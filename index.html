@@ -1010,6 +1010,28 @@ function loadState() {
   } catch(e) {}
 }
 
+// Self-heal any saved state. Removes legacy phantom skips logged for days
+// before the program began, and rebuilds catStruggle deterministically from
+// the (cleaned) skip log so the counter can never drift or stay inflated —
+// fixes the false "habits are being skipped" warnings without a reset.
+function sanitizeState() {
+  var changed = false;
+  for (var k in ST.skipLog) {
+    if (k < ST.startDate) { delete ST.skipLog[k]; changed = true; }
+  }
+  var rebuilt = {};
+  for (var dk in ST.skipLog) {
+    var arr = ST.skipLog[dk] || [];
+    for (var i = 0; i < arr.length; i++) {
+      var cat = HABIT_CAT[arr[i]];
+      if (cat) rebuilt[cat] = (rebuilt[cat] || 0) + 1;
+    }
+  }
+  var prev = JSON.stringify(ST.catStruggle || {});
+  ST.catStruggle = rebuilt;
+  if (changed || prev !== JSON.stringify(rebuilt)) saveState();
+}
+
 // Build a plain-object snapshot of all saved state. Used by both the
 // localStorage save and the export/backup feature so they never drift.
 function serializeState() {
@@ -2536,6 +2558,7 @@ function init() {
     });
   }
   loadState();
+  sanitizeState();
   logTodaySkips();
   calcReadiness();
   initOnboard();
