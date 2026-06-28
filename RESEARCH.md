@@ -137,10 +137,12 @@ Navy facts in APEX must come from official sources first:
 - Boot camp includes medical, dental, fitness screening, vaccinations, haircut/uniform issue, swim testing, classroom instruction, inspections, physical training, weapons/firefighting training, the official PFA, Battle Stations, and graduation.
 - **Pre-basic physical requirements (Navy.com), male age 20–24:** push-ups **42** in two minutes · plank **2 × 30 sec** · 1.5-mile run **13:15**. *(Grade A.)*
 - **Pre-basic physical requirements (Navy.com), female age 20–24:** push-ups **17** in two minutes · plank **2 × 30 sec** · 1.5-mile run **15:15**. *(Grade A.)*
-- **Current Navy PRT events:** push-ups, **forearm plank**, and a cardiorespiratory event (standard 1.5-mile run/walk or authorized alternate cardio). Sequence: push-ups → forearm plank → cardio. *(Grade A.)*
-- **Curl-ups are NOT a current Navy PRT event** and must not be listed as one unless explicitly describing historical standards. *(Corrected in-app: curl-ups removed from PRT standards, logging, and the physical-readiness score.)*
-- **Pay:** begins after accession / active-duty processing — word first-pay timing carefully. DFAS 2026 enlisted base pay: **E-1 under 4 months active duty $2,225.70/month**, **E-1 after 4 months $2,407.20/month**. *(Grade A; do not say "$2,407.20 on day one.")*
-- **Nuclear-field qualification numbers** (e.g., the commonly cited NF composite ≥ 252 and AFQT ≥ 50 to enlist) must be shown as **recruiter-verification-required** unless tied to an official current Navy recruiting source. The app uses 252 / 50 as practice-score *targets* and labels them "confirm with your recruiter."
+- **Current Navy PRT events:** push-ups, **forearm plank**, and a cardiorespiratory event (standard 1.5-mile run/walk or authorized alternate cardio — treadmill, 500-yd swim, stationary cycle, or a 2,000 m row). Sequence: push-ups → forearm plank → cardio. *(Grade A — MyNavyHR Guide-5A.)*
+- **Curl-ups are NOT a current Navy PRT event.** Forearm planks **replaced curl-ups via NAVADMIN 225/20 (Nov 2020), effective 2021.** Do not list curl-ups as a PRT event except when explicitly describing historical standards. *(Corrected in-app: curl-ups removed from PRT standards, logging, and the physical-readiness score. Note: several secondary sites still list the old curl-up standard — another reason to trust official sources first.)*
+- **Forearm plank scoring** is age/sex table-based (single max hold): for male 20–24, roughly ~1:00 minimum "satisfactory" up to ~3:20 "outstanding." The app uses a 1:30 target as a practical "good" hold and labels it a target, not a guaranteed pass line. *(Navy.com also lists a pre-basic DEP screen of "plank 2 × 30 sec.")*
+- **2026 update:** the Navy is moving to **two PFAs per year** and has authorized a **2,000 m rowing** cardio event in addition to the run/swim/bike options (Stars and Stripes, Dec 2025; NAVADMIN guidance). The app's "cardio event" framing already covers this; re-verify exact rowing/plank tables against MyNavyHR before relying on specific times.
+- **Pay:** begins after accession / active-duty processing — word first-pay timing carefully. DFAS 2026 enlisted base pay (3.8% raise effective Jan 1, 2026): **E-1 under 4 months active duty ≈ $2,225.70/month**, **E-1 after 4 months $2,407.20/month**. *(Grade A — DFAS; verified 2026-06-28. Do not say "$2,407.20 on day one.")*
+- **Nuclear-field qualification numbers:** the commonly cited gates are **NF composite ≥ 252** (AR+MK+EI+GS, or VE+AR+MK+MC; with AR+MK ≥ 110) and **AFQT ≥ 50**; those scoring 235–251 may pursue the **NAPT** path. Show as **recruiter-verification-required** — the app uses 252 / 50 as practice-score *targets* and labels them "confirm with your recruiter." *(Verified 2026-06-28 against Navy recruiting/NAPT references.)*
 - **Enlistment bonuses** must be labeled **"up to"** and **"subject to eligibility, contract, rating, ship date, and current Navy policy."**
 
 ### Product wording
@@ -222,4 +224,22 @@ Before any APEX claim goes into the app, verify:
 
 ---
 
-*Last compiled: 2026-06-28. Re-verify Navy standards, pay, and bonus figures against official sources before each release.*
+## Source-verification log
+
+**Verified 2026-06-28** (web search against official/authoritative sources):
+
+| Claim | Result | Source(s) |
+|---|---|---|
+| Current PRT = push-ups, forearm plank, cardio | **Confirmed** | MyNavyHR Guide-5A; Military.com |
+| Curl-ups removed, replaced by forearm plank | **Confirmed** — NAVADMIN 225/20 (Nov 2020), eff. 2021 | Military.com "Goodbye Curl-Ups" (2020) |
+| E-1 base pay 2026: ~$2,225.70 (<4 mo) / $2,407.20 (4 mo+) | **Confirmed** (3.8% raise eff. Jan 1, 2026) | DFAS 2026 pay tables; Military.com |
+| Push-ups 42 / 1.5-mi run 13:15 (male 20–24) | **Confirmed** | Navy fitness standards references |
+| AFQT ≥ 50; NF composite ≥ 252 (AR+MK ≥ 110); NAPT 235–251 | **Confirmed** as commonly-cited gates (recruiter-verify) | Navy ASVAB/NAPT references |
+| Forearm plank: ~1:00 satisfactory → ~3:20 outstanding (M20–24) | **Confirmed** as table-based; app's 1:30 = practical target | navy-prt.com; Sogevity |
+| 2026: twice-yearly PFA + 2,000 m rowing cardio option | **Noted** (new) — re-verify exact tables before relying | Stars and Stripes (Dec 2025) |
+
+Caveat: some figures were confirmed via authoritative secondary aggregators rather than a direct Navy.com / MyNavyHR page fetch (those weren't reachable from this environment). Treat Navy.com, MyNavyHR, and DFAS as the final word and re-confirm exact tables, bonuses, and rating availability with a recruiter before each release.
+
+---
+
+*Last compiled & verified: 2026-06-28. Re-verify Navy standards, pay, and bonus figures against official sources before each release.*
