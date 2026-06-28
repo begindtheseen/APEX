@@ -977,6 +977,7 @@ var ST = {
   phase:1, streak:0, total:0, lastDate:null, lastGoodDate:null,
   startDate: todayKey(),
   checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
+  asvab:{afqt:null,nf:null}, asvabLogs:[],
   logs:[], onboardDone:false, consecutiveGoodDays:0,
   repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
   readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
@@ -993,6 +994,8 @@ function loadState() {
     ST.lastGoodDate = s.lastGoodDate || null;
     ST.startDate = s.startDate;
     ST.prt = s.prt || ST.prt;
+    ST.asvab = s.asvab || ST.asvab;
+    ST.asvabLogs = s.asvabLogs || [];
     ST.logs = s.logs || [];
     ST.onboardDone = s.onboardDone || false;
     ST.consecutiveGoodDays = s.consecutiveGoodDays || 0;
@@ -1061,7 +1064,7 @@ function serializeState() {
   var out = {
     phase:ST.phase, streak:ST.streak, total:ST.total,
     lastDate:ST.lastDate, lastGoodDate:ST.lastGoodDate,
-    startDate:ST.startDate, prt:ST.prt, logs:ST.logs,
+    startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, logs:ST.logs,
     onboardDone:ST.onboardDone, consecutiveGoodDays:ST.consecutiveGoodDays,
     repCounts:ST.repCounts, skipLog:ST.skipLog,
     catStruggle:ST.catStruggle, skipReasons:ST.skipReasons,
@@ -1308,14 +1311,22 @@ function getProgramReadiness() {
   var discipline = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : 0;
   var minCrit = critScores.length ? Math.min.apply(null, critScores) : 0;
   var phys = physicalReadiness();
-  // Headline blends habit discipline with measured fitness: 70/30 once PRT
-  // scores exist, discipline-only until then.
-  var overall = phys !== null ? Math.round(0.7 * discipline + 0.3 * phys) : discipline;
-  // "Ready" now also requires being on track to pass the PRT (>=50% prob, i.e.
-  // at/above the pass line) — you can't be boot-camp ready without it.
+  var cog = cognitiveTestReadiness();
+  // Headline = weighted blend of the pillars that exist: Discipline (habits, .6)
+  // + Physical (PRT, .2) + Cognitive (ASVAB practice, .2), renormalized so it is
+  // discipline-only until measured scores are logged.
+  var pillars = [{ v: discipline, w: 0.6 }];
+  if (phys !== null) pillars.push({ v: phys, w: 0.2 });
+  if (cog !== null) pillars.push({ v: cog, w: 0.2 });
+  var wsum = 0, vsum = 0;
+  for (var pi = 0; pi < pillars.length; pi++) { wsum += pillars[pi].w; vsum += pillars[pi].v * pillars[pi].w; }
+  var overall = Math.round(vsum / wsum);
+  // "Ready" also requires measured proof on both tests: on track to pass the PRT
+  // and on track to qualify on the ASVAB.
   var physOk = phys !== null && phys >= 50;
-  var isReady = minCrit >= 75 && discipline >= 70 && ST.phase >= 4 && ST.total >= 84 && physOk;
-  return {overall:overall, discipline:discipline, physical:phys, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
+  var cogOk = cog !== null && cog >= 50;
+  var isReady = minCrit >= 75 && discipline >= 70 && ST.phase >= 4 && ST.total >= 84 && physOk && cogOk;
+  return {overall:overall, discipline:discipline, physical:phys, cognitive:cog, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
 }
 
 // ── INSIGHTS / CORRELATION ENGINE ────────────────────────────
@@ -1626,6 +1637,30 @@ function eventEtaSessions(key) {
   return { sessions: Math.ceil(remaining / Math.abs(perLog)) };
 }
 
+// ── ASVAB / COGNITIVE TEST READINESS ─────────────────────────
+// Projected from the user's OWN logged practice scores (not fabricated) against
+// the real thresholds: AFQT >= 50 to enlist, Nuclear Field composite >= 252.
+// 50% = exactly at the threshold, 100% = strong, 0% = floor.
+var ASVAB_STD = {
+  afqt: { pass:50,  full:75,  zero:31,  label:'AFQT' },
+  nf:   { pass:252, full:285, zero:215, label:'NF composite' }
+};
+function asvabPct(key) {
+  var raw = ST.asvab ? ST.asvab[key] : null;
+  if (raw === null || raw === undefined || raw === '') return null;
+  var v = parseInt(raw, 10); if (isNaN(v)) return null;
+  var s = ASVAB_STD[key];
+  var pct = v >= s.pass ? 50 + 50 * (v - s.pass) / (s.full - s.pass)
+                        : 50 - 50 * (s.pass - v) / (s.pass - s.zero);
+  return Math.max(0, Math.min(100, Math.round(pct)));
+}
+function cognitiveTestReadiness() {
+  var a = asvabPct('afqt'), n = asvabPct('nf');
+  if (a === null && n === null) return null;
+  if (a !== null && n !== null) return Math.round(0.5 * a + 0.5 * n);
+  return a !== null ? a : n;
+}
+
 // PRT score trajectory (first vs latest logged) per event.
 function computePrtTrend() {
   if (!ST.logs || ST.logs.length < 2) return null;
@@ -1663,6 +1698,7 @@ function computeWeekdayPattern() {
   for (var i = 0; i < 7; i++) { if (buckets[i].length >= 2) stats.push({ day: names[i], pct: Math.round(meanOf(buckets[i]) * 100), n: buckets[i].length }); }
   if (stats.length < 3) return null;
   stats.sort(function(a, b){ return b.pct - a.pct; });
+  if (stats[0].pct === 0) return null;   // no real completion yet — don't claim a "best day" of 0%
   return { best: stats[0], worst: stats[stats.length - 1] };
 }
 
@@ -2406,7 +2442,9 @@ var LOG_CFG = {
   run:{title:'Log 1.5 Mile Run Time', label:'TIME (MM:SS)', ph:'13:45', hint:'Run at full effort. Enter MM:SS format.'},
   pu:{title:'Log Push-Ups (2 min)', label:'COUNT', ph:'32', hint:'Max push-ups in exactly 2 minutes. Chest to floor.'},
   cu:{title:'Log Curl-Ups (2 min)', label:'COUNT', ph:'45', hint:'Sit to 90 degrees. Count in 2 full minutes.'},
-  pl:{title:'Log Plank Hold', label:'TIME (MM:SS)', ph:'1:30', hint:'Forearm plank until form breaks. Enter MM:SS.'}
+  pl:{title:'Log Plank Hold', label:'TIME (MM:SS)', ph:'1:30', hint:'Forearm plank until form breaks. Enter MM:SS.'},
+  afqt:{title:'Log ASVAB Practice — AFQT', label:'AFQT (1-99)', ph:'50', hint:'Your latest practice AFQT percentile. 50+ is required to enlist.'},
+  nf:{title:'Log ASVAB Practice — Nuclear Field', label:'NF COMPOSITE (AR+MK+EI+GS)', ph:'252', hint:'Your latest practice NF composite. 252+ qualifies for the Nuclear Field.'}
 };
 
 function openLog(type) {
@@ -2426,8 +2464,21 @@ function closeLog() { document.getElementById('modal').classList.remove('show');
 function saveLog() {
   var val = document.getElementById('mInput').value.trim();
   if (!val) { toast('Enter a value', 'warn'); return; }
-  ST.prt[_logType] = val;
   var tk = todayKey().split('-');
+  if (_logType === 'afqt' || _logType === 'nf') {
+    var num = parseInt(val, 10);
+    if (isNaN(num)) { toast('Enter a number', 'warn'); return; }
+    if (!ST.asvab) ST.asvab = {afqt:null, nf:null};
+    ST.asvab[_logType] = num;
+    if (!ST.asvabLogs) ST.asvabLogs = [];
+    ST.asvabLogs.push({date:(+tk[1])+'/'+(+tk[2]), type:_logType.toUpperCase(), val:num});
+    closeLog();
+    deriveAll();
+    renderActiveTab();
+    toast('Practice score logged', 'ok');
+    return;
+  }
+  ST.prt[_logType] = val;
   var typeNames = {run:'1.5mi Run', pu:'Push-ups', cu:'Curl-ups', pl:'Plank'};
   ST.logs.push({date:(+tk[1])+'/'+(+tk[2]), type:typeNames[_logType]||_logType, val:val});
   closeLog();
@@ -2557,22 +2608,28 @@ function renderReady() {
   html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pr.overall + '%;background:' + readyColor + ';border-radius:2px"></div></div>';
   html += '</div>';
 
-  // Two pillars the headline is built from: habit Discipline + measured Physical (PRT).
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
-  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:13px">';
-  html += '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">DISCIPLINE</div>';
-  html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--bright)">' + pr.discipline + '%</div>';
-  html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">Habit consistency</div></div>';
-  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:13px">';
-  html += '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">PHYSICAL (PRT)</div>';
-  if (pr.physical !== null) {
-    var physColor = pr.physical >= 75 ? 'var(--green)' : pr.physical >= 50 ? 'var(--primary)' : 'var(--red)';
-    html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:' + physColor + '">' + pr.physical + '%</div>';
-    html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + (pr.physical >= 50 ? 'On track to pass' : 'Below pass line') + ' &#183; <span style="color:var(--bright)">PRT</span></div></div>';
-  } else {
-    html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--muted)">&#8212;</div>';
-    html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">Log scores on PRT tab</div></div>';
+  // Three pillars the headline is built from: Discipline (habits) + Physical (PRT)
+  // + Cognitive (ASVAB practice scores).
+  function pillarColor(v) { return v >= 75 ? 'var(--green)' : v >= 50 ? 'var(--primary)' : 'var(--red)'; }
+  function pillarCard(label, val, color, sub) {
+    return '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:11px">'
+      + '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:5px">' + label + '</div>'
+      + '<div style="font-family:var(--mono);font-size:19px;font-weight:600;color:' + color + '">' + val + '</div>'
+      + '<div style="font-size:9px;color:var(--muted);margin-top:2px">' + sub + '</div></div>';
   }
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px">';
+  html += pillarCard('DISCIPLINE', pr.discipline + '%', 'var(--bright)', 'Habits');
+  html += pr.physical !== null
+    ? pillarCard('PHYSICAL', pr.physical + '%', pillarColor(pr.physical), pr.physical >= 50 ? 'On track' : 'Below pass')
+    : pillarCard('PHYSICAL', '&#8212;', 'var(--muted)', 'Log PRT');
+  html += pr.cognitive !== null
+    ? pillarCard('COGNITIVE', pr.cognitive + '%', pillarColor(pr.cognitive), pr.cognitive >= 50 ? 'On track' : 'Below line')
+    : pillarCard('COGNITIVE', '&#8212;', 'var(--muted)', 'Log ASVAB');
+  html += '</div>';
+  // Log practice ASVAB scores (parallel to the PRT tab's score logging).
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;afqt&#39;)">Log AFQT' + (ST.asvab && ST.asvab.afqt ? ' (' + ST.asvab.afqt + ')' : '') + '</button>';
+  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;nf&#39;)">Log NF' + (ST.asvab && ST.asvab.nf ? ' (' + ST.asvab.nf + ')' : '') + '</button>';
   html += '</div>';
 
   html += renderConsistency();
@@ -2587,6 +2644,7 @@ function renderReady() {
     {label:'ASVAB study 70%+ consistent',cat:'asvab',needed:70},
     {label:'Navy Knowledge 70%+ consistent',cat:'navyknow',needed:70},
     {label:'PRT on track to pass',cat:null,custom:true,met:(pr.physical!==null && pr.physical>=50)},
+    {label:'ASVAB on track (50+ / 252+)',cat:null,custom:true,met:(pr.cognitive!==null && pr.cognitive>=50)},
     {label:'84+ days in program',cat:null,custom:true,met:ST.total>=84},
     {label:'Phase 4 active',cat:null,custom:true,met:ST.phase>=4}
   ];
