@@ -1,0 +1,19 @@
+{
+  "name": "APEX — Progressive Protocol",
+  "short_name": "APEX",
+  "description": "Brain recovery, Navy boot camp prep, and ASVAB study tracker. Progress is saved on your device.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020509",
+  "theme_color": "#020509",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
