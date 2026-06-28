@@ -506,11 +506,14 @@ body{color:var(--text);font-family:var(--sans);}
 
   <!-- TODAY -->
   <div class="screen active scr" id="todayScreen"><div class="pad">
+    <div id="pstBar" style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);text-align:right;margin-bottom:10px"></div>
     <div class="hero">
       <div class="hero-ey" id="heroEy">PHASE 1 — FOUNDATION</div>
       <div class="hero-t" id="heroTitle">Day 1 — Start Small, Stay Consistent</div>
       <div class="hero-b" id="heroBody">Three habits. That is all. Master these and everything else follows.</div>
     </div>
+
+    <div id="todayInsight"></div>
 
     <div class="phase-banner" id="phaseBanner">
       <div class="phase-ico" id="phaseBanIco">🌱</div>
@@ -544,6 +547,7 @@ body{color:var(--text);font-family:var(--sans);}
     </div>
 
     <div id="unlockNotice"></div>
+    <div id="catchupBar"></div>
     <div class="sl">Today's Habits</div>
     <div id="habitBlocks"></div>
   </div></div>
@@ -609,6 +613,18 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="skip-reasons" id="skipReasons"></div>
     <button class="skip-confirm" id="skipConfirmBtn" onclick="confirmSkip()">Log This Skip</button>
     <button class="skip-cancel" onclick="closeSkipModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- CATCH-UP MODAL -->
+<div class="skip-modal" id="catchupModal">
+  <div class="skip-sheet">
+    <div class="skip-habit-name">Log yesterday</div>
+    <div class="skip-date-label" id="catchupDate">YESTERDAY</div>
+    <div class="skip-why-label">CHECK WHAT YOU ACTUALLY DID</div>
+    <div id="catchupList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <button class="skip-confirm" style="background:linear-gradient(135deg,var(--bright),var(--primary));color:var(--void)" onclick="saveCatchup()">Save yesterday</button>
+    <button class="skip-cancel" onclick="closeCatchup()">Cancel</button>
   </div>
 </div>
 
@@ -920,17 +936,51 @@ var CAT_META = {
   evening:  {label:'Evening',        color:'var(--primary)',critical:false}
 };
 
+// ── DATE / TIME (Pacific, 24-hour) ───────────────────────────
+// The whole app keys days by Pacific calendar date, not UTC, so &quot;today&quot;
+// never rolls over early for a PST/PDT user. Times display in 24-hour format.
+var APEX_TZ = 'America/Los_Angeles';
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function pstKey(d) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: APEX_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+function todayKey() { return pstKey(new Date()); }
+// Anchor a YYYY-MM-DD key at noon UTC so day arithmetic never crosses a boundary.
+function keyToAnchor(key) { var p = String(key).split('-'); return new Date(Date.UTC(+p[0], (+p[1] || 1) - 1, +p[2] || 1, 12, 0, 0)); }
+function shiftKey(key, deltaDays) { var d = keyToAnchor(key); d.setUTCDate(d.getUTCDate() + deltaDays); return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()); }
+function daysBetweenKeys(aKey, bKey) { return Math.round((keyToAnchor(bKey) - keyToAnchor(aKey)) / 86400000); }
+function keyWeekday(key) { return keyToAnchor(key).getUTCDay(); }
+function mil(d) {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: APEX_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d).replace(/^24/, '00');
+}
+function pstZoneAbbr() {
+  var parts = new Intl.DateTimeFormat('en-US', { timeZone: APEX_TZ, timeZoneName: 'short' }).formatToParts(new Date());
+  for (var i = 0; i < parts.length; i++) { if (parts[i].type === 'timeZoneName') return parts[i].value; }
+  return 'PT';
+}
+function pstStamp() {
+  var d = new Date();
+  var wd = new Intl.DateTimeFormat('en-US', { timeZone: APEX_TZ, weekday: 'short' }).format(d).toUpperCase();
+  var dm = new Intl.DateTimeFormat('en-GB', { timeZone: APEX_TZ, day: '2-digit', month: 'short' }).format(d).toUpperCase();
+  return wd + ' ' + dm + ' · ' + mil(d) + ' ' + pstZoneAbbr();
+}
+function pstDateTimeLabel(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var datePart = new Intl.DateTimeFormat('en-GB', { timeZone: APEX_TZ, day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+  return datePart + ', ' + mil(d) + ' ' + pstZoneAbbr();
+}
+function updatePstStamp() { var el = document.getElementById('pstBar'); if (el) el.textContent = pstStamp(); }
+
 // ── STATE ────────────────────────────────────────────────────
 var ST = {
   phase:1, streak:0, total:0, lastDate:null, lastGoodDate:null,
-  startDate:new Date().toISOString().split('T')[0],
+  startDate: todayKey(),
   checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
   logs:[], onboardDone:false, consecutiveGoodDays:0,
   repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
   readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
 };
-
-function todayKey() { return new Date().toISOString().split('T')[0]; }
 
 function loadState() {
   try {
@@ -1042,7 +1092,7 @@ function getChecks() {
 }
 
 function recDay() {
-  return Math.max(1, Math.floor((Date.now() - new Date(ST.startDate).getTime()) / 86400000) + 1);
+  return Math.max(1, daysBetweenKeys(ST.startDate, todayKey()) + 1);
 }
 
 function totalActiveHabits() {
@@ -1058,7 +1108,7 @@ function totalActiveHabits() {
 
 // ── ADAPTIVE ENGINE ──────────────────────────────────────────
 function calcReadiness() {
-  var today = new Date(todayKey());
+  var today = todayKey();
   var cats = Object.keys(CAT_META);
   for (var ci = 0; ci < cats.length; ci++) {
     var cat = cats[ci];
@@ -1080,9 +1130,7 @@ function calcReadiness() {
     var totalPossible = 0;
     var totalDone = 0;
     for (var d = 0; d < 14; d++) {
-      var checkDate = new Date(today);
-      checkDate.setDate(today.getDate() - d);
-      var dk = checkDate.toISOString().split('T')[0];
+      var dk = shiftKey(today, -d);
       var dayChecks = ST.checks[dk] ? Array.from(ST.checks[dk]) : [];
       for (var j = 0; j < activeHabits.length; j++) {
         totalPossible++;
@@ -1093,8 +1141,7 @@ function calcReadiness() {
     var base = Math.round((totalDone / totalPossible) * 100);
     var recentSkips = 0;
     for (var d2 = 0; d2 < 3; d2++) {
-      var cd = new Date(today); cd.setDate(today.getDate() - d2);
-      var cdk = cd.toISOString().split('T')[0];
+      var cdk = shiftKey(today, -d2);
       var skips = ST.skipLog[cdk] || [];
       for (var k2 = 0; k2 < activeHabits.length; k2++) {
         if (skips.indexOf(activeHabits[k2]) !== -1) recentSkips++;
@@ -1120,9 +1167,7 @@ function getStruggles() {
 }
 
 function logTodaySkips() {
-  var yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  var yk = yesterday.toISOString().split('T')[0];
+  var yk = shiftKey(todayKey(), -1);
   if (ST.skipLog[yk]) return;
   var dayChecks = ST.checks[yk] ? Array.from(ST.checks[yk]) : [];
   var skips = [];
@@ -1272,14 +1317,11 @@ function catLow(cat) {
 }
 
 function dateKeysRange(maxDays) {
-  var keys = []; var today = new Date(todayKey()); var start = new Date(ST.startDate);
-  var span = Math.floor((today - start) / 86400000);
+  var keys = []; var today = todayKey();
+  var span = daysBetweenKeys(ST.startDate, today);
   if (isNaN(span) || span < 0) span = 0;
   if (span > maxDays) span = maxDays;
-  for (var d = span; d >= 0; d--) {
-    var cd = new Date(today); cd.setDate(today.getDate() - d);
-    keys.push(cd.toISOString().split('T')[0]);
-  }
+  for (var d = span; d >= 0; d--) keys.push(shiftKey(today, -d));
   return keys;
 }
 
@@ -1441,7 +1483,7 @@ function computeWeekdayPattern() {
   for (var k = 0; k < ds.keys.length; k++) {
     var sum = 0;
     for (var c = 0; c < cats.length; c++) sum += ds.series[cats[c]][k];
-    var d = new Date(ds.keys[k]).getDay();
+    var d = keyWeekday(ds.keys[k]);
     buckets[d].push(sum / cats.length);
   }
   var stats = [];
@@ -1861,7 +1903,89 @@ function renderToday() {
     html += '</div></div>';
   }
   document.getElementById('habitBlocks').innerHTML = html;
+
+  updatePstStamp();
+  document.getElementById('todayInsight').innerHTML = renderTodayBanner();
+  document.getElementById('catchupBar').innerHTML = renderCatchupBar();
 }
+
+// Today&#39;s single most important correlation, linking through to the full set.
+function renderTodayBanner() {
+  calcReadiness();
+  var ins = computeInsights();
+  if (!ins.length) return '';
+  var it = ins[0];
+  var html = '<div onclick="goTab(&#39;ready&#39;)" style="cursor:pointer;background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(77,184,255,.04));border:1px solid var(--ice2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">';
+  html += '<div style="font-size:16px;margin-top:1px">💡</div>';
+  html += '<div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-size:9px;color:var(--bright);letter-spacing:1.5px;margin-bottom:3px">TODAY&#39;S TOP INSIGHT</div>';
+  html += '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px">' + it.title + '</div>';
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.5">' + it.fix + ' <span style="color:var(--bright);white-space:nowrap">See all &#8594;</span></div>';
+  html += '</div></div>';
+  return html;
+}
+
+// ── CATCH-UP: log/edit yesterday so a missed day does not skew correlations ──
+var _catchupKey = null;
+var _catchupSel = null;
+
+function keyLongLabel(key) {
+  var d = keyToAnchor(key);
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long', month: 'short', day: 'numeric' }).format(d).toUpperCase();
+}
+
+function renderCatchupBar() {
+  if (daysBetweenKeys(ST.startDate, todayKey()) < 1) return '';
+  var yk = shiftKey(todayKey(), -1);
+  var done = ST.checks[yk] ? Array.from(ST.checks[yk]).length : 0;
+  var label = done ? ('Yesterday: ' + done + ' logged &#8212; tap to edit') : 'Forgot to log yesterday? Catch up';
+  return '<div onclick="openCatchup()" style="cursor:pointer;background:var(--mid);border:1px dashed var(--ice);border-radius:10px;padding:10px 13px;margin-bottom:10px;display:flex;align-items:center;gap:8px"><span style="font-size:13px">&#8617;</span><span style="font-size:12px;color:var(--text)">' + label + ' <span style="color:var(--bright)">&#8594;</span></span></div>';
+}
+
+function openCatchup() {
+  _catchupKey = shiftKey(todayKey(), -1);
+  _catchupSel = {};
+  var existing = ST.checks[_catchupKey];
+  if (existing) { var arr = Array.from(existing); for (var i = 0; i < arr.length; i++) _catchupSel[arr[i]] = true; }
+  document.getElementById('catchupDate').textContent = keyLongLabel(_catchupKey);
+  renderCatchupList();
+  document.getElementById('catchupModal').classList.add('show');
+}
+
+function renderCatchupList() {
+  var html = '';
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    var block = ALL_HABITS[bi];
+    if (block.phase > ST.phase) continue;
+    for (var hi = 0; hi < block.items.length; hi++) {
+      var it = block.items[hi];
+      if (it.phase > ST.phase) continue;
+      var on = !!_catchupSel[it.id];
+      html += '<button class="skip-reason-btn' + (on ? ' selected' : '') + '" style="display:flex;align-items:center;gap:10px" onclick="toggleCatchup(\'' + it.id + '\')">';
+      html += '<span style="width:18px;height:18px;border-radius:5px;border:1.5px solid ' + (on ? 'var(--bright)' : 'var(--ice2)') + ';background:' + (on ? 'var(--bright)' : 'transparent') + ';flex-shrink:0"></span>';
+      html += '<span style="flex:1">' + it.n + '</span></button>';
+    }
+  }
+  document.getElementById('catchupList').innerHTML = html;
+}
+
+function toggleCatchup(id) { if (_catchupSel[id]) delete _catchupSel[id]; else _catchupSel[id] = true; renderCatchupList(); }
+
+function saveCatchup() {
+  var prev = ST.checks[_catchupKey] ? ST.checks[_catchupKey] : new Set();
+  var set = new Set();
+  for (var id in _catchupSel) set.add(id);
+  if (!ST.repCounts) ST.repCounts = {};
+  set.forEach(function(id){ if (!prev.has(id)) ST.repCounts[id] = (ST.repCounts[id] || 0) + 1; });
+  prev.forEach(function(id){ if (!set.has(id)) ST.repCounts[id] = Math.max(0, (ST.repCounts[id] || 0) - 1); });
+  ST.checks[_catchupKey] = set;
+  calcReadiness();
+  saveState();
+  closeCatchup();
+  renderToday();
+  toast('Yesterday saved', 'ok');
+}
+
+function closeCatchup() { document.getElementById('catchupModal').classList.remove('show'); }
 
 function tglBlock(i, locked) {
   if (locked) { toast('Unlocks in Phase ' + ALL_HABITS[i].phase, 'warn'); return; }
@@ -1881,9 +2005,7 @@ function tglHabit(id) {
     ST.total++;
     var missedDays = 0;
     if (ST.lastDate) {
-      var last = new Date(ST.lastDate);
-      var now2 = new Date(today);
-      missedDays = Math.round((now2 - last) / 86400000) - 1;
+      missedDays = daysBetweenKeys(ST.lastDate, today) - 1;
     }
     if (missedDays <= 2) { ST.streak++; } else { ST.streak = 1; ST.consecutiveGoodDays = 0; }
     ST.lastDate = today;
@@ -2054,9 +2176,9 @@ function saveLog() {
   var val = document.getElementById('mInput').value.trim();
   if (!val) { toast('Enter a value', 'warn'); return; }
   ST.prt[_logType] = val;
-  var d = new Date();
+  var tk = todayKey().split('-');
   var typeNames = {run:'1.5mi Run', pu:'Push-ups', cu:'Curl-ups', pl:'Plank'};
-  ST.logs.push({date:(d.getMonth()+1)+'/'+d.getDate(), type:typeNames[_logType]||_logType, val:val});
+  ST.logs.push({date:(+tk[1])+'/'+(+tk[2]), type:typeNames[_logType]||_logType, val:val});
   saveState();
   closeLog();
   updatePRT();
@@ -2251,7 +2373,7 @@ function renderReady() {
 
   // ── DATA & BACKUP ──
   var backupNote = ST.lastBackup
-    ? 'Last backup: ' + new Date(ST.lastBackup).toLocaleDateString()
+    ? 'Last backup: ' + pstDateTimeLabel(ST.lastBackup)
     : 'No backup yet — export one to keep your progress safe.';
   html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-top:14px;">';
   html += '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin-bottom:8px">DATA &amp; BACKUP</div>';
@@ -2311,6 +2433,8 @@ function init() {
     document.getElementById('mainApp').classList.add('active');
     renderToday();
   }
+  updatePstStamp();
+  setInterval(updatePstStamp, 30000);
 }
 
 init();
