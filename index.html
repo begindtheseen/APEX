@@ -1191,19 +1191,24 @@ function calcReadiness() {
     }
     if (totalPossible === 0) { ST.readiness[cat] = null; continue; }
     var base = Math.round((totalDone / totalPossible) * 100);
-    var recentSkips = 0;
+    var recentSkipCount = 0;
     for (var d2 = 0; d2 < 3; d2++) {
       var cdk = shiftKey(today, -d2);
       var skips = ST.skipLog[cdk] || [];
       for (var k2 = 0; k2 < activeHabits.length; k2++) {
-        if (skips.indexOf(activeHabits[k2]) !== -1) recentSkips++;
+        if (skips.indexOf(activeHabits[k2]) !== -1) recentSkipCount++;
       }
     }
-    var penalty = Math.min(20, recentSkips * 5);
     var totalReps = 0;
     for (var ri = 0; ri < activeHabits.length; ri++) totalReps += (ST.repCounts[activeHabits[ri]] || 0);
-    var bonus = Math.max(0, Math.min(15, Math.round((totalReps / activeHabits.length) / 66 * 15)));
-    ST.readiness[cat] = Math.max(0, Math.min(100, base - penalty + bonus));
+    // Automaticity (0..1): how ingrained the category's habits are (Lally ~66 reps).
+    var autom = Math.min(1, (totalReps / activeHabits.length) / 66);
+    // Automaticity buys resilience — a deeply-ingrained habit's occasional miss
+    // hurts readiness less (penalty softened up to 40%). The flat bonus is small
+    // so it doesn't double-count the completion already captured in `base`.
+    var penalty = Math.min(20, recentSkipCount * 5) * (1 - 0.4 * autom);
+    var bonus = Math.min(8, Math.round(autom * 8));
+    ST.readiness[cat] = Math.max(0, Math.min(100, Math.round(base - penalty + bonus)));
   }
 }
 
@@ -1341,6 +1346,11 @@ var INSIGHT_CHAINS = [
     title:'Under-slept days are dragging your training',
     body:'Sleep and Training move together in your data. A short night drains the energy and drive that get you out the door &#8212; &#34;too tired&#34; is the most common training skip there is.',
     fix:'Protect sleep first. One good night raises tomorrow&#39;s training odds more than any amount of willpower.' },
+  { from:'sleep', to:'fuel',
+    reasons:[],
+    title:'Short sleep is steering your eating',
+    body:'Under-sleep spikes ghrelin (hunger) and drops leptin (fullness) the next day, and tilts cravings toward sugar and processed carbs &#8212; so a bad night quietly sabotages the nutrition that turns your training into muscle.',
+    fix:'On low-sleep days, decide breakfast before you are hungry: protein first, no processed sugar before noon.' },
   { from:'training', to:'asvab',
     reasons:['Skipped workout so no BDNF window','Too tired after workout','Got distracted'],
     title:'Skipped workouts are skipping your studying',
@@ -1596,6 +1606,24 @@ function physicalReadiness() {
   var sum = 0, wsum = 0;
   for (var k in w) { var p = eventPassPct(k); if (p !== null) { sum += p * w[k]; wsum += w[k]; } }
   return wsum ? Math.round(sum / wsum) : null;
+}
+
+// ETA to the pass standard for one event, measured in logged sessions at the
+// current improvement rate (logs lack a reliable elapsed-time, so we project in
+// sessions, not days). Returns {passing}|{stalled}|{sessions} or null (<2 logs).
+function eventEtaSessions(key) {
+  var s = PRT_STD[key];
+  var vals = [];
+  for (var i = 0; i < ST.logs.length; i++) { if (ST.logs[i].type === s.type) vals.push(parsePrtVal(s.type, ST.logs[i].val)); }
+  if (vals.length < 2) return null;
+  var v0 = vals[0], v1 = vals[vals.length - 1];
+  var passing = s.lower ? v1 <= s.pass : v1 >= s.pass;
+  if (passing) return { passing: true };
+  var perLog = (v1 - v0) / (vals.length - 1);
+  var improving = s.lower ? perLog < 0 : perLog > 0;
+  if (!improving || perLog === 0) return { stalled: true };
+  var remaining = s.lower ? (v1 - s.pass) : (s.pass - v1);
+  return { sessions: Math.ceil(remaining / Math.abs(perLog)) };
 }
 
 // PRT score trajectory (first vs latest logged) per event.
@@ -2427,7 +2455,16 @@ function updatePRT() {
     } else {
       var onTrack = 0, logged = 0;
       for (var k in PRT_STD) { var p = eventPassPct(k); if (p !== null) { logged++; if (p >= 50) onTrack++; } }
-      ps.innerHTML = '<strong>Physical readiness: ' + phys + '%</strong> &#8212; on track to pass <strong>' + onTrack + '/' + logged + '</strong> logged event' + (logged === 1 ? '' : 's') + ' (50% = at the pass line). This feeds your Nuclear Field readiness.';
+      var etas = [];
+      for (var ek in PRT_STD) {
+        var eta = eventEtaSessions(ek);
+        if (!eta) continue;
+        if (eta.passing) etas.push(PRT_STD[ek].label + ' passing &#10003;');
+        else if (eta.sessions) etas.push(PRT_STD[ek].label + ' ~' + eta.sessions + ' session' + (eta.sessions === 1 ? '' : 's') + ' to pass');
+        else etas.push(PRT_STD[ek].label + ' stalled');
+      }
+      ps.innerHTML = '<strong>Physical readiness: ' + phys + '%</strong> &#8212; on track to pass <strong>' + onTrack + '/' + logged + '</strong> logged event' + (logged === 1 ? '' : 's') + ' (50% = at the pass line). This feeds your Nuclear Field readiness.'
+        + (etas.length ? '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">' + etas.join(' &#183; ') + '</div>' : '');
     }
   }
   var hist=document.getElementById('logHist');
