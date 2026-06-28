@@ -459,7 +459,7 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="ob-step show" id="obs0">
       <div class="ob-ico">⚛️</div>
       <div class="ob-title">One app. Three missions.</div>
-      <div class="ob-body">Brain recovery from cannabis. Physical prep to pass Navy boot camp. ASVAB study to qualify for <strong>Nuclear Field</strong> — $75K+ bonus, six-figure civilian exit. Everything you need is here.</div>
+      <div class="ob-body">Brain recovery from cannabis. Physical prep for Navy boot camp. ASVAB study aimed at the <strong>Nuclear Field</strong> path — which can carry a sizable sign-on bonus and a strong civilian exit. Bonuses and eligibility vary; confirm with a recruiter. Everything you need to prepare is here.</div>
       <button class="ob-btn" onclick="nextOb()">Let's go →</button>
     </div>
 
@@ -485,7 +485,7 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="ob-step" id="obs3">
       <div class="ob-ico">🎯</div>
       <div class="ob-title">Stop comparing. Start compounding.</div>
-      <div class="ob-body">Every habit shows you its <strong>rep count</strong> and automaticity stage — from "conscious effort" to "fully automatic." Miss 1-2 days and your streak survives. Miss 3+ and the counter resets, never the phase. Lally 2010: average habit takes <strong>66 days</strong> to automate. This app tracks every single rep toward that number.</div>
+      <div class="ob-body">Every habit shows you its <strong>rep count</strong> and automaticity stage — from "conscious effort" to "fully automatic." Miss 1-2 days and your streak survives. Miss 3+ and the counter resets, never the phase. Habits don't form in 21 days — a systematic review found a <strong>median around two months</strong>, with large variation by person and behavior. This app tracks every rep toward that range.</div>
       <button class="ob-btn" onclick="finishOb()">Start Day 1 →</button>
     </div>
   </div>
@@ -555,13 +555,13 @@ body{color:var(--text);font-family:var(--sans);}
   <!-- TRAIN -->
   <div class="screen scr" id="trainScreen"><div class="pad">
     <div class="by" style="margin-bottom:14px"><strong>Training plan unlocks at Phase 2 (Day 15).</strong> Right now focus on the foundation habits — sleep, water, sunlight. These enable the training. Jump straight to hard cardio with no sleep or hydration base and you burn out in week one.</div>
-    <div class="sl">PRT Pass Standards (Male Age 24)</div>
-    <div class="prt2" style="margin-bottom:14px">
-      <div class="prtc" style="border-left:3px solid var(--red)"><div class="prtl">1.5 MI RUN</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">13:15 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: sub-12:00</div></div>
+    <div class="sl">Navy PRT — Current Events (Male 20–24, per Navy.com)</div>
+    <div class="prt2" style="margin-bottom:8px">
+      <div class="prtc" style="border-left:3px solid var(--red)"><div class="prtl">1.5 MI RUN / CARDIO</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">13:15 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: sub-12:00</div></div>
       <div class="prtc" style="border-left:3px solid var(--bright)"><div class="prtl">PUSH-UPS (2 min)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">42 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 60+</div></div>
-      <div class="prtc" style="border-left:3px solid var(--glacier)"><div class="prtl">CURL-UPS (2 min)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">52 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 70+</div></div>
-      <div class="prtc" style="border-left:3px solid var(--glacier)"><div class="prtl">PLANK (hold)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">1:30 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 3:00+</div></div>
+      <div class="prtc" style="border-left:3px solid var(--glacier)"><div class="prtl">FOREARM PLANK</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">1:30 target</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Navy screen: 2×30s</div></div>
     </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:14px;line-height:1.6">Current Navy PRT uses push-ups, forearm plank, and a cardio event — curl-ups are no longer a PRT event. Figures per Navy.com; confirm current standards with your recruiter.</div>
     <div class="sl">16-Week Boot Camp Training Plan</div>
     <div id="weekPlan"></div>
   </div></div>
@@ -573,8 +573,7 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="prt2">
       <div class="prtc"><div class="prtl">1.5 MI RUN</div><div class="prtv" id="pRun">—</div><div class="prtt">Pass: <span>13:15</span></div><div class="prtbar"><div class="prtfill" id="bRun" style="width:0%;background:linear-gradient(90deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('run')">Log Run</button></div>
       <div class="prtc"><div class="prtl">PUSH-UPS</div><div class="prtv" id="pPu">—</div><div class="prtt">Pass: <span>42</span></div><div class="prtbar"><div class="prtfill" id="bPu" style="width:0%;background:var(--green)"></div></div><button class="prtbtn" onclick="openLog('pu')">Log Push-ups</button></div>
-      <div class="prtc"><div class="prtl">CURL-UPS</div><div class="prtv" id="pCu">—</div><div class="prtt">Pass: <span>52</span></div><div class="prtbar"><div class="prtfill" id="bCu" style="width:0%;background:linear-gradient(90deg,var(--glacier),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('cu')">Log Curl-ups</button></div>
-      <div class="prtc"><div class="prtl">PLANK</div><div class="prtv" id="pPl">—</div><div class="prtt">Pass: <span>1:30</span></div><div class="prtbar"><div class="prtfill" id="bPl" style="width:0%;background:linear-gradient(135deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('pl')">Log Plank</button></div>
+      <div class="prtc"><div class="prtl">FOREARM PLANK</div><div class="prtv" id="pPl">—</div><div class="prtt">Target: <span>1:30</span></div><div class="prtbar"><div class="prtfill" id="bPl" style="width:0%;background:linear-gradient(135deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('pl')">Log Plank</button></div>
     </div>
     <div class="sl">Log History</div>
     <div id="logHist"><div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0">No logs yet. Start training and log your first scores.</div></div>
@@ -708,7 +707,7 @@ var ALL_HABITS = [
        why_locked:''},
       {id:'h_cold', phase:1,
        n:'30 seconds cold water at end of shower',
-       w:'Cold exposure raises norepinephrine 300% and BDNF 12%. Norepinephrine is the focus neurotransmitter most depleted by cannabis. This starts rebuilding it daily.',
+       w:'Cold exposure has been shown to raise norepinephrine (a focus-related neurotransmitter) and may nudge BDNF. A brief daily cold finish is an easy way to train that response.',
        cue:'IF I finish my shower, THEN I turn it cold for 30 seconds before stepping out.',
        why_locked:''}
     ]
@@ -718,12 +717,12 @@ var ALL_HABITS = [
     items:[
       {id:'h_run', phase:2,
        n:'Run or walk/jog session — per the training plan',
-       w:'Highest-impact habit for both brain and body. Aerobic exercise triggers BDNF, creates new neurons, rebuilds your prefrontal cortex, and fixes your stamina simultaneously. Start at walk/jog intervals.',
+       w:'Highest-impact habit for both brain and body. Aerobic exercise is associated with higher BDNF and supports prefrontal recovery and stamina at the same time. Start at walk/jog intervals.',
        cue:'IF I put on my shoes, THEN I walk out the door immediately — no thinking.',
        why_locked:'Unlocks Phase 2. Build sleep and morning habits first.'},
       {id:'h_strength', phase:2,
-       n:'Push-ups, curl-ups, plank — 3 sets after your run',
-       w:'These are the exact 3 events on the Navy PRT. Training them daily with progressive overload is the only path to passing.',
+       n:'Push-ups and forearm plank — 3 sets after your run',
+       w:'Push-ups and the forearm plank are current Navy PRT events (with the cardio run); curl-ups are optional core work, not a current PRT event. Training them with progressive overload builds toward the standards.',
        cue:'IF I finish my run cooldown, THEN I do my first set immediately.',
        why_locked:'Unlocks Phase 2.'},
       {id:'h_stretch', phase:2,
@@ -763,7 +762,7 @@ var ALL_HABITS = [
        why_locked:'Unlocks Phase 3. Build your aerobic and sleep base first.'},
       {id:'h_study2', phase:3,
        n:'Pomodoro blocks — 25 min on, 5 min walk break, repeat',
-       w:'Cannabis impairs sustained attention more than any other cognitive domain. Structured intervals train exactly this capacity back. Walk breaks consolidate what you just learned.',
+       w:'Cannabis use has been associated with reduced sustained attention. Structured intervals help train that capacity back, and walk breaks help consolidate what you just learned.',
        cue:'IF I sit down to study, THEN I set a 25-minute timer before opening any material.',
        why_locked:'Unlocks Phase 3.'},
       {id:'h_review', phase:3,
@@ -828,7 +827,7 @@ var ALL_HABITS = [
     items:[
       {id:'h_noweed', phase:4,
        n:'No weed tonight — or minimum 4 hours before bed',
-       w:'THC suppresses REM sleep — the phase where your prefrontal cortex repairs and memories consolidate. Every clean sleep compounds cognitive recovery. Your ASVAB memory consolidates during REM.',
+       w:'THC use has been associated with reduced REM sleep — the phase when the prefrontal cortex repairs and memories consolidate. Cleaner sleep may compound cognitive recovery, and much of your ASVAB memory consolidates during REM.',
        cue:'IF it is 3 hours before my bedtime, THEN I make the decision for the night right now.',
        why_locked:'Unlocks Phase 4.'},
       {id:'h_noalc', phase:4,
@@ -1593,12 +1592,11 @@ function parsePrtVal(type, val) {
 var PRT_STD = {
   run: { type:'1.5mi Run', pass:795, full:690, zero:900, lower:true,  label:'1.5 mi run', pretty:'13:15' },
   pu:  { type:'Push-ups',  pass:42,  full:60,  zero:20,  lower:false, label:'Push-ups',   pretty:'42' },
-  cu:  { type:'Curl-ups',  pass:52,  full:70,  zero:30,  lower:false, label:'Curl-ups',   pretty:'52' },
-  pl:  { type:'Plank',     pass:90,  full:180, zero:45,  lower:false, label:'Plank',      pretty:'1:30' }
+  pl:  { type:'Plank',     pass:90,  full:180, zero:45,  lower:false, label:'Forearm plank', pretty:'1:30' }
 };
 function eventPassPct(key) {
+  var s = PRT_STD[key]; if (!s) return null;
   var raw = ST.prt[key]; if (!raw) return null;
-  var s = PRT_STD[key];
   var v = parsePrtVal(s.type, raw);
   var pct;
   if (s.lower) {
@@ -1613,7 +1611,7 @@ function eventPassPct(key) {
 // 0-100 weighted physical readiness across logged events (run weighted highest);
 // null until something is logged. Missing events are omitted and weights renormalized.
 function physicalReadiness() {
-  var w = { run:0.30, pu:0.25, cu:0.25, pl:0.20 };
+  var w = { run:0.40, pu:0.30, pl:0.30 };
   var sum = 0, wsum = 0;
   for (var k in w) { var p = eventPassPct(k); if (p !== null) { sum += p * w[k]; wsum += w[k]; } }
   return wsum ? Math.round(sum / wsum) : null;
@@ -1870,7 +1868,7 @@ function renderInsights() {
     html += '<div style="font-size:12px;color:var(--text);line-height:1.6;margin-top:9px">' + note + '</div>';
     html += '</div>';
   } else {
-    html += dormantStub('Unlocks once you log a PRT score at least twice (PRT tab). Then this tracks whether your run, push-ups, curl-ups and plank improve alongside how consistent your training is.');
+    html += dormantStub('Unlocks once you log a PRT score at least twice (PRT tab). Then this tracks whether your run, push-ups, and plank improve alongside how consistent your training is.');
   }
 
   // ── 4. YOUR STRONGEST & WEAKEST DAYS ──
@@ -2086,9 +2084,9 @@ function renderToday() {
     [7,'Day 7. Dopamine baseline stabilizing.'],
     [14,'Day 14. Simple habits beginning to automate.'],
     [21,'Day 21. Conscious effort dropping. Identity shift is happening.'],
-    [30,'Day 30. Working memory measurably improved.'],
+    [30,'Day 30. Working memory may be improving as recovery continues.'],
     [45,'Day 45. BDNF elevated for 6+ weeks. You are cognitively different now.'],
-    [66,'Day 66. Average habit reaches full automaticity (Lally, UCL).'],
+    [66,'Day 66. Around the median time a habit starts to feel automatic — though it varies widely person to person.'],
     [84,'Day 84. 12 weeks. Substantial BDNF and cognitive improvement confirmed.']
   ];
   var neuroNote = neuroNotes[0][1];
@@ -2339,8 +2337,8 @@ function tglHabit(id) {
   if (!wasChecked) {
     if (reps2 === 7) toast('7 reps. Neural pathways forming.', 'ok');
     else if (reps2 === 14) toast('14 reps. Simple habits automating.', 'ok');
-    else if (reps2 === 21) toast('21 days. Basal ganglia taking over.', 'ok');
-    else if (reps2 === 66) toast('66 reps. Fully automatic. (Lally confirmed)', 'ok');
+    else if (reps2 === 21) toast('21 reps. Real momentum — automaticity usually takes longer.', 'ok');
+    else if (reps2 === 66) toast('66 reps. Around the median for a habit to feel automatic.', 'ok');
     else if (done2 === tot) toast('Perfect protocol day.', 'ok');
     else toast('Logged.', 'ok');
   }
@@ -2400,10 +2398,10 @@ var WEEKS = [
    days:[
     {d:'MON',work:'<strong>Easy run 30 min.</strong>',note:''},
     {d:'TUE',work:'<strong>Hard intervals:</strong> 12x (400m race pace + 90-sec walk).',note:''},
-    {d:'WED',work:'<strong>Full strength:</strong> 3x (2-min max push-ups, 2-min curl-ups, max plank). Log all.',note:''},
+    {d:'WED',work:'<strong>Full strength:</strong> 3x (2-min max push-ups, max forearm plank). Log all.',note:''},
     {d:'THU',work:'<strong>Tempo run 25 min.</strong>',note:''},
     {d:'FRI',work:'<strong>REST.</strong>',note:''},
-    {d:'SAT',work:'<strong>FULL PRT SIMULATION:</strong> Push-ups 2 min, rest 5 min, curl-ups 2 min, rest 5 min, plank max, rest 5 min, 1.5 mile run. Log everything.',note:''},
+    {d:'SAT',work:'<strong>FULL PRT SIMULATION:</strong> Push-ups 2 min, rest 5 min, forearm plank max, rest 5 min, 1.5 mile run. Log everything.',note:''},
     {d:'SUN',work:'<strong>REST. 16 weeks done.</strong>',note:'You built this from zero.'}
    ]}
 ];
@@ -2441,10 +2439,9 @@ var _logType = null;
 var LOG_CFG = {
   run:{title:'Log 1.5 Mile Run Time', label:'TIME (MM:SS)', ph:'13:45', hint:'Run at full effort. Enter MM:SS format.'},
   pu:{title:'Log Push-Ups (2 min)', label:'COUNT', ph:'32', hint:'Max push-ups in exactly 2 minutes. Chest to floor.'},
-  cu:{title:'Log Curl-Ups (2 min)', label:'COUNT', ph:'45', hint:'Sit to 90 degrees. Count in 2 full minutes.'},
-  pl:{title:'Log Plank Hold', label:'TIME (MM:SS)', ph:'1:30', hint:'Forearm plank until form breaks. Enter MM:SS.'},
-  afqt:{title:'Log ASVAB Practice — AFQT', label:'AFQT (1-99)', ph:'50', hint:'Your latest practice AFQT percentile. 50+ is required to enlist.'},
-  nf:{title:'Log ASVAB Practice — Nuclear Field', label:'NF COMPOSITE (AR+MK+EI+GS)', ph:'252', hint:'Your latest practice NF composite. 252+ qualifies for the Nuclear Field.'}
+  pl:{title:'Log Forearm Plank', label:'TIME (MM:SS)', ph:'1:30', hint:'Forearm plank until form breaks. Enter MM:SS.'},
+  afqt:{title:'Log ASVAB Practice — AFQT', label:'AFQT (1-99)', ph:'50', hint:'Your latest practice AFQT percentile. 50+ is the commonly cited minimum to enlist — confirm with your recruiter.'},
+  nf:{title:'Log ASVAB Practice — Nuclear Field', label:'NF COMPOSITE (AR+MK+EI+GS)', ph:'252', hint:'Your latest practice NF composite. 252+ is the commonly cited target — confirm the current number with your recruiter.'}
 };
 
 function openLog(type) {
@@ -2496,7 +2493,7 @@ function updatePRT() {
     document.getElementById(valId).textContent = raw ? (raw + '  ·  ' + pp + '%') : '—';
     document.getElementById(barId).style.width = (pp === null ? 0 : pp) + '%';
   }
-  setRow('run','pRun','bRun'); setRow('pu','pPu','bPu'); setRow('cu','pCu','bCu'); setRow('pl','pPl','bPl');
+  setRow('run','pRun','bRun'); setRow('pu','pPu','bPu'); setRow('pl','pPl','bPl');
 
   var phys = physicalReadiness();
   var ps = document.getElementById('prtSummary');
@@ -2536,7 +2533,7 @@ var SCIENCE = {
     {ico:'🧠', title:'Why Only 3 Habits to Start',
      body:'<h3>The Burnout Equation</h3><p>Every habit you add competes for willpower and decision-making bandwidth — both finite. Research on habit formation shows that stacking too many new behaviors simultaneously causes all of them to fail. Not some. All.</p><p>Starting with 3 keystone habits is not the easy version. It IS the protocol. These 3 habits fix the neurochemical and physiological conditions that make every future habit easier to sustain.</p><div class="bg"><strong>Sleep alone improves willpower, physical recovery, BDNF levels, and emotional regulation.</strong> Fix it first and every other habit becomes easier.</div>'},
     {ico:'😴', title:'Sleep First — Everything Else Depends On It',
-     body:'<h3>What Happens While You Sleep</h3><p>During slow-wave sleep your glymphatic system flushes toxins from your brain. During REM sleep the hippocampus transfers short-term memories to long-term storage. Growth hormone peaks for tissue repair. BDNF restores.</p><div class="br"><strong>Cannabis chronically suppresses REM sleep.</strong> You may fall asleep faster but brain repair and memory consolidation do not happen. Fixing sleep architecture is the single highest-return change in this protocol.</div><h3>REM Rebound</h3><p>When you reduce cannabis use expect vivid dreams and waking at night for 2-4 weeks. This is REM rebound — your brain restoring the architecture that was suppressed. It means recovery is working.</p>'},
+     body:'<h3>What Happens While You Sleep</h3><p>During slow-wave sleep your glymphatic system flushes toxins from your brain. During REM sleep the hippocampus transfers short-term memories to long-term storage. Growth hormone peaks for tissue repair. BDNF restores.</p><div class="br"><strong>Cannabis use has been associated with reduced REM sleep.</strong> You may fall asleep faster, but brain repair and memory consolidation may be reduced. Protecting sleep is one of the highest-return changes you can make.</div><h3>REM Rebound</h3><p>When people reduce cannabis use, vivid dreams and lighter sleep for a few weeks are commonly reported — often described as REM rebound. If sleep problems persist, talk to a clinician.</p>'},
     {ico:'💧', title:'Morning Water and Sunlight — Why These Are First',
      body:'<h3>Hydration</h3><p>Your brain is 73% water. After 8 hours of sleep you are mildly dehydrated. Even 2% dehydration measurably reduces working memory and processing speed — the exact cognitive domains affected by cannabis use.</p><h3>Morning Sunlight</h3><p>Morning light in the first hour of waking triggers a cortisol pulse that sets your energy and focus rhythms for the entire day. It also anchors your melatonin release timing 14-16 hours later. This single habit improves your sleep tonight.</p><h3>Cold Water</h3><p>Cold exposure raises norepinephrine 300% acutely. Norepinephrine is the focus neurotransmitter most depleted by cannabis use. 30 seconds cold at the end of your shower starts rebuilding it daily.</p>'}
   ],
@@ -2550,7 +2547,7 @@ var SCIENCE = {
   ],
   3:[
     {ico:'📚', title:'The ASVAB and Nuclear Field',
-     body:'<h3>Two Separate Scores, Two Gates</h3><p>The AFQT (AR+MK+2xVE) determines if the Navy will take you at all — you need 50+. The Nuclear Field composite (AR+MK+EI+GS) must be 252+. AR and MK count toward both simultaneously — highest ROI subjects to study.</p><div class="bb"><strong>NAPT backup:</strong> Score 235-251 on NF composite? Take the Navy Advanced Programs Test. Score 50+ and you still qualify for Nuclear Field.</div><h3>Why Phase 3</h3><p>By Phase 3 you have 6+ weeks of sleep and aerobic base. BDNF is elevated and your sleep is clean. This is the first time studying is actually efficient.</p>'},
+     body:'<h3>Two Separate Scores, Two Gates</h3><p>The AFQT (AR+MK+2xVE) determines whether the Navy will take you — 50+ is the commonly cited minimum. The Nuclear Field composite (AR+MK+EI+GS) is commonly cited around 252+. AR and MK count toward both — the highest-ROI subjects to study. <strong>Confirm the current qualifying numbers with your recruiter; standards change.</strong></p><div class="bb"><strong>NAPT backup:</strong> A common backup path is the Navy Advanced Programs Test for those just under the NF composite — ask your recruiter whether it applies to you.</div><h3>Why Phase 3</h3><p>By Phase 3 you have 6+ weeks of sleep and aerobic base. BDNF is elevated and your sleep is clean. This is the first time studying is actually efficient.</p>'},
     {ico:'🎯', title:'Why You Study Right After Your Workout',
      body:'<h3>The BDNF Learning Window</h3><p>Aerobic exercise elevates BDNF for 2-4 hours post-workout. BDNF is the molecule that enables synaptic strengthening — when it is elevated, new information is encoded into long-term memory more efficiently.</p><div class="bg"><strong>The sequence:</strong> Train → BDNF peaks → Study 45 min → Sleep → Memory consolidates permanently. Every step feeds the next.</div><h3>Spaced Repetition</h3><p>The evening review session is the mechanism that moves knowledge from short-term to long-term. Reviewing material 6-8 hours after first learning doubles long-term retention.</p>'},
     {ico:'⚓', title:'Navy Knowledge — Why Memorize Before Boot Camp',
@@ -2560,7 +2557,7 @@ var SCIENCE = {
     {ico:'🚀', title:'You Are No Longer Recovering — You Are Optimizing',
      body:'<h3>What Phase 4 Means Neurologically</h3><p>By Phase 4 you have 85+ days of consistent aerobic exercise, consistent sleep, consistent nutrition, and consistent study. The neurological changes at this point are not subtle.</p><div class="bg"><strong>12 weeks of combined aerobic and resistance exercise substantially improved cognitive function and BDNF levels</strong> in multiple human RCTs. You have passed this threshold.</div><h3>The Final Variable</h3><p>Phase 4 introduces no-weed-before-bed. By this point you have built enough positive neurochemical momentum that this is a choice, not cold-turkey shock. You already know what good sleep feels like.</p>'},
     {ico:'⚛️', title:'Nuclear Field — What You Are Walking Into',
-     body:'<h3>Power School</h3><p>Nuclear Field training is among the most rigorous technical pipelines in any branch. Power School covers nuclear physics, thermodynamics, reactor plant theory, chemistry, and radiological controls at a college physics level — in 24 weeks. Prototype is 6 months of hands-on reactor operation.</p><div class="bg"><strong>The BDNF-driven learning you built in Phase 3</strong> — study after exercise, spaced repetition, 8-9 hours of sleep — is the exact same learning protocol that top performers use to survive Power School. You are not just preparing for the ASVAB. You are building the learning infrastructure for the career.</div><h3>Bonus Context</h3><p>Nuclear Field currently offers up to $75,000 enlistment bonus with an additional $10,000 for submarine volunteers. The physical and cognitive work in this protocol unlocks that path.</p>'}
+     body:'<h3>Power School</h3><p>Nuclear Field training is among the most rigorous technical pipelines in any branch. Power School covers nuclear physics, thermodynamics, reactor plant theory, chemistry, and radiological controls at a college physics level — in 24 weeks. Prototype is 6 months of hands-on reactor operation.</p><div class="bg"><strong>The BDNF-driven learning you built in Phase 3</strong> — study after exercise, spaced repetition, 8-9 hours of sleep — is the exact same learning protocol that top performers use to survive Power School. You are not just preparing for the ASVAB. You are building the learning infrastructure for the career.</div><h3>Bonus Context</h3><p>The Nuclear Field path has historically carried one of the larger enlistment bonuses (figures up to the mid-five-figures have been advertised, sometimes with an added submarine-volunteer amount). Bonuses are <strong>"up to"</strong> and subject to eligibility, contract, rating, ship date, and current Navy policy — confirm the current offer with your recruiter. The physical and cognitive work here is what keeps that path open.</p>'}
   ]
 };
 
@@ -2569,7 +2566,9 @@ function renderSci() {
   var articles = SCIENCE[ph] || SCIENCE[1];
   var phNames = ['','Foundation','Body','Brain + ASVAB + Navy','Full Protocol'];
   var phEmojis2 = ['','🌱','⚡','🧠','🚀'];
-  var html = '<div style="margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(77,184,255,.03));border:1px solid var(--ice);border-radius:10px;display:flex;align-items:center;gap:10px;">'
+  var html = '<div style="margin-bottom:12px;padding:11px 13px;background:rgba(255,68,85,.04);border:1px solid rgba(255,68,85,.22);border-radius:10px;font-size:11px;color:var(--text);line-height:1.6">'
+    + '<strong style="color:var(--red)">Educational, not advice.</strong> APEX is a prep app — not medical, legal, or recruiting advice, and not an official Navy determination. The science below is general rationale (mostly single studies); wording like &#34;may&#34; and &#34;associated with&#34; is deliberate. Confirm Navy eligibility, standards, pay, and bonuses with an official recruiter, and consult a clinician for health, sleep, supplement, or cannabis-cessation questions (check OPSS / the DoD Prohibited List for supplements).</div>';
+  html += '<div style="margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(77,184,255,.03));border:1px solid var(--ice);border-radius:10px;display:flex;align-items:center;gap:10px;">'
     + '<div style="font-size:18px">' + phEmojis2[ph] + '</div>'
     + '<div><div style="font-family:var(--mono);font-size:9px;color:var(--bright);letter-spacing:2px;margin-bottom:2px">PHASE ' + ph + ' SCIENCE</div>'
     + '<div style="font-size:13px;font-weight:700;color:#fff">' + phNames[ph] + '</div>'

@@ -1,122 +1,225 @@
 # APEX — Supporting Research
 
-This document is the evidence base behind APEX. Every science claim, phase-unlock
-threshold, habit rationale, and Navy fact used in the app is recorded here with the
-paper or primary source it came from.
+This document is the evidence base behind APEX. Every science claim, threshold,
+Navy fact, and supplement note used in the app is recorded here with its source
+and a confidence grade, so user-facing wording can be matched to evidence
+strength.
 
-> **Provenance & caveats.** This dataset was compiled by the app's author from the
-> research conducted in the conversation that originally designed APEX. Citations are
-> recorded **as provided**. Primary peer-reviewed sources (DOIs / PMC IDs below) are
-> the authoritative references; secondary coverage (news, Medium, community guides) is
-> labeled as such and should be treated as supporting context, not primary evidence.
-> Numbers that drive product behavior (e.g. the 66-day habit average, the 252 NUC-NF
-> composite) are mapped to where they're used in the app so they can be re-verified and
-> updated over time.
+---
+
+## Research quality rules
+
+APEX separates evidence into four confidence levels:
+
+- **Grade A — Official / primary operational source.** Navy.com, MyNavyHR, DFAS,
+  DoD, OPSS, official Navy recruiting documents, peer-reviewed meta-analyses, or
+  full peer-reviewed papers.
+- **Grade B — Peer-reviewed single study.** Useful for rationale, but app
+  language must avoid overclaiming or implying certainty.
+- **Grade C — Secondary educational source.** Supporting context only. Cannot
+  drive app thresholds, eligibility claims, pay claims, medical claims, or Navy
+  readiness claims.
+- **Grade D — Community / anecdotal source.** User-experience color only. Cannot
+  be used as a factual source for app logic.
+
+### App wording rule
+
+Any user-facing claim must be written according to evidence strength:
+
+- **Grade A:** "The Navy requires…" / "DFAS lists…" / "A meta-analysis found…"
+- **Grade B:** "This study suggests…" / "was associated with…" / "may improve…"
+- **Grade C:** "Reported by secondary coverage…" / "supporting context only"
+- **Grade D:** "Anecdotal reports suggest…" / "not used for app logic"
+
+**Claims that affect eligibility, Navy standards, pay, supplements, drug testing,
+boot-camp expectations, or health outcomes must be Grade A or Grade B.**
+
+---
+
+## User-facing medical / military disclaimer
+
+APEX is a preparation and education app. It does **not** provide medical advice,
+legal advice, recruiting guarantees, enlistment eligibility decisions, or
+official Navy determinations.
+
+For Navy eligibility, bonuses, rating availability, medical waivers, drug-testing
+policy, and ship-date requirements, users must confirm with an official Navy
+recruiter or official Navy source.
+
+For supplements, medications, cannabis cessation, mental health, injury recovery,
+and sleep issues, users should consult a qualified clinician and check OPSS / DoD
+guidance where applicable.
+
+*(This disclaimer is surfaced in-app on the Science tab and during onboarding.)*
 
 ---
 
 ## Habit formation
 
-### Lally et al. (2010) — the core study
+### Lally et al. (2010) — the seminal real-world study
 - **Citation:** Lally, P., van Jaarsveld, C.H.M., Potts, H.W.W., & Wardle, J. (2010). How are habits formed: Modelling habit formation in the real world. *European Journal of Social Psychology*, 40(6), 998–1009.
 - **DOI:** https://doi.org/10.1002/ejsp.674
-- **Key findings:** 96 participants, 12 weeks. Average habit automaticity: **66 days**. Range: **18–254 days**. Simple habits (drinking water) automate in ~18 days; complex habits (50 sit-ups daily) up to 254 days. **Missing one day did not materially affect formation; missing several days in a row did.**
-- **Used in app for:** the 66-day rep-count target; the "miss 1–2 days and your streak survives, miss 3+ and the counter resets" rule; phase-unlock calibration — Phase 1 simple habits = 14 days, Phase 2 moderate = 21 days, Phase 3 complex = 28 days.
+- **Evidence grade:** B (single study, foundational).
+- **Key findings:** 96 participants. Time-to-automaticity averaged ~66 days but ranged widely (≈18 to 254 days). Missing a single day did not meaningfully reduce eventual automaticity.
+- **Used in app for:** the rep-count target; the "miss 1–2 days and your streak survives" rule.
+- **Safe wording:** "Habits don't form in 21 days — most take roughly two months, with large individual variation." **Avoid:** "exactly 66 days," "permanent after 66 days," "missing a day never matters."
 
-### 2024 systematic review
-- 20 studies, 2,600+ participants. Confirmed a median of **66 days**, range **59–335 days** for most everyday habits.
-- **Source:** secondary coverage (Medium / @iamrahulrao15, 2026). *Secondary — supporting context.*
+### Singh et al. (2024) — systematic review and meta-analysis  *(replaces the prior "2024 systematic review" entry)*
+- **Citation:** Singh, B. et al. (2024). Time to Form a Habit: A Systematic Review and Meta-Analysis of Health Behaviour Habit Formation and Its Determinants.
+- **Source:** PubMed Central — peer-reviewed systematic review.
+- **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC11641623/
+- **Evidence grade:** A (for habit-formation timing).
+- **Key findings:** Across 20 studies and 2,600+ participants, time-to-habit-formation varied substantially. Median timelines were commonly around **59–66 days**, mean timelines were longer, and some habits took up to **335 days**.
+- **Product use:** supports the 66-day "identity lock-in" target; supports warning users that habit formation is **not** a 21-day process; supports forgiving short misses instead of treating one missed day as total failure.
+- **Safe wording:** "Most habits do not become automatic in 21 days. A systematic review found median habit-formation timelines around two months, with large variation by person and behavior." **Avoid:** "Habits take exactly 66 days," "After 66 days the habit is permanent," "Missing one day never matters."
 
 ### Verplanken & Sui (2019) — habit–identity link
-- **Citation:** Verplanken, B., & Sui, J. (2019). Habit and Identity: Behavioral, Cognitive, Affective, and Motivational Facets of an Integrated Self. *Frontiers in Psychology*, 10, 1504.
-- **DOI:** https://doi.org/10.3389/fpsyg.2019.01504 · **PMC:** PMC6635880
-- **Key findings:** Habits tied to identity show stronger automaticity; habit–identity links correlate with higher self-esteem, cognitive self-integration, and orientation toward the ideal self. When habits relate to central values they become part of the "true self."
-- **Used in app for:** identity framing ("Every rep is a vote for the identity you are choosing").
+- **Citation:** Verplanken, B., & Sui, J. (2019). Habit and Identity. *Frontiers in Psychology*, 10, 1504. **PMC:** PMC6635880.
+- **Evidence grade:** B.
+- **Key findings:** Habits tied to identity show stronger automaticity and associate with higher self-esteem and cognitive self-integration.
+- **Used in app for:** identity framing. **Safe wording:** "habits tied to identity *may* be more durable."
 
 ---
 
 ## Implementation intentions (IF–THEN planning)
 
-### Gollwitzer & Sheeran — meta-analysis, plus fMRI support (2022)
-- **Citation:** Gollwitzer, P.M. & Sheeran, P. Implementation intentions and goal achievement: A meta-analysis of effects and processes.
-- **Supporting fMRI:** bioRxiv 2022.11.13.516302 — "Can the brain strategically go on automatic pilot?"
-- **Key findings:** IF–THEN plans create a strong associative link between a situational cue (S) and a response (R), similar to habits built through repetition. Implementation intentions outperform goal intentions alone across health, academic, and interpersonal domains.
-- **Used in app for:** the cue field on every habit (the "IF … THEN …" prompts).
-
-### Secondary finding — stating goals publicly
-- Publicly announcing goals can backfire: social acknowledgment can satisfy the identity need without the behavior being completed. *Supporting context.*
+- **Citation:** Gollwitzer, P.M. & Sheeran, P. — meta-analysis of implementation intentions and goal achievement; supporting fMRI: bioRxiv 2022.11.13.516302.
+- **Evidence grade:** A (meta-analysis) / B (fMRI).
+- **Key findings:** IF–THEN plans create a strong cue→response association and outperform goal intentions alone across domains.
+- **Used in app for:** the cue field on every habit. **Safe wording:** "Planning a specific cue *has been shown to* improve follow-through."
 
 ---
 
-## Cannabis & cognitive recovery
+## Cannabis & cognitive recovery  *(replaced — graded and re-worded)*
 
 ### Sorkhou et al. (2022)
-- **Key findings:** **28 days of abstinence** produces measurable improvements in visual search speed, selective attention, and visuospatial working memory.
-- **Used in app for:** Phase 3 unlock timing (day 43 = 6+ weeks past this threshold).
+- **Citation:** Sorkhou, M. et al. (2022). Effects of 28 days of cannabis abstinence on cognition in major depressive disorder: A pilot study.
+- **Source:** PubMed — peer-reviewed pilot study. **URL:** https://pubmed.ncbi.nlm.nih.gov/35690891/
+- **Evidence grade:** B.
+- **Key finding:** In participants with major depressive disorder and comorbid cannabis use disorder, 28 days of abstinence **may** improve select cognitive domains.
+- **Product use:** supports the idea that cognitive recovery *can begin* within the first month of abstinence; supports Phase 3 messaging **with cautious language only.**
+- **Safe wording:** "Some studies suggest attention and working-memory measures *may* improve after several weeks of cannabis abstinence, especially in people with cannabis use disorder." **Avoid:** "28 days fully restores your brain," "Everyone's cognition improves after 28 days," "Cannabis damage is reversed in a month."
 
-### Gowin et al. (2025) — large fMRI study
-- **Sample:** n ≈ 1,000+.
-- **Key findings:** Confirmed reduced prefrontal-cortex activation in heavy cannabis users during working-memory tasks; abstaining before cognitively demanding tasks meaningfully improves performance.
-- **Used in app for:** the Phase 3 cognitive-recovery science article.
+### Gowin et al. (2025)
+- **Citation:** Gowin, J.L. et al. (2025). Brain Function Outcomes of Recent and Lifetime Cannabis Use.
+- **Source:** PubMed Central / JAMA Network Open. **URL:** https://pmc.ncbi.nlm.nih.gov/articles/PMC11775743/
+- **Evidence grade:** B.
+- **Key finding:** Heavy lifetime and recent cannabis use were **associated with** lower brain activation during working-memory tasks in young adults.
+- **Product use:** supports the Phase 3 "working memory / focus recovery" article; supports abstinence before ASVAB study blocks.
+- **Safe wording:** "Heavy or recent cannabis use *has been associated with* lower brain activation during working-memory tasks." **Avoid:** "Cannabis permanently lowers intelligence," "causes brain damage in every user," "this study proves quitting immediately restores performance."
 
-### THC & REM sleep — mechanism
-- THC suppresses REM sleep architecture. Users fall asleep faster but miss slow-wave and REM restoration phases. REM is where the prefrontal cortex repairs and memories consolidate.
-- **Used in app for:** the `h_noweed` habit rationale and the sleep science article.
+> **REM / sleep wording:** state as "Cannabis use *has been associated with* reduced REM sleep," not "cannabis chronically suppresses REM." (Grade B.)
 
 ---
 
-## BDNF & exercise
+## BDNF, exercise, cold exposure  (rationale only)
 
-- **Aerobic exercise → BDNF (multiple RCTs):** post-exercise BDNF and dopamine stay elevated for **2–4 hours**; 12 weeks of combined aerobic + resistance training substantially improved cognitive function and BDNF levels. → *post-workout study timing; ASVAB study-block placement.*
-- **Cold exposure → norepinephrine:** cold-water exposure raises norepinephrine ~**300%** and BDNF ~**12%** acutely. → *`h_cold` rationale.*
-- **Sugar → BDNF suppression:** high dietary sugar suppresses BDNF gene expression at the molecular level. → *`h_nosugar` rationale.*
-- **Omega-3 DHA → BDNF:** DHA supplementation measurably raises BDNF over **8–12 weeks**. → *`h_omega` rationale and supplement stack.*
+- Aerobic exercise is **associated with** acute increases in BDNF (single studies / small trials). **Grade B.** Wording: "exercise *may* elevate BDNF for a few hours," not "BDNF peaks for exactly 2–4 hours in everyone."
+- Cold exposure raising norepinephrine and sugar/omega-3 effects on BDNF are **Grade B** mechanistic findings — use "*may*," "*has been associated with*." Do **not** present as guaranteed outcomes or medical advice.
 
 ---
 
 ## Aerobic adaptation
 
-- **Talk test / lactate threshold:** aerobic zone = can speak 3–4 words continuously while running; tempo = one word at a time; anaerobic = cannot speak. → *training-plan notes; "why you gas out" article.*
-- **80/20 rule (polarized training):** 80% of sessions at easy aerobic pace builds base; 20% hard intervals builds speed. Beginners who invert this plateau or get injured within ~3 weeks. → *training-plan design and article.*
-- **Mitochondrial biogenesis / capillary density / cardiac stroke volume:** all increase with consistent aerobic training over **6–8 weeks**. → *"what aerobic adaptation looks like" article.*
+- Talk test, 80/20 polarized training, and adaptation timelines (mitochondrial biogenesis, capillary density, stroke volume over ~6–8 weeks) are **Grade B** exercise-physiology rationale. Wording: "tends to," "over several weeks," not fixed guarantees.
 
 ---
 
-## Navy / boot camp
+## Navy / boot camp  *(replaced — official-source priority)*
 
-**Sources used:** navy.com/navy-life/boot-camp (official); navyenlisted.com (2026 guide); govfacts.org (2025); sandboxx.us; military.com (Sailor's Creed, recruit essentials); Wikipedia (Recruit Training Command Great Lakes); pcspayitforward.com (2026 guide); veteran accounts (Quora). *Mix of official and secondary sources.*
+### Source priority
+Navy facts in APEX must come from official sources first:
+1. Navy.com  2. MyNavyHR  3. DFAS  4. DoD / OPSS  5. Official Navy recruiting documents  6. Secondary military sites only when official sources are unavailable.
 
-**Verified facts used in the app:**
-- Boot camp: **9 weeks**, RTC Great Lakes, IL (shortened from 10 weeks as of January 2025).
-- Pay begins day 1. E-1 base pay 2026: **$2,407.20/month**.
-- NUC-NF composite: **AR + MK + EI + GS ≥ 252** (or VE + AR + MK + MC ≥ 252).
-- NAPT backup: score **235–251** on NF composite → take the NAPT, score **50+** to qualify.
-- Enlistment bonus: up to **$75,000** (NUC-NF) + **$10,000** (submarine volunteer).
-- AFQT minimum: **50** to enlist.
-- Memorize verbatim: **Sailor's Creed**, the **11 General Orders**, rank structure E-1 to O-10.
-- Phonetic alphabet: NATO standard, uniform across branches.
-- PRT events: push-ups (2 min) + curl-ups (2 min) + plank hold + 1.5-mile run.
-- Male age 24 pass standards: run **13:15**, push-ups **42**, curl-ups **52**, plank **1:30**.
-- Position of Attention: heels together, feet at 45°, arms straight, thumbs on trouser seams, eyes forward, chin in.
-- Battle Stations 21: 12-hour final assessment on the USS Trayer simulator, Week 7.
+### Verified facts used in the app
+- **Boot camp location:** Recruit Training Command, Great Lakes, Illinois. *(Grade A.)*
+- **Boot camp length:** Navy.com currently describes Navy boot camp as **9 weeks**. *(Grade A.)*
+- Boot camp includes medical, dental, fitness screening, vaccinations, haircut/uniform issue, swim testing, classroom instruction, inspections, physical training, weapons/firefighting training, the official PFA, Battle Stations, and graduation.
+- **Pre-basic physical requirements (Navy.com), male age 20–24:** push-ups **42** in two minutes · plank **2 × 30 sec** · 1.5-mile run **13:15**. *(Grade A.)*
+- **Pre-basic physical requirements (Navy.com), female age 20–24:** push-ups **17** in two minutes · plank **2 × 30 sec** · 1.5-mile run **15:15**. *(Grade A.)*
+- **Current Navy PRT events:** push-ups, **forearm plank**, and a cardiorespiratory event (standard 1.5-mile run/walk or authorized alternate cardio). Sequence: push-ups → forearm plank → cardio. *(Grade A.)*
+- **Curl-ups are NOT a current Navy PRT event** and must not be listed as one unless explicitly describing historical standards. *(Corrected in-app: curl-ups removed from PRT standards, logging, and the physical-readiness score.)*
+- **Pay:** begins after accession / active-duty processing — word first-pay timing carefully. DFAS 2026 enlisted base pay: **E-1 under 4 months active duty $2,225.70/month**, **E-1 after 4 months $2,407.20/month**. *(Grade A; do not say "$2,407.20 on day one.")*
+- **Nuclear-field qualification numbers** (e.g., the commonly cited NF composite ≥ 252 and AFQT ≥ 50 to enlist) must be shown as **recruiter-verification-required** unless tied to an official current Navy recruiting source. The app uses 252 / 50 as practice-score *targets* and labels them "confirm with your recruiter."
+- **Enlistment bonuses** must be labeled **"up to"** and **"subject to eligibility, contract, rating, ship date, and current Navy policy."**
+
+### Product wording
+**Use:** "According to Navy.com…," "DFAS lists…," "Current Navy PRT guidance uses push-ups, forearm plank, and cardio," "Confirm with your recruiter — standards, bonuses, and rating availability can change."
+**Avoid:** "Guaranteed bonus," "Guaranteed Nuke eligibility," "You will make $2,407.20 immediately on day one," "Curl-ups are part of the current PRT."
 
 ---
 
-## Supplement stack — evidence base
+## Supplement stack — evidence base and military safety rules
 
-| Supplement | Dose | Evidence | Mechanism |
+APEX may discuss supplements as educational context but must **not** function as a
+medical advisor or boot-camp supplement recommender.
+
+### Required safety rules
+- DoD supplement safety source: **Operation Supplement Safety (OPSS)** — the DoD
+  dietary-supplement and substance program. **DoD Instruction 6130.06** formalizes
+  OPSS and establishes a Prohibited Dietary Supplement Ingredients List.
+- Service members may **not** use products containing ingredients on that list.
+- Before APEX displays any supplement, it should tell users to: (1) check the DoD
+  Prohibited List; (2) use the OPSS Scorecard; (3) prefer third-party certified
+  products; (4) ask a recruiter, military medical provider, or OPSS "Ask the
+  Expert" before shipping; (5) stop bringing/taking supplements to boot camp
+  unless specifically allowed.
+
+### Supplement evidence table
+| Supplement | Evidence status | Product stance | Safe wording |
 |---|---|---|---|
-| Omega-3 DHA+EPA | 1000–2000 mg | Strong RCTs | Raises BDNF, reduces neuroinflammation; structural neuronal-membrane component |
-| Creatine monohydrate | 3–5 g | Strong RCTs (Proc. Royal Society) | Improves working memory and cognitive performance; high-intensity exercise capacity |
-| Magnesium glycinate | 200–400 mg | Good | Cofactor for hundreds of brain enzymatic reactions; sleep quality |
-| Lion's Mane | 500–1000 mg | Moderate (8–12 weeks) | Stimulates Nerve Growth Factor; requires fruiting-body extract, not mycelium |
-| Caffeine + L-Theanine | 100–200 mg + 200 mg | Best acute cognitive stack | Sustained attention, working memory; take ~90 min post-wake |
-| Vitamin D3 | 2000–5000 IU | Good | Brain vitamin-D receptors throughout; deficiency linked to impaired cognition |
+| Omega-3 DHA/EPA | Moderate–strong (general health); claim-specific evidence required | Educational only | "May support general brain and cardiovascular health; verify product safety through OPSS." |
+| Creatine monohydrate | Strong (high-intensity performance); moderate emerging (cognition) | Educational only | "May support repeated high-intensity output; hydration and product safety matter." |
+| Magnesium glycinate | Moderate (deficiency / sleep support) | Educational only | "May help if intake/status is low; not a substitute for a sleep routine." |
+| Lion's Mane | Limited / moderate | Avoid as core recommendation | "Evidence is still developing; not required for APEX." |
+| Caffeine + L-Theanine | Good acute attention evidence | Optional education only | "Can improve alertness short-term, but timing and sleep protection matter." |
+| Vitamin D3 | Good if deficient; not universal | Recommend testing / clinician guidance | "Most useful when deficiency is present." |
 
-> **Not medical advice.** Supplement doses are recorded from the source research as
-> compiled. Check with a qualified clinician before starting any supplement, especially
-> before shipping to boot camp (some over-the-counter supplements are restricted).
+### Product rule
+APEX must not sell supplements, rank supplement brands, or imply supplements are
+necessary for Navy readiness. **Training, sleep, nutrition, hydration, abstinence
+from disqualifying substances, and consistent study blocks are the core plan.**
+Supplements are optional, secondary, and safety-gated.
+
+**Use:** "Supplements are optional. Navy readiness is built on training, sleep,
+food, hydration, discipline, and clean testing." / "Before using any supplement,
+check OPSS and the DoD Prohibited List." / "Do not bring supplements to boot camp
+unless your recruiter or official RTC guidance says they are allowed."
+**Avoid:** "This stack will make you pass," "Boot-camp safe," "Guaranteed clean,"
+"Navy-approved supplement," "Required for cognitive recovery."
 
 ---
 
-*Last compiled: 2026-06-28.*
+## Claim audit checklist
+
+Before any APEX claim goes into the app, verify:
+- What is the exact claim?
+- Is it user-facing or internal-only?
+- Does it affect Navy eligibility, pay, PRT, supplements, health, or drug testing?
+- What source supports it?
+- Is the source official, peer-reviewed, secondary, or anecdotal?
+- What is the evidence grade?
+- What safe wording should the app use?
+- What wording should the app avoid?
+- Where is this claim used in the app?
+- When was it last verified?
+
+**Required format:**
+`Claim → Source → Evidence grade → Used in app where → Safe wording → Last verified date`
+
+### Logged claim audits (this revision)
+| Claim | Source | Grade | Used where | Safe wording | Last verified |
+|---|---|---|---|---|---|
+| Habit automaticity ≈ 2 months, not 21 days | Singh 2024 / Lally 2010 | A / B | Onboarding, day-66 note, rep toasts | "median around two months, large variation" | 2026-06-28 |
+| Cannabis abstinence may aid cognition | Sorkhou 2022 | B | Phase-3 science | "may improve … especially in CUD" | 2026-06-28 |
+| Cannabis associated with lower working-memory activation | Gowin 2025 | B | Phase-3 science | "has been associated with" | 2026-06-28 |
+| Push-ups 42 / run 13:15 pass (male 20–24) | Navy.com | A | PRT standards, physical readiness | "According to Navy.com…" | 2026-06-28 |
+| Curl-ups are a PRT event | — (outdated) | — | REMOVED from current PRT | n/a — historical only | 2026-06-28 |
+| Current PRT = push-ups, forearm plank, cardio | Navy.com | A | PRT tab, Train standards | "Current Navy PRT guidance uses…" | 2026-06-28 |
+| NF composite ≥ 252 / AFQT ≥ 50 | Commonly cited; recruiter-verify | recruiter-verify | ASVAB science, practice-score targets | "commonly cited; confirm with recruiter" | 2026-06-28 |
+| Enlistment bonus up to $75k | Navy recruiting (varies) | recruiter-verify | Onboarding, Phase-4 science | "up to … subject to eligibility/contract/rating/ship date/policy" | 2026-06-28 |
+| E-1 base pay 2026 | DFAS | A | (research only) | "$2,225.70 under 4 mo / $2,407.20 after; not day-one" | 2026-06-28 |
+
+---
+
+*Last compiled: 2026-06-28. Re-verify Navy standards, pay, and bonus figures against official sources before each release.*
