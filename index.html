@@ -1285,9 +1285,10 @@ function dateKeysRange(maxDays) {
 
 function meanOf(a) { if (!a.length) return 0; var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
 
-function computeBehaviorLinks() {
-  var keys = dateKeysRange(60);
-  if (keys.length < 8) return [];
+// Per-day completion ratio for every active category, aligned to one list of
+// date keys. Shared by every measured correlation below.
+function buildDailySeries(maxDays) {
+  var keys = dateKeysRange(maxDays);
   var cats = Object.keys(CAT_META);
   var series = {};
   for (var i = 0; i < cats.length; i++) {
@@ -1301,6 +1302,13 @@ function computeBehaviorLinks() {
     }
     series[c] = s;
   }
+  return { keys: keys, series: series };
+}
+
+function computeBehaviorLinks() {
+  var ds = buildDailySeries(60);
+  if (ds.keys.length < 8) return [];
+  var series = ds.series;
   var ck = Object.keys(series); var links = [];
   for (var a = 0; a < ck.length; a++) {
     for (var b = 0; b < ck.length; b++) {
@@ -1374,36 +1382,212 @@ function computeInsights() {
   return out.slice(0, 4);
 }
 
+// Next-day effect of a good vs poor night on every downstream category.
+function computeSleepRipple() {
+  var ds = buildDailySeries(60);
+  if (!ds.series.sleep || ds.keys.length < 8) return null;
+  var A = ds.series.sleep;
+  var targets = ['morning', 'training', 'asvab', 'fuel', 'navyknow', 'cognitive'];
+  var rows = [];
+  for (var i = 0; i < targets.length; i++) {
+    var B = ds.series[targets[i]]; if (!B) continue;
+    var dDone = [], dMiss = [];
+    for (var t = 0; t + 1 < A.length; t++) {
+      if (A[t] >= 0.5) dDone.push(B[t + 1]); else dMiss.push(B[t + 1]);
+    }
+    if (dDone.length < 3 || dMiss.length < 3) continue;
+    var good = Math.round(meanOf(dDone) * 100), bad = Math.round(meanOf(dMiss) * 100);
+    rows.push({ label: CAT_META[targets[i]].label, good: good, bad: bad, gap: good - bad });
+  }
+  if (!rows.length) return null;
+  rows.sort(function(x, y){ return y.gap - x.gap; });
+  return rows;
+}
+
+function parsePrtVal(type, val) {
+  if (type === '1.5mi Run' || type === 'Plank') {
+    var p = String(val).split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+  }
+  return parseInt(val, 10) || 0;
+}
+
+// PRT score trajectory (first vs latest logged) per event.
+function computePrtTrend() {
+  if (!ST.logs || ST.logs.length < 2) return null;
+  var byType = {};
+  for (var i = 0; i < ST.logs.length; i++) {
+    var lg = ST.logs[i]; if (!lg.type) continue;
+    if (!byType[lg.type]) byType[lg.type] = [];
+    byType[lg.type].push({ n: parsePrtVal(lg.type, lg.val), s: lg.val });
+  }
+  var out = [];
+  for (var tp in byType) {
+    var arr = byType[tp]; if (arr.length < 2) continue;
+    var first = arr[0], last = arr[arr.length - 1];
+    var lowerBetter = (tp === '1.5mi Run');
+    var improved = lowerBetter ? (last.n < first.n) : (last.n > first.n);
+    out.push({ type: tp, firstStr: first.s, lastStr: last.s, improved: improved, same: last.n === first.n, count: arr.length });
+  }
+  return out.length ? out : null;
+}
+
+// Overall completion by day of week.
+function computeWeekdayPattern() {
+  var ds = buildDailySeries(60);
+  var cats = Object.keys(ds.series);
+  if (ds.keys.length < 10 || !cats.length) return null;
+  var names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var buckets = [[], [], [], [], [], [], []];
+  for (var k = 0; k < ds.keys.length; k++) {
+    var sum = 0;
+    for (var c = 0; c < cats.length; c++) sum += ds.series[cats[c]][k];
+    var d = new Date(ds.keys[k]).getDay();
+    buckets[d].push(sum / cats.length);
+  }
+  var stats = [];
+  for (var i = 0; i < 7; i++) { if (buckets[i].length >= 2) stats.push({ day: names[i], pct: Math.round(meanOf(buckets[i]) * 100), n: buckets[i].length }); }
+  if (stats.length < 3) return null;
+  stats.sort(function(a, b){ return b.pct - a.pct; });
+  return { best: stats[0], worst: stats[stats.length - 1] };
+}
+
+// Is the most common skip reason getting better or worse over time?
+function computeReasonTrend() {
+  var entries = [];
+  for (var hid in ST.skipReasons) {
+    var rs = ST.skipReasons[hid] || [];
+    for (var i = 0; i < rs.length; i++) { if (rs[i] && rs[i].date && rs[i].reason) entries.push({ date: rs[i].date, reason: rs[i].reason }); }
+  }
+  if (entries.length < 4) return null;
+  var counts = {};
+  for (var e = 0; e < entries.length; e++) counts[entries[e].reason] = (counts[entries[e].reason] || 0) + 1;
+  var top = null, tc = 0;
+  for (var r in counts) { if (counts[r] > tc) { tc = counts[r]; top = r; } }
+  if (!top || tc < 3) return null;
+  var dates = []; for (var d = 0; d < entries.length; d++) dates.push(entries[d].date);
+  dates.sort();
+  var midDate = dates[Math.floor(dates.length / 2)];
+  var early = 0, late = 0;
+  for (var e2 = 0; e2 < entries.length; e2++) {
+    if (entries[e2].reason !== top) continue;
+    if (entries[e2].date < midDate) early++; else late++;
+  }
+  return { reason: top, total: tc, early: early, late: late, dir: late < early ? 'down' : (late > early ? 'up' : 'flat') };
+}
+
+function insightSection(title) {
+  return '<div style="font-family:var(--mono);font-size:10px;color:var(--glacier);letter-spacing:1.5px;margin:16px 0 8px">' + title + '</div>';
+}
+function dormantStub(text) {
+  return '<div style="background:var(--mid);border:1px dashed var(--ice);border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:11px;color:var(--muted);line-height:1.6">' + text + '</div>';
+}
+function insightCardOpen() { return '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:13px;margin-bottom:8px;">'; }
+function leverageBox(text) {
+  return '<div style="margin-top:9px;padding:9px 11px;background:rgba(0,229,160,.05);border-left:2px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;color:var(--text);line-height:1.6"><strong style="color:var(--green)">Highest-leverage move:</strong> ' + text + '</div>';
+}
+
 function renderInsights() {
-  var ins = computeInsights();
   var keys = dateKeysRange(60);
   var daysLogged = 0;
   for (var i = 0; i < keys.length; i++) { if (ST.checks[keys[i]] || ST.skipLog[keys[i]]) daysLogged++; }
 
   var html = '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin:4px 0 10px">INSIGHTS &#8212; HOW YOUR HABITS CONNECT</div>';
 
-  if (!ins.length) {
-    html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:14px;">';
-    html += '<div style="font-size:13px;color:var(--text);line-height:1.7">No clear patterns yet. Keep checking in, and log a reason when you skip &#8212; once a few days stack up, the app starts connecting your habits (for example, how last night&#39;s sleep drives this morning).</div>';
-    html += '</div>';
-    return html;
-  }
-
-  for (var k = 0; k < ins.length; k++) {
-    var it = ins[k];
-    html += '<div style="background:linear-gradient(135deg,var(--mid),var(--shelf));border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:10px;">';
-    html += '<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.5px;padding:2px 7px;border-radius:3px;background:rgba(0,212,255,.1);color:var(--bright)">' + it.tag + '</span></div>';
-    html += '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">' + it.title + '</div>';
-    html += '<div style="font-size:12px;color:var(--text);line-height:1.65;margin-bottom:10px">' + it.body + '</div>';
-    html += '<div style="padding:9px 11px;background:rgba(0,229,160,.05);border-left:2px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;color:var(--text);line-height:1.6"><strong style="color:var(--green)">Highest-leverage move:</strong> ' + it.fix + '</div>';
-    html += '</div>';
-  }
-
-  if (daysLogged < 10) {
-    html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin:2px 0 14px;line-height:1.6">These sharpen as you log more days. ' + daysLogged + ' day' + (daysLogged === 1 ? '' : 's') + ' of data so far &#8212; measured day-to-day patterns kick in around 8&#43;.</div>';
+  // ── 1. TOP CONNECTIONS (cause -> effect cards) ──
+  var ins = computeInsights();
+  if (ins.length) {
+    for (var k = 0; k < ins.length; k++) {
+      var it = ins[k];
+      html += '<div style="background:linear-gradient(135deg,var(--mid),var(--shelf));border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:10px;">';
+      html += '<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.5px;padding:2px 7px;border-radius:3px;background:rgba(0,212,255,.1);color:var(--bright)">' + it.tag + '</span></div>';
+      html += '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">' + it.title + '</div>';
+      html += '<div style="font-size:12px;color:var(--text);line-height:1.65;margin-bottom:2px">' + it.body + '</div>';
+      html += leverageBox(it.fix);
+      html += '</div>';
+    }
   } else {
-    html += '<div style="height:6px"></div>';
+    html += dormantStub('No standout cause&#8594;effect links yet. Keep checking in and log a reason when you skip &#8212; the strongest connections surface here first.');
   }
+
+  // ── 2. SLEEP&#39;S RIPPLE INTO TOMORROW ──
+  html += insightSection('SLEEP&#39;S RIPPLE INTO TOMORROW');
+  var rip = computeSleepRipple();
+  if (rip) {
+    html += insightCardOpen();
+    html += '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:11px">How much of each category you finish the day AFTER a good night vs a poor night.</div>';
+    for (var ri = 0; ri < rip.length; ri++) {
+      var rw = rip[ri];
+      var gapColor = rw.gap >= 15 ? 'var(--green)' : rw.gap <= -5 ? 'var(--red)' : 'var(--muted)';
+      html += '<div style="margin-bottom:9px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px"><span style="color:var(--text)">' + rw.label + '</span>';
+      html += '<span style="font-family:var(--mono);font-size:11px"><span style="color:var(--green)">' + rw.good + '%</span><span style="color:var(--muted)"> vs </span><span style="color:var(--red)">' + rw.bad + '%</span><span style="color:' + gapColor + '">  ' + (rw.gap >= 0 ? '+' : '') + rw.gap + '</span></span></div>';
+      html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + rw.good + '%;background:linear-gradient(90deg,var(--bright),var(--green))"></div></div>';
+      html += '</div>';
+    }
+    var topRip = rip[0];
+    if (topRip && topRip.gap >= 15) html += leverageBox('Sleep is your domino. A good night lifts ' + topRip.label + ' by ' + topRip.gap + ' points the next day &#8212; protect bedtime and tomorrow gets easier on its own.');
+    html += '</div>';
+  } else {
+    html += dormantStub('Unlocks at 8&#43; days of data (you have ' + daysLogged + '). Then this shows how last night&#39;s sleep moves each of the next day&#39;s categories.');
+  }
+
+  // ── 3. PRT SCORES vs TRAINING CONSISTENCY ──
+  html += insightSection('PRT SCORES vs TRAINING CONSISTENCY');
+  var prt = computePrtTrend();
+  if (prt) {
+    html += insightCardOpen();
+    var upCount = 0;
+    for (var p = 0; p < prt.length; p++) {
+      var pr = prt[p];
+      var arrow = pr.improved ? '&#8593;' : (pr.same ? '&#8594;' : '&#8595;');
+      var ac = pr.improved ? 'var(--green)' : (pr.same ? 'var(--muted)' : 'var(--red)');
+      if (pr.improved) upCount++;
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(30,58,95,.5)"><span style="color:var(--text)">' + pr.type + '</span>';
+      html += '<span style="font-family:var(--mono);color:var(--muted)">' + pr.firstStr + ' &#8594; <span style="color:#fff">' + pr.lastStr + '</span> <span style="color:' + ac + '">' + arrow + '</span></span></div>';
+    }
+    var ts = ST.readiness.training;
+    var note;
+    if (ts !== null && ts !== undefined) {
+      if (upCount > 0 && ts >= 60) note = 'Training is at ' + ts + '% and your scores are climbing &#8212; the consistency is converting straight into performance. Keep the volume where it is.';
+      else if (ts < 50) note = 'Training is at ' + ts + '% and the scores reflect it. PRT numbers follow the work &#8212; raising training consistency is what moves them.';
+      else note = 'Training is at ' + ts + '%. Hold the line and these numbers keep trending toward the pass standards.';
+    } else {
+      note = upCount > 0 ? 'Scores are moving the right way. Pair every workout with a logged score to see the trend tighten.' : 'Log scores right after training sessions to connect your work to your numbers.';
+    }
+    html += '<div style="font-size:12px;color:var(--text);line-height:1.6;margin-top:9px">' + note + '</div>';
+    html += '</div>';
+  } else {
+    html += dormantStub('Unlocks once you log a PRT score at least twice (PRT tab). Then this tracks whether your run, push-ups, curl-ups and plank improve alongside how consistent your training is.');
+  }
+
+  // ── 4. YOUR STRONGEST & WEAKEST DAYS ──
+  html += insightSection('YOUR STRONGEST &amp; WEAKEST DAYS');
+  var wd = computeWeekdayPattern();
+  if (wd) {
+    html += insightCardOpen();
+    html += '<div style="font-size:12px;color:var(--text);line-height:1.65">You finish most on <strong style="color:var(--green)">' + wd.best.day + '</strong> (' + wd.best.pct + '%) and least on <strong style="color:var(--red)">' + wd.worst.day + '</strong> (' + wd.worst.pct + '%).</div>';
+    html += leverageBox('Plan ' + wd.worst.day + ' the night before &#8212; lay out clothes, set alarms, pre-decide. That is where your consistency is leaking.');
+    html += '</div>';
+  } else {
+    html += dormantStub('Unlocks at 10&#43; days (you have ' + daysLogged + '). Then this surfaces which weekday you stay most and least consistent &#8212; weekends are the usual leak.');
+  }
+
+  // ── 5. IS YOUR TOP BLOCKER FADING? ──
+  html += insightSection('IS YOUR TOP BLOCKER FADING?');
+  var rt = computeReasonTrend();
+  if (rt) {
+    html += insightCardOpen();
+    var msg, mc;
+    if (rt.dir === 'down') { mc = 'var(--green)'; msg = 'Good sign &#8212; &#34;' + rt.reason + '&#34; is fading: ' + rt.early + ' times earlier vs ' + rt.late + ' recently. The behavior change is taking. Keep the pressure on.'; }
+    else if (rt.dir === 'up') { mc = 'var(--red)'; msg = 'Heads up &#8212; &#34;' + rt.reason + '&#34; is climbing: ' + rt.early + ' earlier vs ' + rt.late + ' recently. Make this the one thing you engineer out this week.'; }
+    else { mc = 'var(--orange)'; msg = '&#34;' + rt.reason + '&#34; is holding steady (' + rt.total + ' times). It has not budged on willpower &#8212; it needs a structural fix, not more trying.'; }
+    html += '<div style="font-size:12px;color:var(--text);line-height:1.65;border-left:2px solid ' + mc + ';padding-left:10px">' + msg + '</div>';
+    html += '</div>';
+  } else {
+    html += dormantStub('Unlocks once you log a few skip reasons over time. Then this tracks whether your most common blocker (like &#34;Weed before bed&#34;) is trending down as you progress.');
+  }
+
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin:14px 0 14px;line-height:1.6">Based on ' + daysLogged + ' day' + (daysLogged === 1 ? '' : 's') + ' of your data. Every correlation here sharpens the more you log &#8212; measured day-to-day patterns kick in around 8&#43; days.</div>';
 
   return html;
 }
