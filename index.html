@@ -1197,6 +1197,217 @@ function getProgramReadiness() {
   return {overall:avg, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
 }
 
+// ── INSIGHTS / CORRELATION ENGINE ────────────────────────────
+// Connects data points ACROSS categories so the user sees WHY a habit is
+// failing, not just THAT it is. Two sources:
+//  A) Reason chains  — curated causal links keyed off the user&#39;s own logged
+//     skip reasons. Works immediately, even with little data.
+//  B) Behavior links — measured from daily check history once enough days
+//     exist (cross-category, same-day and next-day lag).
+var INSIGHT_CHAINS = [
+  { from:'sleep', to:'morning',
+    reasons:['Weed before bed','Screens kept me awake','Stayed up too late','Anxiety or racing thoughts'],
+    title:'Your nights are costing your mornings',
+    body:'The reason you log most for missing sleep feeds straight into your mornings. Weed and late screens suppress REM and push sleep onset back 1&#8211;3 hours, so you wake groggy and short on time &#8212; which is exactly when Morning habits get dropped.',
+    fix:'Pick ONE lever tonight: phone out of the bedroom, or move weed to 4&#43; hours before bed. Win the night and the morning takes care of itself.' },
+  { from:'evening', to:'sleep',
+    reasons:['Used weed','Drank alcohol','Screens on until I fell asleep'],
+    title:'Evening choices are setting your sleep score',
+    body:'Your evening habits and your sleep quality are the same story. THC cuts REM, alcohol shreds sleep architecture, and late screens delay melatonin &#8212; all of it lands on tomorrow as a missed or low-quality night.',
+    fix:'Make the call early: set an alarm 3 hours before bed as your decision point, before the craving hits.' },
+  { from:'sleep', to:'training',
+    reasons:[],
+    title:'Under-slept days are dragging your training',
+    body:'Sleep and Training move together in your data. A short night drains the energy and drive that get you out the door &#8212; &#34;too tired&#34; is the most common training skip there is.',
+    fix:'Protect sleep first. One good night raises tomorrow&#39;s training odds more than any amount of willpower.' },
+  { from:'training', to:'asvab',
+    reasons:['Skipped workout so no BDNF window','Too tired after workout','Got distracted'],
+    title:'Skipped workouts are skipping your studying',
+    body:'Your ASVAB study rides on your workout &#8212; BDNF peaks for 2&#8211;4 hours after exercise, the sharpest learning window you get. Miss the workout and the study session loses its edge, and usually gets skipped too.',
+    fix:'Treat the workout as the on-ramp to studying. Open NucPrep within 10 minutes of finishing &#8212; do not sit down first.' },
+  { from:'asvab', to:'navyknow',
+    reasons:['Skipped ASVAB so skipped this too','Too tired after ASVAB study'],
+    title:'ASVAB and Navy Knowledge rise and fall together',
+    body:'These two are stacked on the same study block, so they win or lose as a pair. When the ASVAB session goes, the creed and General Orders drilling tends to go with it.',
+    fix:'Anchor Navy Knowledge to the END of your ASVAB session &#8212; one General Order out loud before you close the app.' }
+];
+
+function catActiveHabits(cat) {
+  var arr = [];
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+      var it = ALL_HABITS[bi].items[hi];
+      if (HABIT_CAT[it.id] === cat && it.phase <= ST.phase) arr.push(it.id);
+    }
+  }
+  return arr;
+}
+
+function reasonsForCat(cat) {
+  var out = [];
+  for (var hid in HABIT_CAT) {
+    if (HABIT_CAT[hid] === cat) {
+      var rs = ST.skipReasons[hid] || [];
+      for (var i = 0; i < rs.length; i++) out.push(rs[i].reason || '');
+    }
+  }
+  return out;
+}
+
+function reasonMatchCount(cat, patterns) {
+  if (!patterns || !patterns.length) return 0;
+  var rs = reasonsForCat(cat); var n = 0;
+  for (var i = 0; i < rs.length; i++) {
+    for (var p = 0; p < patterns.length; p++) {
+      if (rs[i].indexOf(patterns[p]) !== -1) { n++; break; }
+    }
+  }
+  return n;
+}
+
+function catLow(cat) {
+  var s = ST.readiness[cat];
+  if (s === null || s === undefined) return (ST.catStruggle[cat] || 0) >= 2;
+  return s < 60;
+}
+
+function dateKeysRange(maxDays) {
+  var keys = []; var today = new Date(todayKey()); var start = new Date(ST.startDate);
+  var span = Math.floor((today - start) / 86400000);
+  if (isNaN(span) || span < 0) span = 0;
+  if (span > maxDays) span = maxDays;
+  for (var d = span; d >= 0; d--) {
+    var cd = new Date(today); cd.setDate(today.getDate() - d);
+    keys.push(cd.toISOString().split('T')[0]);
+  }
+  return keys;
+}
+
+function meanOf(a) { if (!a.length) return 0; var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+
+function computeBehaviorLinks() {
+  var keys = dateKeysRange(60);
+  if (keys.length < 8) return [];
+  var cats = Object.keys(CAT_META);
+  var series = {};
+  for (var i = 0; i < cats.length; i++) {
+    var c = cats[i]; var ah = catActiveHabits(c);
+    if (!ah.length) continue;
+    var s = [];
+    for (var k = 0; k < keys.length; k++) {
+      var set = ST.checks[keys[k]]; var done = 0;
+      for (var j = 0; j < ah.length; j++) { if (set && set.has && set.has(ah[j])) done++; }
+      s.push(done / ah.length);
+    }
+    series[c] = s;
+  }
+  var ck = Object.keys(series); var links = [];
+  for (var a = 0; a < ck.length; a++) {
+    for (var b = 0; b < ck.length; b++) {
+      if (a === b) continue;
+      var A = series[ck[a]], B = series[ck[b]];
+      for (var lag = 0; lag <= 1; lag++) {
+        var dDone = [], dMiss = [];
+        for (var t = 0; t + lag < A.length; t++) {
+          if (A[t] >= 0.5) dDone.push(B[t + lag]); else dMiss.push(B[t + lag]);
+        }
+        if (dDone.length < 4 || dMiss.length < 4) continue;
+        var diff = meanOf(dDone) - meanOf(dMiss);
+        if (diff < 0.22) continue;
+        links.push({ from:ck[a], to:ck[b], lag:lag, doneRate:meanOf(dDone), missRate:meanOf(dMiss), diff:diff, n:dDone.length + dMiss.length });
+      }
+    }
+  }
+  links.sort(function(x, y){ return y.diff - x.diff; });
+  return links;
+}
+
+function pairKey(f, t) { return f < t ? f + '_' + t : t + '_' + f; }
+
+function computeInsights() {
+  var out = []; var usedPairs = {};
+
+  var chainScored = [];
+  for (var i = 0; i < INSIGHT_CHAINS.length; i++) {
+    var ch = INSIGHT_CHAINS[i];
+    var rm = reasonMatchCount(ch.from, ch.reasons);
+    var fromLow = catLow(ch.from), toLow = catLow(ch.to);
+    if (!((rm > 0 || fromLow) && toLow)) continue;
+    chainScored.push({
+      kind:'chain', strength: rm * 3 + (fromLow ? 1 : 0) + (toLow ? 1 : 0),
+      tag: rm > 0 ? 'FROM YOUR SKIP REASONS' : 'EARLY SIGNAL',
+      title:ch.title, body:ch.body, fix:ch.fix, from:ch.from, to:ch.to, hasReason: rm > 0
+    });
+  }
+  chainScored.sort(function(x, y){ return y.strength - x.strength; });
+
+  var links = computeBehaviorLinks();
+
+  // 1) reason-backed chains (most personalized)
+  for (var c1 = 0; c1 < chainScored.length; c1++) {
+    if (!chainScored[c1].hasReason) continue;
+    var pk = pairKey(chainScored[c1].from, chainScored[c1].to);
+    if (usedPairs[pk]) continue; usedPairs[pk] = 1;
+    out.push(chainScored[c1]);
+  }
+  // 2) measured behavior links
+  for (var l = 0; l < links.length; l++) {
+    var lk = links[l]; var pk2 = pairKey(lk.from, lk.to);
+    if (usedPairs[pk2]) continue; usedPairs[pk2] = 1;
+    var fl = CAT_META[lk.from].label, tl = CAT_META[lk.to].label;
+    var dr = Math.round(lk.doneRate * 100), mr = Math.round(lk.missRate * 100);
+    var body = lk.lag === 0
+      ? 'On days you complete <strong>' + fl + '</strong>, you also finish <strong>' + tl + '</strong> about ' + dr + '% of the time &#8212; versus only ' + mr + '% on days you miss ' + fl + '.'
+      : 'After a day you complete <strong>' + fl + '</strong>, the next day&#39;s <strong>' + tl + '</strong> lands ' + dr + '% of the time &#8212; versus ' + mr + '% after a missed ' + fl + '.';
+    out.push({ kind:'link', tag: lk.n + '-DAY PATTERN', title: fl + ' is pulling ' + tl + ' with it', body:body,
+      fix:'These two move together. On a day you protect ' + fl + ', stack ' + tl + ' right behind it while the momentum is there.', from:lk.from, to:lk.to });
+  }
+  // 3) early-signal chains to fill remaining slots
+  for (var c2 = 0; c2 < chainScored.length; c2++) {
+    if (out.length >= 4) break;
+    if (chainScored[c2].hasReason) continue;
+    var pk3 = pairKey(chainScored[c2].from, chainScored[c2].to);
+    if (usedPairs[pk3]) continue; usedPairs[pk3] = 1;
+    out.push(chainScored[c2]);
+  }
+
+  return out.slice(0, 4);
+}
+
+function renderInsights() {
+  var ins = computeInsights();
+  var keys = dateKeysRange(60);
+  var daysLogged = 0;
+  for (var i = 0; i < keys.length; i++) { if (ST.checks[keys[i]] || ST.skipLog[keys[i]]) daysLogged++; }
+
+  var html = '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin:4px 0 10px">INSIGHTS &#8212; HOW YOUR HABITS CONNECT</div>';
+
+  if (!ins.length) {
+    html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:14px;">';
+    html += '<div style="font-size:13px;color:var(--text);line-height:1.7">No clear patterns yet. Keep checking in, and log a reason when you skip &#8212; once a few days stack up, the app starts connecting your habits (for example, how last night&#39;s sleep drives this morning).</div>';
+    html += '</div>';
+    return html;
+  }
+
+  for (var k = 0; k < ins.length; k++) {
+    var it = ins[k];
+    html += '<div style="background:linear-gradient(135deg,var(--mid),var(--shelf));border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:10px;">';
+    html += '<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.5px;padding:2px 7px;border-radius:3px;background:rgba(0,212,255,.1);color:var(--bright)">' + it.tag + '</span></div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">' + it.title + '</div>';
+    html += '<div style="font-size:12px;color:var(--text);line-height:1.65;margin-bottom:10px">' + it.body + '</div>';
+    html += '<div style="padding:9px 11px;background:rgba(0,229,160,.05);border-left:2px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;color:var(--text);line-height:1.6"><strong style="color:var(--green)">Highest-leverage move:</strong> ' + it.fix + '</div>';
+    html += '</div>';
+  }
+
+  if (daysLogged < 10) {
+    html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin:2px 0 14px;line-height:1.6">These sharpen as you log more days. ' + daysLogged + ' day' + (daysLogged === 1 ? '' : 's') + ' of data so far &#8212; measured day-to-day patterns kick in around 8&#43;.</div>';
+  } else {
+    html += '<div style="height:6px"></div>';
+  }
+
+  return html;
+}
+
 // ── SKIP SYSTEM ──────────────────────────────────────────────
 var _skipHabitId = null;
 var _skipDate = null;
@@ -1774,6 +1985,8 @@ function renderReady() {
   html += '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Day ' + rd + '. ' + (pr.isReady ? 'All critical thresholds met.' : 'Need 75% per critical category.') + '</div>';
   html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pr.overall + '%;background:' + readyColor + ';border-radius:2px"></div></div>';
   html += '</div>';
+
+  html += renderInsights();
 
   html += '<div style="background:var(--s1);border:1px solid var(--ice);border-radius:13px;padding:14px;margin-bottom:14px;">';
   html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:12px">REQUIREMENTS</div>';
