@@ -568,7 +568,7 @@ body{color:var(--text);font-family:var(--sans);}
 
   <!-- PRT -->
   <div class="screen scr" id="prtScreen"><div class="pad">
-    <div class="bb" style="margin-bottom:14px"><strong>Log your scores after every practice session.</strong> Track progress toward pass standards. Full PRT simulation every 2 weeks on Saturdays per training plan.</div>
+    <div class="bb" style="margin-bottom:14px" id="prtSummary"><strong>Log your scores after every practice session.</strong> Track progress toward pass standards. Full PRT simulation every 2 weeks on Saturdays per training plan.</div>
     <div class="sl">Current Best Scores</div>
     <div class="prt2">
       <div class="prtc"><div class="prtl">1.5 MI RUN</div><div class="prtv" id="pRun">—</div><div class="prtt">Pass: <span>13:15</span></div><div class="prtbar"><div class="prtfill" id="bRun" style="width:0%;background:linear-gradient(90deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('run')">Log Run</button></div>
@@ -1287,10 +1287,17 @@ function getProgramReadiness() {
       if (criticalCats.indexOf(struggles[i].cat) !== -1) critScores.push(struggles[i].score);
     }
   }
-  var avg = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : 0;
+  var discipline = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : 0;
   var minCrit = critScores.length ? Math.min.apply(null, critScores) : 0;
-  var isReady = minCrit >= 75 && avg >= 70 && ST.phase >= 4 && ST.total >= 84;
-  return {overall:avg, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
+  var phys = physicalReadiness();
+  // Headline blends habit discipline with measured fitness: 70/30 once PRT
+  // scores exist, discipline-only until then.
+  var overall = phys !== null ? Math.round(0.7 * discipline + 0.3 * phys) : discipline;
+  // "Ready" now also requires being on track to pass the PRT (>=50% prob, i.e.
+  // at/above the pass line) — you can't be boot-camp ready without it.
+  var physOk = phys !== null && phys >= 50;
+  var isReady = minCrit >= 75 && discipline >= 70 && ST.phase >= 4 && ST.total >= 84 && physOk;
+  return {overall:overall, discipline:discipline, physical:phys, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
 }
 
 // ── INSIGHTS / CORRELATION ENGINE ────────────────────────────
@@ -1513,6 +1520,39 @@ function parsePrtVal(type, val) {
     var p = String(val).split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
   }
   return parseInt(val, 10) || 0;
+}
+
+// ── PRT PHYSICAL READINESS ───────────────────────────────────
+// Turns logged PRT scores into a pass-probability vs the Navy male-24 standards
+// so Nuclear Field readiness reflects measured fitness, not just habit checks.
+// Per event: 50% = exactly at the pass standard, 100% = stretch goal, 0% = fail floor.
+var PRT_STD = {
+  run: { type:'1.5mi Run', pass:795, full:690, zero:900, lower:true,  label:'1.5 mi run', pretty:'13:15' },
+  pu:  { type:'Push-ups',  pass:42,  full:60,  zero:20,  lower:false, label:'Push-ups',   pretty:'42' },
+  cu:  { type:'Curl-ups',  pass:52,  full:70,  zero:30,  lower:false, label:'Curl-ups',   pretty:'52' },
+  pl:  { type:'Plank',     pass:90,  full:180, zero:45,  lower:false, label:'Plank',      pretty:'1:30' }
+};
+function eventPassPct(key) {
+  var raw = ST.prt[key]; if (!raw) return null;
+  var s = PRT_STD[key];
+  var v = parsePrtVal(s.type, raw);
+  var pct;
+  if (s.lower) {
+    pct = v <= s.pass ? 50 + 50 * (s.pass - v) / (s.pass - s.full)
+                      : 50 - 50 * (v - s.pass) / (s.zero - s.pass);
+  } else {
+    pct = v >= s.pass ? 50 + 50 * (v - s.pass) / (s.full - s.pass)
+                      : 50 - 50 * (s.pass - v) / (s.pass - s.zero);
+  }
+  return Math.max(0, Math.min(100, Math.round(pct)));
+}
+// 0-100 weighted physical readiness across logged events (run weighted highest);
+// null until something is logged. Missing events are omitted and weights renormalized.
+function physicalReadiness() {
+  var w = { run:0.30, pu:0.25, cu:0.25, pl:0.20 };
+  var sum = 0, wsum = 0;
+  for (var k in w) { var p = eventPassPct(k); if (p !== null) { sum += p * w[k]; wsum += w[k]; } }
+  return wsum ? Math.round(sum / wsum) : null;
 }
 
 // PRT score trajectory (first vs latest logged) per event.
@@ -2316,20 +2356,27 @@ function saveLog() {
 }
 
 function updatePRT() {
-  function runPct(t) {
-    if (!t) return 0;
-    var p = t.split(':'); var s = parseInt(p[0])*60+(parseInt(p[1])||0);
-    return Math.max(0, Math.min(100, (13*60+15-s)/(13*60+15-12*60)*100));
+  // Each bar/value now shows the pass-probability vs the Navy standard (50% = at
+  // the pass line), so the PRT tab reads as readiness, not an arbitrary bar.
+  function setRow(key, valId, barId) {
+    var raw = ST.prt[key];
+    var pp = eventPassPct(key);
+    document.getElementById(valId).textContent = raw ? (raw + '  ·  ' + pp + '%') : '—';
+    document.getElementById(barId).style.width = (pp === null ? 0 : pp) + '%';
   }
-  function plPct(t) {
-    if (!t) return 0;
-    var p = t.split(':'); var s = parseInt(p[0])*60+(parseInt(p[1])||0);
-    return Math.min(100, (s/180)*100);
+  setRow('run','pRun','bRun'); setRow('pu','pPu','bPu'); setRow('cu','pCu','bCu'); setRow('pl','pPl','bPl');
+
+  var phys = physicalReadiness();
+  var ps = document.getElementById('prtSummary');
+  if (ps) {
+    if (phys === null) {
+      ps.innerHTML = '<strong>Log your scores after every practice session.</strong> Each becomes a pass-probability vs the Navy standards and feeds your Nuclear Field readiness.';
+    } else {
+      var onTrack = 0, logged = 0;
+      for (var k in PRT_STD) { var p = eventPassPct(k); if (p !== null) { logged++; if (p >= 50) onTrack++; } }
+      ps.innerHTML = '<strong>Physical readiness: ' + phys + '%</strong> &#8212; on track to pass <strong>' + onTrack + '/' + logged + '</strong> logged event' + (logged === 1 ? '' : 's') + ' (50% = at the pass line). This feeds your Nuclear Field readiness.';
+    }
   }
-  var r=ST.prt.run; document.getElementById('pRun').textContent=r||'—'; document.getElementById('bRun').style.width=runPct(r)+'%';
-  var pu=ST.prt.pu; document.getElementById('pPu').textContent=pu||'—'; document.getElementById('bPu').style.width=(pu?Math.min(100,(parseInt(pu)/70)*100):0)+'%';
-  var cu=ST.prt.cu; document.getElementById('pCu').textContent=cu||'—'; document.getElementById('bCu').style.width=(cu?Math.min(100,(parseInt(cu)/80)*100):0)+'%';
-  var pl=ST.prt.pl; document.getElementById('pPl').textContent=pl||'—'; document.getElementById('bPl').style.width=plPct(pl)+'%';
   var hist=document.getElementById('logHist');
   if (!ST.logs.length) { hist.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0">No logs yet.</div>'; return; }
   var last=ST.logs.slice(-10).reverse();
@@ -2420,6 +2467,24 @@ function renderReady() {
   html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pr.overall + '%;background:' + readyColor + ';border-radius:2px"></div></div>';
   html += '</div>';
 
+  // Two pillars the headline is built from: habit Discipline + measured Physical (PRT).
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:13px">';
+  html += '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">DISCIPLINE</div>';
+  html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--bright)">' + pr.discipline + '%</div>';
+  html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">Habit consistency</div></div>';
+  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:11px;padding:13px">';
+  html += '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">PHYSICAL (PRT)</div>';
+  if (pr.physical !== null) {
+    var physColor = pr.physical >= 75 ? 'var(--green)' : pr.physical >= 50 ? 'var(--primary)' : 'var(--red)';
+    html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:' + physColor + '">' + pr.physical + '%</div>';
+    html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + (pr.physical >= 50 ? 'On track to pass' : 'Below pass line') + ' &#183; <span style="color:var(--bright)">PRT</span></div></div>';
+  } else {
+    html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--muted)">&#8212;</div>';
+    html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">Log scores on PRT tab</div></div>';
+  }
+  html += '</div>';
+
   html += renderConsistency();
 
   html += renderInsights();
@@ -2431,6 +2496,7 @@ function renderReady() {
     {label:'Training 70%+ consistent',cat:'training',needed:70},
     {label:'ASVAB study 70%+ consistent',cat:'asvab',needed:70},
     {label:'Navy Knowledge 70%+ consistent',cat:'navyknow',needed:70},
+    {label:'PRT on track to pass',cat:null,custom:true,met:(pr.physical!==null && pr.physical>=50)},
     {label:'84+ days in program',cat:null,custom:true,met:ST.total>=84},
     {label:'Phase 4 active',cat:null,custom:true,met:ST.phase>=4}
   ];
