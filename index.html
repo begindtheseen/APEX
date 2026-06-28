@@ -1234,13 +1234,26 @@ function logTodaySkips() {
   ST.skipLog[yk] = skips;
 }
 
+// Skips for a category within the last `days` days — recency-aware, so a
+// category struggled-with weeks ago stops nagging once you turn it around.
+function recentSkips(cat, days) {
+  var today = todayKey();
+  var n = 0;
+  for (var d = 0; d < days; d++) {
+    var arr = ST.skipLog[shiftKey(today, -d)];
+    if (!arr) continue;
+    for (var i = 0; i < arr.length; i++) { if (HABIT_CAT[arr[i]] === cat) n++; }
+  }
+  return n;
+}
+
 function getAdaptiveNote(habitId) {
   var cat = HABIT_CAT[habitId];
   if (!cat) return null;
   var score = ST.readiness[cat];
   if (score === null || score === undefined) return null;
-  var skipCount = ST.catStruggle[cat] || 0;
-  if (skipCount < 3) return null;
+  // Warn only on RECENT struggle (last 10 days), not a lifetime counter.
+  if (recentSkips(cat, 10) < 3) return null;
   var notes = {
     sleep:'Sleep is your most-skipped category. Every missed night reduces BDNF and cancels 40% of training adaptation. Tonight&#39;s sleep is where yesterday&#39;s workout becomes permanent.',
     morning:'Morning habits are being skipped. The cold shower and sunlight take 15 minutes combined. Stack them immediately after water.',
@@ -1313,6 +1326,11 @@ var INSIGHT_CHAINS = [
     title:'Your nights are costing your mornings',
     body:'The reason you log most for missing sleep feeds straight into your mornings. Weed and late screens suppress REM and push sleep onset back 1&#8211;3 hours, so you wake groggy and short on time &#8212; which is exactly when Morning habits get dropped.',
     fix:'Pick ONE lever tonight: phone out of the bedroom, or move weed to 4&#43; hours before bed. Win the night and the morning takes care of itself.' },
+  { from:'morning', to:'sleep',
+    reasons:[],
+    title:'Your mornings are scoring your nights',
+    body:'This is a loop, not a one-way street. Morning sunlight in your first hour sets your circadian clock and anchors melatonin 14&#8211;16 hours later &#8212; so the morning block you do (or skip) today is quietly deciding how well you sleep tonight.',
+    fix:'Get 10 minutes of outdoor light early. It is the cheapest sleep aid you have, and it pays off the same night.' },
   { from:'evening', to:'sleep',
     reasons:['Used weed','Drank alcohol','Screens on until I fell asleep'],
     title:'Evening choices are setting your sleep score',
@@ -1370,8 +1388,33 @@ function reasonMatchCount(cat, patterns) {
 
 function catLow(cat) {
   var s = ST.readiness[cat];
-  if (s === null || s === undefined) return (ST.catStruggle[cat] || 0) >= 2;
+  if (s === null || s === undefined) return recentSkips(cat, 14) >= 2;
   return s < 60;
+}
+
+function keyShortLabel(key) {
+  var d = keyToAnchor(key);
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(d);
+}
+
+// Forecast the next phase-unlock date from the recent strong-day rate.
+// Returns {slow:true} if pace is below unlock speed, or {date,etaDays} ETA,
+// or null when there isn't enough history yet.
+function projectedUnlock(remaining) {
+  if (remaining <= 0) return null;
+  var today = todayKey();
+  var hit = 0, counted = 0;
+  for (var d = 0; d < 14; d++) {
+    var k = shiftKey(today, -d);
+    if (k < ST.startDate) break;
+    counted++;
+    if (dayCompletion(k) >= 0.7) hit++;
+  }
+  if (counted < 3) return null;
+  var rate = hit / counted;
+  if (rate <= 0.05) return { slow: true };
+  var etaDays = Math.ceil(remaining / rate);
+  return { etaDays: etaDays, date: shiftKey(today, etaDays) };
 }
 
 function dateKeysRange(maxDays) {
@@ -1929,9 +1972,19 @@ function renderToday() {
   document.getElementById('phaseProgFill').style.background = 'linear-gradient(90deg,' + phData.color + ',var(--bright))';
 
   var remaining = Math.max(0, daysNeeded - goodDays);
-  document.getElementById('phaseBanDesc').textContent = ph < 4
-    ? goodDays + '/' + daysNeeded + ' strong days — ' + remaining + ' more to unlock Phase ' + (ph+1)
-    : 'Full protocol active. This is the level.';
+  var phaseDesc;
+  if (ph < 4) {
+    phaseDesc = goodDays + '/' + daysNeeded + ' strong days — ' + remaining + ' more to unlock Phase ' + (ph+1);
+    var proj = projectedUnlock(remaining);
+    if (proj) {
+      phaseDesc += proj.slow
+        ? '. Below unlock pace right now — string together 70%+ days to start the clock.'
+        : '. At your pace, ~' + keyShortLabel(proj.date) + '.';
+    }
+  } else {
+    phaseDesc = 'Full protocol active. This is the level.';
+  }
+  document.getElementById('phaseBanDesc').textContent = phaseDesc;
   document.getElementById('phaseBanDesc').style.color = '#364d65';
 
   var checks = getChecks();
