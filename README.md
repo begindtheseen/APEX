@@ -61,3 +61,11 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | `sw.js` | Service worker — caches the app shell for offline use. |
 | `icon.svg` | App icon used by the manifest and home screen. |
 | `.github/workflows/deploy.yml` | Publishes the app to GitHub Pages. |
+| `RESEARCH.md` | The evidence base — every science claim, threshold, and Navy fact mapped to its source. |
+
+## The science behind it
+
+APEX's habits, phase thresholds, and Science tab are grounded in published research
+(Lally 2010 on habit formation, BDNF/exercise studies, cannabis-recovery timelines,
+Navy boot-camp standards, and more). The full source list — with DOIs, key findings,
+and where each is used in the app — is in **[RESEARCH.md](RESEARCH.md)**.
