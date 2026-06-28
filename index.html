@@ -1548,6 +1548,68 @@ function leverageBox(text) {
   return '<div style="margin-top:9px;padding:9px 11px;background:rgba(0,229,160,.05);border-left:2px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;color:var(--text);line-height:1.6"><strong style="color:var(--green)">Highest-leverage move:</strong> ' + text + '</div>';
 }
 
+// Overall completion ratio for one day, across currently-active habits.
+function dayCompletion(dayKey) {
+  var active = 0, done = 0;
+  var set = ST.checks[dayKey];
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+      var it = ALL_HABITS[bi].items[hi];
+      if (it.phase <= ST.phase) { active++; if (set && set.has && set.has(it.id)) done++; }
+    }
+  }
+  return active ? done / active : 0;
+}
+
+// 8-week calendar heatmap of daily completion.
+function renderConsistency() {
+  var todayK = todayKey();
+  var todayDow = keyWeekday(todayK);
+  var weeks = 8;
+  var endKey = shiftKey(todayK, 6 - todayDow);        // Saturday of the current week
+  var startKey = shiftKey(endKey, -(weeks * 7 - 1));  // Sunday, 8 weeks back
+
+  var hit = 0, counted = 0;
+  for (var d = 0; d < 14; d++) {
+    var k = shiftKey(todayK, -d);
+    if (k < ST.startDate) break;
+    counted++;
+    if (dayCompletion(k) >= 0.7) hit++;
+  }
+
+  var html = '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin:4px 0 10px">CONSISTENCY &#8212; LAST 8 WEEKS</div>';
+  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-bottom:14px">';
+  var wdh = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  html += '<div style="display:flex;gap:3px;margin-bottom:4px">';
+  for (var w = 0; w < 7; w++) html += '<div style="flex:1;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted)">' + wdh[w] + '</div>';
+  html += '</div>';
+  for (var wk = 0; wk < weeks; wk++) {
+    html += '<div style="display:flex;gap:3px;margin-bottom:3px">';
+    for (var dd = 0; dd < 7; dd++) {
+      var cellKey = shiftKey(startKey, wk * 7 + dd);
+      if (cellKey < ST.startDate || cellKey > todayK) {
+        html += '<div style="flex:1;height:20px;border-radius:4px;background:transparent;border:1px solid rgba(30,58,95,.25)"></div>';
+      } else {
+        var r = dayCompletion(cellKey);
+        var bg = r >= 1 ? 'var(--green)' : r >= 0.67 ? 'rgba(0,229,160,.7)' : r >= 0.34 ? 'rgba(0,229,160,.45)' : r > 0 ? 'rgba(0,229,160,.22)' : 'rgba(30,58,95,.45)';
+        var border = cellKey === todayK ? ';border:1px solid var(--bright)' : '';
+        html += '<div title="' + cellKey + '" style="flex:1;height:20px;border-radius:4px;background:' + bg + border + '"></div>';
+      }
+    }
+    html += '</div>';
+  }
+  html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:flex-end;font-family:var(--mono);font-size:9px;color:var(--muted)"><span>Less</span>';
+  var legs = ['rgba(30,58,95,.45)', 'rgba(0,229,160,.22)', 'rgba(0,229,160,.45)', 'rgba(0,229,160,.7)', 'var(--green)'];
+  for (var lg = 0; lg < legs.length; lg++) html += '<div style="width:13px;height:13px;border-radius:3px;background:' + legs[lg] + '"></div>';
+  html += '<span>More</span></div>';
+  html += '<div style="margin-top:11px;padding-top:11px;border-top:1px solid var(--ice);display:flex;justify-content:space-between;font-size:12px">';
+  html += '<span style="color:var(--muted)">Current streak: <strong style="color:var(--bright)">' + ST.streak + ' day' + (ST.streak === 1 ? '' : 's') + '</strong></span>';
+  html += '<span style="color:var(--muted)"><strong style="color:var(--green)">' + hit + '</strong> of ' + counted + ' day' + (counted === 1 ? '' : 's') + ' at 70%+</span>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
 function renderInsights() {
   var keys = dateKeysRange(60);
   var daysLogged = 0;
@@ -2335,6 +2397,8 @@ function renderReady() {
   html += '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Day ' + rd + '. ' + (pr.isReady ? 'All critical thresholds met.' : 'Need 75% per critical category.') + '</div>';
   html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pr.overall + '%;background:' + readyColor + ';border-radius:2px"></div></div>';
   html += '</div>';
+
+  html += renderConsistency();
 
   html += renderInsights();
 
