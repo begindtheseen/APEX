@@ -1059,6 +1059,14 @@ function exportData() {
 
 function triggerImport() { document.getElementById('importFile').click(); }
 
+// Wipe everything on this device and start fresh at Day 1 (Pacific).
+function resetAllData() {
+  if (!confirm('Reset all data? This permanently erases every habit, streak, score, and log on this device and starts over at Day 1. Export a backup first if you want to keep it.')) return;
+  if (!confirm('Last check — this cannot be undone. Erase everything and start fresh?')) return;
+  try { localStorage.removeItem('apex_v4'); } catch (e) {}
+  location.reload();
+}
+
 function importData(ev) {
   var file = ev.target.files && ev.target.files[0];
   ev.target.value = '';
@@ -2381,6 +2389,9 @@ function renderReady() {
   html += '<button class="prtbtn" style="margin-top:0" onclick="exportData()">Export backup</button>';
   html += '<button class="prtbtn" onclick="triggerImport()">Restore from backup</button>';
   html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;text-align:center">' + backupNote + '</div>';
+  html += '<div style="border-top:1px solid var(--ice);margin:13px 0 11px"></div>';
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px">Starting over? This erases everything on this device and resets to Day 1. Export a backup first if you want to keep it.</div>';
+  html += '<button onclick="resetAllData()" style="width:100%;background:rgba(255,68,85,.06);border:1px solid rgba(255,68,85,.35);border-radius:9px;padding:11px;color:var(--red);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer">Reset all data</button>';
   html += '</div>';
 
   document.getElementById('readyContent').innerHTML = html;
