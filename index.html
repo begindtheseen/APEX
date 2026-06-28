@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>APEX — Progressive Protocol</title>
+<meta name="description" content="APEX Progressive Protocol — brain recovery, Navy boot camp prep, and ASVAB study tracker. Your progress is saved on this device.">
+<meta name="theme-color" content="#020509">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="APEX">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+:root{
+  /* Deep ocean ice palette — every surface is cold-tinted, never pure black */
+  --void:   #020509;
+  --deep:   #050d1a;
+  --mid:    #081428;
+  --shelf:  #0d1e3a;
+  --frost:  #142843;
+  --ice:    #1e3a5f;
+  --ice2:   #254878;
+  --primary:#4db8ff;
+  --bright: #00d4ff;
+  --glacier:#7dd3fc;
+  --cryo:   #b8e8ff;
+  --green:  #00e5a0;
+  --red:    #ff4455;
+  --purple: #6e8fff;
+  --orange: #38bdf8;
+  --text:   #c8dff5;
+  --muted:  #2d5070;
+  --muted2: #1a3050;
+  --mono:'DM Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--void);}
+body{color:var(--text);font-family:var(--sans);}
+#app{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+.scr{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
+.pad{padding:16px;}
+
+/* ── ICE SHADER ANIMATION ── used on hero card only */
+@keyframes iceShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes breathe {
+  0%,100%{ opacity:0.6; }
+  50%    { opacity:1; }
+}
+
+/* NAV */
+#nav{
+  background:linear-gradient(180deg, var(--deep) 0%, var(--mid) 100%);
+  border-bottom:1px solid var(--ice);
+  display:flex;height:50px;flex-shrink:0;align-items:center;
+  box-shadow:0 1px 20px rgba(0,212,255,.06);
+}
+.brand{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  color:var(--bright);padding:0 12px;letter-spacing:4px;flex-shrink:0;
+  text-shadow:0 0 20px rgba(0,212,255,.4);
+}
+.tabs{display:flex;flex:1;height:100%;}
+.tab{
+  flex:1;background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--muted);font-family:var(--sans);font-size:10px;font-weight:700;
+  cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;
+  transition:color .2s, border-color .2s;
+}
+.tab.on{color:var(--bright);border-bottom-color:var(--bright);}
+
+/* UTILS */
+.sl{
+  font-family:var(--mono);font-size:10px;letter-spacing:2.5px;
+  color:var(--muted);text-transform:uppercase;margin-bottom:10px;
+}
+.chip{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:0.3px;}
+.cg{background:rgba(0,229,160,.1);color:var(--green);}
+.cy{background:rgba(77,184,255,.1);color:var(--primary);}
+.cb{background:rgba(0,212,255,.1);color:var(--bright);}
+.cp{background:rgba(110,143,255,.1);color:var(--purple);}
+.cr{background:rgba(255,68,85,.1);color:var(--red);}
+.co{background:rgba(56,189,248,.1);color:var(--orange);}
+
+/* HERO — THE SIGNATURE PIECE */
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--ice);border-radius:14px;
+  padding:18px;margin-bottom:14px;
+  background:
+    linear-gradient(135deg,
+      rgba(0,212,255,.03) 0%,
+      rgba(77,184,255,.06) 40%,
+      rgba(2,5,9,.0) 60%,
+      rgba(0,212,255,.04) 100%),
+    linear-gradient(180deg, var(--mid) 0%, var(--shelf) 100%);
+}
+/* Ice shader sweep — the signature animation */
+.hero::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(125,211,252,.04) 40%,
+    rgba(0,212,255,.09) 50%,
+    rgba(184,232,255,.06) 55%,
+    rgba(125,211,252,.03) 62%,
+    transparent 72%
+  );
+  background-size:300% 100%;
+  animation:iceShimmer 8s linear infinite;
+  pointer-events:none;
+  border-radius:14px;
+}
+/* Deep ocean glow in top-right */
+.hero::after{
+  content:'';position:absolute;top:-30px;right:-20px;
+  width:120px;height:120px;
+  background:radial-gradient(circle, rgba(0,212,255,.1) 0%, transparent 70%);
+  border-radius:50%;
+  animation:breathe 4s ease-in-out infinite;
+  pointer-events:none;
+}
+.hero-ey{
+  font-family:var(--mono);font-size:10px;
+  color:var(--bright);letter-spacing:2.5px;margin-bottom:6px;
+  text-shadow:0 0 12px rgba(0,212,255,.3);
+}
+.hero-t{font-size:18px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:7px;}
+.hero-b{font-size:12px;color:var(--muted);line-height:1.6;}
+.hero-b strong{color:var(--text);}
+
+/* PHASE BANNER — ice shelf gradient */
+.phase-banner{
+  border-radius:13px;padding:14px 16px;margin-bottom:14px;
+  display:flex;align-items:flex-start;gap:12px;
+  position:relative;overflow:hidden;
+}
+.phase-banner::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,
+    rgba(77,184,255,.04) 0%,
+    rgba(0,212,255,.02) 50%,
+    transparent 100%);
+  pointer-events:none;
+}
+.phase-ico{font-size:24px;flex-shrink:0;margin-top:2px;position:relative;}
+.phase-text{flex:1;position:relative;}
+.phase-name{font-family:var(--mono);font-size:10px;letter-spacing:2px;margin-bottom:4px;}
+.phase-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:5px;}
+.phase-desc{font-size:12px;line-height:1.6;}
+.phase-prog{height:2px;border-radius:2px;overflow:hidden;margin-top:10px;background:rgba(30,58,95,.6);}
+.phase-prog-fill{height:100%;border-radius:2px;transition:width .5s;box-shadow:0 0 8px var(--bright);}
+
+/* UNLOCK NOTICE */
+.unlock-notice{
+  background:linear-gradient(135deg,rgba(13,30,58,.9),rgba(8,20,40,.9));
+  border:1px solid var(--ice);border-radius:10px;
+  padding:10px 13px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;
+}
+.unlock-ico{font-size:15px;flex-shrink:0;}
+.unlock-text{font-size:12px;color:var(--muted);line-height:1.5;}
+.unlock-text strong{color:var(--primary);}
+
+/* RING */
+.ring-row{
+  background:linear-gradient(135deg,var(--mid),var(--shelf));
+  border:1px solid var(--ice);border-radius:13px;
+  padding:14px;display:flex;align-items:center;gap:14px;margin-bottom:14px;
+  box-shadow:inset 0 1px 0 rgba(77,184,255,.06);
+}
+.rsvg{transform:rotate(-90deg);}
+.rbg{fill:none;stroke:var(--ice);stroke-width:5;}
+.rfg{fill:none;stroke:url(#iceGrad);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .5s;filter:drop-shadow(0 0 4px rgba(0,212,255,.5));}
+.rtxt{text-anchor:middle;dominant-baseline:middle;}
+.rp{font-size:13px;fill:var(--bright);font-family:var(--mono);}
+.rs{font-size:9px;fill:var(--muted);}
+.ring-info{flex:1;}
+.ring-t{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;}
+.ring-s{font-size:12px;color:var(--muted);line-height:1.5;}
+.ring-s strong{color:var(--text);}
+
+/* STATS */
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.statbox{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);
+  border:1px solid var(--ice);border-radius:11px;padding:12px 8px;text-align:center;
+  box-shadow:inset 0 1px 0 rgba(77,184,255,.08);
+}
+.stat-v{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--bright);}
+.stat-k{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* CALLOUTS */
+.box{border-radius:9px;padding:11px 13px;margin:8px 0;font-size:12px;line-height:1.65;}
+.bg{background:rgba(0,229,160,.04);border:1px solid rgba(0,229,160,.18);color:var(--text);}
+.bg strong{color:var(--green);}
+.by{background:rgba(77,184,255,.04);border:1px solid rgba(77,184,255,.18);color:var(--text);}
+.by strong{color:var(--primary);}
+.br{background:rgba(255,68,85,.04);border:1px solid rgba(255,68,85,.18);color:var(--text);}
+.br strong{color:var(--red);}
+.bb{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);color:var(--text);}
+.bb strong{color:var(--bright);}
+
+/* HABIT BLOCK */
+.ac{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);
+  border:1px solid var(--ice);border-radius:12px;margin-bottom:8px;overflow:hidden;
+}
+.ac.locked{opacity:0.38;filter:saturate(0.4);}
+.ach{padding:13px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.ach:active{background:rgba(77,184,255,.05);}
+.ac-label{font-family:var(--mono);font-size:11px;font-weight:600;min-width:52px;}
+.ac-name{font-size:13px;font-weight:700;color:#fff;flex:1;}
+.ac-badge{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;flex-shrink:0;}
+.ac-chev{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.ac.open .ac-chev{transform:rotate(90deg);}
+.acb{display:none;border-top:1px solid var(--ice);}
+.ac.open .acb{display:block;}
+
+/* HABIT ROW */
+.hrow{padding:11px 14px;border-bottom:1px solid rgba(30,58,95,.6);display:flex;align-items:flex-start;gap:12px;}
+.hrow:last-child{border-bottom:none;}
+.hrow.locked-h{opacity:0.5;}
+.hck{
+  width:22px;height:22px;border-radius:6px;
+  border:1.5px solid var(--ice2);
+  flex-shrink:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  margin-top:1px;background:var(--mid);position:relative;transition:all .15s;
+}
+.hck.on{
+  background:linear-gradient(135deg,var(--bright),var(--primary));
+  border-color:var(--bright);
+  box-shadow:0 0 10px rgba(0,212,255,.4);
+}
+.hck.on::after{content:'';position:absolute;width:5px;height:9px;border:2px solid #020509;border-top:none;border-left:none;transform:rotate(45deg);margin-top:-2px;}
+.hck.locked-ck{cursor:default;background:var(--mid);border-color:var(--ice);}
+.hinfo{flex:1;}
+.hn{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;transition:all .15s;}
+.hn.done{text-decoration:line-through;color:var(--muted);}
+.hw{font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:3px;}
+.hw strong{color:var(--primary);}
+.hunlock{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* ONBOARD */
+#onboardScreen{
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(0,212,255,.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(77,184,255,.05) 0%, transparent 50%),
+    var(--void);
+  align-items:center;justify-content:center;padding:24px 20px;
+}
+.ob-wrap{width:100%;max-width:380px;}
+.ob-step{display:none;}
+.ob-step.show{display:block;}
+.ob-ico{font-size:48px;text-align:center;margin-bottom:16px;filter:drop-shadow(0 0 16px rgba(0,212,255,.4));}
+.ob-title{font-size:22px;font-weight:700;color:#fff;text-align:center;margin-bottom:10px;line-height:1.2;}
+.ob-body{font-size:14px;color:var(--muted);line-height:1.7;text-align:center;margin-bottom:24px;}
+.ob-body strong{color:var(--text);}
+.ob-btn{
+  width:100%;
+  background:linear-gradient(135deg,var(--bright),var(--primary));
+  border:none;border-radius:12px;padding:15px;
+  color:var(--void);font-family:var(--sans);font-size:15px;font-weight:700;
+  cursor:pointer;margin-bottom:10px;
+  box-shadow:0 4px 24px rgba(0,212,255,.25);
+}
+.ob-skip{width:100%;background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer;padding:8px;}
+.ob-dots{display:flex;justify-content:center;gap:8px;margin-bottom:24px;}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:var(--ice);}
+.ob-dot.on{background:var(--bright);box-shadow:0 0 8px rgba(0,212,255,.5);}
+
+/* TRAIN */
+.wcard{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);
+  border:1px solid var(--ice);border-radius:12px;margin-bottom:8px;overflow:hidden;
+}
+.wcard.locked-w{opacity:0.35;filter:saturate(0.3);}
+.wch{padding:13px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.wch:active{background:rgba(77,184,255,.05);}
+.wch-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--bright);min-width:60px;}
+.wch-lbl{font-size:13px;font-weight:700;color:#fff;flex:1;}
+.wch-chev{font-size:11px;color:var(--muted);transition:transform .2s;}
+.wcard.open .wch-chev{transform:rotate(90deg);}
+.wcb{display:none;border-top:1px solid var(--ice);}
+.wcard.open .wcb{display:block;}
+.drow{padding:12px 15px;border-bottom:1px solid rgba(30,58,95,.5);}
+.drow:last-child{border-bottom:none;}
+.dname{font-family:var(--mono);font-size:11px;color:var(--bright);margin-bottom:4px;}
+.dwork{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:3px;}
+.dwork strong{color:#fff;}
+.dnote{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px;}
+
+/* PRT */
+.prt2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.prtc{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);
+  border:1px solid var(--ice);border-radius:12px;padding:13px;
+}
+.prtl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:7px;}
+.prtv{font-family:var(--mono);font-size:22px;font-weight:600;color:#fff;margin-bottom:2px;}
+.prtt{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.prtt span{color:var(--green);}
+.prtbar{height:3px;background:var(--ice);border-radius:2px;overflow:hidden;margin-top:8px;}
+.prtfill{height:100%;border-radius:2px;transition:width .5s;box-shadow:0 0 6px currentColor;}
+.prtbtn{
+  width:100%;
+  background:rgba(13,30,58,.8);
+  border:1px solid var(--ice2);border-radius:9px;padding:10px;
+  color:var(--text);font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;margin-top:8px;transition:border-color .15s;
+}
+.prtbtn:active{border-color:var(--bright);color:var(--bright);}
+
+/* SCIENCE */
+.scard{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);
+  border:1px solid var(--ice);border-radius:12px;margin-bottom:8px;overflow:hidden;
+}
+.shd{padding:13px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.shd:active{background:rgba(77,184,255,.05);}
+.sico{font-size:18px;flex-shrink:0;}
+.stit{font-size:13px;font-weight:700;color:#fff;flex:1;line-height:1.3;}
+.schev{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.scard.open .schev{transform:rotate(90deg);}
+.sbody{display:none;border-top:1px solid var(--ice);padding:14px;}
+.scard.open .sbody{display:block;}
+.sbody h3{font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:1.5px;text-transform:uppercase;margin:12px 0 6px;}
+.sbody h3:first-child{margin-top:0;}
+.sbody p{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:9px;}
+.sbody ul{padding-left:16px;margin-bottom:9px;}
+.sbody li{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:3px;}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(2,5,9,.94);z-index:100;display:none;align-items:flex-end;}
+.modal.show{display:flex;}
+.msheet{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--deep) 100%);
+  border:1px solid var(--ice);border-top-color:var(--ice2);
+  border-radius:16px 16px 0 0;padding:20px 16px 32px;width:100%;
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+}
+.mtitle{font-size:16px;font-weight:700;color:#fff;margin-bottom:16px;}
+.mfield{margin-bottom:12px;}
+.mfield label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;display:block;margin-bottom:5px;}
+.mfield input{
+  width:100%;background:var(--shelf);border:1px solid var(--ice2);
+  border-radius:9px;padding:11px 13px;color:#fff;
+  font-family:var(--mono);font-size:15px;outline:none;transition:border-color .15s;
+}
+.mfield input:focus{border-color:var(--bright);box-shadow:0 0 0 2px rgba(0,212,255,.12);}
+.msave{
+  width:100%;
+  background:linear-gradient(135deg,var(--bright),var(--primary));
+  border:none;border-radius:10px;padding:14px;
+  color:var(--void);font-family:var(--sans);font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:4px;
+  box-shadow:0 4px 20px rgba(0,212,255,.2);
+}
+.mcancel{width:100%;background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:8px;padding:8px;}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:66px;left:50%;transform:translateX(-50%);
+  background:var(--shelf);border:1px solid var(--ice2);border-radius:9px;
+  padding:9px 16px;font-size:12px;font-weight:700;z-index:200;
+  opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+#toast.show{opacity:1;}
+#toast.ok{border-color:var(--green);color:var(--green);box-shadow:0 4px 20px rgba(0,229,160,.15);}
+#toast.warn{border-color:var(--primary);color:var(--primary);}
+#toast.unlock{border-color:var(--bright);color:var(--bright);box-shadow:0 4px 20px rgba(0,212,255,.2);}
+
+::-webkit-scrollbar{width:2px;}
+::-webkit-scrollbar-thumb{background:var(--ice);}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* SKIP SYSTEM */
+.hrow-actions{display:flex;align-items:center;gap:8px;}
+.skip-btn{
+  background:none;border:1px solid rgba(255,68,85,.25);border-radius:6px;
+  padding:4px 8px;font-family:var(--mono);font-size:9px;color:rgba(255,68,85,.6);
+  cursor:pointer;letter-spacing:0.5px;white-space:nowrap;transition:all .15s;flex-shrink:0;
+}
+.skip-btn:active{border-color:var(--red);color:var(--red);}
+.skip-btn.skipped-today{
+  background:rgba(255,68,85,.08);border-color:var(--red);
+  color:var(--red);
+}
+
+/* SKIP MODAL */
+.skip-modal{position:fixed;inset:0;background:rgba(2,5,9,.94);z-index:150;display:none;align-items:flex-end;}
+.skip-modal.show{display:flex;}
+.skip-sheet{
+  background:linear-gradient(180deg,var(--mid) 0%,var(--deep) 100%);
+  border:1px solid var(--ice);border-top-color:var(--ice2);
+  border-radius:16px 16px 0 0;padding:20px 16px 36px;width:100%;
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+}
+.skip-habit-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;}
+.skip-date-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:16px;}
+.skip-why-label{font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin-bottom:12px;}
+.skip-reasons{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.skip-reason-btn{
+  background:var(--shelf);border:1px solid var(--ice);border-radius:10px;
+  padding:12px 14px;text-align:left;font-family:var(--sans);font-size:13px;
+  color:var(--text);cursor:pointer;transition:all .15s;
+}
+.skip-reason-btn:active{border-color:var(--bright);color:#fff;}
+.skip-reason-btn.selected{border-color:var(--red);background:rgba(255,68,85,.08);color:var(--red);}
+.skip-confirm{
+  width:100%;background:linear-gradient(135deg,var(--red),#cc3333);
+  border:none;border-radius:10px;padding:13px;
+  color:#fff;font-family:var(--sans);font-size:14px;font-weight:700;
+  cursor:pointer;margin-top:4px;
+}
+.skip-cancel{
+  width:100%;background:none;border:none;color:var(--muted);
+  font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:8px;padding:8px;
+}
+
+/* SCIENCE CARDS */
+.scard{background:linear-gradient(180deg,var(--mid) 0%,var(--shelf) 100%);border:1px solid var(--ice);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+.shd{padding:13px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.shd:active{background:rgba(77,184,255,.05);}
+.sico{font-size:18px;flex-shrink:0;}
+.stit{font-size:13px;font-weight:700;color:#fff;flex:1;line-height:1.3;}
+.schev{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.scard.open .schev{transform:rotate(90deg);}
+.sbody{display:none;border-top:1px solid var(--ice);padding:14px;}
+.scard.open .sbody{display:block;}
+.sbody h3{font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:1.5px;text-transform:uppercase;margin:12px 0 6px;}
+.sbody h3:first-child{margin-top:0;}
+.sbody p{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:9px;}
+.sbody ul{padding-left:16px;margin-bottom:9px;}
+.sbody li{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:3px;}
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ONBOARD -->
+<div class="screen active" id="onboardScreen">
+  <div class="ob-wrap">
+    <div class="ob-dots" id="obDots"></div>
+
+    <div class="ob-step show" id="obs0">
+      <div class="ob-ico">⚛️</div>
+      <div class="ob-title">One app. Three missions.</div>
+      <div class="ob-body">Brain recovery from cannabis. Physical prep to pass Navy boot camp. ASVAB study to qualify for <strong>Nuclear Field</strong> — $75K+ bonus, six-figure civilian exit. Everything you need is here.</div>
+      <button class="ob-btn" onclick="nextOb()">Let's go →</button>
+    </div>
+
+    <div class="ob-step" id="obs1">
+      <div class="ob-ico">🔥</div>
+      <div class="ob-title">The burnout problem — solved</div>
+      <div class="ob-body">Dumping 21 habits on someone with zero habits is how people quit in 4 days. This app builds you <strong>one layer at a time</strong> — habits only unlock when your brain and body are ready for them. You will never be asked to do more than you can handle today.</div>
+      <button class="ob-btn" onclick="nextOb()">Makes sense →</button>
+    </div>
+
+    <div class="ob-step" id="obs2">
+      <div class="ob-ico">📈</div>
+      <div class="ob-title">4 phases, 16 weeks</div>
+      <div class="ob-body">
+        <strong>Phase 1:</strong> Sleep, water, sunlight, cold shower.<br><br>
+        <strong>Phase 2:</strong> Training plan + nutrition — build the body.<br><br>
+        <strong>Phase 3:</strong> ASVAB study sessions unlock — use the NucPrep app after every workout when BDNF is highest.<br><br>
+        <strong>Phase 4:</strong> Full protocol. PRT ready. Test ready.
+      </div>
+      <button class="ob-btn" onclick="nextOb()">Got it →</button>
+    </div>
+
+    <div class="ob-step" id="obs3">
+      <div class="ob-ico">🎯</div>
+      <div class="ob-title">Stop comparing. Start compounding.</div>
+      <div class="ob-body">Every habit shows you its <strong>rep count</strong> and automaticity stage — from "conscious effort" to "fully automatic." Miss 1-2 days and your streak survives. Miss 3+ and the counter resets, never the phase. Lally 2010: average habit takes <strong>66 days</strong> to automate. This app tracks every single rep toward that number.</div>
+      <button class="ob-btn" onclick="finishOb()">Start Day 1 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="screen" id="mainApp">
+  <div id="nav">
+    <div class="brand">APEX</div>
+    <div class="tabs">
+      <button class="tab on" onclick="goTab('today')">Today</button>
+      <button class="tab" onclick="goTab('train')">Train</button>
+      <button class="tab" onclick="goTab('prt')">PRT</button>
+      <button class="tab" onclick="goTab('sci')">Science</button>
+      <button class="tab" onclick="goTab('ready')">Readiness</button>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="screen active scr" id="todayScreen"><div class="pad">
+    <div class="hero">
+      <div class="hero-ey" id="heroEy">PHASE 1 — FOUNDATION</div>
+      <div class="hero-t" id="heroTitle">Day 1 — Start Small, Stay Consistent</div>
+      <div class="hero-b" id="heroBody">Three habits. That is all. Master these and everything else follows.</div>
+    </div>
+
+    <div class="phase-banner" id="phaseBanner">
+      <div class="phase-ico" id="phaseBanIco">🌱</div>
+      <div class="phase-text">
+        <div class="phase-name" id="phaseBanName">PHASE 1</div>
+        <div class="phase-title" id="phaseBanTitle">Foundation</div>
+        <div class="phase-desc" id="phaseBanDesc">Build 3 keystone habits until they feel automatic. No training yet. No studying yet. Just these three.</div>
+        <div class="phase-prog"><div class="phase-prog-fill" id="phaseProgFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="ring-row">
+      <svg class="rsvg" width="68" height="68" viewBox="0 0 68 68"><defs><linearGradient id="iceGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1"/><stop offset="100%" style="stop-color:#4db8ff;stop-opacity:1"/></linearGradient></defs>
+        <circle class="rbg" cx="34" cy="34" r="27"/>
+        <circle class="rfg" id="rfg" cx="34" cy="34" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/>
+        <text class="rtxt" x="34" y="30" transform="rotate(90 34 34)">
+          <tspan class="rp" id="rpct" x="34" dy="0">0%</tspan>
+          <tspan class="rs" id="rdone" x="34" dy="13">today</tspan>
+        </text>
+      </svg>
+      <div class="ring-info">
+        <div class="ring-t" id="ringT">Start your habits</div>
+        <div class="ring-s" id="ringS"><strong>Hit 80% for 5 days in a row</strong> to unlock the next phase. Small wins stack into big changes.</div>
+      </div>
+    </div>
+
+    <div class="stats3">
+      <div class="statbox"><div class="stat-v" id="stStreak">0</div><div class="stat-k">Day Streak</div></div>
+      <div class="statbox"><div class="stat-v" id="stPhase">1</div><div class="stat-k">Phase</div></div>
+      <div class="statbox"><div class="stat-v" id="stDay">1</div><div class="stat-k">Total Days</div></div>
+    </div>
+
+    <div id="unlockNotice"></div>
+    <div class="sl">Today's Habits</div>
+    <div id="habitBlocks"></div>
+  </div></div>
+
+  <!-- TRAIN -->
+  <div class="screen scr" id="trainScreen"><div class="pad">
+    <div class="by" style="margin-bottom:14px"><strong>Training plan unlocks at Phase 2 (Day 15).</strong> Right now focus on the foundation habits — sleep, water, sunlight. These enable the training. Jump straight to hard cardio with no sleep or hydration base and you burn out in week one.</div>
+    <div class="sl">PRT Pass Standards (Male Age 24)</div>
+    <div class="prt2" style="margin-bottom:14px">
+      <div class="prtc" style="border-left:3px solid var(--red)"><div class="prtl">1.5 MI RUN</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">13:15 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: sub-12:00</div></div>
+      <div class="prtc" style="border-left:3px solid var(--bright)"><div class="prtl">PUSH-UPS (2 min)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">42 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 60+</div></div>
+      <div class="prtc" style="border-left:3px solid var(--glacier)"><div class="prtl">CURL-UPS (2 min)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">52 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 70+</div></div>
+      <div class="prtc" style="border-left:3px solid var(--glacier)"><div class="prtl">PLANK (hold)</div><div style="font-family:var(--mono);font-size:15px;color:var(--green);font-weight:600">1:30 pass</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Goal: 3:00+</div></div>
+    </div>
+    <div class="sl">16-Week Boot Camp Training Plan</div>
+    <div id="weekPlan"></div>
+  </div></div>
+
+  <!-- PRT -->
+  <div class="screen scr" id="prtScreen"><div class="pad">
+    <div class="bb" style="margin-bottom:14px"><strong>Log your scores after every practice session.</strong> Track progress toward pass standards. Full PRT simulation every 2 weeks on Saturdays per training plan.</div>
+    <div class="sl">Current Best Scores</div>
+    <div class="prt2">
+      <div class="prtc"><div class="prtl">1.5 MI RUN</div><div class="prtv" id="pRun">—</div><div class="prtt">Pass: <span>13:15</span></div><div class="prtbar"><div class="prtfill" id="bRun" style="width:0%;background:linear-gradient(90deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('run')">Log Run</button></div>
+      <div class="prtc"><div class="prtl">PUSH-UPS</div><div class="prtv" id="pPu">—</div><div class="prtt">Pass: <span>42</span></div><div class="prtbar"><div class="prtfill" id="bPu" style="width:0%;background:var(--green)"></div></div><button class="prtbtn" onclick="openLog('pu')">Log Push-ups</button></div>
+      <div class="prtc"><div class="prtl">CURL-UPS</div><div class="prtv" id="pCu">—</div><div class="prtt">Pass: <span>52</span></div><div class="prtbar"><div class="prtfill" id="bCu" style="width:0%;background:linear-gradient(90deg,var(--glacier),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('cu')">Log Curl-ups</button></div>
+      <div class="prtc"><div class="prtl">PLANK</div><div class="prtv" id="pPl">—</div><div class="prtt">Pass: <span>1:30</span></div><div class="prtbar"><div class="prtfill" id="bPl" style="width:0%;background:linear-gradient(135deg,var(--bright),var(--primary))"></div></div><button class="prtbtn" onclick="openLog('pl')">Log Plank</button></div>
+    </div>
+    <div class="sl">Log History</div>
+    <div id="logHist"><div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0">No logs yet. Start training and log your first scores.</div></div>
+  </div></div>
+
+  <!-- SCIENCE -->
+  <div class="screen scr" id="sciScreen"><div class="pad">
+    <div class="sl" style="margin-top:4px">Why This Works — The Science</div>
+    <div id="sciList"></div>
+  </div></div>
+
+  <!-- READINESS -->
+  <div class="screen scr" id="readyScreen"><div class="pad">
+    <div id="readyContent"></div>
+  </div></div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="msheet">
+    <div class="mtitle" id="mTitle">Log Score</div>
+    <div class="mfield"><label id="mLabel">VALUE</label><input type="text" id="mInput" inputmode="decimal"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="mHint"></div>
+    <button class="msave" onclick="saveLog()">Save</button>
+    <button class="mcancel" onclick="closeLog()">Cancel</button>
+  </div>
+</div>
+
+<!-- SKIP MODAL -->
+<div class="skip-modal" id="skipModal">
+  <div class="skip-sheet">
+    <div class="skip-habit-name" id="skipHabitName">—</div>
+    <div class="skip-date-label" id="skipDateLabel">TODAY</div>
+    <div class="skip-why-label">WHY DID YOU SKIP?</div>
+    <div class="skip-reasons" id="skipReasons"></div>
+    <button class="skip-confirm" id="skipConfirmBtn" onclick="confirmSkip()">Log This Skip</button>
+    <button class="skip-cancel" onclick="closeSkipModal()">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+</div>
+
+<script>
+// ============================================================
+// APEX PROGRESSIVE — Clean JS rebuild
+// Rules: NO template literals. NO escaped apostrophes in data strings.
+// ALL apostrophes in user-visible strings use &#39;
+// ALL double quotes in user-visible strings use &quot;
+// ============================================================
+
+// ── PHASE CONFIG ────────────────────────────────────────────
+var PHASES = [
+  {
+    id:1, name:'PHASE 1', title:'Foundation', ico:'seedling', color:'#00e87a',
+    bannerStyle:'background:linear-gradient(135deg,rgba(0,229,160,.04),rgba(0,212,255,.03));border:1px solid rgba(0,229,160,.2);',
+    desc:'Three keystone habits. No training yet. No studying yet. These three habits fix your sleep, fix your morning, and stop the single biggest cognitive saboteur. Master these first.',
+    unlockMsg:'Phase 2 unlocks when you hit 70% for 14 days.',
+    daysNeeded:14
+  },
+  {
+    id:2, name:'PHASE 2', title:'Build the Body', ico:'bolt', color:'#3d8eff',
+    bannerStyle:'background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(77,184,255,.04));border:1px solid rgba(77,184,255,.22);',
+    desc:'Phase 1 habits are anchored. Add physical training and nutrition. Cardio starts extremely light — walk/jog intervals only.',
+    unlockMsg:'Phase 3 unlocks when you hit 70% for 21 days.',
+    daysNeeded:21
+  },
+  {
+    id:3, name:'PHASE 3', title:'Train the Brain', ico:'brain', color:'#9060ff',
+    bannerStyle:'background:linear-gradient(135deg,rgba(110,143,255,.05),rgba(0,212,255,.04));border:1px solid rgba(110,143,255,.22);',
+    desc:'Body base established. Add ASVAB study, Navy Knowledge, and full cognitive protocol. Use the post-workout BDNF window for studying.',
+    unlockMsg:'Phase 4 unlocks when you hit 70% for 28 days.',
+    daysNeeded:28
+  },
+  {
+    id:4, name:'PHASE 4', title:'Full Protocol', ico:'rocket', color:'var(--bright)',
+    bannerStyle:'background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(77,184,255,.05));border:1px solid rgba(0,212,255,.3);',
+    desc:'All habits active. Full training, full cognitive protocol, full ASVAB and Navy Knowledge prep. You built to this — it does not feel like too much.',
+    unlockMsg:'You are at full protocol.',
+    daysNeeded:999
+  }
+];
+
+var ICONS_MAP = {seedling:'🌱', bolt:'⚡', brain:'🧠', rocket:'🚀'};
+
+// ── HABIT DATA ───────────────────────────────────────────────
+// RULES: n/w/cue strings use NO raw apostrophes. Use &#39; instead.
+// Double quotes in w strings use &quot; or just rephrase.
+var ALL_HABITS = [
+  {
+    id:'sleep', phase:1, label:'SLEEP', color:'#3d8eff', name:'Sleep',
+    items:[
+      {id:'h_sleep', phase:1,
+       n:'In bed by the same time every night',
+       w:'This is the single most important habit. Everything else — training adaptation, cognitive recovery, BDNF restoration, memory consolidation — happens during sleep. Consistent bedtime matters more than total hours.',
+       cue:'IF it is 9pm, THEN I set tomorrow&#39;s alarm and put my phone in another room.',
+       why_locked:''},
+      {id:'h_sleep2', phase:1,
+       n:'No screens in bed — phone out of the bedroom',
+       w:'Blue light suppresses melatonin and delays sleep onset by 1-3 hours. Phone across the room eliminates the temptation. This is a physical setup change, not willpower.',
+       cue:'IF I walk into my bedroom at night, THEN my phone stays outside.',
+       why_locked:''}
+    ]
+  },
+  {
+    id:'morning1', phase:1, label:'MORNING', color:'#f5c430', name:'Morning',
+    items:[
+      {id:'h_water', phase:1,
+       n:'Drink 16oz of water before your phone',
+       w:'Brain is 73% water. After 8 hours of sleep you are mildly dehydrated. Even 2% dehydration measurably reduces working memory and processing speed.',
+       cue:'IF my feet hit the floor, THEN I drink water before I touch my phone.',
+       why_locked:''},
+      {id:'h_sun', phase:1,
+       n:'10 min outside within 1 hour of waking',
+       w:'Morning light sets your circadian clock and anchors your cortisol-melatonin rhythm. This single habit improves the sleep you have tonight.',
+       cue:'IF I finish my water, THEN I step outside immediately.',
+       why_locked:''},
+      {id:'h_cold', phase:1,
+       n:'30 seconds cold water at end of shower',
+       w:'Cold exposure raises norepinephrine 300% and BDNF 12%. Norepinephrine is the focus neurotransmitter most depleted by cannabis. This starts rebuilding it daily.',
+       cue:'IF I finish my shower, THEN I turn it cold for 30 seconds before stepping out.',
+       why_locked:''}
+    ]
+  },
+  {
+    id:'training', phase:2, label:'TRAINING', color:'#00e87a', name:'Physical Training',
+    items:[
+      {id:'h_run', phase:2,
+       n:'Run or walk/jog session — per the training plan',
+       w:'Highest-impact habit for both brain and body. Aerobic exercise triggers BDNF, creates new neurons, rebuilds your prefrontal cortex, and fixes your stamina simultaneously. Start at walk/jog intervals.',
+       cue:'IF I put on my shoes, THEN I walk out the door immediately — no thinking.',
+       why_locked:'Unlocks Phase 2. Build sleep and morning habits first.'},
+      {id:'h_strength', phase:2,
+       n:'Push-ups, curl-ups, plank — 3 sets after your run',
+       w:'These are the exact 3 events on the Navy PRT. Training them daily with progressive overload is the only path to passing.',
+       cue:'IF I finish my run cooldown, THEN I do my first set immediately.',
+       why_locked:'Unlocks Phase 2.'},
+      {id:'h_stretch', phase:2,
+       n:'5 min stretch after every session',
+       w:'An injury at your build phase is a 2-week setback. Hip flexors, quads, calves, chest. 5 minutes protects the entire plan.',
+       cue:'IF I finish my last set, THEN I stretch before I sit down.',
+       why_locked:'Unlocks Phase 2.'}
+    ]
+  },
+  {
+    id:'fuel', phase:2, label:'FUEL', color:'#ff8c00', name:'Nutrition',
+    items:[
+      {id:'h_protein', phase:2,
+       n:'Protein at every meal — eggs, chicken, fish, beef',
+       w:'You are building aerobic capacity and muscle simultaneously. Protein converts training into physical change. Make sure protein is present at every meal.',
+       cue:'IF I open the fridge, THEN I find the protein source first.',
+       why_locked:'Unlocks Phase 2.'},
+      {id:'h_nosugar', phase:2,
+       n:'No processed sugar before noon',
+       w:'High sugar directly suppresses BDNF gene expression at the molecular level. You are building an aerobic engine and recovering cognitively — sugar undermines both.',
+       cue:'IF I eat breakfast, THEN it contains zero processed sugar.',
+       why_locked:'Unlocks Phase 2.'},
+      {id:'h_omega', phase:2,
+       n:'Omega-3 source daily — fish, walnuts, or supplement',
+       w:'DHA is a structural component of neuronal membranes and measurably raises BDNF over 8-12 weeks. Also reduces training inflammation.',
+       cue:'IF I eat lunch, THEN I take my omega-3 with it.',
+       why_locked:'Unlocks Phase 2.'}
+    ]
+  },
+  {
+    id:'asvab', phase:3, label:'ASVAB', color:'#9060ff', name:'ASVAB Study',
+    items:[
+      {id:'h_study1', phase:3,
+       n:'ASVAB study — 45 min immediately after your workout',
+       w:'Do this right after training while BDNF is elevated. BDNF and dopamine stay high for 2-4 hours post-exercise. This is your brain&#39;s peak learning window.',
+       cue:'IF my workout ends, THEN I open NucPrep within 10 minutes.',
+       why_locked:'Unlocks Phase 3. Build your aerobic and sleep base first.'},
+      {id:'h_study2', phase:3,
+       n:'Pomodoro blocks — 25 min on, 5 min walk break, repeat',
+       w:'Cannabis impairs sustained attention more than any other cognitive domain. Structured intervals train exactly this capacity back. Walk breaks consolidate what you just learned.',
+       cue:'IF I sit down to study, THEN I set a 25-minute timer before opening any material.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_review', phase:3,
+       n:'Review wrong answers — read every explanation',
+       w:'Every wrong answer is a pattern your brain has not locked in. Reading the explanation builds schema, not just rote memory. Schema survives to test day.',
+       cue:'IF I finish a study session, THEN I review every wrong answer before closing the app.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_study3', phase:3,
+       n:'Second review session — 20-30 min in the evening',
+       w:'Spaced repetition: reviewing material 6-8 hours after first learning doubles long-term retention. Sleep after this locks it permanently.',
+       cue:'IF it is after dinner, THEN I do my evening ASVAB review before any entertainment.',
+       why_locked:'Unlocks Phase 3.'}
+    ]
+  },
+  {
+    id:'navyknow', phase:3, label:'NAVY', color:'#00d4ff', name:'Navy Knowledge',
+    items:[
+      {id:'h_creed', phase:3,
+       n:'Recite the Sailor&#39;s Creed aloud — full, no stumbling',
+       w:'You WILL be asked to recite this verbatim at boot camp, on demand, by an RDC in your face. Knowing it cold before you arrive means one less thing to stress under pressure. Say it out loud daily — subvocal repetition does not build the same recall.',
+       cue:'IF I finish my morning water, THEN I recite the Sailor&#39;s Creed before leaving the bathroom.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_orders', phase:3,
+       n:'Drill one General Order — say it aloud, number and all',
+       w:'11 General Orders must be recited verbatim, out of sequence, on demand. RDCs will call: What is your 7th General Order? You have 3 seconds. Drill one per day rotating through all 11. After 11 days cycle back. By boot camp they are reflex.',
+       cue:'IF I sit down after my workout, THEN I say today&#39;s General Order 5 times out loud before opening my phone.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_ranks', phase:3,
+       n:'Study Navy rank structure — 5 min flashcard review',
+       w:'You must recognize and correctly address every rank from E-1 to O-10. Calling an officer by the wrong rank or addressing an NCO as sir gets you punished. 5 minutes of focused review daily is enough.',
+       cue:'IF I open my ASVAB study app, THEN I do 5 min of rank review first.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_military', phase:3,
+       n:'Military time and phonetic alphabet drill — 2 min',
+       w:'Military time and the NATO phonetic alphabet are used constantly. Arrive fluent and it frees cognitive bandwidth for everything harder. 2 minutes daily.',
+       cue:'IF I check the time on my phone, THEN I immediately convert it to military time in my head.',
+       why_locked:'Unlocks Phase 3.'},
+      {id:'h_bearing', phase:4,
+       n:'Military bearing practice — attention stance 60 sec',
+       w:'Position of Attention is the first physical thing RDCs inspect. Heels together, feet at 45 degrees, arms straight at sides, thumbs on trouser seams, eyes forward, chin in. Practice holding it under discomfort.',
+       cue:'IF I am waiting for anything — elevator, line, stoplight — THEN I snap to attention and hold it.',
+       why_locked:'Unlocks Phase 4.'},
+      {id:'h_customs', phase:4,
+       n:'Review one Navy custom or term — read, say, write it',
+       w:'Boot camp academics test Navy history, customs, seamanship vocabulary (bow, stern, port, starboard, quarterdeck, berthing, underway, watch), UCMJ basics, and chain of command. One item per evening.',
+       cue:'IF I do my evening study session, THEN I add one Navy term to the end of it.',
+       why_locked:'Unlocks Phase 4.'}
+    ]
+  },
+  {
+    id:'cognitive', phase:3, label:'MIND', color:'#9060ff', name:'Cognitive Protocol',
+    items:[
+      {id:'h_nophone', phase:3,
+       n:'No phone for first 30 min after waking',
+       w:'Cortisol and dopamine are calibrating at wake. Social media spikes dopamine artificially and impairs prefrontal function for hours. Protect this window.',
+       cue:'IF my alarm goes off, THEN my phone stays face-down for 30 minutes.',
+       why_locked:'Unlocks Phase 3.'}
+    ]
+  },
+  {
+    id:'evening', phase:4, label:'EVENING', color:'#38bdf8', name:'Evening Protocol',
+    items:[
+      {id:'h_noweed', phase:4,
+       n:'No weed tonight — or minimum 4 hours before bed',
+       w:'THC suppresses REM sleep — the phase where your prefrontal cortex repairs and memories consolidate. Every clean sleep compounds cognitive recovery. Your ASVAB memory consolidates during REM.',
+       cue:'IF it is 3 hours before my bedtime, THEN I make the decision for the night right now.',
+       why_locked:'Unlocks Phase 4.'},
+      {id:'h_noalc', phase:4,
+       n:'No alcohol',
+       w:'Alcohol suppresses BDNF, damages myelin sheaths, and devastates sleep architecture. One drink undoes a day of recovery and training adaptation.',
+       cue:'IF someone offers me a drink, THEN I say: I&#39;m in a protocol right now.',
+       why_locked:'Unlocks Phase 4.'},
+      {id:'h_carbs', phase:4,
+       n:'Complex carbs at lunch — rice, oats, sweet potato',
+       w:'Aerobic training runs on glycogen. By Phase 4 your training volume is high enough that carbohydrate timing actually matters. Eat complex carbs around training.',
+       cue:'IF I eat lunch, THEN it includes a complex carb source.',
+       why_locked:'Unlocks Phase 4.'}
+    ]
+  }
+];
+
+// ── SKIP REASONS ─────────────────────────────────────────────
+var SKIP_REASONS = {
+  sleep:[
+    {id:'sr1', label:'Stayed up too late'},
+    {id:'sr2', label:'Screens kept me awake'},
+    {id:'sr3', label:'Anxiety or racing thoughts'},
+    {id:'sr4', label:'Weed before bed'},
+    {id:'sr5', label:'No bedtime routine yet'},
+    {id:'sr6', label:'Just forgot'}
+  ],
+  morning:[
+    {id:'mr1', label:'Woke up late, no time'},
+    {id:'mr2', label:'Went straight to phone'},
+    {id:'mr3', label:'No motivation in the morning'},
+    {id:'mr4', label:'Forgot'},
+    {id:'mr5', label:'Felt too groggy'}
+  ],
+  training:[
+    {id:'tr1', label:'Too tired / low energy'},
+    {id:'tr2', label:'No time today'},
+    {id:'tr3', label:'Sore or in pain'},
+    {id:'tr4', label:'Did not feel like it'},
+    {id:'tr5', label:'Skipped the start and never began'}
+  ],
+  fuel:[
+    {id:'fr1', label:'Did not plan or prep food'},
+    {id:'fr2', label:'Ate junk instead'},
+    {id:'fr3', label:'No appetite'},
+    {id:'fr4', label:'Forgot'},
+    {id:'fr5', label:'Too busy'}
+  ],
+  asvab:[
+    {id:'ar1', label:'Too tired after workout'},
+    {id:'ar2', label:'Got distracted / on phone'},
+    {id:'ar3', label:'Skipped workout so no BDNF window'},
+    {id:'ar4', label:'Felt overwhelmed by material'},
+    {id:'ar5', label:'Forgot to open the app'}
+  ],
+  navyknow:[
+    {id:'nk1', label:'Forgot to do it'},
+    {id:'nk2', label:'Felt weird saying it out loud alone'},
+    {id:'nk3', label:'Did not know which one to drill'},
+    {id:'nk4', label:'Too tired after ASVAB study'},
+    {id:'nk5', label:'Skipped ASVAB so skipped this too'}
+  ],
+  cognitive:[
+    {id:'cr1', label:'Grabbed phone immediately'},
+    {id:'cr2', label:'Forgot the rule'},
+    {id:'cr3', label:'Felt like I needed to check something'},
+    {id:'cr4', label:'No enforcement mechanism'}
+  ],
+  evening:[
+    {id:'er1', label:'Used weed — was not going to skip'},
+    {id:'er2', label:'Drank alcohol'},
+    {id:'er3', label:'Screens on until I fell asleep'},
+    {id:'er4', label:'No wind-down routine yet'},
+    {id:'er5', label:'Social situation made it hard'}
+  ]
+};
+
+var DEFAULT_REASONS = [
+  {id:'dr1', label:'Did not feel like it'},
+  {id:'dr2', label:'Forgot'},
+  {id:'dr3', label:'No time'},
+  {id:'dr4', label:'Too tired'},
+  {id:'dr5', label:'Just did not do it'}
+];
+
+// ── HABIT-CATEGORY MAP ────────────────────────────────────────
+var HABIT_CAT = {
+  h_sleep:'sleep', h_sleep2:'sleep',
+  h_water:'morning', h_sun:'morning', h_cold:'morning', h_nophone:'morning',
+  h_run:'training', h_strength:'training', h_stretch:'training',
+  h_protein:'fuel', h_nosugar:'fuel', h_omega:'fuel', h_carbs:'fuel',
+  h_study1:'asvab', h_study2:'asvab', h_review:'asvab', h_study3:'asvab',
+  h_creed:'navyknow', h_orders:'navyknow', h_ranks:'navyknow',
+  h_military:'navyknow', h_bearing:'navyknow', h_customs:'navyknow',
+  h_noweed:'evening', h_noalc:'evening'
+};
+
+var CAT_META = {
+  sleep:    {label:'Sleep',          color:'var(--bright)', critical:true},
+  morning:  {label:'Morning',        color:'var(--green)',  critical:true},
+  training: {label:'Training',       color:'var(--green)',  critical:true},
+  fuel:     {label:'Nutrition',      color:'var(--orange)', critical:false},
+  asvab:    {label:'ASVAB Study',    color:'var(--purple)', critical:true},
+  navyknow: {label:'Navy Knowledge', color:'var(--bright)', critical:true},
+  cognitive:{label:'Cognitive',      color:'var(--purple)', critical:false},
+  evening:  {label:'Evening',        color:'var(--primary)',critical:false}
+};
+
+// ── STATE ────────────────────────────────────────────────────
+var ST = {
+  phase:1, streak:0, total:0, lastDate:null, lastGoodDate:null,
+  startDate:new Date().toISOString().split('T')[0],
+  checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
+  logs:[], onboardDone:false, consecutiveGoodDays:0,
+  repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
+  readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
+};
+
+function todayKey() { return new Date().toISOString().split('T')[0]; }
+
+function loadState() {
+  try {
+    var s = JSON.parse(localStorage.getItem('apex_v4') || '{}');
+    if (!s.startDate) return;
+    ST.phase = s.phase || 1;
+    ST.streak = s.streak || 0;
+    ST.total = s.total || 0;
+    ST.lastDate = s.lastDate || null;
+    ST.lastGoodDate = s.lastGoodDate || null;
+    ST.startDate = s.startDate;
+    ST.prt = s.prt || ST.prt;
+    ST.logs = s.logs || [];
+    ST.onboardDone = s.onboardDone || false;
+    ST.consecutiveGoodDays = s.consecutiveGoodDays || 0;
+    ST.repCounts = s.repCounts || {};
+    ST.skipLog = s.skipLog || {};
+    ST.catStruggle = s.catStruggle || {};
+    ST.skipReasons = s.skipReasons || {};
+    ST.lastBackup = s.lastBackup || null;
+    ST.readiness = s.readiness || ST.readiness;
+    if (s.checks) {
+      ST.checks = {};
+      var ks = Object.keys(s.checks);
+      for (var i = 0; i < ks.length; i++) ST.checks[ks[i]] = new Set(s.checks[ks[i]]);
+    }
+  } catch(e) {}
+}
+
+// Build a plain-object snapshot of all saved state. Used by both the
+// localStorage save and the export/backup feature so they never drift.
+function serializeState() {
+  var out = {
+    phase:ST.phase, streak:ST.streak, total:ST.total,
+    lastDate:ST.lastDate, lastGoodDate:ST.lastGoodDate,
+    startDate:ST.startDate, prt:ST.prt, logs:ST.logs,
+    onboardDone:ST.onboardDone, consecutiveGoodDays:ST.consecutiveGoodDays,
+    repCounts:ST.repCounts, skipLog:ST.skipLog,
+    catStruggle:ST.catStruggle, skipReasons:ST.skipReasons,
+    readiness:ST.readiness, lastBackup:ST.lastBackup, checks:{}
+  };
+  var ks = Object.keys(ST.checks);
+  for (var i = 0; i < ks.length; i++) out.checks[ks[i]] = Array.from(ST.checks[ks[i]]);
+  return out;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('apex_v4', JSON.stringify(serializeState()));
+  } catch(e) {}
+}
+
+// ── BACKUP / RESTORE ─────────────────────────────────────────
+// Progress lives in this browser&#39;s localStorage. Export writes a portable
+// JSON file the user can re-import on a new device or after clearing storage.
+function exportData() {
+  try {
+    var snap = serializeState();
+    snap.exportedAt = new Date().toISOString();
+    snap.appVersion = 'apex_v4';
+    var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'apex-backup-' + todayKey() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    ST.lastBackup = new Date().toISOString();
+    saveState();
+    toast('Backup downloaded', 'ok');
+    if (document.getElementById('readyScreen').classList.contains('active')) renderReady();
+  } catch(e) { toast('Export failed', 'warn'); }
+}
+
+function triggerImport() { document.getElementById('importFile').click(); }
+
+function importData(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var s = JSON.parse(reader.result);
+      if (!s || !s.startDate) { toast('Not a valid APEX backup', 'warn'); return; }
+      if (!confirm('Restore this backup? It replaces the progress currently on this device.')) return;
+      localStorage.setItem('apex_v4', JSON.stringify(s));
+      ST.checks = {};
+      loadState();
+      ST.onboardDone = true;
+      saveState();
+      document.getElementById('onboardScreen').classList.remove('active');
+      document.getElementById('mainApp').classList.add('active');
+      calcReadiness();
+      goTab('today');
+      toast('Backup restored', 'ok');
+    } catch(e) { toast('Could not read that file', 'warn'); }
+  };
+  reader.onerror = function() { toast('Could not read that file', 'warn'); };
+  reader.readAsText(file);
+}
+
+function getChecks() {
+  var k = todayKey();
+  if (!ST.checks[k]) ST.checks[k] = new Set();
+  return ST.checks[k];
+}
+
+function recDay() {
+  return Math.max(1, Math.floor((Date.now() - new Date(ST.startDate).getTime()) / 86400000) + 1);
+}
+
+function totalActiveHabits() {
+  var t = 0;
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    var block = ALL_HABITS[bi];
+    for (var hi = 0; hi < block.items.length; hi++) {
+      if (block.items[hi].phase <= ST.phase) t++;
+    }
+  }
+  return t;
+}
+
+// ── ADAPTIVE ENGINE ──────────────────────────────────────────
+function calcReadiness() {
+  var today = new Date(todayKey());
+  var cats = Object.keys(CAT_META);
+  for (var ci = 0; ci < cats.length; ci++) {
+    var cat = cats[ci];
+    var catHabits = [];
+    for (var hid in HABIT_CAT) {
+      if (HABIT_CAT[hid] === cat) catHabits.push(hid);
+    }
+    var activeHabits = [];
+    for (var ai = 0; ai < catHabits.length; ai++) {
+      var hid2 = catHabits[ai];
+      for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+        for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+          var item = ALL_HABITS[bi].items[hi];
+          if (item.id === hid2 && item.phase <= ST.phase) { activeHabits.push(hid2); }
+        }
+      }
+    }
+    if (!activeHabits.length) { ST.readiness[cat] = null; continue; }
+    var totalPossible = 0;
+    var totalDone = 0;
+    for (var d = 0; d < 14; d++) {
+      var checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - d);
+      var dk = checkDate.toISOString().split('T')[0];
+      var dayChecks = ST.checks[dk] ? Array.from(ST.checks[dk]) : [];
+      for (var j = 0; j < activeHabits.length; j++) {
+        totalPossible++;
+        if (dayChecks.indexOf(activeHabits[j]) !== -1) totalDone++;
+      }
+    }
+    if (totalPossible === 0) { ST.readiness[cat] = null; continue; }
+    var base = Math.round((totalDone / totalPossible) * 100);
+    var recentSkips = 0;
+    for (var d2 = 0; d2 < 3; d2++) {
+      var cd = new Date(today); cd.setDate(today.getDate() - d2);
+      var cdk = cd.toISOString().split('T')[0];
+      var skips = ST.skipLog[cdk] || [];
+      for (var k2 = 0; k2 < activeHabits.length; k2++) {
+        if (skips.indexOf(activeHabits[k2]) !== -1) recentSkips++;
+      }
+    }
+    var penalty = Math.min(20, recentSkips * 5);
+    var totalReps = 0;
+    for (var ri = 0; ri < activeHabits.length; ri++) totalReps += (ST.repCounts[activeHabits[ri]] || 0);
+    var bonus = Math.max(0, Math.min(15, Math.round((totalReps / activeHabits.length) / 66 * 15)));
+    ST.readiness[cat] = Math.max(0, Math.min(100, base - penalty + bonus));
+  }
+}
+
+function getStruggles() {
+  var results = [];
+  for (var cat in ST.readiness) {
+    var score = ST.readiness[cat];
+    if (score === null || score === undefined || score < 0) continue;
+    results.push({cat:cat, score:score, label:(CAT_META[cat] ? CAT_META[cat].label : cat)});
+  }
+  results.sort(function(a,b){ return a.score - b.score; });
+  return results;
+}
+
+function logTodaySkips() {
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var yk = yesterday.toISOString().split('T')[0];
+  if (ST.skipLog[yk]) return;
+  var dayChecks = ST.checks[yk] ? Array.from(ST.checks[yk]) : [];
+  var skips = [];
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+      var item = ALL_HABITS[bi].items[hi];
+      if (item.phase > ST.phase) continue;
+      if (dayChecks.indexOf(item.id) === -1) {
+        skips.push(item.id);
+        var cat = HABIT_CAT[item.id];
+        if (cat) ST.catStruggle[cat] = (ST.catStruggle[cat] || 0) + 1;
+      }
+    }
+  }
+  ST.skipLog[yk] = skips;
+}
+
+function getAdaptiveNote(habitId) {
+  var cat = HABIT_CAT[habitId];
+  if (!cat) return null;
+  var score = ST.readiness[cat];
+  if (score === null || score === undefined) return null;
+  var skipCount = ST.catStruggle[cat] || 0;
+  if (skipCount < 3) return null;
+  var notes = {
+    sleep:'Sleep is your most-skipped category. Every missed night reduces BDNF and cancels 40% of training adaptation. Tonight&#39;s sleep is where yesterday&#39;s workout becomes permanent.',
+    morning:'Morning habits are being skipped. The cold shower and sunlight take 15 minutes combined. Stack them immediately after water.',
+    training:'Training is being skipped. BDNF only spikes with actual aerobic output. Each missed session is also a missed cognitive window for ASVAB studying.',
+    fuel:'Nutrition habits are inconsistent. Protein at every meal is the one that matters most — it determines whether training converts to muscle or gets burned for energy.',
+    asvab:'ASVAB study sessions are being skipped. The NucPrep session after your workout is the critical window — BDNF peaks for 2-4 hours post-exercise. Missing this window means studying at your worst time.',
+    navyknow:'Navy Knowledge habits are being skipped. The Sailor&#39;s Creed and General Orders must be verbatim on demand at boot camp. Every missed rep is a missed encoding opportunity.',
+    cognitive:'The no-phone morning rule is being skipped. This protects your dopamine baseline — without it you start every day from a depleted attention state.',
+    evening:'Evening habits are being skipped. These protect your sleep architecture which is where training adapts and memory consolidates.'
+  };
+  var note = notes[cat] || null;
+  if (!note) return null;
+  var topReason = getMostCommonReason(habitId);
+  if (topReason && topReason.count >= 2) {
+    note += ' Most common reason logged: <em style="color:var(--red)">' + topReason.reason + '</em> (' + topReason.count + 'x).';
+  }
+  return note;
+}
+
+function getMostCommonReason(habitId) {
+  if (!ST.skipReasons || !ST.skipReasons[habitId] || !ST.skipReasons[habitId].length) return null;
+  var counts = {};
+  var reasons = ST.skipReasons[habitId];
+  for (var i = 0; i < reasons.length; i++) {
+    var r = reasons[i].reason;
+    counts[r] = (counts[r] || 0) + 1;
+  }
+  var top = null; var topCount = 0;
+  for (var r2 in counts) { if (counts[r2] > topCount) { topCount = counts[r2]; top = r2; } }
+  return top ? {reason:top, count:topCount} : null;
+}
+
+function getProgramReadiness() {
+  calcReadiness();
+  var struggles = getStruggles();
+  var criticalCats = ['sleep','training','asvab','navyknow'];
+  var allScores = [];
+  var critScores = [];
+  for (var i = 0; i < struggles.length; i++) {
+    if (struggles[i].score >= 0) {
+      allScores.push(struggles[i].score);
+      if (criticalCats.indexOf(struggles[i].cat) !== -1) critScores.push(struggles[i].score);
+    }
+  }
+  var avg = allScores.length ? Math.round(allScores.reduce(function(a,b){return a+b;},0)/allScores.length) : 0;
+  var minCrit = critScores.length ? Math.min.apply(null, critScores) : 0;
+  var isReady = minCrit >= 75 && avg >= 70 && ST.phase >= 4 && ST.total >= 84;
+  return {overall:avg, criticalMin:minCrit, isReady:isReady, struggles:struggles.slice(0,3), daysIn:ST.total};
+}
+
+// ── SKIP SYSTEM ──────────────────────────────────────────────
+var _skipHabitId = null;
+var _skipDate = null;
+var _skipReason = null;
+
+function handleSkipBtn(btn) {
+  var hid = btn.getAttribute('data-hid');
+  var hName = hid;
+  for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+    for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+      if (ALL_HABITS[bi].items[hi].id === hid) { hName = ALL_HABITS[bi].items[hi].n; break; }
+    }
+  }
+  openSkipModal(hid, hName, null);
+}
+
+function openSkipModal(habitId, habitName, dateKey) {
+  _skipHabitId = habitId;
+  _skipDate = dateKey || todayKey();
+  _skipReason = null;
+  var cat = HABIT_CAT[habitId] || 'general';
+  var reasons = SKIP_REASONS[cat] || DEFAULT_REASONS;
+  document.getElementById('skipHabitName').textContent = habitName;
+  document.getElementById('skipDateLabel').textContent = _skipDate === todayKey() ? 'TODAY' : _skipDate;
+  var html = '';
+  for (var i = 0; i < reasons.length; i++) {
+    html += '<button class="skip-reason-btn" id="sr_' + reasons[i].id + '" onclick="selectReason(\'' + reasons[i].id + '\',\'' + reasons[i].label.replace(/'/g,'&#39;') + '\')">' + reasons[i].label + '</button>';
+  }
+  document.getElementById('skipReasons').innerHTML = html;
+  document.getElementById('skipConfirmBtn').style.opacity = '0.45';
+  document.getElementById('skipModal').classList.add('show');
+}
+
+function selectReason(id, label) {
+  _skipReason = {id:id, label:label};
+  var btns = document.querySelectorAll('.skip-reason-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
+  var btn = document.getElementById('sr_' + id);
+  if (btn) btn.classList.add('selected');
+  document.getElementById('skipConfirmBtn').style.opacity = '1';
+}
+
+function confirmSkip() {
+  if (!_skipHabitId || !_skipReason) { toast('Select a reason first', 'warn'); return; }
+  var dk = _skipDate;
+  if (!ST.skipLog[dk]) ST.skipLog[dk] = [];
+  if (ST.skipLog[dk].indexOf(_skipHabitId) === -1) ST.skipLog[dk].push(_skipHabitId);
+  var cat = HABIT_CAT[_skipHabitId] || 'general';
+  ST.catStruggle[cat] = (ST.catStruggle[cat] || 0) + 1;
+  if (!ST.skipReasons[_skipHabitId]) ST.skipReasons[_skipHabitId] = [];
+  ST.skipReasons[_skipHabitId].push({date:dk, reason:_skipReason.label});
+  var checks = getChecks();
+  checks.delete(_skipHabitId);
+  calcReadiness();
+  saveState();
+  closeSkipModal();
+  renderToday();
+  toast('Skip logged. The app adapts.', 'warn');
+}
+
+function closeSkipModal() {
+  document.getElementById('skipModal').classList.remove('show');
+  _skipHabitId = null;
+  _skipReason = null;
+}
+
+// ── ONBOARDING ───────────────────────────────────────────────
+var obStep = 0;
+var obTotal = 4;
+
+function initOnboard() {
+  var html = '';
+  for (var i = 0; i < obTotal; i++) {
+    html += '<div class="ob-dot' + (i === 0 ? ' on' : '') + '" id="dot' + i + '"></div>';
+  }
+  document.getElementById('obDots').innerHTML = html;
+}
+
+function nextOb() {
+  document.getElementById('obs' + obStep).classList.remove('show');
+  obStep++;
+  document.getElementById('obs' + obStep).classList.add('show');
+  for (var i = 0; i < obTotal; i++) {
+    document.getElementById('dot' + i).className = 'ob-dot' + (i === obStep ? ' on' : '');
+  }
+}
+
+function finishOb() {
+  ST.onboardDone = true;
+  saveState();
+  document.getElementById('onboardScreen').classList.remove('active');
+  document.getElementById('mainApp').classList.add('active');
+  renderToday();
+}
+
+// ── RENDER TODAY ─────────────────────────────────────────────
+function renderToday() {
+  var rd = recDay();
+  var ph = ST.phase;
+  var phData = PHASES[ph - 1];
+  var daysNeeded = phData.daysNeeded;
+  var goodDays = ST.consecutiveGoodDays || 0;
+
+  var identityPhrases = [
+    'You are the project. Everything else is noise.',
+    'Every rep is a vote for the identity you are choosing.',
+    'You are not working out. You are becoming someone who works out.',
+    'You are not studying. You are becoming someone who qualifies for Nuclear.',
+    'Other people are irrelevant to this process. You are the variable.',
+    'Obsession with yourself is not ego. It is the only path.',
+    'The person you are building does not compare to others.',
+    'Stop fixating outward. Get obsessed inward.'
+  ];
+  var identity = identityPhrases[Math.floor(rd / 3) % identityPhrases.length];
+
+  var phLabels = ['','Foundation','Build the Body','Brain + ASVAB + Navy','Full Protocol'];
+  var phEmojis = ['','🌱','⚡','🧠','🚀'];
+
+  document.getElementById('heroEy').textContent = 'PHASE ' + ph + ' — ' + phLabels[ph].toUpperCase();
+  document.getElementById('heroTitle').textContent = 'Day ' + rd;
+  document.getElementById('heroBody').textContent = identity;
+
+  document.getElementById('phaseBanner').setAttribute('style', phData.bannerStyle);
+  document.getElementById('phaseBanIco').textContent = phEmojis[ph];
+  document.getElementById('phaseBanName').textContent = 'PHASE ' + ph;
+  document.getElementById('phaseBanName').style.color = phData.color;
+  document.getElementById('phaseBanTitle').textContent = phLabels[ph];
+
+  var progPct = ph >= 4 ? 100 : Math.min(100, Math.round((goodDays / daysNeeded) * 100));
+  document.getElementById('phaseProgFill').style.width = progPct + '%';
+  document.getElementById('phaseProgFill').style.background = 'linear-gradient(90deg,' + phData.color + ',var(--bright))';
+
+  var remaining = Math.max(0, daysNeeded - goodDays);
+  document.getElementById('phaseBanDesc').textContent = ph < 4
+    ? goodDays + '/' + daysNeeded + ' strong days — ' + remaining + ' more to unlock Phase ' + (ph+1)
+    : 'Full protocol active. This is the level.';
+  document.getElementById('phaseBanDesc').style.color = '#364d65';
+
+  var checks = getChecks();
+  var tot = totalActiveHabits();
+  var done = 0;
+  var ks = Array.from(checks);
+  for (var i = 0; i < ks.length; i++) {
+    for (var bi2 = 0; bi2 < ALL_HABITS.length; bi2++) {
+      for (var hi2 = 0; hi2 < ALL_HABITS[bi2].items.length; hi2++) {
+        var it = ALL_HABITS[bi2].items[hi2];
+        if (it.id === ks[i] && it.phase <= ph) done++;
+      }
+    }
+  }
+  var pct = tot > 0 ? Math.round((done / tot) * 100) : 0;
+  var circ = 169.6;
+  document.getElementById('rfg').style.strokeDashoffset = circ - (pct / 100 * circ);
+  document.getElementById('rpct').textContent = pct + '%';
+  document.getElementById('rdone').textContent = done + '/' + tot;
+
+  var ringLabels = [[0,'Start the reps.'],[30,'Building neural pathways.'],[60,'Habit loop forming.'],[80,'Strong day — phase progress.'],[100,'Full compound day.']];
+  var rl = ringLabels[0][1];
+  for (var ri2 = 0; ri2 < ringLabels.length; ri2++) { if (pct >= ringLabels[ri2][0]) rl = ringLabels[ri2][1]; }
+  document.getElementById('ringT').textContent = rl;
+  document.getElementById('ringS').innerHTML = '<strong>70%+ for ' + daysNeeded + ' days</strong> unlocks Phase ' + (ph < 4 ? ph+1 : ph) + '. Missing 1-2 days in a row is fine — the streak survives.';
+
+  document.getElementById('stStreak').textContent = ST.streak;
+  document.getElementById('stPhase').textContent = ph;
+  document.getElementById('stDay').textContent = rd;
+
+  // Adaptive notice
+  var struggles = getStruggles();
+  var neuroNotes = [
+    [1,'Day 1. Prefrontal cortex running every habit consciously. This is the hardest phase.'],
+    [7,'Day 7. Dopamine baseline stabilizing.'],
+    [14,'Day 14. Simple habits beginning to automate.'],
+    [21,'Day 21. Conscious effort dropping. Identity shift is happening.'],
+    [30,'Day 30. Working memory measurably improved.'],
+    [45,'Day 45. BDNF elevated for 6+ weeks. You are cognitively different now.'],
+    [66,'Day 66. Average habit reaches full automaticity (Lally, UCL).'],
+    [84,'Day 84. 12 weeks. Substantial BDNF and cognitive improvement confirmed.']
+  ];
+  var neuroNote = neuroNotes[0][1];
+  for (var ni = 0; ni < neuroNotes.length; ni++) { if (rd >= neuroNotes[ni][0]) neuroNote = neuroNotes[ni][1]; }
+
+  var unlockHtml = '';
+  if (struggles.length > 0 && struggles[0].score !== null && struggles[0].score < 60 && ST.total > 5) {
+    var top = struggles[0];
+    var meta = CAT_META[top.cat] || {};
+    unlockHtml = '<div class="unlock-notice" style="border-color:' + (meta.color || 'var(--bright)') + '">'
+      + '<div class="unlock-ico">📊</div>'
+      + '<div class="unlock-text"><strong style="color:' + (meta.color || 'var(--bright)') + '">' + (meta.label || top.cat) + ' is your struggle zone — ' + top.score + '% consistency.</strong> ' + neuroNote + '</div></div>';
+  } else if (ph >= 4) {
+    var pr = getProgramReadiness();
+    var rc = pr.isReady ? 'var(--green)' : 'var(--primary)';
+    unlockHtml = '<div class="unlock-notice" style="border-color:' + rc + '">'
+      + '<div class="unlock-ico">' + (pr.isReady ? '✅' : '📊') + '</div>'
+      + '<div class="unlock-text"><strong style="color:' + rc + '">Nuclear Readiness: ' + pr.overall + '%</strong> — '
+      + (pr.isReady ? 'All critical thresholds met.' : 'Weakest: ' + (pr.struggles[0] ? pr.struggles[0].label + ' (' + pr.struggles[0].score + '%)' : '') + '. Need 75% per critical category.')
+      + '</div></div>';
+  } else {
+    var dLeft = Math.max(0, daysNeeded - goodDays);
+    unlockHtml = '<div class="unlock-notice">'
+      + '<div class="unlock-ico">🔬</div>'
+      + '<div class="unlock-text"><strong>' + neuroNote + '</strong> Phase ' + (ph + 1) + ' in ' + dLeft + ' more strong day' + (dLeft !== 1 ? 's' : '') + '.</div></div>';
+  }
+  document.getElementById('unlockNotice').innerHTML = unlockHtml;
+
+  // Habit blocks
+  var repCounts = ST.repCounts || {};
+  var todaySkips = ST.skipLog[todayKey()] || [];
+  var html = '';
+  for (var bi3 = 0; bi3 < ALL_HABITS.length; bi3++) {
+    var block = ALL_HABITS[bi3];
+    var blockLocked = block.phase > ph;
+    var isOpen = bi3 === 0 ? ' open' : '';
+    html += '<div class="ac' + (blockLocked ? ' locked' : '') + isOpen + '" id="ab' + bi3 + '">';
+    html += '<div class="ach" onclick="tglBlock(' + bi3 + ',' + blockLocked + ')">';
+    html += '<div class="ac-label" style="color:' + (blockLocked ? 'var(--muted)' : block.color) + '">' + block.label + '</div>';
+    html += '<div class="ac-name">' + block.name + '</div>';
+    if (blockLocked) html += '<span class="ac-badge" style="background:rgba(30,58,95,.4);color:var(--muted)">Phase ' + block.phase + '</span>';
+    html += '<div class="ac-chev">&#9658;</div></div>';
+    html += '<div class="acb">';
+    if (blockLocked) {
+      html += '<div style="padding:14px;text-align:center"><div style="font-size:20px;margin-bottom:7px">🔒</div>'
+        + '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6">Unlocks in Phase ' + block.phase + '</div></div>';
+    } else {
+      for (var hi3 = 0; hi3 < block.items.length; hi3++) {
+        var h = block.items[hi3];
+        var hLocked = h.phase > ph;
+        var isChecked = !hLocked && checks.has(h.id);
+        var isSkipped = todaySkips.indexOf(h.id) !== -1;
+        var reps = repCounts[h.id] || 0;
+        var autoStage = '';
+        var autoColor = 'var(--muted)';
+        if (!hLocked && reps > 0) {
+          if (reps < 7) { autoStage = 'Rep ' + reps + ' — conscious effort'; }
+          else if (reps < 21) { autoStage = 'Rep ' + reps + ' — pathways forming'; autoColor = 'var(--primary)'; }
+          else if (reps < 66) { autoStage = 'Rep ' + reps + ' — automating'; autoColor = 'var(--bright)'; }
+          else { autoStage = 'Rep ' + reps + ' — automatic'; autoColor = 'var(--green)'; }
+        }
+        html += '<div class="hrow' + (hLocked ? ' locked-h' : '') + '">';
+        if (hLocked) {
+          html += '<div class="hck locked-ck"><span style="font-size:10px">🔒</span></div>';
+        } else {
+          html += '<div class="hck' + (isChecked ? ' on' : '') + '" onclick="tglHabit(\'' + h.id + '\')"></div>';
+        }
+        html += '<div class="hinfo">';
+        html += '<div class="hn' + (isChecked ? ' done' : '') + '">' + h.n + '</div>';
+        html += '<div class="hw">' + h.w + '</div>';
+        if (h.cue && !hLocked) {
+          html += '<div style="margin-top:5px;padding:7px 10px;background:rgba(0,212,255,.04);border-left:2px solid rgba(0,212,255,.3);border-radius:0 6px 6px 0;font-family:var(--mono);font-size:10px;color:var(--bright);line-height:1.5">' + h.cue + '</div>';
+        }
+        var adaptNote = getAdaptiveNote(h.id);
+        if (adaptNote && !hLocked) {
+          html += '<div style="margin-top:6px;padding:9px 11px;background:rgba(255,100,50,.04);border:1px solid rgba(255,100,50,.2);border-radius:8px;font-size:11px;color:#ff9060;line-height:1.6">&#9888; ' + adaptNote + '</div>';
+        }
+        if (autoStage) {
+          html += '<div style="font-family:var(--mono);font-size:10px;color:' + autoColor + ';margin-top:3px">' + autoStage + '</div>';
+        }
+        if (hLocked && h.why_locked) {
+          html += '<div class="hunlock">🔒 ' + h.why_locked + '</div>';
+        }
+        html += '</div>';
+        if (!hLocked) {
+          html += '<button class="skip-btn' + (isSkipped ? ' skipped-today' : '') + '" data-hid="' + h.id + '" onclick="handleSkipBtn(this)">' + (isSkipped ? '&#10007; Skipped' : 'Mark skipped') + '</button>';
+        }
+        html += '</div>';
+      }
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('habitBlocks').innerHTML = html;
+}
+
+function tglBlock(i, locked) {
+  if (locked) { toast('Unlocks in Phase ' + ALL_HABITS[i].phase, 'warn'); return; }
+  document.getElementById('ab' + i).classList.toggle('open');
+}
+
+function tglHabit(id) {
+  var checks = getChecks();
+  var wasChecked = checks.has(id);
+  if (wasChecked) { checks.delete(id); } else { checks.add(id); }
+
+  if (!ST.repCounts) ST.repCounts = {};
+  if (!wasChecked) ST.repCounts[id] = (ST.repCounts[id] || 0) + 1;
+
+  var today = todayKey();
+  if (ST.lastDate !== today) {
+    ST.total++;
+    var missedDays = 0;
+    if (ST.lastDate) {
+      var last = new Date(ST.lastDate);
+      var now2 = new Date(today);
+      missedDays = Math.round((now2 - last) / 86400000) - 1;
+    }
+    if (missedDays <= 2) { ST.streak++; } else { ST.streak = 1; ST.consecutiveGoodDays = 0; }
+    ST.lastDate = today;
+  }
+
+  var tot = totalActiveHabits();
+  var done2 = 0;
+  var ks2 = Array.from(checks);
+  for (var i = 0; i < ks2.length; i++) {
+    for (var bi4 = 0; bi4 < ALL_HABITS.length; bi4++) {
+      for (var hi4 = 0; hi4 < ALL_HABITS[bi4].items.length; hi4++) {
+        var it2 = ALL_HABITS[bi4].items[hi4];
+        if (it2.id === ks2[i] && it2.phase <= ST.phase) done2++;
+      }
+    }
+  }
+  var pct2 = tot > 0 ? done2 / tot : 0;
+  var threshold = 0.70;
+  var daysNeeded2 = PHASES[ST.phase - 1].daysNeeded;
+
+  if (pct2 >= threshold) {
+    if (ST.lastGoodDate !== today) {
+      ST.consecutiveGoodDays = (ST.consecutiveGoodDays || 0) + 1;
+      ST.lastGoodDate = today;
+    }
+    if (ST.consecutiveGoodDays >= daysNeeded2 && ST.phase < 4) {
+      ST.phase = Math.min(4, ST.phase + 1);
+      ST.consecutiveGoodDays = 0;
+      ST.lastGoodDate = null;
+      logTodaySkips();
+      calcReadiness();
+      saveState();
+      renderToday();
+      toast('PHASE ' + ST.phase + ' UNLOCKED', 'unlock');
+      return;
+    }
+  } else {
+    ST.consecutiveGoodDays = 0;
+  }
+
+  var reps2 = ST.repCounts[id] || 0;
+  if (!wasChecked) {
+    if (reps2 === 7) toast('7 reps. Neural pathways forming.', 'ok');
+    else if (reps2 === 14) toast('14 reps. Simple habits automating.', 'ok');
+    else if (reps2 === 21) toast('21 days. Basal ganglia taking over.', 'ok');
+    else if (reps2 === 66) toast('66 reps. Fully automatic. (Lally confirmed)', 'ok');
+    else if (done2 === tot) toast('Perfect protocol day.', 'ok');
+    else toast('Logged.', 'ok');
+  }
+
+  logTodaySkips();
+  calcReadiness();
+  saveState();
+  renderToday();
+}
+
+// ── RENDER TRAIN ─────────────────────────────────────────────
+var WEEKS = [
+  {w:'WEEKS 1-2', phase:2, label:'Phase 2 — Build the Engine',
+   note:'Zero cardio base — known starting point, known solution. Walk/jog intervals build the aerobic system without destroying you. Jog pace means you can say 3-4 words without gasping.',
+   days:[
+    {d:'MON',work:'<strong>Run/Walk:</strong> 20 min. 60 sec jog / 90 sec walk. 8 rounds.',note:'Jog pace = talk test. Too fast if you cannot speak.'},
+    {d:'TUE',work:'<strong>Strength:</strong> 3 sets max push-ups (log count). 3 sets 20 curl-ups. 3 sets 30-sec plank.',note:'Log your push-up count. This is your baseline.'},
+    {d:'WED',work:'<strong>Run/Walk:</strong> 22 min. 60 sec jog / 90 sec walk. 9 rounds.',note:''},
+    {d:'THU',work:'<strong>REST. Walk 20 min. Stretch 10 min.</strong>',note:'Recovery is where adaptation happens.'},
+    {d:'FRI',work:'<strong>Run/Walk:</strong> 24 min. 90 sec jog / 90 sec walk.',note:'First small progression.'},
+    {d:'SAT',work:'<strong>Strength circuit:</strong> 4 rounds of (15 push-ups, 20 curl-ups, 40-sec plank, 60-sec rest).',note:''},
+    {d:'SUN',work:'<strong>REST.</strong>',note:''}
+   ]},
+  {w:'WEEKS 3-4', phase:2, label:'Phase 2 continued',
+   note:'Jogging intervals extend. Never skip the walk recoveries — they are part of the training.',
+   days:[
+    {d:'MON',work:'<strong>Run/Walk:</strong> 26 min. 2 min jog / 1 min walk. 8 rounds.',note:'First 2-minute jog intervals. Slow down if needed.'},
+    {d:'TUE',work:'<strong>Strength:</strong> 4 sets max push-ups. 4 sets 20 curl-ups. 4 sets 40-sec plank.',note:''},
+    {d:'WED',work:'<strong>Easy walk 30 min.</strong>',note:''},
+    {d:'THU',work:'<strong>Run/Walk:</strong> 28 min. 2 min jog / 1 min walk. 9 rounds.',note:''},
+    {d:'FRI',work:'<strong>Strength:</strong> 5 rounds of (12 push-ups, 20 curl-ups, 45-sec plank). Then max push-ups in 2 min — log count.',note:'First timed test.'},
+    {d:'SAT',work:'<strong>Long run/walk:</strong> 30 min. Comfortable pace.',note:''},
+    {d:'SUN',work:'<strong>REST. Stretch 10 min.</strong>',note:''}
+   ]},
+  {w:'WEEKS 5-8', phase:2, label:'Phase 2 — First Continuous Running',
+   note:'Continuous running begins. The first 5-minute continuous run will feel hard. That discomfort is your aerobic system adapting.',
+   days:[
+    {d:'MON',work:'<strong>Run:</strong> 5 min jog, 2 min walk, 5 min jog, 2 min walk, 5 min jog.',note:'First continuous 5-minute blocks.'},
+    {d:'TUE',work:'<strong>Strength:</strong> 5 sets max push-ups. 3 sets 30 curl-ups. 4 sets 50-sec plank.',note:''},
+    {d:'WED',work:'<strong>Easy jog/walk 20 min.</strong>',note:'Recovery run.'},
+    {d:'THU',work:'<strong>Run:</strong> 10 min jog, 2 min walk, 10 min jog.',note:'10-minute continuous is a real milestone.'},
+    {d:'FRI',work:'<strong>Strength circuit:</strong> 5 rounds of (15 push-ups, 25 curl-ups, 50-sec plank).',note:''},
+    {d:'SAT',work:'<strong>TIME TRIAL — 1.5 miles. Log time in PRT tab.</strong>',note:'Run and walk as needed. This is your baseline.'},
+    {d:'SUN',work:'<strong>REST.</strong>',note:''}
+   ]},
+  {w:'WEEKS 9-12', phase:3, label:'Phase 3 — Build Speed',
+   note:'Add speed work. 80% of runs should be easy conversational pace. 20% hard intervals.',
+   days:[
+    {d:'MON',work:'<strong>Easy run 25 min.</strong>',note:''},
+    {d:'TUE',work:'<strong>Speed intervals:</strong> 5 min warmup, 8x (400m hard + 2 min walk), 5 min cooldown.',note:'400m = 1 lap. Hard = very heavy breathing.'},
+    {d:'WED',work:'<strong>Strength:</strong> 6 sets max push-ups. 5 sets 30 curl-ups. 5 sets 1-min plank.',note:''},
+    {d:'THU',work:'<strong>Tempo run:</strong> 5 min easy, 15 min hard-but-sustainable, 5 min easy.',note:'Tempo = can say one word but not a sentence.'},
+    {d:'FRI',work:'<strong>REST.</strong>',note:''},
+    {d:'SAT',work:'<strong>1.5-mile TIME TRIAL. Target: under 14 min.</strong>',note:''},
+    {d:'SUN',work:'<strong>REST.</strong>',note:''}
+   ]},
+  {w:'WEEKS 13-16', phase:4, label:'Phase 4 — PRT Simulations',
+   note:'Full PRT simulation on Saturday. You want boot camp to feel easier than training.',
+   days:[
+    {d:'MON',work:'<strong>Easy run 30 min.</strong>',note:''},
+    {d:'TUE',work:'<strong>Hard intervals:</strong> 12x (400m race pace + 90-sec walk).',note:''},
+    {d:'WED',work:'<strong>Full strength:</strong> 3x (2-min max push-ups, 2-min curl-ups, max plank). Log all.',note:''},
+    {d:'THU',work:'<strong>Tempo run 25 min.</strong>',note:''},
+    {d:'FRI',work:'<strong>REST.</strong>',note:''},
+    {d:'SAT',work:'<strong>FULL PRT SIMULATION:</strong> Push-ups 2 min, rest 5 min, curl-ups 2 min, rest 5 min, plank max, rest 5 min, 1.5 mile run. Log everything.',note:''},
+    {d:'SUN',work:'<strong>REST. 16 weeks done.</strong>',note:'You built this from zero.'}
+   ]}
+];
+
+function renderTrain() {
+  var html = '';
+  for (var wi = 0; wi < WEEKS.length; wi++) {
+    var w = WEEKS[wi];
+    var isLocked = w.phase > ST.phase;
+    html += '<div class="wcard' + (isLocked ? ' locked-w' : '') + '" id="wk' + wi + '">';
+    html += '<div class="wch" onclick="tglWeek(' + wi + ',' + isLocked + ')">';
+    html += '<div class="wch-num">' + w.w + '</div>';
+    html += '<div class="wch-lbl">' + w.label + '</div>';
+    if (isLocked) html += '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px 7px;background:rgba(30,58,95,.35);border-radius:3px">Ph.' + w.phase + '</span>';
+    html += '<div class="wch-chev">&#9658;</div></div>';
+    html += '<div class="wcb"><div style="padding:12px 15px 4px"><div class="by" style="margin-bottom:8px">' + w.note + '</div></div>';
+    for (var di = 0; di < w.days.length; di++) {
+      var d = w.days[di];
+      html += '<div class="drow"><div class="dname">' + d.d + '</div><div class="dwork">' + d.work + '</div>';
+      if (d.note) html += '<div class="dnote">&#128161; ' + d.note + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('weekPlan').innerHTML = html;
+}
+
+function tglWeek(i, locked) {
+  if (locked) { toast('Unlocks in Phase ' + WEEKS[i].phase, 'warn'); return; }
+  document.getElementById('wk' + i).classList.toggle('open');
+}
+
+// ── PRT ──────────────────────────────────────────────────────
+var _logType = null;
+var LOG_CFG = {
+  run:{title:'Log 1.5 Mile Run Time', label:'TIME (MM:SS)', ph:'13:45', hint:'Run at full effort. Enter MM:SS format.'},
+  pu:{title:'Log Push-Ups (2 min)', label:'COUNT', ph:'32', hint:'Max push-ups in exactly 2 minutes. Chest to floor.'},
+  cu:{title:'Log Curl-Ups (2 min)', label:'COUNT', ph:'45', hint:'Sit to 90 degrees. Count in 2 full minutes.'},
+  pl:{title:'Log Plank Hold', label:'TIME (MM:SS)', ph:'1:30', hint:'Forearm plank until form breaks. Enter MM:SS.'}
+};
+
+function openLog(type) {
+  _logType = type;
+  var cfg = LOG_CFG[type];
+  document.getElementById('mTitle').textContent = cfg.title;
+  document.getElementById('mLabel').textContent = cfg.label;
+  document.getElementById('mInput').placeholder = cfg.ph;
+  document.getElementById('mHint').textContent = cfg.hint;
+  document.getElementById('mInput').value = '';
+  document.getElementById('modal').classList.add('show');
+  setTimeout(function(){ document.getElementById('mInput').focus(); }, 200);
+}
+
+function closeLog() { document.getElementById('modal').classList.remove('show'); }
+
+function saveLog() {
+  var val = document.getElementById('mInput').value.trim();
+  if (!val) { toast('Enter a value', 'warn'); return; }
+  ST.prt[_logType] = val;
+  var d = new Date();
+  var typeNames = {run:'1.5mi Run', pu:'Push-ups', cu:'Curl-ups', pl:'Plank'};
+  ST.logs.push({date:(d.getMonth()+1)+'/'+d.getDate(), type:typeNames[_logType]||_logType, val:val});
+  saveState();
+  closeLog();
+  updatePRT();
+  toast('Logged — keep training', 'ok');
+}
+
+function updatePRT() {
+  function runPct(t) {
+    if (!t) return 0;
+    var p = t.split(':'); var s = parseInt(p[0])*60+(parseInt(p[1])||0);
+    return Math.max(0, Math.min(100, (13*60+15-s)/(13*60+15-12*60)*100));
+  }
+  function plPct(t) {
+    if (!t) return 0;
+    var p = t.split(':'); var s = parseInt(p[0])*60+(parseInt(p[1])||0);
+    return Math.min(100, (s/180)*100);
+  }
+  var r=ST.prt.run; document.getElementById('pRun').textContent=r||'—'; document.getElementById('bRun').style.width=runPct(r)+'%';
+  var pu=ST.prt.pu; document.getElementById('pPu').textContent=pu||'—'; document.getElementById('bPu').style.width=(pu?Math.min(100,(parseInt(pu)/70)*100):0)+'%';
+  var cu=ST.prt.cu; document.getElementById('pCu').textContent=cu||'—'; document.getElementById('bCu').style.width=(cu?Math.min(100,(parseInt(cu)/80)*100):0)+'%';
+  var pl=ST.prt.pl; document.getElementById('pPl').textContent=pl||'—'; document.getElementById('bPl').style.width=plPct(pl)+'%';
+  var hist=document.getElementById('logHist');
+  if (!ST.logs.length) { hist.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0">No logs yet.</div>'; return; }
+  var last=ST.logs.slice(-10).reverse();
+  var hh='<div style="background:var(--s1);border:1px solid var(--b1);border-radius:10px;overflow:hidden">';
+  for (var i=0;i<last.length;i++) {
+    hh+='<div style="padding:10px 13px;border-bottom:1px solid var(--b2);display:flex;justify-content:space-between;align-items:center">'
+      +'<span style="color:var(--muted);font-size:11px">'+last[i].date+' — '+last[i].type+'</span>'
+      +'<span style="color:var(--bright);font-weight:600;font-family:var(--mono)">'+last[i].val+'</span></div>';
+  }
+  hist.innerHTML=hh+'</div>';
+}
+
+// ── SCIENCE ──────────────────────────────────────────────────
+var SCIENCE = {
+  1:[
+    {ico:'🧠', title:'Why Only 3 Habits to Start',
+     body:'<h3>The Burnout Equation</h3><p>Every habit you add competes for willpower and decision-making bandwidth — both finite. Research on habit formation shows that stacking too many new behaviors simultaneously causes all of them to fail. Not some. All.</p><p>Starting with 3 keystone habits is not the easy version. It IS the protocol. These 3 habits fix the neurochemical and physiological conditions that make every future habit easier to sustain.</p><div class="bg"><strong>Sleep alone improves willpower, physical recovery, BDNF levels, and emotional regulation.</strong> Fix it first and every other habit becomes easier.</div>'},
+    {ico:'😴', title:'Sleep First — Everything Else Depends On It',
+     body:'<h3>What Happens While You Sleep</h3><p>During slow-wave sleep your glymphatic system flushes toxins from your brain. During REM sleep the hippocampus transfers short-term memories to long-term storage. Growth hormone peaks for tissue repair. BDNF restores.</p><div class="br"><strong>Cannabis chronically suppresses REM sleep.</strong> You may fall asleep faster but brain repair and memory consolidation do not happen. Fixing sleep architecture is the single highest-return change in this protocol.</div><h3>REM Rebound</h3><p>When you reduce cannabis use expect vivid dreams and waking at night for 2-4 weeks. This is REM rebound — your brain restoring the architecture that was suppressed. It means recovery is working.</p>'},
+    {ico:'💧', title:'Morning Water and Sunlight — Why These Are First',
+     body:'<h3>Hydration</h3><p>Your brain is 73% water. After 8 hours of sleep you are mildly dehydrated. Even 2% dehydration measurably reduces working memory and processing speed — the exact cognitive domains affected by cannabis use.</p><h3>Morning Sunlight</h3><p>Morning light in the first hour of waking triggers a cortisol pulse that sets your energy and focus rhythms for the entire day. It also anchors your melatonin release timing 14-16 hours later. This single habit improves your sleep tonight.</p><h3>Cold Water</h3><p>Cold exposure raises norepinephrine 300% acutely. Norepinephrine is the focus neurotransmitter most depleted by cannabis use. 30 seconds cold at the end of your shower starts rebuilding it daily.</p>'}
+  ],
+  2:[
+    {ico:'🫁', title:'Why You Gas Out — And Why That Changes Fast',
+     body:'<h3>The Aerobic System Problem</h3><p>With almost no aerobic training your body defaults to anaerobic energy even at low intensities. That is why even a short effort leaves you gasping — you created a lactate debt your body has to clear through heavy breathing. This is physiology, not weakness.</p><div class="bg"><strong>The fix:</strong> Training in the aerobic zone (where you can speak 3-4 words) forces your body to build more mitochondria, capillaries, and higher cardiac stroke volume. Over 6-8 weeks this changes completely.</div><h3>The Talk Test</h3><p>Full sentence = aerobic zone, base-building. One word only = tempo, speed-building. Cannot speak = anaerobic only. 80% of your runs should be at full-sentence pace.</p>'},
+    {ico:'⚡', title:'What Aerobic Adaptation Looks Like Inside Your Body',
+     body:'<h3>What Every Session Triggers</h3><ul><li><strong>Mitochondrial biogenesis</strong> — new mitochondria grow in muscle cells. More efficient fuel combustion.</li><li><strong>Capillary density increases</strong> — more blood vessels, more oxygen per heartbeat.</li><li><strong>Cardiac stroke volume increases</strong> — heart pumps more blood per beat. Resting heart rate drops.</li><li><strong>Lactate threshold rises</strong> — you can run faster before hitting the wall.</li></ul><div class="bb"><strong>The 80/20 rule:</strong> 80% easy runs build the base. 20% hard intervals build the speed. Most beginners do the opposite and plateau or get injured.</div>'},
+    {ico:'🥗', title:'Eating to Build',
+     body:'<h3>You Are an Athlete in Training</h3><p>Building aerobic capacity and muscle simultaneously requires caloric sufficiency. If you undereat while training hard, your body breaks down muscle for energy and adaptation stalls.</p><h3>Protein</h3><p>Target 0.7-1g per pound of bodyweight daily. Spread across meals — muscle protein synthesis peaks when protein is distributed, not consumed all at once.</p><div class="by"><strong>No processed sugar before noon.</strong> High sugar directly suppresses BDNF gene expression at the molecular level. You are building a cognitive engine and a physical engine simultaneously — sugar undermines both.</div>'}
+  ],
+  3:[
+    {ico:'📚', title:'The ASVAB and Nuclear Field',
+     body:'<h3>Two Separate Scores, Two Gates</h3><p>The AFQT (AR+MK+2xVE) determines if the Navy will take you at all — you need 50+. The Nuclear Field composite (AR+MK+EI+GS) must be 252+. AR and MK count toward both simultaneously — highest ROI subjects to study.</p><div class="bb"><strong>NAPT backup:</strong> Score 235-251 on NF composite? Take the Navy Advanced Programs Test. Score 50+ and you still qualify for Nuclear Field.</div><h3>Why Phase 3</h3><p>By Phase 3 you have 6+ weeks of sleep and aerobic base. BDNF is elevated and your sleep is clean. This is the first time studying is actually efficient.</p>'},
+    {ico:'🎯', title:'Why You Study Right After Your Workout',
+     body:'<h3>The BDNF Learning Window</h3><p>Aerobic exercise elevates BDNF for 2-4 hours post-workout. BDNF is the molecule that enables synaptic strengthening — when it is elevated, new information is encoded into long-term memory more efficiently.</p><div class="bg"><strong>The sequence:</strong> Train → BDNF peaks → Study 45 min → Sleep → Memory consolidates permanently. Every step feeds the next.</div><h3>Spaced Repetition</h3><p>The evening review session is the mechanism that moves knowledge from short-term to long-term. Reviewing material 6-8 hours after first learning doubles long-term retention.</p>'},
+    {ico:'⚓', title:'Navy Knowledge — Why Memorize Before Boot Camp',
+     body:'<h3>What You WILL Be Asked On Day 1</h3><p>Recruits are expected to know the Sailor&#39;s Creed, all 11 General Orders verbatim, Navy rank structure, phonetic alphabet, and basic seamanship vocabulary. RDCs test this constantly, randomly, and without warning.</p><div class="bg"><strong>Recruits who arrive knowing this spend their cognitive bandwidth adapting to the environment.</strong> Recruits who do not spend it catching up — while being punished for not knowing.</div><h3>General Orders</h3><p>Must be recited by number, out of sequence, on demand. The only way to own them is daily repetition over weeks. Cramming does not produce automatic recall. 60 days of saying them aloud does.</p><h3>Why Phase 3</h3><p>Phase 3 starts at day 43. You need this material locked in well before shipping to boot camp. Phase 3 gives the time to automate it properly.</p>'}
+  ],
+  4:[
+    {ico:'🚀', title:'You Are No Longer Recovering — You Are Optimizing',
+     body:'<h3>What Phase 4 Means Neurologically</h3><p>By Phase 4 you have 85+ days of consistent aerobic exercise, consistent sleep, consistent nutrition, and consistent study. The neurological changes at this point are not subtle.</p><div class="bg"><strong>12 weeks of combined aerobic and resistance exercise substantially improved cognitive function and BDNF levels</strong> in multiple human RCTs. You have passed this threshold.</div><h3>The Final Variable</h3><p>Phase 4 introduces no-weed-before-bed. By this point you have built enough positive neurochemical momentum that this is a choice, not cold-turkey shock. You already know what good sleep feels like.</p>'},
+    {ico:'⚛️', title:'Nuclear Field — What You Are Walking Into',
+     body:'<h3>Power School</h3><p>Nuclear Field training is among the most rigorous technical pipelines in any branch. Power School covers nuclear physics, thermodynamics, reactor plant theory, chemistry, and radiological controls at a college physics level — in 24 weeks. Prototype is 6 months of hands-on reactor operation.</p><div class="bg"><strong>The BDNF-driven learning you built in Phase 3</strong> — study after exercise, spaced repetition, 8-9 hours of sleep — is the exact same learning protocol that top performers use to survive Power School. You are not just preparing for the ASVAB. You are building the learning infrastructure for the career.</div><h3>Bonus Context</h3><p>Nuclear Field currently offers up to $75,000 enlistment bonus with an additional $10,000 for submarine volunteers. The physical and cognitive work in this protocol unlocks that path.</p>'}
+  ]
+};
+
+function renderSci() {
+  var ph = ST.phase;
+  var articles = SCIENCE[ph] || SCIENCE[1];
+  var phNames = ['','Foundation','Body','Brain + ASVAB + Navy','Full Protocol'];
+  var phEmojis2 = ['','🌱','⚡','🧠','🚀'];
+  var html = '<div style="margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(77,184,255,.03));border:1px solid var(--ice);border-radius:10px;display:flex;align-items:center;gap:10px;">'
+    + '<div style="font-size:18px">' + phEmojis2[ph] + '</div>'
+    + '<div><div style="font-family:var(--mono);font-size:9px;color:var(--bright);letter-spacing:2px;margin-bottom:2px">PHASE ' + ph + ' SCIENCE</div>'
+    + '<div style="font-size:13px;font-weight:700;color:#fff">' + phNames[ph] + '</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Updates as you advance through phases</div></div></div>';
+  for (var i = 0; i < articles.length; i++) {
+    var s = articles[i];
+    html += '<div class="scard" id="sc' + i + '"><div class="shd" onclick="tglSci(' + i + ')">'
+      + '<div class="sico">' + s.ico + '</div><div class="stit">' + s.title + '</div>'
+      + '<div class="schev">&#9658;</div></div>'
+      + '<div class="sbody">' + s.body + '</div></div>';
+  }
+  if (ph < 4) {
+    var nextTopics = {2:'Aerobic adaptation, nutrition science, push-up mechanics',3:'ASVAB strategy, BDNF learning windows, Navy Knowledge prep',4:'Nuclear Field pipeline, optimization science'};
+    html += '<div style="margin-top:8px;padding:13px 15px;background:rgba(13,30,58,.6);border:1px dashed var(--ice);border-radius:12px;text-align:center;">'
+      + '<div style="font-size:20px;margin-bottom:6px">🔒</div>'
+      + '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:1.5px;margin-bottom:4px">PHASE ' + (ph+1) + ' SCIENCE LOCKED</div>'
+      + '<div style="font-size:12px;color:var(--muted)">' + (nextTopics[ph+1]||'') + '</div></div>';
+  }
+  document.getElementById('sciList').innerHTML = html;
+}
+
+function tglSci(i) { document.getElementById('sc' + i).classList.toggle('open'); }
+
+// ── READINESS ────────────────────────────────────────────────
+function renderReady() {
+  logTodaySkips();
+  calcReadiness();
+  var pr = getProgramReadiness();
+  var struggles = getStruggles();
+  var rd = recDay();
+  var readyColor = pr.isReady ? 'var(--green)' : pr.overall >= 75 ? 'var(--primary)' : pr.overall >= 50 ? 'var(--orange)' : 'var(--red)';
+  var html = '';
+
+  html += '<div style="background:linear-gradient(135deg,var(--mid),var(--shelf));border:1px solid ' + readyColor + ';border-radius:14px;padding:18px;margin-bottom:14px;">';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:' + readyColor + ';letter-spacing:2px;margin-bottom:8px">NUCLEAR FIELD READINESS</div>';
+  html += '<div style="font-family:var(--mono);font-size:52px;font-weight:600;color:' + readyColor + ';line-height:1;margin-bottom:6px">' + pr.overall + '%</div>';
+  html += '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Day ' + rd + '. ' + (pr.isReady ? 'All critical thresholds met.' : 'Need 75% per critical category.') + '</div>';
+  html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden"><div style="height:100%;width:' + pr.overall + '%;background:' + readyColor + ';border-radius:2px"></div></div>';
+  html += '</div>';
+
+  html += '<div style="background:var(--s1);border:1px solid var(--ice);border-radius:13px;padding:14px;margin-bottom:14px;">';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:12px">REQUIREMENTS</div>';
+  var reqs = [
+    {label:'Sleep 70%+ consistent',cat:'sleep',needed:70},
+    {label:'Training 70%+ consistent',cat:'training',needed:70},
+    {label:'ASVAB study 70%+ consistent',cat:'asvab',needed:70},
+    {label:'Navy Knowledge 70%+ consistent',cat:'navyknow',needed:70},
+    {label:'84+ days in program',cat:null,custom:true,met:ST.total>=84},
+    {label:'Phase 4 active',cat:null,custom:true,met:ST.phase>=4}
+  ];
+  for (var ri3 = 0; ri3 < reqs.length; ri3++) {
+    var req = reqs[ri3];
+    var rawScore = req.cat ? ST.readiness[req.cat] : 0;
+    var score2 = (rawScore === null || rawScore === undefined) ? 0 : rawScore;
+    var hasData = rawScore !== null && rawScore !== undefined;
+    var met = req.custom ? req.met : (hasData && score2 >= req.needed);
+    var reqColor = met ? 'var(--green)' : !hasData ? 'var(--muted)' : score2 > 40 ? 'var(--orange)' : 'var(--red)';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--ice)">';
+    html += '<div style="font-size:14px">' + (met ? '✅' : '⬜') + '</div>';
+    html += '<div style="flex:1;font-size:12px;color:var(--text)">' + req.label + '</div>';
+    if (!req.custom) html += '<div style="font-family:var(--mono);font-size:12px;color:' + reqColor + '">' + (hasData ? score2 + '%' : '—') + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px">CATEGORY BREAKDOWN</div>';
+  var fixActions = {
+    sleep:'Set a hard alarm for bedtime tonight. Phone in another room.',
+    morning:'Water bottle by bed. Shoes by door. Cold last.',
+    training:'10 minutes of walking counts. Start there.',
+    fuel:'Prep one protein source tonight for tomorrow morning.',
+    asvab:'Open NucPrep immediately after your workout. Do not sit down first.',
+    navyknow:'Pick one General Order and say it 10 times out loud right now.',
+    cognitive:'Put your phone charger in a different room. Physical barrier.',
+    evening:'Set a 3-hour-before-bed alarm as your decision point.'
+  };
+  for (var si2 = 0; si2 < struggles.length; si2++) {
+    var s2 = struggles[si2];
+    var meta2 = CAT_META[s2.cat] || {};
+    var sColor = s2.score >= 75 ? 'var(--green)' : s2.score >= 50 ? 'var(--primary)' : s2.score >= 30 ? 'var(--orange)' : 'var(--red)';
+    var skipCt = ST.catStruggle[s2.cat] || 0;
+    html += '<div style="background:var(--s1);border:1px solid var(--ice);border-radius:11px;padding:13px;margin-bottom:8px;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">' + (meta2.label||s2.cat) + '</div>';
+    html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted)">ASVAB Impact: <span style="color:' + (meta2.critical ? 'var(--red)' : 'var(--muted)') + '">' + (meta2.critical ? 'CRITICAL' : 'MODERATE') + '</span></div></div>';
+    html += '<div style="font-family:var(--mono);font-size:22px;font-weight:600;color:' + sColor + '">' + s2.score + '%</div></div>';
+    html += '<div style="height:3px;background:var(--ice);border-radius:2px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:' + s2.score + '%;background:' + sColor + ';border-radius:2px"></div></div>';
+
+    // Top skip reason
+    var catHabitsForReason = [];
+    for (var hid3 in HABIT_CAT) { if (HABIT_CAT[hid3] === s2.cat) catHabitsForReason.push(hid3); }
+    var allCatReasons = {};
+    for (var hIdx2 = 0; hIdx2 < catHabitsForReason.length; hIdx2++) {
+      var hReasons2 = ST.skipReasons[catHabitsForReason[hIdx2]] || [];
+      for (var rIdx2 = 0; rIdx2 < hReasons2.length; rIdx2++) {
+        var rl3 = hReasons2[rIdx2].reason;
+        allCatReasons[rl3] = (allCatReasons[rl3] || 0) + 1;
+      }
+    }
+    var topReason2 = null; var topCount2 = 0;
+    for (var rl4 in allCatReasons) { if (allCatReasons[rl4] > topCount2) { topCount2 = allCatReasons[rl4]; topReason2 = rl4; } }
+    if (skipCt > 0) {
+      html += '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + skipCt + ' skip' + (skipCt!==1?'s':'') + ' logged';
+      if (topReason2) html += ' — top reason: <span style="color:var(--red)">' + topReason2 + '</span>';
+      html += '</div>';
+    }
+    if (s2.score < 60 && fixActions[s2.cat]) {
+      html += '<div style="margin-top:8px;padding:8px 10px;background:rgba(0,212,255,.04);border-left:2px solid rgba(0,212,255,.25);border-radius:0 6px 6px 0;font-size:12px;color:var(--text)"><strong style="color:var(--bright)">Fix:</strong> ' + fixActions[s2.cat] + '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-top:4px;">';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin-bottom:8px">PROGRAM COMPLETION GATE</div>';
+  html += '<div style="font-size:13px;color:var(--muted);line-height:1.7">This app does not mark you complete based on days elapsed. <strong style="color:var(--text)">It marks you ready when your data shows you are ready</strong> — 84+ days in, Phase 4 active, all four critical categories at 75%+ over the last 14 days.</div>';
+  html += '</div>';
+
+  // ── DATA & BACKUP ──
+  var backupNote = ST.lastBackup
+    ? 'Last backup: ' + new Date(ST.lastBackup).toLocaleDateString()
+    : 'No backup yet — export one to keep your progress safe.';
+  html += '<div style="background:var(--mid);border:1px solid var(--ice);border-radius:12px;padding:14px;margin-top:14px;">';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin-bottom:8px">DATA &amp; BACKUP</div>';
+  html += '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px">Your progress is saved on this device only. Export a backup file to move it to a new phone or restore it if this browser&#39;s data is ever cleared.</div>';
+  html += '<button class="prtbtn" style="margin-top:0" onclick="exportData()">Export backup</button>';
+  html += '<button class="prtbtn" onclick="triggerImport()">Restore from backup</button>';
+  html += '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;text-align:center">' + backupNote + '</div>';
+  html += '</div>';
+
+  document.getElementById('readyContent').innerHTML = html;
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+function goTab(t) {
+  var tabEls = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabEls.length; i++) tabEls[i].classList.remove('on');
+  var screens = ['today','train','prt','sci','ready'];
+  for (var i = 0; i < screens.length; i++) {
+    var el = document.getElementById(screens[i] + 'Screen');
+    if (el) el.classList.remove('active');
+  }
+  var scr = document.getElementById(t + 'Screen');
+  if (scr) scr.classList.add('active');
+  for (var i = 0; i < tabEls.length; i++) {
+    if (tabEls[i].getAttribute('onclick') === "goTab('" + t + "')") tabEls[i].classList.add('on');
+  }
+  if (t === 'today') renderToday();
+  if (t === 'train') renderTrain();
+  if (t === 'prt') updatePRT();
+  if (t === 'sci') renderSci();
+  if (t === 'ready') renderReady();
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+var _toastTimer = null;
+function toast(msg, cls) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (cls || 'ok');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function init() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+  loadState();
+  logTodaySkips();
+  calcReadiness();
+  initOnboard();
+  if (ST.onboardDone) {
+    document.getElementById('onboardScreen').classList.remove('active');
+    document.getElementById('mainApp').classList.add('active');
+    renderToday();
+  }
+}
+
+init();
+
+</script>
+</body>
+</html>
