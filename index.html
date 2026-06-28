@@ -1176,6 +1176,7 @@ function getStruggles() {
 
 function logTodaySkips() {
   var yk = shiftKey(todayKey(), -1);
+  if (yk < ST.startDate) return;   // never log skips for days before the program began (e.g. Day 1)
   if (ST.skipLog[yk]) return;
   var dayChecks = ST.checks[yk] ? Array.from(ST.checks[yk]) : [];
   var skips = [];
@@ -1385,11 +1386,22 @@ function pairKey(f, t) { return f < t ? f + '_' + t : t + '_' + f; }
 function computeInsights() {
   var out = []; var usedPairs = {};
 
+  // A struggle inferred from low completion needs a few logged days to be real,
+  // otherwise a brand-new Day 1 (everything at 0%) would look like failure.
+  var dataKeys = dateKeysRange(60);
+  var daysWithData = 0;
+  for (var di = 0; di < dataKeys.length; di++) {
+    var c = ST.checks[dataKeys[di]];
+    if ((c && c.size > 0) || ST.skipLog[dataKeys[di]]) daysWithData++;
+  }
+  var enough = daysWithData >= 3;
+
   var chainScored = [];
   for (var i = 0; i < INSIGHT_CHAINS.length; i++) {
     var ch = INSIGHT_CHAINS[i];
     var rm = reasonMatchCount(ch.from, ch.reasons);
     var fromLow = catLow(ch.from), toLow = catLow(ch.to);
+    if (rm === 0 && !enough) continue;   // no explicit reason and not enough history yet
     if (!((rm > 0 || fromLow) && toLow)) continue;
     chainScored.push({
       kind:'chain', strength: rm * 3 + (fromLow ? 1 : 0) + (toLow ? 1 : 0),
@@ -1986,6 +1998,30 @@ function saveCatchup() {
   set.forEach(function(id){ if (!prev.has(id)) ST.repCounts[id] = (ST.repCounts[id] || 0) + 1; });
   prev.forEach(function(id){ if (!set.has(id)) ST.repCounts[id] = Math.max(0, (ST.repCounts[id] || 0) - 1); });
   ST.checks[_catchupKey] = set;
+
+  // Reconcile that day's skip log + struggle counts so adaptive notes stay accurate.
+  if (_catchupKey >= ST.startDate) {
+    var activeIds = [];
+    for (var bi = 0; bi < ALL_HABITS.length; bi++) {
+      for (var hi = 0; hi < ALL_HABITS[bi].items.length; hi++) {
+        if (ALL_HABITS[bi].items[hi].phase <= ST.phase) activeIds.push(ALL_HABITS[bi].items[hi].id);
+      }
+    }
+    var oldSkips = ST.skipLog[_catchupKey] || [];
+    var newSkips = [];
+    for (var a = 0; a < activeIds.length; a++) {
+      var id2 = activeIds[a];
+      var wasSkip = oldSkips.indexOf(id2) !== -1;
+      var nowSkip = !set.has(id2);
+      if (nowSkip) newSkips.push(id2);
+      var cat = HABIT_CAT[id2];
+      if (!cat) continue;
+      if (!wasSkip && nowSkip) ST.catStruggle[cat] = (ST.catStruggle[cat] || 0) + 1;
+      else if (wasSkip && !nowSkip) ST.catStruggle[cat] = Math.max(0, (ST.catStruggle[cat] || 0) - 1);
+    }
+    ST.skipLog[_catchupKey] = newSkips;
+  }
+
   calcReadiness();
   saveState();
   closeCatchup();
