@@ -692,6 +692,7 @@ body{color:var(--text);font-family:var(--sans);}
 <div id="toast"></div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
 <script src="curriculum.js"></script>
+<script src="qbank.js"></script>
 </div>
 
 <script>
@@ -3262,6 +3263,7 @@ function nextQuiz() {
 // ── RENDER STUDY ─────────────────────────────────────────────
 function renderStudy() {
   var el = document.getElementById('studyContent'); if (!el) return;
+  if (EXAM) { el.innerHTML = renderExam(); if (EXAM && !EXAM.done) examTick(); return; }
   if (STUDY_VIEW) { el.innerHTML = renderTopicView(); return; }
 
   var html = '';
@@ -3344,7 +3346,39 @@ function renderStudy() {
        + '<button class="sbtn" onclick="saveSession()">Save to plan</button></div>';
   html += '</div>';
 
-  // 5) Curriculum browser
+  // 5) Practice tests — timed drills + full NF mock exam
+  html += '<div class="sl" style="margin-top:18px">PRACTICE TESTS</div>';
+  html += '<div class="box by" style="margin-top:0">Timed, no feedback until you finish — the way the real test feels. Full mock runs all 7 NF sections back-to-back and scores both composites. This is where confidence (and your real score) is built.';
+  // last mock summary
+  var exams = (ST.study.exams || []);
+  var lastMock = null;
+  for (var i = exams.length - 1; i >= 0; i--) { if (exams[i].mode === 'mock') { lastMock = exams[i]; break; } }
+  if (lastMock) {
+    var lc = examComposites(lastMock.perSub);
+    html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last full mock (' + lastMock.date + '): Comp1 <strong style="color:' + gateCol(lc.c1) + '">' + (lc.c1 || '—') + '</strong> · Comp2 <strong style="color:' + gateCol(lc.c2) + '">' + (lc.c2 || '—') + '</strong> · ' + lc.status.label + '</div>';
+  }
+  html += '<div style="margin-top:10px"><button class="sbtn pri" style="width:100%;padding:12px" onclick="startMock()">▶ Full NF Mock Exam — all 7 sections</button></div>';
+  html += '<div style="margin-top:10px;font-size:11px;color:var(--muted);margin-bottom:6px">Or drill one subtest (timed):</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  var drillSubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  for (var i = 0; i < drillSubs.length; i++) {
+    var bn = qbank(drillSubs[i]).length;
+    html += '<button class="sbtn" onclick="startDrill(\'' + drillSubs[i] + '\')"' + (bn ? '' : ' disabled') + '>' + drillSubs[i] + ' (' + Math.min(QB_SECTIONS[drillSubs[i]].n, bn) + ')</button>';
+  }
+  html += '</div></div>';
+
+  // 6) Official / free resources — APEX is the engine, these add question volume
+  html += '<div class="sl" style="margin-top:18px">OFFICIAL &amp; FREE RESOURCES</div>';
+  html += '<div class="box bb" style="margin-top:0;line-height:1.7">Use these alongside APEX for extra question volume and an official diagnostic. APEX tracks and teaches; these add reps.'
+    + '<ul style="margin:8px 0 0;padding-left:18px">'
+    + '<li><strong>Your Navy recruiter</strong> — ask for an official ASVAB diagnostic and confirm the current NUC (NFa/NFb) score requirements. The 252/235 thresholds are recruiter-verified.</li>'
+    + '<li><strong>March2Success</strong> (march2success.com) — free DoD-sponsored ASVAB &amp; academic practice.</li>'
+    + '<li><strong>Official ASVAB</strong> (officialasvab.com) — the test-maker\'s own practice test.</li>'
+    + '<li><strong>ASVAB practice books</strong> — Kaplan, Mometrix, or Trivium for hundreds more questions and full-length tests.</li>'
+    + '<li>Take at least <strong>one full-length timed practice test</strong> before test day — speed and stamina matter as much as knowledge.</li>'
+    + '</ul></div>';
+
+  // 7) Curriculum browser
   html += '<div class="sl" style="margin-top:18px">CURRICULUM</div>';
   html += '<div class="box br" style="margin-top:0">Study aid only — not an official Navy source. Always confirm scores/requirements with a recruiter.</div>';
   for (var s = 0; s < STUDY_ORDER.length; s++) {
@@ -3427,6 +3461,159 @@ function renderTopicView() {
 }
 
 function setStudyHours(h) { ST.studyHours = h; saveState(); renderStudy(); }
+
+// ── PRACTICE TEST / EXAM ENGINE ──────────────────────────────
+// Section specs mirror the ASVAB's feel: question count + a time box per
+// subtest. Counts cap at the available bank size.
+var QB_SECTIONS = {
+  GS:{ n:16, min:11, name:'General Science' },
+  AR:{ n:16, min:30, name:'Arithmetic Reasoning' },
+  WK:{ n:16, min:9,  name:'Word Knowledge' },
+  PC:{ n:11, min:20, name:'Paragraph Comprehension' },
+  MK:{ n:16, min:20, name:'Mathematics Knowledge' },
+  EI:{ n:16, min:9,  name:'Electronics Information' },
+  MC:{ n:16, min:20, name:'Mechanical Comprehension' }
+};
+// Full NF mock order (covers both composites; VE = WK + PC).
+var MOCK_ORDER = ['GS','AR','WK','PC','MK','EI','MC'];
+var EXAM = null;
+
+function qbank(sub) { return (typeof QBANK !== 'undefined' && QBANK[sub]) ? QBANK[sub] : []; }
+function shuffleArr(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pickQs(sub, n) { var b = qbank(sub); return shuffleArr(b).slice(0, Math.min(n, b.length)); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtClock(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); }
+
+function startDrill(sub) {
+  if (!qbank(sub).length) { toast('No questions for ' + sub + ' yet', 'warn'); return; }
+  var spec = QB_SECTIONS[sub];
+  EXAM = { mode:'drill', sections:[{ sub:sub, qs:pickQs(sub, spec.n), answers:[] }], secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
+  startExamTimer(); STUDY_VIEW = null; goTab('study');
+}
+function startMock() {
+  var sections = MOCK_ORDER.filter(function(s){ return qbank(s).length; }).map(function(s){ return { sub:s, qs:pickQs(s, QB_SECTIONS[s].n), answers:[] }; });
+  if (!sections.length) { toast('Question bank not loaded', 'warn'); return; }
+  EXAM = { mode:'mock', sections:sections, secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
+  startExamTimer(); STUDY_VIEW = null; goTab('study');
+}
+function startExamTimer() { if (EXAM.timer) clearInterval(EXAM.timer); EXAM.secStartMs = Date.now(); EXAM.timer = setInterval(examTick, 1000); }
+function curSection() { return EXAM.sections[EXAM.secIdx]; }
+function secLimitMs() { return QB_SECTIONS[curSection().sub].min * 60000; }
+function secRemainMs() { return secLimitMs() - (Date.now() - EXAM.secStartMs); }
+function examTick() {
+  if (!EXAM || EXAM.done) return;
+  var el = document.getElementById('examTimer');
+  var r = secRemainMs();
+  if (r <= 0) { advanceSection(); renderStudy(); return; }
+  if (el) { el.textContent = fmtClock(r); if (r < 60000) el.style.color = 'var(--red)'; }
+}
+function examSelect(i) { curSection().answers[EXAM.qIdx] = i; renderStudy(); }
+function examNext() { var sec = curSection(); if (EXAM.qIdx < sec.qs.length - 1) EXAM.qIdx++; else advanceSection(); renderStudy(); }
+function examPrev() { if (EXAM.qIdx > 0) { EXAM.qIdx--; renderStudy(); } }
+function advanceSection() { if (EXAM.secIdx < EXAM.sections.length - 1) { EXAM.secIdx++; EXAM.qIdx = 0; EXAM.secStartMs = Date.now(); } else { finishExam(); } }
+function recordExamIntoSubs(sub, correct, total) { var s = studySubState(sub); s.seen += total; s.correct += correct; }
+function finishExam() {
+  if (EXAM.timer) { clearInterval(EXAM.timer); EXAM.timer = null; }
+  EXAM.done = true;
+  var perSub = {};
+  for (var k = 0; k < EXAM.sections.length; k++) {
+    var sec = EXAM.sections[k], correct = 0;
+    for (var i = 0; i < sec.qs.length; i++) { if (sec.answers[i] === sec.qs[i].a) correct++; }
+    perSub[sec.sub] = { correct:correct, total:sec.qs.length, score:accToStd(correct / sec.qs.length) };
+    recordExamIntoSubs(sec.sub, correct, sec.qs.length);
+  }
+  EXAM.results = perSub;
+  if (!ST.study.exams) ST.study.exams = [];
+  ST.study.exams.push({ date:todayKey(), mode:EXAM.mode, perSub:perSub });
+  deriveAll();
+}
+function exitExam() { if (EXAM && EXAM.timer) clearInterval(EXAM.timer); EXAM = null; STUDY_VIEW = null; renderStudy(); }
+function examToggleReview() { EXAM.review = !EXAM.review; renderStudy(); }
+
+function examSubScore(perSub, sub) {
+  if (sub === 'VE') { var wk = perSub.WK, pc = perSub.PC; if (!wk || !pc) return null; return accToStd((wk.correct + pc.correct) / (wk.total + pc.total)); }
+  return perSub[sub] ? perSub[sub].score : null;
+}
+function examComposites(perSub) {
+  function sum(list) { var s = 0; for (var i = 0; i < list.length; i++) { var v = examSubScore(perSub, list[i]); if (v == null) return null; s += v; } return s; }
+  var c1 = sum(['AR','MK','EI','GS']), c2 = sum(['VE','AR','MK','MC']);
+  var afqt = null;
+  if (perSub.AR && perSub.MK && perSub.WK && perSub.PC) {
+    var num = perSub.AR.correct + perSub.MK.correct + 2 * (perSub.WK.correct + perSub.PC.correct);
+    var den = perSub.AR.total + perSub.MK.total + 2 * (perSub.WK.total + perSub.PC.total);
+    if (den) afqt = Math.max(1, Math.min(99, Math.round((num / den) * 105 - 10)));
+  }
+  return { c1:c1, c2:c2, afqt:afqt, status:nfStatus(c1, c2) };
+}
+function gateCol(v) { if (v == null) return 'var(--muted)'; return v >= NF_GATES.pass ? 'var(--green)' : (v >= NF_GATES.floor235 ? '#ffc83c' : 'var(--red)'); }
+
+function renderExam() {
+  if (EXAM.done) return renderExamResults();
+  var sec = curSection(), q = sec.qs[EXAM.qIdx];
+  var picked = sec.answers[EXAM.qIdx];
+  var spec = QB_SECTIONS[sec.sub];
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    + '<button class="sbtn" onclick="exitExam()">✕ Exit</button>'
+    + '<div style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + (EXAM.mode === 'mock' ? 'NF MOCK · section ' + (EXAM.secIdx + 1) + '/' + EXAM.sections.length : 'TIMED DRILL') + '</div>'
+    + '<div id="examTimer" style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--bright)">' + fmtClock(secRemainMs()) + '</div></div>';
+  html += '<div class="sl" style="margin:0 0 6px">' + sec.sub + ' · ' + spec.name + '</div>';
+  // progress
+  var pct = Math.round((EXAM.qIdx) / sec.qs.length * 100);
+  html += '<div class="subbar-t" style="margin-bottom:12px"><div class="subbar-f" style="width:' + pct + '%"></div></div>';
+  html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (EXAM.qIdx + 1) + ' / ' + sec.qs.length + '</div>';
+  html += '<div style="font-size:14px;line-height:1.6;color:#fff;font-weight:600;margin-bottom:14px;white-space:pre-line">' + esc(q.q) + '</div>';
+  for (var i = 0; i < q.c.length; i++) {
+    var cls = 'qopt' + (picked === i ? ' on' : '');
+    html += '<button class="' + cls + '" onclick="examSelect(' + i + ')" style="' + (picked === i ? 'border-color:var(--bright);background:rgba(0,212,255,.12)' : '') + '">' + String.fromCharCode(65 + i) + '. ' + esc(q.c[i]) + '</button>';
+  }
+  var lastOverall = (EXAM.secIdx === EXAM.sections.length - 1) && (EXAM.qIdx === sec.qs.length - 1);
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">'
+    + '<button class="sbtn" onclick="examPrev()"' + (EXAM.qIdx === 0 ? ' disabled' : '') + '>← Prev</button>'
+    + '<span style="font-size:10px;color:var(--muted)">' + (picked === undefined ? 'tap an answer' : 'answer saved') + '</span>'
+    + '<button class="sbtn pri" onclick="examNext()">' + (lastOverall ? 'Finish & score' : (EXAM.qIdx === sec.qs.length - 1 ? 'Next section →' : 'Next →')) + '</button></div>';
+  return html;
+}
+function renderExamResults() {
+  var perSub = EXAM.results;
+  var comp = examComposites(perSub);
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button class="sbtn" onclick="exitExam()">← Done</button>'
+    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">' + (EXAM.mode === 'mock' ? 'FULL NF MOCK RESULTS' : 'DRILL RESULTS') + '</div></div>';
+  html += '<div class="hero" style="margin-bottom:14px;padding:16px;text-align:center"><div class="hero-ey">RESULT</div>'
+    + '<div class="hero-t" style="font-size:20px"><span class="chip ' + comp.status.cls + '" style="font-size:13px;padding:4px 10px">' + comp.status.label + '</span></div></div>';
+  // per-subtest
+  html += '<div class="sl">BY SUBTEST</div><div class="box bb" style="margin-top:0">';
+  for (var k = 0; k < EXAM.sections.length; k++) {
+    var sub = EXAM.sections[k].sub, r = perSub[sub];
+    html += '<div class="comp-row"><div class="comp-l">' + (ASVAB_SUBS[sub] ? ASVAB_SUBS[sub].name : sub) + '<small>' + r.correct + '/' + r.total + ' correct · est. standard score</small></div><div class="comp-v" style="color:' + gateCol(r.score) + '">' + r.score + '</div></div>';
+  }
+  html += '</div>';
+  // composites (mock only meaningful when all parts present)
+  html += '<div class="sl" style="margin-top:16px">NF COMPOSITES (estimated)</div><div class="box bb" style="margin-top:0">';
+  html += '<div class="comp-row"><div class="comp-l">NF Composite 1<small>AR+MK+EI+GS · target 252 / min 235</small></div><div class="comp-v" style="color:' + gateCol(comp.c1) + '">' + (comp.c1 || '—') + '</div></div>';
+  html += '<div class="comp-row"><div class="comp-l">NF Composite 2<small>VE+AR+MK+MC · min 235</small></div><div class="comp-v" style="color:' + gateCol(comp.c2) + '">' + (comp.c2 || '—') + '</div></div>';
+  html += '<div class="comp-row"><div class="comp-l">AFQT (percentile)<small>min 50 to enlist</small></div><div class="comp-v" style="color:' + (comp.afqt == null ? 'var(--muted)' : (comp.afqt >= 50 ? 'var(--green)' : 'var(--red)')) + '">' + (comp.afqt == null ? '—' : comp.afqt) + '</div></div>';
+  html += '</div>';
+  html += '<div class="box br" style="margin-top:10px">Estimated from this practice test — a study gauge, not an official score. The real NUC thresholds are recruiter-verified. Keep taking full mocks to track the trend.</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:14px"><button class="sbtn" onclick="examToggleReview()">' + (EXAM.review ? 'Hide review' : 'Review answers') + '</button>'
+    + '<button class="sbtn pri" onclick="' + (EXAM.mode === 'mock' ? 'startMock()' : 'startDrill(\'' + EXAM.sections[0].sub + '\')') + '">Retake</button></div>';
+  if (EXAM.review) {
+    html += '<div style="margin-top:14px">';
+    for (var k = 0; k < EXAM.sections.length; k++) {
+      var sec = EXAM.sections[k];
+      html += '<div class="sl" style="margin-top:12px">' + sec.sub + '</div>';
+      for (var i = 0; i < sec.qs.length; i++) {
+        var qq = sec.qs[i], your = sec.answers[i], ok = your === qq.a;
+        html += '<div class="box ' + (ok ? 'bg' : 'br') + '"><div style="font-weight:600;color:#fff;margin-bottom:6px;white-space:pre-line">' + (i + 1) + '. ' + esc(qq.q) + '</div>';
+        html += '<div style="font-size:12px;color:var(--green)">✓ ' + esc(qq.c[qq.a]) + '</div>';
+        if (!ok) html += '<div style="font-size:12px;color:var(--red)">✗ your answer: ' + (your === undefined || your === -1 ? '(blank)' : esc(qq.c[your])) + '</div>';
+        if (qq.e) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">' + esc(qq.e) + '</div>';
+        html += '</div>';
+      }
+    }
+    html += '</div>';
+  }
+  return html;
+}
 
 // ── NAV ──────────────────────────────────────────────────────
 function goTab(t) {
