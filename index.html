@@ -72,8 +72,8 @@ body{color:var(--text);font-family:var(--sans);}
 .tabs{display:flex;flex:1;height:100%;}
 .tab{
   flex:1;background:none;border:none;border-bottom:2px solid transparent;
-  color:var(--muted);font-family:var(--sans);font-size:10px;font-weight:700;
-  cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--muted);font-family:var(--sans);font-size:9px;font-weight:700;
+  cursor:pointer;text-transform:uppercase;letter-spacing:0.2px;padding:0 2px;
   transition:color .2s, border-color .2s;
 }
 .tab.on{color:var(--bright);border-bottom-color:var(--bright);}
@@ -500,7 +500,8 @@ body{color:var(--text);font-family:var(--sans);}
       <button class="tab" onclick="goTab('train')">Train</button>
       <button class="tab" onclick="goTab('prt')">PRT</button>
       <button class="tab" onclick="goTab('sci')">Science</button>
-      <button class="tab" onclick="goTab('ready')">Readiness</button>
+      <button class="tab" onclick="goTab('ready')">Ready</button>
+      <button class="tab" onclick="goTab('enlist')">Enlist</button>
     </div>
   </div>
 
@@ -588,6 +589,11 @@ body{color:var(--text);font-family:var(--sans);}
   <!-- READINESS -->
   <div class="screen scr" id="readyScreen"><div class="pad">
     <div id="readyContent"></div>
+  </div></div>
+
+  <!-- ENLIST -->
+  <div class="screen scr" id="enlistScreen"><div class="pad">
+    <div id="enlistContent"></div>
   </div></div>
 
 </div>
@@ -976,7 +982,7 @@ var ST = {
   phase:1, streak:0, total:0, lastDate:null, lastGoodDate:null,
   startDate: todayKey(),
   checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
-  asvab:{afqt:null,nf:null}, asvabLogs:[],
+  asvab:{afqt:null,nf:null}, asvabLogs:[], enlist:{},
   logs:[], onboardDone:false, consecutiveGoodDays:0,
   repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
   readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
@@ -995,6 +1001,7 @@ function loadState() {
     ST.prt = s.prt || ST.prt;
     ST.asvab = s.asvab || ST.asvab;
     ST.asvabLogs = s.asvabLogs || [];
+    ST.enlist = s.enlist || {};
     ST.logs = s.logs || [];
     ST.onboardDone = s.onboardDone || false;
     ST.consecutiveGoodDays = s.consecutiveGoodDays || 0;
@@ -1055,6 +1062,7 @@ function renderActiveTab() {
   else if (ACTIVE_TAB === 'prt') updatePRT();
   else if (ACTIVE_TAB === 'sci') renderSci();
   else if (ACTIVE_TAB === 'ready') renderReady();
+  else if (ACTIVE_TAB === 'enlist') renderEnlist();
 }
 
 // Build a plain-object snapshot of all saved state. Used by both the
@@ -1063,7 +1071,7 @@ function serializeState() {
   var out = {
     phase:ST.phase, streak:ST.streak, total:ST.total,
     lastDate:ST.lastDate, lastGoodDate:ST.lastGoodDate,
-    startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, logs:ST.logs,
+    startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, enlist:ST.enlist, logs:ST.logs,
     onboardDone:ST.onboardDone, consecutiveGoodDays:ST.consecutiveGoodDays,
     repCounts:ST.repCounts, skipLog:ST.skipLog,
     catStruggle:ST.catStruggle, skipReasons:ST.skipReasons,
@@ -2732,11 +2740,86 @@ function renderReady() {
   document.getElementById('readyContent').innerHTML = html;
 }
 
+// ── ROAD TO ENLISTMENT ───────────────────────────────────────
+// The real-world enlistment track the rest of the app does not cover. Every item
+// is a checkbox the user can tick (persisted in ST.enlist). Wording is honest:
+// the Navy steps are framed "confirm with your recruiter" — this is not official
+// guidance, and eligibility/bonuses/standards change.
+var ENLIST_PLAN = [
+  { title:'1 · Before you call a recruiter', ico:'🧭', items:[
+    { id:'e_clean', t:'Stay clean — no cannabis or disqualifying substances', n:'You will be drug-tested at MEPS and at boot camp, and the Nuclear Field needs a security clearance that reviews drug history. This is eligibility, not just recovery.' },
+    { id:'e_asvab', t:'Hit your ASVAB practice targets (AFQT 50+, NF 252+)', n:'Log practice scores on the Ready tab. For the Nuke path, the score IS your leverage — it unlocks the contract and bonus.' },
+    { id:'e_prt', t:'Be able to pass the PRT events (push-ups, forearm plank, run)', n:'Track these on the PRT tab.' },
+    { id:'e_docs', t:'Gather documents: birth certificate, SSN card, photo ID, transcripts/diploma, any medical & legal records', n:'Having these ready speeds everything up.' }
+  ]},
+  { title:'2 · Recruiter & qualifying', ico:'⚓', items:[
+    { id:'e_recruiter', t:'Talk to a Navy recruiter — ask specifically about the Nuclear Field (NF) program', n:'' },
+    { id:'e_confirm', t:'Confirm CURRENT NF composite / AFQT requirements and the NAPT path', n:'Commonly cited: NF composite 252+, AFQT 50+, NAPT for 235–251 — but confirm the live numbers.' },
+    { id:'e_paygrade', t:'Ask what counts for advanced paygrade (college credits, programs)', n:'Some credits/qualifications can start you at E-2/E-3 instead of E-1 — more pay from day one.' },
+    { id:'e_bonus', t:'Get current bonus terms in writing ("up to", subject to contract)', n:'Bonuses, ratings, and ship dates change. Nothing is guaranteed until it is in your contract.' },
+    { id:'e_honest', t:'Be honest about medical, legal, and drug history', n:'Disclosure beats getting caught — getting caught hiding something is worse than the thing itself.' }
+  ]},
+  { title:'3 · MEPS (processing day)', ico:'🩺', items:[
+    { id:'e_medical', t:'Medical exam + drug test — show up clean and rested', n:'' },
+    { id:'e_official', t:'Take the official ASVAB; complete the NF composite / NAPT if needed', n:'' },
+    { id:'e_contract', t:'Confirm the Nuke contract in your paperwork BEFORE you sign', n:'Rating, ship date, and bonus terms should be written in. Read it; ask questions.' }
+  ]},
+  { title:'4 · Boot camp prep (RTC Great Lakes, ~9 weeks)', ico:'🎽', items:[
+    { id:'e_swim', t:'Be able to swim / float — there is a swim qualification', n:'' },
+    { id:'e_knowledge', t:'Memorize the Sailor’s Creed, 11 General Orders, and ranks', n:'Drill these with the Navy Knowledge habits (Phase 3+).' },
+    { id:'e_pack', t:'Pack per recruiter + RTC guidance — do NOT bring supplements unless allowed', n:'Check OPSS and the DoD Prohibited List. When in doubt, leave it home.' }
+  ]},
+  { title:'5 · Career & exit (the long game)', ico:'🎯', items:[
+    { id:'e_clearance', t:'Protect your security clearance — keep finances, record, and substances clean', n:'' },
+    { id:'e_cool', t:'Plan to use Navy COOL to earn certifications (funded) while serving', n:'You do NOT need certs to get in — and once in, the Navy pays for them.' },
+    { id:'e_planb', t:'Plan B: bank a cheap cert or college credit now in case the timeline slips', n:'A medical DQ or waiver can stall things outside your control. A small credential means you are not starting from zero.' }
+  ]}
+];
+
+function toggleEnlist(id) {
+  if (!ST.enlist) ST.enlist = {};
+  if (ST.enlist[id]) delete ST.enlist[id]; else ST.enlist[id] = true;
+  saveState();
+  renderEnlist();
+}
+
+function renderEnlist() {
+  var total = 0, done = 0;
+  for (var g = 0; g < ENLIST_PLAN.length; g++) {
+    for (var i = 0; i < ENLIST_PLAN[g].items.length; i++) { total++; if (ST.enlist[ENLIST_PLAN[g].items[i].id]) done++; }
+  }
+  var pct = total ? Math.round(done / total * 100) : 0;
+
+  var html = '<div class="hero" style="margin-bottom:14px"><div class="hero-ey">ROAD TO ENLISTMENT</div>';
+  html += '<div class="hero-t">Navy Nuclear Field — the real-world track</div>';
+  html += '<div class="hero-b">The daily app builds discipline, fitness, and test prep. This is everything <strong>around</strong> that — MEPS, documents, the recruiter, the clearance. <strong>' + done + '/' + total + '</strong> done.</div>';
+  html += '<div style="height:4px;background:var(--ice);border-radius:2px;overflow:hidden;margin-top:10px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--bright),var(--green));border-radius:2px"></div></div></div>';
+
+  html += '<div class="box br" style="margin-bottom:14px"><strong>Not official advice.</strong> APEX is a prep app, not a recruiter. Navy standards, bonuses, ratings, ship dates, and eligibility change — confirm every step with an official Navy recruiter before you act.</div>';
+
+  for (var gi = 0; gi < ENLIST_PLAN.length; gi++) {
+    var grp = ENLIST_PLAN[gi];
+    html += '<div class="sl" style="margin-top:14px">' + grp.ico + '  ' + grp.title + '</div>';
+    html += '<div class="ac open" style="margin-bottom:8px"><div class="acb" style="display:block;border-top:none">';
+    for (var ii = 0; ii < grp.items.length; ii++) {
+      var it = grp.items[ii];
+      var on = !!ST.enlist[it.id];
+      html += '<div class="hrow"><div class="hck' + (on ? ' on' : '') + '" onclick="toggleEnlist(\'' + it.id + '\')"></div><div class="hinfo">';
+      html += '<div class="hn' + (on ? ' done' : '') + '">' + it.t + '</div>';
+      if (it.n) html += '<div class="hw">' + it.n + '</div>';
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  document.getElementById('enlistContent').innerHTML = html;
+}
+
 // ── NAV ──────────────────────────────────────────────────────
 function goTab(t) {
   var tabEls = document.querySelectorAll('.tab');
   for (var i = 0; i < tabEls.length; i++) tabEls[i].classList.remove('on');
-  var screens = ['today','train','prt','sci','ready'];
+  var screens = ['today','train','prt','sci','ready','enlist'];
   for (var i = 0; i < screens.length; i++) {
     var el = document.getElementById(screens[i] + 'Screen');
     if (el) el.classList.remove('active');
