@@ -69,11 +69,13 @@ body{color:var(--text);font-family:var(--sans);}
   color:var(--bright);padding:0 12px;letter-spacing:4px;flex-shrink:0;
   text-shadow:0 0 20px rgba(0,212,255,.4);
 }
-.tabs{display:flex;flex:1;height:100%;}
+.tabs{display:flex;flex:1;height:100%;overflow-x:auto;}
+.tabs::-webkit-scrollbar{height:0;}
 .tab{
   flex:1;background:none;border:none;border-bottom:2px solid transparent;
   color:var(--muted);font-family:var(--sans);font-size:9px;font-weight:700;
-  cursor:pointer;text-transform:uppercase;letter-spacing:0.2px;padding:0 2px;
+  cursor:pointer;text-transform:uppercase;letter-spacing:0.2px;padding:0 3px;
+  min-width:44px;flex:1 0 auto;
   transition:color .2s, border-color .2s;
 }
 .tab.on{color:var(--bright);border-bottom-color:var(--bright);}
@@ -446,6 +448,53 @@ body{color:var(--text);font-family:var(--sans);}
 .sbody ul{padding-left:16px;margin-bottom:9px;}
 .sbody li{font-size:13px;line-height:1.7;color:var(--text);margin-bottom:3px;}
 
+/* COUNTDOWN + STUDY */
+.cd-row{display:flex;gap:8px;margin-bottom:14px;}
+.cd{flex:1;border-radius:12px;padding:11px 8px;text-align:center;border:1px solid var(--ice);background:linear-gradient(180deg,var(--mid),var(--shelf));}
+.cd-n{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1;}
+.cd-u{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;margin-top:3px;}
+.cd-k{font-size:10px;color:var(--text);margin-top:5px;font-weight:600;}
+.cd-d{font-size:9px;color:var(--muted);margin-top:1px;}
+.cd.g{border-color:rgba(0,229,160,.4);} .cd.g .cd-n{color:var(--green);}
+.cd.y{border-color:rgba(255,200,60,.4);} .cd.y .cd-n{color:#ffc83c;}
+.cd.r{border-color:rgba(255,68,85,.5);} .cd.r .cd-n{color:var(--red);}
+.mile{border-radius:10px;padding:11px 13px;margin-bottom:14px;font-size:12px;line-height:1.6;font-weight:600;}
+.mile.g{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.35);color:var(--green);}
+.mile.b{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.35);color:var(--bright);}
+.mile.r{background:rgba(255,68,85,.08);border:1px solid rgba(255,68,85,.4);color:var(--red);}
+.mile.y{background:rgba(255,200,60,.08);border:1px solid rgba(255,200,60,.4);color:#ffc83c;}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0;}
+.scell{background:var(--mid);border:1px solid var(--ice);border-radius:9px;padding:8px 4px;text-align:center;}
+.scell .sv{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--bright);}
+.scell .sv.nd{color:var(--muted);font-size:15px;}
+.scell .sk{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+.comp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(30,58,95,.5);}
+.comp-row:last-child{border-bottom:none;}
+.comp-l{font-size:12px;color:var(--text);} .comp-l small{display:block;color:var(--muted);font-size:10px;font-family:var(--mono);}
+.comp-v{font-family:var(--mono);font-size:20px;font-weight:600;}
+.subbar{margin:7px 0;}
+.subbar-h{display:flex;justify-content:space-between;font-size:11px;color:var(--text);margin-bottom:3px;}
+.subbar-h span{font-family:var(--mono);color:var(--muted);}
+.subbar-t{height:6px;background:var(--ice);border-radius:3px;overflow:hidden;}
+.subbar-f{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--bright),var(--green));transition:width .4s;}
+.sbtn{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--ice2);background:var(--mid);color:var(--bright);cursor:pointer;letter-spacing:.5px;}
+.sbtn:active{background:rgba(77,184,255,.08);}
+.sbtn.pri{background:linear-gradient(135deg,var(--bright),var(--primary));color:var(--void);border-color:var(--bright);}
+.sbtn.on{background:rgba(0,212,255,.12);border-color:var(--bright);}
+.sbtn:disabled{opacity:.4;cursor:default;}
+.stopic{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--ice);border-radius:10px;margin-bottom:7px;cursor:pointer;background:linear-gradient(180deg,var(--mid),var(--shelf));}
+.stopic:active{background:rgba(77,184,255,.05);}
+.stopic .st-n{flex:1;font-size:13px;font-weight:600;color:var(--text);}
+.stopic .st-m{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;flex-shrink:0;}
+.flash{border:1px solid var(--ice2);border-radius:14px;min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px 18px;font-size:15px;line-height:1.6;color:var(--text);background:linear-gradient(180deg,var(--mid),var(--shelf));cursor:pointer;}
+.qopt{display:block;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--ice2);border-radius:9px;margin-bottom:7px;background:var(--mid);color:var(--text);font-size:13px;cursor:pointer;}
+.qopt:active{background:rgba(77,184,255,.05);}
+.qopt.correct{border-color:var(--green);background:rgba(0,229,160,.1);color:var(--green);}
+.qopt.wrong{border-color:var(--red);background:rgba(255,68,85,.1);color:var(--red);}
+.qopt.dim{opacity:.5;}
+.lesson{font-size:13px;line-height:1.7;color:var(--text);}
+.lesson p{margin-bottom:10px;} .lesson b{color:#fff;}
+
 </style>
 </head>
 <body>
@@ -474,9 +523,9 @@ body{color:var(--text);font-family:var(--sans);}
       <div class="ob-ico">📈</div>
       <div class="ob-title">4 phases, 16 weeks</div>
       <div class="ob-body">
-        <strong>Phase 1:</strong> Sleep, water, sunlight, cold shower.<br><br>
+        <strong>Phase 1:</strong> ASVAB study starts now (priority #1) + sleep, water, sunlight, cold shower.<br><br>
         <strong>Phase 2:</strong> Training plan + nutrition — build the body.<br><br>
-        <strong>Phase 3:</strong> ASVAB study sessions unlock — use the NucPrep app after every workout when BDNF is highest.<br><br>
+        <strong>Phase 3:</strong> Navy Knowledge + full cognitive protocol layered on top.<br><br>
         <strong>Phase 4:</strong> Full protocol. PRT ready. Test ready.
       </div>
       <button class="ob-btn" onclick="nextOb()">Got it →</button>
@@ -498,8 +547,9 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="tabs">
       <button class="tab on" onclick="goTab('today')">Today</button>
       <button class="tab" onclick="goTab('train')">Train</button>
+      <button class="tab" onclick="goTab('study')">Study</button>
       <button class="tab" onclick="goTab('prt')">PRT</button>
-      <button class="tab" onclick="goTab('sci')">Science</button>
+      <button class="tab" onclick="goTab('sci')">Sci</button>
       <button class="tab" onclick="goTab('ready')">Ready</button>
       <button class="tab" onclick="goTab('enlist')">Enlist</button>
     </div>
@@ -508,6 +558,7 @@ body{color:var(--text);font-family:var(--sans);}
   <!-- TODAY -->
   <div class="screen active scr" id="todayScreen"><div class="pad">
     <div id="pstBar" style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);text-align:right;margin-bottom:10px"></div>
+    <div id="todayCountdown"></div>
     <div class="hero">
       <div class="hero-ey" id="heroEy">PHASE 1 — FOUNDATION</div>
       <div class="hero-t" id="heroTitle">Day 1 — Start Small, Stay Consistent</div>
@@ -521,7 +572,7 @@ body{color:var(--text);font-family:var(--sans);}
       <div class="phase-text">
         <div class="phase-name" id="phaseBanName">PHASE 1</div>
         <div class="phase-title" id="phaseBanTitle">Foundation</div>
-        <div class="phase-desc" id="phaseBanDesc">Build 3 keystone habits until they feel automatic. No training yet. No studying yet. Just these three.</div>
+        <div class="phase-desc" id="phaseBanDesc">ASVAB study is priority #1 from day one. Lock in sleep + morning habits alongside it. Training comes in Phase 2.</div>
         <div class="phase-prog"><div class="phase-prog-fill" id="phaseProgFill" style="width:0%"></div></div>
       </div>
     </div>
@@ -591,6 +642,11 @@ body{color:var(--text);font-family:var(--sans);}
     <div id="readyContent"></div>
   </div></div>
 
+  <!-- STUDY / ACADEMY -->
+  <div class="screen scr" id="studyScreen"><div class="pad">
+    <div id="studyContent"></div>
+  </div></div>
+
   <!-- ENLIST -->
   <div class="screen scr" id="enlistScreen"><div class="pad">
     <div id="enlistContent"></div>
@@ -635,6 +691,7 @@ body{color:var(--text);font-family:var(--sans);}
 
 <div id="toast"></div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+<script src="curriculum.js"></script>
 </div>
 
 <script>
@@ -650,7 +707,7 @@ var PHASES = [
   {
     id:1, name:'PHASE 1', title:'Foundation', ico:'seedling', color:'#00e87a',
     bannerStyle:'background:linear-gradient(135deg,rgba(0,229,160,.04),rgba(0,212,255,.03));border:1px solid rgba(0,229,160,.2);',
-    desc:'Three keystone habits. No training yet. No studying yet. These three habits fix your sleep, fix your morning, and stop the single biggest cognitive saboteur. Master these first.',
+    desc:'ASVAB study starts TODAY — it is priority #1 and the test clock is running. Alongside it, lock in the keystone sleep and morning habits. Physical training is added in Phase 2.',
     unlockMsg:'Phase 2 unlocks when you hit 70% for 14 days.',
     daysNeeded:14
   },
@@ -683,6 +740,31 @@ var ICONS_MAP = {seedling:'🌱', bolt:'⚡', brain:'🧠', rocket:'🚀'};
 // RULES: n/w/cue strings use NO raw apostrophes. Use &#39; instead.
 // Double quotes in w strings use &quot; or just rephrase.
 var ALL_HABITS = [
+  {
+    id:'asvab', phase:1, label:'ASVAB', color:'#9060ff', name:'ASVAB Study — Priority #1',
+    items:[
+      {id:'h_study1', phase:1,
+       n:'45 min ASVAB study — math first (AR + MK)',
+       w:'This is your #1 priority — the ASVAB clock is running NOW. Do 45 focused minutes daily, math first (Arithmetic Reasoning + Math Knowledge carry both NF composites). Open the Study tab and work topics top-down. If you train later in the day, study right after — BDNF stays elevated 2-4 hours post-exercise, your brain&#39;s peak learning window.',
+       cue:'IF I wake up, THEN I do my ASVAB block before anything optional — it comes first today.',
+       why_locked:''},
+      {id:'h_study2', phase:1,
+       n:'Pomodoro blocks — 25 min on, 5 min walk break, repeat',
+       w:'Cannabis use has been associated with reduced sustained attention. Structured intervals help train that capacity back, and walk breaks help consolidate what you just learned.',
+       cue:'IF I sit down to study, THEN I set a 25-minute timer before opening any material.',
+       why_locked:''},
+      {id:'h_review', phase:1,
+       n:'Review wrong answers — read every explanation',
+       w:'Every wrong answer is a pattern your brain has not locked in. Reading the explanation builds schema, not just rote memory. Schema survives to test day.',
+       cue:'IF I finish a study session, THEN I review every wrong answer before closing the app.',
+       why_locked:''},
+      {id:'h_study3', phase:1,
+       n:'Second review session — 20-30 min in the evening',
+       w:'Spaced repetition: reviewing material 6-8 hours after first learning doubles long-term retention. Sleep after this locks it permanently.',
+       cue:'IF it is after dinner, THEN I do my evening ASVAB review before any entertainment.',
+       why_locked:''}
+    ]
+  },
   {
     id:'sleep', phase:1, label:'SLEEP', color:'#3d8eff', name:'Sleep',
     items:[
@@ -756,31 +838,6 @@ var ALL_HABITS = [
        w:'DHA is a structural component of neuronal membranes and measurably raises BDNF over 8-12 weeks. Also reduces training inflammation.',
        cue:'IF I eat lunch, THEN I take my omega-3 with it.',
        why_locked:'Unlocks Phase 2.'}
-    ]
-  },
-  {
-    id:'asvab', phase:3, label:'ASVAB', color:'#9060ff', name:'ASVAB Study',
-    items:[
-      {id:'h_study1', phase:3,
-       n:'ASVAB study — 45 min immediately after your workout',
-       w:'Do this right after training while BDNF is elevated. BDNF and dopamine stay high for 2-4 hours post-exercise. This is your brain&#39;s peak learning window.',
-       cue:'IF my workout ends, THEN I open NucPrep within 10 minutes.',
-       why_locked:'Unlocks Phase 3. Build your aerobic and sleep base first.'},
-      {id:'h_study2', phase:3,
-       n:'Pomodoro blocks — 25 min on, 5 min walk break, repeat',
-       w:'Cannabis use has been associated with reduced sustained attention. Structured intervals help train that capacity back, and walk breaks help consolidate what you just learned.',
-       cue:'IF I sit down to study, THEN I set a 25-minute timer before opening any material.',
-       why_locked:'Unlocks Phase 3.'},
-      {id:'h_review', phase:3,
-       n:'Review wrong answers — read every explanation',
-       w:'Every wrong answer is a pattern your brain has not locked in. Reading the explanation builds schema, not just rote memory. Schema survives to test day.',
-       cue:'IF I finish a study session, THEN I review every wrong answer before closing the app.',
-       why_locked:'Unlocks Phase 3.'},
-      {id:'h_study3', phase:3,
-       n:'Second review session — 20-30 min in the evening',
-       w:'Spaced repetition: reviewing material 6-8 hours after first learning doubles long-term retention. Sleep after this locks it permanently.',
-       cue:'IF it is after dinner, THEN I do my evening ASVAB review before any entertainment.',
-       why_locked:'Unlocks Phase 3.'}
     ]
   },
   {
@@ -983,6 +1040,7 @@ var ST = {
   startDate: todayKey(),
   checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
   asvab:{afqt:null,nf:null}, asvabLogs:[], enlist:{},
+  study:{}, studyDays:{}, studyHours:2, shipDate:'2027-01-23',
   logs:[], onboardDone:false, consecutiveGoodDays:0,
   repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
   readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
@@ -1002,6 +1060,10 @@ function loadState() {
     ST.asvab = s.asvab || ST.asvab;
     ST.asvabLogs = s.asvabLogs || [];
     ST.enlist = s.enlist || {};
+    ST.study = s.study || {};
+    ST.studyDays = s.studyDays || {};
+    ST.studyHours = s.studyHours || 2;
+    ST.shipDate = s.shipDate || '2027-01-23';
     ST.logs = s.logs || [];
     ST.onboardDone = s.onboardDone || false;
     ST.consecutiveGoodDays = s.consecutiveGoodDays || 0;
@@ -1065,6 +1127,7 @@ function renderActiveTab() {
   else if (ACTIVE_TAB === 'prt') updatePRT();
   else if (ACTIVE_TAB === 'sci') renderSci();
   else if (ACTIVE_TAB === 'ready') renderReady();
+  else if (ACTIVE_TAB === 'study') renderStudy();
   else if (ACTIVE_TAB === 'enlist') renderEnlist();
 }
 
@@ -1074,7 +1137,8 @@ function serializeState() {
   var out = {
     phase:ST.phase, streak:ST.streak, total:ST.total,
     lastDate:ST.lastDate, lastGoodDate:ST.lastGoodDate,
-    startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, enlist:ST.enlist, logs:ST.logs,
+    startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, enlist:ST.enlist,
+    study:ST.study, studyDays:ST.studyDays, studyHours:ST.studyHours, shipDate:ST.shipDate, logs:ST.logs,
     onboardDone:ST.onboardDone, consecutiveGoodDays:ST.consecutiveGoodDays,
     repCounts:ST.repCounts, skipLog:ST.skipLog,
     catStruggle:ST.catStruggle, skipReasons:ST.skipReasons,
@@ -2010,6 +2074,9 @@ function finishOb() {
 // ── RENDER TODAY ─────────────────────────────────────────────
 function renderToday() {
   var rd = recDay();
+  // ASVAB countdown + study CTA sit at the very top of home — the test clock is
+  // the #1 priority, visible before anything else.
+  renderCountdown('todayCountdown', true);
   var ph = ST.phase;
   var phData = PHASES[ph - 1];
   var daysNeeded = phData.daysNeeded;
@@ -2855,11 +2922,517 @@ function renderEnlist() {
   document.getElementById('enlistContent').innerHTML = html;
 }
 
+// ── STUDY / ACADEMY ENGINE ───────────────────────────────────
+// Countdown targets (Pacific date keys). ASVAB is the priority clock.
+var ASVAB_TARGET = '2026-08-31';   // sit the ASVAB no later than this
+var DEP_TARGET   = '2026-10-01';   // target DEP entry
+function shipKey() { return ST.shipDate || '2027-01-23'; }
+
+// Build order priority for the daily plan: AR+MK first, then EI/GS/MC, then VE
+// (WK+PC), then NPS readiness. ASVAB training is available from day one — no
+// phase gate — because the test clock starts now.
+var STUDY_ORDER = ['AR','MK','EI','GS','MC','WK','PC','NPS'];
+function orderedTopics() {
+  var out = [];
+  for (var s = 0; s < STUDY_ORDER.length; s++) {
+    for (var i = 0; i < CURRICULUM.length; i++) {
+      if (CURRICULUM[i].sub === STUDY_ORDER[s]) out.push(CURRICULUM[i]);
+    }
+  }
+  return out;
+}
+function topicById(id) {
+  for (var i = 0; i < CURRICULUM.length; i++) if (CURRICULUM[i].id === id) return CURRICULUM[i];
+  return null;
+}
+function studyTopicState(id) {
+  if (!ST.study.topics) ST.study.topics = {};
+  if (!ST.study.topics[id]) ST.study.topics[id] = { box:0, due:null, seen:0, correct:0 };
+  return ST.study.topics[id];
+}
+function studySubState(sub) {
+  if (!ST.study.subs) ST.study.subs = {};
+  if (!ST.study.subs[sub]) ST.study.subs[sub] = { seen:0, correct:0 };
+  return ST.study.subs[sub];
+}
+
+// Leitner intervals by box (days). Box rises on a passed review, resets on a miss.
+var SRS_INT = [1,1,2,4,7,15];
+function recordQuizResult(topicId, sub, correct, total) {
+  var t = studyTopicState(topicId);
+  t.seen += total; t.correct += correct;
+  var sx = studySubState(sub);
+  sx.seen += total; sx.correct += correct;
+  var passed = total > 0 && (correct / total) >= 0.7;
+  if (passed) t.box = Math.min(5, (t.box || 0) + 1);
+  else t.box = Math.max(1, (t.box || 0));   // keep it in rotation, don't advance
+  var iv = SRS_INT[Math.min(t.box, SRS_INT.length - 1)] || 1;
+  t.due = shiftKey(todayKey(), iv);
+  deriveAll();
+}
+
+// Convert practice accuracy to an estimated ASVAB standard score (~20-80, mean
+// ~50). Calibrated so ~70% accuracy ≈ 63 (a 252 composite needs 4×63), and
+// ~59% ≈ 235 (the floor). This is a rough study estimate, NOT an official score.
+function accToStd(acc) { return Math.max(20, Math.min(80, Math.round(35 + acc * 40))); }
+// VE is the verbal composite — estimate it from combined WK + PC practice.
+function subEstimate(sub) {
+  if (sub === 'VE') {
+    var wk = studySubState('WK'), pc = studySubState('PC');
+    var seen = wk.seen + pc.seen; if (!seen) return null;
+    var acc = (wk.correct + pc.correct) / seen;
+    return { seen:seen, acc:acc, score:accToStd(acc) };
+  }
+  var s = studySubState(sub); if (!s.seen) return null;
+  var a = s.correct / s.seen;
+  return { seen:s.seen, acc:a, score:accToStd(a) };
+}
+// NF composite from its 4 component subtests. Returns null components if no data.
+function compositeEstimate(compKey) {
+  var comp = NF_COMPOSITES[compKey];
+  var sum = 0, ready = true, parts = [];
+  for (var i = 0; i < comp.subs.length; i++) {
+    var e = subEstimate(comp.subs[i]);
+    parts.push({ sub:comp.subs[i], est:e });
+    if (e) sum += e.score; else ready = false;
+  }
+  return { label:comp.label, subs:comp.subs, ready:ready, score:ready ? sum : null, parts:parts };
+}
+// AFQT percentile estimate from AR+MK+2×VE practice accuracy (Grade-A formula
+// basis). Mapping accuracy→percentile is a rough curve, clearly labelled.
+function afqtEstimate() {
+  var ar = studySubState('AR'), mk = studySubState('MK');
+  var wk = studySubState('WK'), pc = studySubState('PC');
+  var veSeen = wk.seen + pc.seen;
+  if (!ar.seen && !mk.seen && !veSeen) return null;
+  var num = ar.correct + mk.correct + 2 * (wk.correct + pc.correct);
+  var den = ar.seen + mk.seen + 2 * veSeen;
+  if (!den) return null;
+  var acc = num / den;
+  return Math.max(1, Math.min(99, Math.round(acc * 105 - 10)));
+}
+function nfStatus(c1, c2) {
+  if (c1 == null || c2 == null) return { label:'Need more practice data', cls:'cr' };
+  var both235 = c1 >= NF_GATES.floor235 && c2 >= NF_GATES.floor235;
+  var either252 = c1 >= NF_GATES.pass || c2 >= NF_GATES.pass;
+  if (both235 && either252) return { label:'NFa qualified (no NAPT)', cls:'cg' };
+  if (both235) return { label:'NFb (NAPT required)', cls:'cb' };
+  return { label:'Not yet qualified', cls:'cr' };
+}
+
+// ── COUNTDOWN ────────────────────────────────────────────────
+function cdClass(days) { return days > 90 ? 'g' : (days >= 30 ? 'y' : 'r'); }
+function renderCountdown(elId, compact) {
+  var el = document.getElementById(elId); if (!el) return;
+  var tk = todayKey();
+  var items = [
+    { k:ASVAB_TARGET, label:'ASVAB', sub:'by Aug 31' },
+    { k:DEP_TARGET,   label:'DEP entry', sub:'~Oct 1' },
+    { k:shipKey(),    label:'Ship out', sub:'Jan 23 \'27' }
+  ];
+  var html = '<div class="cd-row">';
+  for (var i = 0; i < items.length; i++) {
+    var d = daysBetweenKeys(tk, items[i].k);
+    var cls = d < 0 ? 'r' : cdClass(d);
+    var n = d < 0 ? 'PAST' : d;
+    html += '<div class="cd ' + cls + '"><div class="cd-n">' + n + '</div>'
+         + (d >= 0 ? '<div class="cd-u">DAYS</div>' : '')
+         + '<div class="cd-k">' + items[i].label + '</div><div class="cd-d">' + items[i].sub + '</div></div>';
+  }
+  html += '</div>';
+  // Pace tracker — how far ahead / behind the ASVAB-paced plan you are.
+  html += '<div id="' + elId + 'Pace"></div>';
+  // Milestone banner (test-clock + qualification state).
+  var mb = milestoneBanner();
+  if (mb) html += '<div class="mile ' + mb.cls + '">' + mb.msg + '</div>';
+  if (compact) {
+    var dleft = daysBetweenKeys(tk, ASVAB_TARGET);
+    var nt = nextUnfinishedTopic();
+    html += '<div class="box bb" style="margin-top:0"><strong>ASVAB is priority #1.</strong> '
+         + (dleft >= 0 ? dleft + ' days to test day. ' : 'Test target passed — sit it ASAP. ')
+         + 'Train math first (AR + MK), then EI/GS/MC/VE.'
+         + '<div style="margin-top:9px"><button class="sbtn pri" style="width:100%;padding:11px" onclick="startStudying()">▶ Start studying now'
+         + (nt ? ' — ' + nt.title : '') + '</button></div></div>';
+  }
+  el.innerHTML = html;
+  renderPaceInto(elId + 'Pace');
+}
+function milestoneBanner() {
+  var tk = todayKey();
+  var dleft = daysBetweenKeys(tk, ASVAB_TARGET);
+  var c1 = compositeEstimate('comp1').score, c2 = compositeEstimate('comp2').score;
+  if (c1 != null && c2 != null) {
+    var st = nfStatus(c1, c2);
+    if (st.label.indexOf('NFa') === 0) return { cls:'g', msg:'🎯 <strong>ASVAB-qualified for NUC</strong> on your practice estimate — no NAPT needed. Lock it in with full practice tests.' };
+    if (st.label.indexOf('NFb') === 0) return { cls:'b', msg:'✅ <strong>You qualify for the NAPT path</strong> on estimate (both composites ≥235). Push one composite to 252 to skip the NAPT.' };
+  }
+  if (dleft >= 0 && dleft <= 14) return { cls:'r', msg:'🔥 <strong>Final stretch — ' + dleft + ' days.</strong> Practice tests only now. Simulate full timed sections; stop cramming new topics.' };
+  if (dleft >= 0 && dleft <= 30) return { cls:'y', msg:'⏰ <strong>' + dleft + ' days to ASVAB.</strong> Intensify review — daily timed AR/MK sets and drill your weakest subtest.' };
+  return null;
+}
+
+// ── DAILY STUDY PLAN ─────────────────────────────────────────
+// Reverse-engineered from the ASVAB clock. Topics are ordered by priority and
+// assigned a target day from a fixed plan start, paced by hours/day. A topic is
+// "done" once practiced (seen>0); any past-due, still-unfinished topic rolls
+// forward into today automatically (auto-redistribution).
+var PLAN_START = '2026-06-29';
+function unitsPerDay() { return Math.max(1, Math.min(6, Math.round((ST.studyHours || 2) * 1.5))); }
+function topicDone(id) { var t = ST.study.topics && ST.study.topics[id]; return !!(t && t.seen > 0); }
+function buildPlan() {
+  var topics = orderedTopics();
+  var per = unitsPerDay();
+  var plan = [];
+  for (var i = 0; i < topics.length; i++) {
+    plan.push({ topic:topics[i], targetDay:shiftKey(PLAN_START, Math.floor(i / per)) });
+  }
+  return plan;
+}
+function todayBatch() {
+  var tk = todayKey();
+  var plan = buildPlan();
+  var due = [], upcoming = [];
+  for (var i = 0; i < plan.length; i++) {
+    if (topicDone(plan[i].topic.id)) continue;
+    if (daysBetweenKeys(plan[i].targetDay, tk) >= 0) due.push(plan[i].topic);  // targetDay <= today
+    else upcoming.push(plan[i].topic);
+  }
+  // If caught up, pull the next 2 upcoming topics so there's always work to do.
+  if (!due.length) due = upcoming.slice(0, 2);
+  return due.slice(0, Math.max(unitsPerDay(), due.length ? 1 : 0));
+}
+function subProgress(sub) {
+  var tot = 0, done = 0;
+  for (var i = 0; i < CURRICULUM.length; i++) {
+    if (CURRICULUM[i].sub === sub) { tot++; if (topicDone(CURRICULUM[i].id)) done++; }
+  }
+  return { tot:tot, done:done, pct:tot ? Math.round(done / tot * 100) : 0 };
+}
+
+// ── PACE TRACKER (are you ahead or behind?) ──────────────────
+// Compares topics actually finished against where the ASVAB-paced plan says you
+// should be today, and projects your finish date from your real pace. This is
+// the "am I on track / falling behind" gut-check the user asked for.
+function paceStatus() {
+  var topics = orderedTopics();
+  var total = topics.length;
+  var done = 0; for (var i = 0; i < topics.length; i++) if (topicDone(topics[i].id)) done++;
+  var tk = todayKey();
+  // Where the plan says you should be by today.
+  var plan = buildPlan(), expected = 0;
+  for (var i = 0; i < plan.length; i++) if (daysBetweenKeys(plan[i].targetDay, tk) >= 0) expected++;
+  expected = Math.min(expected, total);
+  var diff = done - expected;                       // + ahead, − behind
+  var remaining = total - done;
+  var daysToAsvab = daysBetweenKeys(tk, ASVAB_TARGET);
+  // Required pace from here to finish all topics before test day.
+  var reqPerDay = daysToAsvab > 0 ? remaining / daysToAsvab : remaining;
+  // Actual pace so far (topics per elapsed day since the plan began).
+  var elapsed = Math.max(1, daysBetweenKeys(PLAN_START, tk));
+  var actualPerDay = done / elapsed;
+  // Projected finish date at your current pace.
+  var projKey = null, projVsAsvab = null;
+  if (done > 0 && remaining > 0 && actualPerDay > 0) {
+    projKey = shiftKey(tk, Math.ceil(remaining / actualPerDay));
+    projVsAsvab = daysBetweenKeys(ASVAB_TARGET, projKey); // + = finishes AFTER test (bad)
+  } else if (remaining === 0) {
+    projKey = tk; projVsAsvab = daysToAsvab * -1;
+  }
+  return { total:total, done:done, expected:expected, diff:diff, remaining:remaining,
+           daysToAsvab:daysToAsvab, reqPerDay:reqPerDay, projKey:projKey, projVsAsvab:projVsAsvab };
+}
+function renderPaceInto(elId) {
+  var el = document.getElementById(elId); if (!el) return;
+  var p = paceStatus();
+  var cls, head, body;
+  if (p.done === 0) {
+    cls = 'r';
+    head = '😰 0 topics done — the clock is already running';
+    body = 'You need to finish ' + p.total + ' topics before ' + ASVAB_TARGET + ' (' + p.daysToAsvab + ' days). That\'s ' + p.reqPerDay.toFixed(1) + ' topics/day. <strong>Every day you wait, the gap grows. Start your first topic NOW.</strong>';
+  } else if (p.diff <= -1) {
+    cls = 'r';
+    var late = (p.projVsAsvab != null && p.projVsAsvab > 0);
+    head = '😭 BEHIND by ' + Math.abs(p.diff) + ' topic' + (Math.abs(p.diff) === 1 ? '' : 's');
+    body = 'The plan says you should be at ' + p.expected + '/' + p.total + ' by today — you\'re at ' + p.done + '. '
+      + (p.projKey ? 'At your current pace you finish <strong>' + p.projKey + '</strong>' + (late ? ', <strong style="color:var(--red)">' + p.projVsAsvab + ' days AFTER your ASVAB date.</strong> ' : ', just in time — but no margin. ') : '')
+      + 'Close the gap TODAY: you need ' + p.reqPerDay.toFixed(1) + ' topics/day from here.';
+  } else if (p.diff === 0) {
+    cls = 'y';
+    head = '⏳ DEAD ON PACE — no margin';
+    body = 'You\'re exactly where the plan needs you (' + p.done + '/' + p.total + '). One missed day puts you behind. Bank a topic ahead today so a bad day can\'t sink you.';
+  } else {
+    cls = 'g';
+    head = '🔥 AHEAD by ' + p.diff + ' topic' + (p.diff === 1 ? '' : 's');
+    body = 'You\'re at ' + p.done + '/' + p.total + ', past the ' + p.expected + ' the plan asked for. '
+      + (p.projKey && p.projVsAsvab != null ? 'Projected finish <strong>' + p.projKey + '</strong> — ' + Math.abs(p.projVsAsvab) + ' days ' + (p.projVsAsvab < 0 ? 'before' : 'after') + ' test day. ' : '')
+      + 'Keep the lead — don\'t coast.';
+  }
+  var pct = p.total ? Math.round(p.done / p.total * 100) : 0;
+  var epct = p.total ? Math.round(p.expected / p.total * 100) : 0;
+  var ntTopic = nextUnfinishedTopic();
+  var ctaBtn = (p.remaining > 0 && ntTopic) ? '<div style="margin-top:8px"><button class="sbtn pri" style="width:100%;padding:10px" onclick="startStudying()">▶ Start your next topic — ' + ntTopic.title + '</button></div>' : '';
+  el.innerHTML = '<div class="mile ' + cls + '" style="margin-bottom:8px"><div style="font-size:13px">' + head + '</div>'
+    + '<div style="font-weight:400;font-size:11px;margin-top:4px;color:var(--text);opacity:.9">' + body + '</div>' + ctaBtn + '</div>'
+    + '<div class="subbar" style="margin-bottom:14px"><div class="subbar-h"><span style="color:var(--text)">Topics complete</span><span>' + p.done + ' / ' + p.total + ' · plan wants ' + p.expected + '</span></div>'
+    + '<div class="subbar-t" style="position:relative"><div class="subbar-f" style="width:' + pct + '%"></div>'
+    + '<div style="position:absolute;top:-2px;bottom:-2px;left:' + epct + '%;width:2px;background:#fff;opacity:.7" title="plan target"></div></div></div>';
+}
+
+// ── STUDY SESSION TIMER ──────────────────────────────────────
+var studyTimer = { running:false, startMs:0, baseMs:0, sub:'AR', q:0, tick:null };
+function timerDisplay() {
+  var ms = studyTimer.baseMs + (studyTimer.running ? (Date.now() - studyTimer.startMs) : 0);
+  var s = Math.floor(ms / 1000);
+  return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60);
+}
+function timerTick() { var el = document.getElementById('timerClock'); if (el) el.textContent = timerDisplay(); }
+function toggleTimer() {
+  if (studyTimer.running) {
+    studyTimer.baseMs += Date.now() - studyTimer.startMs;
+    studyTimer.running = false;
+    if (studyTimer.tick) { clearInterval(studyTimer.tick); studyTimer.tick = null; }
+  } else {
+    studyTimer.startMs = Date.now();
+    studyTimer.running = true;
+    studyTimer.tick = setInterval(timerTick, 1000);
+  }
+  renderStudy();
+}
+function timerSetSub(v) { studyTimer.sub = v; }
+function timerAddQ(n) { studyTimer.q = Math.max(0, studyTimer.q + n); var el = document.getElementById('timerQ'); if (el) el.textContent = studyTimer.q; }
+function saveSession() {
+  var ms = studyTimer.baseMs + (studyTimer.running ? (Date.now() - studyTimer.startMs) : 0);
+  var mins = Math.round(ms / 60000);
+  if (mins <= 0 && studyTimer.q <= 0) { toast('Nothing to log yet', 'warn'); return; }
+  var tk = todayKey();
+  if (!ST.studyDays[tk]) ST.studyDays[tk] = { mins:0, q:0 };
+  ST.studyDays[tk].mins += mins;
+  ST.studyDays[tk].q += studyTimer.q;
+  if (studyTimer.tick) { clearInterval(studyTimer.tick); studyTimer.tick = null; }
+  studyTimer = { running:false, startMs:0, baseMs:0, sub:studyTimer.sub, q:0, tick:null };
+  deriveAll();
+  toast('Logged ' + mins + ' min to today', 'ok');
+  renderStudy();
+}
+
+// ── STUDY VIEW STATE ─────────────────────────────────────────
+var STUDY_VIEW = null;     // null = dashboard; else a topic id
+var STUDY_MODE = 'lesson'; // lesson | cards | quiz
+var cardIdx = 0, cardFlipped = false;
+var quizIdx = 0, quizPicked = -1, quizRunCorrect = 0;
+
+// One-tap entry: jump straight into the next unfinished priority topic. This is
+// the "I just need to start" button — zero menus between you and studying.
+function nextUnfinishedTopic() {
+  var topics = orderedTopics();
+  for (var i = 0; i < topics.length; i++) if (!topicDone(topics[i].id)) return topics[i];
+  return topics[0] || null;
+}
+function startStudying() {
+  var t = nextUnfinishedTopic();
+  goTab('study');
+  if (t) openTopic(t.id);
+}
+function openTopic(id) { STUDY_VIEW = id; STUDY_MODE = 'lesson'; cardIdx = 0; cardFlipped = false; quizIdx = 0; quizPicked = -1; quizRunCorrect = 0; renderStudy(); }
+function studyHome() { STUDY_VIEW = null; renderStudy(); }
+function studySetMode(m) { STUDY_MODE = m; cardIdx = 0; cardFlipped = false; quizIdx = 0; quizPicked = -1; quizRunCorrect = 0; renderStudy(); }
+function flipCard() { cardFlipped = !cardFlipped; renderStudy(); }
+function nextCard(d) { var t = topicById(STUDY_VIEW); cardIdx = (cardIdx + d + t.cards.length) % t.cards.length; cardFlipped = false; renderStudy(); }
+function answerQuiz(i) {
+  if (quizPicked !== -1) return;
+  quizPicked = i;
+  var t = topicById(STUDY_VIEW);
+  if (i === t.quiz[quizIdx].a) quizRunCorrect++;
+  renderStudy();
+}
+function nextQuiz() {
+  var t = topicById(STUDY_VIEW);
+  if (quizIdx < t.quiz.length - 1) { quizIdx++; quizPicked = -1; renderStudy(); }
+  else {
+    // End of quiz — record results into SRS + subtest tallies.
+    recordQuizResult(t.id, t.sub, quizRunCorrect, t.quiz.length);
+    var n = t.quiz.length, c = quizRunCorrect;
+    toast('Scored ' + c + '/' + n + ' — saved', c / n >= 0.7 ? 'ok' : 'warn');
+    quizIdx = 0; quizPicked = -1; quizRunCorrect = 0;
+    STUDY_MODE = 'lesson';
+    renderStudy();
+  }
+}
+
+// ── RENDER STUDY ─────────────────────────────────────────────
+function renderStudy() {
+  var el = document.getElementById('studyContent'); if (!el) return;
+  if (STUDY_VIEW) { el.innerHTML = renderTopicView(); return; }
+
+  var html = '';
+
+  // 1) Countdown dashboard (populated after innerHTML is set)
+  html += '<div id="studyCountdown"></div>';
+
+  // 2) Score estimator
+  var c1 = compositeEstimate('comp1'), c2 = compositeEstimate('comp2');
+  var afqt = afqtEstimate();
+  var status = nfStatus(c1.score, c2.score);
+  var totalQ = 0; for (var s = 0; s < STUDY_ORDER.length; s++) { var ss = studySubState(STUDY_ORDER[s]); totalQ += ss.seen; }
+  html += '<div class="sl">ASVAB SCORE ESTIMATOR</div>';
+  html += '<div class="box bb" style="margin-top:0">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+       + '<strong>Status</strong><span class="chip ' + status.cls + '">' + status.label + '</span></div>';
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.55">Estimated from <strong style="color:var(--bright)">' + totalQ + '</strong> practice questions. Rough study estimate — not an official score. Verify with your recruiter / a real practice test.</div>';
+  // per-subtest standard scores
+  html += '<div class="sgrid">';
+  var subsShown = ['AR','MK','EI','GS','MC','VE'];
+  for (var i = 0; i < subsShown.length; i++) {
+    var e = subEstimate(subsShown[i]);
+    html += '<div class="scell"><div class="sv' + (e ? '' : ' nd') + '">' + (e ? e.score : '—') + '</div><div class="sk">' + subsShown[i] + '</div></div>';
+  }
+  html += '</div>';
+  // composites
+  html += '<div style="margin-top:4px">';
+  html += compRow('NF Composite 1', c1, 'target 252 · min 235');
+  html += compRow('NF Composite 2', c2, 'min 235');
+  html += '<div class="comp-row"><div class="comp-l">AFQT (percentile)<small>min 50 to enlist</small></div><div class="comp-v" style="color:' + (afqt == null ? 'var(--muted)' : (afqt >= 50 ? 'var(--green)' : 'var(--red)')) + '">' + (afqt == null ? '—' : afqt) + '</div></div>';
+  html += '</div></div>';
+
+  // 3) Daily plan
+  var batch = todayBatch();
+  html += '<div class="sl" style="margin-top:18px">TODAY\'S STUDY PLAN</div>';
+  html += '<div class="box by" style="margin-top:0">';
+  var dleft = daysBetweenKeys(todayKey(), ASVAB_TARGET);
+  html += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + (dleft >= 0 ? dleft + ' days to ASVAB · ' : '') + (ST.studyHours || 2) + ' hr/day · math first, then EI/GS/MC/VE.</div>';
+  if (!batch.length) {
+    html += '<div style="font-size:13px;color:var(--green);font-weight:600">All planned topics practiced — keep reviewing due flashcards and run a full practice test.</div>';
+  } else {
+    for (var i = 0; i < batch.length; i++) {
+      var tp = batch[i]; var done = topicDone(tp.id);
+      var sName = ASVAB_SUBS[tp.sub] ? ASVAB_SUBS[tp.sub].name : tp.sub;
+      html += '<div class="hrow" style="padding:9px 0;border-color:rgba(30,58,95,.4)"><div class="hck' + (done ? ' on' : '') + '" onclick="openTopic(\'' + tp.id + '\')"></div>'
+           + '<div class="hinfo" onclick="openTopic(\'' + tp.id + '\')" style="cursor:pointer"><div class="hn' + (done ? ' done' : '') + '">' + tp.title + '</div>'
+           + '<div class="hw">' + sName + '</div></div></div>';
+    }
+  }
+  // hours selector
+  html += '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--muted)">Hours/day:</span>';
+  var hrs = [1,2,3,4];
+  for (var i = 0; i < hrs.length; i++) {
+    html += '<button class="sbtn' + ((ST.studyHours || 2) === hrs[i] ? ' on' : '') + '" onclick="setStudyHours(' + hrs[i] + ')">' + hrs[i] + (hrs[i] === 4 ? '+' : '') + '</button>';
+  }
+  html += '</div></div>';
+
+  // weekly subject progress bars
+  html += '<div class="sl" style="margin-top:18px">PROGRESS BY SUBJECT</div>';
+  var pbsubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  for (var i = 0; i < pbsubs.length; i++) {
+    var pr = subProgress(pbsubs[i]);
+    html += '<div class="subbar"><div class="subbar-h"><span style="color:var(--text)">' + ASVAB_SUBS[pbsubs[i]].name + '</span><span>' + pr.done + '/' + pr.tot + '</span></div>'
+         + '<div class="subbar-t"><div class="subbar-f" style="width:' + pr.pct + '%"></div></div></div>';
+  }
+
+  // 4) Study session timer
+  html += '<div class="sl" style="margin-top:18px">STUDY SESSION TIMER</div>';
+  html += '<div class="box bb" style="margin-top:0;text-align:center">';
+  html += '<div id="timerClock" style="font-family:var(--mono);font-size:34px;font-weight:600;color:var(--bright);letter-spacing:2px">' + timerDisplay() + '</div>';
+  html += '<div style="margin:8px 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">';
+  var tsubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  html += '<select id="timerSub" onchange="timerSetSub(this.value)" style="background:var(--mid);color:var(--text);border:1px solid var(--ice2);border-radius:7px;padding:6px 8px;font-size:12px">';
+  for (var i = 0; i < tsubs.length; i++) html += '<option value="' + tsubs[i] + '"' + (studyTimer.sub === tsubs[i] ? ' selected' : '') + '>' + tsubs[i] + ' — ' + ASVAB_SUBS[tsubs[i]].name + '</option>';
+  html += '</select></div>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0;font-size:12px;color:var(--muted)">Questions done: '
+       + '<button class="sbtn" onclick="timerAddQ(-1)">−</button><span id="timerQ" style="font-family:var(--mono);font-size:16px;color:var(--text);min-width:24px;display:inline-block">' + studyTimer.q + '</span><button class="sbtn" onclick="timerAddQ(1)">+</button></div>';
+  html += '<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">'
+       + '<button class="sbtn pri" onclick="toggleTimer()">' + (studyTimer.running ? '⏸ Pause' : '▶ Start') + '</button>'
+       + '<button class="sbtn" onclick="saveSession()">Save to plan</button></div>';
+  html += '</div>';
+
+  // 5) Curriculum browser
+  html += '<div class="sl" style="margin-top:18px">CURRICULUM</div>';
+  html += '<div class="box br" style="margin-top:0">Study aid only — not an official Navy source. Always confirm scores/requirements with a recruiter.</div>';
+  for (var s = 0; s < STUDY_ORDER.length; s++) {
+    var sub = STUDY_ORDER[s];
+    var subTopics = CURRICULUM.filter(function(t){ return t.sub === sub; });
+    if (!subTopics.length) continue;
+    var subName = ASVAB_SUBS[sub] ? ASVAB_SUBS[sub].name : (sub === 'NPS' ? 'Nuclear Power School readiness' : sub);
+    var pr = subProgress(sub);
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px"><span class="sl" style="margin:0">' + sub + ' · ' + subName + '</span><span class="chip cb">' + pr.done + '/' + pr.tot + '</span></div>';
+    for (var i = 0; i < subTopics.length; i++) {
+      var tp = subTopics[i]; var ts = ST.study.topics && ST.study.topics[tp.id];
+      var mastered = ts && ts.box >= 3;
+      var started = ts && ts.seen > 0;
+      var badge = mastered ? '<span class="st-m cg">MASTERED</span>' : (started ? '<span class="st-m cb">STARTED</span>' : '<span class="st-m" style="background:var(--mid);color:var(--muted)">NEW</span>');
+      html += '<div class="stopic" onclick="openTopic(\'' + tp.id + '\')"><div class="st-n">' + tp.title + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
+    }
+  }
+
+  el.innerHTML = html;
+  renderCountdown('studyCountdown', false);
+}
+
+function compRow(label, comp, sub) {
+  var col = 'var(--muted)';
+  if (comp.score != null) col = comp.score >= NF_GATES.pass ? 'var(--green)' : (comp.score >= NF_GATES.floor235 ? '#ffc83c' : 'var(--red)');
+  var val = comp.score != null ? comp.score : '—';
+  var note = sub;
+  if (comp.score == null) {
+    var missing = comp.parts.filter(function(p){ return !p.est; }).map(function(p){ return p.sub; });
+    note = 'need data: ' + missing.join(', ');
+  }
+  return '<div class="comp-row"><div class="comp-l">' + label + '<small>' + comp.label + ' · ' + note + '</small></div><div class="comp-v" style="color:' + col + '">' + val + '</div></div>';
+}
+
+function renderTopicView() {
+  var t = topicById(STUDY_VIEW); if (!t) { STUDY_VIEW = null; return ''; }
+  var ts = ST.study.topics && ST.study.topics[t.id];
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<button class="sbtn" onclick="studyHome()">← Study</button>'
+    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">' + t.sub + ' · ' + (ASVAB_SUBS[t.sub] ? ASVAB_SUBS[t.sub].name : t.sub) + '</div></div>';
+  html += '<div class="hero" style="margin-bottom:12px;padding:14px"><div class="hero-ey">TOPIC</div><div class="hero-t" style="font-size:18px">' + t.title + '</div>';
+  if (ts && ts.seen) html += '<div class="hero-b">Practiced ' + ts.correct + '/' + ts.seen + ' correct · SRS box ' + (ts.box || 0) + '/5' + (ts.due ? ' · review due ' + ts.due : '') + '</div>';
+  html += '</div>';
+  // mode tabs
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px">'
+    + '<button class="sbtn' + (STUDY_MODE === 'lesson' ? ' on' : '') + '" onclick="studySetMode(\'lesson\')">Lesson</button>'
+    + '<button class="sbtn' + (STUDY_MODE === 'cards' ? ' on' : '') + '" onclick="studySetMode(\'cards\')">Flashcards (' + t.cards.length + ')</button>'
+    + '<button class="sbtn' + (STUDY_MODE === 'quiz' ? ' on' : '') + '" onclick="studySetMode(\'quiz\')">Quiz (' + t.quiz.length + ')</button></div>';
+
+  if (STUDY_MODE === 'lesson') {
+    html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
+    html += '<div style="margin-top:16px"><button class="sbtn pri" onclick="studySetMode(\'cards\')">Study flashcards →</button></div>';
+  } else if (STUDY_MODE === 'cards') {
+    var c = t.cards[cardIdx];
+    html += '<div class="flash" onclick="flipCard()">' + (cardFlipped ? '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">ANSWER</div>' + c.b + '</div>' : '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">CARD ' + (cardIdx + 1) + ' / ' + t.cards.length + ' — tap to flip</div>' + c.f + '</div>') + '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">'
+      + '<button class="sbtn" onclick="nextCard(-1)">← Prev</button>'
+      + '<span style="font-size:11px;color:var(--muted);font-family:var(--mono)">' + (cardIdx + 1) + ' / ' + t.cards.length + '</span>'
+      + '<button class="sbtn" onclick="nextCard(1)">Next →</button></div>';
+    html += '<div style="margin-top:14px;text-align:center"><button class="sbtn pri" onclick="studySetMode(\'quiz\')">Take the quiz →</button></div>';
+  } else if (STUDY_MODE === 'quiz') {
+    var q = t.quiz[quizIdx];
+    html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (quizIdx + 1) + ' / ' + t.quiz.length + '</div>';
+    html += '<div style="font-size:14px;line-height:1.6;color:#fff;font-weight:600;margin-bottom:14px">' + q.q + '</div>';
+    for (var i = 0; i < q.c.length; i++) {
+      var cls = 'qopt';
+      if (quizPicked !== -1) {
+        if (i === q.a) cls += ' correct';
+        else if (i === quizPicked) cls += ' wrong';
+        else cls += ' dim';
+      }
+      html += '<button class="' + cls + '" onclick="answerQuiz(' + i + ')">' + String.fromCharCode(65 + i) + '. ' + q.c[i] + '</button>';
+    }
+    if (quizPicked !== -1) {
+      html += '<div class="box ' + (quizPicked === q.a ? 'bg' : 'br') + '" style="margin-top:10px"><strong>' + (quizPicked === q.a ? 'Correct.' : 'Not quite.') + '</strong> ' + (q.e || '') + '</div>';
+      html += '<div style="margin-top:12px;text-align:right"><button class="sbtn pri" onclick="nextQuiz()">' + (quizIdx < t.quiz.length - 1 ? 'Next question →' : 'Finish & save score') + '</button></div>';
+    }
+  }
+  return html;
+}
+
+function setStudyHours(h) { ST.studyHours = h; saveState(); renderStudy(); }
+
 // ── NAV ──────────────────────────────────────────────────────
 function goTab(t) {
   var tabEls = document.querySelectorAll('.tab');
   for (var i = 0; i < tabEls.length; i++) tabEls[i].classList.remove('on');
-  var screens = ['today','train','prt','sci','ready','enlist'];
+  var screens = ['today','train','study','prt','sci','ready','enlist'];
   for (var i = 0; i < screens.length; i++) {
     var el = document.getElementById(screens[i] + 'Screen');
     if (el) el.classList.remove('active');
