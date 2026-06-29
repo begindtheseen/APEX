@@ -2576,6 +2576,38 @@ var SCIENCE = {
   ]
 };
 
+// ── ASVAB STRATEGY (always available, not phase-gated) ───────
+// How the test is actually scored + how to study and sit it. Verified against
+// the official AFQT formula; the Nuke-composite nuance is added on purpose.
+var ASVAB_STRATEGY = [
+  { ico:'🎯', title:'How the AFQT is actually scored',
+    body:'<h3>It is a percentile, not a percentage</h3><p>A 50 does not mean you got half the questions right — it means you scored better than about half of a national reference group (the 1997 normative sample). So your job is to out-perform that benchmark, not to be &#34;perfect.&#34;</p><h3>Verbal is doubled</h3><p>The score that gates enlistment is the <strong>AFQT</strong>, and it is built from only four subtests: <strong>AFQT = Arithmetic Reasoning (AR) + Math Knowledge (MK) + 2 × (Word Knowledge + Paragraph Comprehension)</strong>. Your verbal score is weighted <strong>double</strong> — it is the single biggest lever on the qualifying score. The other subtests (electronics, mechanical, etc.) do not count toward the AFQT.</p><div class="bb"><strong>Nuclear Field nuance:</strong> the AFQT needs only those four, but the <strong>NF composite</strong> also uses the technical subtests (commonly AR+MK+EI+GS, or VE+AR+MK+MC). So for the enlistment gate, hammer verbal + math; for the Nuke score, you ALSO need Electronics Info (EI), General Science (GS), and Mechanical Comprehension (MC). Confirm the current composites with your recruiter.</div>' },
+  { ico:'📈', title:'Study the verbal sections first',
+    body:'<h3>Biggest bang for your buck</h3><p>Because Word Knowledge + Paragraph Comprehension is doubled, it is the highest-leverage place to gain AFQT points — for most people, faster points than grinding math. Drill <strong>vocabulary</strong> (roots, prefixes, context) and <strong>reading comprehension</strong> first, then Arithmetic Reasoning and Math Knowledge.</p><p>Once the AFQT gate is comfortable, add the Nuke-composite subtests (EI, GS, MC).</p>' },
+  { ico:'🖥️', title:'Beat the adaptive (CAT) test',
+    body:'<h3>The computer test adapts to you</h3><p>The CAT-ASVAB at MEPS is <strong>adaptive</strong>: answer right and the next question gets harder; answer wrong and it gets easier. It estimates your ability from where your accuracy settles — so the higher the difficulty you can sustain, the higher your score.</p><ul><li><strong>Do not rush the early questions</strong> — they set your starting difficulty. Slow down and lock them in.</li><li>You <strong>cannot skip or go back</strong>, and you must answer every question.</li><li><strong>Pace yourself</strong> so you are not forced to rapid-guess the final questions — on the CAT, a run of wrong guesses at the end of a section can hurt more than it helps (this is the one place &#34;always guess&#34; does not fully apply).</li><li>The take-at-home version (PiCAT) is also adaptive; expect a short verification test at MEPS.</li></ul>' },
+  { ico:'✏️', title:'On the paper test, never leave a blank',
+    body:'<h3>Guessing math</h3><p>The paper ASVAB (offered in some high-school settings) has <strong>no penalty for wrong answers</strong> — a blank is a guaranteed zero, while a guess on four options is about a <strong>25% chance</strong> of a point. If you are running out of time, <strong>fill in every remaining bubble.</strong> (On the computer test you cannot leave blanks anyway — see the adaptive card for end-of-section pacing.)</p>' },
+  { ico:'⏱️', title:'How to practice',
+    body:'<ul><li><strong>Use a timer</strong> (about a minute a question) so decision-making under pressure feels normal on test day.</li><li><strong>No calculator</strong> — the math sections do not allow one. Practice by hand.</li><li><strong>Answer elimination</strong> for vocab: use root words, prefixes, and context to cut two options fast, then choose between the last two.</li><li><strong>Drill practice questions</strong> over memorizing facts — the test rewards pattern recognition and being trainable, and tracking weak areas tells you where to push.</li></ul>' },
+  { ico:'🍳', title:'Test-day checklist',
+    body:'<ul><li>Eat a <strong>steady breakfast</strong> (eggs, oats, Greek yogurt, peanut butter on whole-grain) — skip the sugar/energy-drink crash that hits mid-test.</li><li><strong>Use the bathroom first</strong> — you cannot leave mid-test.</li><li>If you use nicotine, handle it before you go in.</li><li><strong>No calculators</strong> are allowed.</li></ul><div class="by">General prep tips, not medical advice — eat what actually works for you.</div>' }
+];
+function tglAsv(i) { document.getElementById('asv' + i).classList.toggle('open'); }
+function renderAsvabStrategy() {
+  var html = '<div style="font-family:var(--mono);font-size:10px;color:var(--bright);letter-spacing:2px;margin:4px 0 8px">ASVAB STRATEGY &#8212; ALWAYS AVAILABLE</div>';
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px">How the test is actually scored, and how to study and sit it. The AFQT formula is official; confirm Nuke composites and current rules with your recruiter.</div>';
+  for (var i = 0; i < ASVAB_STRATEGY.length; i++) {
+    var s = ASVAB_STRATEGY[i];
+    html += '<div class="scard" id="asv' + i + '"><div class="shd" onclick="tglAsv(' + i + ')">'
+      + '<div class="sico">' + s.ico + '</div><div class="stit">' + s.title + '</div>'
+      + '<div class="schev">&#9658;</div></div>'
+      + '<div class="sbody">' + s.body + '</div></div>';
+  }
+  html += '<div style="height:6px"></div>';
+  return html;
+}
+
 function renderSci() {
   var ph = ST.phase;
   var articles = SCIENCE[ph] || SCIENCE[1];
@@ -2583,6 +2615,7 @@ function renderSci() {
   var phEmojis2 = ['','🌱','⚡','🧠','🚀'];
   var html = '<div style="margin-bottom:12px;padding:11px 13px;background:rgba(255,68,85,.04);border:1px solid rgba(255,68,85,.22);border-radius:10px;font-size:11px;color:var(--text);line-height:1.6">'
     + '<strong style="color:var(--red)">Educational, not advice.</strong> APEX is a prep app — not medical, legal, or recruiting advice, and not an official Navy determination. The science below is general rationale (mostly single studies); wording like &#34;may&#34; and &#34;associated with&#34; is deliberate. Confirm Navy eligibility, standards, pay, and bonuses with an official recruiter, and consult a clinician for health, sleep, supplement, or cannabis-cessation questions (check OPSS / the DoD Prohibited List for supplements).</div>';
+  html += renderAsvabStrategy();
   html += '<div style="margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(77,184,255,.03));border:1px solid var(--ice);border-radius:10px;display:flex;align-items:center;gap:10px;">'
     + '<div style="font-size:18px">' + phEmojis2[ph] + '</div>'
     + '<div><div style="font-family:var(--mono);font-size:9px;color:var(--bright);letter-spacing:2px;margin-bottom:2px">PHASE ' + ph + ' SCIENCE</div>'

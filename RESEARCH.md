@@ -151,6 +151,21 @@ Navy facts in APEX must come from official sources first:
 
 ---
 
+## ASVAB scoring & test strategy
+
+*(Surfaced in-app as the always-available "ASVAB Strategy" cards on the Science tab.)*
+
+- **AFQT is a percentile**, scored against the 1997 normative reference sample — a 50 means "better than ~50% of that group," not "half correct." *(Grade A.)*
+- **AFQT = AR + MK + 2 × VE**, where VE (Verbal Expression) = Word Knowledge + Paragraph Comprehension. **Verbal is weighted double** — the single biggest lever on the qualifying score. Only those four subtests count toward the AFQT. *(Grade A — official AFQT formula.)*
+- **Nuke nuance (do not over-trim study):** the **NF composite** uses the technical subtests too (commonly AR+MK+EI+GS, or VE+AR+MK+MC). So the AFQT gate = verbal + math, but the Nuclear-Field score also needs Electronics Info, General Science, and Mechanical Comprehension. Confirm current composites with a recruiter. *(Recruiter-verify.)*
+- **CAT-ASVAB is adaptive** (item-response-theory): correct answers raise difficulty, wrong ones lower it; ability is estimated from where accuracy stabilizes. Early items set the starting trajectory; you cannot skip or go back; pace so you are not forced into a run of rapid end-of-section guesses (the CAT can penalize that). *(Grade A — adaptive design; the "first 5 questions" emphasis is a reasonable heuristic, not an official rule.)*
+- **Paper ASVAB:** no penalty for wrong answers — never leave a blank (a 4-option guess ≈ 25%). *(Grade A for the paper form.)*
+- **Study/test-day tips** (timed practice, no calculator, vocab answer-elimination, steady breakfast, bathroom first): sensible prep, **Grade C** — framed as tips, not medical advice.
+
+> Wording rule applied: the AFQT formula/percentile/adaptive facts are stated plainly (Grade A); qualifying numbers and Nuke composites are "confirm with recruiter"; breakfast/logistics are tips.
+
+---
+
 ## Supplement stack — evidence base and military safety rules
 
 APEX may discuss supplements as educational context but must **not** function as a
