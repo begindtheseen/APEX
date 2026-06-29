@@ -3047,10 +3047,12 @@ function renderCountdown(elId, compact) {
   if (mb) html += '<div class="mile ' + mb.cls + '">' + mb.msg + '</div>';
   if (compact) {
     var dleft = daysBetweenKeys(tk, ASVAB_TARGET);
+    var nt = nextUnfinishedTopic();
     html += '<div class="box bb" style="margin-top:0"><strong>ASVAB is priority #1.</strong> '
          + (dleft >= 0 ? dleft + ' days to test day. ' : 'Test target passed — sit it ASAP. ')
-         + 'Open <strong>Study</strong> to train math first (AR + MK), then EI/GS/MC/VE. '
-         + '<span style="color:var(--bright);cursor:pointer;font-weight:600" onclick="goTab(\'study\')">Go to Study →</span></div>';
+         + 'Train math first (AR + MK), then EI/GS/MC/VE.'
+         + '<div style="margin-top:9px"><button class="sbtn pri" style="width:100%;padding:11px" onclick="startStudying()">▶ Start studying now'
+         + (nt ? ' — ' + nt.title : '') + '</button></div></div>';
   }
   el.innerHTML = html;
   renderPaceInto(elId + 'Pace');
@@ -3167,8 +3169,10 @@ function renderPaceInto(elId) {
   }
   var pct = p.total ? Math.round(p.done / p.total * 100) : 0;
   var epct = p.total ? Math.round(p.expected / p.total * 100) : 0;
+  var ntTopic = nextUnfinishedTopic();
+  var ctaBtn = (p.remaining > 0 && ntTopic) ? '<div style="margin-top:8px"><button class="sbtn pri" style="width:100%;padding:10px" onclick="startStudying()">▶ Start your next topic — ' + ntTopic.title + '</button></div>' : '';
   el.innerHTML = '<div class="mile ' + cls + '" style="margin-bottom:8px"><div style="font-size:13px">' + head + '</div>'
-    + '<div style="font-weight:400;font-size:11px;margin-top:4px;color:var(--text);opacity:.9">' + body + '</div></div>'
+    + '<div style="font-weight:400;font-size:11px;margin-top:4px;color:var(--text);opacity:.9">' + body + '</div>' + ctaBtn + '</div>'
     + '<div class="subbar" style="margin-bottom:14px"><div class="subbar-h"><span style="color:var(--text)">Topics complete</span><span>' + p.done + ' / ' + p.total + ' · plan wants ' + p.expected + '</span></div>'
     + '<div class="subbar-t" style="position:relative"><div class="subbar-f" style="width:' + pct + '%"></div>'
     + '<div style="position:absolute;top:-2px;bottom:-2px;left:' + epct + '%;width:2px;background:#fff;opacity:.7" title="plan target"></div></div></div>';
@@ -3217,6 +3221,18 @@ var STUDY_MODE = 'lesson'; // lesson | cards | quiz
 var cardIdx = 0, cardFlipped = false;
 var quizIdx = 0, quizPicked = -1, quizRunCorrect = 0;
 
+// One-tap entry: jump straight into the next unfinished priority topic. This is
+// the "I just need to start" button — zero menus between you and studying.
+function nextUnfinishedTopic() {
+  var topics = orderedTopics();
+  for (var i = 0; i < topics.length; i++) if (!topicDone(topics[i].id)) return topics[i];
+  return topics[0] || null;
+}
+function startStudying() {
+  var t = nextUnfinishedTopic();
+  goTab('study');
+  if (t) openTopic(t.id);
+}
 function openTopic(id) { STUDY_VIEW = id; STUDY_MODE = 'lesson'; cardIdx = 0; cardFlipped = false; quizIdx = 0; quizPicked = -1; quizRunCorrect = 0; renderStudy(); }
 function studyHome() { STUDY_VIEW = null; renderStudy(); }
 function studySetMode(m) { STUDY_MODE = m; cardIdx = 0; cardFlipped = false; quizIdx = 0; quizPicked = -1; quizRunCorrect = 0; renderStudy(); }
