@@ -1056,6 +1056,9 @@ function sanitizeState() { deriveAll(); }
 
 // The currently-visible tab, so a mutation re-renders exactly what is on screen.
 var ACTIVE_TAB = 'today';
+// Which Today habit blocks are expanded, preserved across re-renders so checking
+// a habit never collapses its section. null = not yet initialized.
+var openBlocks = null;
 function renderActiveTab() {
   if (ACTIVE_TAB === 'today') renderToday();
   else if (ACTIVE_TAB === 'train') renderTrain();
@@ -2126,11 +2129,12 @@ function renderToday() {
   // Habit blocks
   var repCounts = ST.repCounts || {};
   var todaySkips = ST.skipLog[todayKey()] || [];
+  if (openBlocks === null) { openBlocks = {}; openBlocks[ALL_HABITS[0].id] = true; }
   var html = '';
   for (var bi3 = 0; bi3 < ALL_HABITS.length; bi3++) {
     var block = ALL_HABITS[bi3];
     var blockLocked = block.phase > ph;
-    var isOpen = bi3 === 0 ? ' open' : '';
+    var isOpen = openBlocks[block.id] ? ' open' : '';
     html += '<div class="ac' + (blockLocked ? ' locked' : '') + isOpen + '" id="ab' + bi3 + '">';
     html += '<div class="ach" onclick="tglBlock(' + bi3 + ',' + blockLocked + ')">';
     html += '<div class="ac-label" style="color:' + (blockLocked ? 'var(--muted)' : block.color) + '">' + block.label + '</div>';
@@ -2286,6 +2290,9 @@ function closeCatchup() { document.getElementById('catchupModal').classList.remo
 
 function tglBlock(i, locked) {
   if (locked) { toast('Unlocks in Phase ' + ALL_HABITS[i].phase, 'warn'); return; }
+  if (!openBlocks) openBlocks = {};
+  var id = ALL_HABITS[i].id;
+  openBlocks[id] = !openBlocks[id];
   document.getElementById('ab' + i).classList.toggle('open');
 }
 
