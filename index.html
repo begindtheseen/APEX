@@ -3357,7 +3357,7 @@ function renderStudy() {
 
   // 5) Practice tests — timed drills + full NF mock exam
   html += '<div class="sl" style="margin-top:18px">PRACTICE TESTS</div>';
-  html += '<div class="box by" style="margin-top:0">Timed, no feedback until you finish — the way the real test feels. Full mock runs all 7 NF sections back-to-back and scores both composites. This is where confidence (and your real score) is built.';
+  html += '<div class="box by" style="margin-top:0"><strong>Adaptive, like the real CAT-ASVAB:</strong> answer right and the next question gets harder; miss it and it eases off — your score reflects the difficulty you can sustain. Timed, no feedback until you finish, fresh questions each retake. The full mock runs all 7 NF sections and scores both composites.';
   // last mock summary
   var exams = (ST.study.exams || []);
   var lastMock = null;
@@ -3493,16 +3493,34 @@ function pickQs(sub, n) { var b = qbank(sub); return shuffleArr(b).slice(0, Math
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtClock(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); }
 
+// Adaptive (CAT-style) picker: choose an UNUSED question at the target difficulty
+// (1 easy / 2 medium / 3 hard), falling back to the nearest available difficulty,
+// then to any unused question. Returns the bank index, or -1 if exhausted. This
+// guarantees no within-test repeats and fresh draws across retakes.
+function pickAdaptive(sub, targetD, used) {
+  var bank = qbank(sub);
+  function cands(d) { var r = []; for (var i = 0; i < bank.length; i++) { if (used.indexOf(i) < 0 && (bank[i].d || 2) === d) r.push(i); } return r; }
+  var order = targetD === 1 ? [1,2,3] : (targetD === 3 ? [3,2,1] : [2,1,3]);
+  for (var k = 0; k < order.length; k++) { var c = cands(order[k]); if (c.length) return c[Math.floor(Math.random() * c.length)]; }
+  var any = []; for (var i = 0; i < bank.length; i++) if (used.indexOf(i) < 0) any.push(i);
+  return any.length ? any[Math.floor(Math.random() * any.length)] : -1;
+}
+function newSection(sub) {
+  var n = Math.min(QB_SECTIONS[sub].n, qbank(sub).length);
+  var sec = { sub:sub, n:n, used:[], qs:[], answers:[], curD:2 };
+  var idx = pickAdaptive(sub, 2, sec.used);            // start at medium difficulty
+  if (idx >= 0) { sec.used.push(idx); sec.qs.push(qbank(sub)[idx]); }
+  return sec;
+}
 function startDrill(sub) {
   if (!qbank(sub).length) { toast('No questions for ' + sub + ' yet', 'warn'); return; }
-  var spec = QB_SECTIONS[sub];
-  EXAM = { mode:'drill', sections:[{ sub:sub, qs:pickQs(sub, spec.n), answers:[] }], secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
+  EXAM = { mode:'drill', sections:[newSection(sub)], secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
   startExamTimer(); STUDY_VIEW = null; goTab('study');
 }
 function startMock() {
-  var sections = MOCK_ORDER.filter(function(s){ return qbank(s).length; }).map(function(s){ return { sub:s, qs:pickQs(s, QB_SECTIONS[s].n), answers:[] }; });
-  if (!sections.length) { toast('Question bank not loaded', 'warn'); return; }
-  EXAM = { mode:'mock', sections:sections, secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
+  var subs = MOCK_ORDER.filter(function(s){ return qbank(s).length; });
+  if (!subs.length) { toast('Question bank not loaded', 'warn'); return; }
+  EXAM = { mode:'mock', sections:subs.map(newSection), secIdx:0, qIdx:0, secStartMs:Date.now(), done:false, review:false, timer:null };
   startExamTimer(); STUDY_VIEW = null; goTab('study');
 }
 function startExamTimer() { if (EXAM.timer) clearInterval(EXAM.timer); EXAM.secStartMs = Date.now(); EXAM.timer = setInterval(examTick, 1000); }
@@ -3517,18 +3535,39 @@ function examTick() {
   if (el) { el.textContent = fmtClock(r); if (r < 60000) el.style.color = 'var(--red)'; }
 }
 function examSelect(i) { curSection().answers[EXAM.qIdx] = i; renderStudy(); }
-function examNext() { var sec = curSection(); if (EXAM.qIdx < sec.qs.length - 1) EXAM.qIdx++; else advanceSection(); renderStudy(); }
-function examPrev() { if (EXAM.qIdx > 0) { EXAM.qIdx--; renderStudy(); } }
-function advanceSection() { if (EXAM.secIdx < EXAM.sections.length - 1) { EXAM.secIdx++; EXAM.qIdx = 0; EXAM.secStartMs = Date.now(); } else { finishExam(); } }
+// Advancing serves the next question adaptively: a correct answer steps difficulty
+// up, a wrong/blank answer steps it down (like the real CAT-ASVAB). No going back.
+function examNext() {
+  var sec = curSection();
+  if (sec.answers[EXAM.qIdx] === undefined) sec.answers[EXAM.qIdx] = -1; // blank = skipped
+  if (sec.qs.length < sec.n) {
+    var correct = sec.answers[EXAM.qIdx] === sec.qs[EXAM.qIdx].a;
+    sec.curD = correct ? Math.min(3, sec.curD + 1) : Math.max(1, sec.curD - 1);
+    var idx = pickAdaptive(sec.sub, sec.curD, sec.used);
+    if (idx >= 0) { sec.used.push(idx); sec.qs.push(qbank(sec.sub)[idx]); EXAM.qIdx++; }
+    else advanceSection();   // bank exhausted early
+  } else {
+    advanceSection();
+  }
+  renderStudy();
+}
+function advanceSection() {
+  if (EXAM.secIdx < EXAM.sections.length - 1) { EXAM.secIdx++; EXAM.qIdx = 0; EXAM.secStartMs = Date.now(); }
+  else { finishExam(); }
+}
 function recordExamIntoSubs(sub, correct, total) { var s = studySubState(sub); s.seen += total; s.correct += correct; }
 function finishExam() {
   if (EXAM.timer) { clearInterval(EXAM.timer); EXAM.timer = null; }
   EXAM.done = true;
   var perSub = {};
   for (var k = 0; k < EXAM.sections.length; k++) {
-    var sec = EXAM.sections[k], correct = 0;
-    for (var i = 0; i < sec.qs.length; i++) { if (sec.answers[i] === sec.qs[i].a) correct++; }
-    perSub[sec.sub] = { correct:correct, total:sec.qs.length, score:accToStd(correct / sec.qs.length) };
+    var sec = EXAM.sections[k], correct = 0, wSum = 0, wEarned = 0;
+    for (var i = 0; i < sec.qs.length; i++) {
+      var d = sec.qs[i].d || 2; wSum += d;
+      if (sec.answers[i] === sec.qs[i].a) { correct++; wEarned += d; }   // harder questions count more
+    }
+    var wAcc = wSum ? wEarned / wSum : 0;                                // difficulty-weighted accuracy
+    perSub[sec.sub] = { correct:correct, total:sec.qs.length, score:accToStd(wAcc) };
     recordExamIntoSubs(sec.sub, correct, sec.qs.length);
   }
   EXAM.results = perSub;
@@ -3565,21 +3604,20 @@ function renderExam() {
     + '<button class="sbtn" onclick="exitExam()">✕ Exit</button>'
     + '<div style="font-family:var(--mono);font-size:11px;color:var(--muted)">' + (EXAM.mode === 'mock' ? 'NF MOCK · section ' + (EXAM.secIdx + 1) + '/' + EXAM.sections.length : 'TIMED DRILL') + '</div>'
     + '<div id="examTimer" style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--bright)">' + fmtClock(secRemainMs()) + '</div></div>';
-  html += '<div class="sl" style="margin:0 0 6px">' + sec.sub + ' · ' + spec.name + '</div>';
+  html += '<div class="sl" style="margin:0 0 6px">' + sec.sub + ' · ' + spec.name + ' <span style="color:var(--bright)">· adaptive</span></div>';
   // progress
-  var pct = Math.round((EXAM.qIdx) / sec.qs.length * 100);
+  var pct = Math.round((EXAM.qIdx) / sec.n * 100);
   html += '<div class="subbar-t" style="margin-bottom:12px"><div class="subbar-f" style="width:' + pct + '%"></div></div>';
-  html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (EXAM.qIdx + 1) + ' / ' + sec.qs.length + '</div>';
+  html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (EXAM.qIdx + 1) + ' / ' + sec.n + '</div>';
   html += '<div style="font-size:14px;line-height:1.6;color:#fff;font-weight:600;margin-bottom:14px;white-space:pre-line">' + esc(q.q) + '</div>';
   for (var i = 0; i < q.c.length; i++) {
     var cls = 'qopt' + (picked === i ? ' on' : '');
     html += '<button class="' + cls + '" onclick="examSelect(' + i + ')" style="' + (picked === i ? 'border-color:var(--bright);background:rgba(0,212,255,.12)' : '') + '">' + String.fromCharCode(65 + i) + '. ' + esc(q.c[i]) + '</button>';
   }
-  var lastOverall = (EXAM.secIdx === EXAM.sections.length - 1) && (EXAM.qIdx === sec.qs.length - 1);
+  var lastOverall = (EXAM.secIdx === EXAM.sections.length - 1) && (EXAM.qIdx === sec.n - 1);
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">'
-    + '<button class="sbtn" onclick="examPrev()"' + (EXAM.qIdx === 0 ? ' disabled' : '') + '>← Prev</button>'
-    + '<span style="font-size:10px;color:var(--muted)">' + (picked === undefined ? 'tap an answer' : 'answer saved') + '</span>'
-    + '<button class="sbtn pri" onclick="examNext()">' + (lastOverall ? 'Finish & score' : (EXAM.qIdx === sec.qs.length - 1 ? 'Next section →' : 'Next →')) + '</button></div>';
+    + '<span style="font-size:10px;color:var(--muted)">' + (picked === undefined ? 'tap an answer · no going back' : 'locked in') + '</span>'
+    + '<button class="sbtn pri" onclick="examNext()">' + (lastOverall ? 'Finish & score' : (EXAM.qIdx === sec.n - 1 ? 'Next section →' : 'Next →')) + '</button></div>';
   return html;
 }
 function renderExamResults() {
@@ -3612,7 +3650,8 @@ function renderExamResults() {
       html += '<div class="sl" style="margin-top:12px">' + sec.sub + '</div>';
       for (var i = 0; i < sec.qs.length; i++) {
         var qq = sec.qs[i], your = sec.answers[i], ok = your === qq.a;
-        html += '<div class="box ' + (ok ? 'bg' : 'br') + '"><div style="font-weight:600;color:#fff;margin-bottom:6px;white-space:pre-line">' + (i + 1) + '. ' + esc(qq.q) + '</div>';
+        var dLbl = ['', 'easy', 'medium', 'hard'][qq.d || 2];
+        html += '<div class="box ' + (ok ? 'bg' : 'br') + '"><div style="font-weight:600;color:#fff;margin-bottom:6px;white-space:pre-line">' + (i + 1) + '. <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">[' + dLbl + ']</span> ' + esc(qq.q) + '</div>';
         html += '<div style="font-size:12px;color:var(--green)">✓ ' + esc(qq.c[qq.a]) + '</div>';
         if (!ok) html += '<div style="font-size:12px;color:var(--red)">✗ your answer: ' + (your === undefined || your === -1 ? '(blank)' : esc(qq.c[your])) + '</div>';
         if (qq.e) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">' + esc(qq.e) + '</div>';
