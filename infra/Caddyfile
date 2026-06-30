@@ -1,0 +1,32 @@
+# APEX gateway. One front door for the whole platform.
+#   https://DOMAIN/         -> your static apps (APEX) from /srv/sites
+#   https://DOMAIN/auth/*   -> GoTrue   (accounts, tokens)
+#   https://DOMAIN/rest/*   -> PostgREST (your database API)
+#
+# Caddy provisions + renews HTTPS automatically. For a public domain it uses
+# Let's Encrypt; for `localhost` it issues a local dev cert.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# ── Auth service ────────────────────────────────────────────────────
+	handle_path /auth/* {
+		reverse_proxy auth:9999
+	}
+
+	# ── Database REST API ───────────────────────────────────────────────
+	handle_path /rest/* {
+		reverse_proxy rest:3000
+	}
+
+	# ── Static apps (APEX + anything you drop in ./sites) ───────────────
+	handle {
+		root * /srv/sites
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+}

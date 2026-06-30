@@ -2,12 +2,13 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v5';
+var CACHE = 'apex-shell-v6';
 var SHELL = [
   './',
   './index.html',
   './curriculum.js',
   './qbank.js',
+  './apex-sync.js',
   './manifest.json',
   './icon.svg'
 ];
@@ -32,6 +33,12 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var req = e.request;
   if (req.method !== 'GET') return;
+
+  // Never cache the private backend API (auth/database). When the platform
+  // serves the app and the API from the same origin, these must always hit
+  // the network so sign-in and sync stay live.
+  var path = new URL(req.url).pathname;
+  if (path.indexOf('/auth/') === 0 || path.indexOf('/rest/') === 0) return;
 
   // Navigations: network-first so a refresh picks up a new build, fall back
   // to the cached shell when offline.

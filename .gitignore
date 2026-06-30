@@ -1,0 +1,5 @@
+# Private platform — never commit secrets or runtime artifacts
+infra/.env
+infra/backups/
+infra/sites/*
+!infra/sites/.gitkeep

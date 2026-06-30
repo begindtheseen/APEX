@@ -52,6 +52,16 @@ This repo includes a GitHub Actions workflow (`.github/workflows/deploy.yml`)
 that publishes to **GitHub Pages** on every push to the default branch. To turn
 it on: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
+### Self-hosted (your own platform — no Vercel, no Supabase)
+
+`infra/` contains a complete, privately-owned replacement for the Vercel +
+Supabase free tiers: Postgres + GoTrue (accounts) + PostgREST (database API) +
+Caddy (auto-HTTPS static hosting) as Docker Compose, on a box you own — no
+caps, no project pausing. APEX gains optional cross-device account sync via
+`apex-sync.js` while staying fully offline-first when unconfigured. See
+**[PLATFORM.md](PLATFORM.md)** for the architecture and **[infra/README.md](infra/README.md)**
+for the runbook.
+
 ## Files
 
 | File | Purpose |
@@ -59,8 +69,11 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | `index.html` | The entire app — UI, logic, and `localStorage` persistence. |
 | `manifest.json` | PWA metadata (name, colors, icon) for home-screen install. |
 | `sw.js` | Service worker — caches the app shell for offline use. |
+| `apex-sync.js` | Optional cross-device sync against your own backend (see PLATFORM.md). |
 | `icon.svg` | App icon used by the manifest and home screen. |
 | `.github/workflows/deploy.yml` | Publishes the app to GitHub Pages. |
+| `infra/` | Self-hosted private platform (your own Vercel + Supabase). |
+| `PLATFORM.md` | Architecture + roadmap for the self-hosted platform. |
 | `RESEARCH.md` | The evidence base — every science claim, threshold, and Navy fact mapped to its source. |
 
 ## The science behind it
