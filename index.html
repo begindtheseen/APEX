@@ -495,6 +495,81 @@ body{color:var(--text);font-family:var(--sans);}
 .lesson{font-size:13px;line-height:1.7;color:var(--text);}
 .lesson p{margin-bottom:10px;} .lesson b{color:#fff;}
 
+/* ── CAREER TARGET / HUD ─────────────────────────────────────── */
+.hud{--accent:var(--bright);--gold:#ffb020;}
+.hud-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+.hud-title{font-family:var(--sans);font-size:24px;font-weight:800;color:#eaf6ff;line-height:1.1;letter-spacing:-.5px;}
+.hud-sub{font-size:12.5px;color:var(--muted);margin:6px 0 18px;line-height:1.5;}
+/* Category chips */
+.hud-cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin:0 -2px 18px;scrollbar-width:none;}
+.hud-cats::-webkit-scrollbar{display:none;}
+.hud-cat{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:12px;cursor:pointer;
+  background:linear-gradient(160deg,var(--shelf),var(--mid));border:1px solid var(--ice);color:var(--text);
+  font-family:var(--sans);font-size:11.5px;font-weight:700;transition:.18s;white-space:nowrap;}
+.hud-cat .ci{font-size:15px;}
+.hud-cat.on{border-color:var(--cat);color:#fff;box-shadow:0 0 0 1px var(--cat),0 0 22px -6px var(--cat);background:linear-gradient(160deg,var(--frost),var(--mid));}
+/* Job cards */
+.hud-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.hud-job{position:relative;text-align:left;padding:14px;border-radius:16px;cursor:pointer;overflow:hidden;
+  background:linear-gradient(165deg,var(--shelf) 0%,var(--deep) 100%);border:1px solid var(--ice);transition:.18s;}
+.hud-job::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 60%);opacity:.5;pointer-events:none;}
+.hud-job:active{transform:scale(.985);}
+.hud-job.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 30px -8px var(--accent);}
+.hud-job .ico{font-size:20px;}
+.hud-job .rate{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;
+  color:var(--void);background:var(--accent);border-radius:6px;padding:2px 7px;margin:8px 0 5px;}
+.hud-job .jname{font-size:13.5px;font-weight:800;color:#eaf6ff;line-height:1.2;}
+.hud-job .jtag{font-family:var(--mono);font-size:10px;color:var(--glacier);margin-top:7px;letter-spacing:.3px;}
+.hud-job .jsel{position:absolute;top:12px;right:12px;font-size:10px;font-family:var(--mono);color:var(--accent);}
+/* Detail panel */
+.hud-panel{border:1px solid var(--ice);border-radius:18px;padding:18px;margin-bottom:16px;
+  background:linear-gradient(170deg,var(--mid),var(--deep));box-shadow:inset 0 1px 0 rgba(125,211,252,.06);}
+.hud-panel + .hud-panel{margin-top:0;}
+.hud-slabel{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:12px;}
+.hud-need{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+.hud-need .num{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--accent);line-height:1;
+  text-shadow:0 0 18px color-mix(in srgb,var(--accent) 55%,transparent);}
+.hud-need .lbl{font-size:11px;color:var(--muted);}
+/* Composite node chain */
+.hud-chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px;}
+.hud-node{font-family:var(--mono);font-size:12px;font-weight:700;padding:7px 10px;border-radius:9px;
+  background:var(--frost);border:1px solid var(--ice2);color:var(--glacier);}
+.hud-node.focus{color:#1a1000;background:var(--gold);border-color:var(--gold);
+  box-shadow:0 0 18px -3px var(--gold);}
+.hud-plus{color:var(--gold);font-family:var(--mono);font-weight:700;opacity:.8;}
+.hud-alt{font-size:11px;color:var(--muted);margin-top:4px;}
+/* Attention bars */
+.hud-attn{display:flex;flex-direction:column;gap:11px;}
+.hud-row{display:flex;flex-direction:column;gap:5px;}
+.hud-row .rt{display:flex;justify-content:space-between;font-size:12px;}
+.hud-row .rt b{color:#dceefc;font-weight:700;}
+.hud-row .rt .pr{font-family:var(--mono);font-size:10px;letter-spacing:1px;}
+.hud-row .rt .pr.hi{color:var(--gold);} .hud-row .rt .pr.med{color:var(--glacier);}
+.hud-track{height:6px;border-radius:4px;background:var(--muted2);overflow:hidden;}
+.hud-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--gold));}
+.hud-blurb{font-size:11px;color:var(--muted);}
+/* Transfer chips */
+.hud-chips{display:flex;flex-wrap:wrap;gap:7px;}
+.hud-chip{font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:8px;border:1px solid var(--ice2);}
+.hud-chip.shared{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent);background:color-mix(in srgb,var(--green) 9%,transparent);}
+.hud-chip.fresh{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent);background:color-mix(in srgb,var(--gold) 9%,transparent);}
+.hud-help{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:10px;}
+/* Civilian outlook */
+.hud-civ{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.hud-civ .ci-item{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--text);line-height:1.4;}
+.hud-civ .ci-item::before{content:"›";color:var(--accent);font-weight:700;}
+.hud-demand{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11px;font-weight:800;
+  padding:6px 12px;border-radius:999px;letter-spacing:.5px;}
+.hud-demand.veryhigh{color:var(--green);background:color-mix(in srgb,var(--green) 12%,transparent);border:1px solid color-mix(in srgb,var(--green) 45%,transparent);}
+.hud-demand.high{color:var(--bright);background:color-mix(in srgb,var(--bright) 12%,transparent);border:1px solid color-mix(in srgb,var(--bright) 45%,transparent);}
+.hud-demand.mod{color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);}
+.hud-demand-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:10px;}
+.hud-disc{display:flex;gap:8px;font-size:11px;color:var(--muted);line-height:1.5;
+  border:1px dashed var(--ice2);border-radius:12px;padding:11px 13px;margin-top:4px;}
+.hud-empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 10px;line-height:1.6;}
+@media(max-width:360px){.hud-grid{grid-template-columns:1fr;}}
+
 </style>
 </head>
 <body>
@@ -552,6 +627,7 @@ body{color:var(--text);font-family:var(--sans);}
       <button class="tab" onclick="goTab('sci')">Sci</button>
       <button class="tab" onclick="goTab('ready')">Ready</button>
       <button class="tab" onclick="goTab('enlist')">Enlist</button>
+      <button class="tab" onclick="goTab('job')">Job</button>
     </div>
   </div>
 
@@ -652,6 +728,11 @@ body{color:var(--text);font-family:var(--sans);}
     <div id="enlistContent"></div>
   </div></div>
 
+  <!-- JOB / CAREER TARGET -->
+  <div class="screen scr" id="jobScreen"><div class="pad">
+    <div id="careerContent"></div>
+  </div></div>
+
 </div>
 
 <!-- MODAL -->
@@ -693,6 +774,7 @@ body{color:var(--text);font-family:var(--sans);}
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
 <script src="curriculum.js"></script>
 <script src="qbank.js"></script>
+<script src="jobs.js"></script>
 </div>
 
 <script>
@@ -1040,7 +1122,7 @@ var ST = {
   phase:1, streak:0, total:0, lastDate:null, lastGoodDate:null,
   startDate: todayKey(),
   checks:{}, prt:{run:null,pu:null,cu:null,pl:null},
-  asvab:{afqt:null,nf:null}, asvabLogs:[], enlist:{},
+  asvab:{afqt:null,nf:null}, asvabLogs:[], enlist:{}, targetJob:null, prevJob:null,
   study:{}, studyDays:{}, studyHours:2, shipDate:'2027-01-23',
   logs:[], onboardDone:false, consecutiveGoodDays:0,
   repCounts:{}, skipLog:{}, catStruggle:{}, skipReasons:{}, lastBackup:null,
@@ -1060,6 +1142,8 @@ function loadState() {
     ST.prt = s.prt || ST.prt;
     ST.asvab = s.asvab || ST.asvab;
     ST.asvabLogs = s.asvabLogs || [];
+    ST.targetJob = s.targetJob || null;
+    ST.prevJob = s.prevJob || null;
     ST.enlist = s.enlist || {};
     ST.study = s.study || {};
     ST.studyDays = s.studyDays || {};
@@ -1130,6 +1214,7 @@ function renderActiveTab() {
   else if (ACTIVE_TAB === 'ready') renderReady();
   else if (ACTIVE_TAB === 'study') renderStudy();
   else if (ACTIVE_TAB === 'enlist') renderEnlist();
+  else if (ACTIVE_TAB === 'job') renderCareer();
 }
 
 // Build a plain-object snapshot of all saved state. Used by both the
@@ -1139,6 +1224,7 @@ function serializeState() {
     phase:ST.phase, streak:ST.streak, total:ST.total,
     lastDate:ST.lastDate, lastGoodDate:ST.lastGoodDate,
     startDate:ST.startDate, prt:ST.prt, asvab:ST.asvab, asvabLogs:ST.asvabLogs, enlist:ST.enlist,
+    targetJob:ST.targetJob, prevJob:ST.prevJob,
     study:ST.study, studyDays:ST.studyDays, studyHours:ST.studyHours, shipDate:ST.shipDate, logs:ST.logs,
     onboardDone:ST.onboardDone, consecutiveGoodDays:ST.consecutiveGoodDays,
     repCounts:ST.repCounts, skipLog:ST.skipLog,
@@ -3667,7 +3753,7 @@ function renderExamResults() {
 function goTab(t) {
   var tabEls = document.querySelectorAll('.tab');
   for (var i = 0; i < tabEls.length; i++) tabEls[i].classList.remove('on');
-  var screens = ['today','train','study','prt','sci','ready','enlist'];
+  var screens = ['today','train','study','prt','sci','ready','enlist','job'];
   for (var i = 0; i < screens.length; i++) {
     var el = document.getElementById(screens[i] + 'Screen');
     if (el) el.classList.remove('active');
@@ -3710,6 +3796,139 @@ function init() {
   }
   updatePstStamp();
   setInterval(updatePstStamp, 30000);
+}
+
+// ── CAREER TARGET ────────────────────────────────────────────
+// Pick the Navy rating you're aiming for; the screen recomputes the ASVAB
+// composite you need, the subtests that deserve the most attention, what
+// carries over from your current path, and the civilian outlook.
+var CAREER_CAT = null;
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function selectCareerCat(id){ CAREER_CAT = id; renderCareer(); }
+
+function selectJob(id){
+  var J = window.APEX_JOBS; if (!J) return;
+  if (ST.targetJob && ST.targetJob !== id) ST.prevJob = ST.targetJob;
+  ST.targetJob = id;
+  saveState();
+  var j = J.byId(id);
+  toast(j ? ('Target set — ' + j.name) : 'Target set', 'ok');
+  renderCareer();
+}
+
+function careerNodeChain(parts, focus){
+  var J = window.APEX_JOBS, out = [];
+  parts.forEach(function(p, i){
+    if (i) out.push('<span class="hud-plus">+</span>');
+    var cls = focus.indexOf(p) >= 0 ? 'hud-node focus' : 'hud-node';
+    out.push('<span class="' + cls + '" title="' + esc(J.subtestName(p)) + '">' + esc(p) + '</span>');
+  });
+  return out.join('');
+}
+
+function renderCareer(){
+  var J = window.APEX_JOBS;
+  var host = document.getElementById('careerContent');
+  if (!host) return;
+  if (!J){ host.innerHTML = '<div class="hud-empty">Career data unavailable.</div>'; return; }
+
+  var target = ST.targetJob ? J.byId(ST.targetJob) : null;
+  if (!CAREER_CAT) CAREER_CAT = target ? target.cat : J.CATEGORIES[0].id;
+  var cat = J.category(CAREER_CAT);
+
+  var h = '<div class="hud" style="--accent:' + cat.accent + ';--cat:' + cat.accent + '">';
+  h += '<div class="hud-eyebrow">Career Target</div>';
+  h += '<div class="hud-title">Pick your military job</div>';
+  h += '<div class="hud-sub">Choose the Navy rating you’re aiming for. APEX recomputes the ASVAB score you need, shifts your study focus, keeps what transfers, and shows where it leads on the civilian side.</div>';
+
+  // Category chips
+  h += '<div class="hud-cats">';
+  J.CATEGORIES.forEach(function(c){
+    h += '<button class="hud-cat' + (c.id === CAREER_CAT ? ' on' : '') + '" style="--cat:' + c.accent + '" onclick="selectCareerCat(\'' + c.id + '\')">'
+       + '<span class="ci">' + c.icon + '</span>' + esc(c.label) + '</button>';
+  });
+  h += '</div>';
+
+  // Job cards for the active category
+  h += '<div class="hud-grid">';
+  J.byCat(CAREER_CAT).forEach(function(j){
+    var on = ST.targetJob === j.id;
+    h += '<button class="hud-job' + (on ? ' on' : '') + '" style="--accent:' + cat.accent + '" onclick="selectJob(\'' + j.id + '\')">'
+       + (on ? '<span class="jsel">◉ TARGET</span>' : '')
+       + '<div class="ico">' + cat.icon + '</div>'
+       + '<div class="rate">' + esc(j.rate) + '</div>'
+       + '<div class="jname">' + esc(j.name) + '</div>'
+       + '<div class="jtag">' + esc(j.composite.formula) + ' ≥ ' + j.composite.min + '</div>'
+       + '</button>';
+  });
+  h += '</div>';
+
+  if (!target){
+    h += '<div class="hud-empty">Tap a rating above to lock in your target and build your plan around it.</div>';
+    h += '</div>';
+    host.innerHTML = h;
+    return;
+  }
+
+  // ── SCORES YOU NEED ──
+  h += '<div class="hud-panel">';
+  h += '<div class="hud-slabel">Scores you need</div>';
+  h += '<div class="hud-need"><span class="num">' + target.composite.min + '</span><span class="lbl">minimum line-score composite<br>for <b style="color:#dceefc">' + esc(target.name) + '</b></span></div>';
+  h += '<div class="hud-chain">' + careerNodeChain(target.composite.parts, target.focus) + '</div>';
+  if (target.composite.alt) h += '<div class="hud-alt">' + esc(target.composite.alt) + '</div>';
+  if (target.extra) h += '<div class="hud-help">' + esc(target.extra) + '</div>';
+  h += '</div>';
+
+  // ── SECTIONS NEEDING MOST ATTENTION ──
+  h += '<div class="hud-panel"><div class="hud-slabel">Sections needing the most attention</div><div class="hud-attn">';
+  target.composite.parts.forEach(function(p){
+    var hi = target.focus.indexOf(p) >= 0;
+    var meta = J.SUBTESTS[p] || {};
+    h += '<div class="hud-row">'
+       + '<div class="rt"><b>' + esc(p) + ' · ' + esc(meta.name || p) + '</b>'
+       + '<span class="pr ' + (hi ? 'hi' : 'med') + '">' + (hi ? 'HIGH LEVERAGE' : 'SUPPORTING') + '</span></div>'
+       + '<div class="hud-track"><div class="hud-fill" style="width:' + (hi ? 100 : 62) + '%"></div></div>'
+       + (meta.blurb ? '<div class="hud-blurb">' + esc(meta.blurb) + '</div>' : '')
+       + '</div>';
+  });
+  h += '</div></div>';
+
+  // ── TRAINING FOCUS ──
+  if (target.training && target.training.length){
+    h += '<div class="hud-panel"><div class="hud-slabel">Training focus</div><div class="hud-civ">';
+    target.training.forEach(function(t){ h += '<div class="ci-item">' + esc(t) + '</div>'; });
+    h += '</div></div>';
+  }
+
+  // ── TRANSFERS FROM YOUR PLAN ──
+  var fromId = ST.prevJob || (target.id !== J.DEFAULT_JOB ? J.DEFAULT_JOB : null);
+  var tr = J.transfer(fromId, target.id);
+  h += '<div class="hud-panel"><div class="hud-slabel">Transfers from your plan</div><div class="hud-chips">';
+  tr.shared.forEach(function(p){ h += '<span class="hud-chip shared" title="' + esc(J.subtestName(p)) + '">✓ ' + esc(p) + '</span>'; });
+  tr.fresh.forEach(function(p){ h += '<span class="hud-chip fresh" title="' + esc(J.subtestName(p)) + '">+ ' + esc(p) + '</span>'; });
+  h += '</div>';
+  var fromName = fromId ? (J.byId(fromId) ? J.byId(fromId).name : fromId) : 'your current studying';
+  if (tr.fresh.length) h += '<div class="hud-help"><b style="color:var(--green)">Green</b> = already on your plan from ' + esc(fromName) + ', keep it. <b style="color:var(--gold)">Gold</b> = new focus this rating adds.</div>';
+  else h += '<div class="hud-help">Everything this rating needs, you’re already training. No new subtests to pick up.</div>';
+  h += '</div>';
+
+  // ── CIVILIAN OUTLOOK ──
+  var dl = target.demand.level.toLowerCase();
+  var dcls = dl.indexOf('very') >= 0 ? 'veryhigh' : (dl.indexOf('high') >= 0 ? 'high' : 'mod');
+  h += '<div class="hud-panel"><div class="hud-slabel">Civilian outlook</div><div class="hud-civ">';
+  target.civilian.forEach(function(c){ h += '<div class="ci-item">' + esc(c) + '</div>'; });
+  h += '</div>';
+  h += '<span class="hud-demand ' + dcls + '">FUTURE DEMAND · ' + esc(target.demand.level) + '</span>';
+  h += '<div class="hud-demand-note">' + esc(target.demand.note) + '</div>';
+  h += '</div>';
+
+  // ── DISCLAIMER ──
+  h += '<div class="hud-disc"><span>⚠️</span><span>Composite minimums are unofficial and change often. Confirm the current line-score requirement for this rating with your recruiter (NRC / MEPS) before committing.</span></div>';
+
+  h += '</div>';
+  host.innerHTML = h;
 }
 
 init();
