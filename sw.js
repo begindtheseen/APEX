@@ -2,12 +2,13 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v5';
+var CACHE = 'apex-shell-v6';
 var SHELL = [
   './',
   './index.html',
   './curriculum.js',
   './qbank.js',
+  './jobs.js',
   './manifest.json',
   './icon.svg'
 ];
