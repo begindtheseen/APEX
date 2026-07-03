@@ -15,8 +15,12 @@ var ASVAB_SUBS = {
   GS: { name:'General Science', phase:2 },
   MC: { name:'Mechanical Comprehension', phase:2 },
   WK: { name:'Word Knowledge', phase:3 },
-  PC: { name:'Paragraph Comprehension', phase:3 }
+  PC: { name:'Paragraph Comprehension', phase:3 },
+  AS: { name:'Auto & Shop Information', phase:2 },
+  AO: { name:'Assembling Objects', phase:3 }
 };
+// AS and AO do NOT feed the AFQT or the NF composites — they're covered so the
+// full CAT-ASVAB holds no surprises and backup ratings (e.g. MM uses AS) stay open.
 // VE (Verbal Expression) = WK + PC. NF composites & gates:
 var NF_COMPOSITES = {
   comp1: { label:'AR + MK + EI + GS', subs:['AR','MK','EI','GS'] },
@@ -492,6 +496,126 @@ var CURRICULUM = [
     {q:'Corrosion of a metal is fundamentally a…', c:['Chemical (oxidation) reaction','Physical change only','Nuclear reaction','Type of welding'], a:0, e:'Corrosion is oxidation — a chemical change of the metal.'}
   ]}
 
+,
+// ───────────────────────── PHASE 3 · PARAGRAPH COMPREHENSION (PC) — DEPTH ─────────────────────────
+// VE (WK+PC) is DOUBLED in the AFQT, so every PC point counts twice. These two
+// lessons cover the question types beyond main-idea that the CAT actually asks.
+{ id:'pc_purpose', sub:'PC', phase:3, title:'Author’s purpose, tone & attitude',
+  concept:'<p>Purpose questions ask <b>why</b> the passage was written: to <b>inform</b> (neutral facts), <b>persuade</b> (opinion + loaded words like "should/must/clearly"), <b>instruct</b> (steps, imperatives), or <b>entertain</b> (story, humor). Tone is the author’s attitude — find it in the <b>adjectives and verbs</b>, not the topic. A passage about accidents can be neutral (report) or alarmed (warning).</p><p>Trap to avoid: an answer that is <i>true</i> but not the <i>purpose</i>. "The passage mentions X" ≠ "the passage was written to explain X."</p>',
+  example:'<p><b>Ex:</b> "Every year, preventable machine injuries cost shipyards millions. Simple lockout procedures would stop most of them. There is no excuse for skipping them." Purpose?</p><p>Opinion words ("no excuse", "would stop") → <b>to persuade</b> readers to follow lockout procedures — not merely to inform about injuries.</p>',
+  cards:[
+    {f:'Four common purposes', b:'Inform, persuade, instruct, entertain.'},
+    {f:'Where tone lives', b:'In the author’s word choices (adjectives/verbs), not the subject matter.'},
+    {f:'"Should / must / clearly / worst" signal…', b:'Persuasion — the author is arguing, not just reporting.'},
+    {f:'True-but-not-asked trap', b:'An answer can be factually in the passage and still be wrong for a purpose/tone question.'}
+  ],
+  quiz:[
+    {q:'"First, disconnect the battery. Next, remove the terminal bolts. Finally, lift the battery straight up." The author’s purpose is to…', c:['instruct','persuade','entertain','compare'], a:0, e:'Numbered steps and command verbs = instructions.'},
+    {q:'A passage calls a new policy "reckless, hasty, and doomed to fail." Its tone is best described as…', c:['critical','neutral','admiring','amused'], a:0, e:'Strongly negative adjectives signal a critical attitude.'},
+    {q:'A paragraph lists a submarine’s length, crew size, and top speed without opinion. Purpose?', c:['to inform','to persuade','to entertain','to warn'], a:0, e:'Pure facts, no judgment words → informational.'}
+  ]},
+{ id:'pc_structure', sub:'PC', phase:3, title:'Sequence, directions & vocabulary in context',
+  concept:'<p>Three more CAT-PC question types. <b>Sequence:</b> "what happened first/next?" — rebuild the timeline from time words (before, after, then, once, until). <b>Following directions:</b> apply the passage’s rule to a new case exactly as written — no outside knowledge. <b>Vocabulary in context:</b> a word’s meaning <i>in this passage</i> may not be its common meaning; re-read the sentence and substitute each answer choice.</p><p>Golden rule for all PC: the correct answer is provable from the passage alone. If you’re using outside knowledge, you’re probably taking the bait.</p>',
+  example:'<p><b>Ex:</b> "The valve may be opened only after the gauge reads below 15 psi, unless a supervisor overrides." Gauge reads 20 psi, supervisor silent — can you open it?</p><p>No — the condition (&lt;15 psi) is not met and no override occurred. Answer comes purely from the rule as written.</p>',
+  cards:[
+    {f:'Sequence words to circle', b:'Before, after, then, once, until, following, prior to.'},
+    {f:'Directions questions are graded on…', b:'The rule exactly as written — not what would be sensible in real life.'},
+    {f:'Vocab-in-context method', b:'Substitute each choice into the sentence; keep the one that preserves the meaning.'},
+    {f:'The PC golden rule', b:'Every correct answer is provable from the passage alone.'}
+  ],
+  quiz:[
+    {q:'"Sand the hull before priming; once primed, wait a day, then paint." What comes immediately after priming?', c:['wait a day','paint','sand','wash'], a:0, e:'Sequence: sand → prime → wait a day → paint.'},
+    {q:'"Report any leak exceeding one drip per minute." A fitting drips every 90 seconds. Report it?', c:['No — it’s under the threshold','Yes — all leaks are reported','Yes — 90 s exceeds 1/min','Only if a supervisor asks'], a:0, e:'One drip per 90 s is slower than one per 60 s, so it does not exceed the stated rate.'},
+    {q:'"The crew weathered three inspections that week." Here "weathered" most nearly means…', c:['endured','forecast','eroded','avoided'], a:0, e:'Substitution: they endured/got through the inspections.'}
+  ]},
+// ───────────────────────── PHASE 3 · WORD KNOWLEDGE (WK) — DEPTH ─────────────────────────
+{ id:'wk_context', sub:'WK', phase:3, title:'Context clues & connotation',
+  concept:'<p>Half of WK items are "<i>word</i> most nearly means…" in a sentence. Mine the sentence for clues: <b>contrast</b> ("but", "although" → opposite nearby), <b>restatement</b> (a comma or dash often restates the word), and <b>cause/effect</b>. Also use <b>connotation</b> — decide first whether the word feels positive, negative, or neutral, then eliminate every choice with the wrong charge before comparing meanings.</p>',
+  example:'<p><b>Ex:</b> "Unlike his candid sister, Marco was <i>evasive</i> about his plans." "Unlike" + candid (open/honest) → evasive means the opposite: <b>avoiding directness</b>.</p>',
+  cards:[
+    {f:'"But / although / unlike" signal…', b:'A contrast clue — look for the opposite meaning nearby.'},
+    {f:'First move on a hard WK item', b:'Judge the word’s charge (positive/negative/neutral) and eliminate mismatches.'},
+    {f:'Restatement clue', b:'Commas, dashes, or "that is" often define the word in the same sentence.'},
+    {f:'Suffix -ous / -ful vs -less', b:'-ous/-ful = full of; -less = without (hope: hopeful vs hopeless).'}
+  ],
+  quiz:[
+    {q:'"The report was terse — just three sentences long." Terse most nearly means…', c:['brief','confusing','angry','detailed'], a:0, e:'The dash restates it: only three sentences → brief/concise.'},
+    {q:'"Though the sea looked placid, strong currents ran beneath." Placid most nearly means…', c:['calm','stormy','deep','cold'], a:0, e:'"Though" contrasts with strong currents → the surface looked calm.'},
+    {q:'Which word has a NEGATIVE connotation: slender, thrifty, scrawny, curious?', c:['scrawny','slender','thrifty','curious'], a:0, e:'Scrawny = thin in an unhealthy, unattractive way; slender/thrifty are positive spins.'}
+  ]},
+// ───────────────────────── PHASE 2 · AUTO & SHOP (AS) ─────────────────────────
+// Not in the AFQT or NF composites — covered so the full test holds no surprises
+// and mechanical backup ratings (MM uses VE+AR+MK+AS) stay open.
+{ id:'as_engine', sub:'AS', phase:2, title:'Engines & drivetrain fundamentals',
+  concept:'<p>A gasoline engine is a <b>4-stroke</b> cycle: <b>intake</b> (piston down, air/fuel in), <b>compression</b> (piston up, valves closed), <b>power</b> (spark fires, expansion pushes piston), <b>exhaust</b> (piston up, burnt gas out). Order: <i>suck–squeeze–bang–blow</i>. <b>Diesel</b> has no spark plugs — compression alone ignites the fuel. Power flows engine → <b>clutch/torque converter</b> → <b>transmission</b> (trades speed for torque) → <b>driveshaft</b> → <b>differential</b> (lets drive wheels turn at different speeds in corners) → wheels.</p>',
+  example:'<p><b>Ex:</b> Which stroke actually produces power? The <b>power stroke</b> — the only one where combustion pushes the piston; the other three are overhead.</p>',
+  cards:[
+    {f:'4-stroke order', b:'Intake → compression → power → exhaust (suck–squeeze–bang–blow).'},
+    {f:'Diesel vs gasoline ignition', b:'Diesel ignites by compression heat — no spark plugs.'},
+    {f:'What the differential does', b:'Lets the two drive wheels rotate at different speeds when turning.'},
+    {f:'What the transmission trades', b:'Speed for torque (low gears = more torque, less speed).'}
+  ],
+  quiz:[
+    {q:'During which stroke are both valves closed and the piston moving up before the spark?', c:['Compression','Intake','Power','Exhaust'], a:0, e:'Compression: valves sealed, mixture squeezed, then the plug fires.'},
+    {q:'A car’s engine cranks but won’t fire, and there’s no spark at the plugs. The most likely system at fault is the…', c:['ignition system','cooling system','exhaust system','suspension'], a:0, e:'No spark = ignition (coil, plugs, wiring).'},
+    {q:'Which component allows the left and right drive wheels to spin at different speeds in a turn?', c:['Differential','Clutch','Camshaft','Alternator'], a:0, e:'That is the differential’s entire job.'}
+  ]},
+{ id:'as_systems', sub:'AS', phase:2, title:'Electrical, fuel, cooling & brake systems',
+  concept:'<p><b>Electrical:</b> the <b>battery</b> starts the car (stores 12 V DC); the <b>alternator</b> recharges it and powers the car while running; the <b>starter motor</b> cranks the engine. Dim lights + clicking = weak battery; battery dies while driving = alternator. <b>Fuel:</b> pump → filter → injectors; a clogged filter starves the engine at load. <b>Cooling:</b> water pump circulates coolant; <b>thermostat</b> opens at temperature; radiator sheds heat — a stuck-closed thermostat overheats the engine fast. <b>Brakes:</b> hydraulic — pedal force pushes fluid to calipers (disc) or wheel cylinders (drum); a soft, sinking pedal usually means fluid leak or air in the lines.</p>',
+  example:'<p><b>Ex:</b> Engine overheats in 10 minutes but the radiator is cold. The <b>thermostat is stuck closed</b> — coolant never reaches the radiator.</p>',
+  cards:[
+    {f:'Battery vs alternator failure', b:'Won’t start = battery; dies while running = alternator.'},
+    {f:'Stuck-closed thermostat symptom', b:'Rapid overheat while the radiator stays cool.'},
+    {f:'Soft or sinking brake pedal', b:'Air in the lines or a fluid leak in the hydraulic system.'},
+    {f:'Order of the fuel path', b:'Tank → pump → filter → injectors (or carburetor on older engines).'}
+  ],
+  quiz:[
+    {q:'Headlights dim and the engine dies while driving down the road. Most likely cause?', c:['Failed alternator','Dead starter','Clogged air filter','Bad thermostat'], a:0, e:'The alternator powers the car once running; when it fails the battery drains and the car dies.'},
+    {q:'In a hydraulic brake system, pressing the pedal transmits force via…', c:['brake fluid','a steel cable','vacuum hoses','the driveshaft'], a:0, e:'Hydraulics: fluid transmits pedal force to the wheel cylinders/calipers.'},
+    {q:'Which part keeps coolant from circulating until the engine warms up?', c:['Thermostat','Radiator cap','Water pump','Head gasket'], a:0, e:'The thermostat stays closed when cold, then opens at operating temperature.'}
+  ]},
+{ id:'as_shop', sub:'AS', phase:2, title:'Shop tools, fasteners & materials',
+  concept:'<p>Match the tool to the job. <b>Cutting:</b> hacksaw (metal), crosscut saw (across wood grain), rip saw (with the grain), chisel (shaping). <b>Gripping/turning:</b> box-end wrench (strongest grip on a nut), socket + ratchet (speed), torque wrench (tighten to a specified torque), pliers never on good nuts (rounds them). <b>Holes:</b> drill bit makes it, <b>tap</b> cuts INTERNAL threads in a hole, <b>die</b> cuts EXTERNAL threads on a rod. <b>Fasteners:</b> bolts+nuts clamp strongest; washers spread load; lock washers resist loosening. <b>Level</b> checks horizontal; <b>plumb bob</b> checks vertical; <b>micrometer/caliper</b> measure precisely.</p>',
+  example:'<p><b>Ex:</b> You need threads inside a drilled hole for a bolt. Tool? A <b>tap</b> (tap = internal, die = external — "you tap INto a hole").</p>',
+  cards:[
+    {f:'Tap vs die', b:'Tap cuts internal threads (in a hole); die cuts external threads (on a rod).'},
+    {f:'Tighten a head bolt to spec with…', b:'A torque wrench.'},
+    {f:'Level vs plumb bob', b:'Level = horizontal; plumb bob = vertical.'},
+    {f:'Why not pliers on a nut?', b:'They round off the corners — use a box-end wrench or socket.'}
+  ],
+  quiz:[
+    {q:'Which tool cuts external threads on a metal rod?', c:['Die','Tap','Reamer','Punch'], a:0, e:'Die = external (rod); tap = internal (hole).'},
+    {q:'The best saw for cutting a steel pipe is a…', c:['hacksaw','rip saw','crosscut saw','coping saw'], a:0, e:'Hacksaws have fine, hardened teeth made for metal.'},
+    {q:'To confirm a fence post is perfectly vertical, use a…', c:['plumb bob','level laid flat','micrometer','chalk line'], a:0, e:'A plumb bob hangs true vertical by gravity.'}
+  ]},
+// ───────────────────────── PHASE 3 · ASSEMBLING OBJECTS (AO) ─────────────────────────
+{ id:'ao_connect', sub:'AO', phase:3, title:'AO: connection problems',
+  concept:'<p>Connection items show two shapes with labeled points (A, B) and a line; the answer joins the SAME points on the SAME shapes, with the shapes possibly <b>rotated</b>. Method: (1) Fix in memory <i>where each dot sits on its shape</i> — corner? midpoint of the short edge? inside? (2) Rotate each answer’s shape back upright in your head and re-check the dot’s home. (3) Kill choices where a dot moved to a different feature, the shape is <b>mirrored</b> (flipped), or the wrong shapes are used.</p><svg viewBox="0 0 300 90" style="width:100%;max-width:340px;display:block;margin:8px auto"><rect x="10" y="20" width="50" height="35" fill="none" stroke="#4db8ff" stroke-width="2"/><circle cx="10" cy="20" r="4" fill="#ffb020"/><text x="20" y="16" fill="#7dd3fc" font-size="10">A = top-left corner</text><polygon points="120,55 145,15 170,55" fill="none" stroke="#4db8ff" stroke-width="2"/><circle cx="145" cy="15" r="4" fill="#ffb020"/><text x="152" y="14" fill="#7dd3fc" font-size="10">B = apex</text><rect x="210" y="25" width="50" height="35" fill="none" stroke="#00e5a0" stroke-width="2" transform="rotate(25 235 42)"/><circle cx="219" cy="12" r="4" fill="#ffb020"/><text x="212" y="80" fill="#00e5a0" font-size="10">rotated — A still on ITS corner ✓</text></svg><p>Rotation preserves a dot’s home; mirroring does not. Mirrors are the #1 trap.</p>',
+  example:'<p><b>Ex:</b> Point A is at the tip of a triangle’s longest corner. An answer shows the triangle rotated 90° with A at the tip of that same longest corner → keep. Another shows A on the short corner → kill, even though it "looks similar."</p>',
+  cards:[
+    {f:'First thing to memorize on a connection item', b:'Which feature of the shape each dot sits on (corner, edge-midpoint, center).'},
+    {f:'Rotation vs mirror', b:'Rotation keeps the dot’s home and is allowed; a mirrored (flipped) shape is always wrong.'},
+    {f:'Fast elimination order', b:'Wrong shapes → mirrored shapes → dot on wrong feature → compare survivors.'}
+  ],
+  quiz:[
+    {q:'On a connection problem, the target shows point B at the midpoint of a rectangle’s SHORT side. A choice shows the rectangle rotated 90° with B at the midpoint of a LONG side. That choice is…', c:['wrong — the dot changed features','right — rotation is allowed','right — midpoints are equivalent','impossible to judge'], a:0, e:'Rotation is fine, but the dot must stay on the same feature (short-side midpoint).'},
+    {q:'A choice shows the correct shapes and dot positions, but one shape is a mirror image of the original. The choice is…', c:['wrong — mirroring is never allowed','right — mirrors count as rotation','right if rotated too','only wrong for triangles'], a:0, e:'AO answers may rotate pieces but never flip them.'},
+    {q:'The most efficient first elimination on AO connection items is to discard choices that…', c:['use different shapes than the originals','are rotated','look cluttered','have the line crossing a shape'], a:0, e:'Wrong-shape choices die instantly — no mental rotation needed.'}
+  ]},
+{ id:'ao_puzzle', sub:'AO', phase:3, title:'AO: puzzle (jigsaw) problems',
+  concept:'<p>Puzzle items show 4–6 loose pieces; the answer is the ONE figure those exact pieces assemble into. Don’t assemble — <b>eliminate</b>: (1) <b>Count pieces</b> — the assembled figure must contain exactly that many parts. (2) <b>Match signatures</b> — the most distinctive piece (longest curve, sharpest sliver, only right angle) must appear somewhere, rotated but never mirrored. (3) <b>Area sense</b> — pieces that look small can’t fill a big region.</p><svg viewBox="0 0 300 84" style="width:100%;max-width:340px;display:block;margin:8px auto"><polygon points="14,64 44,14 74,64" fill="none" stroke="#4db8ff" stroke-width="2"/><polygon points="86,64 116,14 146,64" fill="none" stroke="#4db8ff" stroke-width="2" transform="rotate(180 116 39)"/><text x="14" y="80" fill="#7dd3fc" font-size="10">2 triangles…</text><polygon points="196,14 256,14 256,64 196,64" fill="none" stroke="#00e5a0" stroke-width="2"/><line x1="196" y1="64" x2="256" y2="14" stroke="#00e5a0" stroke-width="1.6" stroke-dasharray="4 3"/><text x="188" y="80" fill="#00e5a0" font-size="10">…assemble into a split square ✓</text></svg><p>Work signature-first: one impossible piece kills a whole answer choice.</p>',
+  example:'<p><b>Ex:</b> Pieces: 3 triangles + 1 quarter-circle. An answer figure with no curved edge anywhere is dead on sight — the quarter-circle has to live somewhere.</p>',
+  cards:[
+    {f:'Piece-count rule', b:'The assembled figure must use exactly the pieces shown — no more, no fewer.'},
+    {f:'Signature piece', b:'The most distinctive piece (curve, sliver, notch) — hunt for it in each answer first.'},
+    {f:'Allowed vs forbidden moves', b:'Pieces may rotate; they may never mirror-flip or resize.'},
+    {f:'If stuck between two choices', b:'Compare where the signature piece’s odd angle/curve lands in each.'}
+  ],
+  quiz:[
+    {q:'A puzzle shows 5 pieces. One answer choice is clearly built from 4. That choice is…', c:['eliminated immediately','possible if pieces overlap','possible if one piece is hidden','correct if the outline matches'], a:0, e:'Piece count must match exactly — fastest kill available.'},
+    {q:'One piece is a thin sliver with a curved edge. The correct assembled figure must contain…', c:['a matching curved edge somewhere','only straight edges','two slivers','a mirrored sliver'], a:0, e:'Every piece appears in the assembly; a curve can’t vanish.'},
+    {q:'In AO puzzle items, pieces in the answer may be ______ compared with how they were shown.', c:['rotated','mirrored','enlarged','stretched'], a:0, e:'Rotation only — never flipped or resized.'}
+  ]}
 ];
 
 // Expose for the main app (browser global).
