@@ -3018,7 +3018,7 @@ function shipKey() { return ST.shipDate || '2027-01-23'; }
 // Build order priority for the daily plan: AR+MK first, then EI/GS/MC, then VE
 // (WK+PC), then NPS readiness. ASVAB training is available from day one — no
 // phase gate — because the test clock starts now.
-var STUDY_ORDER = ['AR','MK','EI','GS','MC','WK','PC','NPS'];
+var STUDY_ORDER = ['AR','MK','EI','GS','MC','WK','PC','AS','AO','NPS'];
 function orderedTopics() {
   var out = [];
   for (var s = 0; s < STUDY_ORDER.length; s++) {
@@ -3418,7 +3418,7 @@ function renderStudy() {
 
   // weekly subject progress bars
   html += '<div class="sl" style="margin-top:18px">PROGRESS BY SUBJECT</div>';
-  var pbsubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  var pbsubs = ['AR','MK','EI','GS','MC','WK','PC','AS','AO'];
   for (var i = 0; i < pbsubs.length; i++) {
     var pr = subProgress(pbsubs[i]);
     html += '<div class="subbar"><div class="subbar-h"><span style="color:var(--text)">' + ASVAB_SUBS[pbsubs[i]].name + '</span><span>' + pr.done + '/' + pr.tot + '</span></div>'
@@ -3430,7 +3430,7 @@ function renderStudy() {
   html += '<div class="box bb" style="margin-top:0;text-align:center">';
   html += '<div id="timerClock" style="font-family:var(--mono);font-size:34px;font-weight:600;color:var(--bright);letter-spacing:2px">' + timerDisplay() + '</div>';
   html += '<div style="margin:8px 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">';
-  var tsubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  var tsubs = ['AR','MK','EI','GS','MC','WK','PC','AS','AO'];
   html += '<select id="timerSub" onchange="timerSetSub(this.value)" style="background:var(--mid);color:var(--text);border:1px solid var(--ice2);border-radius:7px;padding:6px 8px;font-size:12px">';
   for (var i = 0; i < tsubs.length; i++) html += '<option value="' + tsubs[i] + '"' + (studyTimer.sub === tsubs[i] ? ' selected' : '') + '>' + tsubs[i] + ' — ' + ASVAB_SUBS[tsubs[i]].name + '</option>';
   html += '</select></div>';
@@ -3455,7 +3455,7 @@ function renderStudy() {
   html += '<div style="margin-top:10px"><button class="sbtn pri" style="width:100%;padding:12px" onclick="startMock()">▶ Full NF Mock Exam — all 7 sections</button></div>';
   html += '<div style="margin-top:10px;font-size:11px;color:var(--muted);margin-bottom:6px">Or drill one subtest (timed):</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
-  var drillSubs = ['AR','MK','EI','GS','MC','WK','PC'];
+  var drillSubs = ['AR','MK','EI','GS','MC','WK','PC','AS','AO'];
   for (var i = 0; i < drillSubs.length; i++) {
     var bn = qbank(drillSubs[i]).length;
     html += '<button class="sbtn" onclick="startDrill(\'' + drillSubs[i] + '\')"' + (bn ? '' : ' disabled') + '>' + drillSubs[i] + ' (' + Math.min(QB_SECTIONS[drillSubs[i]].n, bn) + ')</button>';
@@ -3567,10 +3567,13 @@ var QB_SECTIONS = {
   PC:{ n:11, min:20, name:'Paragraph Comprehension' },
   MK:{ n:16, min:20, name:'Mathematics Knowledge' },
   EI:{ n:16, min:9,  name:'Electronics Information' },
-  MC:{ n:16, min:20, name:'Mechanical Comprehension' }
+  MC:{ n:16, min:20, name:'Mechanical Comprehension' },
+  AS:{ n:16, min:11, name:'Auto & Shop Information' },
+  AO:{ n:16, min:17, name:'Assembling Objects' }
 };
-// Full NF mock order (covers both composites; VE = WK + PC).
-var MOCK_ORDER = ['GS','AR','WK','PC','MK','EI','MC'];
+// Full mock order mirrors the real CAT-ASVAB sequence (AS/AO don't feed the
+// AFQT or NF composites, but you sit them on test day — no surprises).
+var MOCK_ORDER = ['GS','AR','WK','PC','MK','EI','AS','MC','AO'];
 var EXAM = null;
 
 function qbank(sub) { return (typeof QBANK !== 'undefined' && QBANK[sub]) ? QBANK[sub] : []; }
