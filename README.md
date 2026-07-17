@@ -63,6 +63,22 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | `.github/workflows/deploy.yml` | Publishes the app to GitHub Pages. |
 | `RESEARCH.md` | The evidence base — every science claim, threshold, and Navy fact mapped to its source. |
 
+## Obsidian — the second curriculum (black side)
+
+The ◆ button at the right of the tab bar opens **Obsidian**: a black-themed
+second realm of the app that runs the exact same learning engine (lesson →
+flashcards → quiz → spaced repetition → adaptive timed drills) on a completely
+different curriculum, with completely separate progress.
+
+- All Obsidian content lives in **`obsidian.js`** — config, subjects, topics,
+  and an optional drill question bank. The app ships with placeholder content.
+- To teach a new subject: give the **HANDOFF SPEC** comment at the top of
+  `obsidian.js` to whoever (or whatever session) is writing your curriculum,
+  then paste their output into that file and reload. Nothing else changes.
+- Obsidian progress is stored under its own key (`apex_obsidian_v1`) and has
+  its own Export/Restore/Reset buttons at the bottom of its dashboard — it is
+  **not** included in the main APEX backup.
+
 ## The science behind it
 
 APEX's habits, phase thresholds, and Science tab are grounded in published research
