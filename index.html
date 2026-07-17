@@ -570,6 +570,57 @@ body{color:var(--text);font-family:var(--sans);}
 .hud-empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 10px;line-height:1.6;}
 @media(max-width:360px){.hud-grid{grid-template-columns:1fr;}}
 
+/* ── OBSIDIAN — the black realm ─────────────────────────────── */
+/* Launcher lives in the main nav: a black diamond that opens the other side. */
+.dk-launch{
+  flex-shrink:0;margin:0 10px 0 6px;width:32px;height:32px;border-radius:9px;
+  border:1px solid #2e2e2e;background:#000;color:#fff;cursor:pointer;
+  font-size:13px;line-height:1;
+  box-shadow:inset 0 0 10px rgba(255,255,255,.07), 0 0 12px rgba(0,0,0,.9);
+  transition:box-shadow .2s, border-color .2s;
+}
+.dk-launch:active{border-color:#fff;box-shadow:inset 0 0 14px rgba(255,255,255,.16);}
+/* The realm itself re-skins every shared component by overriding the palette
+   variables in scope: pure black surfaces, silver/white accents, no blue. */
+#obsidianApp{
+  --void:#000000; --deep:#050505; --mid:#0b0b0b; --shelf:#111111; --frost:#171717;
+  --ice:#232323; --ice2:#303030; --primary:#cfcfcf; --bright:#ffffff;
+  --glacier:#a9a9a9; --cryo:#ededed; --purple:#bfbfbf; --orange:#dcdcdc;
+  --text:#d8d8d8; --muted:#737373; --muted2:#2a2a2a;
+  background:#000;
+}
+#obsidianApp .hero{background:linear-gradient(180deg,#0d0d0d 0%,#060606 100%);border-color:#262626;}
+#obsidianApp .hero::before{background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.03) 42%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 58%,transparent 72%);background-size:300% 100%;}
+#obsidianApp .hero::after{background:radial-gradient(circle, rgba(255,255,255,.09) 0%, transparent 70%);}
+#obsidianApp .hero-ey{text-shadow:0 0 12px rgba(255,255,255,.3);}
+#obsidianApp .bb{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.15);}
+#obsidianApp .by{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.15);}
+#obsidianApp .by strong{color:#fff;}
+#obsidianApp .cb{background:rgba(255,255,255,.09);color:#fff;}
+#obsidianApp .cy{background:rgba(255,255,255,.09);color:#e5e5e5;}
+#obsidianApp .sbtn:active{background:rgba(255,255,255,.09);}
+#obsidianApp .sbtn.on{background:rgba(255,255,255,.11);border-color:#fff;}
+#obsidianApp .qopt:active{background:rgba(255,255,255,.05);}
+#obsidianApp .stopic:active{background:rgba(255,255,255,.05);}
+#obsidianApp .subbar-f{background:linear-gradient(90deg,#ffffff,#7a7a7a);}
+#obsidianApp .comp-row{border-bottom-color:rgba(255,255,255,.08);}
+#dkNav{
+  background:linear-gradient(180deg,#000 0%,#0a0a0a 100%);
+  border-bottom:1px solid #262626;
+  display:flex;height:50px;flex-shrink:0;align-items:center;gap:10px;padding:0 12px;
+  box-shadow:0 1px 20px rgba(255,255,255,.04);
+}
+.dk-back{
+  background:none;border:1px solid #2e2e2e;border-radius:8px;color:#cfcfcf;
+  font-family:var(--mono);font-size:11px;font-weight:600;padding:6px 11px;
+  cursor:pointer;letter-spacing:.5px;flex-shrink:0;
+}
+.dk-back:active{border-color:#fff;color:#fff;}
+.dk-brand{
+  font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;
+  letter-spacing:4px;flex:1;text-shadow:0 0 18px rgba(255,255,255,.35);
+}
+.dk-tag{font-family:var(--mono);font-size:9px;color:#737373;letter-spacing:1.5px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -629,6 +680,7 @@ body{color:var(--text);font-family:var(--sans);}
       <button class="tab" onclick="goTab('enlist')">Enlist</button>
       <button class="tab" onclick="goTab('job')">Job</button>
     </div>
+    <button class="dk-launch" onclick="goObsidian()" title="Obsidian — the second curriculum">◆</button>
   </div>
 
   <!-- TODAY -->
@@ -735,6 +787,16 @@ body{color:var(--text);font-family:var(--sans);}
 
 </div>
 
+<!-- OBSIDIAN — the black side. Same learning engine, different curriculum. -->
+<div class="screen" id="obsidianApp">
+  <div id="dkNav">
+    <button class="dk-back" onclick="exitObsidian()">← APEX</button>
+    <div class="dk-brand" id="dkBrand">OBSIDIAN</div>
+    <div class="dk-tag">SECOND CURRICULUM</div>
+  </div>
+  <div class="scr"><div class="pad" id="obsidianContent"></div></div>
+</div>
+
 <!-- MODAL -->
 <div class="modal" id="modal">
   <div class="msheet">
@@ -772,9 +834,11 @@ body{color:var(--text);font-family:var(--sans);}
 
 <div id="toast"></div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+<input type="file" id="obsImportFile" accept="application/json,.json" style="display:none" onchange="obsImport(event)">
 <script src="curriculum.js"></script>
 <script src="qbank.js"></script>
 <script src="jobs.js"></script>
+<script src="obsidian.js"></script>
 </div>
 
 <script>
@@ -3934,6 +3998,474 @@ function renderCareer(){
   host.innerHTML = h;
 }
 
+// ═══════════════════════════════════════════════════════════
+// OBSIDIAN — the black side. A second, fully separate learning
+// realm running the same engine (lesson → flashcards → quiz →
+// spaced repetition → adaptive timed drills) on whatever
+// curriculum obsidian.js provides. Its progress lives under its
+// own localStorage key and never touches the blue-side state.
+// ═══════════════════════════════════════════════════════════
+var OBS_KEY = 'apex_obsidian_v1';
+var OBS_ST = { topics:{}, subs:{}, exams:[] };
+
+function obsCfg() {
+  var c = (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {};
+  return {
+    brand: c.brand || 'OBSIDIAN',
+    name: c.name || 'Obsidian Academy',
+    tagline: c.tagline || '',
+    subjects: c.subjects || {},
+    order: c.order || [],
+    drills: c.drills || { n:12, min:15 }
+  };
+}
+function obsCurr() { return (typeof OBSIDIAN_CURRICULUM !== 'undefined' && OBSIDIAN_CURRICULUM) ? OBSIDIAN_CURRICULUM : []; }
+function obsQbank(sub) { return (typeof OBSIDIAN_QBANK !== 'undefined' && OBSIDIAN_QBANK && OBSIDIAN_QBANK[sub]) ? OBSIDIAN_QBANK[sub] : []; }
+function obsSubName(sub) { var s = obsCfg().subjects[sub]; return s ? s.name : sub; }
+// Subject order = config order, plus any subs found in the curriculum but
+// missing from the config (so a partial handoff still renders everything).
+function obsSubOrder() {
+  var order = obsCfg().order.slice(), cur = obsCurr();
+  for (var i = 0; i < cur.length; i++) if (order.indexOf(cur[i].sub) < 0) order.push(cur[i].sub);
+  return order;
+}
+
+function obsLoad() {
+  try {
+    var s = JSON.parse(localStorage.getItem(OBS_KEY) || '{}');
+    OBS_ST.topics = s.topics || {};
+    OBS_ST.subs = s.subs || {};
+    OBS_ST.exams = s.exams || [];
+  } catch(e) {}
+}
+function obsSave() { try { localStorage.setItem(OBS_KEY, JSON.stringify(OBS_ST)); } catch(e) {} }
+function obsTopicState(id) { if (!OBS_ST.topics[id]) OBS_ST.topics[id] = { box:0, due:null, seen:0, correct:0 }; return OBS_ST.topics[id]; }
+function obsSubState(sub) { if (!OBS_ST.subs[sub]) OBS_ST.subs[sub] = { seen:0, correct:0 }; return OBS_ST.subs[sub]; }
+
+// Same Leitner ladder as the blue side: pass ≥70% climbs a box, box 3 = mastered.
+function obsRecordQuiz(topicId, sub, correct, total) {
+  var t = obsTopicState(topicId);
+  t.seen += total; t.correct += correct;
+  var sx = obsSubState(sub);
+  sx.seen += total; sx.correct += correct;
+  var passed = total > 0 && (correct / total) >= 0.7;
+  if (passed) t.box = Math.min(5, (t.box || 0) + 1);
+  else t.box = Math.max(1, (t.box || 0));
+  var iv = SRS_INT[Math.min(t.box, SRS_INT.length - 1)] || 1;
+  t.due = shiftKey(todayKey(), iv);
+  obsSave();
+}
+
+function obsOrderedTopics() {
+  var out = [], order = obsSubOrder(), cur = obsCurr();
+  for (var s = 0; s < order.length; s++) {
+    for (var i = 0; i < cur.length; i++) if (cur[i].sub === order[s]) out.push(cur[i]);
+  }
+  return out;
+}
+function obsTopicById(id) { var cur = obsCurr(); for (var i = 0; i < cur.length; i++) if (cur[i].id === id) return cur[i]; return null; }
+function obsTopicDone(id) { var t = OBS_ST.topics[id]; return !!(t && t.seen > 0); }
+function obsNextTopic() {
+  var topics = obsOrderedTopics();
+  for (var i = 0; i < topics.length; i++) if (!obsTopicDone(topics[i].id)) return topics[i];
+  return topics[0] || null;
+}
+function obsSubProgress(sub) {
+  var cur = obsCurr(), tot = 0, done = 0;
+  for (var i = 0; i < cur.length; i++) if (cur[i].sub === sub) { tot++; if (obsTopicDone(cur[i].id)) done++; }
+  return { tot:tot, done:done, pct:tot ? Math.round(done / tot * 100) : 0 };
+}
+function obsDueTopics() {
+  var tk = todayKey(), out = [], topics = obsOrderedTopics();
+  for (var i = 0; i < topics.length; i++) {
+    var t = OBS_ST.topics[topics[i].id];
+    if (t && t.seen > 0 && t.due && t.due <= tk) out.push(topics[i]);
+  }
+  return out;
+}
+
+// ── OBSIDIAN VIEW STATE ──────────────────────────────────────
+var OBS_VIEW = null;      // null = dashboard; else a topic id
+var OBS_MODE = 'lesson';  // lesson | cards | quiz
+var obsCardIdx = 0, obsCardFlip = false;
+var obsQuizIdx = 0, obsQuizPicked = -1, obsQuizCorrect = 0;
+
+function obsOpenTopic(id, mode) {
+  OBS_VIEW = id; OBS_MODE = mode || 'lesson';
+  obsCardIdx = 0; obsCardFlip = false; obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0;
+  renderObsidian();
+}
+function obsHome() { OBS_VIEW = null; renderObsidian(); }
+function obsSetMode(m) { OBS_MODE = m; obsCardIdx = 0; obsCardFlip = false; obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0; renderObsidian(); }
+function obsFlipCard() { obsCardFlip = !obsCardFlip; renderObsidian(); }
+function obsNextCard(d) { var t = obsTopicById(OBS_VIEW); obsCardIdx = (obsCardIdx + d + t.cards.length) % t.cards.length; obsCardFlip = false; renderObsidian(); }
+function obsAnswerQuiz(i) {
+  if (obsQuizPicked !== -1) return;
+  obsQuizPicked = i;
+  var t = obsTopicById(OBS_VIEW);
+  if (i === t.quiz[obsQuizIdx].a) obsQuizCorrect++;
+  renderObsidian();
+}
+function obsNextQuiz() {
+  var t = obsTopicById(OBS_VIEW);
+  if (obsQuizIdx < t.quiz.length - 1) { obsQuizIdx++; obsQuizPicked = -1; renderObsidian(); }
+  else {
+    obsRecordQuiz(t.id, t.sub, obsQuizCorrect, t.quiz.length);
+    var n = t.quiz.length, c = obsQuizCorrect;
+    toast('Scored ' + c + '/' + n + ' — saved', c / n >= 0.7 ? 'ok' : 'warn');
+    obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0;
+    OBS_MODE = 'lesson';
+    renderObsidian();
+  }
+}
+function obsStartNext() { var t = obsNextTopic(); if (t) obsOpenTopic(t.id); }
+
+// ── OBSIDIAN ADAPTIVE DRILL ──────────────────────────────────
+// Single-subject timed drill with the same CAT-style behavior as the blue
+// side: start medium, step difficulty up on a hit and down on a miss, never
+// repeat a question within a run, difficulty-weighted scoring.
+var OBS_EXAM = null;
+function obsPickAdaptive(sub, targetD, used) {
+  var bank = obsQbank(sub);
+  function cands(d) { var r = []; for (var i = 0; i < bank.length; i++) { if (used.indexOf(i) < 0 && (bank[i].d || 2) === d) r.push(i); } return r; }
+  var order = targetD === 1 ? [1,2,3] : (targetD === 3 ? [3,2,1] : [2,1,3]);
+  for (var k = 0; k < order.length; k++) { var c = cands(order[k]); if (c.length) return c[Math.floor(Math.random() * c.length)]; }
+  var any = []; for (var i = 0; i < bank.length; i++) if (used.indexOf(i) < 0) any.push(i);
+  return any.length ? any[Math.floor(Math.random() * any.length)] : -1;
+}
+function obsStartDrill(sub) {
+  var bank = obsQbank(sub);
+  if (!bank.length) { toast('No drill questions for ' + sub + ' yet', 'warn'); return; }
+  var spec = obsCfg().drills;
+  OBS_EXAM = { sub:sub, n:Math.min(spec.n || 12, bank.length), used:[], qs:[], answers:[], qIdx:0,
+               curD:2, startMs:Date.now(), limitMs:(spec.min || 15) * 60000, done:false, review:false, timer:null };
+  var idx = obsPickAdaptive(sub, 2, OBS_EXAM.used);
+  if (idx >= 0) { OBS_EXAM.used.push(idx); OBS_EXAM.qs.push(bank[idx]); }
+  OBS_EXAM.timer = setInterval(obsExamTick, 1000);
+  OBS_VIEW = null;
+  renderObsidian();
+}
+function obsExamTick() {
+  if (!OBS_EXAM || OBS_EXAM.done) return;
+  var r = OBS_EXAM.limitMs - (Date.now() - OBS_EXAM.startMs);
+  if (r <= 0) { obsFinishExam(); renderObsidian(); return; }
+  var el = document.getElementById('obsExamTimer');
+  if (el) { el.textContent = fmtClock(r); if (r < 60000) el.style.color = 'var(--red)'; }
+}
+function obsExamSelect(i) { OBS_EXAM.answers[OBS_EXAM.qIdx] = i; renderObsidian(); }
+function obsExamNext() {
+  var ex = OBS_EXAM;
+  if (ex.answers[ex.qIdx] === undefined) ex.answers[ex.qIdx] = -1;
+  if (ex.qs.length < ex.n) {
+    var correct = ex.answers[ex.qIdx] === ex.qs[ex.qIdx].a;
+    ex.curD = correct ? Math.min(3, ex.curD + 1) : Math.max(1, ex.curD - 1);
+    var idx = obsPickAdaptive(ex.sub, ex.curD, ex.used);
+    if (idx >= 0) { ex.used.push(idx); ex.qs.push(obsQbank(ex.sub)[idx]); ex.qIdx++; }
+    else obsFinishExam();
+  } else {
+    obsFinishExam();
+  }
+  renderObsidian();
+}
+function obsFinishExam() {
+  var ex = OBS_EXAM;
+  if (!ex || ex.done) return;
+  if (ex.timer) { clearInterval(ex.timer); ex.timer = null; }
+  ex.done = true;
+  var correct = 0, wSum = 0, wEarned = 0;
+  for (var i = 0; i < ex.qs.length; i++) {
+    var d = ex.qs[i].d || 2; wSum += d;
+    if (ex.answers[i] === ex.qs[i].a) { correct++; wEarned += d; }
+  }
+  ex.result = { correct:correct, total:ex.qs.length,
+                acc: ex.qs.length ? Math.round(correct / ex.qs.length * 100) : 0,
+                wacc: wSum ? Math.round(wEarned / wSum * 100) : 0 };
+  var s = obsSubState(ex.sub);
+  s.seen += ex.qs.length; s.correct += correct;
+  OBS_ST.exams.push({ date:todayKey(), sub:ex.sub, correct:correct, total:ex.qs.length, wacc:ex.result.wacc });
+  obsSave();
+}
+function obsExitExam() { if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer); OBS_EXAM = null; renderObsidian(); }
+function obsExamToggleReview() { OBS_EXAM.review = !OBS_EXAM.review; renderObsidian(); }
+
+// ── OBSIDIAN BACKUP ──────────────────────────────────────────
+function obsExport() {
+  try {
+    var snap = { topics:OBS_ST.topics, subs:OBS_ST.subs, exams:OBS_ST.exams,
+                 exportedAt:new Date().toISOString(), appVersion:OBS_KEY };
+    var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'obsidian-backup-' + todayKey() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('Obsidian backup downloaded', 'ok');
+  } catch(e) { toast('Export failed', 'warn'); }
+}
+function obsTriggerImport() { document.getElementById('obsImportFile').click(); }
+function obsImport(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var s = JSON.parse(reader.result);
+      if (!s || !s.topics) { toast('Not a valid Obsidian backup', 'warn'); return; }
+      if (!confirm('Restore this Obsidian backup? It replaces the Obsidian progress on this device.')) return;
+      OBS_ST.topics = s.topics || {};
+      OBS_ST.subs = s.subs || {};
+      OBS_ST.exams = s.exams || [];
+      obsSave();
+      toast('Obsidian backup restored', 'ok');
+      renderObsidian();
+    } catch(e) { toast('Could not read that file', 'warn'); }
+  };
+  reader.onerror = function() { toast('Could not read that file', 'warn'); };
+  reader.readAsText(file);
+}
+function obsResetProgress() {
+  if (!confirm('Reset ALL Obsidian progress? Blue-side APEX data is untouched. This cannot be undone.')) return;
+  OBS_ST = { topics:{}, subs:{}, exams:[] };
+  obsSave();
+  toast('Obsidian progress reset', 'ok');
+  renderObsidian();
+}
+
+// ── OBSIDIAN RENDER ──────────────────────────────────────────
+function renderObsidian() {
+  var el = document.getElementById('obsidianContent'); if (!el) return;
+  var brandEl = document.getElementById('dkBrand'); if (brandEl) brandEl.textContent = obsCfg().brand;
+  if (OBS_EXAM) { el.innerHTML = obsRenderExam(); if (!OBS_EXAM.done) obsExamTick(); return; }
+  if (OBS_VIEW) { el.innerHTML = obsRenderTopic(); return; }
+  el.innerHTML = obsRenderDash();
+}
+
+function obsRenderDash() {
+  var cfg = obsCfg(), topics = obsOrderedTopics();
+  var html = '';
+
+  // Hero — course identity + overall standing
+  var done = 0, mastered = 0;
+  for (var i = 0; i < topics.length; i++) {
+    var ts = OBS_ST.topics[topics[i].id];
+    if (ts && ts.seen > 0) done++;
+    if (ts && ts.box >= 3) mastered++;
+  }
+  var seen = 0, corr = 0;
+  for (var k in OBS_ST.subs) { seen += OBS_ST.subs[k].seen; corr += OBS_ST.subs[k].correct; }
+  var acc = seen ? Math.round(corr / seen * 100) : null;
+  html += '<div class="hero"><div class="hero-ey">' + esc(cfg.brand) + ' · SECOND CURRICULUM</div>'
+       + '<div class="hero-t">' + esc(cfg.name) + '</div>'
+       + '<div class="hero-b">' + esc(cfg.tagline) + '</div>';
+  if (topics.length) {
+    html += '<div class="hero-b" style="margin-top:8px"><strong>' + done + '/' + topics.length + '</strong> topics practiced · <strong>' + mastered + '</strong> mastered'
+         + (acc != null ? ' · <strong>' + acc + '%</strong> overall accuracy (' + seen + ' questions)' : '') + '</div>';
+  }
+  html += '</div>';
+
+  // No curriculum yet — show the install instructions and stop.
+  if (!topics.length) {
+    html += '<div class="box by"><strong>Awaiting the handoff curriculum.</strong> This realm is empty until obsidian.js defines OBSIDIAN_CURRICULUM. Open obsidian.js, give the HANDOFF SPEC comment at the top to the session writing your curriculum, and paste its output into that file. Reload and everything here comes alive.</div>';
+    return html;
+  }
+
+  // One-tap entry into the next unfinished topic
+  var nt = obsNextTopic();
+  if (done < topics.length && nt) {
+    html += '<div style="margin-bottom:14px"><button class="sbtn pri" style="width:100%;padding:12px" onclick="obsStartNext()">▶ Next topic — ' + esc(nt.title) + '</button></div>';
+  }
+
+  // Spaced-repetition queue
+  var due = obsDueTopics();
+  if (due.length) {
+    html += '<div class="sl">REVIEW DUE — ' + due.length + '</div>';
+    for (var i = 0; i < due.length; i++) {
+      var t = due[i], ts2 = OBS_ST.topics[t.id];
+      html += '<div class="stopic" onclick="obsOpenTopic(\'' + t.id + '\',\'quiz\')"><div class="st-n">' + esc(t.title)
+           + '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">' + esc(obsSubName(t.sub)) + ' · box ' + (ts2.box || 0) + '/5 · due ' + ts2.due + '</div></div>'
+           + '<span class="st-m cy">REVIEW</span><span class="ac-chev">▸</span></div>';
+    }
+  }
+
+  // Progress by subject
+  var order = obsSubOrder();
+  html += '<div class="sl" style="margin-top:18px">PROGRESS BY SUBJECT</div>';
+  for (var s = 0; s < order.length; s++) {
+    var pr = obsSubProgress(order[s]);
+    if (!pr.tot) continue;
+    var sx = OBS_ST.subs[order[s]];
+    var sacc = (sx && sx.seen) ? Math.round(sx.correct / sx.seen * 100) + '%' : '—';
+    html += '<div class="subbar"><div class="subbar-h"><span style="color:var(--text)">' + esc(obsSubName(order[s])) + '</span><span>' + pr.done + '/' + pr.tot + ' · ' + sacc + '</span></div>'
+         + '<div class="subbar-t"><div class="subbar-f" style="width:' + pr.pct + '%"></div></div></div>';
+  }
+
+  // Adaptive timed drills — only when a question bank exists
+  var drillSubs = [];
+  for (var s = 0; s < order.length; s++) if (obsQbank(order[s]).length) drillSubs.push(order[s]);
+  if (drillSubs.length) {
+    var spec = obsCfg().drills;
+    html += '<div class="sl" style="margin-top:18px">ADAPTIVE TIMED DRILLS</div>';
+    html += '<div class="box bb" style="margin-top:0"><strong>Answer right and it gets harder; miss and it eases off.</strong> Timed at ' + (spec.min || 15) + ' min, no feedback until the end, fresh questions each run, harder questions weigh more.';
+    var last = OBS_ST.exams.length ? OBS_ST.exams[OBS_ST.exams.length - 1] : null;
+    if (last) html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last drill (' + last.date + '): ' + esc(obsSubName(last.sub)) + ' — ' + last.correct + '/' + last.total + ' · weighted ' + last.wacc + '%</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">';
+    for (var i = 0; i < drillSubs.length; i++) {
+      var bn = obsQbank(drillSubs[i]).length;
+      html += '<button class="sbtn" onclick="obsStartDrill(\'' + drillSubs[i] + '\')">' + esc(drillSubs[i]) + ' (' + Math.min((spec.n || 12), bn) + ')</button>';
+    }
+    html += '</div></div>';
+  }
+
+  // Curriculum browser
+  html += '<div class="sl" style="margin-top:18px">CURRICULUM</div>';
+  var cur = obsCurr();
+  for (var s = 0; s < order.length; s++) {
+    var sub = order[s];
+    var subTopics = [];
+    for (var i = 0; i < cur.length; i++) if (cur[i].sub === sub) subTopics.push(cur[i]);
+    if (!subTopics.length) continue;
+    var pr2 = obsSubProgress(sub);
+    var subj = obsCfg().subjects[sub];
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px"><span class="sl" style="margin:0">' + esc(sub) + ' · ' + esc(obsSubName(sub)) + '</span><span class="chip cb">' + pr2.done + '/' + pr2.tot + '</span></div>';
+    if (subj && subj.blurb) html += '<div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">' + esc(subj.blurb) + '</div>';
+    for (var i = 0; i < subTopics.length; i++) {
+      var tp = subTopics[i]; var ts3 = OBS_ST.topics[tp.id];
+      var m = ts3 && ts3.box >= 3;
+      var st = ts3 && ts3.seen > 0;
+      var badge = m ? '<span class="st-m cg">MASTERED</span>' : (st ? '<span class="st-m cb">STARTED</span>' : '<span class="st-m" style="background:var(--mid);color:var(--muted)">NEW</span>');
+      html += '<div class="stopic" onclick="obsOpenTopic(\'' + tp.id + '\')"><div class="st-n">' + esc(tp.title) + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
+    }
+  }
+
+  // Backup — Obsidian progress is separate from the blue-side backup
+  html += '<div class="sl" style="margin-top:18px">OBSIDIAN DATA</div>';
+  html += '<div class="box bb" style="margin-top:0">Obsidian progress is saved on this device, separately from APEX. It is NOT inside the APEX backup — export it here.'
+       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+       + '<button class="sbtn" onclick="obsExport()">Export backup</button>'
+       + '<button class="sbtn" onclick="obsTriggerImport()">Restore</button>'
+       + '<button class="sbtn" onclick="obsResetProgress()" style="color:var(--red);border-color:var(--red)">Reset progress</button>'
+       + '</div></div>';
+
+  return html;
+}
+
+function obsRenderTopic() {
+  var t = obsTopicById(OBS_VIEW); if (!t) { OBS_VIEW = null; return obsRenderDash(); }
+  var ts = OBS_ST.topics[t.id];
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<button class="sbtn" onclick="obsHome()">← ' + esc(obsCfg().brand) + '</button>'
+    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">' + esc(t.sub) + ' · ' + esc(obsSubName(t.sub)) + '</div></div>';
+  html += '<div class="hero" style="margin-bottom:12px;padding:14px"><div class="hero-ey">TOPIC</div><div class="hero-t" style="font-size:18px">' + esc(t.title) + '</div>';
+  if (ts && ts.seen) html += '<div class="hero-b">Practiced ' + ts.correct + '/' + ts.seen + ' correct · SRS box ' + (ts.box || 0) + '/5' + (ts.due ? ' · review due ' + ts.due : '') + '</div>';
+  html += '</div>';
+  var cards = t.cards || [], quiz = t.quiz || [];
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px">'
+    + '<button class="sbtn' + (OBS_MODE === 'lesson' ? ' on' : '') + '" onclick="obsSetMode(\'lesson\')">Lesson</button>'
+    + (cards.length ? '<button class="sbtn' + (OBS_MODE === 'cards' ? ' on' : '') + '" onclick="obsSetMode(\'cards\')">Flashcards (' + cards.length + ')</button>' : '')
+    + (quiz.length ? '<button class="sbtn' + (OBS_MODE === 'quiz' ? ' on' : '') + '" onclick="obsSetMode(\'quiz\')">Quiz (' + quiz.length + ')</button>' : '') + '</div>';
+
+  if (OBS_MODE === 'lesson') {
+    html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
+    if (cards.length) html += '<div style="margin-top:16px"><button class="sbtn pri" onclick="obsSetMode(\'cards\')">Study flashcards →</button></div>';
+    else if (quiz.length) html += '<div style="margin-top:16px"><button class="sbtn pri" onclick="obsSetMode(\'quiz\')">Take the quiz →</button></div>';
+  } else if (OBS_MODE === 'cards') {
+    var c = cards[obsCardIdx];
+    html += '<div class="flash" onclick="obsFlipCard()">' + (obsCardFlip ? '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">ANSWER</div>' + c.b + '</div>' : '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">CARD ' + (obsCardIdx + 1) + ' / ' + cards.length + ' — tap to flip</div>' + c.f + '</div>') + '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">'
+      + '<button class="sbtn" onclick="obsNextCard(-1)">← Prev</button>'
+      + '<span style="font-size:11px;color:var(--muted);font-family:var(--mono)">' + (obsCardIdx + 1) + ' / ' + cards.length + '</span>'
+      + '<button class="sbtn" onclick="obsNextCard(1)">Next →</button></div>';
+    if (quiz.length) html += '<div style="margin-top:14px;text-align:center"><button class="sbtn pri" onclick="obsSetMode(\'quiz\')">Take the quiz →</button></div>';
+  } else if (OBS_MODE === 'quiz') {
+    var q = quiz[obsQuizIdx];
+    html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (obsQuizIdx + 1) + ' / ' + quiz.length + '</div>';
+    html += '<div style="font-size:14px;line-height:1.6;color:#fff;font-weight:600;margin-bottom:14px">' + q.q + '</div>';
+    for (var i = 0; i < q.c.length; i++) {
+      var cls = 'qopt';
+      if (obsQuizPicked !== -1) {
+        if (i === q.a) cls += ' correct';
+        else if (i === obsQuizPicked) cls += ' wrong';
+        else cls += ' dim';
+      }
+      html += '<button class="' + cls + '" onclick="obsAnswerQuiz(' + i + ')">' + String.fromCharCode(65 + i) + '. ' + q.c[i] + '</button>';
+    }
+    if (obsQuizPicked !== -1) {
+      html += '<div class="box ' + (obsQuizPicked === q.a ? 'bg' : 'br') + '" style="margin-top:10px"><strong>' + (obsQuizPicked === q.a ? 'Correct.' : 'Not quite.') + '</strong> ' + (q.e || '') + '</div>';
+      html += '<div style="margin-top:12px;text-align:right"><button class="sbtn pri" onclick="obsNextQuiz()">' + (obsQuizIdx < quiz.length - 1 ? 'Next question →' : 'Finish & save score') + '</button></div>';
+    }
+  }
+  return html;
+}
+
+function obsRenderExam() {
+  if (OBS_EXAM.done) return obsRenderExamResults();
+  var ex = OBS_EXAM, q = ex.qs[ex.qIdx];
+  var picked = ex.answers[ex.qIdx];
+  var remain = ex.limitMs - (Date.now() - ex.startMs);
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    + '<button class="sbtn" onclick="obsExitExam()">✕ Exit</button>'
+    + '<div style="font-family:var(--mono);font-size:11px;color:var(--muted)">ADAPTIVE DRILL</div>'
+    + '<div id="obsExamTimer" style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--bright)">' + fmtClock(remain) + '</div></div>';
+  html += '<div class="sl" style="margin:0 0 6px">' + esc(ex.sub) + ' · ' + esc(obsSubName(ex.sub)) + ' <span style="color:var(--bright)">· adaptive</span></div>';
+  var pct = Math.round(ex.qIdx / ex.n * 100);
+  html += '<div class="subbar-t" style="margin-bottom:12px"><div class="subbar-f" style="width:' + pct + '%"></div></div>';
+  html += '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">QUESTION ' + (ex.qIdx + 1) + ' / ' + ex.n + '</div>';
+  html += '<div style="font-size:14px;line-height:1.6;color:#fff;font-weight:600;margin-bottom:14px;white-space:pre-line">' + esc(q.q) + '</div>';
+  for (var i = 0; i < q.c.length; i++) {
+    var cls = 'qopt' + (picked === i ? ' on' : '');
+    html += '<button class="' + cls + '" onclick="obsExamSelect(' + i + ')" style="' + (picked === i ? 'border-color:var(--bright);background:rgba(255,255,255,.1)' : '') + '">' + String.fromCharCode(65 + i) + '. ' + esc(q.c[i]) + '</button>';
+  }
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">'
+    + '<span style="font-size:10px;color:var(--muted)">' + (picked === undefined ? 'tap an answer · no going back' : 'locked in') + '</span>'
+    + '<button class="sbtn pri" onclick="obsExamNext()">' + (ex.qIdx === ex.n - 1 ? 'Finish & score' : 'Next →') + '</button></div>';
+  return html;
+}
+function obsRenderExamResults() {
+  var ex = OBS_EXAM, r = ex.result;
+  var col = r.wacc >= 70 ? 'var(--green)' : (r.wacc >= 50 ? '#ffc83c' : 'var(--red)');
+  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button class="sbtn" onclick="obsExitExam()">← Done</button>'
+    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">DRILL RESULTS · ' + esc(obsSubName(ex.sub)) + '</div></div>';
+  html += '<div class="hero" style="margin-bottom:14px;padding:16px;text-align:center"><div class="hero-ey">RESULT</div>'
+    + '<div class="hero-t" style="font-size:30px;color:' + col + '">' + r.wacc + '%</div>'
+    + '<div class="hero-b">' + r.correct + '/' + r.total + ' correct · ' + r.acc + '% raw · ' + r.wacc + '% difficulty-weighted</div></div>';
+  html += '<div class="box bb">Weighted score counts hard questions (d3) more than easy ones (d1) — the level you can sustain matters more than the raw count. Retake for fresh questions.</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:14px"><button class="sbtn" onclick="obsExamToggleReview()">' + (ex.review ? 'Hide review' : 'Review answers') + '</button>'
+    + '<button class="sbtn pri" onclick="obsStartDrill(\'' + ex.sub + '\')">Retake</button></div>';
+  if (ex.review) {
+    html += '<div style="margin-top:14px">';
+    for (var i = 0; i < ex.qs.length; i++) {
+      var qq = ex.qs[i], your = ex.answers[i], ok = your === qq.a;
+      var dLbl = ['', 'easy', 'medium', 'hard'][qq.d || 2];
+      html += '<div class="box ' + (ok ? 'bg' : 'br') + '"><div style="font-weight:600;color:#fff;margin-bottom:6px;white-space:pre-line">' + (i + 1) + '. <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">[' + dLbl + ']</span> ' + esc(qq.q) + '</div>';
+      html += '<div style="font-size:12px;color:var(--green)">✓ ' + esc(qq.c[qq.a]) + '</div>';
+      if (!ok) html += '<div style="font-size:12px;color:var(--red)">✗ your answer: ' + (your === undefined || your === -1 ? '(blank)' : esc(qq.c[your])) + '</div>';
+      if (qq.e) html += '<div style="font-size:11px;color:var(--muted);margin-top:5px">' + esc(qq.e) + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+// ── OBSIDIAN NAV ─────────────────────────────────────────────
+function goObsidian() {
+  document.getElementById('mainApp').classList.remove('active');
+  document.getElementById('obsidianApp').classList.add('active');
+  renderObsidian();
+}
+function exitObsidian() {
+  if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
+  OBS_EXAM = null; OBS_VIEW = null;
+  document.getElementById('obsidianApp').classList.remove('active');
+  document.getElementById('mainApp').classList.add('active');
+  renderActiveTab();
+}
+
+obsLoad();
 init();
 
 </script>
