@@ -4016,7 +4016,8 @@ function obsCfg() {
     tagline: c.tagline || '',
     subjects: c.subjects || {},
     order: c.order || [],
-    drills: c.drills || { n:12, min:15 }
+    drills: c.drills || { n:12, min:15 },
+    srs: c.srs || null
   };
 }
 function obsCurr() { return (typeof OBSIDIAN_CURRICULUM !== 'undefined' && OBSIDIAN_CURRICULUM) ? OBSIDIAN_CURRICULUM : []; }
@@ -4051,7 +4052,8 @@ function obsRecordQuiz(topicId, sub, correct, total) {
   var passed = total > 0 && (correct / total) >= 0.7;
   if (passed) t.box = Math.min(5, (t.box || 0) + 1);
   else t.box = Math.max(1, (t.box || 0));
-  var iv = SRS_INT[Math.min(t.box, SRS_INT.length - 1)] || 1;
+  var ints = obsCfg().srs || SRS_INT;
+  var iv = ints[Math.min(t.box, ints.length - 1)] || 1;
   t.due = shiftKey(todayKey(), iv);
   obsSave();
 }
@@ -4089,11 +4091,19 @@ var OBS_VIEW = null;      // null = dashboard; else a topic id
 var OBS_MODE = 'lesson';  // lesson | cards | quiz
 var obsCardIdx = 0, obsCardFlip = false;
 var obsQuizIdx = 0, obsQuizPicked = -1, obsQuizCorrect = 0;
+var obsRevealed = false;  // predict-then-reveal: lesson unlocks after an attempt
 
 function obsOpenTopic(id, mode) {
   OBS_VIEW = id; OBS_MODE = mode || 'lesson';
   obsCardIdx = 0; obsCardFlip = false; obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0;
+  obsRevealed = false;
   renderObsidian();
+}
+function obsReveal() { obsRevealed = true; renderObsidian(); }
+function obsSavePost(id) {
+  var el = document.getElementById('obsPost'); if (!el) return;
+  var t = obsTopicState(id); t.post = el.value; obsSave();
+  toast('Post draft saved', 'ok');
 }
 function obsHome() { OBS_VIEW = null; renderObsidian(); }
 function obsSetMode(m) { OBS_MODE = m; obsCardIdx = 0; obsCardFlip = false; obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0; renderObsidian(); }
@@ -4369,9 +4379,24 @@ function obsRenderTopic() {
     + (quiz.length ? '<button class="sbtn' + (OBS_MODE === 'quiz' ? ' on' : '') + '" onclick="obsSetMode(\'quiz\')">Quiz (' + quiz.length + ')</button>' : '') + '</div>';
 
   if (OBS_MODE === 'lesson') {
-    html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
-    if (cards.length) html += '<div style="margin-top:16px"><button class="sbtn pri" onclick="obsSetMode(\'cards\')">Study flashcards →</button></div>';
-    else if (quiz.length) html += '<div style="margin-top:16px"><button class="sbtn pri" onclick="obsSetMode(\'quiz\')">Take the quiz →</button></div>';
+    if (t.predict && !obsRevealed) {
+      // Predict-then-reveal: an attempted answer (even wrong) beats passive reading.
+      html += '<div class="box by" style="margin-top:0"><strong>PREDICT FIRST.</strong> Attempt an answer — in your head, out loud, or on paper — before the lesson unlocks. Wrong attempts still build the memory.</div>';
+      html += '<div class="flash" style="min-height:110px;cursor:default">' + t.predict + '</div>';
+      html += '<div style="margin-top:14px"><button class="sbtn pri" style="width:100%;padding:11px" onclick="obsReveal()">I attempted an answer — reveal the lesson</button></div>';
+    } else {
+      html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
+      if (t.teach) html += '<div class="box bg" style="margin-top:12px"><strong>Teach-back:</strong> ' + t.teach + '</div>';
+      // Post Draft — written from memory by the learner; the app never writes it.
+      var pv = (ts && ts.post) ? ts.post : '';
+      html += '<div class="sl" style="margin-top:16px">POST DRAFT</div>'
+           + '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">From memory, draft the post this lesson would make. Yours to write — the app never writes it for you.</div>'
+           + '<textarea id="obsPost" style="width:100%;min-height:90px;background:var(--mid);color:var(--text);border:1px solid var(--ice2);border-radius:9px;padding:10px;font-size:13px;font-family:var(--sans);resize:vertical">' + esc(pv) + '</textarea>'
+           + '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">'
+           + '<button class="sbtn" onclick="obsSavePost(\'' + t.id + '\')">Save draft</button>'
+           + (cards.length ? '<button class="sbtn pri" onclick="obsSetMode(\'cards\')">Study flashcards →</button>' : (quiz.length ? '<button class="sbtn pri" onclick="obsSetMode(\'quiz\')">Take the quiz →</button>' : ''))
+           + '</div>';
+    }
   } else if (OBS_MODE === 'cards') {
     var c = cards[obsCardIdx];
     html += '<div class="flash" onclick="obsFlipCard()">' + (obsCardFlip ? '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">ANSWER</div>' + c.b + '</div>' : '<div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px">CARD ' + (obsCardIdx + 1) + ' / ' + cards.length + ' — tap to flip</div>' + c.f + '</div>') + '</div>';
@@ -4426,12 +4451,14 @@ function obsRenderExam() {
 }
 function obsRenderExamResults() {
   var ex = OBS_EXAM, r = ex.result;
-  var col = r.wacc >= 70 ? 'var(--green)' : (r.wacc >= 50 ? '#ffc83c' : 'var(--red)');
+  var gate = obsCfg().drills.gate || null;
+  var col = r.wacc >= (gate || 70) ? 'var(--green)' : (r.wacc >= 50 ? '#ffc83c' : 'var(--red)');
   var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button class="sbtn" onclick="obsExitExam()">← Done</button>'
     + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">DRILL RESULTS · ' + esc(obsSubName(ex.sub)) + '</div></div>';
   html += '<div class="hero" style="margin-bottom:14px;padding:16px;text-align:center"><div class="hero-ey">RESULT</div>'
     + '<div class="hero-t" style="font-size:30px;color:' + col + '">' + r.wacc + '%</div>'
-    + '<div class="hero-b">' + r.correct + '/' + r.total + ' correct · ' + r.acc + '% raw · ' + r.wacc + '% difficulty-weighted</div></div>';
+    + '<div class="hero-b">' + r.correct + '/' + r.total + ' correct · ' + r.acc + '% raw · ' + r.wacc + '% difficulty-weighted</div>'
+    + (gate ? '<div style="margin-top:8px"><span class="chip ' + (r.wacc >= gate ? 'cg' : 'cr') + '">' + (r.wacc >= gate ? 'GATE PASSED — ' + gate + '%+' : 'BELOW THE ' + gate + '% GATE — review and retake') + '</span></div>' : '') + '</div>';
   html += '<div class="box bb">Weighted score counts hard questions (d3) more than easy ones (d1) — the level you can sustain matters more than the raw count. Retake for fresh questions.</div>';
   html += '<div style="display:flex;gap:8px;margin-top:14px"><button class="sbtn" onclick="obsExamToggleReview()">' + (ex.review ? 'Hide review' : 'Review answers') + '</button>'
     + '<button class="sbtn pri" onclick="obsStartDrill(\'' + ex.sub + '\')">Retake</button></div>';
