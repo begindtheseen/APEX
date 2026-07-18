@@ -621,6 +621,10 @@ body{color:var(--text);font-family:var(--sans);}
   letter-spacing:4px;flex:1;text-shadow:0 0 18px rgba(255,255,255,.35);
 }
 .dk-tag{font-family:var(--mono);font-size:9px;color:#737373;letter-spacing:1.5px;flex-shrink:0;}
+/* Animated mechanism diagrams inside Obsidian lessons */
+.dk-viz{border:1px solid #232323;border-radius:12px;padding:12px 8px;margin:4px 0 6px;background:linear-gradient(180deg,#0b0b0b,#060606);overflow:hidden;}
+.dk-viz svg{display:block;}
+.dk-viz text{font-family:'DM Sans',sans-serif;}
 </style>
 </head>
 <body>
@@ -839,6 +843,7 @@ body{color:var(--text);font-family:var(--sans);}
 <script src="qbank.js"></script>
 <script src="jobs.js"></script>
 <script src="obsidian.js"></script>
+<script src="obsviz.js"></script>
 </div>
 
 <script>
@@ -4386,6 +4391,8 @@ function obsRenderTopic() {
       html += '<div style="margin-top:14px"><button class="sbtn pri" style="width:100%;padding:11px" onclick="obsReveal()">I attempted an answer — reveal the lesson</button></div>';
     } else {
       html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
+      var viz = (typeof OBSIDIAN_VIZ !== 'undefined' && OBSIDIAN_VIZ && OBSIDIAN_VIZ[t.id]) ? OBSIDIAN_VIZ[t.id] : null;
+      if (viz) html += '<div class="sl" style="margin-top:14px">MECHANISM DIAGRAM</div><div class="dk-viz">' + viz + '</div>';
       if (t.teach) html += '<div class="box bg" style="margin-top:12px"><strong>Teach-back:</strong> ' + t.teach + '</div>';
       // Post Draft — written from memory by the learner; the app never writes it.
       var pv = (ts && ts.post) ? ts.post : '';
