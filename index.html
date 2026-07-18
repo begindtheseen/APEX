@@ -4139,11 +4139,24 @@ function obsNextQuiz() {
     if (c === n && jumpTo && wasBox < jumpTo && nowBox >= jumpTo) toast('Perfect ' + c + '/' + n + ' — MASTERED first pass', 'ok');
     else toast('Scored ' + c + '/' + n + ' — saved', c / n >= 0.7 ? 'ok' : 'warn');
     obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0;
-    OBS_MODE = 'lesson';
-    renderObsidian();
+    // Lessons chain: finishing a quiz flows straight into the next lesson.
+    var ts = obsOrderedTopics(), ti = obsTopicIndex(t.id);
+    if (ti >= 0 && ti < ts.length - 1) { obsOpenTopic(ts[ti + 1].id); }
+    else { OBS_VIEW = null; renderObsidian(); }
   }
 }
 function obsStartNext() { var t = obsNextTopic(); if (t) obsOpenTopic(t.id); }
+function obsTopicIndex(id) { var ts = obsOrderedTopics(); for (var i = 0; i < ts.length; i++) if (ts[i].id === id) return i; return -1; }
+// Step to the previous/next lesson in curriculum order from the topic view.
+function obsNavTopic(d) {
+  var ts = obsOrderedTopics();
+  var i = obsTopicIndex(OBS_VIEW);
+  if (i < 0) return;
+  var n = i + d;
+  if (n < 0) { toast('This is the first lesson', 'warn'); return; }
+  if (n >= ts.length) { toast('This is the last lesson', 'warn'); return; }
+  obsOpenTopic(ts[n].id);
+}
 
 // ── OBSIDIAN ADAPTIVE DRILL ──────────────────────────────────
 // Single-subject timed drill with the same CAT-style behavior as the blue
@@ -4381,10 +4394,13 @@ function obsRenderDash() {
 function obsRenderTopic() {
   var t = obsTopicById(OBS_VIEW); if (!t) { OBS_VIEW = null; return obsRenderDash(); }
   var ts = OBS_ST.topics[t.id];
-  var html = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+  var allT = obsOrderedTopics(), tIdx = obsTopicIndex(t.id);
+  var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
     + '<button class="sbtn" onclick="obsHome()">← ' + esc(obsCfg().brand) + '</button>'
-    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono)">' + esc(t.sub) + ' · ' + esc(obsSubName(t.sub)) + '</div></div>';
-  html += '<div class="hero" style="margin-bottom:12px;padding:14px"><div class="hero-ey">TOPIC</div><div class="hero-t" style="font-size:18px">' + esc(t.title) + '</div>';
+    + '<div style="flex:1;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center">' + (tIdx + 1) + ' / ' + allT.length + '</div>'
+    + '<button class="sbtn" onclick="obsNavTopic(-1)"' + (tIdx <= 0 ? ' disabled' : '') + ' title="Previous lesson">‹</button>'
+    + '<button class="sbtn" onclick="obsNavTopic(1)"' + (tIdx >= allT.length - 1 ? ' disabled' : '') + ' title="Next lesson">›</button></div>';
+  html += '<div class="hero" style="margin-bottom:12px;padding:14px"><div class="hero-ey">' + esc(t.sub) + ' · ' + esc(obsSubName(t.sub)) + '</div><div class="hero-t" style="font-size:18px">' + esc(t.title) + '</div>';
   if (ts && ts.seen) html += '<div class="hero-b">Practiced ' + ts.correct + '/' + ts.seen + ' correct · SRS box ' + (ts.box || 0) + '/5' + (ts.due ? ' · review due ' + ts.due : '') + '</div>';
   html += '</div>';
   var cards = t.cards || [], quiz = t.quiz || [];
@@ -4437,7 +4453,7 @@ function obsRenderTopic() {
     }
     if (obsQuizPicked !== -1) {
       html += '<div class="box ' + (obsQuizPicked === q.a ? 'bg' : 'br') + '" style="margin-top:10px"><strong>' + (obsQuizPicked === q.a ? 'Correct.' : 'Not quite.') + '</strong> ' + (q.e || '') + '</div>';
-      html += '<div style="margin-top:12px;text-align:right"><button class="sbtn pri" onclick="obsNextQuiz()">' + (obsQuizIdx < quiz.length - 1 ? 'Next question →' : 'Finish & save score') + '</button></div>';
+      html += '<div style="margin-top:12px;text-align:right"><button class="sbtn pri" onclick="obsNextQuiz()">' + (obsQuizIdx < quiz.length - 1 ? 'Next question →' : (obsTopicIndex(OBS_VIEW) < obsOrderedTopics().length - 1 ? 'Finish → next lesson' : 'Finish & save score')) + '</button></div>';
     }
   }
   return html;
