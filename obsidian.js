@@ -45,7 +45,10 @@ window.OBSIDIAN_CONFIG = {
   },
   order: ['T0','T1','T2','T3','T4','T5','T6','T7','T8','TX','REPS'],
   drills: { n: 10, min: 12, gate: 85 },
-  srs: [1, 1, 3, 7, 21, 30]
+  srs: [1, 1, 3, 7, 21, 30],
+  // Ace a topic quiz (100%) and it jumps straight to box 3 = MASTERED —
+  // one strong first pass is enough; reviews still schedule to keep it honest.
+  perfectTo: 3
 };
 
 window.OBSIDIAN_CURRICULUM = [
