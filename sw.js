@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v11';
+var CACHE = 'apex-shell-v12';
 var SHELL = [
   './',
   './index.html',
@@ -17,8 +17,16 @@ var SHELL = [
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
+  // Fetch every shell file straight from the network (cache:'reload' bypasses
+  // the browser HTTP cache) so a new version never installs with stale files.
   e.waitUntil(
-    caches.open(CACHE).then(function(c) { return c.addAll(SHELL); })
+    caches.open(CACHE).then(function(c) {
+      return Promise.all(SHELL.map(function(u) {
+        return fetch(new Request(u, { cache: 'reload' })).then(function(res) {
+          if (res && res.ok) return c.put(u, res);
+        });
+      }));
+    })
   );
 });
 
