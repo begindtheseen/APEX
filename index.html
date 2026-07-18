@@ -4022,7 +4022,8 @@ function obsCfg() {
     subjects: c.subjects || {},
     order: c.order || [],
     drills: c.drills || { n:12, min:15 },
-    srs: c.srs || null
+    srs: c.srs || null,
+    perfectTo: c.perfectTo || 0
   };
 }
 function obsCurr() { return (typeof OBSIDIAN_CURRICULUM !== 'undefined' && OBSIDIAN_CURRICULUM) ? OBSIDIAN_CURRICULUM : []; }
@@ -4055,7 +4056,12 @@ function obsRecordQuiz(topicId, sub, correct, total) {
   var sx = obsSubState(sub);
   sx.seen += total; sx.correct += correct;
   var passed = total > 0 && (correct / total) >= 0.7;
-  if (passed) t.box = Math.min(5, (t.box || 0) + 1);
+  var perfect = total > 0 && correct === total;
+  var jump = obsCfg().perfectTo || 0;
+  // Ace a quiz below the mastery line and you jump straight to it — no
+  // grinding repeat passes on material you fully understood the first time.
+  if (perfect && jump && (t.box || 0) < jump) t.box = jump;
+  else if (passed) t.box = Math.min(5, (t.box || 0) + 1);
   else t.box = Math.max(1, (t.box || 0));
   var ints = obsCfg().srs || SRS_INT;
   var iv = ints[Math.min(t.box, ints.length - 1)] || 1;
@@ -4125,9 +4131,13 @@ function obsNextQuiz() {
   var t = obsTopicById(OBS_VIEW);
   if (obsQuizIdx < t.quiz.length - 1) { obsQuizIdx++; obsQuizPicked = -1; renderObsidian(); }
   else {
+    var wasBox = (OBS_ST.topics[t.id] && OBS_ST.topics[t.id].box) || 0;
     obsRecordQuiz(t.id, t.sub, obsQuizCorrect, t.quiz.length);
     var n = t.quiz.length, c = obsQuizCorrect;
-    toast('Scored ' + c + '/' + n + ' — saved', c / n >= 0.7 ? 'ok' : 'warn');
+    var nowBox = OBS_ST.topics[t.id].box || 0;
+    var jumpTo = obsCfg().perfectTo || 0;
+    if (c === n && jumpTo && wasBox < jumpTo && nowBox >= jumpTo) toast('Perfect ' + c + '/' + n + ' — MASTERED first pass', 'ok');
+    else toast('Scored ' + c + '/' + n + ' — saved', c / n >= 0.7 ? 'ok' : 'warn');
     obsQuizIdx = 0; obsQuizPicked = -1; obsQuizCorrect = 0;
     OBS_MODE = 'lesson';
     renderObsidian();
