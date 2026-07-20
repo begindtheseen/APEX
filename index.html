@@ -4011,7 +4011,7 @@ function renderCareer(){
 // own localStorage key and never touches the blue-side state.
 // ═══════════════════════════════════════════════════════════
 var OBS_KEY = 'apex_obsidian_v1';
-var OBS_ST = { topics:{}, subs:{}, exams:[] };
+var OBS_ST = { topics:{}, subs:{}, exams:[], reps:[] };
 
 function obsCfg() {
   var c = (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {};
@@ -4043,6 +4043,7 @@ function obsLoad() {
     OBS_ST.topics = s.topics || {};
     OBS_ST.subs = s.subs || {};
     OBS_ST.exams = s.exams || [];
+    OBS_ST.reps = s.reps || [];
   } catch(e) {}
 }
 function obsSave() { try { localStorage.setItem(OBS_KEY, JSON.stringify(OBS_ST)); } catch(e) {} }
@@ -4229,7 +4230,7 @@ function obsExamToggleReview() { OBS_EXAM.review = !OBS_EXAM.review; renderObsid
 // ── OBSIDIAN BACKUP ──────────────────────────────────────────
 function obsExport() {
   try {
-    var snap = { topics:OBS_ST.topics, subs:OBS_ST.subs, exams:OBS_ST.exams,
+    var snap = { topics:OBS_ST.topics, subs:OBS_ST.subs, exams:OBS_ST.exams, reps:OBS_ST.reps,
                  exportedAt:new Date().toISOString(), appVersion:OBS_KEY };
     var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
@@ -4257,6 +4258,7 @@ function obsImport(ev) {
       OBS_ST.topics = s.topics || {};
       OBS_ST.subs = s.subs || {};
       OBS_ST.exams = s.exams || [];
+      OBS_ST.reps = s.reps || [];
       obsSave();
       toast('Obsidian backup restored', 'ok');
       renderObsidian();
@@ -4267,10 +4269,125 @@ function obsImport(ev) {
 }
 function obsResetProgress() {
   if (!confirm('Reset ALL Obsidian progress? Blue-side APEX data is untouched. This cannot be undone.')) return;
-  OBS_ST = { topics:{}, subs:{}, exams:[] };
+  OBS_ST = { topics:{}, subs:{}, exams:[], reps:[] };
   obsSave();
   toast('Obsidian progress reset', 'ok');
   renderObsidian();
+}
+
+// ── THE REPS LADDER ──────────────────────────────────────────
+// Counters for the practice apparatus (Part III of the brief). Knowledge
+// lives in lessons; the reps — logged here, graded honestly — are what
+// build real skill and a defensible public record.
+var OBS_REP_OPEN = null;   // rep type key with its log form open, or null
+function obsRepTypes() { var c = (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {}; return c.reps || []; }
+function obsRepType(k) { var r = obsRepTypes(); for (var i = 0; i < r.length; i++) if (r[i].k === k) return r[i]; return null; }
+function obsRepEntries(k) { var out = []; for (var i = 0; i < OBS_ST.reps.length; i++) if (OBS_ST.reps[i].k === k) out.push(OBS_ST.reps[i]); return out; }
+// Gradeable reps count only GRADED entries — a prediction is a rep once judged.
+function obsRepCount(k) {
+  var t = obsRepType(k), es = obsRepEntries(k);
+  if (!t || !t.g) return es.length;
+  var n = 0; for (var i = 0; i < es.length; i++) if (es[i].s === 'h' || es[i].s === 'm') n++;
+  return n;
+}
+// Journal streak: consecutive days (ending today or yesterday) with an entry.
+function obsRepStreak(k) {
+  var days = {}; var es = obsRepEntries(k);
+  for (var i = 0; i < es.length; i++) days[es[i].d] = true;
+  var start = days[todayKey()] ? todayKey() : shiftKey(todayKey(), -1);
+  if (!days[start]) return 0;
+  var n = 0, d = start;
+  while (days[d]) { n++; d = shiftKey(d, -1); }
+  return n;
+}
+// A rep type unlocks once its tier has been entered (any topic practiced).
+// First-tier reps (observation) are open from day zero — the clock starts now.
+function obsRepUnlocked(t) {
+  if (!t.tier) return true;
+  if (t.tier === obsCfg().order[0]) return true;
+  var cur = obsCurr();
+  for (var i = 0; i < cur.length; i++) {
+    if (cur[i].sub === t.tier) { var ts = OBS_ST.topics[cur[i].id]; if (ts && ts.seen > 0) return true; }
+  }
+  return false;
+}
+function obsRepToggleForm(k) { OBS_REP_OPEN = (OBS_REP_OPEN === k) ? null : k; renderObsidian(); }
+function obsRepSave(k) {
+  var el = document.getElementById('obsRepNote'); if (!el) return;
+  var note = (el.value || '').trim();
+  if (!note) { toast('Write the rep first — the note IS the work', 'warn'); return; }
+  var t = obsRepType(k);
+  OBS_ST.reps.push({ k:k, d:todayKey(), n:note, s:(t && t.g) ? 'p' : '' });
+  OBS_REP_OPEN = null;
+  obsSave();
+  toast((t ? t.name : 'Rep') + ' logged' + ((t && t.g) ? ' — grade it when the outcome is known' : ''), 'ok');
+  renderObsidian();
+}
+function obsRepGrade(idx, hit) {
+  if (!OBS_ST.reps[idx] || OBS_ST.reps[idx].s !== 'p') return;
+  OBS_ST.reps[idx].s = hit ? 'h' : 'm';
+  obsSave();
+  toast(hit ? 'Graded: hit' : 'Graded: miss — misses are loot, log what it taught', 'ok');
+  renderObsidian();
+}
+function obsRenderReps() {
+  var types = obsRepTypes();
+  if (!types.length) return '';
+  var html = '<div class="sl" style="margin-top:18px">THE REPS LADDER</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;line-height:1.5">Lessons teach the machine; reps build the operator. Each type unlocks with its tier. Gradeable reps count only once graded — misses are the curriculum.</div>';
+  for (var i = 0; i < types.length; i++) {
+    var t = types[i];
+    var unlocked = obsRepUnlocked(t);
+    var count = obsRepCount(t.k);
+    var pendingN = 0;
+    if (t.g) { var es0 = obsRepEntries(t.k); for (var j = 0; j < es0.length; j++) if (es0[j].s === 'p') pendingN++; }
+    html += '<div class="box bb" style="margin:0 0 7px;padding:10px 12px;' + (unlocked ? '' : 'opacity:.45') + '">';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="flex:1"><strong>' + t.name + '</strong> <span class="chip cb" style="margin-left:4px">' + t.tier + '</span>';
+    if (t.daily) { var stk = obsRepStreak(t.k); html += ' <span class="chip ' + (stk > 0 ? 'cg' : 'cy') + '">' + stk + '-day streak</span>'; }
+    html += '</div>';
+    html += '<div style="font-family:var(--mono);font-size:16px;font-weight:600;color:' + (count > 0 ? 'var(--bright)' : 'var(--muted)') + '">' + count + (t.target ? '<span style="font-size:10px;color:var(--muted)"> / ' + t.target + '</span>' : '') + '</div>';
+    html += (unlocked ? '<button class="sbtn" onclick="obsRepToggleForm(\'' + t.k + '\')">' + (OBS_REP_OPEN === t.k ? 'Close' : '+ Log') + '</button>' : '<span style="font-size:9px;color:var(--muted);font-family:var(--mono)">start ' + t.tier + '</span>');
+    html += '</div>';
+    if (t.target) {
+      var pct = Math.min(100, Math.round(count / t.target * 100));
+      html += '<div class="subbar-t" style="margin-top:8px"><div class="subbar-f" style="width:' + pct + '%"></div></div>';
+    }
+    if (t.g && pendingN) html += '<div style="font-size:10px;color:#ffc83c;margin-top:6px;font-family:var(--mono)">' + pendingN + ' awaiting a grade below</div>';
+    if (OBS_REP_OPEN === t.k) {
+      html += '<div style="margin-top:9px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + t.hint + '</div>'
+        + '<textarea id="obsRepNote" style="width:100%;min-height:70px;background:var(--mid);color:var(--text);border:1px solid var(--ice2);border-radius:9px;padding:10px;font-size:13px;font-family:var(--sans);resize:vertical" placeholder="The note IS the rep — write it from your own head."></textarea>'
+        + '<div style="margin-top:7px;text-align:right"><button class="sbtn pri" onclick="obsRepSave(\'' + t.k + '\')">Save rep</button></div></div>';
+    }
+    html += '</div>';
+  }
+  // Pending grades — gradeable entries awaiting judgment day.
+  var pend = [];
+  for (var i = 0; i < OBS_ST.reps.length; i++) if (OBS_ST.reps[i].s === 'p') pend.push(i);
+  if (pend.length) {
+    html += '<div class="sl" style="margin-top:14px">AWAITING GRADES — ' + pend.length + '</div>';
+    for (var i = 0; i < pend.length; i++) {
+      var e = OBS_ST.reps[pend[i]], tt = obsRepType(e.k);
+      html += '<div class="box by" style="margin:0 0 7px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px">' + (tt ? tt.name : e.k) + ' · ' + e.d + '</div>'
+        + '<div style="font-size:12px;line-height:1.5;margin-bottom:8px">' + esc(e.n) + '</div>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end">'
+        + '<button class="sbtn" style="color:var(--green);border-color:var(--green)" onclick="obsRepGrade(' + pend[i] + ',true)">✓ Hit</button>'
+        + '<button class="sbtn" style="color:var(--red);border-color:var(--red)" onclick="obsRepGrade(' + pend[i] + ',false)">✗ Miss</button></div></div>';
+    }
+  }
+  // Recent log — the visible trail of work done.
+  var recent = OBS_ST.reps.slice(-3).reverse();
+  if (recent.length) {
+    html += '<div class="sl" style="margin-top:14px">RECENT REPS</div>';
+    for (var i = 0; i < recent.length; i++) {
+      var e2 = recent[i], t2 = obsRepType(e2.k);
+      var badge = e2.s === 'h' ? '<span class="chip cg">HIT</span>' : (e2.s === 'm' ? '<span class="chip cr">MISS</span>' : (e2.s === 'p' ? '<span class="chip cy">PENDING</span>' : ''));
+      html += '<div style="display:flex;gap:8px;align-items:baseline;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px">'
+        + '<span style="font-family:var(--mono);color:var(--muted);flex-shrink:0">' + e2.d + '</span>'
+        + '<span style="color:var(--text);flex:1">' + (t2 ? t2.name : e2.k) + ' — ' + esc(e2.n.length > 70 ? e2.n.slice(0, 70) + '…' : e2.n) + '</span>' + badge + '</div>';
+    }
+  }
+  return html;
 }
 
 // ── OBSIDIAN RENDER ──────────────────────────────────────────
@@ -4328,6 +4445,9 @@ function obsRenderDash() {
            + '<span class="st-m cy">REVIEW</span><span class="ac-chev">▸</span></div>';
     }
   }
+
+  // The reps ladder — the practice apparatus that builds the record
+  html += obsRenderReps();
 
   // Progress by subject
   var order = obsSubOrder();
