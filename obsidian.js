@@ -48,7 +48,37 @@ window.OBSIDIAN_CONFIG = {
   srs: [1, 1, 3, 7, 21, 30],
   // Ace a topic quiz (100%) and it jumps straight to box 3 = MASTERED —
   // one strong first pass is enough; reviews still schedule to keep it honest.
-  perfectTo: 3
+  perfectTo: 3,
+  // ── THE REPS LADDER (Part III of the brief) ──────────────────
+  // Knowledge lives in lessons; edge lives in reps with a graded record.
+  // Each rep type unlocks with its tier and tracks a counter the app
+  // displays like a streak. g:true = gradeable (logged first, graded
+  // hit/miss later — wrong answers are the curriculum). target = the
+  // program milestone for that counter. daily:true = streak-tracked.
+  reps: [
+    { k:'journal', tier:'T0', name:'Market Journal', daily:true,
+      hint:'Every trading day: what moved and ONE mechanical why. No predictions yet.' },
+    { k:'spot', tier:'T0', name:'Concept Spotted',
+      hint:'A lesson concept seen in the wild on a watchlist name within 48h. Name the concept and the ticker.' },
+    { k:'predict', tier:'T1', name:'Prediction Log', g:true,
+      hint:'Before a scheduled event (earnings, Fed day, rebalance): who is forced to do what. Grade it after.' },
+    { k:'mech', tier:'T2', name:'Mechanics Rep',
+      hint:'A machine felt first-hand: order types worked, a short simulated, one live IPO followed S-1 to first trade.' },
+    { k:'filing', tier:'T3', name:'Filing Teardown', target:50,
+      hint:'One timed 10-K/S-1 teardown, dirty dozen extracted, shipped as a post. THE odometer of the program.' },
+    { k:'call', tier:'T3', name:'Earnings Call Log',
+      hint:'One call Q&amp;A: log what management dodged.' },
+    { k:'audit', tier:'T4', name:'Price-Assumption Audit',
+      hint:'One-pager: what this price requires, judged against base rates.' },
+    { k:'macro', tier:'T5', name:'Monday Macro Read',
+      hint:'One paragraph from bonds, spreads, and the dollar only — no equity headlines.' },
+    { k:'insider', tier:'T6', name:'Insider Scan',
+      hint:'Weekly Form 4 open-market buys + new 13Ds: the 3 most interesting with a one-line why-now.' },
+    { k:'trap', tier:'T7', name:'Trap Safari',
+      hint:'One live trap dissected: mechanism / beneficiary / tell. The account&#39;s signature content.' },
+    { k:'thesis', tier:'T8', name:'Paper Thesis', g:true, target:5,
+      hint:'Full public thesis: claim, evidence, what the price assumes, falsifier with a date, planned size. 5 GRADED before one real dollar.' }
+  ]
 };
 
 window.OBSIDIAN_CURRICULUM = [
