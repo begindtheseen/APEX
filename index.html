@@ -604,6 +604,44 @@ body{color:var(--text);font-family:var(--sans);}
 #obsidianApp .stopic:active{background:rgba(255,255,255,.05);}
 #obsidianApp .subbar-f{background:linear-gradient(90deg,#ffffff,#7a7a7a);}
 #obsidianApp .comp-row{border-bottom-color:rgba(255,255,255,.08);}
+
+/* ── REDLINE — the third realm (carbon + signal red) ─────────── */
+/* Same engine, same screen, different skin. The theme class re-skins every
+   shared component in red; without it, the screen is Obsidian's black. */
+.dk-launch.redline{
+  border-color:#3a1414;background:#0a0303;color:#ff4033;
+  box-shadow:inset 0 0 10px rgba(255,64,51,.16), 0 0 12px rgba(0,0,0,.9);
+  font-size:12px;
+}
+.dk-launch.redline:active{border-color:#ff3b30;box-shadow:inset 0 0 14px rgba(255,64,51,.35);}
+#obsidianApp.theme-redline{
+  --void:#0a0505; --deep:#0d0606; --mid:#150a0a; --shelf:#1c0e0e; --frost:#231414;
+  --ice:#2c1616; --ice2:#3c1d1d; --primary:#ff3b30; --bright:#ff5b52;
+  --glacier:#c9463d; --cryo:#ffd9d5; --purple:#ff6a5f; --orange:#ff8a3c;
+  --text:#ece0df; --muted:#8f6d6a; --muted2:#2c1616;
+  background:#080404;
+}
+#obsidianApp.theme-redline .hero{background:linear-gradient(180deg,#1a0a08 0%,#0b0505 100%);border-color:#3a1a17;}
+#obsidianApp.theme-redline .hero::before{background:linear-gradient(105deg,transparent 30%,rgba(255,64,51,.04) 42%,rgba(255,64,51,.12) 50%,rgba(255,64,51,.05) 58%,transparent 72%);background-size:300% 100%;}
+#obsidianApp.theme-redline .hero::after{background:radial-gradient(circle, rgba(255,64,51,.13) 0%, transparent 70%);}
+#obsidianApp.theme-redline .hero-ey{color:#ff5b52;text-shadow:0 0 14px rgba(255,64,51,.45);}
+#obsidianApp.theme-redline .bb{background:rgba(255,64,51,.045);border-color:rgba(255,64,51,.18);}
+#obsidianApp.theme-redline .by{background:rgba(255,180,32,.05);border-color:rgba(255,150,40,.28);}
+#obsidianApp.theme-redline .by strong{color:#ffb020;}
+#obsidianApp.theme-redline .cb{background:rgba(255,64,51,.14);color:#ff7b70;}
+#obsidianApp.theme-redline .cy{background:rgba(255,180,32,.14);color:#ffc44d;}
+#obsidianApp.theme-redline .sbtn:active{background:rgba(255,64,51,.12);}
+#obsidianApp.theme-redline .sbtn.on{background:rgba(255,64,51,.16);border-color:#ff3b30;color:#fff;}
+#obsidianApp.theme-redline .sbtn.pri{background:linear-gradient(180deg,#ff3b30,#c31c14);border-color:#ff5b52;color:#fff;}
+#obsidianApp.theme-redline .qopt:active{background:rgba(255,64,51,.07);}
+#obsidianApp.theme-redline .stopic:active{background:rgba(255,64,51,.07);}
+#obsidianApp.theme-redline .subbar-f{background:linear-gradient(90deg,#ff3b30,#7a1710);}
+#obsidianApp.theme-redline .comp-row{border-bottom-color:rgba(255,64,51,.10);}
+#obsidianApp.theme-redline #dkNav{background:linear-gradient(180deg,#0a0404 0%,#150808 100%);border-bottom-color:#3a1a17;box-shadow:0 1px 20px rgba(255,64,51,.06);}
+#obsidianApp.theme-redline .dk-brand{color:#ff5b52;text-shadow:0 0 18px rgba(255,64,51,.5);}
+#obsidianApp.theme-redline .dk-back{border-color:#3c1d1d;color:#e0a5a0;}
+#obsidianApp.theme-redline .dk-back:active{border-color:#ff3b30;color:#fff;}
+#obsidianApp.theme-redline .dk-viz{background:linear-gradient(180deg,#150a0a,#0a0505);border-color:#2c1616;}
 #dkNav{
   background:linear-gradient(180deg,#000 0%,#0a0a0a 100%);
   border-bottom:1px solid #262626;
@@ -685,6 +723,7 @@ body{color:var(--text);font-family:var(--sans);}
       <button class="tab" onclick="goTab('job')">Job</button>
     </div>
     <button class="dk-launch" onclick="goObsidian()" title="Obsidian — the second curriculum">◆</button>
+    <button class="dk-launch redline" onclick="goRedline()" title="REDLINE — the third curriculum">▲</button>
   </div>
 
   <!-- TODAY -->
@@ -796,7 +835,7 @@ body{color:var(--text);font-family:var(--sans);}
   <div id="dkNav">
     <button class="dk-back" onclick="exitObsidian()">← APEX</button>
     <div class="dk-brand" id="dkBrand">OBSIDIAN</div>
-    <div class="dk-tag">SECOND CURRICULUM</div>
+    <div class="dk-tag" id="dkTag">SECOND CURRICULUM</div>
   </div>
   <div class="scr"><div class="pad" id="obsidianContent"></div></div>
 </div>
@@ -844,6 +883,8 @@ body{color:var(--text);font-family:var(--sans);}
 <script src="jobs.js"></script>
 <script src="obsidian.js"></script>
 <script src="obsviz.js"></script>
+<script src="redline.js"></script>
+<script src="redlineviz.js"></script>
 </div>
 
 <script>
@@ -4010,14 +4051,39 @@ function renderCareer(){
 // curriculum obsidian.js provides. Its progress lives under its
 // own localStorage key and never touches the blue-side state.
 // ═══════════════════════════════════════════════════════════
-var OBS_KEY = 'apex_obsidian_v1';
+// ── REALM REGISTRY ───────────────────────────────────────────
+// One engine, many dark realms. Each realm is a self-contained curriculum:
+// its own data globals, its own localStorage key, its own theme skin. The
+// blue side (APEX) stays separate. ACTIVE_REALM points at whichever dark
+// realm is open. Obsidian's behavior is unchanged — when it is active, every
+// accessor below resolves to the exact same globals and key as before.
+var REALMS = {
+  obsidian: {
+    key:'apex_obsidian_v1', themeClass:'', tag:'SECOND CURRICULUM', label:'SECOND CURRICULUM',
+    dataName:'Obsidian', file:'obsidian.js', globalName:'OBSIDIAN_CURRICULUM', backupPrefix:'obsidian',
+    cfg:function(){ return (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {}; },
+    curr:function(){ return (typeof OBSIDIAN_CURRICULUM !== 'undefined' && OBSIDIAN_CURRICULUM) ? OBSIDIAN_CURRICULUM : []; },
+    qbank:function(){ return (typeof OBSIDIAN_QBANK !== 'undefined' && OBSIDIAN_QBANK) ? OBSIDIAN_QBANK : {}; },
+    viz:function(){ return (typeof OBSIDIAN_VIZ !== 'undefined' && OBSIDIAN_VIZ) ? OBSIDIAN_VIZ : {}; }
+  },
+  redline: {
+    key:'apex_redline_v1', themeClass:'theme-redline', tag:'THIRD CURRICULUM', label:'THIRD CURRICULUM',
+    dataName:'REDLINE', file:'redline.js', globalName:'REDLINE_CURRICULUM', backupPrefix:'redline',
+    cfg:function(){ return (typeof REDLINE_CONFIG !== 'undefined' && REDLINE_CONFIG) ? REDLINE_CONFIG : {}; },
+    curr:function(){ return (typeof REDLINE_CURRICULUM !== 'undefined' && REDLINE_CURRICULUM) ? REDLINE_CURRICULUM : []; },
+    qbank:function(){ return (typeof REDLINE_QBANK !== 'undefined' && REDLINE_QBANK) ? REDLINE_QBANK : {}; },
+    viz:function(){ return (typeof REDLINE_VIZ !== 'undefined' && REDLINE_VIZ) ? REDLINE_VIZ : {}; }
+  }
+};
+var ACTIVE_REALM = 'obsidian';
+function realm() { return REALMS[ACTIVE_REALM] || REALMS.obsidian; }
 var OBS_ST = { topics:{}, subs:{}, exams:[], reps:[] };
 
 function obsCfg() {
-  var c = (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {};
+  var c = realm().cfg();
   return {
-    brand: c.brand || 'OBSIDIAN',
-    name: c.name || 'Obsidian Academy',
+    brand: c.brand || realm().dataName || 'REALM',
+    name: c.name || 'Academy',
     tagline: c.tagline || '',
     subjects: c.subjects || {},
     order: c.order || [],
@@ -4026,8 +4092,8 @@ function obsCfg() {
     perfectTo: c.perfectTo || 0
   };
 }
-function obsCurr() { return (typeof OBSIDIAN_CURRICULUM !== 'undefined' && OBSIDIAN_CURRICULUM) ? OBSIDIAN_CURRICULUM : []; }
-function obsQbank(sub) { return (typeof OBSIDIAN_QBANK !== 'undefined' && OBSIDIAN_QBANK && OBSIDIAN_QBANK[sub]) ? OBSIDIAN_QBANK[sub] : []; }
+function obsCurr() { return realm().curr(); }
+function obsQbank(sub) { var q = realm().qbank(); return (q && q[sub]) ? q[sub] : []; }
 function obsSubName(sub) { var s = obsCfg().subjects[sub]; return s ? s.name : sub; }
 // Subject order = config order, plus any subs found in the curriculum but
 // missing from the config (so a partial handoff still renders everything).
@@ -4039,14 +4105,14 @@ function obsSubOrder() {
 
 function obsLoad() {
   try {
-    var s = JSON.parse(localStorage.getItem(OBS_KEY) || '{}');
+    var s = JSON.parse(localStorage.getItem(realm().key) || '{}');
     OBS_ST.topics = s.topics || {};
     OBS_ST.subs = s.subs || {};
     OBS_ST.exams = s.exams || [];
     OBS_ST.reps = s.reps || [];
   } catch(e) {}
 }
-function obsSave() { try { localStorage.setItem(OBS_KEY, JSON.stringify(OBS_ST)); } catch(e) {} }
+function obsSave() { try { localStorage.setItem(realm().key, JSON.stringify(OBS_ST)); } catch(e) {} }
 function obsTopicState(id) { if (!OBS_ST.topics[id]) OBS_ST.topics[id] = { box:0, due:null, seen:0, correct:0 }; return OBS_ST.topics[id]; }
 function obsSubState(sub) { if (!OBS_ST.subs[sub]) OBS_ST.subs[sub] = { seen:0, correct:0 }; return OBS_ST.subs[sub]; }
 
@@ -4231,17 +4297,17 @@ function obsExamToggleReview() { OBS_EXAM.review = !OBS_EXAM.review; renderObsid
 function obsExport() {
   try {
     var snap = { topics:OBS_ST.topics, subs:OBS_ST.subs, exams:OBS_ST.exams, reps:OBS_ST.reps,
-                 exportedAt:new Date().toISOString(), appVersion:OBS_KEY };
+                 exportedAt:new Date().toISOString(), appVersion:realm().key };
     var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'obsidian-backup-' + todayKey() + '.json';
+    a.download = realm().backupPrefix + '-backup-' + todayKey() + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    toast('Obsidian backup downloaded', 'ok');
+    toast(realm().dataName + ' backup downloaded', 'ok');
   } catch(e) { toast('Export failed', 'warn'); }
 }
 function obsTriggerImport() { document.getElementById('obsImportFile').click(); }
@@ -4253,14 +4319,14 @@ function obsImport(ev) {
   reader.onload = function() {
     try {
       var s = JSON.parse(reader.result);
-      if (!s || !s.topics) { toast('Not a valid Obsidian backup', 'warn'); return; }
-      if (!confirm('Restore this Obsidian backup? It replaces the Obsidian progress on this device.')) return;
+      if (!s || !s.topics) { toast('Not a valid ' + realm().dataName + ' backup', 'warn'); return; }
+      if (!confirm('Restore this ' + realm().dataName + ' backup? It replaces the ' + realm().dataName + ' progress on this device.')) return;
       OBS_ST.topics = s.topics || {};
       OBS_ST.subs = s.subs || {};
       OBS_ST.exams = s.exams || [];
       OBS_ST.reps = s.reps || [];
       obsSave();
-      toast('Obsidian backup restored', 'ok');
+      toast(realm().dataName + ' backup restored', 'ok');
       renderObsidian();
     } catch(e) { toast('Could not read that file', 'warn'); }
   };
@@ -4268,10 +4334,10 @@ function obsImport(ev) {
   reader.readAsText(file);
 }
 function obsResetProgress() {
-  if (!confirm('Reset ALL Obsidian progress? Blue-side APEX data is untouched. This cannot be undone.')) return;
+  if (!confirm('Reset ALL ' + realm().dataName + ' progress? Blue-side APEX data is untouched. This cannot be undone.')) return;
   OBS_ST = { topics:{}, subs:{}, exams:[], reps:[] };
   obsSave();
-  toast('Obsidian progress reset', 'ok');
+  toast(realm().dataName + ' progress reset', 'ok');
   renderObsidian();
 }
 
@@ -4280,7 +4346,7 @@ function obsResetProgress() {
 // lives in lessons; the reps — logged here, graded honestly — are what
 // build real skill and a defensible public record.
 var OBS_REP_OPEN = null;   // rep type key with its log form open, or null
-function obsRepTypes() { var c = (typeof OBSIDIAN_CONFIG !== 'undefined' && OBSIDIAN_CONFIG) ? OBSIDIAN_CONFIG : {}; return c.reps || []; }
+function obsRepTypes() { var c = realm().cfg(); return c.reps || []; }
 function obsRepType(k) { var r = obsRepTypes(); for (var i = 0; i < r.length; i++) if (r[i].k === k) return r[i]; return null; }
 function obsRepEntries(k) { var out = []; for (var i = 0; i < OBS_ST.reps.length; i++) if (OBS_ST.reps[i].k === k) out.push(OBS_ST.reps[i]); return out; }
 // Gradeable reps count only GRADED entries — a prediction is a rep once judged.
@@ -4413,7 +4479,7 @@ function obsRenderDash() {
   var seen = 0, corr = 0;
   for (var k in OBS_ST.subs) { seen += OBS_ST.subs[k].seen; corr += OBS_ST.subs[k].correct; }
   var acc = seen ? Math.round(corr / seen * 100) : null;
-  html += '<div class="hero"><div class="hero-ey">' + esc(cfg.brand) + ' · SECOND CURRICULUM</div>'
+  html += '<div class="hero"><div class="hero-ey">' + esc(cfg.brand) + ' · ' + realm().label + '</div>'
        + '<div class="hero-t">' + esc(cfg.name) + '</div>'
        + '<div class="hero-b">' + esc(cfg.tagline) + '</div>';
   if (topics.length) {
@@ -4424,7 +4490,7 @@ function obsRenderDash() {
 
   // No curriculum yet — show the install instructions and stop.
   if (!topics.length) {
-    html += '<div class="box by"><strong>Awaiting the handoff curriculum.</strong> This realm is empty until obsidian.js defines OBSIDIAN_CURRICULUM. Open obsidian.js, give the HANDOFF SPEC comment at the top to the session writing your curriculum, and paste its output into that file. Reload and everything here comes alive.</div>';
+    html += '<div class="box by"><strong>Awaiting the handoff curriculum.</strong> This realm is empty until ' + realm().file + ' defines ' + realm().globalName + '. Open ' + realm().file + ', give the HANDOFF SPEC comment at the top to the session writing your curriculum, and paste its output into that file. Reload and everything here comes alive.</div>';
     return html;
   }
 
@@ -4500,8 +4566,8 @@ function obsRenderDash() {
   }
 
   // Backup — Obsidian progress is separate from the blue-side backup
-  html += '<div class="sl" style="margin-top:18px">OBSIDIAN DATA</div>';
-  html += '<div class="box bb" style="margin-top:0">Obsidian progress is saved on this device, separately from APEX. It is NOT inside the APEX backup — export it here.'
+  html += '<div class="sl" style="margin-top:18px">' + realm().dataName.toUpperCase() + ' DATA</div>';
+  html += '<div class="box bb" style="margin-top:0">' + realm().dataName + ' progress is saved on this device, separately from APEX. It is NOT inside the APEX backup — export it here.'
        + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
        + '<button class="sbtn" onclick="obsExport()">Export backup</button>'
        + '<button class="sbtn" onclick="obsTriggerImport()">Restore</button>'
@@ -4537,7 +4603,7 @@ function obsRenderTopic() {
       html += '<div style="margin-top:14px"><button class="sbtn pri" style="width:100%;padding:11px" onclick="obsReveal()">I attempted an answer — reveal the lesson</button></div>';
     } else {
       html += '<div class="lesson">' + t.concept + (t.example ? '<div class="box bb" style="margin-top:12px">' + t.example + '</div>' : '') + '</div>';
-      var viz = (typeof OBSIDIAN_VIZ !== 'undefined' && OBSIDIAN_VIZ && OBSIDIAN_VIZ[t.id]) ? OBSIDIAN_VIZ[t.id] : null;
+      var vz = realm().viz(); var viz = (vz && vz[t.id]) ? vz[t.id] : null;
       if (viz) html += '<div class="sl" style="margin-top:14px">MECHANISM DIAGRAM</div><div class="dk-viz">' + viz + '</div>';
       if (t.teach) html += '<div class="box bg" style="margin-top:12px"><strong>Teach-back:</strong> ' + t.teach + '</div>';
       // Post Draft — written from memory by the learner; the app never writes it.
@@ -4632,16 +4698,34 @@ function obsRenderExamResults() {
 }
 
 // ── OBSIDIAN NAV ─────────────────────────────────────────────
-function goObsidian() {
+// Open a dark realm: point ACTIVE_REALM at it, load ITS saved progress into
+// OBS_ST, skin the shared screen with its theme, and render. One screen
+// serves every realm; the theme class is what makes it black or red.
+function enterRealm(name) {
+  ACTIVE_REALM = REALMS[name] ? name : 'obsidian';
+  if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
+  OBS_EXAM = null; OBS_VIEW = null; OBS_MODE = 'lesson'; OBS_REP_OPEN = null;
+  obsLoad();
+  var app = document.getElementById('obsidianApp');
+  var i, names = [];
+  for (var k in REALMS) if (REALMS[k].themeClass) names.push(REALMS[k].themeClass);
+  for (i = 0; i < names.length; i++) app.classList.remove(names[i]);
+  if (realm().themeClass) app.classList.add(realm().themeClass);
+  var tagEl = document.getElementById('dkTag'); if (tagEl) tagEl.textContent = realm().tag;
   document.getElementById('mainApp').classList.remove('active');
-  document.getElementById('obsidianApp').classList.add('active');
+  app.classList.add('active');
   renderObsidian();
 }
+function goObsidian() { enterRealm('obsidian'); }
+function goRedline() { enterRealm('redline'); }
 function exitObsidian() {
   if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
   OBS_EXAM = null; OBS_VIEW = null;
-  document.getElementById('obsidianApp').classList.remove('active');
+  var app = document.getElementById('obsidianApp');
+  app.classList.remove('active');
+  if (realm().themeClass) app.classList.remove(realm().themeClass);
   document.getElementById('mainApp').classList.add('active');
+  ACTIVE_REALM = 'obsidian';
   renderActiveTab();
 }
 
