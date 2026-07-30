@@ -668,15 +668,25 @@ body{color:var(--text);font-family:var(--sans);}
 /* Three curricula side by side (per the dashboard sketch: blue square,
    white diamond, red triangle). APEX is no longer the default screen —
    everything launches from here, through the warp transition below. */
-#launcherScreen{background:#010204;}
-.ls-head{padding:calc(18px + env(safe-area-inset-top)) 16px 8px;text-align:center;flex-shrink:0;}
+#launcherScreen{background:#010204;position:relative;justify-content:center;}
+/* Ambient atmosphere — three breathing color glows, one per realm, so the
+   space around the compact cards never reads as empty black. */
+.ls-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.ls-bg span{position:absolute;width:52vw;height:52vw;max-width:250px;max-height:250px;
+  border-radius:50%;filter:blur(48px);opacity:.14;animation:lsBreathe 7.5s ease-in-out infinite;}
+.ls-bg .bgA{left:-8vw;top:16%;background:#0090d4;}
+.ls-bg .bgO{left:calc(50% - 26vw);top:2%;background:#8a8a8a;animation-delay:2.5s;}
+.ls-bg .bgR{right:-8vw;bottom:12%;background:#e03328;animation-delay:5s;}
+@keyframes lsBreathe{0%,100%{opacity:.09;transform:scale(.9)}50%{opacity:.2;transform:scale(1.1)}}
+.ls-head{padding:0 16px 20px;text-align:center;flex-shrink:0;position:relative;}
 .ls-kicker{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:#4e5e6c;}
 .ls-title{font-family:var(--sans);font-weight:800;font-size:20px;letter-spacing:5px;color:#e8f4ff;margin-top:5px;}
-.ls-row{flex:1;display:flex;min-height:0;padding:10px 10px calc(10px + env(safe-area-inset-bottom));gap:10px;}
+.ls-row{flex:0 0 auto;display:flex;justify-content:center;align-items:stretch;gap:10px;padding:0 12px;position:relative;}
 .ls-panel{
-  flex:1;min-width:0;border-radius:18px;border:1px solid;position:relative;overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;
-  cursor:pointer;padding:14px 6px;margin:0;
+  flex:1;min-width:0;max-width:128px;aspect-ratio:10/14.2;
+  border-radius:20px;border:1px solid;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  cursor:pointer;padding:12px 6px;margin:0;
   appearance:none;-webkit-appearance:none;font-family:inherit;outline:none;
   transition:transform .18s ease;
 }
@@ -688,35 +698,35 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-panel.lsObs::before{animation-delay:2.1s}
 .ls-panel.lsRed::before{animation-delay:4.2s}
 @keyframes lsSheen{0%,58%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
-.ls-glyph{font-size:50px;line-height:1;animation:lsFloat 4.4s ease-in-out infinite;}
+.ls-glyph{font-size:38px;line-height:1;animation:lsFloat 4.4s ease-in-out infinite;}
 .ls-panel.lsObs .ls-glyph{animation-delay:.9s}
 .ls-panel.lsRed .ls-glyph{animation-delay:1.8s}
-@keyframes lsFloat{0%,100%{transform:translateY(5px)}50%{transform:translateY(-6px)}}
+@keyframes lsFloat{0%,100%{transform:translateY(3px)}50%{transform:translateY(-4px)}}
 /* the hand-drawn squiggle from the sketch — a self-drawing trace */
-.ls-trace{width:78%;max-width:118px;height:26px;opacity:.95;flex-shrink:0;}
+.ls-trace{width:72%;max-width:86px;height:20px;opacity:.95;flex-shrink:0;}
 .ls-trace polyline{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:100;animation:lsDraw 3.6s ease-in-out infinite;}
 @keyframes lsDraw{0%{stroke-dashoffset:100}42%,68%{stroke-dashoffset:0}100%{stroke-dashoffset:-100}}
-.ls-name{font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:3px;}
-.ls-tag{font-family:var(--mono);font-size:9px;line-height:1.5;color:#8fa0ad;text-align:center;letter-spacing:.4px;padding:0 5px;}
-.ls-sub{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:#55656f;min-height:12px;}
-.ls-panel.lsApex{border-color:rgba(0,212,255,.35);
+.ls-name{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:2.5px;}
+.ls-tag{font-family:var(--mono);font-size:8.5px;line-height:1.5;color:#8fa0ad;text-align:center;letter-spacing:.3px;padding:0 5px;}
+.ls-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;color:#55656f;min-height:11px;}
+.ls-panel.lsApex{border-color:rgba(0,212,255,.35);box-shadow:0 26px 60px -20px rgba(0,212,255,.35);
   background:radial-gradient(130% 90% at 50% -10%,rgba(0,212,255,.17),transparent 62%),linear-gradient(180deg,#04121f,#010508);}
 .ls-panel.lsApex .ls-glyph{color:#37c8ff;text-shadow:0 0 24px rgba(0,212,255,.55);}
 .ls-panel.lsApex .ls-name{color:#bfeaff;}
 .ls-panel.lsApex .ls-trace{color:#37c8ff;}
-.ls-panel.lsObs{border-color:rgba(255,255,255,.30);
+.ls-panel.lsObs{border-color:rgba(255,255,255,.30);box-shadow:0 26px 60px -20px rgba(255,255,255,.26);
   background:radial-gradient(130% 90% at 50% -10%,rgba(255,255,255,.11),transparent 62%),linear-gradient(180deg,#101010,#000);}
 .ls-panel.lsObs .ls-glyph{color:#fff;text-shadow:0 0 24px rgba(255,255,255,.5);}
 .ls-panel.lsObs .ls-name{color:#f0f0f0;}
 .ls-panel.lsObs .ls-trace{color:#e6e6e6;}
-.ls-panel.lsRed{border-color:rgba(255,59,48,.42);
+.ls-panel.lsRed{border-color:rgba(255,59,48,.42);box-shadow:0 26px 60px -20px rgba(255,59,48,.38);
   background:radial-gradient(130% 90% at 50% -10%,rgba(255,59,48,.19),transparent 62%),linear-gradient(180deg,#180707,#050202);}
 .ls-panel.lsRed .ls-glyph{color:#ff4033;text-shadow:0 0 26px rgba(255,59,48,.6);}
 .ls-panel.lsRed .ls-name{color:#ffd9d5;}
 .ls-panel.lsRed .ls-trace{color:#ff5b52;}
-.ls-foot{flex-shrink:0;text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;
-  padding:0 16px calc(12px + env(safe-area-inset-bottom));}
+.ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
+  text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
 
 /* ── WARP — the full-screen realm transition ─────────────────── */
 /* Canvas-driven: dim → radial warp streaks + particle burst + shockwave
@@ -736,6 +746,7 @@ body{color:var(--text);font-family:var(--sans);}
 
 <!-- REALM SELECT — the start page. Three curricula, one engine. -->
 <div class="screen active" id="launcherScreen">
+  <div class="ls-bg"><span class="bgA"></span><span class="bgO"></span><span class="bgR"></span></div>
   <div class="ls-head">
     <div class="ls-kicker">ONE ENGINE · THREE CURRICULA</div>
     <div class="ls-title">SELECT REALM</div>
