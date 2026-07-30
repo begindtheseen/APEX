@@ -82,6 +82,34 @@ c0_scores:
 +'<rect x="176" y="154" width="138" height="30" rx="7" fill="#140a0a" stroke="#7a7a7a" stroke-width="1"/>'
 +'<text x="185" y="168" fill="#a9a9a9" font-size="9" text-anchor="start">FICO 2 / 4 / 5</text>'
 +'<text x="185" y="179" fill="#7a7a7a" font-size="8" text-anchor="start">mortgage pulls</text>'
++'</svg>',
+
+// C4 · The roll — negative equity stacks into each new loan; debt snowballs.
+c4_dti:
+'<svg viewBox="0 0 320 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">'
++'<text x="160" y="14" fill="#a9a9a9" font-size="10" text-anchor="middle">The roll: each trade stacks old debt into the new loan</text>'
+// baseline
++'<line x1="20" y1="172" x2="300" y2="172" stroke="#3c1d1d" stroke-width="1"/>'
+// Car 1 — owe 60k (gold 45k car + red 15k negative)
++'<rect x="44" y="142" width="54" height="30" fill="#ffb020"/>'
++'<rect x="44" y="122" width="54" height="20" fill="#ff4455"/>'
++'<text x="71" y="116" fill="#ff6a5f" font-size="9" text-anchor="middle">$60k</text>'
++'<text x="71" y="186" fill="#a9a9a9" font-size="9" text-anchor="middle">Car 1</text>'
+// Car 2 — owe 85k (gold 55k + red 30k)
++'<rect x="136" y="132" width="54" height="40" fill="#ffb020"/>'
++'<rect x="136" y="92" width="54" height="40" fill="#ff4455"/>'
++'<text x="163" y="86" fill="#ff6a5f" font-size="9" text-anchor="middle">$85k</text>'
++'<text x="163" y="186" fill="#a9a9a9" font-size="9" text-anchor="middle">Car 2</text>'
+// Car 3 — owe 120k (gold 62k + red 58k)
++'<rect x="228" y="110" width="54" height="62" fill="#ffb020"/>'
++'<rect x="228" y="52" width="54" height="58" fill="#ff4455"/>'
++'<text x="255" y="46" fill="#ff6a5f" font-size="9" text-anchor="middle">$120k+</text>'
++'<text x="255" y="186" fill="#a9a9a9" font-size="9" text-anchor="middle">Car 3</text>'
+// the rolled negative equity travels forward and grows
++'<circle r="5" fill="#ff4455"><animateMotion dur="3s" repeatCount="indefinite" keyPoints="0;0.5;1" keyTimes="0;0.5;1" calcMode="linear" path="M71 122 L163 92 L255 52"/></circle>'
+// legend
++'<rect x="20" y="24" width="9" height="9" fill="#ffb020"/><text x="33" y="32" fill="#7a7a7a" font-size="8" text-anchor="start">financed car</text>'
++'<rect x="96" y="24" width="9" height="9" fill="#ff4455"/><text x="109" y="32" fill="#7a7a7a" font-size="8" text-anchor="start">negative equity carried forward</text>'
 +'</svg>'
 
 };
