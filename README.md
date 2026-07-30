@@ -57,18 +57,27 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | File | Purpose |
 | --- | --- |
 | `index.html` | The entire app — UI, logic, and `localStorage` persistence. |
+| `obsidian.js` / `obsviz.js` | Obsidian curriculum data + its animated mechanism diagrams. |
+| `redline.js` / `redlineviz.js` | REDLINE curriculum data (exotic rental + credit engineering) + diagrams. |
 | `manifest.json` | PWA metadata (name, colors, icon) for home-screen install. |
 | `sw.js` | Service worker — caches the app shell for offline use. |
 | `icon.svg` | App icon used by the manifest and home screen. |
 | `.github/workflows/deploy.yml` | Publishes the app to GitHub Pages. |
 | `RESEARCH.md` | The evidence base — every science claim, threshold, and Navy fact mapped to its source. |
 
+## The realm launcher — three curricula, one engine
+
+The app opens on a **realm-select start page**: three side-by-side panels —
+**APEX** (blue ■, the protocol above), **OBSIDIAN** (white ◆), and
+**REDLINE** (red ▲). Tapping a panel plays a full-screen warp transition in
+that realm's color and drops you in. The ❖ button (or ← REALMS) returns to
+the launcher. Each realm keeps fully separate progress.
+
 ## Obsidian — the second curriculum (black side)
 
-The ◆ button at the right of the tab bar opens **Obsidian**: a black-themed
-second realm of the app that runs the exact same learning engine (lesson →
-flashcards → quiz → spaced repetition → adaptive timed drills) on a completely
-different curriculum, with completely separate progress.
+**Obsidian** is a black-themed realm running the same learning engine
+(lesson → flashcards → quiz → spaced repetition → adaptive timed drills) on a
+completely different curriculum, with completely separate progress.
 
 - All Obsidian content lives in **`obsidian.js`** — config, subjects, topics,
   and an optional drill question bank. The app ships with placeholder content.
@@ -78,6 +87,15 @@ different curriculum, with completely separate progress.
 - Obsidian progress is stored under its own key (`apex_obsidian_v1`) and has
   its own Export/Restore/Reset buttons at the bottom of its dashboard — it is
   **not** included in the main APEX backup.
+
+## REDLINE — the third curriculum (red side)
+
+**REDLINE** runs the same engine on the exotic-rental industry — how the
+agency/consignment machine works, the money waterfall, insurance, and a full
+credit-engineering rail (personal file → business credit → financing the
+car). Content lives in **`redline.js`** (+ `redlineviz.js` diagrams), progress
+under its own key (`apex_redline_v1`) with its own Export/Restore/Reset.
+Educational only — never financial, legal, tax, or insurance advice.
 
 ## The science behind it
 
