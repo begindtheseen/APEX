@@ -689,7 +689,7 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-row{flex:0 0 auto;display:flex;justify-content:center;align-items:stretch;gap:10px;padding:0 12px;position:relative;}
 .ls-panel{
   flex:1;min-width:0;max-width:128px;aspect-ratio:10/14.2;
-  border-radius:20px;border:1px solid;position:relative;overflow:hidden;
+  border-radius:20px;border:1px solid;position:relative;overflow:hidden;contain:paint;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
   cursor:pointer;padding:12px 6px;margin:0;
   appearance:none;-webkit-appearance:none;font-family:inherit;outline:none;
@@ -711,9 +711,12 @@ body{color:var(--text);font-family:var(--sans);}
 @keyframes lsFloat{0%,100%{transform:translateY(3px)}50%{transform:translateY(-4px)}}
 /* the hand-drawn squiggle from the sketch — a self-drawing trace */
 .ls-trace{width:72%;max-width:86px;height:20px;opacity:.95;flex-shrink:0;}
+/* PERF: dash animation is CPU paint (can’t composite). It runs 3 draw
+   cycles on each launcher entry, then settles fully drawn — after that the
+   idle page does ZERO paint work; everything left is compositor-only. */
 .ls-trace polyline{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:100;animation:lsDraw 3.6s ease-in-out infinite;}
-@keyframes lsDraw{0%{stroke-dashoffset:100}42%,68%{stroke-dashoffset:0}100%{stroke-dashoffset:-100}}
+  stroke-dasharray:100;stroke-dashoffset:0;animation:lsDraw 3.6s ease-in-out 3;}
+@keyframes lsDraw{0%{stroke-dashoffset:100}55%,100%{stroke-dashoffset:0}}
 .ls-name{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:2.5px;}
 .ls-tag{font-family:var(--mono);font-size:8.5px;line-height:1.5;color:#8fa0ad;text-align:center;letter-spacing:.3px;padding:0 5px;}
 .ls-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;color:#55656f;min-height:11px;}
@@ -752,7 +755,7 @@ body{color:var(--text);font-family:var(--sans);}
 #warpCanvas{position:absolute;inset:0;width:100%;height:100%;}
 .warp-glyph{position:absolute;font-size:96px;line-height:1;transform:translate(-50%,-50%);
   will-change:transform,opacity;pointer-events:none;}
-#warpFlash{position:absolute;inset:0;opacity:0;pointer-events:none;}
+#warpFlash{position:absolute;inset:0;opacity:0;pointer-events:none;will-change:opacity;}
 </style>
 </head>
 <body>
@@ -4909,9 +4912,11 @@ function launchRealm(name, btn) {
   var gl = document.getElementById('warpGlyph');
   var fl = document.getElementById('warpFlash');
   var W = window.innerWidth, H = window.innerHeight;
-  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  // PERF: 1.5x pixel cap — nobody resolves extra pixels inside a one-second
+  // burst, and the smaller raster keeps weak GPUs at full frame rate.
+  var dpr = Math.min(1.5, window.devicePixelRatio || 1);
   cv.width = W * dpr; cv.height = H * dpr;
-  var ctx = cv.getContext('2d');
+  var ctx = cv.getContext('2d', { desynchronized: true });
   // Burst origin = the center of the panel that was tapped.
   var rc = btn.getBoundingClientRect();
   var ox = rc.left + rc.width / 2, oy = rc.top + rc.height / 2;
@@ -4925,21 +4930,36 @@ function launchRealm(name, btn) {
   fl.style.background = 'radial-gradient(circle at ' + ox + 'px ' + oy + 'px, ' + pal.cols[3] + ' 0%, ' + pal.cols[0] + ' 42%, ' + pal.bg + ' 100%)';
   fl.style.opacity = '0';
   wrap.classList.remove('fade'); wrap.classList.add('on');
-  var i, parts = [], streaks = [];
+  // PERF: pre-rendered radial-gradient sprites — drawImage per particle is
+  // far cheaper than arc()+fill(), and the soft falloff looks better too.
+  function sprite(col) {
+    var c = document.createElement('canvas'); c.width = c.height = 32;
+    var g = c.getContext('2d');
+    var grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, col); grad.addColorStop(.45, col); grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 32, 32);
+    return c;
+  }
+  var i, sprites = [];
+  for (i = 0; i < pal.cols.length; i++) sprites.push(sprite(pal.cols[i]));
+  var parts = [];
   for (i = 0; i < 170; i++) {
     var a = Math.random() * 6.2832, sp = 3 + Math.random() * 13;
     parts.push({ x:ox, y:oy, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
-                 s:1.2 + Math.random()*2.6, c:pal.cols[(Math.random()*pal.cols.length)|0], l:.6 + Math.random()*.4 });
+                 s:1.2 + Math.random()*2.6, k:(Math.random()*sprites.length)|0, l:.6 + Math.random()*.4 });
   }
+  // PERF: streaks batched by color — 3 stroke() calls per frame, not 110.
+  var groups = [[], [], []];
   for (i = 0; i < 110; i++) {
-    streaks.push({ a:Math.random()*6.2832, off:Math.random(), len:50 + Math.random()*170,
-                   w:.8 + Math.random()*1.8, c:pal.cols[(Math.random()*3)|0] });
+    groups[i % 3].push({ a:Math.random()*6.2832, off:Math.random(), len:50 + Math.random()*170 });
   }
   var rings = [120, 260, 420];
-  var t0 = Date.now(), DUR = 1050, routed = false;
+  var t0 = null, DUR = 1050, routed = false;
   function ease(x) { return 1 - Math.pow(1 - x, 3); }
-  function frame() {
-    var t = Date.now() - t0, p = Math.min(1, t / DUR);
+  function frame(now) {
+    // rAF timestamps ride vsync — steadier than Date.now() sampling.
+    if (t0 === null) t0 = now;
+    var t = now - t0, p = Math.min(1, t / DUR);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     // Dim to solid realm base as the warp builds.
@@ -4951,15 +4971,22 @@ function launchRealm(name, btn) {
     ctx.globalCompositeOperation = 'lighter';
     // Warp streaks rushing outward from the origin.
     var p2 = ease(Math.max(0, (p - .12) / .88));
-    for (i = 0; i < streaks.length; i++) {
-      var s = streaks[i];
-      var r0 = (s.off * .25 + p2) * (maxR * .9), r1 = r0 + s.len * (.35 + p2);
-      ctx.globalAlpha = Math.max(0, (1 - p2) * .75);
-      ctx.strokeStyle = s.c; ctx.lineWidth = s.w;
-      ctx.beginPath();
-      ctx.moveTo(ox + Math.cos(s.a) * r0, oy + Math.sin(s.a) * r0);
-      ctx.lineTo(ox + Math.cos(s.a) * r1, oy + Math.sin(s.a) * r1);
-      ctx.stroke();
+    var sAlpha = (1 - p2) * .75;
+    if (sAlpha > .01) {
+      ctx.globalAlpha = sAlpha;
+      ctx.lineWidth = 1.5;
+      for (var gI = 0; gI < 3; gI++) {
+        var grp = groups[gI];
+        ctx.strokeStyle = pal.cols[gI];
+        ctx.beginPath();
+        for (i = 0; i < grp.length; i++) {
+          var s = grp[i];
+          var r0 = (s.off * .25 + p2) * (maxR * .9), r1 = r0 + s.len * (.35 + p2);
+          ctx.moveTo(ox + Math.cos(s.a) * r0, oy + Math.sin(s.a) * r0);
+          ctx.lineTo(ox + Math.cos(s.a) * r1, oy + Math.sin(s.a) * r1);
+        }
+        ctx.stroke();
+      }
     }
     // Shockwave rings, staggered.
     for (i = 0; i < rings.length; i++) {
@@ -4971,15 +4998,15 @@ function launchRealm(name, btn) {
         ctx.beginPath(); ctx.arc(ox, oy, ease(rt) * maxR, 0, 6.2832); ctx.stroke();
       }
     }
-    // Particle burst with drag.
+    // Particle burst with drag — soft sprites via drawImage.
     if (t > 60) for (i = 0; i < parts.length; i++) {
       var q = parts[i];
       q.x += q.vx; q.y += q.vy; q.vx *= .965; q.vy *= .965;
       var la = q.l - p;
       if (la <= 0) continue;
       ctx.globalAlpha = Math.min(1, la * 1.6);
-      ctx.fillStyle = q.c;
-      ctx.beginPath(); ctx.arc(q.x, q.y, q.s, 0, 6.2832); ctx.fill();
+      var d = q.s * 4;
+      ctx.drawImage(sprites[q.k], q.x - d / 2, q.y - d / 2, d, d);
     }
     // Glyph: overshoot in, then punch through the screen.
     var gs, go = 1;
@@ -4987,11 +5014,15 @@ function launchRealm(name, btn) {
     else { var pz = (p - .78) / .22; gs = 1.3 + pz * pz * 9; go = 1 - pz; }
     gl.style.transform = 'translate(-50%,-50%) scale(' + gs.toFixed(3) + ')';
     gl.style.opacity = go.toFixed(2);
-    // Route under the flash so the realm is ready when it clears.
-    if (t > 760 && !routed) { routed = true; routeRealm(name); }
     if (t > 760) fl.style.opacity = Math.min(1, (t - 760) / 160).toFixed(2);
+    // PERF: route at FLASH PEAK (t≥930, screen a solid color) — building the
+    // destination realm's DOM is the warp's one heavy main-thread frame, and
+    // doing it mid-motion was the single biggest visible hitch. Behind the
+    // full flash, the stall cannot be seen.
+    if (t >= 930 && !routed) { routed = true; routeRealm(name); }
     if (t < DUR + 120) requestAnimationFrame(frame);
     else {
+      if (!routed) { routed = true; routeRealm(name); }
       wrap.classList.add('fade');
       setTimeout(function() {
         wrap.classList.remove('on'); wrap.classList.remove('fade');
