@@ -663,13 +663,125 @@ body{color:var(--text);font-family:var(--sans);}
 .dk-viz{border:1px solid #232323;border-radius:12px;padding:12px 8px;margin:4px 0 6px;background:linear-gradient(180deg,#0b0b0b,#060606);overflow:hidden;}
 .dk-viz svg{display:block;}
 .dk-viz text{font-family:'DM Sans',sans-serif;}
+
+/* ── REALM SELECT — the start page ───────────────────────────── */
+/* Three curricula side by side (per the dashboard sketch: blue square,
+   white diamond, red triangle). APEX is no longer the default screen —
+   everything launches from here, through the warp transition below. */
+#launcherScreen{background:#010204;position:relative;justify-content:center;}
+/* Ambient atmosphere — three breathing color glows, one per realm, so the
+   space around the compact cards never reads as empty black. */
+.ls-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.ls-bg span{position:absolute;width:52vw;height:52vw;max-width:250px;max-height:250px;
+  border-radius:50%;filter:blur(48px);opacity:.14;animation:lsBreathe 7.5s ease-in-out infinite;}
+.ls-bg .bgA{left:-8vw;top:16%;background:#0090d4;}
+.ls-bg .bgO{left:calc(50% - 26vw);top:2%;background:#8a8a8a;animation-delay:2.5s;}
+.ls-bg .bgR{right:-8vw;bottom:12%;background:#e03328;animation-delay:5s;}
+@keyframes lsBreathe{0%,100%{opacity:.09;transform:scale(.9)}50%{opacity:.2;transform:scale(1.1)}}
+.ls-head{padding:0 16px 20px;text-align:center;flex-shrink:0;position:relative;}
+.ls-kicker{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:#4e5e6c;}
+.ls-title{font-family:var(--sans);font-weight:800;font-size:20px;letter-spacing:5px;color:#e8f4ff;margin-top:5px;}
+.ls-row{flex:0 0 auto;display:flex;justify-content:center;align-items:stretch;gap:10px;padding:0 12px;position:relative;}
+.ls-panel{
+  flex:1;min-width:0;max-width:128px;aspect-ratio:10/14.2;
+  border-radius:20px;border:1px solid;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  cursor:pointer;padding:12px 6px;margin:0;
+  appearance:none;-webkit-appearance:none;font-family:inherit;outline:none;
+  transition:transform .18s ease;
+}
+.ls-panel:active{transform:scale(.96);}
+/* travelling sheen, staggered per panel so the page never sits still */
+.ls-panel::before{content:"";position:absolute;inset:-40%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.08) 50%,transparent 58%);
+  transform:translateX(-130%);animation:lsSheen 6.4s ease-in-out infinite;}
+.ls-panel.lsObs::before{animation-delay:2.1s}
+.ls-panel.lsRed::before{animation-delay:4.2s}
+@keyframes lsSheen{0%,58%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
+.ls-glyph{font-size:38px;line-height:1;animation:lsFloat 4.4s ease-in-out infinite;}
+.ls-panel.lsObs .ls-glyph{animation-delay:.9s}
+.ls-panel.lsRed .ls-glyph{animation-delay:1.8s}
+@keyframes lsFloat{0%,100%{transform:translateY(3px)}50%{transform:translateY(-4px)}}
+/* the hand-drawn squiggle from the sketch — a self-drawing trace */
+.ls-trace{width:72%;max-width:86px;height:20px;opacity:.95;flex-shrink:0;}
+.ls-trace polyline{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;animation:lsDraw 3.6s ease-in-out infinite;}
+@keyframes lsDraw{0%{stroke-dashoffset:100}42%,68%{stroke-dashoffset:0}100%{stroke-dashoffset:-100}}
+.ls-name{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:2.5px;}
+.ls-tag{font-family:var(--mono);font-size:8.5px;line-height:1.5;color:#8fa0ad;text-align:center;letter-spacing:.3px;padding:0 5px;}
+.ls-sub{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;color:#55656f;min-height:11px;}
+.ls-panel.lsApex{border-color:rgba(0,212,255,.35);box-shadow:0 26px 60px -20px rgba(0,212,255,.35);
+  background:radial-gradient(130% 90% at 50% -10%,rgba(0,212,255,.17),transparent 62%),linear-gradient(180deg,#04121f,#010508);}
+.ls-panel.lsApex .ls-glyph{color:#37c8ff;text-shadow:0 0 24px rgba(0,212,255,.55);}
+.ls-panel.lsApex .ls-name{color:#bfeaff;}
+.ls-panel.lsApex .ls-trace{color:#37c8ff;}
+.ls-panel.lsObs{border-color:rgba(255,255,255,.30);box-shadow:0 26px 60px -20px rgba(255,255,255,.26);
+  background:radial-gradient(130% 90% at 50% -10%,rgba(255,255,255,.11),transparent 62%),linear-gradient(180deg,#101010,#000);}
+.ls-panel.lsObs .ls-glyph{color:#fff;text-shadow:0 0 24px rgba(255,255,255,.5);}
+.ls-panel.lsObs .ls-name{color:#f0f0f0;}
+.ls-panel.lsObs .ls-trace{color:#e6e6e6;}
+.ls-panel.lsRed{border-color:rgba(255,59,48,.42);box-shadow:0 26px 60px -20px rgba(255,59,48,.38);
+  background:radial-gradient(130% 90% at 50% -10%,rgba(255,59,48,.19),transparent 62%),linear-gradient(180deg,#180707,#050202);}
+.ls-panel.lsRed .ls-glyph{color:#ff4033;text-shadow:0 0 26px rgba(255,59,48,.6);}
+.ls-panel.lsRed .ls-name{color:#ffd9d5;}
+.ls-panel.lsRed .ls-trace{color:#ff5b52;}
+.ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
+  text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
+
+/* ── WARP — the full-screen realm transition ─────────────────── */
+/* Canvas-driven: dim → radial warp streaks + particle burst + shockwave
+   rings from the tapped panel, glyph overshoot then punch-through, color
+   flash in the realm's palette, fade to reveal the realm underneath. */
+#realmWarp{position:fixed;inset:0;z-index:400;display:none;opacity:1;}
+#realmWarp.on{display:block;}
+#realmWarp.fade{opacity:0;transition:opacity .34s ease;}
+#warpCanvas{position:absolute;inset:0;width:100%;height:100%;}
+.warp-glyph{position:absolute;font-size:96px;line-height:1;transform:translate(-50%,-50%);
+  will-change:transform,opacity;pointer-events:none;}
+#warpFlash{position:absolute;inset:0;opacity:0;pointer-events:none;}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ONBOARD -->
-<div class="screen active" id="onboardScreen">
+<!-- REALM SELECT — the start page. Three curricula, one engine. -->
+<div class="screen active" id="launcherScreen">
+  <div class="ls-bg"><span class="bgA"></span><span class="bgO"></span><span class="bgR"></span></div>
+  <div class="ls-head">
+    <div class="ls-kicker">ONE ENGINE · THREE CURRICULA</div>
+    <div class="ls-title">SELECT REALM</div>
+  </div>
+  <div class="ls-row">
+    <button class="ls-panel lsApex" onclick="launchRealm('apex',this)">
+      <div class="ls-glyph">■</div>
+      <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,24 18,10 30,18 46,4 60,16 74,8 98,22"/></svg>
+      <div class="ls-name">APEX</div>
+      <div class="ls-tag">Recovery · Navy prep · ASVAB</div>
+      <div class="ls-sub" id="lsSubApex"></div>
+    </button>
+    <button class="ls-panel lsObs" onclick="launchRealm('obsidian',this)">
+      <div class="ls-glyph">◆</div>
+      <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,20 20,12 34,18 50,6 64,14 80,4 98,10"/></svg>
+      <div class="ls-name">OBSIDIAN</div>
+      <div class="ls-tag">Markets · operator track</div>
+      <div class="ls-sub" id="lsSubObs"></div>
+    </button>
+    <button class="ls-panel lsRed" onclick="launchRealm('redline',this)">
+      <div class="ls-glyph">▲</div>
+      <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,25 26,23 48,18 66,10 82,5 98,4"/></svg>
+      <div class="ls-name">REDLINE</div>
+      <div class="ls-tag">Exotic rental · credit engine</div>
+      <div class="ls-sub" id="lsSubRed"></div>
+    </button>
+  </div>
+  <div class="ls-foot">PROGRESS SAVED PER REALM · ON THIS DEVICE</div>
+</div>
+
+<!-- WARP — full-screen transition overlay, painted per realm -->
+<div id="realmWarp"><canvas id="warpCanvas"></canvas><div class="warp-glyph" id="warpGlyph"></div><div id="warpFlash"></div></div>
+
+<!-- ONBOARD (runs on first entry into APEX) -->
+<div class="screen" id="onboardScreen">
   <div class="ob-wrap">
     <div class="ob-dots" id="obDots"></div>
 
@@ -722,8 +834,7 @@ body{color:var(--text);font-family:var(--sans);}
       <button class="tab" onclick="goTab('enlist')">Enlist</button>
       <button class="tab" onclick="goTab('job')">Job</button>
     </div>
-    <button class="dk-launch" onclick="goObsidian()" title="Obsidian — the second curriculum">◆</button>
-    <button class="dk-launch redline" onclick="goRedline()" title="REDLINE — the third curriculum">▲</button>
+    <button class="dk-launch" onclick="goLauncher()" title="Realm select">❖</button>
   </div>
 
   <!-- TODAY -->
@@ -833,7 +944,7 @@ body{color:var(--text);font-family:var(--sans);}
 <!-- OBSIDIAN — the black side. Same learning engine, different curriculum. -->
 <div class="screen" id="obsidianApp">
   <div id="dkNav">
-    <button class="dk-back" onclick="exitObsidian()">← APEX</button>
+    <button class="dk-back" onclick="exitObsidian()">← REALMS</button>
     <div class="dk-brand" id="dkBrand">OBSIDIAN</div>
     <div class="dk-tag" id="dkTag">SECOND CURRICULUM</div>
   </div>
@@ -3901,12 +4012,9 @@ function init() {
   loadState();
   deriveAll();
   initOnboard();
-  if (ST.onboardDone) {
-    document.getElementById('onboardScreen').classList.remove('active');
-    document.getElementById('mainApp').classList.add('active');
-    ACTIVE_TAB = 'today';
-    renderActiveTab();
-  }
+  // The realm-select launcher is the entry point — APEX, Obsidian, and
+  // REDLINE are all launched from it. Onboarding runs on first APEX entry.
+  renderLauncher();
   updatePstStamp();
   setInterval(updatePstStamp, 30000);
 }
@@ -4718,15 +4826,164 @@ function enterRealm(name) {
 }
 function goObsidian() { enterRealm('obsidian'); }
 function goRedline() { enterRealm('redline'); }
-function exitObsidian() {
+// Leaving a realm goes back to the start page — APEX is a realm now too.
+function exitObsidian() { goLauncher(); }
+
+// ═══════════════════════════════════════════════════════════
+// REALM SELECT + WARP — the start page and its transition.
+// Every screen is reached from the launcher; the warp is a canvas
+// animation painted in the chosen realm's palette: dim → radial
+// warp streaks + particle burst + shockwave rings from the tapped
+// panel, glyph overshoot then punch-through, color flash, reveal.
+// ═══════════════════════════════════════════════════════════
+function realmDoneCount(name) {
+  try {
+    var r = REALMS[name];
+    var s = JSON.parse(localStorage.getItem(r.key) || '{}');
+    var t = s.topics || {}, cur = r.curr(), n = 0;
+    for (var i = 0; i < cur.length; i++) { var st = t[cur[i].id]; if (st && st.seen > 0) n++; }
+    return n + '/' + cur.length + ' TOPICS';
+  } catch(e) { return ''; }
+}
+function renderLauncher() {
+  var a = document.getElementById('lsSubApex');
+  if (a) a.textContent = (typeof ST !== 'undefined' && ST && ST.onboardDone) ? ('PHASE ' + (ST.phase || 1)) : 'BEGIN DAY 1';
+  var o = document.getElementById('lsSubObs'); if (o) o.textContent = realmDoneCount('obsidian');
+  var r = document.getElementById('lsSubRed'); if (r) r.textContent = realmDoneCount('redline');
+}
+function goLauncher() {
   if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
   OBS_EXAM = null; OBS_VIEW = null;
   var app = document.getElementById('obsidianApp');
   app.classList.remove('active');
   if (realm().themeClass) app.classList.remove(realm().themeClass);
-  document.getElementById('mainApp').classList.add('active');
   ACTIVE_REALM = 'obsidian';
-  renderActiveTab();
+  document.getElementById('mainApp').classList.remove('active');
+  document.getElementById('onboardScreen').classList.remove('active');
+  document.getElementById('launcherScreen').classList.add('active');
+  renderLauncher();
+}
+// Show the chosen realm's screen (called mid-warp, under the flash).
+function routeRealm(name) {
+  document.getElementById('launcherScreen').classList.remove('active');
+  if (name === 'apex') {
+    if (!ST.onboardDone) { document.getElementById('onboardScreen').classList.add('active'); }
+    else {
+      document.getElementById('mainApp').classList.add('active');
+      ACTIVE_TAB = 'today';
+      renderActiveTab();
+    }
+  } else { enterRealm(name); }
+}
+var WARP_PAL = {
+  apex:     { bg:'#020509', cols:['#00d4ff','#4db8ff','#9ff1ff','#ffffff'], glyph:'■' },
+  obsidian: { bg:'#000000', cols:['#ffffff','#d8d8d8','#a9a9a9','#7a7a7a'], glyph:'◆' },
+  redline:  { bg:'#080404', cols:['#ff3b30','#ff8a3c','#ffb020','#ffffff'], glyph:'▲' }
+};
+var WARP_ON = false;
+function launchRealm(name, btn) {
+  if (WARP_ON) return;
+  var pal = WARP_PAL[name];
+  var wrap = document.getElementById('realmWarp');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!pal || !wrap || reduce || !btn) { routeRealm(name); return; }
+  WARP_ON = true;
+  var cv = document.getElementById('warpCanvas');
+  var gl = document.getElementById('warpGlyph');
+  var fl = document.getElementById('warpFlash');
+  var W = window.innerWidth, H = window.innerHeight;
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  var ctx = cv.getContext('2d');
+  // Burst origin = the center of the panel that was tapped.
+  var rc = btn.getBoundingClientRect();
+  var ox = rc.left + rc.width / 2, oy = rc.top + rc.height / 2;
+  var maxR = Math.sqrt(W * W + H * H);
+  gl.textContent = pal.glyph;
+  gl.style.left = ox + 'px'; gl.style.top = oy + 'px';
+  gl.style.color = pal.cols[0];
+  gl.style.textShadow = '0 0 30px ' + pal.cols[0] + ', 0 0 90px ' + pal.cols[1];
+  gl.style.opacity = '1';
+  gl.style.transform = 'translate(-50%,-50%) scale(.55)';
+  fl.style.background = 'radial-gradient(circle at ' + ox + 'px ' + oy + 'px, ' + pal.cols[3] + ' 0%, ' + pal.cols[0] + ' 42%, ' + pal.bg + ' 100%)';
+  fl.style.opacity = '0';
+  wrap.classList.remove('fade'); wrap.classList.add('on');
+  var i, parts = [], streaks = [];
+  for (i = 0; i < 170; i++) {
+    var a = Math.random() * 6.2832, sp = 3 + Math.random() * 13;
+    parts.push({ x:ox, y:oy, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+                 s:1.2 + Math.random()*2.6, c:pal.cols[(Math.random()*pal.cols.length)|0], l:.6 + Math.random()*.4 });
+  }
+  for (i = 0; i < 110; i++) {
+    streaks.push({ a:Math.random()*6.2832, off:Math.random(), len:50 + Math.random()*170,
+                   w:.8 + Math.random()*1.8, c:pal.cols[(Math.random()*3)|0] });
+  }
+  var rings = [120, 260, 420];
+  var t0 = Date.now(), DUR = 1050, routed = false;
+  function ease(x) { return 1 - Math.pow(1 - x, 3); }
+  function frame() {
+    var t = Date.now() - t0, p = Math.min(1, t / DUR);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    // Dim to solid realm base as the warp builds.
+    ctx.globalAlpha = Math.min(1, .35 + p * 1.1);
+    ctx.fillStyle = pal.bg;
+    ctx.fillRect(0, 0, W, H);
+    // Punch: a little shake through the mid-phase.
+    if (p > .3 && p < .85) ctx.translate((Math.random() - .5) * 3, (Math.random() - .5) * 3);
+    ctx.globalCompositeOperation = 'lighter';
+    // Warp streaks rushing outward from the origin.
+    var p2 = ease(Math.max(0, (p - .12) / .88));
+    for (i = 0; i < streaks.length; i++) {
+      var s = streaks[i];
+      var r0 = (s.off * .25 + p2) * (maxR * .9), r1 = r0 + s.len * (.35 + p2);
+      ctx.globalAlpha = Math.max(0, (1 - p2) * .75);
+      ctx.strokeStyle = s.c; ctx.lineWidth = s.w;
+      ctx.beginPath();
+      ctx.moveTo(ox + Math.cos(s.a) * r0, oy + Math.sin(s.a) * r0);
+      ctx.lineTo(ox + Math.cos(s.a) * r1, oy + Math.sin(s.a) * r1);
+      ctx.stroke();
+    }
+    // Shockwave rings, staggered.
+    for (i = 0; i < rings.length; i++) {
+      var rt = (t - rings[i]) / 640;
+      if (rt > 0 && rt < 1) {
+        ctx.globalAlpha = (1 - rt) * .55;
+        ctx.strokeStyle = pal.cols[i % pal.cols.length];
+        ctx.lineWidth = 3 - rt * 2;
+        ctx.beginPath(); ctx.arc(ox, oy, ease(rt) * maxR, 0, 6.2832); ctx.stroke();
+      }
+    }
+    // Particle burst with drag.
+    if (t > 60) for (i = 0; i < parts.length; i++) {
+      var q = parts[i];
+      q.x += q.vx; q.y += q.vy; q.vx *= .965; q.vy *= .965;
+      var la = q.l - p;
+      if (la <= 0) continue;
+      ctx.globalAlpha = Math.min(1, la * 1.6);
+      ctx.fillStyle = q.c;
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.s, 0, 6.2832); ctx.fill();
+    }
+    // Glyph: overshoot in, then punch through the screen.
+    var gs, go = 1;
+    if (p < .78) gs = .55 + ease(p / .78) * .75;
+    else { var pz = (p - .78) / .22; gs = 1.3 + pz * pz * 9; go = 1 - pz; }
+    gl.style.transform = 'translate(-50%,-50%) scale(' + gs.toFixed(3) + ')';
+    gl.style.opacity = go.toFixed(2);
+    // Route under the flash so the realm is ready when it clears.
+    if (t > 760 && !routed) { routed = true; routeRealm(name); }
+    if (t > 760) fl.style.opacity = Math.min(1, (t - 760) / 160).toFixed(2);
+    if (t < DUR + 120) requestAnimationFrame(frame);
+    else {
+      wrap.classList.add('fade');
+      setTimeout(function() {
+        wrap.classList.remove('on'); wrap.classList.remove('fade');
+        fl.style.opacity = '0'; gl.style.opacity = '0';
+        WARP_ON = false;
+      }, 360);
+    }
+  }
+  requestAnimationFrame(frame);
 }
 
 obsLoad();
