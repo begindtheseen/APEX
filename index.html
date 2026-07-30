@@ -670,14 +670,19 @@ body{color:var(--text);font-family:var(--sans);}
    everything launches from here, through the warp transition below. */
 #launcherScreen{background:#010204;position:relative;justify-content:center;}
 /* Ambient atmosphere — three breathing color glows, one per realm, so the
-   space around the compact cards never reads as empty black. */
+   space around the compact cards never reads as empty black.
+   PERF: the glow is a radial-gradient (pre-blurred by its falloff), NOT a
+   live blur() filter — animating scale on blurred elements re-rasterizes
+   the blur every frame and cripples phone GPUs. Gradient + compositor-only
+   transform/opacity keeps the exact look at ~zero cost. */
 .ls-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
-.ls-bg span{position:absolute;width:52vw;height:52vw;max-width:250px;max-height:250px;
-  border-radius:50%;filter:blur(48px);opacity:.14;animation:lsBreathe 7.5s ease-in-out infinite;}
-.ls-bg .bgA{left:-8vw;top:16%;background:#0090d4;}
-.ls-bg .bgO{left:calc(50% - 26vw);top:2%;background:#8a8a8a;animation-delay:2.5s;}
-.ls-bg .bgR{right:-8vw;bottom:12%;background:#e03328;animation-delay:5s;}
-@keyframes lsBreathe{0%,100%{opacity:.09;transform:scale(.9)}50%{opacity:.2;transform:scale(1.1)}}
+.ls-bg span{position:absolute;width:64vw;height:64vw;max-width:300px;max-height:300px;
+  border-radius:50%;opacity:.14;will-change:transform,opacity;
+  animation:lsBreathe 7.5s ease-in-out infinite;}
+.ls-bg .bgA{left:-12vw;top:13%;background:radial-gradient(circle,rgba(0,144,212,.55) 0%,rgba(0,144,212,.18) 38%,transparent 68%);}
+.ls-bg .bgO{left:calc(50% - 32vw);top:0;background:radial-gradient(circle,rgba(138,138,138,.5) 0%,rgba(138,138,138,.16) 38%,transparent 68%);animation-delay:2.5s;}
+.ls-bg .bgR{right:-12vw;bottom:9%;background:radial-gradient(circle,rgba(224,51,40,.55) 0%,rgba(224,51,40,.18) 38%,transparent 68%);animation-delay:5s;}
+@keyframes lsBreathe{0%,100%{opacity:.09;transform:scale(.9) translateZ(0)}50%{opacity:.2;transform:scale(1.1) translateZ(0)}}
 .ls-head{padding:0 16px 20px;text-align:center;flex-shrink:0;position:relative;}
 .ls-kicker{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:#4e5e6c;}
 .ls-title{font-family:var(--sans);font-weight:800;font-size:20px;letter-spacing:5px;color:#e8f4ff;margin-top:5px;}
@@ -691,14 +696,16 @@ body{color:var(--text);font-family:var(--sans);}
   transition:transform .18s ease;
 }
 .ls-panel:active{transform:scale(.96);}
-/* travelling sheen, staggered per panel so the page never sits still */
+/* travelling sheen, staggered per panel so the page never sits still.
+   will-change promotes each animated piece to its own compositor layer so
+   the sweep/float never trigger paint — transform/opacity only. */
 .ls-panel::before{content:"";position:absolute;inset:-40%;pointer-events:none;
   background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.08) 50%,transparent 58%);
-  transform:translateX(-130%);animation:lsSheen 6.4s ease-in-out infinite;}
+  transform:translateX(-130%);will-change:transform;animation:lsSheen 6.4s ease-in-out infinite;}
 .ls-panel.lsObs::before{animation-delay:2.1s}
 .ls-panel.lsRed::before{animation-delay:4.2s}
 @keyframes lsSheen{0%,58%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
-.ls-glyph{font-size:38px;line-height:1;animation:lsFloat 4.4s ease-in-out infinite;}
+.ls-glyph{font-size:38px;line-height:1;will-change:transform;animation:lsFloat 4.4s ease-in-out infinite;}
 .ls-panel.lsObs .ls-glyph{animation-delay:.9s}
 .ls-panel.lsRed .ls-glyph{animation-delay:1.8s}
 @keyframes lsFloat{0%,100%{transform:translateY(3px)}50%{transform:translateY(-4px)}}
@@ -727,6 +734,13 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-panel.lsRed .ls-trace{color:#ff5b52;}
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
   text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
+/* While the warp canvas runs, idle animations pause so they never compete
+   with it for the GPU; users who prefer reduced motion get a still page. */
+#launcherScreen.warping .ls-bg span,#launcherScreen.warping .ls-panel::before,
+#launcherScreen.warping .ls-glyph,#launcherScreen.warping .ls-trace polyline{animation-play-state:paused;}
+@media (prefers-reduced-motion: reduce){
+  .ls-bg span,.ls-panel::before,.ls-glyph,.ls-trace polyline{animation:none;}
+}
 
 /* ── WARP — the full-screen realm transition ─────────────────── */
 /* Canvas-driven: dim → radial warp streaks + particle burst + shockwave
@@ -4860,7 +4874,9 @@ function goLauncher() {
   ACTIVE_REALM = 'obsidian';
   document.getElementById('mainApp').classList.remove('active');
   document.getElementById('onboardScreen').classList.remove('active');
-  document.getElementById('launcherScreen').classList.add('active');
+  var ls = document.getElementById('launcherScreen');
+  ls.classList.remove('warping');
+  ls.classList.add('active');
   renderLauncher();
 }
 // Show the chosen realm's screen (called mid-warp, under the flash).
@@ -4888,6 +4904,7 @@ function launchRealm(name, btn) {
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!pal || !wrap || reduce || !btn) { routeRealm(name); return; }
   WARP_ON = true;
+  document.getElementById('launcherScreen').classList.add('warping');
   var cv = document.getElementById('warpCanvas');
   var gl = document.getElementById('warpGlyph');
   var fl = document.getElementById('warpFlash');
@@ -4979,6 +4996,7 @@ function launchRealm(name, btn) {
       setTimeout(function() {
         wrap.classList.remove('on'); wrap.classList.remove('fade');
         fl.style.opacity = '0'; gl.style.opacity = '0';
+        document.getElementById('launcherScreen').classList.remove('warping');
         WARP_ON = false;
       }, 360);
     }
