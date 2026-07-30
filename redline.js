@@ -133,7 +133,7 @@ window.REDLINE_CURRICULUM = [
   ],
   quiz:[
     {q:'A renter came in asking for a Ferrari, but yours is out. The most useful thing you know about this customer is…', c:['They will cancel if they can’t get the exact car','They are flexible — a Lamborghini that photographs as hard will save the deal','They want the best spec sheet','They are a car enthusiast'], a:1, e:'They rent the image, not the spec. Low, loud, aggressive, photogenic — the badge is interchangeable if the look lands.'},
-    {q:'Why can independent operators serve 18–30 renters the big platforms turn away?', c:['They ignore the law','Personal-auto coverage is carrier-based, not the platforms’ age-gated program','They charge triple','They don’t verify anyone'], a:1, e:'The age walls belong to the platforms’ own insurance programs. Personal-policy coverage transfers by carrier rules — a real, legal gap independents can serve (full logic in Tier 2).'}
+    {q:'Why can independent operators serve 18–30 renters the big platforms turn away?', c:['They ignore the law','They charge triple','Personal-auto coverage is carrier-based, not the platforms’ age-gated program','They don’t verify anyone'], a:2, e:'The age walls belong to the platforms’ own insurance programs. Personal-policy coverage transfers by carrier rules — a real, legal gap independents can serve (full logic in Tier 2).'}
   ]},
 
 { id:'t0_emptyseat', sub:'T0', title:'Why no empire exists yet — and the seat that’s open',
@@ -151,8 +151,8 @@ window.REDLINE_CURRICULUM = [
     {f:'Where is the open opportunity (“the empty seat”)?', b:'The operator seat: bring modern marketing, systems, data, and AI to a relationship-run industry that cannot quickly copy those skills.'}
   ],
   quiz:[
-    {q:'The main reason no one has scaled exotic rental into a national brand is…', c:['The cars are too expensive to insure','Industry-wide gatekeeping starved it of shared data and systems','Demand is too small','Regulation bans it'], a:1, e:'Defensive secrecy that protects each operator individually prevents the data, systems, and scale an empire would require.'},
-    {q:'The “empty seat” at the industry’s table is…', c:['A car expert','A wealthy investor','The operator: systems, data, marketing, AI','A celebrity'], a:2, e:'Insiders own cars and relationships; almost none bring the operator skill set. That is the open, hard-to-copy lane.'}
+    {q:'The main reason no one has scaled exotic rental into a national brand is…', c:['The cars are too expensive to insure','Regulation bans it','Demand is too small','Industry-wide gatekeeping starved it of shared data and systems'], a:3, e:'Defensive secrecy that protects each operator individually prevents the data, systems, and scale an empire would require.'},
+    {q:'The “empty seat” at the industry’s table is…', c:['A car expert','The operator: systems, data, marketing, AI','A wealthy investor','A celebrity'], a:1, e:'Insiders own cars and relationships; almost none bring the operator skill set. That is the open, hard-to-copy lane.'}
   ]},
 
 { id:'t0_twodoors', sub:'T0', title:'The two doors, the ladder, and where your credit file comes in',
@@ -171,7 +171,7 @@ window.REDLINE_CURRICULUM = [
     {f:'Why does REDLINE run a credit rail alongside the industry rail?', b:'Because the credit file is the bridge from the no-money door to the vehicle door — personal file → business credit → financing the exotic through the business.'}
   ],
   quiz:[
-    {q:'A person with no money and no car can still start in exotic rental this week by…', c:['Buying a Lamborghini on credit','Sourcing a verified lead and walking it into a fleet for a spread','Opening a warehouse','Getting a broker license'], a:1, e:'The lead door needs no capital or permission. A qualified renter is the introduction — the fleet pays a spread for the deal.'},
+    {q:'A person with no money and no car can still start in exotic rental this week by…', c:['Buying a Lamborghini on credit','Opening a warehouse','Sourcing a verified lead and walking it into a fleet for a spread','Getting a broker license'], a:2, e:'The lead door needs no capital or permission. A qualified renter is the introduction — the fleet pays a spread for the deal.'},
     {q:'In REDLINE, the role of the credit file (Tiers C0–C4) is to…', c:['Replace the need for relationships','Bridge the no-money door to the vehicle door by financing the asset','Improve your Instagram','Lower insurance premiums'], a:1, e:'Owning an exotic starts with the file: build personal credit, then business credit, then finance the car through the business — the hallway between the two doors.'}
   ]},
 
@@ -193,7 +193,7 @@ window.REDLINE_CURRICULUM = [
   ],
   quiz:[
     {q:'Two applicants both score 720. Why might only one be approved for a $130k car?', c:['The score is wrong','The files differ — depth, capacity, and derogatories aren’t equal','One lied','Scores don’t matter for cars'], a:1, e:'On a big note the lender reads the file, not just the number. A thin young file is a scarier bet than a thick high-limit one at the same score.'},
-    {q:'Someone offers to sell you a “CPN” to apply for credit under a fresh number. The correct move is…', c:['Use it only for small purchases','Refuse — it’s federal fraud that collapses on verification','Use it to build then switch back','Ask for a discount'], a:1, e:'CPNs / synthetic identifiers are bank and identity fraud. Never needed, and they destroy the future you’re building. Only legitimate file-building works.'}
+    {q:'Someone offers to sell you a “CPN” to apply for credit under a fresh number. The correct move is…', c:['Use it only for small purchases','Ask for a discount','Use it to build then switch back','Refuse — it’s federal fraud that collapses on verification'], a:3, e:'CPNs / synthetic identifiers are bank and identity fraud. Never needed, and they destroy the future you’re building. Only legitimate file-building works.'}
   ]},
 
 { id:'c0_bureaus', sub:'C0', title:'The three bureaus, your reports, and the hidden files',
@@ -213,8 +213,8 @@ window.REDLINE_CURRICULUM = [
     {f:'What are LexisNexis and SageStream/Clarity?', b:'Specialty consumer bureaus that auto/subprime lenders pull. You can request these files too — and clean the one your target lender uses.'}
   ],
   quiz:[
-    {q:'The best explanation for a 700 app-score but a 660 lender-pull is…', c:['One is fake','Each bureau holds a different file and lenders pull different ones','The lender made an error','Your score dropped that day'], a:1, e:'Three bureaus, three files, multiple score models. Optimize the file the lender will actually pull, not just the app’s.'},
-    {q:'Before building business credit, checking ChexSystems matters because…', c:['It sets your FICO','A bad banking record can block the business bank account you’ll need','It’s required by the IRS','It lists your car loans'], a:1, e:'ChexSystems is banking history. A negative record can stop you from opening the business account that the whole business-credit machine sits on.'}
+    {q:'The best explanation for a 700 app-score but a 660 lender-pull is…', c:['Each bureau holds a different file and lenders pull different ones','One is fake','The lender made an error','Your score dropped that day'], a:0, e:'Three bureaus, three files, multiple score models. Optimize the file the lender will actually pull, not just the app’s.'},
+    {q:'Before building business credit, checking ChexSystems matters because…', c:['A bad banking record can block the business bank account you’ll need','It sets your FICO','It’s required by the IRS','It lists your car loans'], a:0, e:'ChexSystems is banking history. A negative record can stop you from opening the business account that the whole business-credit machine sits on.'}
   ]},
 
 { id:'c0_scores', sub:'C0', title:'FICO vs VantageScore — and the score an auto lender actually pulls',
@@ -236,7 +236,7 @@ window.REDLINE_CURRICULUM = [
   ],
   quiz:[
     {q:'The number a car lender uses to set your rate is usually…', c:['Your Credit Karma VantageScore','A FICO Auto Score, often on a 250–900 auto-weighted scale','An average of all your scores','Whatever you tell them'], a:1, e:'Most auto lenders buy an industry-enhanced FICO Auto Score. The free-app VantageScore is a proxy, not the decision number.'},
-    {q:'For someone targeting an exotic auto loan, a smart early credit move is…', c:['Open ten new cards fast','Establish/keep a clean auto trade line, since the Auto Score weights it heavily','Close all old accounts','Only use the free-app score'], a:1, e:'The exotic pull is auto-weighted, so a perfectly-paid auto line moves the exact model the desk reads — targeted, not generic.'}
+    {q:'For someone targeting an exotic auto loan, a smart early credit move is…', c:['Open ten new cards fast','Close all old accounts','Establish/keep a clean auto trade line, since the Auto Score weights it heavily','Only use the free-app score'], a:2, e:'The exotic pull is auto-weighted, so a perfectly-paid auto line moves the exact model the desk reads — targeted, not generic.'}
   ]},
 
 // ═══════════════════════ CREDIT 4 · FINANCING THE EXOTIC ═══════════════════════
@@ -260,8 +260,8 @@ window.REDLINE_CURRICULUM = [
   ],
   quiz:[
     {q:'The main mechanical reason someone can get two new car loans in one week is…', c:['Lenders don’t check credit','The reporting lag — new loans take weeks to post, so each lender sees an incomplete file','It’s illegal and they got lucky','High income only'], a:1, e:'Funded loans post on the next monthly cycle. Apply in a tight window and each lender misses the other fresh debt — legal only if the applications are truthful.'},
-    {q:'Rolling negative equity across trades causes total debt to…', c:['Shrink each time','Stay flat','Snowball — the old upside-down balance stacks onto each new loan','Disappear at trade-in'], a:2, e:'The negative balance is added to the next loan, so you get more upside-down every trade. It is how a stack reaches $290k.'},
-    {q:'The four stacking levers (lag, captive desks, leasing, rolling equity) all share one limit:', c:['They raise your score','They create new income','They only rearrange timing and payments — none add income to service the debt','They are all illegal'], a:2, e:'They move debt around; they do not fund it. Debt your income or the car’s earnings can’t service is a countdown.'}
+    {q:'Rolling negative equity across trades causes total debt to…', c:['Shrink each time','Stay flat','Disappear at trade-in','Snowball — the old upside-down balance stacks onto each new loan'], a:3, e:'The negative balance is added to the next loan, so you get more upside-down every trade. It is how a stack reaches $290k.'},
+    {q:'The four stacking levers (lag, captive desks, leasing, rolling equity) all share one limit:', c:['They raise your score','They only rearrange timing and payments — none add income to service the debt','They create new income','They are all illegal'], a:1, e:'They move debt around; they do not fund it. Debt your income or the car’s earnings can’t service is a countdown.'}
   ]},
 
 { id:'c4_fraudline', sub:'C4', title:'Manufacturing DTI: the felony line, and why it ends the operator',
@@ -281,9 +281,9 @@ window.REDLINE_CURRICULUM = [
     {f:'The disciplined use of leverage:', b:'Borrow only when the debt is truthfully underwritten, the cars earn enough to service it, and the risk sits in a business built to carry it.'}
   ],
   quiz:[
-    {q:'A person with no job gets approved for two M cars. The LEGAL version of that is…', c:['He faked pay stubs well','He truthfully stated other real income, assets, or a co-signer','He used the reporting lag to hide income','He used a CPN'], a:1, e:'No job is not no income. Truthfully stating business/investment income, reserves, or a co-signer is a legitimate approval. Fabricating income is the crime.'},
-    {q:'“Manufacturing DTI” by stating income you don’t have is…', c:['A gray area','A smart hack','Loan-application fraud — state statutes and federal bank fraud','Only a problem if you miss payments'], a:2, e:'False income/employment on a credit application is fraud on a document you signed — a felony whether or not the payments are later made.'},
-    {q:'For an exotic-rental operator, a financing-fraud flag is fatal mainly because it destroys…', c:['Only your credit score','Your credit file, your insurability, and your reputation at once','Nothing important','Your Instagram following'], a:1, e:'The business runs on lender approvals, commercial-insurance underwriting, and a spotless reputation — a fraud marker takes out all three.'}
+    {q:'A person with no job gets approved for two M cars. The LEGAL version of that is…', c:['He faked pay stubs well','He used the reporting lag to hide income','He truthfully stated other real income, assets, or a co-signer','He used a CPN'], a:2, e:'No job is not no income. Truthfully stating business/investment income, reserves, or a co-signer is a legitimate approval. Fabricating income is the crime.'},
+    {q:'“Manufacturing DTI” by stating income you don’t have is…', c:['A gray area','Loan-application fraud — state statutes and federal bank fraud','A smart hack','Only a problem if you miss payments'], a:1, e:'False income/employment on a credit application is fraud on a document you signed — a felony whether or not the payments are later made.'},
+    {q:'For an exotic-rental operator, a financing-fraud flag is fatal mainly because it destroys…', c:['Only your credit score','Your Instagram following','Nothing important','Your credit file, your insurability, and your reputation at once'], a:3, e:'The business runs on lender approvals, commercial-insurance underwriting, and a spotless reputation — a fraud marker takes out all three.'}
   ]}
 
 ];
@@ -292,30 +292,30 @@ window.REDLINE_CURRICULUM = [
 // Adaptive timed drills per tier. d:1 easy · 2 medium · 3 hard.
 window.REDLINE_QBANK = {
   T0: [
-    {q:'An exotic-rental “agency” primarily…', c:['Owns its entire fleet outright','Operates consigned cars owned by others and splits revenue','Only leases from manufacturers','Sells cars'], a:1, e:'Consignment is the model: owners fund the fleet, the operator runs and splits it.', d:1},
+    {q:'An exotic-rental “agency” primarily…', c:['Owns its entire fleet outright','Sells cars','Only leases from manufacturers','Operates consigned cars owned by others and splits revenue'], a:3, e:'Consignment is the model: owners fund the fleet, the operator runs and splits it.', d:1},
     {q:'The most guarded information in the industry is…', c:['Daily rates','The list of who owns the cars','Delivery zones','Instagram passwords'], a:1, e:'Owner lists are poachable — learn them and you can take a fleet’s inventory. Hence the secrecy.', d:2},
     {q:'“Survival math” for fleet size means…', c:['Bigger fleets look better online','With few cars, one in the shop wipes out a large share of revenue','More cars means lower insurance','Three cars is optimal'], a:1, e:'Scale spreads the risk of any single car being down; it is survival, not ego.', d:2},
     {q:'The core exotic-rental customer is best described as…', c:['The truly wealthy','Car enthusiasts','People who can’t OWN but can rent the image','Business travelers'], a:2, e:'The product is the image; the customer rents the look, not the spec.', d:1},
     {q:'A renter asked for a Ferrari but it’s booked. Your best play relies on the fact that…', c:['They’ll always wait','They’re flexible if the replacement photographs as hard','They only want that VIN','They want the cheapest car'], a:1, e:'They rent a look, not a badge — a comparable aggressive car saves the deal.', d:2},
-    {q:'Independents can serve 18–30 renters the big platforms reject because…', c:['They skip verification','Coverage on personal auto policies is carrier-based, not the platforms’ age program','They break the law','They charge cash only'], a:1, e:'Age walls are the platforms’ insurance programs; personal-policy transfer follows carrier rules.', d:3},
-    {q:'Why has no national exotic-rental empire emerged?', c:['No demand','Industry-wide gatekeeping starved it of data, systems, and scale','It’s illegal to scale','Cars are uninsurable'], a:1, e:'Defensive secrecy prevents the shared data and operator systems scaling requires.', d:2},
-    {q:'The “empty seat” at the table is the…', c:['Investor','Car expert','Operator: systems, data, marketing, AI','Celebrity spokesperson'], a:2, e:'Insiders have cars and relationships; the operator skill set is rare and hard to copy.', d:2},
+    {q:'Independents can serve 18–30 renters the big platforms reject because…', c:['Coverage on personal auto policies is carrier-based, not the platforms’ age program','They skip verification','They break the law','They charge cash only'], a:0, e:'Age walls are the platforms’ insurance programs; personal-policy transfer follows carrier rules.', d:3},
+    {q:'Why has no national exotic-rental empire emerged?', c:['Industry-wide gatekeeping starved it of data, systems, and scale','No demand','It’s illegal to scale','Cars are uninsurable'], a:0, e:'Defensive secrecy prevents the shared data and operator systems scaling requires.', d:2},
+    {q:'The “empty seat” at the table is the…', c:['Operator: systems, data, marketing, AI','Car expert','Investor','Celebrity spokesperson'], a:0, e:'Insiders have cars and relationships; the operator skill set is rare and hard to copy.', d:2},
     {q:'Door 1 into the industry (no capital) is…', c:['Buying a supercar','Sourcing/brokering a renter to a car you don’t control','Opening a warehouse','Getting licensed'], a:1, e:'Lead sourcing needs no capital or permission; the lead is the introduction.', d:1},
-    {q:'The clean way to approach a fleet with no track record is to…', c:['Ask for a job','Walk in holding a verified deal','Offer to buy a car','Post about them'], a:1, e:'A qualified renter is the strongest possible introduction — fleets don’t refuse real deals.', d:2},
+    {q:'The clean way to approach a fleet with no track record is to…', c:['Walk in holding a verified deal','Ask for a job','Offer to buy a car','Post about them'], a:0, e:'A qualified renter is the strongest possible introduction — fleets don’t refuse real deals.', d:2},
     {q:'In REDLINE, the credit rail exists to…', c:['Replace relationships','Bridge the no-money door to the vehicle door via financing','Improve marketing','Cut insurance costs'], a:1, e:'Personal file → business credit → finance the asset: the hallway between the two doors.', d:2},
-    {q:'The “dual-rail” advantage is…', c:['Owning two warehouses','Collecting the broker spread AND the owner split on your own deal','Renting only SUVs','Using two CRMs'], a:1, e:'Your lead on your car means you’re broker and owner at once — nobody dilutes you.', d:3}
+    {q:'The “dual-rail” advantage is…', c:['Owning two warehouses','Renting only SUVs','Collecting the broker spread AND the owner split on your own deal','Using two CRMs'], a:2, e:'Your lead on your car means you’re broker and owner at once — nobody dilutes you.', d:3}
   ],
   C0: [
-    {q:'A credit score is best understood as…', c:['A random number','The credit file compressed into one risk number','Your net worth','Set by the government'], a:1, e:'Lenders on big loans read the underlying file, not just the compressed score.', d:1},
-    {q:'Two identical 720 scores can be different bets because of differences in…', c:['Zip code','Depth, capacity, and derogatories in the file','Score app used','Hair color'], a:1, e:'A thin young file is a scarier bet than a thick high-limit one at the same number.', d:2},
-    {q:'A “CPN” offered to apply for credit is…', c:['A smart hack','Federal fraud that collapses on verification','A business EIN','A second SSN the IRS issues'], a:1, e:'CPNs / synthetic identifiers are bank and identity fraud — never needed, always destructive.', d:1},
-    {q:'You have a 700 in an app but a lender pulls 660. The reason is usually…', c:['Someone lied','Different bureau and score model','A glitch','Fraud on your file'], a:1, e:'Three bureaus, multiple models — optimize the file the lender actually pulls.', d:2},
-    {q:'ChexSystems tracks…', c:['Your FICO','Your banking history (overdrafts, closed accounts)','Your car loans','Your rent'], a:1, e:'A bad ChexSystems record can block the business bank account business credit sits on.', d:2},
-    {q:'Most free credit apps display…', c:['FICO Auto Score','VantageScore 3.0/4.0','FICO 2/4/5','The lender’s exact pull'], a:1, e:'VantageScore is a useful gauge but usually not what lenders buy.', d:1},
-    {q:'Most auto lenders decide using…', c:['VantageScore','An industry-enhanced FICO Auto Score (often 250–900)','Your bank balance','A mortgage FICO'], a:1, e:'The auto pull weights auto history and uses a different scale than 300–850.', d:2},
-    {q:'Because the exotic pull is auto-weighted, a high-value early move is…', c:['Closing old cards','Keeping a clean auto trade line','Maxing a card','Ignoring your score'], a:1, e:'A perfectly-paid auto line lifts the exact model the exotic desk reads.', d:2},
+    {q:'A credit score is best understood as…', c:['A random number','Set by the government','Your net worth','The credit file compressed into one risk number'], a:3, e:'Lenders on big loans read the underlying file, not just the compressed score.', d:1},
+    {q:'Two identical 720 scores can be different bets because of differences in…', c:['Zip code','Score app used','Depth, capacity, and derogatories in the file','Hair color'], a:2, e:'A thin young file is a scarier bet than a thick high-limit one at the same number.', d:2},
+    {q:'A “CPN” offered to apply for credit is…', c:['Federal fraud that collapses on verification','A smart hack','A business EIN','A second SSN the IRS issues'], a:0, e:'CPNs / synthetic identifiers are bank and identity fraud — never needed, always destructive.', d:1},
+    {q:'You have a 700 in an app but a lender pulls 660. The reason is usually…', c:['Someone lied','Fraud on your file','A glitch','Different bureau and score model'], a:3, e:'Three bureaus, multiple models — optimize the file the lender actually pulls.', d:2},
+    {q:'ChexSystems tracks…', c:['Your FICO','Your car loans','Your banking history (overdrafts, closed accounts)','Your rent'], a:2, e:'A bad ChexSystems record can block the business bank account business credit sits on.', d:2},
+    {q:'Most free credit apps display…', c:['VantageScore 3.0/4.0','FICO Auto Score','FICO 2/4/5','The lender’s exact pull'], a:0, e:'VantageScore is a useful gauge but usually not what lenders buy.', d:1},
+    {q:'Most auto lenders decide using…', c:['An industry-enhanced FICO Auto Score (often 250–900)','VantageScore','Your bank balance','A mortgage FICO'], a:0, e:'The auto pull weights auto history and uses a different scale than 300–850.', d:2},
+    {q:'Because the exotic pull is auto-weighted, a high-value early move is…', c:['Keeping a clean auto trade line','Closing old cards','Maxing a card','Ignoring your score'], a:0, e:'A perfectly-paid auto line lifts the exact model the exotic desk reads.', d:2},
     {q:'The FCRA primarily gives you the right to…', c:['Erase accurate debts','See your files and dispute inaccurate items','Demand a 0% rate','Open unlimited accounts'], a:1, e:'It’s the legitimate lever: access and dispute of inaccuracies across bureaus.', d:2},
-    {q:'“The real score” at the finance desk is…', c:['Your app’s number','The model and bureau the lender actually pulls','The highest of your three','Always 850'], a:1, e:'Whoever lends prices off their chosen model and bureau — that’s the number that sets terms.', d:3}
+    {q:'“The real score” at the finance desk is…', c:['Your app’s number','Always 850','The highest of your three','The model and bureau the lender actually pulls'], a:3, e:'Whoever lends prices off their chosen model and bureau — that’s the number that sets terms.', d:3}
   ]
 };
 
@@ -360,8 +360,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'Utilization is calculated from…', c:['Your balance on the due date','The balance that reported at statement close','Your annual spending','Your income'], a:1, e:'Issuers report at statement close. Paying in full afterward doesn’t change what was already reported.'},
-    {q:'The AZEO position before a big application is…', c:['All cards at $0','All cards under 30%','All at $0 except one reporting 1–9%','One card maxed'], a:2, e:'One small reported balance with the rest at zero is the tuned snapshot; all-zero can score slightly worse.'},
-    {q:'Which action LOWERS utilization without touching spending?', c:['Closing an old card','A credit-limit increase','A new hard inquiry','Carrying a balance'], a:1, e:'Utilization = balance ÷ limit. Raising the denominator (CLIs, often soft-pull) lowers the percentage at the same spend.'}
+    {q:'The AZEO position before a big application is…', c:['All cards at $0','All cards under 30%','One card maxed','All at $0 except one reporting 1–9%'], a:3, e:'One small reported balance with the rest at zero is the tuned snapshot; all-zero can score slightly worse.'},
+    {q:'Which action LOWERS utilization without touching spending?', c:['Closing an old card','A new hard inquiry','A credit-limit increase','Carrying a balance'], a:2, e:'Utilization = balance ÷ limit. Raising the denominator (CLIs, often soft-pull) lowers the percentage at the same spend.'}
   ]},
 
 { id:'c1_age_inq', sub:'C1', title:'Lever 3 & 4 — age of file, and the truth about inquiries',
@@ -381,7 +381,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   quiz:[
     {q:'Six auto-loan hard pulls within a tight shopping window score as…', c:['Six inquiries','Three','One','Zero'], a:2, e:'Auto/mortgage rate-shopping dedups to a single scored inquiry inside the window (14–45 days by model [VERIFY]).'},
     {q:'Your oldest card has an annual fee you hate. The file-smart move is…', c:['Close it','Product-change (downgrade) it to a no-fee card','Max it out','Ignore the fee'], a:1, e:'Closing sacrifices age and limit. A product change keeps the account’s history alive without the fee.'},
-    {q:'Which is a SOFT inquiry?', c:['An auto loan application','A new card application','Checking your own score / a pre-qualification','A mortgage application'], a:2, e:'Self-checks and pre-quals don’t touch the score. Applications are hard pulls.'}
+    {q:'Which is a SOFT inquiry?', c:['Checking your own score / a pre-qualification','A new card application','An auto loan application','A mortgage application'], a:0, e:'Self-checks and pre-quals don’t touch the score. Applications are hard pulls.'}
   ]},
 
 { id:'c1_mix_au', sub:'C1', title:'Lever 5 — credit mix, and the authorized-user accelerant',
@@ -399,8 +399,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Rule for borrowing and mix:', b:'Never borrow JUST for mix. Sequence borrowing you already need so mix and auto history build themselves.'}
   ],
   quiz:[
-    {q:'Being added as an AU on a parent’s 15-year-old card typically…', c:['Does nothing without using the card','Grafts the card’s age and utilization onto your file','Requires a hard pull','Is illegal'], a:1, e:'Many issuers report the full line to the AU’s file — age and utilization included. The reporting, not the plastic, is the point.'},
-    {q:'Buying an AU spot on a stranger’s aged card is…', c:['A standard industry practice lenders respect','File-dressing: discounted by models, removable, fraud-adjacent in loan contexts','Guaranteed +100 points','Free'], a:1, e:'Rented history misrepresents your risk. Models discount it, sellers can drop you, and near a loan it feeds a fraud theory.'},
+    {q:'Being added as an AU on a parent’s 15-year-old card typically…', c:['Does nothing without using the card','Is illegal','Requires a hard pull','Grafts the card’s age and utilization onto your file'], a:3, e:'Many issuers report the full line to the AU’s file — age and utilization included. The reporting, not the plastic, is the point.'},
+    {q:'Buying an AU spot on a stranger’s aged card is…', c:['A standard industry practice lenders respect','Guaranteed +100 points','File-dressing: discounted by models, removable, fraud-adjacent in loan contexts','Free'], a:2, e:'Rented history misrepresents your risk. Models discount it, sellers can drop you, and near a loan it feeds a fraud theory.'},
     {q:'The right way to add installment mix to a card-only file is…', c:['Borrow anything immediately','A credit-builder loan or a genuinely-needed modest auto loan','A payday loan','Buy a tradeline'], a:1, e:'Small builder loans and needed auto borrowing add mix and auto history honestly — never borrow purely for mix.'}
   ]},
 
@@ -421,24 +421,24 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'What the tune-up cannot do:', b:'Erase true lates (that’s repair/goodwill), age a young file (time/AU), or manufacture income (never). It polishes what is true.'}
   ],
   quiz:[
-    {q:'Disputes go FIRST in the 30-day tune-up because…', c:['They’re the most fun','Reinvestigation takes ~30 days, so late-started disputes won’t resolve before the pull','They raise limits','They’re free'], a:1, e:'The FCRA reinvestigation window is ~30 days — start on day 1 or the fix misses your application.'},
-    {q:'The week-4 mistake that undoes the tune-up is…', c:['Paying a card early','Opening a shiny new card','Checking your own score','Setting autopay'], a:1, e:'A new account right before the pull drops average age, adds a non-deduping inquiry, and reads as hunger.'},
-    {q:'The tune-up’s honest limit is that it…', c:['Only works once a year','Polishes the true file — it cannot erase real lates, add years, or invent income','Requires a credit repair company','Needs 90 days minimum'], a:1, e:'Everything in it is timing and truth. Erasing real history or faking income is either repair, time, or fraud — not tuning.'}
+    {q:'Disputes go FIRST in the 30-day tune-up because…', c:['They’re the most fun','They raise limits','Reinvestigation takes ~30 days, so late-started disputes won’t resolve before the pull','They’re free'], a:2, e:'The FCRA reinvestigation window is ~30 days — start on day 1 or the fix misses your application.'},
+    {q:'The week-4 mistake that undoes the tune-up is…', c:['Opening a shiny new card','Paying a card early','Checking your own score','Setting autopay'], a:0, e:'A new account right before the pull drops average age, adds a non-deduping inquiry, and reads as hunger.'},
+    {q:'The tune-up’s honest limit is that it…', c:['Polishes the true file — it cannot erase real lates, add years, or invent income','Only works once a year','Requires a credit repair company','Needs 90 days minimum'], a:0, e:'Everything in it is timing and truth. Erasing real history or faking income is either repair, time, or fraud — not tuning.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.C1 = [
-  {q:'The heaviest FICO lever is…', c:['Utilization','Payment history','Credit mix','Inquiries'], a:1, e:'~35% [VERIFY]. One reported late outweighs almost anything else you can do that month.', d:1},
+  {q:'The heaviest FICO lever is…', c:['Payment history','Utilization','Credit mix','Inquiries'], a:0, e:'~35% [VERIFY]. One reported late outweighs almost anything else you can do that month.', d:1},
   {q:'A late becomes reportable at…', c:['1 day past due','15 days','30 days past due','Only at charge-off'], a:2, e:'Fees start immediately; the FILE is only hit at 30+ days past due.', d:1},
-  {q:'Utilization is computed from…', c:['Due-date balance','Statement-close reported balance','Annual spend','Average daily balance'], a:1, e:'Cards report at statement close — pay before the close to choose the reported number.', d:2},
+  {q:'Utilization is computed from…', c:['Due-date balance','Average daily balance','Annual spend','Statement-close reported balance'], a:3, e:'Cards report at statement close — pay before the close to choose the reported number.', d:2},
   {q:'AZEO means…', c:['All cards at zero','All zero except one at 1–9%','Alternate zeros each month','All cards equal'], a:1, e:'One small reported balance, rest at zero — the tuned pre-application snapshot.', d:2},
   {q:'Closing your oldest card…', c:['Helps your score','Loses its limit now and its age later','Is neutral','Removes lates'], a:1, e:'Denominator shrinks immediately; age eventually. Product-change instead.', d:2},
   {q:'Auto rate-shopping inquiries inside the dedup window score as…', c:['One each','Half each','One total','Soft pulls'], a:2, e:'The 14–45 day auto/mortgage window [VERIFY] collapses them to one scored inquiry.', d:2},
   {q:'Card application inquiries…', c:['Also dedup','Never dedup — and underwriters read recent card hunger','Are soft','Expire in a week'], a:1, e:'Dedup is for auto/mortgage shopping. Card pulls all count and all show.', d:3},
-  {q:'A family AU addition typically grafts…', c:['Nothing without card use','The line’s age and utilization onto your file','Only the limit','A hard inquiry'], a:1, e:'Many issuers report the full line to the AU [VERIFY] — the reporting is the gift.', d:2},
+  {q:'A family AU addition typically grafts…', c:['Nothing without card use','Only the limit','The line’s age and utilization onto your file','A hard inquiry'], a:2, e:'Many issuers report the full line to the AU [VERIFY] — the reporting is the gift.', d:2},
   {q:'Buying a stranger’s tradeline is…', c:['A lender-respected strategy','File-dressing: discounted, removable, fraud-adjacent near loans','Permanent','Reported as installment'], a:1, e:'Rented history misrepresents risk; models discount it and it can feed a fraud theory.', d:3},
-  {q:'The correct final week before a planned auto pull is…', c:['Open two cards for mix','Go quiet — no new applications; then shop the loan in one tight window','Max a card','Close old accounts'], a:1, e:'Quiet file + concentrated auto shopping = best snapshot, one scored inquiry.', d:2}
+  {q:'The correct final week before a planned auto pull is…', c:['Open two cards for mix','Max a card','Go quiet — no new applications; then shop the loan in one tight window','Close old accounts'], a:2, e:'Quiet file + concentrated auto shopping = best snapshot, one scored inquiry.', d:2}
 ];
 
 // ═══════════════════════ CREDIT 2 · BUILD & REPAIR ═══════════════════════
@@ -460,9 +460,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Why can’t this path be taken from you?', b:'Because the record is TRUE. You funded your own risk and paid on time — no seller, no rented history, nothing to unravel.'}
   ],
   quiz:[
-    {q:'A secured card’s limit comes from…', c:['The issuer’s risk model','Your own refundable deposit','Your income','Your parents'], a:1, e:'You collateralize yourself — which is why approval is nearly automatic and reporting is identical to a normal card.'},
-    {q:'A credit-builder loan pays out the money…', c:['Up front','Never','At the end, after the payments built the history','Only if you default'], a:2, e:'The funds sit locked while payments report; you get cash + installment history at the end.'},
-    {q:'The thing to confirm BEFORE opening a secured card is…', c:['Its color','That it graduates and reports to all three bureaus','That it has a lounge benefit','Its APR only'], a:1, e:'No graduation path or partial bureau reporting makes it a dead end with a deposit attached.'}
+    {q:'A secured card’s limit comes from…', c:['The issuer’s risk model','Your parents','Your income','Your own refundable deposit'], a:3, e:'You collateralize yourself — which is why approval is nearly automatic and reporting is identical to a normal card.'},
+    {q:'A credit-builder loan pays out the money…', c:['At the end, after the payments built the history','Never','Up front','Only if you default'], a:0, e:'The funds sit locked while payments report; you get cash + installment history at the end.'},
+    {q:'The thing to confirm BEFORE opening a secured card is…', c:['Its color','Its APR only','That it has a lounge benefit','That it graduates and reports to all three bureaus'], a:3, e:'No graduation path or partial bureau reporting makes it a dead end with a deposit attached.'}
   ]},
 
 { id:'c2_disputes', sub:'C2', title:'The dispute machine — FCRA 611, furnishers, and the 609 myth',
@@ -481,8 +481,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Re-aging:', b:'Negatives run 7 years from ORIGINAL delinquency. Collectors shifting the date to look fresh are breaking the law — check DOFD, dispute it.'}
   ],
   quiz:[
-    {q:'An item the furnisher cannot verify within the reinvestigation window…', c:['Stays with a note','Must be deleted','Becomes an inquiry','Doubles'], a:1, e:'That is the teeth of §611: verify it or delete it.'},
-    {q:'The “609 letter” sold online…', c:['Forces deletion of accurate items','Is a myth — 609 is just your right to see the file','Is required before any dispute','Works only with a notary'], a:1, e:'No section number deletes true data. §611 unverifiability is the only deletion mechanism.'},
+    {q:'An item the furnisher cannot verify within the reinvestigation window…', c:['Stays with a note','Doubles','Becomes an inquiry','Must be deleted'], a:3, e:'That is the teeth of §611: verify it or delete it.'},
+    {q:'The “609 letter” sold online…', c:['Is a myth — 609 is just your right to see the file','Forces deletion of accurate items','Is required before any dispute','Works only with a notary'], a:0, e:'No section number deletes true data. §611 unverifiability is the only deletion mechanism.'},
     {q:'A collector offers deletion if you pay, on the phone. You…', c:['Pay immediately','Get the pay-for-delete in writing BEFORE paying','Record it and pay','Dispute it as not yours'], a:1, e:'Written agreement first. And never dispute a debt you know is yours as “not mine” — that’s the fraud line.'}
   ]},
 
@@ -505,7 +505,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   quiz:[
     {q:'Under CROA, a repair company charging $1,500 before doing anything is…', c:['Standard practice','A federal violation','Fine if disclosed','Legal in most states'], a:1, e:'CROA bans advance fees and promised results outright.'},
     {q:'A “sweep” produces a clean report because…', c:['Items were deleted forever','Accurate items vanish only while pending reinvestigation, then return','The bureaus lost the data','It uses section 609'], a:1, e:'The 30-day unverified window is the illusion the screenshot sells. Truth re-verifies and returns.'},
-    {q:'The structural tell of every credit scam is…', c:['High price','Speed and secrecy','Bad grammar','Out-of-state address'], a:1, e:'Real file work is slow and documented. Anything fast and secret is selling paper or prison.'}
+    {q:'The structural tell of every credit scam is…', c:['High price','Bad grammar','Speed and secrecy','Out-of-state address'], a:2, e:'Real file work is slow and documented. Anything fast and secret is selling paper or prison.'}
   ]},
 
 { id:'c2_rebuild', sub:'C2', title:'The comeback arc — collections, charge-offs, repos, and real timelines',
@@ -525,24 +525,24 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The comeback’s engine:', b:'Recency. Scores discount old damage buried under 2–3 clean years. Damaged → lender-ready is a real 18–36 month arc.'}
   ],
   quiz:[
-    {q:'Before paying any collection, you…', c:['Pay a little to show good faith','Demand FDCPA validation','Call and promise','Dispute it as not yours regardless of truth'], a:1, e:'Validate first — records may not exist. “Good faith” partial payments can restart your SOL, and false disputes are the fraud line.'},
-    {q:'After a repo sells at auction below the loan balance, the borrower owes…', c:['Nothing','The deficiency plus fees','Only the fees','The full original loan'], a:1, e:'The gap survives the car. Settling it is step one of the auto-history comeback.'},
-    {q:'A 5-year-old repo under 3 recent clean years reads to the model as…', c:['Identical to a fresh repo','Heavily discounted — recency dominates','An automatic denial forever','A soft inquiry'], a:1, e:'Recency weighting is the comeback’s engine — old damage under new clean history loses most of its teeth.'}
+    {q:'Before paying any collection, you…', c:['Pay a little to show good faith','Call and promise','Demand FDCPA validation','Dispute it as not yours regardless of truth'], a:2, e:'Validate first — records may not exist. “Good faith” partial payments can restart your SOL, and false disputes are the fraud line.'},
+    {q:'After a repo sells at auction below the loan balance, the borrower owes…', c:['Nothing','The full original loan','Only the fees','The deficiency plus fees'], a:3, e:'The gap survives the car. Settling it is step one of the auto-history comeback.'},
+    {q:'A 5-year-old repo under 3 recent clean years reads to the model as…', c:['Identical to a fresh repo','A soft inquiry','An automatic denial forever','Heavily discounted — recency dominates'], a:3, e:'Recency weighting is the comeback’s engine — old damage under new clean history loses most of its teeth.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.C2 = [
-  {q:'A secured card reports to the bureaus as…', c:['A special starter product','An ordinary credit card','An installment loan','It doesn’t report'], a:1, e:'That’s its whole purpose — identical reporting, you fund the risk.', d:1},
-  {q:'A credit-builder loan releases the money…', c:['Immediately','At the end, after payments built history','Never','Only on default'], a:1, e:'Locked savings + reported payments = installment history for the unbankable.', d:1},
-  {q:'FCRA §611 forces deletion of items that are…', c:['Old','Embarrassing','Unverifiable within the reinvestigation window','Small'], a:2, e:'Verify-or-delete is the machine. Accurate items survive.', d:2},
-  {q:'Section 609 actually gives you…', c:['Magic deletion words','The right to see your file','Free scores','A lawyer'], a:1, e:'Disclosure, not deletion. The “609 letter” industry sells paper.', d:2},
-  {q:'Pay-for-delete must be…', c:['Verbal','In writing before payment','Notarized','Filed with the CFPB'], a:1, e:'A phone promise from a collector is worth exactly nothing.', d:2},
-  {q:'Re-aging a debt means…', c:['Legally extending the SOL','Illegally shifting the delinquency date to look fresher','Paying it late','Selling it'], a:1, e:'The 7-year clock runs from ORIGINAL delinquency. Moved dates get disputed.', d:3},
+  {q:'A secured card reports to the bureaus as…', c:['An ordinary credit card','A special starter product','An installment loan','It doesn’t report'], a:0, e:'That’s its whole purpose — identical reporting, you fund the risk.', d:1},
+  {q:'A credit-builder loan releases the money…', c:['Immediately','Never','At the end, after payments built history','Only on default'], a:2, e:'Locked savings + reported payments = installment history for the unbankable.', d:1},
+  {q:'FCRA §611 forces deletion of items that are…', c:['Old','Embarrassing','Small','Unverifiable within the reinvestigation window'], a:3, e:'Verify-or-delete is the machine. Accurate items survive.', d:2},
+  {q:'Section 609 actually gives you…', c:['Magic deletion words','Free scores','The right to see your file','A lawyer'], a:2, e:'Disclosure, not deletion. The “609 letter” industry sells paper.', d:2},
+  {q:'Pay-for-delete must be…', c:['In writing before payment','Verbal','Notarized','Filed with the CFPB'], a:0, e:'A phone promise from a collector is worth exactly nothing.', d:2},
+  {q:'Re-aging a debt means…', c:['Legally extending the SOL','Paying it late','Illegally shifting the delinquency date to look fresher','Selling it'], a:2, e:'The 7-year clock runs from ORIGINAL delinquency. Moved dates get disputed.', d:3},
   {q:'CROA makes illegal:', c:['All credit repair','Upfront fees and promised results','Goodwill letters','Disputes'], a:1, e:'Advance fees, guaranteed outcomes, and advising lies — the classic pitch is illegal twice.', d:2},
   {q:'A “sweep” works by…', c:['Deleting items forever','Disputing everything as ID theft so accurate items vanish temporarily','Bribing bureaus','Using §609'], a:1, e:'The 30-day pending window is the screenshot illusion; the false report is your crime.', d:2},
-  {q:'A partial payment on an old collection can…', c:['Delete it','Restart the lawsuit statute of limitations in some states','Raise your score','End the 7-year clock'], a:1, e:'Know your state’s SOL before any payment on old debt [VERIFY].', d:3},
-  {q:'The comeback arc’s engine is…', c:['Luck','Recency — clean recent years discount old damage','Paying everything at face','A new CPN'], a:1, e:'18–36 months of clean, well-built history moves damaged files to lender-ready.', d:2}
+  {q:'A partial payment on an old collection can…', c:['Delete it','Raise your score','Restart the lawsuit statute of limitations in some states','End the 7-year clock'], a:2, e:'Know your state’s SOL before any payment on old debt [VERIFY].', d:3},
+  {q:'The comeback arc’s engine is…', c:['Luck','Paying everything at face','Recency — clean recent years discount old damage','A new CPN'], a:2, e:'18–36 months of clean, well-built history moves damaged files to lender-ready.', d:2}
 ];
 
 // ═══════════════════════ CREDIT 3 · THE BUSINESS CREDIT MACHINE ═══════════════════════
@@ -563,7 +563,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Why business credit is the exotic bridge:', b:'Business-financed car + consignment revenue servicing the note + commercial policy — every piece needs an institution-grade business profile.'}
   ],
   quiz:[
-    {q:'Business tradelines generally appear on…', c:['Your consumer report','The business bureaus only (D&B, Experian Biz, Equifax Biz)','Both always','Neither'], a:1, e:'That separation is the strategy: fleet leverage on the EIN, pristine personal file on the SSN.'},
+    {q:'Business tradelines generally appear on…', c:['The business bureaus only (D&B, Experian Biz, Equifax Biz)','Your consumer report','Both always','Neither'], a:0, e:'That separation is the strategy: fleet leverage on the EIN, pristine personal file on the SSN.'},
     {q:'Early business credit almost always still involves…', c:['No paperwork','A personal guarantee','Collateral only','A co-op'], a:1, e:'The PG is the standard toll until revenue and seasoning earn no-PG terms.'},
     {q:'“Use your EIN so your bad SSN never comes up” becomes fraud when…', c:['You form an LLC','You misrepresent ownership, revenue, or PG status to a lender','You get a D-U-N-S number','You open a business account'], a:1, e:'Structure is legal; lying on the application about who/what is behind the company is loan fraud.'}
   ]},
@@ -589,7 +589,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Shelf/aged corps:', b:'Purchased time-in-business presented as your history = misrepresentation, and ownership changes are detectable. The clock only counts if it’s really yours.'}
   ],
   quiz:[
-    {q:'The quiet killer of automated business-credit applications is…', c:['High revenue','NAP mismatches across records','Too many employees','A .net domain'], a:1, e:'Underwriting pattern-matches name/address/phone across sources; inconsistency reads as unreal or fraudulent.'},
+    {q:'The quiet killer of automated business-credit applications is…', c:['High revenue','Too many employees','NAP mismatches across records','A .net domain'], a:2, e:'Underwriting pattern-matches name/address/phone across sources; inconsistency reads as unreal or fraudulent.'},
     {q:'Taking rental payments in cash outside the business account…', c:['Is smart tax planning','Makes revenue invisible to underwriting — you look smaller than you are','Builds PAYDEX','Is required'], a:1, e:'(And skimming it from taxes is its own crime.) Statements ARE the proof of revenue; unbanked dollars don’t exist to lenders.'},
     {q:'Buying an “aged corporation” for instant time-in-business is…', c:['A standard accelerant','Misrepresentation of operating history that lenders can detect','Free','Required in CA'], a:1, e:'Purchased time rhymes with purchased identity. Form YOUR entity early instead — the honest clock is free.'}
   ]},
@@ -610,9 +610,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Who reads the business file besides lenders:', b:'Warehouse landlords, commercial insurers, vendors setting terms, fleets judging if you’re real — it’s your institutional reputation.'}
   ],
   quiz:[
-    {q:'A PAYDEX of 80 means the business…', c:['Pays late','Pays exactly on terms','Pays 30 days early','Has no file'], a:1, e:'On-time is the 80 baseline; only EARLY payment climbs above it — dollar-weighted.'},
-    {q:'The fastest way to waste a year of business-credit building is…', c:['Paying early','Opening lines that report to no bureau','Getting a D-U-N-S','Using net-30 terms'], a:1, e:'Non-reporting tradelines build nothing. Confirm reporting before opening — pick vendors BY where they report.'},
-    {q:'To maximize PAYDEX with limited cash, pay early on…', c:['The smallest invoices','The largest invoices','Random invoices','Only new vendors'], a:1, e:'PAYDEX is dollar-weighted — early payment on big invoices moves it most.'}
+    {q:'A PAYDEX of 80 means the business…', c:['Pays late','Has no file','Pays 30 days early','Pays exactly on terms'], a:3, e:'On-time is the 80 baseline; only EARLY payment climbs above it — dollar-weighted.'},
+    {q:'The fastest way to waste a year of business-credit building is…', c:['Opening lines that report to no bureau','Paying early','Getting a D-U-N-S','Using net-30 terms'], a:0, e:'Non-reporting tradelines build nothing. Confirm reporting before opening — pick vendors BY where they report.'},
+    {q:'To maximize PAYDEX with limited cash, pay early on…', c:['The smallest invoices','Only new vendors','Random invoices','The largest invoices'], a:3, e:'PAYDEX is dollar-weighted — early payment on big invoices moves it most.'}
   ]},
 
 { id:'c3_tiers', sub:'C3', title:'The vendor ladder — net-30s to fleet cards to real bank money',
@@ -632,9 +632,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Tier 4 reality:', b:'Bank LOCs/term loans want ~2 years seasoning, revenue through the account, financials, and a relationship — bank where you’ll want the line.'}
   ],
   quiz:[
-    {q:'Vendors approve 3-month-old LLCs because…', c:['They’re careless','Their risk is inventory margin and they want the customer','The law requires it','They never report'], a:1, e:'A net-30 supplier risks product, not cash — so they extend credit banks won’t, and the reporting ones build your file.'},
-    {q:'The only Tier-1 vendors worth opening are ones that…', c:['Have the best catalog','Report the tradeline to business bureaus','Offer net-60','Waive shipping'], a:1, e:'Non-reporting lines build nothing (C3·paydex). Confirm reporting first — it’s the entire point.'},
-    {q:'Most major business credit cards touch your PERSONAL report…', c:['Every month','Only if the account goes derogatory [VERIFY]','Never under any condition','Only utilization'], a:1, e:'Day-to-day business spend stays off the consumer file; blow it up and it lands on you — the PG made sure of that.'}
+    {q:'Vendors approve 3-month-old LLCs because…', c:['They’re careless','They never report','The law requires it','Their risk is inventory margin and they want the customer'], a:3, e:'A net-30 supplier risks product, not cash — so they extend credit banks won’t, and the reporting ones build your file.'},
+    {q:'The only Tier-1 vendors worth opening are ones that…', c:['Have the best catalog','Waive shipping','Offer net-60','Report the tradeline to business bureaus'], a:3, e:'Non-reporting lines build nothing (C3·paydex). Confirm reporting first — it’s the entire point.'},
+    {q:'Most major business credit cards touch your PERSONAL report…', c:['Every month','Never under any condition','Only if the account goes derogatory [VERIFY]','Only utilization'], a:2, e:'Day-to-day business spend stays off the consumer file; blow it up and it lands on you — the PG made sure of that.'}
   ]},
 
 { id:'c3_lending', sub:'C3', title:'Business auto financing — the note that buys the fleet car',
@@ -653,22 +653,22 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The anti-Ken structure:', b:'Debt serviced by the asset’s own consignment revenue, inside an entity built to carry it — leverage that earns instead of eats.'}
   ],
   quiz:[
-    {q:'A business vehicle note at this scale is underwritten on…', c:['The asset alone','Business + personal guarantor + asset, stacked','Your Instagram','Time-in-business alone'], a:1, e:'Three layers; weakness in one must be carried by the others.'},
-    {q:'The “audition loan” strategy is…', c:['Buying the exotic first','A modest, obviously-serviceable first note seasoned perfectly as proof for the big one','Paying cash always','Leasing personally'], a:1, e:'Lenders reread the business’s first auto line. Make it boring and perfect.'},
-    {q:'Renting out a consumer-financed, personally-insured car is…', c:['Fine if profitable','A loan-terms violation with a voided policy — and lying about it to a lender is fraud','Standard practice','A tax strategy'], a:1, e:'The commercial-use trap: the only durable structure is commercial note + commercial policy + disclosed use.'}
+    {q:'A business vehicle note at this scale is underwritten on…', c:['Business + personal guarantor + asset, stacked','The asset alone','Your Instagram','Time-in-business alone'], a:0, e:'Three layers; weakness in one must be carried by the others.'},
+    {q:'The “audition loan” strategy is…', c:['Buying the exotic first','Leasing personally','Paying cash always','A modest, obviously-serviceable first note seasoned perfectly as proof for the big one'], a:3, e:'Lenders reread the business’s first auto line. Make it boring and perfect.'},
+    {q:'Renting out a consumer-financed, personally-insured car is…', c:['A loan-terms violation with a voided policy — and lying about it to a lender is fraud','Fine if profitable','Standard practice','A tax strategy'], a:0, e:'The commercial-use trap: the only durable structure is commercial note + commercial policy + disclosed use.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.C3 = [
   {q:'Business credit is keyed to…', c:['Your SSN','The EIN','Your address','The state'], a:1, e:'EIN-keyed files at D&B / Experian Biz / Equifax Biz — separate from the consumer file.', d:1},
-  {q:'A PG means…', c:['No liability','You personally back the business debt','The bank owns equity','Nothing after a year'], a:1, e:'Standard early toll; the goal is earning no-PG terms with seasoning and revenue.', d:1},
-  {q:'NAP mismatches across records cause…', c:['Better rates','Silent automated-review flags and dead applications','Higher PAYDEX','Nothing'], a:1, e:'Underwriting pattern-matches name/address/phone; inconsistency reads as unreal.', d:2},
-  {q:'PAYDEX above 80 requires…', c:['On-time payment','EARLY payment, dollar-weighted','More revenue','A CPA letter'], a:1, e:'80 = on terms; 90–100 = paying weeks early, weighted by invoice size.', d:2},
-  {q:'A D-U-N-S number costs…', c:['$229/yr','Nothing — free from D&B','One tradeline','$49 once'], a:1, e:'Free; the paid “builder” packages are upsells you don’t need to have a file.', d:1},
-  {q:'Tier 1 of the ladder is…', c:['Bank term loans','Reporting net-30 vendors','Corporate cards','SBA loans'], a:1, e:'Vendors risk inventory margin, approve young LLCs, and (the reporting ones) create the file.', d:1},
-  {q:'A business tradeline that reports to no bureau…', c:['Still builds slowly','Builds nothing','Builds personal credit','Doubles PAYDEX'], a:1, e:'Confirm reporting before opening — non-reporting lines are wasted months.', d:2},
-  {q:'Most major business cards hit your consumer report…', c:['Monthly','Only if derogatory [VERIFY]','Never','Weekly'], a:1, e:'Business spend stays off the personal snapshot until you default into the PG.', d:2},
+  {q:'A PG means…', c:['No liability','Nothing after a year','The bank owns equity','You personally back the business debt'], a:3, e:'Standard early toll; the goal is earning no-PG terms with seasoning and revenue.', d:1},
+  {q:'NAP mismatches across records cause…', c:['Better rates','Nothing','Higher PAYDEX','Silent automated-review flags and dead applications'], a:3, e:'Underwriting pattern-matches name/address/phone; inconsistency reads as unreal.', d:2},
+  {q:'PAYDEX above 80 requires…', c:['On-time payment','A CPA letter','More revenue','EARLY payment, dollar-weighted'], a:3, e:'80 = on terms; 90–100 = paying weeks early, weighted by invoice size.', d:2},
+  {q:'A D-U-N-S number costs…', c:['$229/yr','$49 once','One tradeline','Nothing — free from D&B'], a:3, e:'Free; the paid “builder” packages are upsells you don’t need to have a file.', d:1},
+  {q:'Tier 1 of the ladder is…', c:['Bank term loans','Corporate cards','Reporting net-30 vendors','SBA loans'], a:2, e:'Vendors risk inventory margin, approve young LLCs, and (the reporting ones) create the file.', d:1},
+  {q:'A business tradeline that reports to no bureau…', c:['Still builds slowly','Builds personal credit','Builds nothing','Doubles PAYDEX'], a:2, e:'Confirm reporting before opening — non-reporting lines are wasted months.', d:2},
+  {q:'Most major business cards hit your consumer report…', c:['Monthly','Never','Only if derogatory [VERIFY]','Weekly'], a:2, e:'Business spend stays off the personal snapshot until you default into the PG.', d:2},
   {q:'Tier 4 bank money typically wants…', c:['A logo','~2 yrs seasoning, revenue through the account, financials, a relationship','Only a PG','A shelf corp'], a:1, e:'Bank where you’ll want the line — bankers lend to balances they can see.', d:2},
   {q:'The commercial-use trap is…', c:['Paying commercial rates','Consumer loan + personal policy on a car secretly used for rentals','Titling to an LLC','Leasing'], a:1, e:'Loan-terms violation + voided coverage; lying about use to a lender is loan fraud.', d:3},
   {q:'The “audition loan” exists to…', c:['Impress clients','Create a perfectly-seasoned business auto line that the six-figure note reads later','Avoid taxes','Skip the PG'], a:1, e:'The first note is evidence for the second. Boring and perfect is the strategy.', d:3},
@@ -697,9 +697,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The long-term trap:', b:'120–144mo crushes the payment but builds equity so slowly you are underwater for years — negative-equity fuel unless you have exit discipline.'}
   ],
   quiz:[
-    {q:'A mainstream bank declines your $140k exotic note most likely because…', c:['You are always too weak','The car breaks their program’s box — caps, comps, remarketing','Exotics are illegal to finance','They only do leases'], a:1, e:'Program limits do the declining. The specialty landscape exists precisely because the asset class needs its own box.'},
+    {q:'A mainstream bank declines your $140k exotic note most likely because…', c:['You are always too weak','Exotics are illegal to finance','The car breaks their program’s box — caps, comps, remarketing','They only do leases'], a:2, e:'Program limits do the declining. The specialty landscape exists precisely because the asset class needs its own box.'},
     {q:'A 144-month exotic note’s hidden cost is…', c:['Higher insurance','Years underwater — slow equity that fuels the negative-equity snowball','No GAP available','Monthly fees'], a:1, e:'The payment feels light while the balance outruns the car’s value deep into the term (c4_dti).'},
-    {q:'Dealer F&I versus a direct lender relationship:', c:['F&I is always cheaper','Direct beats F&I pricing; F&I beats no access — the desk keeps rate spread','They are identical','F&I is illegal'], a:1, e:'F&I shops your file conveniently and marks up the winning rate. Relationships remove the spread.'}
+    {q:'Dealer F&I versus a direct lender relationship:', c:['F&I is always cheaper','They are identical','Direct beats F&I pricing; F&I beats no access — the desk keeps rate spread','F&I is illegal'], a:2, e:'F&I shops your file conveniently and marks up the winning rate. Relationships remove the spread.'}
   ]},
 
 { id:'c4_structures', sub:'C4', title:'Loan vs balloon vs lease — engineering the payment to the plan',
@@ -719,8 +719,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'GAP on exotics:', b:'Covers payoff-vs-ACV after a total loss — the exact exposure of long terms and balloons. Verify commercial-use isn’t excluded [VERIFY].'}
   ],
   quiz:[
-    {q:'A balloon note is fundamentally a bet that…', c:['Rates fall','The car’s value at term ≥ the balloon owed','Insurance stays cheap','Utilization stays high'], a:1, e:'Right = cheap payments then exit over the balloon. Wrong = five-figure lump over a depreciated car.'},
-    {q:'A closed-end consumer lease fails this business because…', c:['Payments are too high','Mileage caps — consignment/rental miles demolish them','It builds equity too fast','Banks hate them'], a:1, e:'Depreciation+rent pricing assumes capped personal miles. Rental use blows the caps and the economics.'},
+    {q:'A balloon note is fundamentally a bet that…', c:['Rates fall','Insurance stays cheap','The car’s value at term ≥ the balloon owed','Utilization stays high'], a:2, e:'Right = cheap payments then exit over the balloon. Wrong = five-figure lump over a depreciated car.'},
+    {q:'A closed-end consumer lease fails this business because…', c:['Mileage caps — consignment/rental miles demolish them','Payments are too high','It builds equity too fast','Banks hate them'], a:0, e:'Depreciation+rent pricing assumes capped personal miles. Rental use blows the caps and the economics.'},
     {q:'The three questions to answer IN WRITING before picking a structure:', c:['Color, trim, wrap','Exit plan, realistic consignment miles, drought survival','Rate, rate, rate','Dealer, captive, CU'], a:1, e:'Structure follows plan: exit, miles, and the no-revenue stress test. Payment-only choosing is hope with a signature.'}
   ]},
 
@@ -740,26 +740,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'A write-off is…', b:'A discount on real spending against real income — never a reason to buy a car the business couldn’t otherwise carry.'}
   ],
   quiz:[
-    {q:'Business-titled car + personal auto policy “to save money” =', c:['A smart optimization','An adjuster’s easiest claim denial — the structures must align','Required by lenders','A tax strategy'], a:1, e:'Rental/business use is excluded personally; the car can never sit in the gap between structures.'},
+    {q:'Business-titled car + personal auto policy “to save money” =', c:['A smart optimization','A tax strategy','Required by lenders','An adjuster’s easiest claim denial — the structures must align'], a:3, e:'Rental/business use is excluded personally; the car can never sit in the gap between structures.'},
     {q:'The >6,000-lb GVWR line matters because…', c:['Heavier cars rent higher','It escapes luxury-auto caps into 179/bonus territory [VERIFY]','Insurance is free above it','It changes the title'], a:1, e:'Heavy SUVs get the large first-year deductions passenger cars are capped out of — and they’re the gentle-renter fleet cars anyway.'},
-    {q:'Depreciation you deduct now is…', c:['Free forever','Recaptured as income when you sell — plan for it','Doubled at sale','Transferred to the buyer'], a:1, e:'179/bonus is timing, not magic. The exit math includes recapture or the “edge” was a surprise tax bill.'}
+    {q:'Depreciation you deduct now is…', c:['Free forever','Doubled at sale','Recaptured as income when you sell — plan for it','Transferred to the buyer'], a:2, e:'179/bonus is timing, not magic. The exit math includes recapture or the “edge” was a surprise tax bill.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.C4 = [
-  {q:'DTI compares…', c:['Debt payments to income','Assets to debts','Cars to income','Rent to income'], a:0, e:'Total monthly debt payments ÷ gross monthly income; PTI is the car payment alone.', d:1},
-  {q:'Two same-week car approvals usually work because…', c:['Lenders share instantly','The reporting lag hides the other fresh loan from each pull','Scores update daily','Dealers waive checks'], a:1, e:'New loans post on the next cycle (~30–45 days) — legal only if every app is truthful.', d:2},
-  {q:'Rolling negative equity means…', c:['Paying early','Stacking the old car’s upside-down balance into the new loan','Refinancing down','Leasing'], a:1, e:'Each roll deepens the hole — the $290k snowball mechanism.', d:1},
-  {q:'Stating income you no longer earn on an auto app is…', c:['Negotiation','Loan-application fraud (state + federal bank fraud)','A gray area','Fine if payments are made'], a:1, e:'18 U.S.C. §1344 territory — the felony line of c4_fraudline.', d:1},
-  {q:'Mainstream banks decline exotics mostly because…', c:['Borrowers are weak','Program boxes: caps, thin comps, hard remarketing','They dislike speed','Law forbids it'], a:1, e:'The asset breaks the normal-car assumptions; specialty lenders exist for exactly this.', d:2},
-  {q:'Specialty exotic lenders differentiate with…', c:['Free insurance','Very long terms, balloons/leases, asset-literate underwriting','No credit checks','Crypto payment'], a:1, e:'120–144mo terms [VERIFY], structures, and desks that know what a Performante is.', d:2},
-  {q:'The hidden cost of a 144-month term is…', c:['Paper fees','Years underwater as equity builds slowly','Higher insurance','Registration'], a:1, e:'Negative-equity fuel unless exit discipline is real.', d:2},
-  {q:'A balloon note ends with…', c:['Nothing','A large lump due — a bet on the car’s value at term','Automatic refi','Ownership transfer'], a:1, e:'Value ≥ balloon = ride was cheap. Value < balloon = five-figure problem.', d:2},
+  {q:'DTI compares…', c:['Cars to income','Assets to debts','Debt payments to income','Rent to income'], a:2, e:'Total monthly debt payments ÷ gross monthly income; PTI is the car payment alone.', d:1},
+  {q:'Two same-week car approvals usually work because…', c:['Lenders share instantly','Dealers waive checks','Scores update daily','The reporting lag hides the other fresh loan from each pull'], a:3, e:'New loans post on the next cycle (~30–45 days) — legal only if every app is truthful.', d:2},
+  {q:'Rolling negative equity means…', c:['Stacking the old car’s upside-down balance into the new loan','Paying early','Refinancing down','Leasing'], a:0, e:'Each roll deepens the hole — the $290k snowball mechanism.', d:1},
+  {q:'Stating income you no longer earn on an auto app is…', c:['Negotiation','Fine if payments are made','A gray area','Loan-application fraud (state + federal bank fraud)'], a:3, e:'18 U.S.C. §1344 territory — the felony line of c4_fraudline.', d:1},
+  {q:'Mainstream banks decline exotics mostly because…', c:['Borrowers are weak','Law forbids it','They dislike speed','Program boxes: caps, thin comps, hard remarketing'], a:3, e:'The asset breaks the normal-car assumptions; specialty lenders exist for exactly this.', d:2},
+  {q:'Specialty exotic lenders differentiate with…', c:['Very long terms, balloons/leases, asset-literate underwriting','Free insurance','No credit checks','Crypto payment'], a:0, e:'120–144mo terms [VERIFY], structures, and desks that know what a Performante is.', d:2},
+  {q:'The hidden cost of a 144-month term is…', c:['Paper fees','Registration','Higher insurance','Years underwater as equity builds slowly'], a:3, e:'Negative-equity fuel unless exit discipline is real.', d:2},
+  {q:'A balloon note ends with…', c:['Nothing','Automatic refi','A large lump due — a bet on the car’s value at term','Ownership transfer'], a:2, e:'Value ≥ balloon = ride was cheap. Value < balloon = five-figure problem.', d:2},
   {q:'Closed-end leases fail fleet use because…', c:['Rates','Mileage caps that rental miles demolish','No insurance','Title issues'], a:1, e:'Depreciation-plus-rent pricing assumes capped personal miles.', d:2},
   {q:'GAP coverage exists for…', c:['Maintenance','The payoff-vs-actual-value gap after a total loss','Deductibles','Storage'], a:1, e:'Exactly where long terms and balloons leave you exposed — verify commercial use isn’t excluded [VERIFY].', d:2},
-  {q:'The >6,000-lb GVWR tax significance is…', c:['Cheaper fuel','Escaping luxury-auto caps into Section 179/bonus territory [VERIFY]','Free tolls','Lower registration'], a:1, e:'Heavy SUVs (Urus/Cullinan-class [VERIFY]) get first-year deductions capped cars can’t touch.', d:3},
-  {q:'Depreciation taken under 179/bonus is…', c:['Permanent','Recaptured as income at sale','Transferable','Doubled'], a:1, e:'It is timing. The exit plan must include recapture or the edge becomes a surprise bill.', d:3}
+  {q:'The >6,000-lb GVWR tax significance is…', c:['Cheaper fuel','Lower registration','Free tolls','Escaping luxury-auto caps into Section 179/bonus territory [VERIFY]'], a:3, e:'Heavy SUVs (Urus/Cullinan-class [VERIFY]) get first-year deductions capped cars can’t touch.', d:3},
+  {q:'Depreciation taken under 179/bonus is…', c:['Recaptured as income at sale','Permanent','Transferable','Doubled'], a:0, e:'It is timing. The exit plan must include recapture or the edge becomes a surprise bill.', d:3}
 ];
 
 // ═══════════════════════ TIER 1 · THREE LAWS & THE WATERFALL ═══════════════════════
@@ -781,8 +781,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The most profitable seat:', b:'Controlling the car AND the renter — nobody else at the table. The dual-rail endgame expressed as Law 1.'}
   ],
   quiz:[
-    {q:'The wholesale rate is set by…', c:['The renter','Whoever controls the car','The broker','A price index'], a:1, e:'Law 2: the asset is the real thing in the room, so its controller quotes the floor.'},
-    {q:'Across the whole market, leverage belongs to…', c:['Whoever owns the most cars','Whoever can reliably produce renters','The insurers','The platforms'], a:1, e:'Law 3: idle cars bleed daily. Demand production is the scarce skill fleets compete for.'},
+    {q:'The wholesale rate is set by…', c:['The renter','A price index','The broker','Whoever controls the car'], a:3, e:'Law 2: the asset is the real thing in the room, so its controller quotes the floor.'},
+    {q:'Across the whole market, leverage belongs to…', c:['Whoever owns the most cars','The platforms','The insurers','Whoever can reliably produce renters'], a:3, e:'Law 3: idle cars bleed daily. Demand production is the scarce skill fleets compete for.'},
     {q:'Every added middleman in a deal…', c:['Grows the pie','Shrinks everyone else’s share of a fixed pie','Doubles the rate','Is illegal'], a:1, e:'Law 1: the renter’s payment is the whole plate — each seat is a cut from it.'}
   ]},
 
@@ -801,9 +801,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Why rates are relationships:', b:'Every rate is negotiated per person on trust/track record/volume — proven partners buy 10–20 points cheaper. Reputation IS pricing.'}
   ],
   quiz:[
-    {q:'A car retails $1,000/day; typical wholesale would be…', c:['$950–990','$700–800','$400–500','$1,100'], a:1, e:'20–30% under retail is the standard broker-rate band.'},
-    {q:'Holding a fleet’s broker sheet means…', c:['You’re an employee','You can sell their inventory at known floors','You own their cars','You set retail'], a:1, e:'The sheet is the keys to inventory — every car, every wholesale rate, yours to build deals on.'},
-    {q:'When a fleet discounts a rate too deep, the un-negotiable loss lands on…', c:['The renter','The broker','The car’s owner via miles and depreciation','Nobody'], a:2, e:'Cash discounts come off margins, but the MILES still hit the asset — and depreciation is the owner’s to eat.'}
+    {q:'A car retails $1,000/day; typical wholesale would be…', c:['$700–800','$950–990','$400–500','$1,100'], a:0, e:'20–30% under retail is the standard broker-rate band.'},
+    {q:'Holding a fleet’s broker sheet means…', c:['You can sell their inventory at known floors','You’re an employee','You own their cars','You set retail'], a:0, e:'The sheet is the keys to inventory — every car, every wholesale rate, yours to build deals on.'},
+    {q:'When a fleet discounts a rate too deep, the un-negotiable loss lands on…', c:['The car’s owner via miles and depreciation','The broker','The renter','Nobody'], a:0, e:'Cash discounts come off margins, but the MILES still hit the asset — and depreciation is the owner’s to eat.'}
   ]},
 
 { id:'t1_waterfall', sub:'T1', title:'The waterfall — same deal, three completely different paychecks',
@@ -821,7 +821,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The scoreboard truth:', b:'Broker: most margin/least work. Agency: second/all the work. Owner: least/none. No correct seat — only the seat that fits your situation.'}
   ],
   quiz:[
-    {q:'Renter pays $1,000; wholesale is $800; consignment is 50/50. The owner receives…', c:['$500','$400','$200','$800'], a:1, e:'The broker’s $200 came off first — the owner splits WHOLESALE, not retail.'},
+    {q:'Renter pays $1,000; wholesale is $800; consignment is 50/50. The owner receives…', c:['$400','$500','$200','$800'], a:0, e:'The broker’s $200 came off first — the owner splits WHOLESALE, not retail.'},
     {q:'The two owner costs nobody can negotiate away are…', c:['Marketing and fuel','Depreciation and maintenance','Insurance and storage','Deposits and fees'], a:1, e:'Every mile is resale value leaving; wear lands on the owner. Renter damage, by contrast, comes from the deposit.'},
     {q:'Per effort and liability, the best-paid seat in a brokered deal is usually…', c:['The agency','The owner','The broker','The renter'], a:2, e:'~$200, near-zero costs, zero liability, hours of work. The agency earns more absolute dollars by carrying everything.'}
   ]},
@@ -842,26 +842,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'White-labeling:', b:'Fleets book competitors’ cars at wholesale and present them as their own; the supplier keeps the secret because roles reverse weekly. Why every fleet looks infinite.'}
   ],
   quiz:[
-    {q:'The share of deals a typical fleet’s own marketing lands on its own cars is roughly…', c:['70%','50%','30%','90%'], a:2, e:'~30% [VERIFY]. The other ~70% arrive via sourcers — the measured form of Law 3.'},
-    {q:'To legally broker your first exotic deal you need…', c:['A broker’s license','An LLC and insurance','A renter and a fleet’s wholesale rate','21 years of age'], a:2, e:'The role has no license, exam, or age gate. The qualified lead IS the credential.'},
-    {q:'A fleet’s Instagram shows a car they don’t own being “their” rental. Most likely explanation:', c:['Fraud in progress','White-labeling — booked from a peer at wholesale, presented as their own','A stolen photo','A glitch'], a:1, e:'Completely normal here: fleets are each other’s suppliers constantly, and the client never knows.'}
+    {q:'The share of deals a typical fleet’s own marketing lands on its own cars is roughly…', c:['30%','50%','70%','90%'], a:0, e:'~30% [VERIFY]. The other ~70% arrive via sourcers — the measured form of Law 3.'},
+    {q:'To legally broker your first exotic deal you need…', c:['A broker’s license','An LLC and insurance','21 years of age','A renter and a fleet’s wholesale rate'], a:3, e:'The role has no license, exam, or age gate. The qualified lead IS the credential.'},
+    {q:'A fleet’s Instagram shows a car they don’t own being “their” rental. Most likely explanation:', c:['Fraud in progress','A stolen photo','White-labeling — booked from a peer at wholesale, presented as their own','A glitch'], a:2, e:'Completely normal here: fleets are each other’s suppliers constantly, and the client never knows.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T1 = [
-  {q:'Every role in the industry stands between…', c:['Two fleets','A car owner and a renter','A bank and a dealer','Insurance and the DMV'], a:1, e:'Owner and renter are the only two essential people; everyone else takes work and a cut.', d:1},
-  {q:'Law 1 says the money in a deal is…', c:['Growable','Fixed at what the renter pays — every seat is a cut','Set by the fleet','Set by insurers'], a:1, e:'Same plate, more forks = less each. Control more of the deal to keep more.', d:1},
-  {q:'The wholesale rate is quoted by…', c:['The lead side','The car side','The renter','The platform'], a:1, e:'Law 2: the asset is real, the renter is a maybe — the car controller sets the floor.', d:1},
-  {q:'Idle exotics are…', c:['Neutral','Bleeding depreciation, storage, insurance, payments','Appreciating','Tax write-offs automatically'], a:1, e:'Law 3’s engine: an unbooked car costs daily, which is why lead producers hold leverage.', d:2},
-  {q:'Typical wholesale sits…', c:['5% under retail','20–30% under retail','50% under retail','Above retail'], a:1, e:'The standard broker-rate band; the spread above it is the sourcer’s pay.', d:1},
-  {q:'The waterfall payout order is…', c:['Agency, owner, broker','Owner, broker, agency','Broker/sourcer, owner, agency','Simultaneous'], a:2, e:'Sourcer off the top, owner’s split of wholesale, agency keeps the rest.', d:2},
-  {q:'A 50/50 consignment owner in a brokered deal splits…', c:['Retail','Wholesale','The deposit','Net profit'], a:1, e:'The broker’s spread shrank the pie first — the detail most owners never learn.', d:2},
-  {q:'After depreciation and maintenance, a consignment owner typically nets about…', c:['All of their split','15–20% of their split [VERIFY]','Nothing ever','Double the agency'], a:1, e:'Miles are resale value leaving; wear is the owner’s. The gross check flatters the seat.', d:3},
-  {q:'The broker’s seat carries…', c:['Full liability','No car costs and no liability — nearly pure-profit spreads','The insurance burden','The storage bill'], a:1, e:'Which is why per-effort it is the best-paid seat in most deals.', d:2},
-  {q:'~70% of deals are sourced by…', c:['The supplying fleet','Someone other than the supplying fleet','Platforms','Walk-ins'], a:1, e:'The industry’s demand mostly arrives from outside — the first door is a lead, not a car.', d:1},
-  {q:'Becoming a broker requires…', c:['A license and bond','Nothing but a renter and a wholesale rate','An LLC','Fleet employment'], a:1, e:'No license, exam, age, or entity gate exists. The lead is the introduction.', d:1},
-  {q:'White-labeling is…', c:['Illegal deception','Fleets renting peers’ cars at wholesale, presented as their own — normal and mutual','A wrap style','A lease type'], a:1, e:'Roles reverse weekly, so the secret keeps itself. Every fleet looks infinite.', d:2}
+  {q:'Every role in the industry stands between…', c:['Two fleets','A bank and a dealer','A car owner and a renter','Insurance and the DMV'], a:2, e:'Owner and renter are the only two essential people; everyone else takes work and a cut.', d:1},
+  {q:'Law 1 says the money in a deal is…', c:['Growable','Set by the fleet','Fixed at what the renter pays — every seat is a cut','Set by insurers'], a:2, e:'Same plate, more forks = less each. Control more of the deal to keep more.', d:1},
+  {q:'The wholesale rate is quoted by…', c:['The car side','The lead side','The renter','The platform'], a:0, e:'Law 2: the asset is real, the renter is a maybe — the car controller sets the floor.', d:1},
+  {q:'Idle exotics are…', c:['Neutral','Tax write-offs automatically','Appreciating','Bleeding depreciation, storage, insurance, payments'], a:3, e:'Law 3’s engine: an unbooked car costs daily, which is why lead producers hold leverage.', d:2},
+  {q:'Typical wholesale sits…', c:['5% under retail','50% under retail','20–30% under retail','Above retail'], a:2, e:'The standard broker-rate band; the spread above it is the sourcer’s pay.', d:1},
+  {q:'The waterfall payout order is…', c:['Agency, owner, broker','Broker/sourcer, owner, agency','Owner, broker, agency','Simultaneous'], a:1, e:'Sourcer off the top, owner’s split of wholesale, agency keeps the rest.', d:2},
+  {q:'A 50/50 consignment owner in a brokered deal splits…', c:['Wholesale','Retail','The deposit','Net profit'], a:0, e:'The broker’s spread shrank the pie first — the detail most owners never learn.', d:2},
+  {q:'After depreciation and maintenance, a consignment owner typically nets about…', c:['15–20% of their split [VERIFY]','All of their split','Nothing ever','Double the agency'], a:0, e:'Miles are resale value leaving; wear is the owner’s. The gross check flatters the seat.', d:3},
+  {q:'The broker’s seat carries…', c:['Full liability','The insurance burden','No car costs and no liability — nearly pure-profit spreads','The storage bill'], a:2, e:'Which is why per-effort it is the best-paid seat in most deals.', d:2},
+  {q:'~70% of deals are sourced by…', c:['The supplying fleet','Walk-ins','Platforms','Someone other than the supplying fleet'], a:3, e:'The industry’s demand mostly arrives from outside — the first door is a lead, not a car.', d:1},
+  {q:'Becoming a broker requires…', c:['A license and bond','Fleet employment','An LLC','Nothing but a renter and a wholesale rate'], a:3, e:'No license, exam, age, or entity gate exists. The lead is the introduction.', d:1},
+  {q:'White-labeling is…', c:['Illegal deception','A wrap style','Fleets renting peers’ cars at wholesale, presented as their own — normal and mutual','A lease type'], a:2, e:'Roles reverse weekly, so the secret keeps itself. Every fleet looks infinite.', d:2}
 ];
 
 // ═══════════════════════ TIER 2 · THE INSURANCE SPINE ═══════════════════════
@@ -883,9 +883,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The fraud wall here:', b:'An owner lying to their carrier about how the car was used is insurance fraud. A car-sized loss is never converted into a prison-sized one.'}
   ],
   quiz:[
-    {q:'After a rental crash, the injured third parties get paid…', c:['Only if the renter files','Automatically off the driver’s liability coverage','From the fleet’s deposit','Never'], a:1, e:'Liability pays outward without the renter’s help. It is the collision claim on YOUR car that only the renter can open.'},
-    {q:'Your renter’s policy fully covers the totaled rental, but the renter ghosts. The claim…', c:['Can be filed by you with proof','Is filed automatically at 30 days','Never gets filed — only the policyholder can open it','Transfers to your commercial policy free'], a:2, e:'The asymmetry: coverage without cooperation pays nothing. Every industry ritual exists to prevent this person from getting keys.'},
-    {q:'Every verification ritual in this industry ultimately answers…', c:['How to charge more','How to never hand keys to someone who’d strand you with an unfiled claim','How to avoid taxes','How to win chargebacks'], a:1, e:'The rule can’t be fixed — renters can only be chosen. That is the spine of the entire protection stack.'}
+    {q:'After a rental crash, the injured third parties get paid…', c:['Only if the renter files','From the fleet’s deposit','Automatically off the driver’s liability coverage','Never'], a:2, e:'Liability pays outward without the renter’s help. It is the collision claim on YOUR car that only the renter can open.'},
+    {q:'Your renter’s policy fully covers the totaled rental, but the renter ghosts. The claim…', c:['Can be filed by you with proof','Is filed automatically at 30 days','Transfers to your commercial policy free','Never gets filed — only the policyholder can open it'], a:3, e:'The asymmetry: coverage without cooperation pays nothing. Every industry ritual exists to prevent this person from getting keys.'},
+    {q:'Every verification ritual in this industry ultimately answers…', c:['How to charge more','How to win chargebacks','How to avoid taxes','How to never hand keys to someone who’d strand you with an unfiled claim'], a:3, e:'The rule can’t be fixed — renters can only be chosen. That is the spine of the entire protection stack.'}
   ]},
 
 { id:'t2_fourdocs', sub:'T2', title:'The four documents — and SERFF, where the fine print hides',
@@ -907,7 +907,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'“Will this policy pay for my Lamborghini?” is answered in…', c:['The declarations page','The policy contract and endorsements','The application','The insurance card'], a:1, e:'The dec page shows what was bought. Non-owner rules, caps, and exclusions live in the contract + endorsements.'},
-    {q:'SERFF is…', c:['A carrier’s claims line','The state database where insurers file their policy forms','A credit bureau','A rental platform'], a:1, e:'NAIC number + form numbers in, exact state-specific fine print out — the gatekept skill that is actually a lookup.'},
+    {q:'SERFF is…', c:['The state database where insurers file their policy forms','A carrier’s claims line','A credit bureau','A rental platform'], a:0, e:'NAIC number + form numbers in, exact state-specific fine print out — the gatekept skill that is actually a lookup.'},
     {q:'The AI-era verification shortcut still requires a human to…', c:['Read every page manually','Pull the RIGHT documents — carrier, state, current form versions','Call the DMV','Notarize the dec page'], a:1, e:'Garbage in, garbage out: extraction is instant, but sourcing the correct filed forms is the enduring skill.'}
   ]},
 
@@ -926,9 +926,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The 18–30 market’s mechanism:', b:'Platform underwriters say no; some renters’ own carriers say yes; the operator who can VERIFY the yes serves the gap legally. Fine-print literacy is the edge.'}
   ],
   quiz:[
-    {q:'Under the cliff-cap form, a Sentra-owning renter totals a $105k rental. The policy pays about…', c:['$105k','$100k','The Sentra’s value — maybe $10k','Nothing'], a:2, e:'Above the $100k line, coverage drops to the renter’s own most-expensive-vehicle value [VERIFY]. One unread paragraph, ~$95k of exposure.'},
-    {q:'The “carrier matrix” is…', c:['A rate comparison site','An operator’s living per-carrier notes on transfer rules, caps, and exclusions','A state database','A platform feature'], a:1, e:'Fresh verification every rental, but the notes tell you where each carrier usually hides the trap.'},
-    {q:'A 21-year-old can be legitimately covered in your $90k car when…', c:['They pay cash','Their own carrier’s policy transfers full coverage to non-owner vehicles','A platform approves them','They sign a waiver'], a:1, e:'Age walls are platform-program rules. Carrier-based transfer either exists or it doesn’t — verification, not age, decides.'}
+    {q:'Under the cliff-cap form, a Sentra-owning renter totals a $105k rental. The policy pays about…', c:['$105k','The Sentra’s value — maybe $10k','$100k','Nothing'], a:1, e:'Above the $100k line, coverage drops to the renter’s own most-expensive-vehicle value [VERIFY]. One unread paragraph, ~$95k of exposure.'},
+    {q:'The “carrier matrix” is…', c:['A rate comparison site','A platform feature','A state database','An operator’s living per-carrier notes on transfer rules, caps, and exclusions'], a:3, e:'Fresh verification every rental, but the notes tell you where each carrier usually hides the trap.'},
+    {q:'A 21-year-old can be legitimately covered in your $90k car when…', c:['They pay cash','A platform approves them','Their own carrier’s policy transfers full coverage to non-owner vehicles','They sign a waiver'], a:2, e:'Age walls are platform-program rules. Carrier-based transfer either exists or it doesn’t — verification, not age, decides.'}
   ]},
 
 { id:'t2_forms', sub:'T2', title:'Reading the actual form — exclusion anatomy for operators',
@@ -948,26 +948,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The complete verification workflow:', b:'SERFF pull → AI-extract the three answers (transfer? cap? voiding uses?) → update carrier matrix → confirm on a recorded line (T3).'}
   ],
   quiz:[
-    {q:'The “furnished or available for regular use” exclusion threatens…', c:['One-day rentals','Long or repeating same-car rental patterns','Deliveries','Test drives'], a:1, e:'Regular access is what the exclusion targets — month-long or every-weekend patterns drift out of coverage.'},
+    {q:'The “furnished or available for regular use” exclusion threatens…', c:['Long or repeating same-car rental patterns','One-day rentals','Deliveries','Test drives'], a:0, e:'Regular access is what the exclusion targets — month-long or every-weekend patterns drift out of coverage.'},
     {q:'The structural reason a fleet MUST have a commercial policy is…', c:['Marketing','The business-use/livery exclusion family voids personal coverage on rental operations','State registration fees','Platform rules'], a:1, e:'Personal forms wall off commercial use. There is no personal-policy version of this business.'},
-    {q:'The correct read-order on a pulled contract is…', c:['Back to front','Definitions → physical damage → exclusions → endorsements','Endorsements only','Dec page twice'], a:1, e:'Definitions decide the words, coverage grants the yes, exclusions the no, endorsements the override — in that order.'}
+    {q:'The correct read-order on a pulled contract is…', c:['Back to front','Endorsements only','Definitions → physical damage → exclusions → endorsements','Dec page twice'], a:2, e:'Definitions decide the words, coverage grants the yes, exclusions the no, endorsements the override — in that order.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T2 = [
-  {q:'On a rental crash, liability coverage pays…', c:['Your car','Third parties, automatically','Only after a lawsuit','The deposit'], a:1, e:'Liability protects the outside world and needs no cooperation. Collision on YOUR car is the asymmetric one.', d:1},
-  {q:'Rental cars sit in personal policies as…', c:['Fleet vehicles','Non-owner vehicles','Commercial autos','Uninsurable'], a:1, e:'The non-owner classification is where transfer, caps, and exclusions all attach.', d:1},
-  {q:'The collision claim on a wrecked rental can be opened by…', c:['The operator with proof','Only the renter (policyholder)','Any lawyer','The DMV'], a:1, e:'The asymmetry that rules everything: coverage without cooperation pays nothing.', d:1},
-  {q:'A ghosting renter with real coverage means…', c:['The claim files itself','A real claim that never gets filed — the loss sits','Automatic subrogation','The platform pays'], a:1, e:'Every protection ritual exists to keep this person from ever holding your keys.', d:2},
-  {q:'The dec page tells you…', c:['What the policy covers','What the insured BOUGHT','The fine print','The caps'], a:1, e:'Coverage answers live in the contract + endorsements — the documents almost nobody pulls.', d:2},
+  {q:'On a rental crash, liability coverage pays…', c:['Third parties, automatically','Your car','Only after a lawsuit','The deposit'], a:0, e:'Liability protects the outside world and needs no cooperation. Collision on YOUR car is the asymmetric one.', d:1},
+  {q:'Rental cars sit in personal policies as…', c:['Fleet vehicles','Commercial autos','Non-owner vehicles','Uninsurable'], a:2, e:'The non-owner classification is where transfer, caps, and exclusions all attach.', d:1},
+  {q:'The collision claim on a wrecked rental can be opened by…', c:['The operator with proof','Any lawyer','Only the renter (policyholder)','The DMV'], a:2, e:'The asymmetry that rules everything: coverage without cooperation pays nothing.', d:1},
+  {q:'A ghosting renter with real coverage means…', c:['The claim files itself','Automatic subrogation','A real claim that never gets filed — the loss sits','The platform pays'], a:2, e:'Every protection ritual exists to keep this person from ever holding your keys.', d:2},
+  {q:'The dec page tells you…', c:['What the insured BOUGHT','What the policy covers','The fine print','The caps'], a:0, e:'Coverage answers live in the contract + endorsements — the documents almost nobody pulls.', d:2},
   {q:'SERFF holds…', c:['Claims histories','Carriers’ filed policy forms per state','Credit files','MVRs'], a:1, e:'NAIC + form numbers → the state portal → the exact fine print, free.', d:2},
-  {q:'Under the $100k cliff cap, coverage above the line drops to…', c:['Zero','The renter’s own most-expensive-vehicle value','50%','The deductible'], a:1, e:'The Sentra problem: $105k car, ~$10k payout [VERIFY]. One paragraph, one business.', d:3},
-  {q:'Platform age walls (25+/30+) come from…', c:['State law','The platforms’ own insurance programs','Carriers’ personal policies','The DMV'], a:1, e:'Personal-policy transfer is carrier-based — the mechanical source of the legal 18–30 gap.', d:2},
-  {q:'“Furnished or available for regular use” endangers…', c:['Short one-off rentals','Repeat/long same-car patterns','Deliveries only','Nothing'], a:1, e:'Regular access drifts out of non-owned coverage — long rentals are a coverage question.', d:3},
-  {q:'Your own personal auto policy covers cars you rent out…', c:['Fully','Never — business-use/livery exclusions wall it off','Up to $50k','If disclosed'], a:1, e:'The structural mandate for the commercial policy. No exceptions worth betting a car on.', d:1},
-  {q:'The carrier matrix is refreshed…', c:['Never — set once','Constantly — forms update and every verification is fresh','Annually by law','By the platforms'], a:1, e:'Notes tell you where traps usually are; the fresh pull tells you where they are today.', d:2},
-  {q:'The AI shortcut in fine-print work is bounded by…', c:['Token limits','Pulling the RIGHT documents — carrier, state, current versions','Cost','Speed'], a:1, e:'Extraction is instant; sourcing the correct filed forms remains the human skill.', d:2}
+  {q:'Under the $100k cliff cap, coverage above the line drops to…', c:['The renter’s own most-expensive-vehicle value','Zero','50%','The deductible'], a:0, e:'The Sentra problem: $105k car, ~$10k payout [VERIFY]. One paragraph, one business.', d:3},
+  {q:'Platform age walls (25+/30+) come from…', c:['State law','The DMV','Carriers’ personal policies','The platforms’ own insurance programs'], a:3, e:'Personal-policy transfer is carrier-based — the mechanical source of the legal 18–30 gap.', d:2},
+  {q:'“Furnished or available for regular use” endangers…', c:['Short one-off rentals','Deliveries only','Repeat/long same-car patterns','Nothing'], a:2, e:'Regular access drifts out of non-owned coverage — long rentals are a coverage question.', d:3},
+  {q:'Your own personal auto policy covers cars you rent out…', c:['Fully','If disclosed','Up to $50k','Never — business-use/livery exclusions wall it off'], a:3, e:'The structural mandate for the commercial policy. No exceptions worth betting a car on.', d:1},
+  {q:'The carrier matrix is refreshed…', c:['Constantly — forms update and every verification is fresh','Never — set once','Annually by law','By the platforms'], a:0, e:'Notes tell you where traps usually are; the fresh pull tells you where they are today.', d:2},
+  {q:'The AI shortcut in fine-print work is bounded by…', c:['Token limits','Speed','Cost','Pulling the RIGHT documents — carrier, state, current versions'], a:3, e:'Extraction is instant; sourcing the correct filed forms remains the human skill.', d:2}
 ];
 
 // ═══════════════════════ TIER 3 · THE VERIFICATION STACK ═══════════════════════
@@ -989,9 +989,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Layer-1 red flags:', b:'Insists on emailing a PDF, “login not working,” third-party policyholder, coverage born yesterday before a supercar weekend.'}
   ],
   quiz:[
-    {q:'Carrier-connection capture defeats fake insurance because…', c:['The PDF looks better','The client must authenticate with the carrier — forgeries and lapsed policies can’t log in','It’s faster','It’s cheaper'], a:1, e:'Data from the source replaces paper from the renter. Existence is proven at capture time.'},
-    {q:'A renter offers a beautiful dec-page PDF but “can’t” use the connection link. The stack says…', c:['Accept the PDF with a bigger deposit','No connection, no keys','Call their agent instead','Skip to Layer 3'], a:1, e:'The insistence on documents over connection IS the tell. The tool never argues; it just asks the carrier.'},
-    {q:'Liability-only coverage on the renter’s policy means…', c:['Proceed with a waiver','The car itself has no collision path — instant no for your vehicle','Fine if under $100k','Charge double deposit'], a:1, e:'Liability protects others (T2). With no comp/collision to transfer, your car has no coverage story at all.'}
+    {q:'Carrier-connection capture defeats fake insurance because…', c:['The PDF looks better','It’s cheaper','It’s faster','The client must authenticate with the carrier — forgeries and lapsed policies can’t log in'], a:3, e:'Data from the source replaces paper from the renter. Existence is proven at capture time.'},
+    {q:'A renter offers a beautiful dec-page PDF but “can’t” use the connection link. The stack says…', c:['Accept the PDF with a bigger deposit','Call their agent instead','No connection, no keys','Skip to Layer 3'], a:2, e:'The insistence on documents over connection IS the tell. The tool never argues; it just asks the carrier.'},
+    {q:'Liability-only coverage on the renter’s policy means…', c:['Proceed with a waiver','Fine if under $100k','The car itself has no collision path — instant no for your vehicle','Charge double deposit'], a:2, e:'Liability protects others (T2). With no comp/collision to transfer, your car has no coverage story at all.'}
   ]},
 
 { id:'t3_call', sub:'T3', title:'Layer 3 — the recorded call: four questions, in order',
@@ -1014,9 +1014,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'When agent and form disagree:', b:'The filed form wins; the deal pauses. Agents misread — SERFF filings don’t. Escalate, re-ask, or decline.'}
   ],
   quiz:[
-    {q:'Q4 names a Lamborghini Huracán specifically to…', c:['Impress the agent','Force the agent past the script into the form — smoking out value caps','Comply with law','Speed up the call'], a:1, e:'Overshooting with a real six-figure car turns a vague yes into a tested one; the cliff cap dies or shows itself here.'},
-    {q:'The agent answers Q3 with “liability is 100/300.” You…', c:['Accept and move on','Redirect: you’re asking if comp/collision covers the ACV of the driven non-owner vehicle','Hang up','Mark the carrier bad'], a:1, e:'The classic mishear. Rephrase until the physical-damage ACV question is the one being answered.'},
-    {q:'Layer 2 says a $100k cap exists; the Layer 3 agent says “fully covered.” You…', c:['Trust the agent — it’s recorded','Trust the form; pause the deal and escalate','Average the two','Proceed with a bigger deposit'], a:1, e:'Filed forms outrank a misreading agent. The tape helps later only if the coverage was actually there.'}
+    {q:'Q4 names a Lamborghini Huracán specifically to…', c:['Impress the agent','Comply with law','Force the agent past the script into the form — smoking out value caps','Speed up the call'], a:2, e:'Overshooting with a real six-figure car turns a vague yes into a tested one; the cliff cap dies or shows itself here.'},
+    {q:'The agent answers Q3 with “liability is 100/300.” You…', c:['Accept and move on','Mark the carrier bad','Hang up','Redirect: you’re asking if comp/collision covers the ACV of the driven non-owner vehicle'], a:3, e:'The classic mishear. Rephrase until the physical-damage ACV question is the one being answered.'},
+    {q:'Layer 2 says a $100k cap exists; the Layer 3 agent says “fully covered.” You…', c:['Trust the form; pause the deal and escalate','Trust the agent — it’s recorded','Average the two','Proceed with a bigger deposit'], a:0, e:'Filed forms outrank a misreading agent. The tape helps later only if the coverage was actually there.'}
   ]},
 
 { id:'t3_human', sub:'T3', title:'Underwrite the human — MVR, the deeper check, and the contact web',
@@ -1036,8 +1036,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'The MVR runs…', c:['When the renter seems young','On every rental, no exceptions','Only above $150k cars','Only for new clients'], a:1, e:'Cheap, fast, standard — pattern-reading on every single renter, like the insurance stack.'},
-    {q:'“Habits transfer” justifies…', c:['Profiling by group','A criminal check when the deal’s facts feel off — priors with cars/property/rules predict treatment of yours','Skipping the MVR','Bigger deposits only'], a:1, e:'The check reads the record, not the person’s group — and it costs $8 against a $200k car.'},
-    {q:'Testing the phone and email before keys move protects, above all…', c:['Marketing lists','Your claim path — a ghost with dead contacts can never be made to file','The delivery fee','The playlist'], a:1, e:'T2’s asymmetry makes reachability the recovery path itself. Untested contacts = pre-ghosted.'}
+    {q:'“Habits transfer” justifies…', c:['Profiling by group','Bigger deposits only','Skipping the MVR','A criminal check when the deal’s facts feel off — priors with cars/property/rules predict treatment of yours'], a:3, e:'The check reads the record, not the person’s group — and it costs $8 against a $200k car.'},
+    {q:'Testing the phone and email before keys move protects, above all…', c:['Marketing lists','The delivery fee','Your claim path — a ghost with dead contacts can never be made to file','The playlist'], a:2, e:'T2’s asymmetry makes reachability the recovery path itself. Untested contacts = pre-ghosted.'}
   ]},
 
 { id:'t3_network', sub:'T3', title:'The network effect — individually gatekept, collectively defended',
@@ -1055,26 +1055,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The freshness rule:', b:'Verification is per-RENTAL: policies cancel overnight, forms change, MVRs grow. Repeat clients get streamlined courtesy — never skipped layers.'}
   ],
   quiz:[
-    {q:'When a renter fails verification with fraud, the industry norm is…', c:['Silence — competitive advantage','Broadcast the facts to the metro’s fleets — collective defense','A police report only','A bad review'], a:1, e:'The thief tries the next fleet tomorrow. Warnings cost nothing and earn reciprocity.'},
-    {q:'A trusted repeat client books their sixth rental. Verification…', c:['Is skipped — they’re proven','Re-runs fresh — policies cancel and forms change; courtesy streamlines, never skips','Uses last month’s capture','Only needs the deposit'], a:1, e:'Per-rental, not per-person. Last month’s clean client can be this month’s lapsed policy.'},
-    {q:'The stack’s real power is…', c:['Any one brilliant layer','All layers, fresh, every time, on everyone — plus the metro network beside you','The recorded call alone','The MVR alone'], a:1, e:'Redundancy catches what any single check misses; the network catches what YOU miss.'}
+    {q:'When a renter fails verification with fraud, the industry norm is…', c:['Silence — competitive advantage','A bad review','A police report only','Broadcast the facts to the metro’s fleets — collective defense'], a:3, e:'The thief tries the next fleet tomorrow. Warnings cost nothing and earn reciprocity.'},
+    {q:'A trusted repeat client books their sixth rental. Verification…', c:['Is skipped — they’re proven','Uses last month’s capture','Re-runs fresh — policies cancel and forms change; courtesy streamlines, never skips','Only needs the deposit'], a:2, e:'Per-rental, not per-person. Last month’s clean client can be this month’s lapsed policy.'},
+    {q:'The stack’s real power is…', c:['Any one brilliant layer','The recorded call alone','All layers, fresh, every time, on everyone — plus the metro network beside you','The MVR alone'], a:2, e:'Redundancy catches what any single check misses; the network catches what YOU miss.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T3 = [
-  {q:'The three layers of the stack are…', c:['ID, deposit, contract','Carrier-connected capture, fine-print read, recorded call','MVR, criminal, credit','Photos, video, GPS'], a:1, e:'Each catches what the others miss; all three run before every rental.', d:1},
-  {q:'Carrier-connection capture proves…', c:['The renter is rich','The policy exists NOW — forgeries and lapsed policies can’t log in','Driving skill','Address history'], a:1, e:'Data from the source replaces paper from the renter.', d:1},
-  {q:'A renter who insists on emailing a PDF instead of connecting is…', c:['Efficient','A Layer-1 red flag — the insistence is the tell','Preferred','Saving you money'], a:1, e:'No connection, no keys. The tool never argues; it asks the carrier.', d:2},
+  {q:'The three layers of the stack are…', c:['Carrier-connected capture, fine-print read, recorded call','ID, deposit, contract','MVR, criminal, credit','Photos, video, GPS'], a:0, e:'Each catches what the others miss; all three run before every rental.', d:1},
+  {q:'Carrier-connection capture proves…', c:['The renter is rich','Address history','Driving skill','The policy exists NOW — forgeries and lapsed policies can’t log in'], a:3, e:'Data from the source replaces paper from the renter.', d:1},
+  {q:'A renter who insists on emailing a PDF instead of connecting is…', c:['Efficient','Saving you money','Preferred','A Layer-1 red flag — the insistence is the tell'], a:3, e:'No connection, no keys. The tool never argues; it asks the carrier.', d:2},
   {q:'Liability-only renters are…', c:['Fine with waivers','An instant no for your car — nothing transfers to cover it','OK under $100k','Charged more'], a:1, e:'No comp/collision = no coverage story for the vehicle itself.', d:1},
-  {q:'The recorded call exists to…', c:['Research coverage','Manufacture evidence — the carrier confirming coverage pre-rental, on tape','Meet the agent','Negotiate rates'], a:1, e:'Layer 2 was research. The tape has weight when a claim gets pushed back on.', d:2},
+  {q:'The recorded call exists to…', c:['Research coverage','Meet the agent','Manufacture evidence — the carrier confirming coverage pre-rental, on tape','Negotiate rates'], a:2, e:'Layer 2 was research. The tape has weight when a claim gets pushed back on.', d:2},
   {q:'Q3’s classic failure is the agent answering about…', c:['Deductibles','Liability limits instead of physical-damage ACV','The wrong state','Premiums'], a:1, e:'Redirect until comp/collision-covers-ACV-of-the-driven-vehicle is the question answered.', d:2},
-  {q:'Q4 overshoots with a named supercar to…', c:['Flatter the client','Force the agent into the form and smoke out value caps','End the call','Set the deposit'], a:1, e:'A Huracán with a dollar figure turns a scripted yes into a tested one.', d:2},
-  {q:'Form says capped; agent says covered. The ruling is…', c:['The agent — it’s recorded','The filed form — pause and escalate','Whichever helps','Flip a coin'], a:1, e:'Agents misread; SERFF filings don’t. The tape only helps if coverage was real.', d:3},
-  {q:'The MVR runs on…', c:['Suspicious renters','Every renter, reading for pattern','First-timers','Under-25s'], a:1, e:'Standard on all — one old ticket is life; patterns are the picture.', d:1},
-  {q:'The criminal check triggers on…', c:['Every renter','Anything off — mismatched addresses, wobbly story, odd comms. Habits transfer','Only felony cars','Never'], a:1, e:'$8 against a $200k car; the record, not the group, is what is read.', d:2},
-  {q:'Testing phone + email before keys move protects…', c:['The playlist','Your claim path, deposit recovery, and skip trace — reachability IS recovery','Marketing','Fuel billing'], a:1, e:'Only the renter can file (T2); a ghost with dead contacts was pre-ghosted.', d:2},
-  {q:'Verification freshness means…', c:['Annual re-checks','Per-RENTAL re-runs — policies cancel overnight and forms change','Once per client','Only after incidents'], a:1, e:'Repeat clients get streamlined courtesy, never skipped layers.', d:2}
+  {q:'Q4 overshoots with a named supercar to…', c:['Force the agent into the form and smoke out value caps','Flatter the client','End the call','Set the deposit'], a:0, e:'A Huracán with a dollar figure turns a scripted yes into a tested one.', d:2},
+  {q:'Form says capped; agent says covered. The ruling is…', c:['The agent — it’s recorded','Whichever helps','The filed form — pause and escalate','Flip a coin'], a:2, e:'Agents misread; SERFF filings don’t. The tape only helps if coverage was real.', d:3},
+  {q:'The MVR runs on…', c:['Suspicious renters','First-timers','Every renter, reading for pattern','Under-25s'], a:2, e:'Standard on all — one old ticket is life; patterns are the picture.', d:1},
+  {q:'The criminal check triggers on…', c:['Anything off — mismatched addresses, wobbly story, odd comms. Habits transfer','Every renter','Only felony cars','Never'], a:0, e:'$8 against a $200k car; the record, not the group, is what is read.', d:2},
+  {q:'Testing phone + email before keys move protects…', c:['Your claim path, deposit recovery, and skip trace — reachability IS recovery','The playlist','Marketing','Fuel billing'], a:0, e:'Only the renter can file (T2); a ghost with dead contacts was pre-ghosted.', d:2},
+  {q:'Verification freshness means…', c:['Per-RENTAL re-runs — policies cancel overnight and forms change','Annual re-checks','Once per client','Only after incidents'], a:0, e:'Repeat clients get streamlined courtesy, never skipped layers.', d:2}
 ];
 
 // ═══════════════════════ TIER 4 · THE COMMERCIAL POLICY ═══════════════════════
@@ -1097,8 +1097,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'Commercial exotic-fleet insurance is obtained by…', c:['An online quote form','Pitching an agent with proof your operation deflects claims','State assignment','Joining a platform'], a:1, e:'No quote button exists. The agent underwrites YOU — the stack is the evidence.'},
-    {q:'The telematics offer changes pricing because…', c:['It’s trendy','The carrier prices what it can SEE — verified driving data replaces assumed risk','It’s required by law','It replaces deposits'], a:1, e:'Data converts you from an unknown risk to a measured one; measured risks price lower.'},
-    {q:'The “triple payoff” of the verification stack is…', c:['Speed, cost, marketing','Protects, obtains, and prices the commercial policy','Leads, cars, deals','None'], a:1, e:'One system built once: claims deflected, policy granted, premium cut.'}
+    {q:'The telematics offer changes pricing because…', c:['It’s trendy','It’s required by law','The carrier prices what it can SEE — verified driving data replaces assumed risk','It replaces deposits'], a:2, e:'Data converts you from an unknown risk to a measured one; measured risks price lower.'},
+    {q:'The “triple payoff” of the verification stack is…', c:['Speed, cost, marketing','Leads, cars, deals','Protects, obtains, and prices the commercial policy','None'], a:2, e:'One system built once: claims deflected, policy granted, premium cut.'}
   ]},
 
 { id:'t4_machinery', sub:'T4', title:'The machinery — how consigned cars get onto a commercial policy',
@@ -1117,9 +1117,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The aorta principle:', b:'The commercial policy is priced on loss history and exists to almost never be used — claims belong on renters’ policies; a spiked loss ratio means non-renewal with nowhere to go.'}
   ],
   quiz:[
-    {q:'A consigned car becomes native to the fleet’s commercial policy via…', c:['A handshake','Lease-and-register: leased to the agency, registered/insured under the company','A rider on the owner’s policy','Platform coverage'], a:1, e:'Structure aligns coverage. Loose consignment keeps the owner’s policy active — and the car must never sit between the two.'},
-    {q:'Garagekeepers coverage protects…', c:['The building','Customers’/owners’ vehicles in the fleet’s care, custody, and control','Renters’ liability','Lost keys'], a:1, e:'Storage, detailing, repositioning — the gap consignment owners never ask about until it matters.'},
-    {q:'The commercial policy “exists to almost never be used” because…', c:['It covers nothing','Its loss ratio prices next year — claims belong on renters’ policies or premiums spiral to non-renewal','Claims are illegal','Deductibles are huge'], a:1, e:'The aorta principle: the whole stack exists to deflect claims off it; a dropped fleet has nowhere to go.'}
+    {q:'A consigned car becomes native to the fleet’s commercial policy via…', c:['Lease-and-register: leased to the agency, registered/insured under the company','A handshake','A rider on the owner’s policy','Platform coverage'], a:0, e:'Structure aligns coverage. Loose consignment keeps the owner’s policy active — and the car must never sit between the two.'},
+    {q:'Garagekeepers coverage protects…', c:['The building','Lost keys','Renters’ liability','Customers’/owners’ vehicles in the fleet’s care, custody, and control'], a:3, e:'Storage, detailing, repositioning — the gap consignment owners never ask about until it matters.'},
+    {q:'The commercial policy “exists to almost never be used” because…', c:['It covers nothing','Claims are illegal','Its loss ratio prices next year — claims belong on renters’ policies or premiums spiral to non-renewal','Deductibles are huge'], a:2, e:'The aorta principle: the whole stack exists to deflect claims off it; a dropped fleet has nowhere to go.'}
   ]},
 
 { id:'t4_turo', sub:'T4', title:'The Turo exception — how one company rewrote the rules',
@@ -1137,8 +1137,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The moat:', b:'The independent exotic industry lives entirely inside that carrier “no.” The un-built exotic PVSP is the standing opportunity (TX).'}
   ],
   quiz:[
-    {q:'A PVSP legally differs from a rental company in that…', c:['It pays more tax','It is a distinct classification for noncommercial sharing — no commercial reclassification, carrier-cancellation protection, program-carried liability','It skips insurance','It is federal'], a:1, e:'AB 1871’s new species — solving by statute what fleets solve with machinery [VERIFY states].'},
-    {q:'California’s revenue test means the PVSP shield fails when…', c:['The car is red','Annual sharing revenue exceeds annual ownership/operating costs — i.e., profit','Trips exceed 30 days','The owner is under 25'], a:1, e:'The law blesses cost-offsetting and structurally excludes running a business — a fleet is outside by definition.'},
+    {q:'A PVSP legally differs from a rental company in that…', c:['It pays more tax','It is federal','It skips insurance','It is a distinct classification for noncommercial sharing — no commercial reclassification, carrier-cancellation protection, program-carried liability'], a:3, e:'AB 1871’s new species — solving by statute what fleets solve with machinery [VERIFY states].'},
+    {q:'California’s revenue test means the PVSP shield fails when…', c:['Annual sharing revenue exceeds annual ownership/operating costs — i.e., profit','The car is red','Trips exceed 30 days','The owner is under 25'], a:0, e:'The law blesses cost-offsetting and structurally excludes running a business — a fleet is outside by definition.'},
     {q:'Turo’s ~$200k listing cap and age tiers exist because…', c:['Federal law requires them','Its carriers priced the risk of strangers in valuable cars and said no above the gates','Owners voted','Marketing'], a:1, e:'Loss-data underwriting, not statute. That carrier “no” is the moat the independent industry lives inside.'}
   ]},
 
@@ -1158,25 +1158,25 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'“Turo for exotics” doesn’t exist mainly because…', c:['Demand is too small','No law allows it','The loss/telematics dataset carriers need to price it has never been assembled','Exotics can’t carry trackers'], a:2, e:'Unmeasured, not unpriceable: carriers price what they can see, and nobody has shown them exotic-sharing data at scale.'},
-    {q:'The party best positioned to eventually close the gap is…', c:['A hedge fund','An operator who has documented verified rentals, telematics, and clean claims from day one','A carrier acting alone','A car manufacturer'], a:1, e:'Operating records ARE the dataset in miniature — the t4_pitch at industry scale requires exactly what disciplined operators accumulate.'},
-    {q:'Until the gap closes, the practical meaning for independents is…', c:['The business is doomed','The moat holds — this course’s machinery is the price of admission, and disciplined operators profit inside it','Insurance is optional','Only platforms win'], a:1, e:'The carrier “no” protects the independent industry; the machinery is what admission costs.'}
+    {q:'The party best positioned to eventually close the gap is…', c:['A hedge fund','A carrier acting alone','An operator who has documented verified rentals, telematics, and clean claims from day one','A car manufacturer'], a:2, e:'Operating records ARE the dataset in miniature — the t4_pitch at industry scale requires exactly what disciplined operators accumulate.'},
+    {q:'Until the gap closes, the practical meaning for independents is…', c:['The moat holds — this course’s machinery is the price of admission, and disciplined operators profit inside it','The business is doomed','Insurance is optional','Only platforms win'], a:0, e:'The carrier “no” protects the independent industry; the machinery is what admission costs.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T4 = [
-  {q:'The commercial exotic policy is obtained via…', c:['Online quote','A pitch to an agent, with the verification stack as proof','State pool','A platform'], a:1, e:'No quote button exists; you sell the agent on a claims-deflecting operation.', d:1},
-  {q:'The carrier’s single underlying question is…', c:['How many followers you have','Will this business make the pool money or bleed it','How fast the cars are','Your age'], a:1, e:'Pooled risk: prove claims land on renters’ policies, not theirs.', d:1},
-  {q:'The telematics feed offer matters because…', c:['It’s legally required','Carriers price what they can SEE — measured risk beats assumed risk','It replaces contracts','It tracks employees'], a:1, e:'The closer: visible driving data can cut premiums to a fraction [VERIFY].', d:2},
-  {q:'The stack’s triple payoff is…', c:['Cheaper cars','Protects, obtains, and prices the commercial policy','More leads','Better photos'], a:1, e:'One system: claims deflected, policy granted, premium reduced.', d:2},
-  {q:'Consigned cars natively join the fleet’s policy via…', c:['A verbal deal','Lease-and-register under the agency','The owner’s rider','PVSP status'], a:1, e:'Structure aligns coverage; loose consignment leaves the owner’s policy active instead — never the gap between.', d:2},
-  {q:'Garagekeepers coverage answers the owner question…', c:['Who pays tolls','What covers my car in your storage, detailing, and repositioning','Who fuels it','What’s the split'], a:1, e:'Care, custody, and control — the audit question owners never ask [VERIFY forms].', d:3},
-  {q:'The commercial policy is “the aorta” because…', c:['It’s expensive','It exists to almost never be used — its loss ratio prices survival','It covers everything','It’s mandatory'], a:1, e:'Claims that hit it spike loss ratios toward non-renewal, and dropped fleets have nowhere to go.', d:2},
-  {q:'Much exotic-fleet insurance is written in…', c:['The admitted mass market','The excess & surplus (E&S) specialty market via wholesale brokers [VERIFY]','Federal pools','Platform programs'], a:1, e:'Odd risks, custom forms, broker relationships worth guarding like a rate sheet.', d:3},
-  {q:'A PVSP (AB 1871-style) is…', c:['A rental company','A distinct legal species for NONcommercial private-car sharing','A tax status','A franchise'], a:1, e:'New classification: no commercial reclassification, carrier-cancellation protection, program-carried trip liability [VERIFY].', d:2},
+  {q:'The commercial exotic policy is obtained via…', c:['Online quote','State pool','A pitch to an agent, with the verification stack as proof','A platform'], a:2, e:'No quote button exists; you sell the agent on a claims-deflecting operation.', d:1},
+  {q:'The carrier’s single underlying question is…', c:['How many followers you have','Your age','How fast the cars are','Will this business make the pool money or bleed it'], a:3, e:'Pooled risk: prove claims land on renters’ policies, not theirs.', d:1},
+  {q:'The telematics feed offer matters because…', c:['It’s legally required','It replaces contracts','Carriers price what they can SEE — measured risk beats assumed risk','It tracks employees'], a:2, e:'The closer: visible driving data can cut premiums to a fraction [VERIFY].', d:2},
+  {q:'The stack’s triple payoff is…', c:['Cheaper cars','More leads','Protects, obtains, and prices the commercial policy','Better photos'], a:2, e:'One system: claims deflected, policy granted, premium reduced.', d:2},
+  {q:'Consigned cars natively join the fleet’s policy via…', c:['A verbal deal','The owner’s rider','Lease-and-register under the agency','PVSP status'], a:2, e:'Structure aligns coverage; loose consignment leaves the owner’s policy active instead — never the gap between.', d:2},
+  {q:'Garagekeepers coverage answers the owner question…', c:['Who pays tolls','What’s the split','Who fuels it','What covers my car in your storage, detailing, and repositioning'], a:3, e:'Care, custody, and control — the audit question owners never ask [VERIFY forms].', d:3},
+  {q:'The commercial policy is “the aorta” because…', c:['It exists to almost never be used — its loss ratio prices survival','It’s expensive','It covers everything','It’s mandatory'], a:0, e:'Claims that hit it spike loss ratios toward non-renewal, and dropped fleets have nowhere to go.', d:2},
+  {q:'Much exotic-fleet insurance is written in…', c:['The admitted mass market','Federal pools','The excess & surplus (E&S) specialty market via wholesale brokers [VERIFY]','Platform programs'], a:2, e:'Odd risks, custom forms, broker relationships worth guarding like a rate sheet.', d:3},
+  {q:'A PVSP (AB 1871-style) is…', c:['A distinct legal species for NONcommercial private-car sharing','A rental company','A tax status','A franchise'], a:0, e:'New classification: no commercial reclassification, carrier-cancellation protection, program-carried trip liability [VERIFY].', d:2},
   {q:'California’s PVSP revenue test forbids…', c:['Luxury cars','Sharing revenue exceeding ownership/operating costs — i.e., profit','Young drivers','Long trips'], a:1, e:'Cost-offsetting is blessed; a business running for margin is commercial by definition — outside the shield.', d:3},
-  {q:'Turo’s age tiers and ~$200k cap come from…', c:['Statute','Its carriers pricing loss data on strangers in valuable cars','User votes','The DMV'], a:1, e:'Underwriting gates, not law — and the carriers’ “no” above the gates is the independents’ moat.', d:2},
-  {q:'The exotic-PVSP gap persists because…', c:['It’s illegal','The loss/telematics dataset carriers need has never been assembled','No demand','No entrepreneurs'], a:1, e:'Unmeasured ≠ unpriceable. Whoever assembles the data gets to pitch the rewrite (TX).', d:2}
+  {q:'Turo’s age tiers and ~$200k cap come from…', c:['Its carriers pricing loss data on strangers in valuable cars','Statute','User votes','The DMV'], a:0, e:'Underwriting gates, not law — and the carriers’ “no” above the gates is the independents’ moat.', d:2},
+  {q:'The exotic-PVSP gap persists because…', c:['It’s illegal','No entrepreneurs','No demand','The loss/telematics dataset carriers need has never been assembled'], a:3, e:'Unmeasured ≠ unpriceable. Whoever assembles the data gets to pitch the rewrite (TX).', d:2}
 ];
 
 // ═══════════════════════ TIER 5 · PROTECTION & ENFORCEMENT ═══════════════════════
@@ -1198,7 +1198,7 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The honest limits:', b:'Enclosed trailers beat kill switches. Telematics shrinks the window and raises the thief’s cost; client selection remains the real security. Same feed = insurance closer (T4).'}
   ],
   quiz:[
-    {q:'The kill switch may be used…', c:['Any time GPS shows speeding','Only on a stopped car, typically after an unexplained geofence breach','On moving cars in emergencies','Never legally'], a:1, e:'Disabling a moving car endangers everyone near it. Stopped-only turns theft-in-progress into trip-over.'},
+    {q:'The kill switch may be used…', c:['Any time GPS shows speeding','Never legally','On moving cars in emergencies','Only on a stopped car, typically after an unexplained geofence breach'], a:3, e:'Disabling a moving car endangers everyone near it. Stopped-only turns theft-in-progress into trip-over.'},
     {q:'Modern telematics can distinguish…', c:['Nothing beyond location','Freeway speed from drift/donut/launch signatures','Driver identity by weight','Fuel brand'], a:1, e:'Behavior signatures — not just velocity — are what let you respond proportionately.'},
     {q:'The tracker “pays for itself twice” because…', c:['It’s tax deductible','It polices renters AND closes your commercial-policy pitch as the data feed carriers price on','It reduces fuel use','It replaces deposits'], a:1, e:'T4’s closer is this exact stream: measured risk prices lower.'}
   ]},
@@ -1219,8 +1219,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Who the ritual disciplines:', b:'Renters (on camera before driving), staff and delivering brokers (T6’s double clock-out), and future-you (a folder, not a story, in every dispute).'}
   ],
   quiz:[
-    {q:'“That scratch was already there” is settled by…', c:['Whoever sounds confident','The clock-out walkaround video from three days earlier','A discount','The deposit automatically'], a:1, e:'The baseline artifact makes the claim checkable in seconds — that is the ritual’s entire purpose.'},
-    {q:'The deposit holds 3–5 days after a clean return because…', c:['Banks are slow','Missed damage and cleared warning-light codes surface in days, not minutes','Interest accrues','The contract forgot'], a:1, e:'The window exists for what clock-in structurally cannot catch.'},
+    {q:'“That scratch was already there” is settled by…', c:['Whoever sounds confident','A discount','The clock-out walkaround video from three days earlier','The deposit automatically'], a:2, e:'The baseline artifact makes the claim checkable in seconds — that is the ritual’s entire purpose.'},
+    {q:'The deposit holds 3–5 days after a clean return because…', c:['Banks are slow','The contract forgot','Interest accrues','Missed damage and cleared warning-light codes surface in days, not minutes'], a:3, e:'The window exists for what clock-in structurally cannot catch.'},
     {q:'The license video at handoff binds…', c:['Rate and duration','Face, document, car, and moment into one artifact','Fuel and odometer','Nothing legally'], a:1, e:'One continuous artifact ties the verified person to the physical handoff — quiet poison for straw setups and chargebacks alike.'}
   ]},
 
@@ -1242,8 +1242,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Fees + CDW:', b:'100 mi/day (halved long-term), ~$7/gal refuel, smoking = full deposit, itemized invoice; CDW ~$300/day [VERIFY] — healthy margin, regulated product (check your state).'}
   ],
   quiz:[
-    {q:'The cooperation clause honestly provides…', c:['A guaranteed claim filing','Breach-of-contract leverage that moves the 95% who respond to consequences','Direct claim access for the operator','Nothing'], a:1, e:'It cannot force a filing (T2’s rule stands) — it makes ghosting expensive for anyone with something to lose.'},
-    {q:'The no-other-drivers clause exists because…', c:['Insurance costs more for two','An unverified friend crashing = no coverage and no contract with that person','Renters share fuel costs','Valets are risky'], a:1, e:'The one risk verification can’t reach — so the contract makes the renter own it.'},
+    {q:'The cooperation clause honestly provides…', c:['Breach-of-contract leverage that moves the 95% who respond to consequences','A guaranteed claim filing','Direct claim access for the operator','Nothing'], a:0, e:'It cannot force a filing (T2’s rule stands) — it makes ghosting expensive for anyone with something to lose.'},
+    {q:'The no-other-drivers clause exists because…', c:['Insurance costs more for two','Valets are risky','Renters share fuel costs','An unverified friend crashing = no coverage and no contract with that person'], a:3, e:'The one risk verification can’t reach — so the contract makes the renter own it.'},
     {q:'CDW is best described as…', c:['Required insurance','An optional priced waiver of casual-damage responsibility — high-margin, state-regulated [VERIFY]','A deposit substitute','A platform fee'], a:1, e:'Renters buy peace over scrapes; operators bank a margin line that funds the fleet’s dings. Reckless always excluded.'}
   ]},
 
@@ -1263,9 +1263,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The ghost’s true lesson:', b:'Leverage and persistence solve many; some stay ghosts and the options are all bad. It was solvable only BEFORE — the bad-feeling rental you did anyway.'}
   ],
   quiz:[
-    {q:'The third move after any accident on a consigned car is…', c:['Call your lawyer','Call the owner immediately with facts and a plan','Post about it','Wait for the police report'], a:1, e:'Owners forgive accidents, not late news. The call is painful and it is the relationship.'},
-    {q:'The money order for real damage is…', c:['Claim → deposit → renter','Deposit → renter pays directly → insurance claim','Renter → claim → deposit','Commercial policy first'], a:1, e:'Deposit absorbs first, direct payment gets a short window, the claim is the third resort — and the commercial policy never (T4).'},
-    {q:'Veteran operators say the ghost rental was almost always…', c:['Random bad luck','One they had a bad feeling about and did anyway','A platform booking','Underpriced'], a:1, e:'Selection is the only ghost-solver. The feeling was the data; the override was the mistake.'}
+    {q:'The third move after any accident on a consigned car is…', c:['Call the owner immediately with facts and a plan','Call your lawyer','Post about it','Wait for the police report'], a:0, e:'Owners forgive accidents, not late news. The call is painful and it is the relationship.'},
+    {q:'The money order for real damage is…', c:['Claim → deposit → renter','Commercial policy first','Renter → claim → deposit','Deposit → renter pays directly → insurance claim'], a:3, e:'Deposit absorbs first, direct payment gets a short window, the claim is the third resort — and the commercial policy never (T4).'},
+    {q:'Veteran operators say the ghost rental was almost always…', c:['Random bad luck','Underpriced','A platform booking','One they had a bad feeling about and did anyway'], a:3, e:'Selection is the only ghost-solver. The feeling was the data; the override was the mistake.'}
   ]},
 
 { id:'t5_straw', sub:'T5', title:'The straw rental — when every check passes and the deal is still wrong',
@@ -1284,27 +1284,27 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The ceiling rule:', b:'When checks pass but the deal makes no sense, the deal is wrong — decline without justification. Tonight’s car in the warehouse beats the booking you turned away.'}
   ],
   quiz:[
-    {q:'A straw rental defeats verification because…', c:['The documents are fake','The verified renter is real — but was never the person taking the car','The MVR lags','Insurance lies'], a:1, e:'A hired clean face passes honestly; the crew stays invisible. Only the deal’s incongruence shows the seam.'},
-    {q:'The straw defense that actually works is…', c:['Bigger deposits','Reading the whole deal for incongruence — and declining when it doesn’t make sense','Group-based screening','More paperwork'], a:1, e:'Judgment above the checklist. And fact-based reads beat profiling at the actual job of catching thieves.'},
-    {q:'All checks pass; the deal feels assembled by someone off-scene. You…', c:['Proceed — checks are checks','Decline. No justification owed; the car is worth more than the booking','Add $500 deposit','Ask for a cosigner'], a:1, e:'The checklist has a ceiling; above it sits judgment with full permission to say no.'}
+    {q:'A straw rental defeats verification because…', c:['The verified renter is real — but was never the person taking the car','The documents are fake','The MVR lags','Insurance lies'], a:0, e:'A hired clean face passes honestly; the crew stays invisible. Only the deal’s incongruence shows the seam.'},
+    {q:'The straw defense that actually works is…', c:['Reading the whole deal for incongruence — and declining when it doesn’t make sense','Bigger deposits','Group-based screening','More paperwork'], a:0, e:'Judgment above the checklist. And fact-based reads beat profiling at the actual job of catching thieves.'},
+    {q:'All checks pass; the deal feels assembled by someone off-scene. You…', c:['Decline. No justification owed; the car is worth more than the booking','Proceed — checks are checks','Add $500 deposit','Ask for a cosigner'], a:0, e:'The checklist has a ceiling; above it sits judgment with full permission to say no.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T5 = [
-  {q:'Telematics behavior data can distinguish…', c:['Nothing beyond GPS','Freeway speeding from drifting/launch signatures','Driver age','Passenger count'], a:1, e:'Signatures, not just velocity — proportionate response depends on it.', d:1},
+  {q:'Telematics behavior data can distinguish…', c:['Freeway speeding from drifting/launch signatures','Nothing beyond GPS','Driver age','Passenger count'], a:0, e:'Signatures, not just velocity — proportionate response depends on it.', d:1},
   {q:'The two geofence types are…', c:['City and state','Perimeter and blacklisted zones','Day and night','Fast and slow'], a:1, e:'Where the rental may be, and the places you want seconds-level alerts about.', d:1},
-  {q:'The kill switch is used…', c:['On moving cars if theft is certain','Only on stopped cars — usually after unexplained geofence breach','Weekly as a test','Never'], a:1, e:'A moving-car kill trades theft for catastrophe. Stopped-only, last resort.', d:1},
-  {q:'Telematics’ honest limit is…', c:['Cost','An enclosed trailer defeats it — client selection remains the real security','Battery life','Range'], a:1, e:'It shrinks windows and raises thief cost; it does not replace T3.', d:2},
+  {q:'The kill switch is used…', c:['Only on stopped cars — usually after unexplained geofence breach','On moving cars if theft is certain','Weekly as a test','Never'], a:0, e:'A moving-car kill trades theft for catastrophe. Stopped-only, last resort.', d:1},
+  {q:'Telematics’ honest limit is…', c:['Cost','Range','Battery life','An enclosed trailer defeats it — client selection remains the real security'], a:3, e:'It shrinks windows and raises thief cost; it does not replace T3.', d:2},
   {q:'Clock-out’s license video binds…', c:['Rate to duration','Face, document, car, and moment into one artifact','Fuel to odometer','Nothing'], a:1, e:'Quiet poison for straw setups and chargebacks alike.', d:2},
   {q:'The 3–5 day deposit window exists to catch…', c:['Bank delays','Missed damage and cleared warning-light codes that resurface','Interest','Late fees'], a:1, e:'What clock-in structurally cannot see surfaces in days.', d:2},
-  {q:'The strike ladder standard is…', c:['One strike, repossession','~20-over = strike; three strikes = rental over + deposit; drifting/100+ voids instantly','Five warnings','Fines only'], a:1, e:'Flexible in practice, absolute on paper — the right pre-exists the moment.', d:2},
-  {q:'Smoking in the car costs…', c:['$50','A cleaning fee','The entire deposit — industry standard','Nothing if windows open'], a:2, e:'Smoke damage is real, expensive, and impossible to pre-document.', d:1},
-  {q:'CDW at the exotic level is…', c:['Mandatory insurance','~$300/day optional waiver of casual damage — high margin, state-regulated [VERIFY]','A deposit','Platform-only'], a:1, e:'Reckless always excluded; check your state’s waiver law before selling.', d:2},
-  {q:'After an accident, the owner is called…', c:['After the claim settles','Immediately — third move, with facts and a plan','Next business day','Never'], a:1, e:'Owners forgive accidents, not late news.', d:1},
-  {q:'The money order for damage is…', c:['Claim first','Deposit → direct payment window → personal-policy claim','Commercial policy first','Small claims first'], a:1, e:'And the commercial policy stays untouched (T4’s aorta).', d:2},
-  {q:'The straw rental’s seam shows in…', c:['The documents','The mismatch between renter and rental — incongruence','The MVR','The deposit'], a:1, e:'Every check passes because the checked person is real. The deal is what doesn’t parse.', d:3},
-  {q:'When all checks pass but the deal makes no sense…', c:['Proceed with padding','Decline — no justification owed','Escalate the deposit','Ask the platform'], a:1, e:'The checklist has a ceiling; the warehouse beats the booking.', d:2}
+  {q:'The strike ladder standard is…', c:['One strike, repossession','Five warnings','~20-over = strike; three strikes = rental over + deposit; drifting/100+ voids instantly','Fines only'], a:2, e:'Flexible in practice, absolute on paper — the right pre-exists the moment.', d:2},
+  {q:'Smoking in the car costs…', c:['$50','The entire deposit — industry standard','A cleaning fee','Nothing if windows open'], a:1, e:'Smoke damage is real, expensive, and impossible to pre-document.', d:1},
+  {q:'CDW at the exotic level is…', c:['Mandatory insurance','Platform-only','A deposit','~$300/day optional waiver of casual damage — high margin, state-regulated [VERIFY]'], a:3, e:'Reckless always excluded; check your state’s waiver law before selling.', d:2},
+  {q:'After an accident, the owner is called…', c:['Immediately — third move, with facts and a plan','After the claim settles','Next business day','Never'], a:0, e:'Owners forgive accidents, not late news.', d:1},
+  {q:'The money order for damage is…', c:['Deposit → direct payment window → personal-policy claim','Claim first','Commercial policy first','Small claims first'], a:0, e:'And the commercial policy stays untouched (T4’s aorta).', d:2},
+  {q:'The straw rental’s seam shows in…', c:['The mismatch between renter and rental — incongruence','The documents','The MVR','The deposit'], a:0, e:'Every check passes because the checked person is real. The deal is what doesn’t parse.', d:3},
+  {q:'When all checks pass but the deal makes no sense…', c:['Proceed with padding','Escalate the deposit','Decline — no justification owed','Ask the platform'], a:2, e:'The checklist has a ceiling; the warehouse beats the booking.', d:2}
 ];
 
 // ═══════════════════════ TIER 6 · THE DEAL MACHINE ═══════════════════════
@@ -1328,8 +1328,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'The quietly profitable first move on any inbound lead is…', c:['Quote higher','Convert them onto a car you control before sourcing elsewhere','Ask for referrals','Check their followers'], a:1, e:'Image-flexible clients swap badges happily; your controlled cars carry your best margins (T0+T1 combined).'},
-    {q:'At five-figure totals, payment preference runs toward…', c:['Cards for convenience','Irreversible rails — wire, Zelle, ACH, cash — because cards charge back months later','Crypto','Invoicing net-30'], a:1, e:'Reversibility is the risk. If cards are taken, the clock-out artifacts are the defense.'},
-    {q:'The most common deposit deduction industry-wide is…', c:['Smoking','Overmileage','Fuel','Curb rash'], a:1, e:'Renters routinely decide the miles were worth it — which makes the overage schedule a genuine revenue line.'}
+    {q:'At five-figure totals, payment preference runs toward…', c:['Irreversible rails — wire, Zelle, ACH, cash — because cards charge back months later','Cards for convenience','Crypto','Invoicing net-30'], a:0, e:'Reversibility is the risk. If cards are taken, the clock-out artifacts are the defense.'},
+    {q:'The most common deposit deduction industry-wide is…', c:['Overmileage','Smoking','Fuel','Curb rash'], a:0, e:'Renters routinely decide the miles were worth it — which makes the overage schedule a genuine revenue line.'}
   ]},
 
 { id:'t6_broker', sub:'T6', title:'When a broker is in the deal — three rules and the double clock-out',
@@ -1350,8 +1350,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'A deeply trusted broker pre-screens a client perfectly. The agency…', c:['Skips verification to honor trust','Runs the full stack anyway — risk follows the asset','Verifies only insurance','Splits verification duties'], a:1, e:'Rule 1 has no trust exception: the broker cannot carry the loss, so their screening is advisory by definition.'},
-    {q:'The deposit is held by…', c:['The broker who knows the client','The agency — whoever bears the damage risk holds the damage money','A neutral escrow app','The client'], a:1, e:'Rule 3: a broker refunding “their” client before clock-in is how recovery money vanishes.'},
-    {q:'The double clock-out exists to expose…', c:['Client speeding','The broker’s own miles — the gap between the two clock-outs','Fuel theft','Detailing time'], a:1, e:'Two artifacts make every mile belong to someone; without them, delivery joyrides hide inside client paperwork.'}
+    {q:'The deposit is held by…', c:['The broker who knows the client','A neutral escrow app','The agency — whoever bears the damage risk holds the damage money','The client'], a:2, e:'Rule 3: a broker refunding “their” client before clock-in is how recovery money vanishes.'},
+    {q:'The double clock-out exists to expose…', c:['Client speeding','Fuel theft','The broker’s own miles — the gap between the two clock-outs','Detailing time'], a:2, e:'Two artifacts make every mile belong to someone; without them, delivery joyrides hide inside client paperwork.'}
   ]},
 
 { id:'t6_agency', sub:'T6', title:'Agency to agency — the courtesy tier and the liability chain',
@@ -1371,9 +1371,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The structural reveal:', b:'Competitors are suppliers and customers simultaneously. Clean peer-deal handling = access to everyone’s inventory without owning any of it.'}
   ],
   quiz:[
-    {q:'In an agency-to-agency deal, the car-owning fleet receives…', c:['Full client contact info','License and insurance only — and verifies them itself','Nothing at all','The client’s payment details'], a:1, e:'Flip 1: the client stays the sourcing agency’s asset; Rule 1 (verify at the asset) still never delegates.'},
-    {q:'The client signs…', c:['The car-owning agency’s contract','The sourcing agency’s contract','Both contracts','No contract at the courtesy tier'], a:1, e:'Flip 2 — which is exactly why the inter-agency agreement must pass liability through behind the scenes.'},
-    {q:'Before any car moves between agencies, the car-owner reads…', c:['The client’s Instagram','The sourcing agency’s rental contract — confirming the liability chain holds','The broker sheet','The client’s MVR only'], a:1, e:'Protections attach to paper that isn’t yours in this deal; verify the chain or the courtesy is exposure.'}
+    {q:'In an agency-to-agency deal, the car-owning fleet receives…', c:['Full client contact info','The client’s payment details','Nothing at all','License and insurance only — and verifies them itself'], a:3, e:'Flip 1: the client stays the sourcing agency’s asset; Rule 1 (verify at the asset) still never delegates.'},
+    {q:'The client signs…', c:['The car-owning agency’s contract','Both contracts','The sourcing agency’s contract','No contract at the courtesy tier'], a:2, e:'Flip 2 — which is exactly why the inter-agency agreement must pass liability through behind the scenes.'},
+    {q:'Before any car moves between agencies, the car-owner reads…', c:['The client’s Instagram','The client’s MVR only','The broker sheet','The sourcing agency’s rental contract — confirming the liability chain holds'], a:3, e:'Protections attach to paper that isn’t yours in this deal; verify the chain or the courtesy is exposure.'}
   ]},
 
 { id:'t6_repeat', sub:'T6', title:'Clients who come back — reward in value, never in price',
@@ -1391,26 +1391,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Where discounts DO belong:', b:'Inventory tools for slow cars — never relationship tools for good clients.'}
   ],
   quiz:[
-    {q:'Discounting a happy repeat client mostly…', c:['Builds loyalty','Donates margin and permanently reprices future rentals','Increases frequency','Costs nothing'], a:1, e:'Price was never their objection; the anchor moves forever. Reward in value instead.'},
-    {q:'“New car lands Thursday — nobody’s rented it. Want first slot at full rate?” works because…', c:['Scarcity is illegal','Status is the actual product these clients buy','It’s cheaper','It hides fees'], a:1, e:'First access sells insider status at zero discount — the purest form of value-not-price.'},
-    {q:'The test for any loyalty move is…', c:['Cost under $100','High perceived value + low real cost + zero permanent repricing','Client asks for it','Competitors do it'], a:1, e:'Insider feeling without anchor damage. Discounts stay in the inventory toolbox.'}
+    {q:'Discounting a happy repeat client mostly…', c:['Builds loyalty','Costs nothing','Increases frequency','Donates margin and permanently reprices future rentals'], a:3, e:'Price was never their objection; the anchor moves forever. Reward in value instead.'},
+    {q:'“New car lands Thursday — nobody’s rented it. Want first slot at full rate?” works because…', c:['Scarcity is illegal','It hides fees','It’s cheaper','Status is the actual product these clients buy'], a:3, e:'First access sells insider status at zero discount — the purest form of value-not-price.'},
+    {q:'The test for any loyalty move is…', c:['Cost under $100','Client asks for it','High perceived value + low real cost + zero permanent repricing','Competitors do it'], a:2, e:'Insider feeling without anchor damage. Discounts stay in the inventory toolbox.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T6 = [
-  {q:'“Convert first, source second” means…', c:['Convert leads to email lists','Land clients on cars you control before sourcing a peer’s at wholesale','Convert currencies','Upsell insurance'], a:1, e:'Image-flexible clients swap badges; controlled cars carry your best margins.', d:1},
-  {q:'Everything collected before keys move includes…', c:['Half the rental','Full rental + fees + deposit','Deposit only','A card on file'], a:1, e:'Money before keys, always — with irreversible rails favored at five figures.', d:1},
-  {q:'Deposits scale with…', c:['Client age','Car value and its famous weak points','Season','Distance'], a:1, e:'~$1k under-$100k → $3–5k Aventador+ [VERIFY]; the Huracán lip raises its tier.', d:2},
-  {q:'The #1 deposit deduction industry-wide is…', c:['Smoke','Overmileage','Fuel','Late return'], a:1, e:'Renters decide the miles were worth it — a real revenue line.', d:1},
+  {q:'“Convert first, source second” means…', c:['Convert leads to email lists','Convert currencies','Land clients on cars you control before sourcing a peer’s at wholesale','Upsell insurance'], a:2, e:'Image-flexible clients swap badges; controlled cars carry your best margins.', d:1},
+  {q:'Everything collected before keys move includes…', c:['Half the rental','Deposit only','Full rental + fees + deposit','A card on file'], a:2, e:'Money before keys, always — with irreversible rails favored at five figures.', d:1},
+  {q:'Deposits scale with…', c:['Client age','Season','Car value and its famous weak points','Distance'], a:2, e:'~$1k under-$100k → $3–5k Aventador+ [VERIFY]; the Huracán lip raises its tier.', d:2},
+  {q:'The #1 deposit deduction industry-wide is…', c:['Overmileage','Smoke','Fuel','Late return'], a:0, e:'Renters decide the miles were worth it — a real revenue line.', d:1},
   {q:'Delivery is priced…', c:['Per mile','Flat by zone, each way — deliverer keeps the fee','Free over $1k','By weight'], a:1, e:'Zone flats ($200/$300/$400-style [VERIFY]); the party delivering keeps it.', d:2},
-  {q:'Rule 1 of brokered deals:', c:['Broker verifies','Verification never delegates — the asset side runs the stack','Split verification','Platform verifies'], a:1, e:'The broker can’t carry the loss, so their screening is advisory.', d:1},
-  {q:'In a solo-broker deal the client signs…', c:['The broker’s paper','The agency’s contract','Nothing','Both'], a:1, e:'Policy and protections attach to the fleet’s own paper.', d:2},
-  {q:'The deposit in any brokered deal is held by…', c:['The broker','The agency (asset side)','Escrow','The client’s bank'], a:1, e:'Whoever bears damage risk holds damage money — no exceptions.', d:1},
-  {q:'The double clock-out’s gap equals…', c:['Client miles','The broker’s own miles','Fuel burned','GPS error'], a:1, e:'Two artifacts make every mile belong to someone.', d:2},
+  {q:'Rule 1 of brokered deals:', c:['Verification never delegates — the asset side runs the stack','Broker verifies','Split verification','Platform verifies'], a:0, e:'The broker can’t carry the loss, so their screening is advisory.', d:1},
+  {q:'In a solo-broker deal the client signs…', c:['The agency’s contract','The broker’s paper','Nothing','Both'], a:0, e:'Policy and protections attach to the fleet’s own paper.', d:2},
+  {q:'The deposit in any brokered deal is held by…', c:['The broker','Escrow','The agency (asset side)','The client’s bank'], a:2, e:'Whoever bears damage risk holds damage money — no exceptions.', d:1},
+  {q:'The double clock-out’s gap equals…', c:['Client miles','Fuel burned','The broker’s own miles','GPS error'], a:2, e:'Two artifacts make every mile belong to someone.', d:2},
   {q:'Agency-to-agency, the car owner receives…', c:['Full client contacts','License + insurance only, and verifies them itself','The client’s deposit','Nothing'], a:1, e:'The client stays the sourcing agency’s asset; verification still follows the car.', d:2},
   {q:'The inter-agency agreement exists to…', c:['Set retail prices','Pass liability through when the client signs the sourcing agency’s paper','Share clients','Split marketing'], a:1, e:'Read the peer’s contract too — a broken chain is exposure with extra steps.', d:3},
-  {q:'The loyalty reward test is…', c:['Under $50','High perceived value, low real cost, zero permanent repricing','Client-requested','Annual'], a:1, e:'Miles, overage softening, lighter holds, first access, inside events — never standing discounts.', d:2}
+  {q:'The loyalty reward test is…', c:['High perceived value, low real cost, zero permanent repricing','Under $50','Client-requested','Annual'], a:0, e:'Miles, overage softening, lighter holds, first access, inside events — never standing discounts.', d:2}
 ];
 
 // ═══════════════════════ TIER 7 · THE LEAD DOOR (NO MONEY) ═══════════════════════
@@ -1434,8 +1434,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'As a new broker, your retail pricing strategy is…', c:['Undercut the fleet by 10%','Charge what the fleet lists — your spread is already inside the wholesale gap','Add 50%','Auction it'], a:1, e:'They know their market. Underpricing only shrinks your own spread (T6’s pricing note).'},
-    {q:'A lead becomes worth paying for when…', c:['The person is famous','It carries license, insurance docs, and working contacts — prequalified','They follow you','They text twice'], a:1, e:'Qualification is the job. Raw names are worth nothing; packages are worth 20% of the deal.'},
-    {q:'With zero track record, fleets work with you because…', c:['You signed an NDA','You walked in holding a verified deal — the lead is the introduction','You offered to work free','You know cars'], a:1, e:'Nobody turns down qualified business for being new. Land one; the rate-sheet talk starts itself.'}
+    {q:'A lead becomes worth paying for when…', c:['The person is famous','They follow you','It carries license, insurance docs, and working contacts — prequalified','They text twice'], a:2, e:'Qualification is the job. Raw names are worth nothing; packages are worth 20% of the deal.'},
+    {q:'With zero track record, fleets work with you because…', c:['You signed an NDA','You offered to work free','You walked in holding a verified deal — the lead is the introduction','You know cars'], a:2, e:'Nobody turns down qualified business for being new. Land one; the rate-sheet talk starts itself.'}
   ]},
 
 { id:'t7_reputation', sub:'T7', title:'Reputation is your pricing power — the spread spread',
@@ -1454,9 +1454,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Reputational death:', b:'One stolen car or ugly chargeback from your lead = metro-wide broadcast in days, no appeals. The stakes are why disciplined brokers own the best rate cards.'}
   ],
   quiz:[
-    {q:'The gap between a 10% broker and a 35% broker is closed by…', c:['Negotiation seminars','Volume promises','Track record of clean clients — nothing else','Lower retail pricing'], a:2, e:'Fleets price trust. The spread spread is the compounding return on client quality.'},
-    {q:'Your pre-send filter on leads exists because…', c:['Fleets don’t verify','Each lead’s outcome prices ALL your future deals — you’re paid for renters fleets are glad they met','It’s legally required','It speeds delivery'], a:1, e:'The fleet still runs its stack (Rule 1); your filter protects the asset that sets your rates: your name.'},
-    {q:'One catastrophic lead typically costs a broker…', c:['One fleet relationship','A fine','Every fleet in the metro, within days, no appeals','Nothing if apologized for'], a:2, e:'The network that protects fleets (T3) is the same wire that carries your name. No inventory = not a broker.'}
+    {q:'The gap between a 10% broker and a 35% broker is closed by…', c:['Track record of clean clients — nothing else','Volume promises','Negotiation seminars','Lower retail pricing'], a:0, e:'Fleets price trust. The spread spread is the compounding return on client quality.'},
+    {q:'Your pre-send filter on leads exists because…', c:['Fleets don’t verify','It speeds delivery','It’s legally required','Each lead’s outcome prices ALL your future deals — you’re paid for renters fleets are glad they met'], a:3, e:'The fleet still runs its stack (Rule 1); your filter protects the asset that sets your rates: your name.'},
+    {q:'One catastrophic lead typically costs a broker…', c:['One fleet relationship','Every fleet in the metro, within days, no appeals','A fine','Nothing if apologized for'], a:1, e:'The network that protects fleets (T3) is the same wire that carries your name. No inventory = not a broker.'}
   ]},
 
 { id:'t7_leads', sub:'T7', title:'Where leads live — three ecosystems and the premium niche',
@@ -1474,9 +1474,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Where to hunt the niche:', b:'Wedding-vendor platforms, event-planner circles, production communities, luxury real estate — where purpose-renters already shop.'}
   ],
   quiz:[
-    {q:'The highest-intent lead source is…', c:['Viral reels','Local search — “lamborghini rental [city]”','Club promoters','Billboards'], a:1, e:'The searcher already decided; the ecosystem contest is just who is standing there — and the local bar is years out of date.'},
-    {q:'Concierges, agents, and planners are the invisible channel because…', c:['They hide their clients','They give supercar referrals away free, not knowing wholesale rates exist','They only work with platforms','They fear fleets'], a:1, e:'One conversation converts them from free-referrers to paid sourcers — the classic broker origin (T1).'},
-    {q:'Fleets price non-driving-lead brokers like royalty because…', c:['The invoices are bigger','Minimal miles + minimal risk + full rates = the best business that exists','They tip in cash','The cars stay cleaner'], a:1, e:'The risk logic runs backwards: a parked, chauffeured, or filmed car is revenue without the dangerous part.'}
+    {q:'The highest-intent lead source is…', c:['Viral reels','Billboards','Club promoters','Local search — “lamborghini rental [city]”'], a:3, e:'The searcher already decided; the ecosystem contest is just who is standing there — and the local bar is years out of date.'},
+    {q:'Concierges, agents, and planners are the invisible channel because…', c:['They hide their clients','They only work with platforms','They give supercar referrals away free, not knowing wholesale rates exist','They fear fleets'], a:2, e:'One conversation converts them from free-referrers to paid sourcers — the classic broker origin (T1).'},
+    {q:'Fleets price non-driving-lead brokers like royalty because…', c:['The invoices are bigger','They tip in cash','Minimal miles + minimal risk + full rates = the best business that exists','The cars stay cleaner'], a:2, e:'The risk logic runs backwards: a parked, chauffeured, or filmed car is revenue without the dangerous part.'}
   ]},
 
 { id:'t7_ladder', sub:'T7', title:'The ladder — leads, then cars, then the whole machine',
@@ -1497,8 +1497,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'Rung 3 (sourcing cars) pays you…', c:['A one-time finder’s fee','~10% of every deal on the car, standing between owner and agency','The agency’s 40%','Nothing until Rung 4'], a:1, e:'50/50 with the owner, 60/40 with the agency: 10 points ride every deal for as long as the car earns.'},
-    {q:'An owner accepts your 10 points instead of going direct because…', c:['They can’t find fleets','You are their advocate — auditing payouts, policing miles, able to MOVE the car','It’s customary','Fleets require it'], a:1, e:'Alignment + portability is the product. Your incentives already pointed their way (t7_reputation).'},
-    {q:'The ladder’s honest trade at every rung is…', c:['Money for time','Simplicity for margin','Risk for fame','Speed for safety'], a:1, e:'15–30% no-risk → 10%+spreads low-risk → majority-with-all-risk. No correct stop; only how much machine you want to own.'}
+    {q:'An owner accepts your 10 points instead of going direct because…', c:['You are their advocate — auditing payouts, policing miles, able to MOVE the car','They can’t find fleets','It’s customary','Fleets require it'], a:0, e:'Alignment + portability is the product. Your incentives already pointed their way (t7_reputation).'},
+    {q:'The ladder’s honest trade at every rung is…', c:['Simplicity for margin','Money for time','Risk for fame','Speed for safety'], a:0, e:'15–30% no-risk → 10%+spreads low-risk → majority-with-all-risk. No correct stop; only how much machine you want to own.'}
   ]},
 
 { id:'t7_brand', sub:'T7', title:'The personal brand — the highest-leverage asset almost nobody holds',
@@ -1519,26 +1519,26 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'The non-car audience opened fleet doors because…', c:['Fleets love influencers','It proved the ability to source attention — the industry’s scarcest input','It guaranteed renters','It was luck'], a:1, e:'Demand-starved industries read reach as qualification. The asset transferred across niches as leverage.'},
-    {q:'The “magnet” effect of building in public is…', c:['More likes','The right people find you inbound, pre-sold from watching you work','Cheaper ads','Platform verification'], a:1, e:'The fleet owner who reached out created consignment, brokering, and consulting seats — from one piece of content.'},
-    {q:'The visible-person lane is open because…', c:['It’s expensive','Fleets are faceless, brokers private, owners hidden by design — almost nobody shows this industry with a face','It’s regulated','It requires a car'], a:1, e:'In a reputation-priced business, being findable and documented compounds against no competition.'}
+    {q:'The “magnet” effect of building in public is…', c:['The right people find you inbound, pre-sold from watching you work','More likes','Cheaper ads','Platform verification'], a:0, e:'The fleet owner who reached out created consignment, brokering, and consulting seats — from one piece of content.'},
+    {q:'The visible-person lane is open because…', c:['It’s expensive','It’s regulated','Fleets are faceless, brokers private, owners hidden by design — almost nobody shows this industry with a face','It requires a car'], a:2, e:'In a reputation-priced business, being findable and documented compounds against no competition.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T7 = [
-  {q:'A broker, translated to marketer language, is…', c:['An agent','A lead generator for exotic rentals','A dealer','A driver'], a:1, e:'Find the renter, connect to the fleet, keep the spread above wholesale.', d:1},
+  {q:'A broker, translated to marketer language, is…', c:['An agent','A dealer','A lead generator for exotic rentals','A driver'], a:2, e:'Find the renter, connect to the fleet, keep the spread above wholesale.', d:1},
   {q:'You are actually PAID for…', c:['Knowing cars','Prequalification — the license/insurance/contact package on a fitting car','Introductions','Volume'], a:1, e:'Raw names are worthless; qualified packages are worth 20% of a deal.', d:1},
-  {q:'Broker income with no 1099 is…', c:['Tax-free','Taxable — records from day one, the obligation is yours','The fleet’s problem','Deferred'], a:1, e:'Zelle spreads are income. Keep records; form the entity early (C3).', d:2},
-  {q:'The cold-start move is…', c:['Cold-email fleets','Walk in holding a verified deal','Offer free work','Buy ads'], a:1, e:'No fleet refuses qualified business for newness. The lead is the introduction.', d:1},
-  {q:'The spread spread runs…', c:['5% vs 8%','10–15% (unproven) vs 30–35% (trusted) [VERIFY]','50% vs 60%','Fixed by law'], a:1, e:'Double-to-triple margin on identical deals — priced by track record alone.', d:2},
-  {q:'Your pre-send lead filter question is…', c:['Can they pay?','Would I hand THEM my own car?','Are they famous?','Do they follow me?'], a:1, e:'You’re paid to send renters fleets are glad they met — the filter prices your future.', d:2},
-  {q:'One catastrophic lead costs…', c:['That fleet only','The metro — the story travels every fleet in days, no appeals','A fee','Nothing'], a:1, e:'No inventory = not a broker. The stakes are why disciplined brokers hold the best cards.', d:2},
+  {q:'Broker income with no 1099 is…', c:['Taxable — records from day one, the obligation is yours','Tax-free','The fleet’s problem','Deferred'], a:0, e:'Zelle spreads are income. Keep records; form the entity early (C3).', d:2},
+  {q:'The cold-start move is…', c:['Walk in holding a verified deal','Cold-email fleets','Offer free work','Buy ads'], a:0, e:'No fleet refuses qualified business for newness. The lead is the introduction.', d:1},
+  {q:'The spread spread runs…', c:['5% vs 8%','50% vs 60%','10–15% (unproven) vs 30–35% (trusted) [VERIFY]','Fixed by law'], a:2, e:'Double-to-triple margin on identical deals — priced by track record alone.', d:2},
+  {q:'Your pre-send lead filter question is…', c:['Would I hand THEM my own car?','Can they pay?','Are they famous?','Do they follow me?'], a:0, e:'You’re paid to send renters fleets are glad they met — the filter prices your future.', d:2},
+  {q:'One catastrophic lead costs…', c:['That fleet only','Nothing','A fee','The metro — the story travels every fleet in days, no appeals'], a:3, e:'No inventory = not a broker. The stakes are why disciplined brokers hold the best cards.', d:2},
   {q:'The three lead ecosystems are…', c:['Ads, email, SMS','Search (intent), social (creation), referral web (invisible)','TV, radio, print','Platforms only'], a:1, e:'Harvest, create, convert-the-connected — each with its own playbook.', d:1},
-  {q:'The premium lead niche is…', c:['Bachelor parties','Non-driving rentals — shoots, sets, chauffeured weddings, display events','Track days','Long road trips'], a:1, e:'Minimal miles + risk at full rates: the best business that exists, priced accordingly.', d:2},
+  {q:'The premium lead niche is…', c:['Bachelor parties','Long road trips','Track days','Non-driving rentals — shoots, sets, chauffeured weddings, display events'], a:3, e:'Minimal miles + risk at full rates: the best business that exists, priced accordingly.', d:2},
   {q:'Rung 3 of the ladder is…', c:['Opening a lot','Sourcing CARS — owner agreements placed at agencies, keeping ~10% of every deal','Franchising','Buying a fleet'], a:1, e:'The connecting skill pointed at supply; the seat almost nobody sees.', d:2},
   {q:'The Rung-3 owner is buying…', c:['Your driving','Alignment + portability — audited payouts, policed miles, the power to move the car','Insurance','Marketing'], a:1, e:'An advocate with options beats going direct alone.', d:3},
-  {q:'The personal brand’s door-opening asset is…', c:['Car knowledge','Proven ability to source ATTENTION — transferable across niches','A logo','Equipment'], a:1, e:'Demand-starved fleets read reach as qualification; the followers were leverage, not customers.', d:2},
-  {q:'The chapter’s one directive:', c:['Stay quiet until big','Do it in public — content + consistency is the broke operator’s compounding capital','Buy followers','Post only wins'], a:1, e:'The visible documented person in a metro compounds against no competition.', d:1}
+  {q:'The personal brand’s door-opening asset is…', c:['Car knowledge','A logo','Proven ability to source ATTENTION — transferable across niches','Equipment'], a:2, e:'Demand-starved fleets read reach as qualification; the followers were leverage, not customers.', d:2},
+  {q:'The chapter’s one directive:', c:['Stay quiet until big','Post only wins','Buy followers','Do it in public — content + consistency is the broke operator’s compounding capital'], a:3, e:'The visible documented person in a metro compounds against no competition.', d:1}
 ];
 
 // ═══════════════════════ TIER 8 · THE VEHICLE DOOR (CAPITAL) ═══════════════════════
@@ -1561,9 +1561,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Perceived age + budget:', b:'Renters see fresh vs dated, inside AND out (the analog-cabin 911 that won’t rent). Door opens ~$100k; dead zone $60–90k; $100–120k = Vantage, R8, older McLarens.'}
   ],
   quiz:[
-    {q:'The renter summoned by a sub-$100k M car is…', c:['The gentlest in the industry','The youngest, most aggressive class — highest accident/abuse rates','Identical to a Rolls renter','Older collectors'], a:1, e:'The starter trap: beautiful on paper, priced with a demographic tax the spreadsheet doesn’t show.'},
-    {q:'A 2018 911 with a timeless exterior barely rents because…', c:['Porsches don’t rent','Its analog cabin reads dated the moment a renter sits down — perceived age is inside AND out','It’s too cheap','No delivery zone'], a:1, e:'Renters judge fresh-vs-dated, not model years. Older Ferraris on the same lot pass; the cabin fails the 911.'},
-    {q:'For an owner’s actual returns, the Urus quietly beats the Huracán because…', c:['Higher retail rate','No scrapeable lip, less shop time, gentler renters — more days out, fewer claims','Better exhaust','Cheaper insurance always'], a:1, e:'Utilization and avoided damage beat headline rate — the customer the car summons IS the economics.'}
+    {q:'The renter summoned by a sub-$100k M car is…', c:['The gentlest in the industry','Older collectors','Identical to a Rolls renter','The youngest, most aggressive class — highest accident/abuse rates'], a:3, e:'The starter trap: beautiful on paper, priced with a demographic tax the spreadsheet doesn’t show.'},
+    {q:'A 2018 911 with a timeless exterior barely rents because…', c:['Porsches don’t rent','It’s too cheap','Its analog cabin reads dated the moment a renter sits down — perceived age is inside AND out','No delivery zone'], a:2, e:'Renters judge fresh-vs-dated, not model years. Older Ferraris on the same lot pass; the cabin fails the 911.'},
+    {q:'For an owner’s actual returns, the Urus quietly beats the Huracán because…', c:['No scrapeable lip, less shop time, gentler renters — more days out, fewer claims','Higher retail rate','Better exhaust','Cheaper insurance always'], a:0, e:'Utilization and avoided damage beat headline rate — the customer the car summons IS the economics.'}
   ]},
 
 { id:'t8_trim', sub:'T8', title:'Minimum viable trim — and spec taste that actually rents',
@@ -1582,8 +1582,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The reliable patterns:', b:'Colored interiors #1 (orange = Rolls). Black-over-loud-interior = universal. BMW carbon cabin nearly mandatory. Exhaust fills calendars. Wraps rescue bad colors. Spec is your storefront.'}
   ],
   quiz:[
-    {q:'The Performante premium over a base Evo buys a fleet owner…', c:['~$200/day more','Almost nothing — same rate, same photo, bigger payment and depreciation','Faster bookings','Lower insurance'], a:1, e:'Renters can’t see trims. Minimum viable trim: pay for the look, never the badge under it.'},
-    {q:'The lime-green convertible M4 failed because…', c:['Flashy never rents','Its SUMMONED demographic wants dark, mean, hardtops — the same spec as a Huracán would rent fine','It was overpriced','BMWs don’t rent'], a:1, e:'Taste rules are demographic-specific. The customer the car summons writes the spec sheet.'},
+    {q:'The Performante premium over a base Evo buys a fleet owner…', c:['~$200/day more','Lower insurance','Faster bookings','Almost nothing — same rate, same photo, bigger payment and depreciation'], a:3, e:'Renters can’t see trims. Minimum viable trim: pay for the look, never the badge under it.'},
+    {q:'The lime-green convertible M4 failed because…', c:['Its SUMMONED demographic wants dark, mean, hardtops — the same spec as a Huracán would rent fine','Flashy never rents','It was overpriced','BMWs don’t rent'], a:0, e:'Taste rules are demographic-specific. The customer the car summons writes the spec sheet.'},
     {q:'The single biggest spec desirability lever is…', c:['Horsepower','A colored interior — orange above all','Wheel size','A spoiler'], a:1, e:'It reads as Rolls-Royce in photos — and the photo is the product (T0).'}
   ]},
 
@@ -1603,9 +1603,9 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'Broker-in-agency-clothing:', b:'Polished “fleet,” no operation — your car runs at a company you never vetted. Ask who operates and who holds the policy; transparent Rung-3 placement is fine only fully papered.'}
   ],
   quiz:[
-    {q:'The single most important contract term for an owner is…', c:['The split','Month-to-month duration — the power to pull the car is your only real leverage','The delivery fee','Naming rights'], a:1, e:'Locked in, you are furniture. Month-to-month makes the fleet keep earning you every month.'},
+    {q:'The single most important contract term for an owner is…', c:['The split','The delivery fee','Month-to-month duration — the power to pull the car is your only real leverage','Naming rights'], a:2, e:'Locked in, you are furniture. Month-to-month makes the fleet keep earning you every month.'},
     {q:'A clause disclaiming fleet responsibility for damage during their own rentals means…', c:['Standard boilerplate','They can total your car and apologize — non-negotiable, walk','Lower fees','Better insurance'], a:1, e:'The agency must bear responsibility while housing and renting the car. This clause exists in the wild; read for it.'},
-    {q:'A disciplined fleet at 50/50 vs a sloppy one at 60/40:', c:['Take the 60/40 — math is math','The 50/50 — process quality outearns 10 points every quarter','Split the difference','Alternate months'], a:1, e:'Verification, enforcement, and clean settlements protect the asset that IS your return. Fine print > split.'}
+    {q:'A disciplined fleet at 50/50 vs a sloppy one at 60/40:', c:['Take the 60/40 — math is math','Split the difference','The 50/50 — process quality outearns 10 points every quarter','Alternate months'], a:2, e:'Verification, enforcement, and clean settlements protect the asset that IS your return. Fine print > split.'}
   ]},
 
 { id:'t8_owner', sub:'T8', title:'Owner etiquette and the ledger — chill, firm, and watching ghost miles',
@@ -1625,8 +1625,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
   ],
   quiz:[
     {q:'An owner demanding renter names and narrating telemetry pings is…', c:['Diligent','The dreaded overprotective owner — asking for the fleet’s guarded asset and marking themselves an outsider','Standard','Legally entitled'], a:1, e:'Client info IS the fleet’s business (T0). Chill on operations, firm on the ledger — that owner gets kept.'},
-    {q:'The partner report column that is “the whole game” is…', c:['Revenue per rental','Start/end odometer per rental','Client ratings','Fuel levels'], a:1, e:'Rental miles are accounted-for miles; everything outside them is the gap you audit.'},
-    {q:'700 unaccounted miles are best controlled by…', c:['Pulling the car immediately','Flatbedding long deliveries + a firm monthly non-rental-mile cap (~100), car comes home if blown','Accepting them as marketing','A bigger split'], a:1, e:'Honest uses fit inside the valves; the clause exists so the conversation is a line item, not a fight.'}
+    {q:'The partner report column that is “the whole game” is…', c:['Start/end odometer per rental','Revenue per rental','Client ratings','Fuel levels'], a:0, e:'Rental miles are accounted-for miles; everything outside them is the gap you audit.'},
+    {q:'700 unaccounted miles are best controlled by…', c:['Pulling the car immediately','Accepting them as marketing','Flatbedding long deliveries + a firm monthly non-rental-mile cap (~100), car comes home if blown','A bigger split'], a:2, e:'Honest uses fit inside the valves; the clause exists so the conversation is a line item, not a fight.'}
   ]},
 
 { id:'t8_flip', sub:'T8', title:'The owner ladder — consignment as apprenticeship, then the flip',
@@ -1645,8 +1645,8 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The four teeth:', b:'Earned, not demanded. You become the work. Species change: supplier/competitor now — diversify across 2–5 fleets with sweeteners. Final gate: your own policy + warehouse = you ARE the agency.'}
   ],
   quiz:[
-    {q:'The flip changes an owner’s economics because…', c:['The split improves to 70/30','They quote a wholesale FLOOR and keep everything above it — no more shrinking-pie splits','Deposits transfer','Insurance drops'], a:1, e:'A floor is guaranteed; a split share sinks with every discounted deal (T1). 65–80% effective take is the species change.'},
-    {q:'After the flip, expect the original fleet to…', c:['Prioritize your car harder','Deprioritize it against higher-margin cars — rational, answered by multi-fleet diversification','Buy the car','Cancel the relationship'], a:1, e:'You are now supplier and partial competitor. 2–5 fleets holding your rate sheet, plus sweeteners, is the answer.'},
+    {q:'The flip changes an owner’s economics because…', c:['The split improves to 70/30','Insurance drops','Deposits transfer','They quote a wholesale FLOOR and keep everything above it — no more shrinking-pie splits'], a:3, e:'A floor is guaranteed; a split share sinks with every discounted deal (T1). 65–80% effective take is the species change.'},
+    {q:'After the flip, expect the original fleet to…', c:['Deprioritize it against higher-margin cars — rational, answered by multi-fleet diversification','Prioritize your car harder','Buy the car','Cancel the relationship'], a:0, e:'You are now supplier and partial competitor. 2–5 fleets holding your rate sheet, plus sweeteners, is the answer.'},
     {q:'The final gate between a flipped owner and being the agency is…', c:['A license','More Instagram followers','Their own commercial policy and warehouse','A fleet’s permission'], a:2, e:'T4’s two obstacles, one last time. Cross them and both doors of the course arrive in the same room.'}
   ]},
 
@@ -1665,26 +1665,180 @@ window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
     {f:'The dual-rail’s three loops:', b:'Both ends of your own deals; car = insider status while leads = leverage (the flip lands easier); demand-intel + supply-intel compounding into the full operator skillset.'}
   ],
   quiz:[
-    {q:'The ladder beats agency-first because…', c:['Agencies are illegal at first','It builds reputation, relationships, and instincts while someone else carries the liability','It is more profitable immediately','Warehouses are scarce'], a:1, e:'The five burdens are survivable only with the three assets — and the ladder is where those get built.'},
-    {q:'“The math on your Urus only works if the rental income shows up.” The course’s verdict:', c:['Smart leverage','You own a payment with a fragile plan — the affordability line exists exactly for you','Standard practice','Fine if insured'], a:1, e:'Buy what your income carries; let splits be bonus. Utilization swings — payments don’t.'},
-    {q:'The dual-rail makes the flip (t8_flip) land easier because…', c:['Contracts require it','You are the fleet’s inventory AND its demand — leverage on both sides of their business','It is cheaper','Owners vote'], a:1, e:'A fleet losing you loses cars and bookings at once. That is the hybrid’s compounding position.'}
+    {q:'The ladder beats agency-first because…', c:['Agencies are illegal at first','Warehouses are scarce','It is more profitable immediately','It builds reputation, relationships, and instincts while someone else carries the liability'], a:3, e:'The five burdens are survivable only with the three assets — and the ladder is where those get built.'},
+    {q:'“The math on your Urus only works if the rental income shows up.” The course’s verdict:', c:['Smart leverage','Fine if insured','Standard practice','You own a payment with a fragile plan — the affordability line exists exactly for you'], a:3, e:'Buy what your income carries; let splits be bonus. Utilization swings — payments don’t.'},
+    {q:'The dual-rail makes the flip (t8_flip) land easier because…', c:['Contracts require it','It is cheaper','You are the fleet’s inventory AND its demand — leverage on both sides of their business','Owners vote'], a:2, e:'A fleet losing you loses cars and bookings at once. That is the hybrid’s compounding position.'}
   ]}
 
 ]);
 
 window.REDLINE_QBANK.T8 = [
-  {q:'Choosing a fleet car is really choosing…', c:['A brand','The customer the model summons','A color','A payment'], a:1, e:'The renter’s risk profile and style determine returns more than the spec sheet.', d:1},
+  {q:'Choosing a fleet car is really choosing…', c:['A brand','A payment','A color','The customer the model summons'], a:3, e:'The renter’s risk profile and style determine returns more than the spec sheet.', d:1},
   {q:'The gentlest renter class is summoned by…', c:['M cars','Two-door supercars','Luxury/SUV — Rolls, Bentley, Urus tier','Base coupes'], a:2, e:'Presence renters drive like presence renters — worth real money in avoided damage.', d:1},
-  {q:'The M3/M4 “starter trap” is…', c:['Bad margins','The youngest, hardest-driving demographic hidden inside pretty spreadsheet math','High insurance','Slow bookings'], a:1, e:'Workable with open eyes, current-gen only — the customer is the tax.', d:2},
-  {q:'Perceived age means…', c:['Model year','Fresh-vs-dated to a non-car-person, inside AND out','Mileage','Warranty status'], a:1, e:'Timeless supercars pass at 8 years old; an analog cabin fails a 2018 911.', d:2},
-  {q:'Minimum viable trim says…', c:['Buy the Performante','Buy the cheapest version delivering the LOOK — trims are invisible to renters','Buy used only','Buy two base cars'], a:1, e:'Same rate, same photo, smaller payment. Ego pays the premium otherwise.', d:1},
-  {q:'The single biggest spec desirability lever is…', c:['Wheels','A colored interior (orange above all)','Exhaust','Tint'], a:1, e:'It reads as Rolls in photos — and the photo is the product.', d:2},
-  {q:'The most dangerous owner-contract clause is…', c:['The split','A liability disclaimer for damage during the fleet’s own rentals','Delivery fees','Storage terms'], a:1, e:'Under it they can total your car and apologize. Non-negotiable: walk.', d:2},
-  {q:'Term length for placements is…', c:['12 months for stability','Month-to-month, always — pulling the car is your only real power','5 years','Per rental'], a:1, e:'Locked in, you are furniture; month-to-month, a partner they keep earning.', d:1},
-  {q:'The partner report’s critical column is…', c:['Revenue','Start/end odometer per rental','Client names','Fuel'], a:1, e:'Rental miles are accounted-for; the gap is ghost miles eating resale.', d:2},
+  {q:'The M3/M4 “starter trap” is…', c:['Bad margins','Slow bookings','High insurance','The youngest, hardest-driving demographic hidden inside pretty spreadsheet math'], a:3, e:'Workable with open eyes, current-gen only — the customer is the tax.', d:2},
+  {q:'Perceived age means…', c:['Model year','Mileage','Fresh-vs-dated to a non-car-person, inside AND out','Warranty status'], a:2, e:'Timeless supercars pass at 8 years old; an analog cabin fails a 2018 911.', d:2},
+  {q:'Minimum viable trim says…', c:['Buy the Performante','Buy two base cars','Buy used only','Buy the cheapest version delivering the LOOK — trims are invisible to renters'], a:3, e:'Same rate, same photo, smaller payment. Ego pays the premium otherwise.', d:1},
+  {q:'The single biggest spec desirability lever is…', c:['A colored interior (orange above all)','Wheels','Exhaust','Tint'], a:0, e:'It reads as Rolls in photos — and the photo is the product.', d:2},
+  {q:'The most dangerous owner-contract clause is…', c:['A liability disclaimer for damage during the fleet’s own rentals','The split','Delivery fees','Storage terms'], a:0, e:'Under it they can total your car and apologize. Non-negotiable: walk.', d:2},
+  {q:'Term length for placements is…', c:['Month-to-month, always — pulling the car is your only real power','12 months for stability','5 years','Per rental'], a:0, e:'Locked in, you are furniture; month-to-month, a partner they keep earning.', d:1},
+  {q:'The partner report’s critical column is…', c:['Start/end odometer per rental','Revenue','Client names','Fuel'], a:0, e:'Rental miles are accounted-for; the gap is ghost miles eating resale.', d:2},
   {q:'Ghost miles are controlled by…', c:['Trust','Flatbedding long deliveries + a monthly non-rental-mile cap (~100)','Bigger splits','GPS alone'], a:1, e:'Client pays delivery either way — the miles just land on a truck. Blown cap = car comes home.', d:2},
-  {q:'The flip sentence is…', c:['“Raise my split”','“Broker my car FROM me at a wholesale rate I set”','“Sell my car”','“Add insurance”'], a:1, e:'From split share to everything above your floor — investor becomes peer/supplier.', d:2},
+  {q:'The flip sentence is…', c:['“Raise my split”','“Add insurance”','“Sell my car”','“Broker my car FROM me at a wholesale rate I set”'], a:3, e:'From split share to everything above your floor — investor becomes peer/supplier.', d:2},
   {q:'After flipping, smart owners…', c:['Stay exclusive','Diversify across 2–5 fleets with sweeteners for the original','Sell immediately','Stop brokering'], a:1, e:'You are partly a competitor now; no single fleet may be your point of failure.', d:3},
-  {q:'The affordability line:', c:['Finance the max','Consignment offsets a car you can ALREADY afford — never the reason you can','Splits are guaranteed','Buy two'], a:1, e:'Utilization swings 8–20 days; payments don’t. Survivors obey the line.', d:1},
+  {q:'The affordability line:', c:['Finance the max','Buy two','Splits are guaranteed','Consignment offsets a car you can ALREADY afford — never the reason you can'], a:3, e:'Utilization swings 8–20 days; payments don’t. Survivors obey the line.', d:1},
   {q:'The dual-rail is fastest because…', c:['It is easier','Both ends of your own deals + insider/leverage loops + compounding demand-and-supply intel','It skips verification','Fleets prefer it'], a:1, e:'More, run well, compounds — but doors still work one at a time first.', d:3}
+];
+
+// ═══════════════════════ TIER X · THE OPERATOR SEAT ═══════════════════════
+window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
+
+{ id:'tx_behind', sub:'TX', title:'How far behind this industry actually is',
+  predict:'Some of the biggest exotic fleets in California run their entire operation on one piece of software. Guess what it is — and what that single fact tells you about the sharpest edge available to anyone entering right now.',
+  concept:'<p>Everything you have learned — the relationships, the handshake deals, the gatekeeping — has a technology shadow: <b>this industry runs on almost no software and almost no data.</b></p>'
+    +'<p><b>The inventory of what is missing.</b> There is no purpose-built platform that properly fits the broker-and-consignment model you now understand — the general rental platforms were built for companies that <i>own</i> their cars, which (T0) is not this industry. Established fleets, including some of the biggest names in California, run their operations on <b>spreadsheets</b>. Marketing tactics are years out of date (T7’s low search bar). And reliable industry data — utilization by car and city, seasonal demand, real margins — <b>basically does not exist anywhere.</b> Every number in this course’s source material came from operating and from sitting down with people and asking, because there was nothing to look up (T0’s empty-data industry, now seen from the builder’s side).</p>'
+    +'<p><b>Put that next to what you know about the insiders</b> (T0): brilliant with cars and relationships, thin on systems. The empty seat at this industry’s table is the <b>operator seat</b> — and AI just made it absurdly cheap to sit down in it. The moat protecting incumbents (relationship webs) does not defend against someone who brings the other half; it can’t, because the other half was never present to compete with.</p>'
+    +'<p><b>Why the gap persists — the same three reasons it opened.</b> The people who built the industry came up as car people, not systems people. The gatekeeping culture (T0) means nobody publishes numbers, so no shared tooling ever emerged. And the businesses are small and profitable enough that nobody was forced to modernize (T0’s no-forced-actor). None of those reasons is a law of physics. All three fall to one disciplined entrant with modern tools — and the next lessons are the build order.</p>'
+    +'<p><b>Who benefits.</b> You, precisely because you are entering broke: systems and data are the one form of capital that compounds from zero. A spreadsheet-run incumbent cannot copy your stack without becoming a different company; you can copy their relationships one clean deal at a time (T7). Asymmetric war, fought with homework.</p>',
+  example:'<p><b>Ex:</b> You ask three fleets for their Urus utilization last March. Fleet 1: “pretty good, I think.” Fleet 2 checks a spreadsheet tab: “booked… some.” Fleet 3 has no idea. You, six months in, answer from your dashboard: 62% March utilization across the metro’s Uruses you track, median 11-day gap in mid-month. Nobody can argue with you — nobody else has numbers to argue WITH.</p>',
+  teach:'Describe the industry’s technology shadow (spreadsheets, no purpose-built platform, no data), why the gap persists, and why it favors a broke entrant specifically.',
+  cards:[
+    {f:'The technology shadow:', b:'No purpose-built platform for broker+consignment; big fleets on spreadsheets; marketing years stale; utilization/margin/seasonal data effectively nonexistent.'},
+    {f:'Why general rental software fails here:', b:'It was built for companies that OWN their cars. This industry is agencies operating consigned cars with brokers in 70% of deals — a different data model entirely.'},
+    {f:'Why the gap persists:', b:'Car-people founders, gatekeeping that prevented shared tooling, and comfortable small profits — none of which is a law of physics.'},
+    {f:'Why it favors the broke entrant:', b:'Systems compound from zero capital. Incumbents can’t copy your stack without becoming different companies; you can copy their relationships one clean deal at a time.'}
+  ],
+  quiz:[
+    {q:'Some of the biggest exotic fleets run their operations on…', c:['Custom platforms','Nothing at all','Dealer software','Spreadsheets'], a:3, e:'The operator seat is empty at the top of the market — that is the entire opportunity.'},
+    {q:'General rental platforms fail this industry because…', c:['Too expensive','Banned','Too complex','Built for owner-operators — not agencies running consigned cars with brokers in most deals'], a:3, e:'The broker/consignment data model (splits, sheets, double clock-outs, owner ledgers) simply isn’t in them.'},
+    {q:'The incumbents’ relationship moat…', c:['Blocks all entrants','Is illegal','Doesn’t defend against the systems half — which was never present to compete with','Is fake'], a:2, e:'Asymmetric: they can’t copy your stack without changing species; you can build relationships one clean deal at a time.'}
+  ]},
+
+{ id:'tx_stack', sub:'TX', title:'The operator stack — the build that took one person one week',
+  predict:'With broker relationships and rate sheets in hand, one person stood up a site listing 100+ cars from a metro’s top fleets in about a week, alone. What did the heavy lifting — and what TWO-stage funnel does the site feed that almost no fleet in the industry runs?',
+  concept:'<p>Not theory — the documented entry build, generalized into your checklist.</p>'
+    +'<p><b>The storefront.</b> A site listing every car you can sell — which, with fleet relationships and broker sheets, is <b>far larger than anything you own</b> (T1 white-labeling as an inventory strategy). AI automations do the heavy lifting: every car added triggers automated research filling specs, horsepower, 0–60, features; listings sync against availability. Optimized not just for Google but for <b>AI search</b> — being the answer when someone asks a chatbot where to rent a Lamborghini nearby. A surface almost nobody in this industry knows exists yet <i>[VERIFY the current state of that surface]</i>: structured data, consistent NAP (C3’s fundability work doing double duty), pages that answer questions the way answer-engines quote.</p>'
+    +'<p><b>The two-stage funnel — the part that matters more than any tool.</b> <b>Booking software cannot nurture.</b> It cannot remarket, cannot text the lead who clicked once and vanished. A <b>CRM sits IN FRONT of whatever booking system you use</b>: capture → qualify → nurture → book. Named stacks from the source build: GoHighLevel as the CRM (ActiveCampaign a fine alternative); Booqable as a solid general booking layer — knowing it does NOT natively handle broker relationships or owner payouts, which operators bolt on outside it <i>[VERIFY all]</i>. Most of this industry has <b>neither stage</b> and runs on DMs and memory. A lead that says “maybe next month” is, in a DM-run fleet, gone forever; in your CRM it is a scheduled follow-up that closes in month two at zero marginal cost.</p>'
+    +'<p><b>The telematics-to-API layer.</b> Zubie and One Step GPS are industry standards; <b>Smartcar matters for its API</b> — the difference between a tracker you look at and a data stream you can BUILD on (T5’s infrastructure, now feeding TX’s dashboards): automated trip logs into the partner ledger, geofence events into your alerting, behavior data into your insurance file (T4’s closer, automated).</p>'
+    +'<p><b>The content wall’s modern workaround.</b> T7’s chicken-and-egg — content needs car access — bends two ways now: the classic trust route (delivery moments), and <b>AI video generation producing marketing content from photos before you ever hold keys</b> <i>[VERIFY tools/policies — label AI content honestly]</i>. The wall is a trust problem AND a tooling problem, and both halves now have answers.</p>'
+    +'<p><b>The frontier: the analytics layer.</b> An AI layer reading fleet operations data — telematics, odometers, utilization, margins — and pointing at the friction: which car idles Thursdays, which broker’s clients overrun miles, which zone’s deliveries eat margin. The analytics layer this industry has never had, buildable today by one person who knows the industry (you, now) pointing modern tools at it. <b>None of this required an engineering team. It required knowing the machine — which is what the last nine tiers were.</b></p>',
+  example:'<p><b>Ex — the week, day by day:</b> D1: domain, site shell, brand. D2: broker sheets → listing schema; AI fills specs. D3: 100+ cars live, availability synced. D4: CRM wired — every form → pipeline, auto-text in 5 min. D5: local pages + structured data for AI answers. D6: telematics API keys for the two consigned cars you steward. D7: first AI-search referral books a Urus weekend. One person. [VERIFY tool specifics.]</p>',
+  teach:'Describe the storefront (white-label inventory + AI research + AI-search optimization), the CRM-before-booking funnel, the API-grade telematics layer, and the analytics frontier.',
+  cards:[
+    {f:'The storefront:', b:'List everything your broker sheets let you sell (inventory >> ownership); AI auto-research fills specs; optimize for Google AND AI-answer surfaces — nearly uncontested [VERIFY].'},
+    {f:'The two-stage funnel:', b:'CRM (GoHighLevel-class) IN FRONT of booking (Booqable-class, which lacks broker/owner-payout models [VERIFY]). Booking software can’t nurture; most fleets have neither stage.'},
+    {f:'The API layer:', b:'Zubie/One Step standard; Smartcar’s API turns trackers into data streams — auto trip logs, ledger entries, geofence alerts, insurance-grade behavior files.'},
+    {f:'The frontier:', b:'An AI analytics layer over ops data pointing at friction — idle patterns, mile-overrunning brokers, margin-eating zones. Never existed here; one fluent person can build it.'}
+  ],
+  quiz:[
+    {q:'The site could list 100+ cars in a week because…', c:['The builder owned them','Broker sheets made peers’ inventory sellable, and AI automated the listing research','They were fake','A platform provided them'], a:1, e:'White-labeling as inventory strategy + automation as labor. Knowing the industry was the prerequisite, not capital.'},
+    {q:'The CRM sits in front of booking software because…', c:['It’s cheaper','It handles payments','Fleets require it','Booking systems can’t nurture, remarket, or text the vanished lead — capture-and-follow-up is a separate stage'], a:3, e:'Most of the industry runs on DMs and memory; the two-stage funnel converts the leads they lose.'},
+    {q:'Smartcar-class tools matter specifically for…', c:['Cheaper hardware','Longer battery','The API — turning tracking into a buildable data stream for ledgers, alerts, and insurance files','Prettier maps'], a:2, e:'A tracker you look at polices one rental; a stream you build on compounds into the analytics layer.'}
+  ]},
+
+{ id:'tx_data', sub:'TX', title:'The data moat — log everything from day one',
+  predict:'T4 ended with: whoever assembles the exotic-rental dataset first gets to pitch carriers on rewriting the rules. You are one broke operator doing your first deals. What exactly should you be logging from day one so that, years out, YOU hold that dataset — and it cost you nothing extra to collect?',
+  concept:'<p>The T4 gap lesson gave the thesis; this is the practice. <b>The dataset that unlocks the industry’s endgame is a byproduct of running your operation correctly — if you log it.</b></p>'
+    +'<p><b>What to log, per deal, forever:</b> the verification record (carrier, form numbers, transfer/cap answers, the recorded call’s outcome — your carrier matrix growing one row per rental); the telematics trip file (miles, speed profile, harsh events, zones); the money (retail, wholesale, spread, split, deposit outcome, deductions and why); the asset (odometer in/out, damage incidents, repair costs, days-to-repair); and the human outcome (clean return? late? strike? ghost-risk signals?). Every field is something T3–T8 already told you to capture <b>operationally</b> — the moat is just refusing to let it die in a chat thread.</p>'
+    +'<p><b>Why this compounds into three different assets.</b> <b>Asset 1 — operations:</b> your own pricing, buying, and placement decisions sharpen (which cars idle, which brokers overrun, which zones eat margin — tx_stack’s analytics need this substrate). <b>Asset 2 — the T4 pitch, industrialized:</b> your loss-ratio table (rentals run / verifications passed / claims by type / commercial-policy touches: ideally zero) is the exact artifact that prices your policy down every renewal — and at scale, the seed of the carrier conversation nobody has been able to start. <b>Asset 3 — market intelligence nobody else has</b> (tx_behind): in an industry where utilization numbers are learned over coffee, a year of logged deals makes you the person fleets ask. That status converts to rates, cars, and partnerships (T7’s reputation, now with receipts).</p>'
+    +'<p><b>The honest scale question.</b> One operator’s logs are not the industry dataset — carriers price on volume you will not have alone for years. The compounding paths: your own growth (every rung multiplies deals logged); <b>data partnerships</b> — the fleets you broker for and steward cars at have the same operational exhaust dying in spreadsheets, and the person who aggregates it (anonymized, by agreement) is playing the platform game without writing a platform <i>[VERIFY data-sharing agreements with counsel]</i>; and the long game — TX’s endgame lesson. Meanwhile the discipline costs you <b>nothing</b>: you were required to collect every field anyway. The moat is a habit wearing a spreadsheet.</p>'
+    +'<p><b>Who is forced to act — nobody. Which is the point.</b> No incumbent is forced to log anything, and their culture (gatekeeping, gut feel) ensures most never will. A moat nobody is racing you toward is the cheapest moat in business. Start the log on deal one.</p>',
+  example:'<p><b>Ex — the same deal, two operators:</b> Operator A closes a $1,100 Urus weekend, high-fives, moves on. Operator B closes the identical deal and 90 seconds later the log gains: carrier + cap answers, 212 trip miles / zero harsh events, $850 wholesale / $250 spread, deposit released clean, odo delta 214. Two years later A has stories; B has 600 rows — a loss table for carriers, a pricing model for buys, and the only utilization dataset in the metro. Same deals. One habit apart.</p>',
+  teach:'List the five per-deal log categories, the three assets the log compounds into, and why the moat costs nothing because operations already required every field.',
+  cards:[
+    {f:'The five log categories per deal:', b:'Verification record (carrier matrix row), telematics trip file, money (retail/wholesale/spread/split/deposit), asset (odo/damage/repair), human outcome.'},
+    {f:'The three compounding assets:', b:'1: sharper ops decisions. 2: the loss-ratio table that prices your policy down — and seeds the carrier pitch. 3: the metro’s only market intelligence — status that converts to rates and partnerships.'},
+    {f:'The scale paths:', b:'Own growth (rungs multiply logged deals), anonymized data partnerships with fleets whose exhaust dies in spreadsheets [VERIFY with counsel], and the endgame play.'},
+    {f:'Why the moat is free:', b:'T3–T8 already require capturing every field operationally. The moat is refusing to let the data die in a chat thread — a habit wearing a spreadsheet.'}
+  ],
+  quiz:[
+    {q:'The data moat costs a disciplined operator…', c:['A data team','Years of unpaid work','$50k in software','Almost nothing — every field was already operationally required; the moat is logging instead of losing it'], a:3, e:'Verification, telematics, money, asset, and outcome records all exist per-deal by construction. Structure them or lose them.'},
+    {q:'The loss-ratio table (rentals / verifications / claims / policy touches) is…', c:['The artifact that prices your commercial policy down every renewal — and seeds the T4 carrier conversation at scale','Vanity metrics','A tax document','Required by law'], a:0, e:'T4’s pitch, industrialized: carriers price what they can see, and you are building the thing to show them.'},
+    {q:'Nobody racing you toward this moat is…', c:['A warning sign','Irrelevant','Temporary','The point — incumbent culture (gatekeeping, gut feel) ensures most never log, making it the cheapest moat in business'], a:3, e:'An uncontested compounding asset, started on deal one, in an industry that learns its own numbers over coffee.'}
+  ]},
+
+{ id:'tx_endgame', sub:'TX', title:'The endgame — the crown on the table',
+  predict:'Assemble everything: no player past ~$10M, an empty operator seat, a legal blueprint (PVSP) proven in another market, and a missing dataset you now know how to build. Describe the company that takes the crown — and the honest sequence that gets one person from here to there.',
+  concept:'<p>The course’s closing argument, assembled from every tier.</p>'
+    +'<p><b>The crown, restated precisely.</b> T0: nobody has scaled past roughly $5–10M/year <i>[VERIFY]</i> — no national brand, in an industry of four-figure daily rates. The reasons were never demand: they are the gatekeeping that starved the industry of shared knowledge (T0), the insurance wall that caps casual entry (T2–T4), and the missing operator half (tx_behind). Each of those is also a door, and you now hold keys to all three.</p>'
+    +'<p><b>What the crown-taker looks like — three stages, each profitable on its own.</b> <b>Stage 1 — the metro operator</b> (this course, executed): dual-rail (T8), operator stack (tx_stack), data log (tx_data), spotless verification record. A profitable business that happens to be accumulating the industry’s missing dataset. <b>Stage 2 — the multi-metro network:</b> the playbook repeated across markets — each with its own relationship web (the moat you must rebuild each time; there are no shortcuts through T7), but the SAME systems, brand, and data spine. This is where the ~$10M ceiling lives, and where systems—not relationships—become the binding constraint, which is exactly why car-people incumbents never crossed it. <b>Stage 3 — the platform move:</b> with scale data (tx_data’s partnerships + your own volume), the T4 conversation becomes possible: pitch carriers on an insurance program for high-value sharing — the exotic PVSP, or its commercial equivalent — built on verified renters, telematics on every trip, and a documented loss history nobody else possesses. Succeed, and you have done for exotics what Turo did for Corollas: <b>rewritten the rules while everyone else played the old game.</b> The crown was never “biggest fleet.” It is <b>the rule-rewrite</b> — infrastructure, not inventory.</p>'
+    +'<p><b>The honest odds, stated like an operator.</b> Stage 3 is a moonshot: regulators state by state, carriers who move at carrier speed, capital at platform scale <i>[VERIFY everything at that altitude]</i>. But notice the shape of the bet: <b>every stage is independently worth running.</b> Stage 1 is a good business. Stage 2 is a great one. Stage 3 is the asymmetric upside sitting on top of a stack you wanted anyway — the rare moonshot whose failure mode is “merely a thriving multi-metro operation.” That is the kind of bet you take.</p>'
+    +'<p><b>And the sequence never changes.</b> Every rung of it starts exactly where you are: map the metro, pull your file, build the log, walk in holding a deal (T7), place the first car right (T8), do it in public (t7_brand). The crown is a decade of Tuesdays executed cleanly. The course ends here so the reps can start — REPS is next, and it is the odometer for all of it.</p>',
+  example:'<p><b>Ex — the bet’s shape:</b> Year 1: dual-rail metro operator, 300 logged deals, policy priced down twice. Year 3: three metros, shared stack, 4,000 deals, two fleets contributing anonymized data. Year 5: the carrier meeting — not a pitch deck of dreams but a loss table nobody else on earth can produce. If the answer is no: you own a multi-metro operation with the industry’s best unit economics. If yes: the rules change under your name. Both branches were worth the Tuesdays.</p>',
+  teach:'Restate the crown as the rule-rewrite, walk the three stages and why each is independently profitable, and explain why the moonshot’s failure mode makes the bet sound.',
+  cards:[
+    {f:'The crown, precisely:', b:'Not the biggest fleet — the rule-rewrite: an insurance program for high-value sharing (the exotic PVSP or commercial equivalent), built on the dataset nobody else has.'},
+    {f:'The three stages:', b:'1: dual-rail metro operator with the log (profitable). 2: multi-metro — same systems and data spine, relationships rebuilt per market (the ceiling breaks here). 3: the carrier pitch at scale.'},
+    {f:'Why incumbents never crossed the ceiling:', b:'Past one metro, SYSTEMS become the binding constraint — the exact half the car-people founders never carried (tx_behind).'},
+    {f:'The bet’s shape:', b:'Every stage worth running alone; the moonshot’s failure mode is “merely a thriving operation.” Asymmetric upside on a stack you wanted anyway — a decade of clean Tuesdays.'}
+  ],
+  quiz:[
+    {q:'The crown of this industry is best understood as…', c:['A 50-car warehouse','The rule-rewrite: insuring high-value sharing at scale, unlocked by the missing dataset','A celebrity clientele','A franchise chain'], a:1, e:'Turo’s play, pointed at exotics: infrastructure and rules, not inventory, is what nobody has taken.'},
+    {q:'The ~$10M ceiling exists because past one metro…', c:['Demand runs out','Cars get scarce','Regulators forbid growth','Systems become the binding constraint — the half the industry’s founders never carried'], a:3, e:'Relationship webs scale linearly and personally; only the operator half scales past them.'},
+    {q:'The Stage-3 moonshot is a sound bet because…', c:['Its failure mode is a thriving multi-metro business — every stage beneath it is independently profitable','It always succeeds','Carriers are desperate','It needs no capital'], a:0, e:'Asymmetric upside stacked on operations you wanted anyway. Take that shape of bet every time.'}
+  ]}
+
+]);
+
+// ═══════════════════════ REPS · THE ODOMETER ═══════════════════════
+window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
+
+{ id:'reps_system', sub:'REPS', title:'The reps system — knowledge is the map, reps are the odometer',
+  predict:'Two students finish this course. One can recite every tier; the other has 12 fleet audits, 40 dec-page reads, and 5 closed deals logged. Every fleet in the metro can only see one of them. Which — and what does that tell you about what this app’s counters are actually for?',
+  concept:'<p>Lessons teach the machine; <b>reps build the operator.</b> The counters on this realm’s dashboard are not gamification — they are the odometer of your actual entry into this industry, and each one was chosen because it is a unit of the real work:</p>'
+    +'<p><b>The observation reps</b> (open from day zero): <b>Fleet Mapped</b> — one local fleet’s inventory, pricing, socials, positioning; ten of these and you know your metro better than most people working in it (the course’s literal first assignment). <b>Build In Public</b> — the daily content rep (t7_brand’s directive with a streak attached). <b>Score Pull</b> — the credit rail’s first physical act (C0).</p>'
+    +'<p><b>The skill reps:</b> <b>Dec-Page Read</b> (target: 25) — the T2 muscle, built one real declarations page at a time until carrier language reads like English. <b>Carrier Call</b> — the four-question script run live (T3), consent observed. <b>Credit Move</b> — one lever pulled on your own file (C1’s tune-up, rep by rep). <b>Verification Run</b> — the full stack executed on a real or mock renter, <i>graded</i>: did the layers agree, and would you have handed keys?</p>'
+    +'<p><b>The deal reps — the graded ones that become your track record:</b> <b>Lead Sourced</b> (target: 20) — a qualified package assembled (t7_translate’s step 3), graded when the fleet responds. <b>Deal Closed</b> (target: 5) — a booking that ran clean start to finish; five clean deals is a track record fleets price on (t7_reputation). <b>Business Tradeline</b> (target: 5) — the C3 ladder, rung by rung. <b>Fleet Audit</b> — t8_place’s checklist run on a real operation (as research long before you own a car). <b>Car Sourced</b> — Rung 3 attempted, graded when a car lands.</p>'
+    +'<p><b>Why grading matters — misses are the curriculum.</b> Gradeable reps log first and grade later (hit/miss), exactly like the source discipline this app’s second realm teaches: a miss with a written why is worth more than an ungraded win, because <b>the industry grades you the same way — on outcomes, after the fact</b> (t7_reputation’s scoreboard). The counters make your record visible to the only person who can act on it early: you.</p>'
+    +'<p><b>The answer to the predict question, plainly:</b> fleets can only see the second student — because reps leave artifacts (deals, audits, posts, calls) and knowledge alone leaves none. In a reputation-priced industry, <b>the visible record IS the résumé</b>. The map matters; the odometer is what they pay.</p>',
+  example:'<p><b>Ex — a real week of reps:</b> Mon: Fleet Mapped #7 + the daily post. Tue: two Dec-Page Reads (one had the $100k cliff — flagged in your matrix). Wed: Carrier Call #4, clean tape. Thu: Lead Sourced #9 — graded HIT Friday when the fleet confirmed. Sat: Verification Run on the booking, graded hit; Deal Closed #2 logged Sunday night. Seven counters moved; every one of them is something a fleet, an owner, or a carrier will someday pay you for having done.</p>',
+  teach:'Explain observation vs skill vs deal reps, why gradeable reps log-then-grade, and why the visible record beats knowledge in a reputation-priced industry.',
+  cards:[
+    {f:'The three rep families:', b:'Observation (map fleets, build in public, pull scores) — open day zero. Skill (dec reads, carrier calls, credit moves, verification runs). Deal (leads, closes, tradelines, audits, cars) — graded, your track record.'},
+    {f:'Log-then-grade:', b:'Gradeable reps record first, grade hit/miss when the outcome lands. A graded miss with a written why beats an ungraded win — the industry grades you on outcomes too.'},
+    {f:'The targets that matter:', b:'25 dec-page reads (fluency), 20 leads sourced, 5 clean deals (the track record fleets price), 5 reporting tradelines (a PAYDEX exists).'},
+    {f:'Why reps beat knowledge:', b:'Reps leave artifacts — deals, audits, tapes, posts. Knowledge leaves none. In a reputation-priced industry the visible record IS the résumé.'}
+  ],
+  quiz:[
+    {q:'The app’s counters exist because…', c:['Reps leave visible artifacts and knowledge doesn’t — the record is the résumé in a reputation-priced industry','Streaks are fun','The engine requires them','Fleets check the app'], a:0, e:'The odometer measures actual entry: deals, audits, reads, calls — the things the industry eventually pays for.'},
+    {q:'A graded MISS on a sourced lead is…', c:['Deleted','A reason to stop','Half a point','Curriculum — a written why on a real outcome, exactly how the industry itself will grade you'], a:3, e:'Log-then-grade builds the judgment the checklist can’t teach (t5_straw’s ceiling).'},
+    {q:'The “track record fleets price on” milestone is…', c:['100 followers','A logo','One big deal','5 clean closed deals'], a:3, e:'t7_reputation’s spread spread starts moving in your favor on a visible record of clean outcomes.'}
+  ]},
+
+{ id:'reps_road', sub:'REPS', title:'The road after — your first 90 days, then the decade',
+  predict:'The course is over. It is Monday. You have no money, a phone, and this app. Sequence your first 90 days from the reps ladder — weeks 1–2, 3–6, 7–12 — such that by day 90 a fleet in your metro knows your name for the right reason.',
+  concept:'<p>The map is complete. Here is the road, paced like the course’s own closing advice: <b>go slower than your excitement wants and faster than your fear wants</b> — this industry rewards the person who shows up consistently for months, not the one who sprints for two weeks.</p>'
+    +'<p><b>Weeks 1–2 — see the battlefield (all observation reps).</b> Map every exotic fleet within an hour: inventory, pricing, socials (Fleet Mapped ×5–10 — one afternoon each; by ten you know the metro better than most people working in it). Pull all three credit reports; log the Score Pull and the one ugliest item (C0). Start Build In Public — day one, your voice, your face (t7_brand: the directive is a daily rep, not a someday plan). Form nothing, buy nothing, pitch nobody yet.</p>'
+    +'<p><b>Weeks 3–6 — build the muscles (skill reps).</b> Dec-Page Reads ×8–10: your own policy, family’s, friends’ — with the SERFF pull and the three-answer extraction each time (T2). Carrier Calls ×2–3 on those policies, consent observed, tape kept (T3). Credit Moves weekly: the C1 tune-up run as reps — disputes filed, AZEO staged, CLIs requested. File the LLC + EIN + business bank account when the first spread lands in sight (C3’s clock — start it while still brokering). Keep posting: the metro map, the teardown clips, the journey.</p>'
+    +'<p><b>Weeks 7–12 — enter the market (deal reps).</b> Work your world for the first renter (the content is already fishing). Assemble the first qualified package — license, dec page, tested contacts, fitting car (Lead Sourced #1, graded when the fleet answers). <b>Walk in holding it</b> (t7_translate) — the introduction that cannot be refused. Run the Verification stack alongside the fleet’s (Verification Run, graded: would YOU have handed keys?). Close it clean: Deal Closed #1 — then repeat toward five, the track record that moves your rates (t7_reputation). Open the first net-30s once revenue exists (Business Tradeline ×2–3). And Fleet Audit #1 — as pure research, on the operation you know best now.</p>'
+    +'<p><b>Day 90, honestly measured:</b> a metro map nobody else your age has, a tuned personal file with a business clock running, 25+ documented skill reps, one-to-three real deals, and a public record of all of it. That person is no longer outside the industry — <b>they are the newest node in its network, with receipts.</b></p>'
+    +'<p><b>Then the decade, in one paragraph.</b> Months 4–12: deals toward twenty, tradelines toward a PAYDEX, the audition loan when the business can obviously carry it (C3). Year 2: the placement or the first business-financed car (T8/C4 — customer first, affordability line sacred), the dual-rail forming. Years 3–5: Rung 3 cars, the flip when earned, the operator stack and the log compounding (TX). The crown stays on the table exactly as long as nobody executes a decade of clean Tuesdays. <b>The course ends here. The odometer starts now.</b></p>',
+  example:'<p><b>Ex — day 90, one real ledger:</b> 9 fleets mapped · 84 daily posts · file: 640→688, 2 disputes won, AZEO staged · LLC + EIN + account open · 11 dec reads (2 cliff-caps caught) · 3 taped carrier calls · 6 leads sourced (4 hit) · 2 deals closed clean · first net-30 reporting · 1 fleet audit done as research. Total capital deployed: under $500. The fleet that closed both deals just texted about a third — and asked if you ever do Saturdays.</p>',
+  teach:'Lay out the 90-day arc (observe → skill → deal) with its rep counts, and the decade arc in one breath — ending at why the crown waits for consistent Tuesdays.',
+  cards:[
+    {f:'Weeks 1–2:', b:'Observation only: 5–10 fleets mapped, three reports pulled, daily public posting begun. Form nothing, pitch nobody — see the battlefield first.'},
+    {f:'Weeks 3–6:', b:'Skill reps: 8–10 dec reads with SERFF pulls, 2–3 taped carrier calls, weekly credit moves (the C1 tune-up as reps), LLC/EIN/account when the first spread nears.'},
+    {f:'Weeks 7–12:', b:'Deal reps: first qualified package, walk in holding it, verification run alongside the fleet’s, Deal Closed #1 → toward five, first net-30s, first fleet audit as research.'},
+    {f:'The pace rule + the decade:', b:'Slower than excitement, faster than fear. Deals→20, PAYDEX, audition loan, placement/dual-rail, Rung 3, the flip, the stack + log — the crown waits for clean Tuesdays.'}
+  ],
+  quiz:[
+    {q:'The first two weeks contain…', c:['Observation reps only — map the metro, pull the file, start posting. See the battlefield before entering it','The first pitch','LLC formation','A car purchase'], a:0, e:'Ten mapped fleets = more market knowledge than most working brokers, for the cost of afternoons.'},
+    {q:'The LLC forms…', c:['When the first spread is in sight — the C3 clock starts early but only once brokering is real','Day one, before anything','After the first car','Never for brokers'], a:0, e:'Time-in-business compounds (C3), but weeks 1–2 are for seeing, not filing.'},
+    {q:'By day 90 the goal is…', c:['An agency','$10k/month','A fleet knowing your name for the right reason — deals closed clean, record public, file tuned','A placed car'], a:2, e:'The newest node in the network, with receipts. The decade builds from exactly there.'}
+  ]}
+
+]);
+
+window.REDLINE_QBANK.TX = [
+  {q:'The industry’s technology reality is…', c:['Cutting-edge','Fully automated','Platform-dominated','Spreadsheets at the top, no purpose-built platform, no shared data'], a:3, e:'The operator seat is empty even at the biggest fleets.', d:1},
+  {q:'General rental software fails the industry because…', c:['Price','Speed','Language','It models owner-operators, not agencies + consignment + brokers'], a:3, e:'70% brokered deals and owner ledgers simply are not in its data model.', d:2},
+  {q:'The two-stage funnel is…', c:['Two websites','CRM in front of booking software — capture/nurture before transactions','Two brokers','A/B testing'], a:1, e:'Booking systems can’t text the vanished lead; most fleets have neither stage.', d:2},
+  {q:'Smartcar-class telematics matters for…', c:['Cheaper devices','The API — data streams you can build ledgers, alerts, and insurance files on','Longer range','Resale'], a:1, e:'A dashboard polices; a stream compounds.', d:2},
+  {q:'The AI-search surface is valuable because…', c:['High-intent answers with almost zero industry competition [VERIFY]','It’s trendy','It’s free forever','Fleets fear it'], a:0, e:'Being the chatbot’s answer for “rent a Lamborghini near me” is the new maps-pack — uncontested.', d:2},
+  {q:'The data moat’s five per-deal categories are…', c:['Photos, video, posts, likes, shares','Rate, date, name, car, city','Verification, telematics trip, money, asset, human outcome','None'], a:2, e:'All operationally required anyway — the moat is structured logging.', d:2},
+  {q:'The loss-ratio table matters because…', c:['Carriers price what they can see — it cuts premiums now and seeds the endgame pitch','Investors like tables','Taxes','It’s required'], a:0, e:'T4’s pitch industrialized, one clean deal at a time.', d:2},
+  {q:'The ~$10M ceiling breaks on…', c:['More cars','Luck','Systems — the binding constraint past one metro, the half incumbents never carried','Celebrity clients'], a:2, e:'Relationship webs scale personally and linearly; only the operator half scales past them.', d:3},
+  {q:'The Stage-3 endgame is…', c:['The biggest warehouse','An exit to Turo','A franchise','The rule-rewrite: an insured high-value sharing program built on the missing dataset'], a:3, e:'Infrastructure, not inventory — Turo’s play pointed at exotics.', d:3},
+  {q:'The moonshot is a sound bet because…', c:['Each stage beneath it is independently profitable — failure mode is a thriving operation','It can’t fail','Carriers promised','It’s cheap'], a:0, e:'Asymmetric upside on a stack worth building anyway.', d:2},
+  {q:'The reps ladder’s deal-tier milestone is…', c:['1 deal','5 clean closed deals — the track record fleets price on','50 leads','A viral post'], a:1, e:'The spread spread starts moving on a visible record of clean outcomes.', d:1},
+  {q:'The 90-day arc runs…', c:['Pitch → buy → scale','Observe (map/pull/post) → skill (reads/calls/moves) → deal (source/verify/close)','LLC → car → agency','Content only'], a:1, e:'See the battlefield, build the muscles, enter holding a deal.', d:1}
 ];
