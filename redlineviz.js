@@ -500,6 +500,31 @@ b4_owned:
 +'<rect x="70" y="142" width="180" height="26" rx="7" fill="#1c0e0e" stroke="#ffb020" stroke-width="1"/>'
 +'<text x="160" y="159" fill="#ffb020" font-size="8.5" text-anchor="middle">metric: owned contacts / 1,000 views</text>'
 +'<text x="160" y="186" fill="#7a7a7a" font-size="8" text-anchor="middle">Discovery is rented. Relationships live on the phone.</text>'
++'</svg>',
+
+// B5 · The two-audience test — warm followers seed the cold push.
+b5_surfaces:
+'<svg viewBox="0 0 320 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">'
++'<text x="160" y="14" fill="#a9a9a9" font-size="10" text-anchor="middle">Every reel takes the same two-stage exam</text>'
++'<rect x="20" y="30" width="80" height="30" rx="8" fill="#140a0a" stroke="#d8d8d8" stroke-width="1.1"/>'
++'<text x="60" y="49" fill="#ece0df" font-size="9" text-anchor="middle">YOUR REEL</text>'
++'<rect x="128" y="26" width="120" height="52" rx="9" fill="#1c0e0e" stroke="#ffb020" stroke-width="1.2"/>'
++'<text x="188" y="43" fill="#ffb020" font-size="8.5" text-anchor="middle">CONNECTED POOL</text>'
++'<text x="188" y="55" fill="#a9a9a9" font-size="7" text-anchor="middle">followers · relationship-scored</text>'
++'<text x="188" y="67" fill="#a9a9a9" font-size="7" text-anchor="middle">stories + DMs warmed this</text>'
++'<path d="M100 45 L128 45" stroke="#7a7a7a" stroke-width="1"/>'
++'<circle r="3.5" fill="#ffb020"><animateMotion dur="3.2s" repeatCount="indefinite" path="M100 45 L128 45 M188 78 L188 104" keyPoints="0;1" keyTimes="0;1"/></circle>'
++'<path d="M188 78 L188 104" stroke="#00e5a0" stroke-width="1.3"/>'
++'<text x="200" y="94" fill="#00e5a0" font-size="7" text-anchor="start">signals clear</text>'
++'<rect x="104" y="104" width="168" height="52" rx="9" fill="#0f1a12" stroke="#00e5a0" stroke-width="1.3"/>'
++'<text x="188" y="121" fill="#00e5a0" font-size="8.5" text-anchor="middle">UNCONNECTED REACH</text>'
++'<text x="188" y="133" fill="#a9a9a9" font-size="7" text-anchor="middle">Reels tab · Explore · strangers</text>'
++'<text x="188" y="145" fill="#00e5a0" font-size="7.5" text-anchor="middle">scored on watch time + SENDS/reach</text>'
++'<rect x="20" y="112" width="64" height="36" rx="8" fill="#1a0d0d" stroke="#ff4455" stroke-width="1.1"/>'
++'<text x="52" y="127" fill="#ff6a5f" font-size="7.5" text-anchor="middle">weak seed =</text>'
++'<text x="52" y="139" fill="#ff6a5f" font-size="7.5" text-anchor="middle">quiet stop</text>'
++'<text x="160" y="178" fill="#7a7a7a" font-size="8.5" text-anchor="middle">The relationship layer is not upkeep — it seeds every cold test</text>'
++'<text x="160" y="192" fill="#7a7a7a" font-size="8" text-anchor="middle">Trial reels skip stage 1 entirely: a free cold-audience laboratory [VERIFY]</text>'
 +'</svg>'
 
 
