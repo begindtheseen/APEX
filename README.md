@@ -91,9 +91,10 @@ completely different curriculum, with completely separate progress.
 ## REDLINE — the third curriculum (red side)
 
 **REDLINE** runs the same engine on the exotic-rental industry — how the
-agency/consignment machine works, the money waterfall, insurance, and a full
+agency/consignment machine works, the money waterfall, insurance, a full
 credit-engineering rail (personal file → business credit → financing the
-car). Content lives in **`redline.js`** (+ `redlineviz.js` diagrams), progress
+car), and a personal-brand rail (positioning → content machine → algorithm →
+conversion → the moat). Content lives in **`redline.js`** (+ `redlineviz.js` diagrams), progress
 under its own key (`apex_redline_v1`) with its own Export/Restore/Reset.
 Educational only — never financial, legal, tax, or insurance advice.
 
