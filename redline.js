@@ -1,2524 +1,1073 @@
 // ============================================================
-// APEX — REDLINE curriculum: THE EXOTIC RENTAL OPERATOR TRACK
+// APEX — REDLINE: SOCIAL MEDIA OPERATOR MASTERCLASS
 // ============================================================
-// The third realm. Absolute zero → operator who controls cars, sources
-// demand, and runs the machine — built from a broke file up. Two rails run
-// through it: the INDUSTRY spine (how the exotic-rental machine actually
-// works, Tiers T0–TX) and the CREDIT spine (how you finance your way in,
-// Tiers C0–C4). Educational only — never financial, legal, tax, or
-// insurance advice. No income claims, ever. Time-sensitive figures — rates,
-// caps, statutes, platform gates, tax thresholds — are tagged [VERIFY];
-// confirm them against the live source before you repeat or act on them.
-// The fraud line is a WALL, not a technique: every place a shortcut crosses
-// into fraud (CPNs, sweeps, straw deals, lying to a carrier), the course
-// names it and stops. You win this game by learning it properly.
-//
-// ─────────────────────────────────────────────────────────────
-// SCHEMA (the engine reads exactly this — same engine as Obsidian):
-//   window.REDLINE_CONFIG = { brand, name, tagline,
-//     subjects:{KEY:{name,blurb}}, order:[KEY,...],
-//     drills:{n,min,gate},          // gate = % needed to pass a tier drill
-//     srs:[d0,d1,d2,d3,d4,d5],      // review intervals in days, by SRS box
-//     perfectTo, reps:[...] }
-//   window.REDLINE_CURRICULUM = [{
-//     id:'t0_slug', sub:'T0', title:'...',
-//     predict:'Question shown BEFORE the lesson unlocks (predict-then-reveal).',
-//     concept:'<p>HTML lesson, mechanism-first: who pays whom, who is forced
-//              to act, who benefits, where the money and the risk land.</p>',
-//     example:'<p><b>Ex:</b> optional worked example.</p>',
-//     teach:'Teach-back prompt (explain it to a sharp friend).',
-//     cards:[{f:'front',b:'back'}], quiz:[{q,c:[4],a:index,e}] }]
-//   window.REDLINE_QBANK = { KEY:[{q,c,a,e,d:1|2|3}] }  // tier gate drills
-// Rules: ES5 only, no template literals, ’ instead of raw apostrophes,
-// unique permanent ids (renaming orphans progress), vary quiz answer index.
-// ─────────────────────────────────────────────────────────────
-
-window.REDLINE_CONFIG = {
-  brand: 'REDLINE',
-  name: 'REDLINE — Exotic Rental Operator Track',
-  tagline: 'Absolute zero to operator. How the exotic-rental machine really runs — who owns the cars, how the money splits, why insurance rules everything — and how you finance your way from a broke file to your own fleet. Educational only, never advice.',
-  subjects: {
-    // ── The Industry spine ──────────────────────────────────
-    T0: { name: 'Tier 0 · The Curtain', blurb: 'What the industry actually is behind the Instagram: the agency model, who really rents, why no empire exists yet, and the two doors in.' },
-    T1: { name: 'Tier 1 · Three Laws &amp; the Waterfall', blurb: 'The value chain: who holds power in a deal, wholesale vs retail, and exactly who walks away with what.' },
-    T2: { name: 'Tier 2 · The Insurance Spine', blurb: 'The asymmetry that rules everything — plus the forms, the carrier rules, and the SERFF fine print the free course only points at.' },
-    T3: { name: 'Tier 3 · The Verification Stack', blurb: 'The exact sequence that turns documents into a yes-or-no before keys ever move — scripts, tells, and the fraud it stops.' },
-    T4: { name: 'Tier 4 · The Commercial Policy', blurb: 'How the pitch, the telematics feed, and the Turo exception work — down to the garage form and the PVSP statutes.' },
-    T5: { name: 'Tier 5 · Protection &amp; Enforcement', blurb: 'Background checks, telematics, the contract clause by clause, and what to do when it goes wrong.' },
-    T6: { name: 'Tier 6 · The Deal Machine', blurb: 'A booking start to finish at every trust level — direct, broker, agency-to-agency — and the repeat clients that pay forever.' },
-    T7: { name: 'Tier 7 · The Lead Door (no money)', blurb: 'Brokering as lead-gen: reputation as pricing, where leads live, the premium low-risk niche, and the ladder up.' },
-    T8: { name: 'Tier 8 · The Vehicle Door (capital)', blurb: 'Choosing the customer not the car, the unit economics, the tax edge, placing and auditing a fleet, and the flip.' },
-    TX: { name: 'Tier X · The Operator Seat', blurb: 'The empty seat: systems, data, and AI. Build the platform this industry never built and take the crown off the table.' },
-    // ── The Credit spine ────────────────────────────────────
-    C0: { name: 'Credit 0 · The File From Zero', blurb: 'Owning an exotic starts with your credit file. What credit really is, the bureaus, and the score a lender actually pulls.' },
-    C1: { name: 'Credit 1 · The Five Levers', blurb: 'Exactly what moves a score, in order of weight — and the fastest legitimate moves on each lever.' },
-    C2: { name: 'Credit 2 · Build &amp; Repair', blurb: 'From a thin or damaged file to a lender-ready one — and the fraud “repair” industry that will scam you.' },
-    C3: { name: 'Credit 3 · The Business Credit Machine', blurb: 'Fundability, D-U-N-S, PAYDEX, the vendor-tier ladder — credit that buys cars without touching your personal file.' },
-    C4: { name: 'Credit 4 · Financing the Exotic', blurb: 'The specialty lenders, simple-interest vs balloon vs lease, the commercial-use trap, and buying the car through the business.' },
-    // ── The Brand spine ─────────────────────────────────────
-    B0: { name: 'Brand 0 · The Asset', blurb: 'What a personal brand actually is — attention × trust × proof — and the positioning that makes you a category of one from day zero.' },
-    B1: { name: 'Brand 1 · The Content Machine', blurb: 'Pillars, hooks, retention, packaging, and the production system that ships daily without waiting for inspiration.' },
-    B2: { name: 'Brand 2 · The Algorithm', blurb: 'How distribution actually works — test pools, ranked signals, the platform map for this industry, and local gravity.' },
-    B3: { name: 'Brand 3 · The Conversion', blurb: 'The profile storefront, the DM protocol, growth vs conversion content, and social proof that never lies.' },
-    B4: { name: 'Brand 4 · The Moat', blurb: 'Owned attention, surviving the dip, opsec around six-figure cars, and the 12-month arc to inbound.' },
-    B5: { name: 'Brand 5 · The Instagram Machine', blurb: 'The town square, weaponized: how IG actually ranks, the Reels fast-attention doctrine, the format arsenal, diagnostics, and the exact launch protocol.' },
-    REPS: { name: 'The Reps Ladder &amp; The Odometer', blurb: 'Knowledge lives in lessons; edge lives in reps with a graded record. The counters that turn study into a track record.' }
-  },
-  order: ['T0','C0','B0','T1','T2','T3','T4','T5','T6','T7','B1','B2','B3','B4','B5','C1','C2','C3','C4','T8','TX','REPS'],
-  drills: { n: 12, min: 15, gate: 80 },
-  srs: [1, 1, 3, 7, 21, 30],
-  // Ace a topic quiz (100%) and it jumps straight to box 3 = MASTERED — one
-  // strong first pass is enough; reviews still schedule to keep it honest.
-  perfectTo: 3,
-  // ── THE REPS LADDER ──────────────────────────────────────────
-  // Each rep unlocks with its tier and tracks a counter shown like a streak.
-  // g:true = gradeable (logged first, graded hit/miss later — misses ARE the
-  // curriculum). target = the program milestone. daily:true = streak-tracked.
-  reps: [
-    { k:'metro', tier:'T0', name:'Fleet Mapped',
-      hint:'Map one local exotic fleet — inventory, retail pricing, socials, who they seem to serve. Ten fleets and you know your metro better than most people working in it.' },
-    { k:'build', tier:'T0', name:'Build In Public', daily:true,
-      hint:'Ship one piece of content about this industry, in your own voice, face attached. In a relationship business, visible reach IS qualification. Post from day zero.' },
-    { k:'score', tier:'C0', name:'Score Pull',
-      hint:'Pull your three reports / real scores. Log the number and the ONE thing dragging it down. What gets measured gets fixed.' },
-    { k:'lever', tier:'C1', name:'Credit Move',
-      hint:'One concrete file action: a pre-statement paydown, AZEO set, a dispute filed, an authorized-user line added. Log the move and the lever it pulls.' },
-    { k:'decread', tier:'T2', name:'Dec-Page Read', target:25,
-      hint:'Pull one real declarations page + its policy form; extract the non-owner-vehicle rule and any value cap. THE core skill — reps compound into fluency.' },
-    { k:'call', tier:'T3', name:'Carrier Call',
-      hint:'Run one recorded 4-question coverage call (with consent — know your state) to a carrier. The tape is your evidence and your training.' },
-    { k:'verify', tier:'T3', name:'Verification Run', g:true,
-      hint:'Run the full stack on a real or mock renter. Grade it: did the three layers agree, and would you have handed over the keys?' },
-    { k:'lead', tier:'T7', name:'Lead Sourced', g:true, target:20,
-      hint:'Assemble one qualified renter — license, insurance dec page, working contact, a car that fits. Grade hit/miss when the fleet responds.' },
-    { k:'deal', tier:'T7', name:'Deal Closed', g:true, target:5,
-      hint:'A brokered or placed booking that ran clean, start to finish. Five clean deals is a track record fleets price on. Misses are the curriculum.' },
-    { k:'tradeline', tier:'C3', name:'Business Tradeline', target:5,
-      hint:'Open one net-30 / vendor line that REPORTS to a business bureau, and pay it early. The ladder to a PAYDEX a bank will lend against.' },
-    { k:'dmq', tier:'B3', name:'DM → Qualified', g:true, target:25,
-      hint:'One inbound DM run through the qualification script to a clean yes/no. Grade HIT when it becomes a real lead package (license + insurance + fitting car).' },
-    { k:'owned', tier:'B4', name:'Owned-Channel Signup', target:100,
-      hint:'One follower converted to a channel you OWN — email, SMS, community. Rented algorithmic attention becomes yours one signup at a time.' },
-    { k:'audit', tier:'T8', name:'Fleet Audit',
-      hint:'Audit one operation against the checklist — verification stack, commercial-policy limit, who-drives, storage. Their answers ARE the audit.' },
-    { k:'source', tier:'T8', name:'Car Sourced', g:true,
-      hint:'Bring one idle-owner exotic a step toward placement. Grade it when it lands on a fleet. Sourcing cars is where the seats at the table multiply.' }
-  ]
-};
-
-window.REDLINE_CURRICULUM = [
-
-// ═══════════════════════ TIER 0 · THE CURTAIN ═══════════════════════
-{ id:'t0_agency', sub:'T0', title:'The agency secret — almost no fleet owns its cars',
-  predict:'You scroll a local exotic-rental company’s Instagram: a dozen Lamborghinis, a Ferrari, a Rolls. Your brain fills in “this company is rich — they own all of these.” How many of those cars does the company actually own, and why would the honest answer be a guarded business secret?',
-  concept:'<p>Unlearn the first thing everyone assumes. When you see an exotic fleet’s lot or feed, you assume the company <i>owns</i> the cars. In reality, <b>almost every car you will ever see in an exotic fleet is owned by someone else.</b></p>'
-    +'<p><b>Why buying breaks at this level.</b> A normal rental startup finances five or six cheap economy cars on personal credit, builds business credit, and qualifies for fleet financing. Try that with exotics and one Huracán costs more than that entire starter fleet. The debt grows so fast you can never finance enough cars to <i>be</i> a fleet. And fleet size is survival math, not ego: with three cars, one in the shop is a third of your revenue gone; with fifteen, one down barely registers.</p>'
-    +'<p><b>The fix: they don’t buy, they source.</b> An exotic-rental company is an <b>agency</b>. Owners and investors place cars with it on <b>consignment</b>; the company operates them — marketing, bookings, verification, deliveries, protection — and the revenue splits. Owners fund the fleet; the operator runs it.</p>'
-    +'<p><b>Who pays, who benefits, who’s exposed.</b> The owner funds the asset and eats depreciation; the agency does the work and carries the liability; both share the revenue. And the single most guarded fact in the industry is <b>the list of who owns the cars</b> — because a rival who learns your owners can go straight to them with a better split and pull your fleet out from under you without stealing a single car. The owner list <i>is</i> the business. That is why companies claim to own everything: it is defense, not vanity.</p>'
-    +'<p><b>The edge under the secret.</b> Because it runs on consignment, the barrier to entry is not “be rich enough to buy ten Lamborghinis.” It is trust and relationships — and there are seats at this table (broker, car-sourcer, operator) that outsiders never see. One detail to file for Tier 2: <i>how</i> a car is consigned — leased and re-registered to the agency, versus a looser hand-shake consignment — quietly decides whose insurance actually covers it. Most owners never ask. You will.</p>',
-  example:'<p><b>Ex — the survival math:</b> Three $250k cars, one in the shop for a month: you just lost ~33% of your capacity on an asset still costing you insurance, storage, and payments while it sits. Fifteen cars, one down: ~7%. Scale is not showing off; it is how you stop one repair from being an emergency.</p>',
-  teach:'Explain to a friend why a fleet showing twelve supercars on Instagram might own only two of them — and why they would rather you not know that.',
-  cards:[
-    {f:'What is an exotic-rental company, structurally?', b:'An agency: it operates cars placed with it on consignment by owners/investors, and splits the revenue. It mostly does not own the fleet.'},
-    {f:'Why can’t you just finance a fleet of exotics like economy cars?', b:'Each car costs more than a whole starter fleet, so debt outruns you — you can never finance enough to reach survival scale. Sourcing (consignment) solves it.'},
-    {f:'What is the most guarded secret in the industry, and why?', b:'The list of who owns the cars. A rival who learns it can poach your owners and take your fleet without stealing a car. The owner list IS the business.'}
-  ],
-  quiz:[
-    {q:'The single most important structural fact about the exotic-rental industry is that…', c:['Fleets buy their cars with fleet financing','Fleets mostly operate consigned cars owned by other people','Only the wealthy can enter','Turo owns most exotics'], a:1, e:'It is an agency/consignment model — owners fund the fleet, the operator runs it and splits revenue. That is what lowers the barrier to entry.'},
-    {q:'Why do fleets claim to own cars they actually operate on consignment?', c:['Vanity','Tax reasons','Defense — the owner list is their most poachable asset','It is legally required'], a:2, e:'If a competitor learns your owners, they can offer a better split and pull your inventory away. Hiding ownership protects the business.'}
-  ]},
-
-{ id:'t0_customer', sub:'T0', title:'Who actually rents supercars — the image, not the car',
-  predict:'You could build the coolest tuned Supra in the state — a genuine enthusiast’s dream car. Will it rent well sitting in an exotic fleet? Yes or no — and what does your answer reveal about who the customer really is?',
-  concept:'<p>Get this wrong and every marketing dollar you spend is wasted. Start by ruling out who it is <b>not</b>.</p>'
-    +'<p><b>Not the regular renter</b> (they are on the big platforms getting a sensible car for a trip). <b>Not the truly rich</b> (they own or lease their exotics, and when they travel they usually want the <i>opposite</i> of attention — quiet luxury). And the surprise: <b>not car enthusiasts</b> either. The person who can tell a Performante from an Evo mostly is not the person renting. Your tuned Supra sits unrented, because to the customer it reads as “a Toyota.”</p>'
-    +'<p><b>Who it actually is:</b> the band in the middle — people who cannot afford to <i>own</i> a supercar but can afford to <i>rent</i> the image of one. The product is not the car. <b>The product is the image.</b> In real life: content creators and B/C-list names shooting posts; crypto and day-trading money (cash-rich, credit-poor — buying is hard, renting is easy); rich kids on a weekend; and a group outsiders forget — <b>18-to-30-year-olds the big platforms lock out on age</b>, who come to independent operators instead.</p>'
-    +'<p><b>Two consequences that shape everything.</b> First, renters are <b>flexible about the car</b> in a way that shocks people from car sales — someone who asked for a Ferrari will happily leave in a Lamborghini if it is low, loud, aggressive, and photographs hard. Whole deals get saved by knowing this. Second, this customer is <b>expensive to find</b> — a small slice of the population that rents rarely and briefly — so whoever can <i>reliably produce these renters</i> holds real power. That is the foundation of the no-money door.</p>'
-    +'<p><b>The edge under it.</b> Each segment lives on a different surface — creators on short-form video, crypto money in group chats and on X, event/wedding demand through concierges and planners. And the age-gap group is not a loophole to fear: it is a <b>legal, underserved niche</b> that independents can serve precisely because personal-auto coverage rules are carrier-based, not platform age-gates. You will learn exactly why in Tier 2. <i>[VERIFY platform age thresholds — they shift.]</i></p>',
-  example:'<p><b>Ex — the save:</b> A client insists on “a Ferrari” for a photo shoot; your Ferrari is booked. You offer a Lamborghini that shoots just as hard. In car sales nobody swaps a Sentra for an Escalade — but here the client says yes, because they were renting a <i>look</i>, not a spec sheet. Deal saved.</p>',
-  teach:'Explain to a friend why an enthusiast’s dream-build can sit unrented while a “boring-badge” Lamborghini stays booked — and who the real customer is.',
-  cards:[
-    {f:'Who is the core exotic-rental customer?', b:'The middle band: can’t afford to OWN, can afford to RENT the image. Content creators, crypto money, rich kids, and the 18–30 age-gap platforms lock out.'},
-    {f:'What is the actual product being sold?', b:'The image — how the car makes the renter look and photograph. Not the spec sheet. Renters are flexible on the specific car if the look lands.'},
-    {f:'Why is “who can find these renters” the powerful role?', b:'The customer is a small, rarely-renting slice that normal marketing misses. Reliable lead production is scarce — so it holds leverage over fleets full of idle cars.'}
-  ],
-  quiz:[
-    {q:'A renter came in asking for a Ferrari, but yours is out. The most useful thing you know about this customer is…', c:['They will cancel if they can’t get the exact car','They are flexible — a Lamborghini that photographs as hard will save the deal','They want the best spec sheet','They are a car enthusiast'], a:1, e:'They rent the image, not the spec. Low, loud, aggressive, photogenic — the badge is interchangeable if the look lands.'},
-    {q:'Why can independent operators serve 18–30 renters the big platforms turn away?', c:['They ignore the law','They charge triple','Personal-auto coverage is carrier-based, not the platforms’ age-gated program','They don’t verify anyone'], a:2, e:'The age walls belong to the platforms’ own insurance programs. Personal-policy coverage transfers by carrier rules — a real, legal gap independents can serve (full logic in Tier 2).'}
-  ]},
-
-{ id:'t0_emptyseat', sub:'T0', title:'Why no empire exists yet — and the seat that’s open',
-  predict:'This is an industry of six-figure cars and four-figure daily rates, yet nobody has built a national brand — no dominant player anywhere past roughly $5–10M/year. The crown is sitting on the table. Guess why before you read.',
-  concept:'<p>Every exotic-rental company is a <b>small business</b>. The owners are in the shop doing deals, not distant investors. Most came in as <b>car people first</b> — deep automotive networks, real passion, encyclopedic model knowledge, relationships all over the local scene. That relationship web is a genuine moat: it cannot be downloaded, and anyone entering ends up depending on it.</p>'
-    +'<p><b>What the industry has little of is the operator half:</b> marketing systems, clean data, repeatable process, scale. The result is a landscape of well-connected, passionate companies running on referrals and gut feel. Some of the most established fleets run the entire operation on a spreadsheet. Marketing tactics are years out of date. And reliable data — utilization by car and city, real margins, seasonal demand — <b>basically does not exist</b>. Operators get their numbers by sitting down with each other and asking, because there is nothing to look up.</p>'
-    +'<p><b>The gatekeeping paradox.</b> Everyone guards owner names, broker rates, processes, numbers. Individually that is smart defense (you saw why in the agency lesson). Collectively it means the industry never built a public knowledge base — every newcomer starts from zero, and insiders like it that way because it keeps the club small. Here is the twist: <b>the gatekeeping that protects each player one-by-one is exactly what has stopped anyone from scaling.</b> You cannot build an empire on information that cannot leave the room.</p>'
-    +'<p><b>Who is forced to act, and who wins.</b> Nobody is forced to modernize — until someone does. The person who brings the missing half (modern marketing, systems, data, and now AI) steps onto a field where that skill set is rare and the incumbents cannot quickly copy it. The moat protecting the insiders is real; the seat next to them — the <b>operator seat</b> — is empty. Tier X is the whole playbook for sitting down in it.</p>'
-    +'<p><i>[VERIFY the ~$5–10M ceiling figure — it is an operator estimate, not a published statistic.]</i></p>',
-  example:'<p><b>Ex — no data to look up:</b> Want to know how often a Urus rents in your city per month? There is no report. The only source is another operator willing to tell you over coffee. That vacuum is the opportunity: whoever assembles clean data first holds something no incumbent has ever had.</p>',
-  teach:'Explain why an industry full of expensive cars and high day-rates has no dominant national player — and what kind of person is positioned to change that.',
-  cards:[
-    {f:'What skill set does the industry mostly LACK?', b:'The operator half: marketing systems, clean data, repeatable process, scale. It is rich in car knowledge and relationships, thin on systems.'},
-    {f:'What is the gatekeeping paradox?', b:'Guarding information protects each player individually but starves the whole industry of a knowledge base and data — which is exactly why nobody has scaled.'},
-    {f:'Where is the open opportunity (“the empty seat”)?', b:'The operator seat: bring modern marketing, systems, data, and AI to a relationship-run industry that cannot quickly copy those skills.'}
-  ],
-  quiz:[
-    {q:'The main reason no one has scaled exotic rental into a national brand is…', c:['The cars are too expensive to insure','Regulation bans it','Demand is too small','Industry-wide gatekeeping starved it of shared data and systems'], a:3, e:'Defensive secrecy that protects each operator individually prevents the data, systems, and scale an empire would require.'},
-    {q:'The “empty seat” at the industry’s table is…', c:['A car expert','The operator: systems, data, marketing, AI','A wealthy investor','A celebrity'], a:1, e:'Insiders own cars and relationships; almost none bring the operator skill set. That is the open, hard-to-copy lane.'}
-  ]},
-
-{ id:'t0_twodoors', sub:'T0', title:'The two doors, the ladder, and where your credit file comes in',
-  predict:'Two people want in. One has zero dollars. One has $100k of available credit. Do they walk through the same door — and which one can realistically start this week?',
-  concept:'<p>There are exactly two ways in, and everything in this course serves one or both.</p>'
-    +'<p><b>Door 1 — source leads (no money).</b> You find a renter and connect them to a car you do not control; the fleet pays you a spread. No license, no LLC on day one, no capital, no permission. Your first deal can happen this month by <b>walking in holding it</b>: “I have a verified renter who wants your Huracán this weekend — what’s your rate?” No fleet turns down a real deal because you are new. The lead <i>is</i> the introduction.</p>'
-    +'<p><b>Door 2 — provide a vehicle (capital).</b> You put roughly $100k+ of car on the table, placed on consignment, and collect an owner’s split. The most passive seat — the fleet does the work — but it requires the asset.</p>'
-    +'<p><b>Both doors lead to the same room.</b> The broker who keeps climbing ends up controlling cars; the owner who keeps hustling ends up sourcing demand. Control cars <i>and</i> produce renters and you are the agency. Your entry door is not your ceiling — it is just where the climb starts.</p>'
-    +'<p><b>The bridge the free version skips.</b> The person with “no money” and the person with “$100k of car” are often the <i>same person</i>, a year or two apart. What carries you from one to the other is a <b>credit file</b> — and this is the piece nobody teaches. Owning an exotic starts with your credit file: you build the personal file, then a business-credit profile, then you finance the asset through the business without wrecking your personal standing. That is why REDLINE runs a second rail (Tiers C0–C4) right alongside the industry. And the fastest movers run <b>both doors at once</b> — a “dual-rail” where your own lead lands on your own car and you collect the broker spread <i>and</i> the owner split on one deal, with nobody diluting you.</p>'
-    +'<p><b>Who is forced to act.</b> Nobody hands you a seat. But neither door needs anyone’s permission to start — the lead door needs a renter, the vehicle door needs an asset, and the credit rail needs only that you start your file today.</p>',
-  example:'<p><b>Ex — same person, two years apart:</b> Month 1, broke: you source leads, bank the spreads into a business account, and start building business credit. Month 20: that seasoned business finances your first “attainable exotic,” you place it on consignment, point your own lead flow at it, and collect both ends. The doors were never separate — the credit file was the hallway between them.</p>',
-  teach:'Explain the two doors into the industry, why they lead to the same place, and why a credit file is the bridge from the no-money door to the vehicle door.',
-  cards:[
-    {f:'What are the two doors into exotic rental?', b:'Door 1: source leads with no capital (broker a renter to a car you don’t control). Door 2: provide a vehicle (place ~$100k+ of car on consignment for a split).'},
-    {f:'How do you get a fleet to work with you before you have a track record?', b:'Walk in holding a verified deal. The lead is the introduction — no fleet turns down a real qualified renter because you’re new.'},
-    {f:'Why does REDLINE run a credit rail alongside the industry rail?', b:'Because the credit file is the bridge from the no-money door to the vehicle door — personal file → business credit → financing the exotic through the business.'}
-  ],
-  quiz:[
-    {q:'A person with no money and no car can still start in exotic rental this week by…', c:['Buying a Lamborghini on credit','Opening a warehouse','Sourcing a verified lead and walking it into a fleet for a spread','Getting a broker license'], a:2, e:'The lead door needs no capital or permission. A qualified renter is the introduction — the fleet pays a spread for the deal.'},
-    {q:'In REDLINE, the role of the credit file (Tiers C0–C4) is to…', c:['Replace the need for relationships','Bridge the no-money door to the vehicle door by financing the asset','Improve your Instagram','Lower insurance premiums'], a:1, e:'Owning an exotic starts with the file: build personal credit, then business credit, then finance the car through the business — the hallway between the two doors.'}
-  ]},
-
-// ═══════════════════════ CREDIT 0 · THE FILE FROM ZERO ═══════════════════════
-{ id:'c0_whatis', sub:'C0', title:'What your credit file actually is — and why the exotic starts here',
-  predict:'Two people both have a 720 credit score. One is approved to finance a $130k Aston Martin; the other is declined. Same score. What is the lender seeing that the single three-digit number hides?',
-  concept:'<p>Strip the mystique off. <b>Credit is a lender’s bet on your reliability, priced.</b> Your <b>file</b> at each bureau is the evidence behind the bet: every account, its limit and balance, your payment history, public records, and recent inquiries. The three-digit <b>score</b> is just that file <i>compressed</i> into one risk number.</p>'
-    +'<p><b>Why two identical scores aren’t identical bets.</b> A lender writing a $130k note does not stop at the number — it reads the file for three things the score blurs together: <b>depth</b> (how many accounts, how long they’ve been open), <b>capacity</b> (real high-limit revolving credit vs a couple of small cards), and <b>derogatories</b> (any lates, collections, or recent damage). Two 720s can differ wildly in thickness. The thin 720 — three young cards, no big limits — is a scarier bet on a six-figure car than the thick 720 with a decade of high-limit history, even though the app shows the same number.</p>'
-    +'<p><b>Who is forced to act, and how it costs you.</b> The lender is <i>forced</i> to price risk on whatever it sees. A thin or scary file does not always mean “no” — more often it means a worse yes: higher rate, bigger down payment, a co-signer. On a $130k asset, one notch of rate is real money every month. So the file is not paperwork; it is your <b>terms</b>.</p>'
-    +'<p><b>Why the exotic literally starts here.</b> Specialty exotic lenders (Tier C4) underwrite <i>both</i> the borrower and the asset. You cannot control the asset half yet — but the borrower half is a file you can start engineering today. Everything in C1–C4 is aimed at making that file a bet a lender wants to take.</p>'
-    +'<p><b>The fraud wall, said once and plainly.</b> The moment you start reading about credit you will meet people selling “credit privacy numbers,” new SSN-like identifiers, or overnight “sweeps.” Using a CPN or a fabricated identity to apply for credit is <b>federal fraud</b> — bank fraud and identity fraud — full stop. You never need it, it collapses the instant a lender verifies, and it can end the exact future you are building. This course teaches only the legitimate machine that actually moves a real file. <i>Educational only — not financial or legal advice.</i></p>',
-  example:'<p><b>Ex — the two 720s:</b> Applicant A: one 14-year-old card with a $40k limit, a paid-off auto loan, zero lates. Applicant B: three cards opened last year, $1,500 limits, one 30-day late. Same score, opposite bets. On a $130k Aston, the lender wants A — and gives B a worse rate or a no. The number was equal; the <i>files</i> were not.</p>',
-  teach:'Explain to a friend why two people with the same credit score can get completely different answers on a car loan — using the words file, depth, capacity, and derogatory.',
-  cards:[
-    {f:'What is a credit score, relative to a credit file?', b:'A compression of the file into one risk number. Lenders on big loans read the underlying file — depth, capacity, derogatories — not just the number.'},
-    {f:'What three things does a lender read past the score?', b:'Depth (how many/how old the accounts), capacity (real high-limit revolving credit), and derogatories (lates, collections, recent damage).'},
-    {f:'Why does “owning an exotic start with your credit file”?', b:'Specialty exotic lenders underwrite the borrower AND the asset. The borrower half is a file you can engineer now — it sets your rate, down payment, and approval.'},
-    {f:'The fraud wall in one line:', b:'CPNs / fake identifiers / overnight “sweeps” are federal fraud — never needed, they collapse on verification. Only the legitimate machine moves a real file.'}
-  ],
-  quiz:[
-    {q:'Two applicants both score 720. Why might only one be approved for a $130k car?', c:['The score is wrong','The files differ — depth, capacity, and derogatories aren’t equal','One lied','Scores don’t matter for cars'], a:1, e:'On a big note the lender reads the file, not just the number. A thin young file is a scarier bet than a thick high-limit one at the same score.'},
-    {q:'Someone offers to sell you a “CPN” to apply for credit under a fresh number. The correct move is…', c:['Use it only for small purchases','Ask for a discount','Use it to build then switch back','Refuse — it’s federal fraud that collapses on verification'], a:3, e:'CPNs / synthetic identifiers are bank and identity fraud. Never needed, and they destroy the future you’re building. Only legitimate file-building works.'}
-  ]},
-
-{ id:'c0_bureaus', sub:'C0', title:'The three bureaus, your reports, and the hidden files',
-  predict:'You check your score in one app and it reads 700. A lender pulls you the same afternoon and quotes off a 660. Neither of you is lying. How can the same person have two different scores at the same moment?',
-  concept:'<p>There is no single “credit report.” There are three national bureaus — <b>Equifax, Experian, and TransUnion</b> — and each holds its <i>own</i> file on you. Creditors are not required to report to all three, and many report to one or two, so the files diverge. Different file in, different score out. That is the whole answer to the 700-vs-660 mystery.</p>'
-    +'<p><b>Pull all three, free.</b> The official free-report channel lets you see each bureau’s file directly <i>[VERIFY the current official free-report site and cadence]</i>. Read them for accuracy first — a surprising share contain errors, and an error on the bureau a lender happens to pull can cost you the deal.</p>'
-    +'<p><b>The files most people never know exist.</b> Beyond the big three sit specialty consumer bureaus, and they matter here:</p>'
-    +'<p>• <b>ChexSystems</b> — your banking history (overdrafts, closed accounts). A bad ChexSystems record can block you from opening the <i>business bank account</i> you will need in C3. Few people check it until they’re denied.<br>'
-    +'• <b>LexisNexis</b> and <b>SageStream / Clarity</b> — specialty bureaus that auto and subprime lenders pull, holding data the big three may not. You have the right to request these too.</p>'
-    +'<p><b>Who is forced to act, and where your leverage is.</b> The lender chooses which bureau and which score model to pull — so your job is to make <i>the file they’ll actually see</i> clean, not just the one your app shows. Auto and exotic lenders often have a bureau preference that varies by region and lender. Learn your target lender’s pull, and clean that file first.</p>'
-    +'<p><b>Your rights are the tool.</b> The Fair Credit Reporting Act (FCRA) gives you the right to see these files and to <b>dispute</b> inaccurate items on all of them — the legitimate lever you’ll use in C2. <i>Educational only — not legal advice; confirm current rights and procedures.</i></p>',
-  example:'<p><b>Ex — the bureau that quietly killed a deal:</b> Your file is clean at Experian and TransUnion, but an old collection still shows at Equifax. The dealer’s lender pulls Equifax. You walk in expecting your app’s 700 and get quoted like a 640. Same you — different file. Knowing which bureau they pull is half the game.</p>',
-  teach:'Explain why one person can have three different credit scores at once, and name two “hidden” files (beyond Equifax/Experian/TransUnion) that can affect getting a bank account or a car loan.',
-  cards:[
-    {f:'Why do your scores differ across bureaus?', b:'Equifax, Experian, and TransUnion each hold their own file, and creditors don’t all report to all three. Different data in → different score out.'},
-    {f:'What is ChexSystems and why does it matter to an operator?', b:'It’s your banking-history file. A bad record can block you from opening the business bank account you need to build business credit (C3).'},
-    {f:'What are LexisNexis and SageStream/Clarity?', b:'Specialty consumer bureaus that auto/subprime lenders pull. You can request these files too — and clean the one your target lender uses.'}
-  ],
-  quiz:[
-    {q:'The best explanation for a 700 app-score but a 660 lender-pull is…', c:['Each bureau holds a different file and lenders pull different ones','One is fake','The lender made an error','Your score dropped that day'], a:0, e:'Three bureaus, three files, multiple score models. Optimize the file the lender will actually pull, not just the app’s.'},
-    {q:'Before building business credit, checking ChexSystems matters because…', c:['A bad banking record can block the business bank account you’ll need','It sets your FICO','It’s required by the IRS','It lists your car loans'], a:0, e:'ChexSystems is banking history. A negative record can stop you from opening the business account that the whole business-credit machine sits on.'}
-  ]},
-
-{ id:'c0_scores', sub:'C0', title:'FICO vs VantageScore — and the score an auto lender actually pulls',
-  predict:'Your free app says 740. You sit at the exotic dealer’s finance desk and their screen shows 705. Which number is “real” — and which one just quietly cost or saved you thousands over the life of the loan?',
-  concept:'<p>Two different companies make credit scores, and each makes many versions. Confusing them is how people walk into a finance office over-confident and walk out over-charged.</p>'
-    +'<p><b>VantageScore</b> (3.0/4.0) is what most <i>free</i> apps show — Credit Karma and similar. It is a real score and a fine gauge of direction, but most lenders do not buy it. <b>FICO</b> is what most lenders actually purchase to make the decision — and FICO comes in versions tuned to the loan:</p>'
-    +'<p>• <b>Mortgages</b> generally pull older versions — FICO 2, 4, and 5 — one per bureau.<br>'
-    +'• <b>Most auto lenders</b> pull an <b>industry-enhanced FICO Auto Score</b> on a <b>250–900</b> scale (not the familiar 300–850) that weights your <i>auto</i> history more heavily.<br>'
-    +'• <b>General/card decisions</b> lean on FICO 8, with FICO 9 and 10T newer and less universal.<br>'
-    +'<i>[VERIFY exact versions and scale — score models and lender adoption change over time.]</i></p>'
-    +'<p><b>Who is forced to act, and on which number.</b> Whoever is lending prices off <i>their</i> chosen model, pulled from <i>their</i> chosen bureau. So the “real” number is the one on the finance-desk screen — the app’s figure is a rough proxy, sometimes optimistically high.</p>'
-    +'<p><b>The edge for the exotic.</b> Because the exotic/auto pull is usually a <b>FICO Auto Score</b>, your <i>auto</i> trade line matters more than a general score model would suggest. A single modest financed car, paid perfectly, can lift the exact number the exotic desk reads — which is why the credit-mix and auto-history moves in C1 are not generic “build credit” advice. They are aimed at the model that decides your rate on the car. <i>Educational only, never advice.</i></p>',
-  example:'<p><b>Ex — the 35-point surprise:</b> App shows 740 (VantageScore). The dealer pulls a FICO Auto Score from a different bureau and sees 705. Nothing is wrong — different company, different version, different bureau, auto-weighted scale. If you had known, you might have cleaned that bureau or added a clean auto line first, and walked in matching their screen.</p>',
-  teach:'Explain the difference between the free-app score and the number a car lender uses — and why a clean auto loan can matter more for an exotic than for a credit-card approval.',
-  cards:[
-    {f:'What score do most free apps show, and do lenders use it?', b:'VantageScore 3.0/4.0 — a real, useful gauge, but most lenders don’t buy it. They mostly buy FICO.'},
-    {f:'What score do most auto lenders actually pull?', b:'An industry-enhanced FICO Auto Score, often on a 250–900 scale, weighting auto history more heavily. [VERIFY — models change.]'},
-    {f:'Why does a clean auto trade line matter extra for an exotic?', b:'The exotic/auto pull is usually a FICO Auto Score. Auto history is weighted heavily, so one perfectly-paid car loan can lift the exact number the desk reads.'}
-  ],
-  quiz:[
-    {q:'The number a car lender uses to set your rate is usually…', c:['Your Credit Karma VantageScore','A FICO Auto Score, often on a 250–900 auto-weighted scale','An average of all your scores','Whatever you tell them'], a:1, e:'Most auto lenders buy an industry-enhanced FICO Auto Score. The free-app VantageScore is a proxy, not the decision number.'},
-    {q:'For someone targeting an exotic auto loan, a smart early credit move is…', c:['Open ten new cards fast','Close all old accounts','Establish/keep a clean auto trade line, since the Auto Score weights it heavily','Only use the free-app score'], a:2, e:'The exotic pull is auto-weighted, so a perfectly-paid auto line moves the exact model the desk reads — targeted, not generic.'}
-  ]},
-
-// ═══════════════════════ CREDIT 4 · FINANCING THE EXOTIC ═══════════════════════
-// (Seeded ahead of C1–C3 because it answers a live question: how the multi-car
-//  game actually works, and exactly where it becomes a felony.)
-{ id:'c4_dti', sub:'C4', title:'DTI, PTI, and how people actually stack multiple cars',
-  predict:'Someone already owes on three financed cars. How does he drive out in a fourth brand-new one the same week — before the fourth loan is paid down at all? What is each lender not seeing?',
-  concept:'<p>Two ratios run every auto-approval. <b>DTI</b> (debt-to-income) is your total monthly debt payments ÷ gross monthly income. <b>PTI</b> (payment-to-income) is just the car payment ÷ income. Auto lenders decide on those two plus your score — a “manageable” DTI is roughly under ~45–50% for most, PTI often capped near ~15–20% <i>[VERIFY — varies by lender and credit tier]</i>. So the question “how do you keep getting approved while you still owe?” has four real mechanical answers.</p>'
-    +'<p><b>1 — The reporting lag (the big one).</b> A new loan does not appear on your credit report the instant it funds; it posts on the lender’s <i>next monthly cycle</i>, up to ~30–45 days later. Apply to several lenders inside a tight window and each pulls a report where the <i>other</i> fresh loans have not posted yet — so your DTI looks lower to each than it truly is. That is the mechanism behind “two M cars at once.” It is legal <b>only if every application is truthful</b>; lenders now counter it with undisclosed-debt monitoring and a soft re-pull before funding, and it collapses the instant all those payments arrive together.</p>'
-    +'<p><b>2 — Different desks, different appetite.</b> A captive lender (BMW Financial Services on an M car) pushes its own brand harder than a bank or credit union will. Two cars can clear two different underwriters who never compared notes.</p>'
-    +'<p><b>3 — Lease vs finance.</b> A lease payment is lower — you pay depreciation plus rent, not the whole car — so it consumes less PTI per car, and more obligations fit on paper. Manufacturers push leases on M/AMG hard for exactly this reason.</p>'
-    +'<p><b>4 — Rolling negative equity (“rolling his debts”).</b> When you owe more than a car is worth (upside-down), the dealer rolls that negative balance into the <i>next</i> car’s loan. You never settle the old debt — you stack it onto the new one. Repeat it and the balance snowballs. <b>That is exactly how a person reaches $290k across a handful of cars.</b> Each roll leaves you more upside-down and more fragile.</p>'
-    +'<p><b>Who is forced to act — and the honest verdict.</b> The lender is forced to price risk off an incomplete, lagging snapshot; the borrower gaming the lag is borrowing against a picture he knows is stale. None of these four levers create income — they only rearrange timing and payments. Debt your income (or the car’s earnings) cannot service is a countdown, not a strategy. The operator’s real answer to “carry many cars” is not the lag shotgun — it is graduating to <b>business/commercial financing</b> (C3), where the business’s income and credit carry the vehicles and the cars <i>earn</i> on consignment to service the note. That is leverage that pays for itself; the lag game is leverage that eats you. <i>Educational only — not financial advice.</i></p>',
-  example:'<p><b>Ex — the snowball:</b> Car 1: owe $60k, worth $45k → roll $15k negative equity into Car 2 ($70k) = $85k owed on a $55k car → roll $30k into Car 3 ($90k) = $120k owed. Three trades, no cash down, and the debt has outrun every car. Stack a few more and you are at $290k with nothing that could sell for close to it.</p>',
-  teach:'Explain how the credit-reporting lag lets someone get two approvals at once, and why rolling negative equity makes total debt snowball instead of shrink.',
-  cards:[
-    {f:'DTI vs PTI', b:'DTI = all monthly debt payments ÷ gross income. PTI = just the car payment ÷ income. Auto lenders decide on both plus your score.'},
-    {f:'Why can you get two car approvals in the same week?', b:'The credit-reporting lag: a new loan takes up to ~30–45 days to post, so each lender pulls a report missing the other fresh loans. Legal only if every app is truthful.'},
-    {f:'What does “rolling negative equity” do to your debt?', b:'It stacks the upside-down balance of the old car onto the new loan. It snowballs — each roll leaves you more upside-down. It is how debt balloons to six figures.'},
-    {f:'The operator’s legitimate way to carry many cars?', b:'Graduate to business/commercial financing (C3) where the business income/credit carries the vehicles, and the cars earn on consignment to service the note.'}
-  ],
-  quiz:[
-    {q:'The main mechanical reason someone can get two new car loans in one week is…', c:['Lenders don’t check credit','The reporting lag — new loans take weeks to post, so each lender sees an incomplete file','It’s illegal and they got lucky','High income only'], a:1, e:'Funded loans post on the next monthly cycle. Apply in a tight window and each lender misses the other fresh debt — legal only if the applications are truthful.'},
-    {q:'Rolling negative equity across trades causes total debt to…', c:['Shrink each time','Stay flat','Disappear at trade-in','Snowball — the old upside-down balance stacks onto each new loan'], a:3, e:'The negative balance is added to the next loan, so you get more upside-down every trade. It is how a stack reaches $290k.'},
-    {q:'The four stacking levers (lag, captive desks, leasing, rolling equity) all share one limit:', c:['They raise your score','They only rearrange timing and payments — none add income to service the debt','They create new income','They are all illegal'], a:1, e:'They move debt around; they do not fund it. Debt your income or the car’s earnings can’t service is a countdown.'}
-  ]},
-
-{ id:'c4_fraudline', sub:'C4', title:'Manufacturing DTI: the felony line, and why it ends the operator',
-  predict:'Ken quit his job and still got approved for two brand-new M cars. Only two things could make that happen — one is legal, one is a federal crime. What are they, and which one is the trap that ends a business?',
-  concept:'<p>A jobless applicant gets a “yes” exactly two ways, and you must be able to tell them apart instantly.</p>'
-    +'<p><b>Path A — legal.</b> He truthfully stated <i>other</i> real resources: business income, investment or rental income, documented cash reserves, or a co-signer. A lender can honestly approve on those. No job is not the same as no income, and stating real income is never the crime.</p>'
-    +'<p><b>Path B — fraud.</b> He stated a job or income he no longer had, inflated the number, or produced fake pay stubs or a fake employer to “manufacture” a passing DTI. <b>That is loan-application fraud</b> — state auto-lending fraud statutes, and federal <b>bank fraud (18 U.S.C. §1344)</b> when a federally insured lender is involved. Fabricated income, a fake verification line, claiming employment you quit — all of it. Manufacturing DTI by fabrication is not a life hack; it is a felony on a document you signed.</p>'
-    +'<p><b>The line sits right next to a legal move.</b> The reporting-lag shotgun from the last lesson is legal <i>if every application is truthful</i>, and fraud the instant you misstate income — or run it as a deliberate scheme to load debt you never intend to service (a “bust-out”). Same keystrokes; <b>intent and truthfulness</b> decide which side of a prison wall you are on.</p>'
-    +'<p><b>Why this is disqualifying for YOU, not merely risky.</b> The entire REDLINE thesis rests on three assets a fraud flag destroys. <b>(1) Your credit file</b> — the thing all of C0–C4 exists to build — takes a default, repo, charge-off, or fraud marker, and the specialty exotic lenders in C4, who underwrite the <i>borrower</i>, slam shut. <b>(2) Your insurability</b> — commercial exotic underwriters (Tier 4) run financial and background checks; a fraud in your history is exactly what makes them decline the policy your business cannot operate a single day without. <b>(3) Your reputation</b> — in a small, talkative industry (Tier 7), fleets and owners broadcast bad actors across a metro in days, and a financing-fraud story travels the same road. The fraud path does not just risk jail; it <b>forecloses the business you are trying to build.</b></p>'
-    +'<p><b>The discipline that is the actual edge.</b> Leverage into cars only when three things are all true: the debt is <i>truthfully</i> underwritten; the cars <i>earn</i> enough (consignment/rental) to service it; and you have moved the risk into a <i>business built to carry it</i>. Ken — jobless, manufactured DTI, $290k upside-down — is not the blueprint. He is the cautionary tale this whole course is engineered to keep you from becoming. This lesson exists so you can <b>recognize</b> these tactics and never sign your name to one, and never be sold them by a “credit guru.” It will never teach you to execute them, because executing them ends you. <i>Educational only — not legal or financial advice.</i></p>',
-  example:'<p><b>Ex — the fork:</b> Two identical applications from a man with no job. One lists $9k/month in verifiable LLC distributions and $80k in the bank — a clean, legal approval. The other lists a job he quit last month at $9k/month — the same “approval,” now a felony waiting for the first verification call or the first missed payment. The number on the page was identical; one built a future and one detonated it.</p>',
-  teach:'Explain the two ways a jobless person can get a car approved, which one is a felony, and why that felony is fatal to an exotic-rental operator specifically.',
-  cards:[
-    {f:'The two ways a jobless applicant gets approved:', b:'A) Truthfully stating other real income/assets/co-signer — legal. B) Misstating income/employment to manufacture DTI — loan-application fraud (a felony).'},
-    {f:'When does the reporting-lag shotgun become fraud?', b:'The instant you misstate income on an application, or run it as a scheme to load debt you never intend to service. Intent + truthfulness decide it.'},
-    {f:'Why is financing fraud disqualifying for an operator, not just risky?', b:'It destroys the three assets the business needs: your credit file (lenders), your insurability (commercial underwriters), and your reputation (a talkative industry).'},
-    {f:'The disciplined use of leverage:', b:'Borrow only when the debt is truthfully underwritten, the cars earn enough to service it, and the risk sits in a business built to carry it.'}
-  ],
-  quiz:[
-    {q:'A person with no job gets approved for two M cars. The LEGAL version of that is…', c:['He faked pay stubs well','He used the reporting lag to hide income','He truthfully stated other real income, assets, or a co-signer','He used a CPN'], a:2, e:'No job is not no income. Truthfully stating business/investment income, reserves, or a co-signer is a legitimate approval. Fabricating income is the crime.'},
-    {q:'“Manufacturing DTI” by stating income you don’t have is…', c:['A gray area','Loan-application fraud — state statutes and federal bank fraud','A smart hack','Only a problem if you miss payments'], a:1, e:'False income/employment on a credit application is fraud on a document you signed — a felony whether or not the payments are later made.'},
-    {q:'For an exotic-rental operator, a financing-fraud flag is fatal mainly because it destroys…', c:['Only your credit score','Your Instagram following','Nothing important','Your credit file, your insurability, and your reputation at once'], a:3, e:'The business runs on lender approvals, commercial-insurance underwriting, and a spotless reputation — a fraud marker takes out all three.'}
-  ]}
-
-];
-
-// ── TIER-GATE DRILL BANKS ─────────────────────────────────────
-// Adaptive timed drills per tier. d:1 easy · 2 medium · 3 hard.
-window.REDLINE_QBANK = {
-  T0: [
-    {q:'An exotic-rental “agency” primarily…', c:['Owns its entire fleet outright','Sells cars','Only leases from manufacturers','Operates consigned cars owned by others and splits revenue'], a:3, e:'Consignment is the model: owners fund the fleet, the operator runs and splits it.', d:1},
-    {q:'The most guarded information in the industry is…', c:['Daily rates','The list of who owns the cars','Delivery zones','Instagram passwords'], a:1, e:'Owner lists are poachable — learn them and you can take a fleet’s inventory. Hence the secrecy.', d:2},
-    {q:'“Survival math” for fleet size means…', c:['Bigger fleets look better online','With few cars, one in the shop wipes out a large share of revenue','More cars means lower insurance','Three cars is optimal'], a:1, e:'Scale spreads the risk of any single car being down; it is survival, not ego.', d:2},
-    {q:'The core exotic-rental customer is best described as…', c:['The truly wealthy','Car enthusiasts','People who can’t OWN but can rent the image','Business travelers'], a:2, e:'The product is the image; the customer rents the look, not the spec.', d:1},
-    {q:'A renter asked for a Ferrari but it’s booked. Your best play relies on the fact that…', c:['They’ll always wait','They’re flexible if the replacement photographs as hard','They only want that VIN','They want the cheapest car'], a:1, e:'They rent a look, not a badge — a comparable aggressive car saves the deal.', d:2},
-    {q:'Independents can serve 18–30 renters the big platforms reject because…', c:['Coverage on personal auto policies is carrier-based, not the platforms’ age program','They skip verification','They break the law','They charge cash only'], a:0, e:'Age walls are the platforms’ insurance programs; personal-policy transfer follows carrier rules.', d:3},
-    {q:'Why has no national exotic-rental empire emerged?', c:['Industry-wide gatekeeping starved it of data, systems, and scale','No demand','It’s illegal to scale','Cars are uninsurable'], a:0, e:'Defensive secrecy prevents the shared data and operator systems scaling requires.', d:2},
-    {q:'The “empty seat” at the table is the…', c:['Operator: systems, data, marketing, AI','Car expert','Investor','Celebrity spokesperson'], a:0, e:'Insiders have cars and relationships; the operator skill set is rare and hard to copy.', d:2},
-    {q:'Door 1 into the industry (no capital) is…', c:['Buying a supercar','Sourcing/brokering a renter to a car you don’t control','Opening a warehouse','Getting licensed'], a:1, e:'Lead sourcing needs no capital or permission; the lead is the introduction.', d:1},
-    {q:'The clean way to approach a fleet with no track record is to…', c:['Walk in holding a verified deal','Ask for a job','Offer to buy a car','Post about them'], a:0, e:'A qualified renter is the strongest possible introduction — fleets don’t refuse real deals.', d:2},
-    {q:'In REDLINE, the credit rail exists to…', c:['Replace relationships','Bridge the no-money door to the vehicle door via financing','Improve marketing','Cut insurance costs'], a:1, e:'Personal file → business credit → finance the asset: the hallway between the two doors.', d:2},
-    {q:'The “dual-rail” advantage is…', c:['Owning two warehouses','Renting only SUVs','Collecting the broker spread AND the owner split on your own deal','Using two CRMs'], a:2, e:'Your lead on your car means you’re broker and owner at once — nobody dilutes you.', d:3}
-  ],
-  C0: [
-    {q:'A credit score is best understood as…', c:['A random number','Set by the government','Your net worth','The credit file compressed into one risk number'], a:3, e:'Lenders on big loans read the underlying file, not just the compressed score.', d:1},
-    {q:'Two identical 720 scores can be different bets because of differences in…', c:['Zip code','Score app used','Depth, capacity, and derogatories in the file','Hair color'], a:2, e:'A thin young file is a scarier bet than a thick high-limit one at the same number.', d:2},
-    {q:'A “CPN” offered to apply for credit is…', c:['Federal fraud that collapses on verification','A smart hack','A business EIN','A second SSN the IRS issues'], a:0, e:'CPNs / synthetic identifiers are bank and identity fraud — never needed, always destructive.', d:1},
-    {q:'You have a 700 in an app but a lender pulls 660. The reason is usually…', c:['Someone lied','Fraud on your file','A glitch','Different bureau and score model'], a:3, e:'Three bureaus, multiple models — optimize the file the lender actually pulls.', d:2},
-    {q:'ChexSystems tracks…', c:['Your FICO','Your car loans','Your banking history (overdrafts, closed accounts)','Your rent'], a:2, e:'A bad ChexSystems record can block the business bank account business credit sits on.', d:2},
-    {q:'Most free credit apps display…', c:['VantageScore 3.0/4.0','FICO Auto Score','FICO 2/4/5','The lender’s exact pull'], a:0, e:'VantageScore is a useful gauge but usually not what lenders buy.', d:1},
-    {q:'Most auto lenders decide using…', c:['An industry-enhanced FICO Auto Score (often 250–900)','VantageScore','Your bank balance','A mortgage FICO'], a:0, e:'The auto pull weights auto history and uses a different scale than 300–850.', d:2},
-    {q:'Because the exotic pull is auto-weighted, a high-value early move is…', c:['Keeping a clean auto trade line','Closing old cards','Maxing a card','Ignoring your score'], a:0, e:'A perfectly-paid auto line lifts the exact model the exotic desk reads.', d:2},
-    {q:'The FCRA primarily gives you the right to…', c:['Erase accurate debts','See your files and dispute inaccurate items','Demand a 0% rate','Open unlimited accounts'], a:1, e:'It’s the legitimate lever: access and dispute of inaccuracies across bureaus.', d:2},
-    {q:'“The real score” at the finance desk is…', c:['Your app’s number','Always 850','The highest of your three','The model and bureau the lender actually pulls'], a:3, e:'Whoever lends prices off their chosen model and bureau — that’s the number that sets terms.', d:3}
-  ]
-};
-
-// ═══════════════════════ CREDIT 1 · THE FIVE LEVERS ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'c1_payment', sub:'C1', title:'Lever 1 — payment history: the 35% you can never buy back',
-  predict:'One 30-day late payment on an otherwise perfect file. How many points can it cost, and how long does it legally stay on the report — even after you pay it?',
-  concept:'<p>FICO’s recipe is roughly: <b>payment history ~35%</b>, amounts owed ~30%, length ~15%, new credit ~10%, mix ~10% <i>[VERIFY — weights are approximate and vary by model]</i>. Payment history is the heaviest lever, and it is asymmetric: years of on-time payments build slowly, while a single reported late detonates instantly.</p>'
-    +'<p><b>The mechanics.</b> A payment only becomes reportable when it is a full <b>30 days past due</b> — a payment five days late costs you a fee, not your file. From there the ladder is 30 → 60 → 90 → 120 → charge-off, each rung worse. A fresh 30-day late on a clean file can cost roughly 60–100+ points <i>[VERIFY — depends on the file]</i>, and the mark stays for <b>seven years from the date of delinquency</b>, paying it does not remove it — it only stops the bleeding and marks it paid.</p>'
-    +'<p><b>Who is forced to act.</b> The furnisher (your card issuer or lender) reports monthly; the bureaus record what they send. So your leverage is entirely <i>before</i> day 30: autopay for at least the minimum on every account, with any manual payments on top. The minimum-autopay + manual-extra pattern means a distracted month can cost you interest, never a late.</p>'
-    +'<p><b>The one legitimate undo: the goodwill letter.</b> If you have a long clean history and one slip, write the creditor and ask them to delete the late as a courtesy — furnishers may adjust their own reporting. It works often enough to always be worth the stamp, especially with banks you hold other accounts with. What is never legitimate: disputing an accurate late as “not mine” — that is lying to a bureau, and it is the exact line the credit-sweep scammers in C2 push you across.</p>'
-    +'<p><b>Why this lever matters double here.</b> The FICO Auto Score (C0) weights your <i>auto</i> payment lines heavily. One perfect car loan is quiet gold; one 30-day late on a car loan is exactly the wrong place to have one when an exotic lender reads your file.</p>',
-  example:'<p><b>Ex:</b> Two files, both 740. File A misses one card payment by 32 days on a $40 balance. It reports; A drops to ~660 <i>[VERIFY range]</i> and carries the mark for 7 years. The $40 was never the point — the reported <i>event</i> was. Autopay would have cost nothing.</p>',
-  teach:'Explain why a $40 late can cost 80 points and 7 years, why paying it doesn’t erase it, and the one honest way it sometimes comes off.',
-  cards:[
-    {f:'When does a late payment hit your credit file?', b:'Only at 30+ days past due. Before day 30 it costs fees, not the file. Then 30/60/90/120 → charge-off, each rung worse, 7 years from delinquency.'},
-    {f:'The autopay pattern that makes lates impossible:', b:'Autopay the minimum on every account, pay extra manually. A distracted month costs interest, never a reported late.'},
-    {f:'What is a goodwill letter?', b:'A request that the creditor delete an accurate late as a courtesy after a long clean history. Legitimate, often works, always worth trying.'},
-    {f:'Why payment history matters extra for the exotic:', b:'FICO Auto weights auto lines heavily — a perfect car loan is gold; a late on one is poison at the exotic desk.'}
-  ],
-  quiz:[
-    {q:'A payment 20 days past due…', c:['Reports as a 30-day late','Costs a fee but does not hit the credit file','Stays 7 years','Halves your score'], a:1, e:'Reporting starts at a full 30 days past due. Before that it is a fee problem, not a file problem.'},
-    {q:'Paying off a reported 30-day late…', c:['Removes it from the file','Marks it paid but it stays up to 7 years from delinquency','Resets your score','Converts it to a soft inquiry'], a:1, e:'Payment stops the bleeding; the event remains. Only goodwill deletion (or an actual inaccuracy dispute) removes it.'},
-    {q:'The legitimate move after one late on a long clean file is…', c:['Dispute it as “not mine”','A goodwill letter asking the furnisher to delete it','A credit sweep','Closing the account'], a:1, e:'Goodwill requests are honest and often work. Disputing accurate data as fraud is the scam line — never cross it.'}
-  ]},
-
-{ id:'c1_utilization', sub:'C1', title:'Lever 2 — utilization and the statement-date trick (AZEO)',
-  predict:'You pay every card in full, every month, never a day late — yet your score sags. What number is the bureau seeing that you think you’ve already handled?',
-  concept:'<p><b>Utilization</b> — your revolving balances as a percentage of limits — is ~30% of the score, and it has a property most people never learn: <b>it has no memory.</b> It is a snapshot, recalculated from whatever your cards most recently reported. Fix it this month and the score responds this month.</p>'
-    +'<p><b>The trick is WHEN cards report.</b> Almost every issuer reports your balance on the <b>statement closing date</b>, not the due date. Pay in full by the due date and the bureau still saw the balance that closed on the statement. Heavy card users look maxed to the bureau while never paying a cent of interest. The move: <b>pay down before the statement closes</b>, so the number that reports is the number you chose.</p>'
-    +'<p><b>AZEO — All Zero Except One.</b> For a maximum-polish snapshot (before an important application): let every card report <b>$0</b> except one, which reports a small balance (1–9% of its limit). All-zero everywhere can actually score slightly worse than one tiny balance <i>[VERIFY — model behavior]</i>; AZEO is the tuned position. Both <i>overall</i> utilization and <i>per-card</i> utilization matter — one maxed card hurts even when the overall number is low.</p>'
-    +'<p><b>The other side of the fraction.</b> Utilization = balance ÷ limit, so raising limits lowers utilization at the same spending. Ask for <b>credit-limit increases</b> every 6–12 months — many issuers do them with a soft pull (ask which before agreeing) <i>[VERIFY per issuer]</i>. And never casually close old cards: you lose their limit from the denominator and eventually their age (C1’s next lever). Downgrade (product-change) an annual-fee card instead of closing it.</p>'
-    +'<p><b>Who benefits.</b> This is the fastest legitimate lever in all of credit: no new accounts, no inquiries, no risk — just timing and denominators. Thirty days before any car application, AZEO the file. It is the closest thing to a free score boost that exists.</p>',
-  example:'<p><b>Ex:</b> $8k limit, $6k monthly spend, always paid in full by the due date → reports 75% utilization, score sags. Same spend, paid to $300 two days before the statement closes → reports 3.7%. Nothing about the spending changed. The reported <i>snapshot</i> did.</p>',
-  teach:'Explain why paying in full by the due date can still report high utilization, and walk through AZEO before a car application.',
-  cards:[
-    {f:'When do cards report your balance?', b:'At the statement closing date, not the due date. Pay BEFORE the close and you choose the number the bureau sees.'},
-    {f:'AZEO', b:'All Zero Except One: every card reports $0 except one small 1–9% balance. The tuned pre-application snapshot; all-zero can score slightly worse.'},
-    {f:'Why never casually close an old card?', b:'You lose its limit from the utilization denominator now and its age later. Product-change annual-fee cards instead.'},
-    {f:'Why is utilization the fastest lever?', b:'It has no memory — it is recalculated from the latest snapshot. Fix it this cycle, score responds this cycle.'}
-  ],
-  quiz:[
-    {q:'Utilization is calculated from…', c:['Your balance on the due date','The balance that reported at statement close','Your annual spending','Your income'], a:1, e:'Issuers report at statement close. Paying in full afterward doesn’t change what was already reported.'},
-    {q:'The AZEO position before a big application is…', c:['All cards at $0','All cards under 30%','One card maxed','All at $0 except one reporting 1–9%'], a:3, e:'One small reported balance with the rest at zero is the tuned snapshot; all-zero can score slightly worse.'},
-    {q:'Which action LOWERS utilization without touching spending?', c:['Closing an old card','A new hard inquiry','A credit-limit increase','Carrying a balance'], a:2, e:'Utilization = balance ÷ limit. Raising the denominator (CLIs, often soft-pull) lowers the percentage at the same spend.'}
-  ]},
-
-{ id:'c1_age_inq', sub:'C1', title:'Lever 3 & 4 — age of file, and the truth about inquiries',
-  predict:'Rate-shopping five auto lenders in one week: five hard pulls. Does your score take five hits — or one? And what determines the answer?',
-  concept:'<p><b>Age (~15%).</b> The models read your <b>average age of accounts</b> and the age of your <b>oldest</b> account. Consequences: your first real card is sacred — keep it open forever, even in a drawer with one small recurring charge. Every new account drops your average (the “thin and young” problem from C0), which is why the file you want for the exotic is <i>started early and opened calmly</i>. Time is the one input money cannot buy — which is exactly why the authorized-user lever in the next lesson is so valuable.</p>'
-    +'<p><b>New credit / inquiries (~10%).</b> A <b>hard inquiry</b> (you applied for credit) costs a few points and matters for about a year <i>[VERIFY]</i>; a <b>soft inquiry</b> (you checked yourself, a pre-qualification, a CLI soft pull) costs nothing. The part almost nobody knows: <b>rate-shopping dedup</b>. Multiple auto (or mortgage) inquiries inside a shopping window count as <b>one</b> inquiry for scoring — the window is 14 to 45 days depending on model version <i>[VERIFY]</i>. So you shop your exotic loan hard, in a tight window, without shredding the file. Spraying applications across three months is what shreds it.</p>'
-    +'<p><b>The gotcha inside the gotcha.</b> Dedup applies to <i>scoring</i>, but lenders still <i>see</i> every inquiry listed — and a manual underwriter reading six card applications last month reads hunger. Card inquiries never dedup. Keep card applications far away from the months before an auto application.</p>'
-    +'<p><b>Who is forced to act.</b> Nobody — this lever is pure discipline and calendar. The winning pattern for your situation: open what the file needs <i>early</i> (C2’s builder accounts), then go quiet, let age accrue, AZEO the snapshot, and concentrate your auto shopping into one two-week strike when you are actually buying.</p>',
-  example:'<p><b>Ex:</b> Buyer A applies to 5 auto lenders across January–March: five scored inquiries, each application looking more desperate. Buyer B pre-stages the file, then applies to 6 lenders in 10 days: scored as ONE inquiry, and every lender saw the same clean snapshot. Same shopping, opposite files.</p>',
-  teach:'Explain average age vs oldest account, hard vs soft pulls, and how the auto rate-shopping window lets you apply to many lenders for the price of one.',
-  cards:[
-    {f:'The two age numbers that matter:', b:'Average age of accounts and oldest account. First card stays open forever; new accounts drop the average.'},
-    {f:'Hard vs soft inquiry:', b:'Hard = you applied; small cost, ~1 year of relevance. Soft = self-checks, pre-quals, most CLIs; zero cost.'},
-    {f:'Auto rate-shopping dedup:', b:'Multiple auto inquiries inside a 14–45 day window [VERIFY] score as ONE. Concentrate your loan shopping into a tight strike.'},
-    {f:'What never dedups:', b:'Card inquiries. Keep card applications months away from an auto application — underwriters read recent hunger.'}
-  ],
-  quiz:[
-    {q:'Six auto-loan hard pulls within a tight shopping window score as…', c:['Six inquiries','Three','One','Zero'], a:2, e:'Auto/mortgage rate-shopping dedups to a single scored inquiry inside the window (14–45 days by model [VERIFY]).'},
-    {q:'Your oldest card has an annual fee you hate. The file-smart move is…', c:['Close it','Product-change (downgrade) it to a no-fee card','Max it out','Ignore the fee'], a:1, e:'Closing sacrifices age and limit. A product change keeps the account’s history alive without the fee.'},
-    {q:'Which is a SOFT inquiry?', c:['Checking your own score / a pre-qualification','A new card application','An auto loan application','A mortgage application'], a:0, e:'Self-checks and pre-quals don’t touch the score. Applications are hard pulls.'}
-  ]},
-
-{ id:'c1_mix_au', sub:'C1', title:'Lever 5 — credit mix, and the authorized-user accelerant',
-  predict:'A parent adds their kid to a 20-year-old credit card. The kid never touches the card — never even knows the number. What happens to the kid’s credit file, and why is a version of this sold on the internet for $1,500?',
-  concept:'<p><b>Mix (~10%).</b> Models like seeing you handle both <b>revolving</b> credit (cards) and <b>installment</b> credit (loans with fixed payments). A file of only cards is missing a food group. The clean fixes: a small <b>credit-builder loan</b> (C2), or in time a modest financed vehicle — which double-dips, because it also feeds the auto history the FICO Auto Score weights (C0). You never borrow <i>just</i> for mix; you sequence borrowing you already need so the mix builds itself.</p>'
-    +'<p><b>The authorized-user (AU) accelerant.</b> When you are added as an AU on someone’s card, many issuers report that card’s <b>entire history</b> — its age and its utilization — onto <i>your</i> file <i>[VERIFY per issuer]</i>. A parent’s or partner’s decade-old, high-limit, low-balance card can graft years of age onto a young file overnight. You don’t need the physical card; you need the reporting. This is the single fastest legitimate accelerant for a thin file, and it is exactly how families quietly hand their kids a head start.</p>'
-    +'<p><b>Now the wall.</b> Because AUs work, a market exists selling AU spots on strangers’ aged cards — “<b>tradeline buying</b>.” Understand it precisely: renting a stranger’s history to dress your file for a lender misrepresents the risk you actually are. It lives in a gray-to-black zone — banks treat it as file-dressing, scoring models actively discount suspected rented AUs <i>[VERIFY]</i>, and in loan contexts it can support a fraud theory when combined with anything else dishonest. It is also money burned: the boost is discounted, temporary, and removable at the seller’s whim. <b>Family and real partners, yes. Rented strangers, no.</b> An operator whose whole business runs on lender and insurer trust (C4·fraudline) does not rent a costume.</p>'
-    +'<p><b>Who benefits.</b> You, twice: honestly-added AU lines age your file while your own accounts season, and the mix fills in from borrowing you genuinely needed. Slow is smooth; smooth is fast.</p>',
-  example:'<p><b>Ex:</b> A 19-year-old with one 6-month-old secured card is added to a parent’s 15-year card ($20k limit, always paid). Next cycle, the file’s average age jumps years and utilization drops. Same person, no new debt — the file simply now tells a longer true story: this household pays.</p>',
-  teach:'Explain what an authorized user inherits, why family AU additions are legitimate while purchased tradelines are a trap, and how mix builds itself from borrowing you already needed.',
-  cards:[
-    {f:'What does an AU inherit?', b:'Many issuers report the card’s full age and utilization onto the AU’s file [VERIFY per issuer]. No card use required — the reporting is the gift.'},
-    {f:'Family AU vs bought tradeline:', b:'Family/partner AU = legitimate accelerant. Renting a stranger’s line = file-dressing: discounted by models, removable, and fraud-adjacent in loan contexts.'},
-    {f:'The clean mix fixes:', b:'A small credit-builder loan, and in time a modest financed vehicle — which also feeds the auto history the exotic desk’s score weights.'},
-    {f:'Rule for borrowing and mix:', b:'Never borrow JUST for mix. Sequence borrowing you already need so mix and auto history build themselves.'}
-  ],
-  quiz:[
-    {q:'Being added as an AU on a parent’s 15-year-old card typically…', c:['Does nothing without using the card','Is illegal','Requires a hard pull','Grafts the card’s age and utilization onto your file'], a:3, e:'Many issuers report the full line to the AU’s file — age and utilization included. The reporting, not the plastic, is the point.'},
-    {q:'Buying an AU spot on a stranger’s aged card is…', c:['A standard industry practice lenders respect','Guaranteed +100 points','File-dressing: discounted by models, removable, fraud-adjacent in loan contexts','Free'], a:2, e:'Rented history misrepresents your risk. Models discount it, sellers can drop you, and near a loan it feeds a fraud theory.'},
-    {q:'The right way to add installment mix to a card-only file is…', c:['Borrow anything immediately','A credit-builder loan or a genuinely-needed modest auto loan','A payday loan','Buy a tradeline'], a:1, e:'Small builder loans and needed auto borrowing add mix and auto history honestly — never borrow purely for mix.'}
-  ]},
-
-{ id:'c1_playbook', sub:'C1', title:'The 30-day file tune-up — sequencing all five levers',
-  predict:'You have 30 days before you want a lender pulling your file. Put the five levers in order: what do you do in week 1, and what do you absolutely NOT do in week 4?',
-  concept:'<p>Levers are only useful in sequence. Here is the tune-up, ordered by mechanism:</p>'
-    +'<p><b>Week 1 — see the battlefield.</b> Pull all three reports (C0). List every account, limit, statement close date, and any derogatory. Dispute genuine inaccuracies immediately (C2 covers the machine) — disputes take ~30 days, so they must start now. Check which bureau your target lenders pull if you can learn it.</p>'
-    +'<p><b>Week 1–2 — set the denominators.</b> Request soft-pull credit-limit increases on existing cards. Add a genuine family AU line if one exists — it needs a cycle or two to report. Set autopay minimums everywhere.</p>'
-    +'<p><b>Week 2–3 — stage the snapshot.</b> Map every card’s statement close date. Pay balances down BEFORE closes so the file reports AZEO: all zeros, one card at 1–9%. This is pure timing; it costs nothing.</p>'
-    +'<p><b>Week 4 — go quiet and strike.</b> No new card applications — none. New accounts in the pre-approval window drop your average age, add non-deduping inquiries, and read as hunger to a human underwriter. Then, when you shop the loan itself, concentrate every auto application into one tight window so they score as a single inquiry.</p>'
-    +'<p><b>What this cannot do.</b> It cannot erase a real late, age a young file, or manufacture income — those are C2 (repair), time, and honesty respectively. The tune-up polishes what is true. That is the whole point: the file a lender sees on day 30 is the truest, best-lit version of the file you actually have — nothing rented, nothing faked, nothing that unravels in underwriting.</p>',
-  example:'<p><b>Ex:</b> Day 1: reports pulled, one wrong-balance collection disputed, CLIs requested. Day 10: AU line from a parent added. Day 18–25: paydowns land before each statement close; AZEO set. Day 30: file reports 4% utilization, zero new inquiries, dispute resolved. The lender’s pull catches the file at its honest best — and the auto shopping that follows dedups to one inquiry.</p>',
-  teach:'Walk someone through the 30-day tune-up week by week, and name the two things it can never do.',
-  cards:[
-    {f:'Week 1 of the tune-up:', b:'Pull all 3 reports, list accounts/limits/close dates, dispute real inaccuracies immediately (they need ~30 days), request soft-pull CLIs.'},
-    {f:'Weeks 2–3:', b:'Add a genuine family AU if available; map statement closes; pay down before closes to stage AZEO.'},
-    {f:'Week 4 rule:', b:'Zero new card applications. Then concentrate all auto-loan applications into one tight window so they score as one inquiry.'},
-    {f:'What the tune-up cannot do:', b:'Erase true lates (that’s repair/goodwill), age a young file (time/AU), or manufacture income (never). It polishes what is true.'}
-  ],
-  quiz:[
-    {q:'Disputes go FIRST in the 30-day tune-up because…', c:['They’re the most fun','They raise limits','Reinvestigation takes ~30 days, so late-started disputes won’t resolve before the pull','They’re free'], a:2, e:'The FCRA reinvestigation window is ~30 days — start on day 1 or the fix misses your application.'},
-    {q:'The week-4 mistake that undoes the tune-up is…', c:['Opening a shiny new card','Paying a card early','Checking your own score','Setting autopay'], a:0, e:'A new account right before the pull drops average age, adds a non-deduping inquiry, and reads as hunger.'},
-    {q:'The tune-up’s honest limit is that it…', c:['Polishes the true file — it cannot erase real lates, add years, or invent income','Only works once a year','Requires a credit repair company','Needs 90 days minimum'], a:0, e:'Everything in it is timing and truth. Erasing real history or faking income is either repair, time, or fraud — not tuning.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.C1 = [
-  {q:'The heaviest FICO lever is…', c:['Payment history','Utilization','Credit mix','Inquiries'], a:0, e:'~35% [VERIFY]. One reported late outweighs almost anything else you can do that month.', d:1},
-  {q:'A late becomes reportable at…', c:['1 day past due','15 days','30 days past due','Only at charge-off'], a:2, e:'Fees start immediately; the FILE is only hit at 30+ days past due.', d:1},
-  {q:'Utilization is computed from…', c:['Due-date balance','Average daily balance','Annual spend','Statement-close reported balance'], a:3, e:'Cards report at statement close — pay before the close to choose the reported number.', d:2},
-  {q:'AZEO means…', c:['All cards at zero','All zero except one at 1–9%','Alternate zeros each month','All cards equal'], a:1, e:'One small reported balance, rest at zero — the tuned pre-application snapshot.', d:2},
-  {q:'Closing your oldest card…', c:['Helps your score','Loses its limit now and its age later','Is neutral','Removes lates'], a:1, e:'Denominator shrinks immediately; age eventually. Product-change instead.', d:2},
-  {q:'Auto rate-shopping inquiries inside the dedup window score as…', c:['One each','Half each','One total','Soft pulls'], a:2, e:'The 14–45 day auto/mortgage window [VERIFY] collapses them to one scored inquiry.', d:2},
-  {q:'Card application inquiries…', c:['Also dedup','Never dedup — and underwriters read recent card hunger','Are soft','Expire in a week'], a:1, e:'Dedup is for auto/mortgage shopping. Card pulls all count and all show.', d:3},
-  {q:'A family AU addition typically grafts…', c:['Nothing without card use','Only the limit','The line’s age and utilization onto your file','A hard inquiry'], a:2, e:'Many issuers report the full line to the AU [VERIFY] — the reporting is the gift.', d:2},
-  {q:'Buying a stranger’s tradeline is…', c:['A lender-respected strategy','File-dressing: discounted, removable, fraud-adjacent near loans','Permanent','Reported as installment'], a:1, e:'Rented history misrepresents risk; models discount it and it can feed a fraud theory.', d:3},
-  {q:'The correct final week before a planned auto pull is…', c:['Open two cards for mix','Max a card','Go quiet — no new applications; then shop the loan in one tight window','Close old accounts'], a:2, e:'Quiet file + concentrated auto shopping = best snapshot, one scored inquiry.', d:2}
-];
-
-// ═══════════════════════ CREDIT 2 · BUILD & REPAIR ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'c2_thin', sub:'C2', title:'Building from nothing — secured cards, builder loans, and graduation',
-  predict:'A lender wants to see credit history before giving you credit — but you can’t build history without credit. Every broke 18-year-old faces this loop. What are the two products built specifically to break it?',
-  concept:'<p>The cold-start loop breaks with two products where <b>you</b> carry the risk, so approval is nearly automatic:</p>'
-    +'<p><b>1 — The secured card.</b> You deposit, say, $300; that deposit becomes your limit. To the bureaus it reports exactly like any credit card — which is the entire point. Use it for one small recurring bill, AZEO it like a real card, never carry interest. After 6–12 months of clean reporting, good issuers <b>graduate</b> you: deposit back, card becomes unsecured, and — critically — <b>the account’s age survives</b>. Pick an issuer known to graduate and to report to all three bureaus <i>[VERIFY current issuers]</i>; a secured card that can’t graduate is a dead end with a deposit.</p>'
-    +'<p><b>2 — The credit-builder loan (CBL).</b> A loan in reverse: the “borrowed” money sits locked in savings while you make the payments; at the end you get the money and the file got 12–24 months of perfect <b>installment</b> history — the mix lever (C1) for people no bank would loan to yet.</p>'
-    +'<p><b>The starter file blueprint.</b> Within the first year you want: 1–2 revolving lines (secured → graduated), one small installment (CBL), a genuine family AU if available (C1), everything on autopay, utilization staged low. That is a file that turns 2 years old looking exactly like what an auto underwriter wants to meet. Rent and utility reporting services can add data to some scores <i>[VERIFY which models use them]</i> — marginal help, never harmful, worth doing if free.</p>'
-    +'<p><b>Who pays, who benefits.</b> You fund your own risk (deposit, locked savings), the issuer earns float and a future customer, and the bureaus get a record that is TRUE — which is why this path cannot be taken from you. Contrast: every shortcut in the next lessons is someone selling you a record that is false.</p>',
-  example:'<p><b>Ex:</b> Month 1: $300 secured card + $25/mo CBL + added as AU on mom’s 12-year card. Months 2–12: one Netflix charge on the card, autopay, AZEO. Month 12: card graduates, deposit back. The file is now: 3 tradelines, 1 installment, aged AU, zero derogatories — a real foundation, built from $325 of your own money.</p>',
-  teach:'Explain how a secured card and a credit-builder loan break the no-history loop, and what the 12-month starter file should look like.',
-  cards:[
-    {f:'How does a secured card work?', b:'Your deposit = your limit; reports like any card. After 6–12 clean months good issuers graduate it — deposit back, age survives.'},
-    {f:'What is a credit-builder loan?', b:'A loan in reverse: money locked in savings while you pay; you get the cash at the end plus 12–24 months of perfect installment history.'},
-    {f:'The 12-month starter file:', b:'1–2 revolvers (secured→graduated), one CBL, genuine family AU, autopay everywhere, low staged utilization.'},
-    {f:'Why can’t this path be taken from you?', b:'Because the record is TRUE. You funded your own risk and paid on time — no seller, no rented history, nothing to unravel.'}
-  ],
-  quiz:[
-    {q:'A secured card’s limit comes from…', c:['The issuer’s risk model','Your parents','Your income','Your own refundable deposit'], a:3, e:'You collateralize yourself — which is why approval is nearly automatic and reporting is identical to a normal card.'},
-    {q:'A credit-builder loan pays out the money…', c:['At the end, after the payments built the history','Never','Up front','Only if you default'], a:0, e:'The funds sit locked while payments report; you get cash + installment history at the end.'},
-    {q:'The thing to confirm BEFORE opening a secured card is…', c:['Its color','Its APR only','That it has a lounge benefit','That it graduates and reports to all three bureaus'], a:3, e:'No graduation path or partial bureau reporting makes it a dead end with a deposit attached.'}
-  ]},
-
-{ id:'c2_disputes', sub:'C2', title:'The dispute machine — FCRA 611, furnishers, and the 609 myth',
-  predict:'Roughly one in five credit reports contains an error [VERIFY]. The law gives you a specific machine for removing them. Who is legally forced to act when you dispute — and what happens if they miss their deadline?',
-  concept:'<p>The FCRA gives you a real enforcement machine. Learn the actual gears, because the internet sells fake ones.</p>'
-    +'<p><b>The reinvestigation (FCRA §611).</b> Dispute an item with a bureau and the bureau is <b>forced to reinvestigate, generally within 30 days</b> <i>[VERIFY]</i>. It forwards your dispute to the <b>furnisher</b> (the creditor who reported it), who must verify the data. Anything that cannot be verified in the window <b>must be deleted</b>. That is the entire legitimate mechanism: inaccurate, incomplete, or unverifiable items come off; accurate items do not.</p>'
-    +'<p><b>How to run it like an operator.</b> Dispute in writing with documents, item by item, specific — “this account shows a 60-day late in March; attached statement shows the March payment posted on the 3rd.” Vague blanket disputes get flagged frivolous. You can also dispute <b>directly with the furnisher</b> (§623 duties) — running both tracks is legitimate. Keep every letter and response; if a bureau stonewalls, escalate with a CFPB complaint, which forces a documented response <i>[VERIFY process]</i>. Certified mail beats web forms for a paper trail on serious items.</p>'
-    +'<p><b>The “609 letter” myth.</b> Section 609 is your right to <i>see</i> your file — a disclosure right. The internet sells “609 letters” claiming a magic phrase forces deletion of accurate items. No such mechanism exists. Deletion flows from §611 unverifiability, not from citing a section number like a spell. Anyone selling you a template “that banks fear” is selling paper.</p>'
-    +'<p><b>Two honest levers beyond disputes.</b> <b>Goodwill</b> (C1) for true lates after clean history. <b>Pay-for-delete</b> for collections: some collectors will delete the tradeline in exchange for payment — always negotiated <b>in writing before</b> you pay, never on a phone promise <i>[VERIFY enforceability varies]</i>. And one dating rule that catches real abuse: negatives run <b>seven years from the original delinquency date</b> — collectors sometimes “re-age” debts to look fresher. Re-aging is illegal; check the DOFD on every collection and dispute any that moved.</p>',
-  example:'<p><b>Ex:</b> A $180 collection you don’t recognize. Letter to the bureau: “not mine, verify or delete,” with ID. Furnisher can’t verify within 30 days → deleted by law. Second item: a true 30-day late. No dispute exists for truth — that one gets a goodwill letter instead. Knowing which tool fits which item IS the skill.</p>',
-  teach:'Explain what §611 actually forces, why the “609 letter” is a myth, and when goodwill vs pay-for-delete is the right tool.',
-  cards:[
-    {f:'What does an FCRA §611 dispute force?', b:'Bureau must reinvestigate (~30 days) with the furnisher; anything unverifiable in the window must be deleted. Accurate items stay.'},
-    {f:'The 609 myth:', b:'§609 is a disclosure right. No magic letter deletes accurate data — deletion flows from §611 unverifiability, not a cited section.'},
-    {f:'Pay-for-delete rule:', b:'Collections only, negotiated IN WRITING before paying. A phone promise is worth nothing.'},
-    {f:'Re-aging:', b:'Negatives run 7 years from ORIGINAL delinquency. Collectors shifting the date to look fresh are breaking the law — check DOFD, dispute it.'}
-  ],
-  quiz:[
-    {q:'An item the furnisher cannot verify within the reinvestigation window…', c:['Stays with a note','Doubles','Becomes an inquiry','Must be deleted'], a:3, e:'That is the teeth of §611: verify it or delete it.'},
-    {q:'The “609 letter” sold online…', c:['Is a myth — 609 is just your right to see the file','Forces deletion of accurate items','Is required before any dispute','Works only with a notary'], a:0, e:'No section number deletes true data. §611 unverifiability is the only deletion mechanism.'},
-    {q:'A collector offers deletion if you pay, on the phone. You…', c:['Pay immediately','Get the pay-for-delete in writing BEFORE paying','Record it and pay','Dispute it as not yours'], a:1, e:'Written agreement first. And never dispute a debt you know is yours as “not mine” — that’s the fraud line.'}
-  ]},
-
-{ id:'c2_scams', sub:'C2', title:'The repair industry — CROA, sweeps, and every scam aimed at you',
-  predict:'A “credit repair specialist” promises a 750 in 90 days, wants $1,500 upfront, and hints at a “legal loophole the bureaus hate.” Federal law makes at least two things about that sentence illegal. Which two?',
-  concept:'<p>Because credit desperation is evergreen, an industry farms it. Here is the whole taxonomy, so nothing on this list ever costs you a dollar or a felony:</p>'
-    +'<p><b>The law that frames it: CROA.</b> The Credit Repair Organizations Act makes it illegal for a repair company to <b>charge before services are performed</b>, to <b>promise specific results</b>, or to advise you to lie. Read that again: the upfront fee and the guaranteed score in the pitch above are both federal violations before any work happens. Also true under CROA’s logic: <b>everything a legitimate repair company can do, you can do yourself, free</b> — it is the §611 machine from the last lesson, in an envelope with a markup.</p>'
-    +'<p><b>The “sweep.”</b> The service disputes <i>everything</i> on your file as identity theft — accurate accounts included, sometimes with a fake police report. Items vanish for 30 days (while “unverified”), the seller screenshots the clean report, collects, and the accurate items return on verification. You paid for a screenshot, and a fabricated identity-theft claim with a false report is a crime with your name on it, not theirs.</p>'
-    +'<p><b>CPNs, again, from this angle.</b> The C0 wall, now with the sales script: “a fresh profile number, legal under privacy law.” It is a stolen or synthetic SSN. Applying with it is identity fraud plus bank fraud. There is no privacy-law exception. Walk.</p>'
-    +'<p><b>Tradeline rental</b> (C1’s wall) and <b>“primaries for sale”</b> — fabricated aged accounts sold as if you’d held them for years — same family: purchased false history, discounted by models, catastrophic in underwriting.</p>'
-    +'<p><b>The tell that beats every future variant.</b> Legitimate credit work is <b>slow, documented, and boring</b>: disputes of real errors, goodwill letters, paydown timing, secured builders, age. Every scam sells <b>speed and secrecy</b>. Anyone selling fast + secret is selling you either paper or prison. As the operator this course is building, your file is a business asset with a 20-year horizon — nobody rents you a shortcut worth that.</p>',
-  example:'<p><b>Ex:</b> The $1,500 “sweep” file: day 10, collections gone, screenshot sent, balance due. Day 45: every accurate item re-verified and returned — now with a fraud-alert flag and a police report in your name that YOU didn’t file. Score: unchanged. Legal exposure: yours. The specialist: gone.</p>',
-  teach:'List the scams — sweep, CPN, rented tradelines, fake primaries — and the one structural tell (fast + secret) that identifies every future variant.',
-  cards:[
-    {f:'What does CROA make illegal?', b:'Upfront fees before service, promised specific results, and advising you to lie. The classic pitch violates federal law in its first sentence.'},
-    {f:'How does a “sweep” work?', b:'Dispute EVERYTHING as identity theft (often w/ fake police report); items vanish ~30 days pending verification; seller screenshots, collects; truth returns. The false report is a crime — yours.'},
-    {f:'The universal scam tell:', b:'Legit credit work is slow, documented, boring. Scams sell speed + secrecy. Fast + secret = paper or prison.'},
-    {f:'Can a repair company do anything you can’t?', b:'No. The legitimate machine is §611 disputes + goodwill + time — available to you free.'}
-  ],
-  quiz:[
-    {q:'Under CROA, a repair company charging $1,500 before doing anything is…', c:['Standard practice','A federal violation','Fine if disclosed','Legal in most states'], a:1, e:'CROA bans advance fees and promised results outright.'},
-    {q:'A “sweep” produces a clean report because…', c:['Items were deleted forever','Accurate items vanish only while pending reinvestigation, then return','The bureaus lost the data','It uses section 609'], a:1, e:'The 30-day unverified window is the illusion the screenshot sells. Truth re-verifies and returns.'},
-    {q:'The structural tell of every credit scam is…', c:['High price','Bad grammar','Speed and secrecy','Out-of-state address'], a:2, e:'Real file work is slow and documented. Anything fast and secret is selling paper or prison.'}
-  ]},
-
-{ id:'c2_rebuild', sub:'C2', title:'The comeback arc — collections, charge-offs, repos, and real timelines',
-  predict:'A charged-off card, a repo from two years ago, one collection. Is this file dead for the exotic path — or does it have a comeback arc, and roughly how long is it?',
-  concept:'<p>Damaged is not dead. Every derogatory has a mechanical afterlife, and knowing it turns panic into a schedule.</p>'
-    +'<p><b>Collections.</b> First move is never payment — it is <b>validation</b>: under the FDCPA you can demand the collector prove the debt (amount, chain of ownership), and collection activity pauses until they respond <i>[VERIFY window]</i>. Debts get sold with garbage records; some die right here. If valid: negotiate — settlements routinely land below face value, pay-for-delete in writing where possible. Two traps: a partial payment can restart the <b>statute of limitations</b> on being sued in some states <i>[VERIFY your state]</i> — never pay “a little to show good faith” on old debt without knowing your SOL; and remember the clock: 7 years from original delinquency regardless of sale or payment. Also useful: newer models (FICO 9/10, VantageScore 4) ignore <b>paid</b> collections — but auto desks often run older models, so a paid collection may still show teeth at the car desk <i>[VERIFY]</i>.</p>'
-    +'<p><b>Charge-offs.</b> The creditor wrote the debt off their books — <b>you still owe it</b>, and it may be sold to a collector (never pay twice: validate who owns it). Settling shows “settled for less,” which beats “unpaid” but not “paid in full.” It ages out on the same 7-year clock.</p>'
-    +'<p><b>Repossession.</b> The car goes back, gets auctioned, and the gap between what you owed and what auction fetched — the <b>deficiency</b> — follows you as a debt, often with fees. A repo on the file is the single ugliest item to an AUTO lender specifically (C0: the Auto Score weights auto history). The comeback: settle the deficiency, then rebuild auto history deliberately — a small financed vehicle, perfect for 24 months, is the counter-evidence the auto model wants to see.</p>'
-    +'<p><b>Bankruptcy.</b> Chapter 7 reports up to 10 years, 13 up to 7 <i>[VERIFY]</i>. It is the reset button with the longest shadow — and even it has an arc: secured builders often approve soon after discharge because you can’t re-file for years.</p>'
-    +'<p><b>The arc itself.</b> Scores weight <b>recency</b> hard: a 5-year-old repo with 3 clean recent years reads completely differently than last month’s. The comeback schedule is: stop new damage → validate/settle strategically → rebuild with C2 builders + C1 levers → let recency do the heavy lift. Real files go damaged → lender-ready in 18–36 months. That is not hype; it is just how the recency math works. The exotic timeline survives a bad chapter — it does not survive giving up, or a shortcut felony.</p>',
-  example:'<p><b>Ex:</b> Repo (2 yrs ago, $6k deficiency), 1 collection ($400), 1 charge-off ($900). Sequence: validate the collection (dies — no records); settle the deficiency at 40% in writing; settle the charge-off; open secured card + CBL; 24 clean months + a small financed commuter. At month 30 the file reads: old damage, deep clean recent history, real auto line. That file gets auto approvals — at a rate premium at first, then normally.</p>',
-  teach:'Explain validation-before-payment, the deficiency on a repo, why recency is the comeback’s engine, and a realistic 18–36 month arc.',
-  cards:[
-    {f:'First move on any collection:', b:'FDCPA validation — make them prove the debt and its ownership. Some die right there; never pay an unvalidated debt.'},
-    {f:'The partial-payment trap:', b:'A small payment can restart the lawsuit statute of limitations in some states [VERIFY]. Know your SOL before paying anything on old debt.'},
-    {f:'What follows a repossession?', b:'The deficiency: loan balance minus auction price, plus fees — a debt that follows you. Settle it, then rebuild auto history deliberately.'},
-    {f:'The comeback’s engine:', b:'Recency. Scores discount old damage buried under 2–3 clean years. Damaged → lender-ready is a real 18–36 month arc.'}
-  ],
-  quiz:[
-    {q:'Before paying any collection, you…', c:['Pay a little to show good faith','Call and promise','Demand FDCPA validation','Dispute it as not yours regardless of truth'], a:2, e:'Validate first — records may not exist. “Good faith” partial payments can restart your SOL, and false disputes are the fraud line.'},
-    {q:'After a repo sells at auction below the loan balance, the borrower owes…', c:['Nothing','The full original loan','Only the fees','The deficiency plus fees'], a:3, e:'The gap survives the car. Settling it is step one of the auto-history comeback.'},
-    {q:'A 5-year-old repo under 3 recent clean years reads to the model as…', c:['Identical to a fresh repo','A soft inquiry','An automatic denial forever','Heavily discounted — recency dominates'], a:3, e:'Recency weighting is the comeback’s engine — old damage under new clean history loses most of its teeth.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.C2 = [
-  {q:'A secured card reports to the bureaus as…', c:['An ordinary credit card','A special starter product','An installment loan','It doesn’t report'], a:0, e:'That’s its whole purpose — identical reporting, you fund the risk.', d:1},
-  {q:'A credit-builder loan releases the money…', c:['Immediately','Never','At the end, after payments built history','Only on default'], a:2, e:'Locked savings + reported payments = installment history for the unbankable.', d:1},
-  {q:'FCRA §611 forces deletion of items that are…', c:['Old','Embarrassing','Small','Unverifiable within the reinvestigation window'], a:3, e:'Verify-or-delete is the machine. Accurate items survive.', d:2},
-  {q:'Section 609 actually gives you…', c:['Magic deletion words','Free scores','The right to see your file','A lawyer'], a:2, e:'Disclosure, not deletion. The “609 letter” industry sells paper.', d:2},
-  {q:'Pay-for-delete must be…', c:['In writing before payment','Verbal','Notarized','Filed with the CFPB'], a:0, e:'A phone promise from a collector is worth exactly nothing.', d:2},
-  {q:'Re-aging a debt means…', c:['Legally extending the SOL','Paying it late','Illegally shifting the delinquency date to look fresher','Selling it'], a:2, e:'The 7-year clock runs from ORIGINAL delinquency. Moved dates get disputed.', d:3},
-  {q:'CROA makes illegal:', c:['All credit repair','Upfront fees and promised results','Goodwill letters','Disputes'], a:1, e:'Advance fees, guaranteed outcomes, and advising lies — the classic pitch is illegal twice.', d:2},
-  {q:'A “sweep” works by…', c:['Deleting items forever','Disputing everything as ID theft so accurate items vanish temporarily','Bribing bureaus','Using §609'], a:1, e:'The 30-day pending window is the screenshot illusion; the false report is your crime.', d:2},
-  {q:'A partial payment on an old collection can…', c:['Delete it','Raise your score','Restart the lawsuit statute of limitations in some states','End the 7-year clock'], a:2, e:'Know your state’s SOL before any payment on old debt [VERIFY].', d:3},
-  {q:'The comeback arc’s engine is…', c:['Luck','Paying everything at face','Recency — clean recent years discount old damage','A new CPN'], a:2, e:'18–36 months of clean, well-built history moves damaged files to lender-ready.', d:2}
-];
-
-// ═══════════════════════ CREDIT 3 · THE BUSINESS CREDIT MACHINE ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'c3_why', sub:'C3', title:'Two files, one you — why the business gets its own credit life',
-  predict:'Your LLC can build a credit profile that never touches your personal report. True — and yet almost every early business loan still runs through YOUR file anyway. How are both of those things true at once?',
-  concept:'<p>The moment you form a company, a second credit life becomes possible: a profile keyed to your <b>EIN</b> (the business’s tax ID) instead of your SSN, tracked by <b>business bureaus</b> — Dun &amp; Bradstreet, Experian Business, Equifax Business — under different scores and different rules. Business tradelines generally do not appear on your consumer report, business inquiries don’t hit your FICO, and business utilization doesn’t touch your AZEO snapshot. A leveraged fleet on the business side can coexist with a pristine personal file. That separation is the entire strategic point.</p>'
-    +'<p><b>Now the adult truth: the PG.</b> Early business credit almost always requires a <b>personal guarantee</b> — you co-sign your own company. The lender files on the business, prices on the business, but if the business fails, you personally owe it. The PG is not a defeat; it is the standard toll while the business proves itself. What you are building toward is the day revenue, seasoning, and payment history let you sign <b>without</b> one. Vendor lines and some corporate cards get there fast; real bank money takes years.</p>'
-    +'<p><b>The wall, stated precisely.</b> The internet sells “EIN-only funding, no PG, hide from your SSN.” Some of it is real (revenue-underwritten corporate cards); much of it is a scam or worse. The felony version: lying on an application — saying no PG exists when it does, inflating revenue, or using the EIN to dodge a personal file you’ve wrecked <i>while misrepresenting who controls the company</i>. Lenders ask who owns the business; answering falsely is loan fraud (C4’s fraudline, business edition). The separation is a structure, not a disguise.</p>'
-    +'<p><b>Why this is THE bridge for you.</b> Recall the plan (T0): the exotic gets financed by the <b>business</b>, serviced by <b>consignment revenue</b>, insured under a <b>commercial policy</b> (T4). Every one of those needs a business that looks real to institutions — which is exactly what the next lesson builds, brick by brick.</p>',
-  example:'<p><b>Ex:</b> Operator with a 690 personal file and a 2-year-old LLC with real revenue: the LLC holds $40k of vendor lines and a fleet card, none of it on her consumer report. Her personal utilization: 3%. When the exotic lender pulls both files — and for a six-figure note they will — each file is clean on its own terms. Two files, both true, both strong. That is the design.</p>',
-  teach:'Explain EIN-vs-SSN credit separation, why the PG still exists early, and where the felony line sits in “EIN-only funding” pitches.',
-  cards:[
-    {f:'What separates business credit from personal?', b:'Keyed to the EIN, tracked by D&B / Experian Biz / Equifax Biz; business tradelines, inquiries, and utilization generally never touch the consumer file.'},
-    {f:'The personal guarantee (PG):', b:'You co-sign your own company — standard toll early. The goal is earning no-PG credit via revenue, seasoning, and payment history.'},
-    {f:'The business-credit felony line:', b:'Misrepresenting ownership, revenue, or PG status on applications is loan fraud. Separation is a structure, not a disguise for a wrecked file.'},
-    {f:'Why business credit is the exotic bridge:', b:'Business-financed car + consignment revenue servicing the note + commercial policy — every piece needs an institution-grade business profile.'}
-  ],
-  quiz:[
-    {q:'Business tradelines generally appear on…', c:['The business bureaus only (D&B, Experian Biz, Equifax Biz)','Your consumer report','Both always','Neither'], a:0, e:'That separation is the strategy: fleet leverage on the EIN, pristine personal file on the SSN.'},
-    {q:'Early business credit almost always still involves…', c:['No paperwork','A personal guarantee','Collateral only','A co-op'], a:1, e:'The PG is the standard toll until revenue and seasoning earn no-PG terms.'},
-    {q:'“Use your EIN so your bad SSN never comes up” becomes fraud when…', c:['You form an LLC','You misrepresent ownership, revenue, or PG status to a lender','You get a D-U-N-S number','You open a business account'], a:1, e:'Structure is legal; lying on the application about who/what is behind the company is loan fraud.'}
-  ]},
-
-{ id:'c3_fundability', sub:'C3', title:'Fundability — building a business that underwriting believes',
-  predict:'Two LLCs apply for the same credit line. Same revenue, same owner score. One sails through, one gets flagged for manual review and dies. The difference is six boring details. Name three.',
-  concept:'<p>Before any business bureau scores you, lender systems run a colder check: <b>does this business look real?</b> The industry word is <b>fundability</b>, and it is a checklist — automated underwriting literally pattern-matches these fields, and mismatches quietly kill applications that never get a human explanation.</p>'
-    +'<p><b>The foundation, in build order:</b></p>'
-    +'<p>• <b>Entity + EIN.</b> An LLC (or corp) filed with the state, in good standing, with its own tax ID. Sole-prop-with-a-DBA builds almost nothing.<br>'
-    +'• <b>NAP consistency.</b> Name, Address, Phone — <i>identical everywhere</i>: state filing, IRS, bank, licenses, website, directories. “APEX Exotics LLC” vs “Apex Exotic Rentals” across records is exactly the mismatch that flags review.<br>'
-    +'• <b>A real address and a real phone.</b> A commercial or virtual-office address (many lenders discount residential and reject PO boxes <i>[VERIFY policies]</i>) and a dedicated business line listed in directory assistance — a data point some underwriting still checks <i>[VERIFY]</i>.<br>'
-    +'• <b>Domain + professional email.</b> A site describing a real operation, email at the domain — gmail-run companies read as hobbies.<br>'
-    +'• <b>Licenses</b> your city/state requires for the activity.<br>'
-    +'• <b>The business bank account</b> — the load-bearing one. Every dollar of revenue flows through it: it creates the bank rating and the statements that every future lender reads, it seasons, and it is the account ChexSystems gatekeeps (C0 — check yours before you apply). Cash deals that skip the account are invisible to underwriting; you are literally paying yourself to look smaller.<br>'
-    +'• <b>Time.</b> Time-in-business is a hard filter (many products want 6–24 months <i>[VERIFY]</i>). The clock starts at formation — form the entity EARLY, even while you are still only brokering leads (T7).</p>'
-    +'<p><b>The wall here: shelf corps.</b> “Buy a 5-year-old aged corporation, instant time-in-business.” Presenting a purchased shell’s age as your operating history misrepresents exactly what the filter exists to measure — and lenders detect ownership changes on aged entities <i>[VERIFY]</i>. It rhymes with the CPN: purchased time instead of purchased identity. Same answer: the clock only counts if it is really yours, so start it now.</p>',
-  example:'<p><b>Ex:</b> Day one as a lead-sourcer (T7, no car, no money): file the LLC ($~100 in many states), EIN in 15 minutes free, business checking the same week, domain + email that day, phone line listed. Total under a few hundred dollars — and 18 months later, when the fleet plan needs institutional credit, “time in business: 18 months, consistent NAP, seasoned account” is already true. The foundation was never expensive; it was just early.</p>',
-  teach:'Walk the fundability checklist in build order and explain why NAP mismatches and skipped bank deposits quietly kill applications.',
-  cards:[
-    {f:'NAP consistency:', b:'Name, Address, Phone identical across state, IRS, bank, licenses, site, directories. Mismatches flag automated review — the silent application killer.'},
-    {f:'The load-bearing fundability item:', b:'The business bank account with ALL revenue flowing through it — creates the bank rating, statements, and seasoning every lender reads.'},
-    {f:'Why form the entity before you “need” it:', b:'Time-in-business is a hard filter (6–24 months for many products). The clock starts at formation — start it while still brokering.'},
-    {f:'Shelf/aged corps:', b:'Purchased time-in-business presented as your history = misrepresentation, and ownership changes are detectable. The clock only counts if it’s really yours.'}
-  ],
-  quiz:[
-    {q:'The quiet killer of automated business-credit applications is…', c:['High revenue','Too many employees','NAP mismatches across records','A .net domain'], a:2, e:'Underwriting pattern-matches name/address/phone across sources; inconsistency reads as unreal or fraudulent.'},
-    {q:'Taking rental payments in cash outside the business account…', c:['Is smart tax planning','Makes revenue invisible to underwriting — you look smaller than you are','Builds PAYDEX','Is required'], a:1, e:'(And skimming it from taxes is its own crime.) Statements ARE the proof of revenue; unbanked dollars don’t exist to lenders.'},
-    {q:'Buying an “aged corporation” for instant time-in-business is…', c:['A standard accelerant','Misrepresentation of operating history that lenders can detect','Free','Required in CA'], a:1, e:'Purchased time rhymes with purchased identity. Form YOUR entity early instead — the honest clock is free.'}
-  ]},
-
-{ id:'c3_paydex', sub:'C3', title:'D-U-N-S, PAYDEX, and how business scores actually move',
-  predict:'On personal credit, paying on the due date is perfect. On the main business score, paying on the due date gets you an 80 — and the top score requires something that sounds impossible. What?',
-  concept:'<p>Business scoring runs on different physics. Learn the three systems lenders actually look at:</p>'
-    +'<p><b>Dun &amp; Bradstreet.</b> First step: get a <b>D-U-N-S number</b> — D&B’s business identifier. It is <b>free</b> directly from D&B (they will aggressively upsell “credit builder” packages; you don’t need them to have a file) <i>[VERIFY current process]</i>. D&B’s headline score is <b>PAYDEX</b> (0–100), and here is the physics shift: it is <b>dollar-weighted payment timing</b>. Paying exactly on terms ≈ <b>80</b>. Scores above 80 come from paying <b>EARLY</b> — 90 ≈ ~20 days early, 100 ≈ ~30 days early <i>[VERIFY mapping]</i>. On the personal side, early payment buys nothing; on PAYDEX, early payment IS the score. And PAYDEX needs data: roughly <b>3+ reporting tradelines</b> before it even generates <i>[VERIFY]</i>.</p>'
-    +'<p><b>Experian Business (Intelliscore)</b> and <b>Equifax Business</b> — blended risk scores using payment data, utilization-like factors, firmographics, public records. You don’t register for these the way you do a D-U-N-S; they build from whatever your creditors report. Which creditor reports to which bureau varies — serious builders pick vendors partly BY where they report <i>[VERIFY per vendor]</i>.</p>'
-    +'<p><b>What moves the needles, ranked:</b> (1) <b>tradelines that actually report</b> — many business creditors report nowhere, building you nothing (always confirm before opening); (2) <b>early payment</b>, dollar-weighted — pay the big invoices early first; (3) <b>clean public records</b> — a lien or judgment craters business scores harder than personal ones; (4) <b>utilization discipline</b> on revolving business lines; (5) <b>firmographics</b> — the fundability fields from last lesson feeding the same models.</p>'
-    +'<p><b>Who is watching.</b> Not just lenders: landlords for your warehouse (T4’s second obstacle), insurers pricing your commercial policy, fleets deciding if your operation is real, and vendors setting your terms. The business file is your institutional reputation — the operator-world twin of the broker reputation in T7.</p>',
-  example:'<p><b>Ex:</b> Two LLCs, both pay every invoice on terms. LLC A: PAYDEX 80. LLC B routes the same invoices but pays its two largest 25 days early: PAYDEX ~95 [VERIFY]. Same cash, different timing — because the score measures WHEN, weighted by HOW MUCH. B gets better terms from the next vendor, compounding.</p>',
-  teach:'Explain what a D-U-N-S is, why PAYDEX 80 = on-time and above-80 = early, and the ranked list of what actually moves business scores.',
-  cards:[
-    {f:'D-U-N-S number:', b:'D&B’s free business identifier — the key to having a D&B file at all. Ignore the paid “builder” upsells; the number itself costs nothing.'},
-    {f:'PAYDEX physics:', b:'Dollar-weighted payment timing. On-terms ≈ 80; ~20 days early ≈ 90; ~30 days early ≈ 100 [VERIFY]. Early payment IS the score.'},
-    {f:'Why some business credit builds nothing:', b:'Many business creditors report to no bureau. Confirm reporting (and to WHICH bureau) before opening any line.'},
-    {f:'Who reads the business file besides lenders:', b:'Warehouse landlords, commercial insurers, vendors setting terms, fleets judging if you’re real — it’s your institutional reputation.'}
-  ],
-  quiz:[
-    {q:'A PAYDEX of 80 means the business…', c:['Pays late','Has no file','Pays 30 days early','Pays exactly on terms'], a:3, e:'On-time is the 80 baseline; only EARLY payment climbs above it — dollar-weighted.'},
-    {q:'The fastest way to waste a year of business-credit building is…', c:['Opening lines that report to no bureau','Paying early','Getting a D-U-N-S','Using net-30 terms'], a:0, e:'Non-reporting tradelines build nothing. Confirm reporting before opening — pick vendors BY where they report.'},
-    {q:'To maximize PAYDEX with limited cash, pay early on…', c:['The smallest invoices','Only new vendors','Random invoices','The largest invoices'], a:3, e:'PAYDEX is dollar-weighted — early payment on big invoices moves it most.'}
-  ]},
-
-{ id:'c3_tiers', sub:'C3', title:'The vendor ladder — net-30s to fleet cards to real bank money',
-  predict:'No bank will touch a 3-month-old LLC. Yet that same LLC can be approved for real credit this week — from a different kind of creditor entirely. Who extends credit to businesses banks won’t touch, and why?',
-  concept:'<p>Business credit builds up a ladder, each rung underwritten more strictly than the last. The genius of the bottom rung: <b>vendors</b> extend credit banks never would, because their risk is inventory margin, not cash — and they want you as a customer.</p>'
-    +'<p><b>Tier 1 — reporting net-30 vendors (month 0+).</b> Suppliers (office, shipping, industrial goods) who invoice on <b>net-30 terms</b> and — the only part that matters — <b>report the tradeline</b> to business bureaus. The classic starter names change over time <i>[VERIFY current reporting vendors]</i>; the recipe doesn’t: open 3–5, place small orders for things you genuinely use (shipping supplies, printer stock, detailing consumables), pay <b>early</b>, and in 60–90 days you have a PAYDEX and a file where none existed.</p>'
-    +'<p><b>Tier 2 — store and fleet credit (month 3–6+).</b> Retail/store business accounts (hardware, office chains) and — gold for this industry — <b>fleet fuel cards</b> (WEX/Fuelman-family <i>[VERIFY]</i>): fuel for delivery runs and repositioning drives, per-vehicle controls, and a reporting tradeline that fits your actual operating costs. Often still PG-light at modest limits <i>[VERIFY]</i>.</p>'
-    +'<p><b>Tier 3 — business credit cards (month 6–12+, or day 1 with a strong personal file).</b> Major-bank business cards underwrite YOU (PG + your FICO — the C1 file earns its keep here). Quirk worth knowing: most majors report business-card activity to business bureaus and only report to your <i>consumer</i> file if the account goes derogatory <i>[VERIFY per issuer]</i> — day-to-day business utilization stays off your personal snapshot. Newer <b>corporate charge cards</b> underwrite the business’s revenue/balance instead of you — real no-PG credit, gated on real deposits <i>[VERIFY providers]</i>.</p>'
-    +'<p><b>Tier 4 — bank lines and term loans (year 2+).</b> Real bank money wants the full fundability file: ~2 years seasoning, revenue through the account, financials, often a banking relationship first — open the operating account where you’ll later want the line; bankers lend to balances they can see. This rung is where fleet-scale borrowing (and the C4 vehicle note without brutal terms) lives.</p>'
-    +'<p><b>Discipline that makes the ladder real:</b> only buy what you actually use (a tradeline is not a shopping excuse); every line on autopay-early; track which bureau each line feeds; and never inflate revenue on an application — the ladder is a resume, and one lie on a resume is the C3 fraud line.</p>',
-  example:'<p><b>Ex — the 12-month build:</b> Months 0–2: LLC + bank account + 4 reporting net-30s (shipping + detailing supplies), paid 20 days early. Month 3: PAYDEX generates ~86. Months 4–6: fleet fuel card + a store account. Month 8: major business card (PG, personal 720 doing the work). Month 12: file shows 7 reporting tradelines, clean, early-paying — and the year-2 banker conversation is now a real one.</p>',
-  teach:'Explain why vendors extend credit banks won’t, walk the four tiers in order with rough timing, and name the discipline rules that keep the ladder honest.',
-  cards:[
-    {f:'Tier 1 and why it works:', b:'Reporting net-30 vendors — their risk is inventory margin, not cash, so they approve young LLCs. 3–5 lines, real purchases, paid early → a file exists in 60–90 days.'},
-    {f:'Tier 2 for THIS industry:', b:'Fleet fuel cards (WEX-family [VERIFY]) — fuel for deliveries/repositioning, per-vehicle controls, and a reporting tradeline that matches your real costs.'},
-    {f:'Tier 3 quirk:', b:'Major business cards: PG + your FICO to approve, but activity usually reports to business bureaus only unless derogatory [VERIFY] — utilization stays off your personal file.'},
-    {f:'Tier 4 reality:', b:'Bank LOCs/term loans want ~2 years seasoning, revenue through the account, financials, and a relationship — bank where you’ll want the line.'}
-  ],
-  quiz:[
-    {q:'Vendors approve 3-month-old LLCs because…', c:['They’re careless','They never report','The law requires it','Their risk is inventory margin and they want the customer'], a:3, e:'A net-30 supplier risks product, not cash — so they extend credit banks won’t, and the reporting ones build your file.'},
-    {q:'The only Tier-1 vendors worth opening are ones that…', c:['Have the best catalog','Waive shipping','Offer net-60','Report the tradeline to business bureaus'], a:3, e:'Non-reporting lines build nothing (C3·paydex). Confirm reporting first — it’s the entire point.'},
-    {q:'Most major business credit cards touch your PERSONAL report…', c:['Every month','Never under any condition','Only if the account goes derogatory [VERIFY]','Only utilization'], a:2, e:'Day-to-day business spend stays off the consumer file; blow it up and it lands on you — the PG made sure of that.'}
-  ]},
-
-{ id:'c3_lending', sub:'C3', title:'Business auto financing — the note that buys the fleet car',
-  predict:'The business borrows; the cars earn; the note services itself. For a lender to sign up for that story on a six-figure car, what three proofs does the file have to carry?',
-  concept:'<p>This is where the machine points at the garage. <b>Commercial vehicle financing</b> — the loan or lease that puts a car in the LLC’s name — underwrites three stacked layers: the <b>business</b> (seasoning, bank statements, business scores — the C3 file), the <b>guarantor</b> (your personal FICO — almost always PG’d at this scale, C1’s file), and the <b>asset</b> (the vehicle’s value and, for exotics, its story — C4’s territory). Weakness in one layer must be carried by the others; strength in all three is what “fundable” finally means.</p>'
-    +'<p><b>The forms it takes.</b> A straight <b>commercial auto loan</b> (titled to the LLC, fixed note). A <b>commercial lease</b> — including the open-end/TRAC-style structures fleets use, where you carry the residual risk but payments and tax treatment fit a business <i>[VERIFY structures]</i>. Or — the exotic-industry pattern from T0/T8 — <b>you finance strength into the business over time</b>: start with a modest, boring, cash-flowing vehicle note the business can obviously service, season it perfectly, and let THAT auto line become the proof the six-figure note reads later. The business’s first car loan is an audition, and lenders reread it.</p>'
-    +'<p><b>What the lender reads, concretely:</b> 12–24 months of business bank statements (revenue = deposits — the fundability lesson’s “every dollar through the account” pays off here); time-in-business; business scores + clean public records; your PG file; and a <b>use story that is TRUE</b>. Which is the trap’s edge:</p>'
-    +'<p><b>The commercial-use trap, named.</b> Financing a car on a <b>consumer</b> loan and quietly putting it to rental work violates nearly every consumer note’s terms (acceleration risk if discovered) and — far worse — voids the personal policy insuring it (T2/T4: rental use is excluded). The C4·fraudline cousin: telling a commercial lender it’s a personal car, or a consumer lender it’s not a rental, is loan fraud. The honest structure exists and is not exotic: commercial note or lease, titled and insured commercially, use disclosed. It costs more per month and it is the version that survives a claim, an audit, and a deposition.</p>'
-    +'<p><b>Who benefits when it’s built right.</b> The lender gets a self-servicing note with three layers of protection. You get leverage that <b>earns</b> — the anti-Ken (C4): debt whose service comes from the asset’s own consignment revenue, sitting inside an entity built to carry it, leaving your personal snapshot clean for the next move.</p>',
-  example:'<p><b>Ex — the audition loan:</b> Year 1: the LLC finances a $28k depreciated-but-clean Urus… no — a $28k M240i for deliveries and a first consignment listing [VERIFY what rents locally], note $520/mo, business banks $1,400/mo from it, paid early for 14 months. Year 2: same lender, same file, now with a perfect business auto line and 24 months of deposits — the $110k exotic conversation is no longer a cold pitch. The first note was never about the first car.</p>',
-  teach:'Explain the three underwriting layers of a business vehicle note, the audition-loan sequence, and exactly where the commercial-use trap turns into fraud.',
-  cards:[
-    {f:'The three layers a business auto note underwrites:', b:'The business (seasoning, statements, scores), the guarantor (your PG’d FICO), and the asset. Strength in all three = fundable.'},
-    {f:'The audition loan:', b:'Start with a modest note the business obviously services, season it perfectly — that auto line becomes the proof the six-figure note reads later.'},
-    {f:'The commercial-use trap:', b:'Consumer-financed + secretly rented = loan-terms violation AND voided personal policy. Lying about use to either lender = loan fraud. Commercial note, commercial policy, disclosed use.'},
-    {f:'The anti-Ken structure:', b:'Debt serviced by the asset’s own consignment revenue, inside an entity built to carry it — leverage that earns instead of eats.'}
-  ],
-  quiz:[
-    {q:'A business vehicle note at this scale is underwritten on…', c:['Business + personal guarantor + asset, stacked','The asset alone','Your Instagram','Time-in-business alone'], a:0, e:'Three layers; weakness in one must be carried by the others.'},
-    {q:'The “audition loan” strategy is…', c:['Buying the exotic first','Leasing personally','Paying cash always','A modest, obviously-serviceable first note seasoned perfectly as proof for the big one'], a:3, e:'Lenders reread the business’s first auto line. Make it boring and perfect.'},
-    {q:'Renting out a consumer-financed, personally-insured car is…', c:['A loan-terms violation with a voided policy — and lying about it to a lender is fraud','Fine if profitable','Standard practice','A tax strategy'], a:0, e:'The commercial-use trap: the only durable structure is commercial note + commercial policy + disclosed use.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.C3 = [
-  {q:'Business credit is keyed to…', c:['Your SSN','The EIN','Your address','The state'], a:1, e:'EIN-keyed files at D&B / Experian Biz / Equifax Biz — separate from the consumer file.', d:1},
-  {q:'A PG means…', c:['No liability','Nothing after a year','The bank owns equity','You personally back the business debt'], a:3, e:'Standard early toll; the goal is earning no-PG terms with seasoning and revenue.', d:1},
-  {q:'NAP mismatches across records cause…', c:['Better rates','Nothing','Higher PAYDEX','Silent automated-review flags and dead applications'], a:3, e:'Underwriting pattern-matches name/address/phone; inconsistency reads as unreal.', d:2},
-  {q:'PAYDEX above 80 requires…', c:['On-time payment','A CPA letter','More revenue','EARLY payment, dollar-weighted'], a:3, e:'80 = on terms; 90–100 = paying weeks early, weighted by invoice size.', d:2},
-  {q:'A D-U-N-S number costs…', c:['$229/yr','$49 once','One tradeline','Nothing — free from D&B'], a:3, e:'Free; the paid “builder” packages are upsells you don’t need to have a file.', d:1},
-  {q:'Tier 1 of the ladder is…', c:['Bank term loans','Corporate cards','Reporting net-30 vendors','SBA loans'], a:2, e:'Vendors risk inventory margin, approve young LLCs, and (the reporting ones) create the file.', d:1},
-  {q:'A business tradeline that reports to no bureau…', c:['Still builds slowly','Builds personal credit','Builds nothing','Doubles PAYDEX'], a:2, e:'Confirm reporting before opening — non-reporting lines are wasted months.', d:2},
-  {q:'Most major business cards hit your consumer report…', c:['Monthly','Never','Only if derogatory [VERIFY]','Weekly'], a:2, e:'Business spend stays off the personal snapshot until you default into the PG.', d:2},
-  {q:'Tier 4 bank money typically wants…', c:['A logo','~2 yrs seasoning, revenue through the account, financials, a relationship','Only a PG','A shelf corp'], a:1, e:'Bank where you’ll want the line — bankers lend to balances they can see.', d:2},
-  {q:'The commercial-use trap is…', c:['Paying commercial rates','Consumer loan + personal policy on a car secretly used for rentals','Titling to an LLC','Leasing'], a:1, e:'Loan-terms violation + voided coverage; lying about use to a lender is loan fraud.', d:3},
-  {q:'The “audition loan” exists to…', c:['Impress clients','Create a perfectly-seasoned business auto line that the six-figure note reads later','Avoid taxes','Skip the PG'], a:1, e:'The first note is evidence for the second. Boring and perfect is the strategy.', d:3},
-  {q:'Buying an aged “shelf corp” for instant seasoning is…', c:['A smart accelerant','Misrepresenting operating history — detectable and fraud-adjacent','Free','Standard'], a:1, e:'Purchased time rhymes with purchased identity (CPN). Start your real clock early instead.', d:3}
-];
-
-// ═══════════════════════ CREDIT 4 · FINANCING THE EXOTIC (completion) ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'c4_lenders', sub:'C4', title:'Who actually lends on exotics — the specialty landscape',
-  predict:'Your local bank happily writes $40k car loans all day — then flatly refuses a $140k McLaren note to the same borrower. What about the CAR (not the borrower) makes a normal auto desk say no, and who says yes instead?',
-  concept:'<p>Normal auto lending is built for normal cars: predictable depreciation curves, deep resale data, easy repossession and remarketing. An exotic breaks every assumption — six-figure exposure on one VIN, thin comps, model-specific value cliffs, a resale market that punishes miles unevenly (T8: Ferrari vs Lambo). So mainstream desks cap out (often around $100–150k and 84 months <i>[VERIFY]</i>) or decline outright — not because you are weak, but because their box is.</p>'
-    +'<p><b>The landscape that says yes:</b></p>'
-    +'<p>• <b>Credit unions</b> — sometimes surprisingly aggressive on 6-figure notes for strong members at great rates, but inconsistent: it is one desk’s appetite, not a program <i>[VERIFY locally]</i>.<br>'
-    +'• <b>Specialty exotic/classic lenders</b> — firms built ONLY for this asset class (names like Woodside Credit, Premier Financial Services, Putnam Leasing, J.J. Best Banc circulate in this space <i>[VERIFY current programs]</i>). Their box: much longer terms (up to 120–144 months <i>[VERIFY]</i>) to crush the monthly payment, balloon and lease structures, asset-literate underwriting (they know what a Performante is worth and that a driven Ferrari bleeds), and relationship-style approval — the borrower interview matters.<br>'
-    +'• <b>Captives</b> — the manufacturers’ own finance arms, strongest on new/CPO cars of their own badge.<br>'
-    +'• <b>Dealer F&amp;I at exotic stores</b> — the desk that shops your file to all of the above at once; convenient, and marked up (the dealer keeps rate spread). Direct relationships beat F&amp;I pricing; F&amp;I beats having no access at all.</p>'
-    +'<p><b>What the specialty desk underwrites</b> is the pair from C0: <b>borrower + asset</b>. Borrower: the full C1–C3 story (FICO Auto pull, income/DTI, reserves — they routinely want to see cash left after the down payment <i>[VERIFY]</i>). Asset: year/model/miles/spec against THEIR resale view — they will lend happily on a clean Huracán and cautiously on a modified oddball, because they are pricing the repo they hope never to do.</p>'
-    +'<p><b>The trap inside the long term.</b> A 144-month note makes a $140k car feel like $1,4xx/month — and it builds equity so slowly that you are underwater for YEARS of the curve. That is exactly the negative-equity fuel from c4_dti. Long terms are a cash-flow tool for people with exit discipline (sell/refi timing, miles managed), not a way to afford a car you can’t (T8’s affordability line). The payment being survivable is not the same as the deal being sound.</p>',
-  example:'<p><b>Ex:</b> Same borrower, same $140k Huracán: Bank — declined (over program cap). CU — 84mo @ strong rate, $2,0xx/mo, stiff payment. Specialty — 144mo, $1,3xx/mo, but underwater until ~year 5 [VERIFY math]. Dealer F&I — the specialty deal, +1.5 points of markup. Four answers, one car: the landscape IS the negotiation.</p>',
-  teach:'Explain why mainstream desks decline exotics, name the four lender types that say yes, and the equity trap hidden inside very long terms.',
-  cards:[
-    {f:'Why do normal auto desks decline exotics?', b:'Their box assumes predictable depreciation, deep comps, easy remarketing — an exotic breaks all three. Program caps (~$100–150k/84mo [VERIFY]) do the declining.'},
-    {f:'The specialty-lender box:', b:'Exotic-only firms [VERIFY names]: terms to 120–144mo, balloon/lease structures, asset-literate underwriting, relationship-style approvals.'},
-    {f:'What does the specialty desk underwrite?', b:'Borrower + asset: your FICO Auto/DTI/reserves AND the car’s year/model/miles/spec against their resale view. They price the repo they hope never to do.'},
-    {f:'The long-term trap:', b:'120–144mo crushes the payment but builds equity so slowly you are underwater for years — negative-equity fuel unless you have exit discipline.'}
-  ],
-  quiz:[
-    {q:'A mainstream bank declines your $140k exotic note most likely because…', c:['You are always too weak','Exotics are illegal to finance','The car breaks their program’s box — caps, comps, remarketing','They only do leases'], a:2, e:'Program limits do the declining. The specialty landscape exists precisely because the asset class needs its own box.'},
-    {q:'A 144-month exotic note’s hidden cost is…', c:['Higher insurance','Years underwater — slow equity that fuels the negative-equity snowball','No GAP available','Monthly fees'], a:1, e:'The payment feels light while the balance outruns the car’s value deep into the term (c4_dti).'},
-    {q:'Dealer F&I versus a direct lender relationship:', c:['F&I is always cheaper','They are identical','Direct beats F&I pricing; F&I beats no access — the desk keeps rate spread','F&I is illegal'], a:2, e:'F&I shops your file conveniently and marks up the winning rate. Relationships remove the spread.'}
-  ]},
-
-{ id:'c4_structures', sub:'C4', title:'Loan vs balloon vs lease — engineering the payment to the plan',
-  predict:'Three ways to hold the same $150k car: $2,100/mo, $1,500/mo, or $1,200/mo. Same car, same buyer, same lender family. What is each structure quietly trading away for the lower payment?',
-  concept:'<p>Structures are trades between <b>payment, equity, and risk</b>. Choose by the PLAN for the car (T8), never by the payment alone.</p>'
-    +'<p><b>1 — Simple-interest loan.</b> Highest payment, cleanest story: every month buys real equity, payoff is transparent, no end-of-term event. Interest accrues on the outstanding balance daily — extra principal early actually shortens the cost curve. If the plan is “hold and consign for years,” boring wins.</p>'
-    +'<p><b>2 — Balloon note.</b> Normal payments sized as if the loan ran much longer, with a large lump (the balloon) due at term end. You are betting the car will be worth ≥ the balloon when it hits — on an exotic, a bet on miles and market. If right: you sell/refi over the balloon and rode cheap payments. If wrong: you owe a five-figure lump on an asset worth less — the snowball’s big brother. Balloons fit operators with a dated exit plan and mileage discipline; they punish drift.</p>'
-    +'<p><b>3 — Lease structures.</b> Payment = depreciation + rent charge, lowest of the three. Two species matter here: the closed-end consumer lease (walk away at term, mileage caps that rental use will demolish — usually wrong for this business) and the <b>open-end / TRAC-style commercial lease</b> the specialty firms write <i>[VERIFY]</i>: business-friendly treatment, but YOU carry the residual risk at term — functionally a balloon wearing a lease’s clothes. Read which species you are signing; the word “lease” alone tells you nothing.</p>'
-    +'<p><b>The supporting cast.</b> <b>Down payment:</b> 10–20%+ is both an approval lever (skin in the game) and your anti-underwater cushion <i>[VERIFY typical]</i>. <b>GAP:</b> on a long note or any balloon, the gap between payoff and actual-cash-value after a total loss is exactly where you are exposed — on a $150k car that gap can be crushing; price GAP (or self-insure it consciously) on day one, and note some GAP products exclude commercial use <i>[VERIFY]</i> — the T4 commercial policy conversation must include it. <b>Rate vs everything:</b> a great rate on the wrong structure is still the wrong deal; the structure IS the deal.</p>'
-    +'<p><b>The operator’s test.</b> Before signing anything: what is the exit (sell at month N / refi / hold)? What miles will consignment realistically add (T8 ledger)? Does the note survive a 3-month utilization drought (T8’s affordability line)? A structure chosen with those three answers written down is financing; chosen by payment alone, it is hope with a signature.</p>',
-  example:'<p><b>Ex:</b> $150k Urus, plan = consign 24 months then sell. Loan: $2,1xx/mo, equity building, clean exit anytime. Balloon: $1,5xx/mo with $70k due at month 36 — works ONLY if miles stay disciplined and the market holds. Closed lease: $1,2xx/mo with 10k mi/yr caps — consignment miles obliterate it in months. The plan picks the loan or a carefully-mileaged balloon; the payment alone would have picked the trap.</p>',
-  teach:'Explain what a balloon is betting on, why closed-end leases and rental miles don’t mix, and the three written answers required before choosing any structure.',
-  cards:[
-    {f:'Simple-interest loan trade:', b:'Highest payment, real equity, transparent payoff, no term event. The “hold and consign for years” structure.'},
-    {f:'Balloon note trade:', b:'Low payments now, big lump at term — a bet that the car’s value ≥ balloon. Miles and market discipline or it becomes the snowball’s big brother.'},
-    {f:'The lease species that fits fleets (and its catch):', b:'Open-end/TRAC-style commercial lease [VERIFY]: business treatment, but YOU hold residual risk — a balloon in lease clothing. Closed-end caps die under rental miles.'},
-    {f:'GAP on exotics:', b:'Covers payoff-vs-ACV after a total loss — the exact exposure of long terms and balloons. Verify commercial-use isn’t excluded [VERIFY].'}
-  ],
-  quiz:[
-    {q:'A balloon note is fundamentally a bet that…', c:['Rates fall','Insurance stays cheap','The car’s value at term ≥ the balloon owed','Utilization stays high'], a:2, e:'Right = cheap payments then exit over the balloon. Wrong = five-figure lump over a depreciated car.'},
-    {q:'A closed-end consumer lease fails this business because…', c:['Mileage caps — consignment/rental miles demolish them','Payments are too high','It builds equity too fast','Banks hate them'], a:0, e:'Depreciation+rent pricing assumes capped personal miles. Rental use blows the caps and the economics.'},
-    {q:'The three questions to answer IN WRITING before picking a structure:', c:['Color, trim, wrap','Exit plan, realistic consignment miles, drought survival','Rate, rate, rate','Dealer, captive, CU'], a:1, e:'Structure follows plan: exit, miles, and the no-revenue stress test. Payment-only choosing is hope with a signature.'}
-  ]},
-
-{ id:'c4_bizbuy', sub:'C4', title:'Buying through the business — title, policy, and the tax edge',
-  predict:'Two identical Uruses, same price, same day. One is bought personally; one is bought by a seasoned LLC that consigns it. A year later their owners’ tax bills, insurance validity, and lender files look completely different. Walk the three differences.',
-  concept:'<p>The end-state the whole credit spine points at: <b>the business buys the car.</b> Get the three layers right — title, policy, tax — because they only work as a set.</p>'
-    +'<p><b>Title &amp; note.</b> The LLC is the titled owner; the note is commercial (C3·lending), PG’d early, with the business’s statements and seasoned auto line doing the persuading. Everything disclosed: the lender knows it is a rental/consignment asset. This is the structure that survives scrutiny — and it is also simply what the T8 fleet-placement plan requires, because…</p>'
-    +'<p><b>Policy.</b> A personally-insured car cannot legally do this work (T2: rental use is excluded from personal policies; T4: the commercial policy is the business’s hardest purchase). Titling to the LLC aligns with the commercial policy — or with the fleet’s policy under the lease-and-register consignment machinery (T4) when your car joins their program. The kill-shot to avoid: business-titled car, personal policy “to save money” — a claim adjuster’s easiest denial. The T8 rule restated: never let the car sit in the gap between two structures.</p>'
-    +'<p><b>The tax edge — where the heavy SUVs get interesting.</b> Business-use vehicles deduct: either actual expenses (fuel, insurance, maintenance, depreciation) or mileage, plus interest on the business note. The headline: <b>Section 179 + bonus depreciation</b>. Passenger cars face tight “luxury auto” depreciation caps — but vehicles over <b>6,000 lbs GVWR</b> escape into far larger first-year write-offs (179 up to six figures with bonus on top; percentages and caps move yearly <i>[VERIFY current-year rules]</i>). Now read the exotic garage through that lens: <b>Urus, Cullinan, Bentayga, G63 — heavy SUVs over the GVWR line <i>[VERIFY each]</i></b> — the same vehicles T8 calls the gentlest-renter, hardest-working fleet cars. The machine aligns: the car that rents safest may also carry the biggest legitimate first-year deduction <i>against the business income it produces</i>.</p>'
-    +'<p><b>The honest fine print, all of it.</b> The deduction requires real <b>business-use percentage</b> (>50% for 179; personal joyrides dilute it — the T5/T8 mileage ledger is also your tax log <i>[VERIFY]</i>); depreciation you take now is <b>recaptured</b> as income when you sell; a write-off is a discount on real spending, never a reason to buy (the T8 affordability line, tax edition); and every number here moves with the tax year — this is education, and the operator who does this <b>hires a CPA</b> before signing. The edge is knowing the structure exists and arriving at that CPA meeting already fluent.</p>',
-  example:'<p><b>Ex:</b> Seasoned LLC buys a $240k Urus [VERIFY price], commercial note, commercial policy, consigned at a fleet (T8 audit done). Year 1: consignment revenue services the note; 179+bonus on a >6,000-lb GVWR asset shelters a large slice of the business’s income [VERIFY current caps]; the mileage ledger doubles as the business-use log. Sale in year 3 triggers recapture — planned for, not discovered. Every layer legal, disclosed, and pointing the same direction.</p>',
-  teach:'Explain the title-policy-tax stack for a business-bought exotic, why the >6,000-lb GVWR rule makes heavy SUVs special, and the recapture + business-use fine print that keeps it honest.',
-  cards:[
-    {f:'The three-layer stack of a business buy:', b:'LLC title + commercial note (disclosed use), commercial policy (never a personal policy on a business rental car), and the tax treatment — they only work as a SET.'},
-    {f:'Why heavy SUVs are the tax edge:', b:'>6,000 lbs GVWR escapes luxury-auto depreciation caps into Section 179 + bonus territory [VERIFY yearly] — and Urus/Cullinan-class fleet SUVs sit over the line [VERIFY].'},
-    {f:'The fine print trio:', b:'>50% real business use (the mileage ledger is the log), depreciation recapture on sale, and numbers that move yearly — CPA before signature.'},
-    {f:'A write-off is…', b:'A discount on real spending against real income — never a reason to buy a car the business couldn’t otherwise carry.'}
-  ],
-  quiz:[
-    {q:'Business-titled car + personal auto policy “to save money” =', c:['A smart optimization','A tax strategy','Required by lenders','An adjuster’s easiest claim denial — the structures must align'], a:3, e:'Rental/business use is excluded personally; the car can never sit in the gap between structures.'},
-    {q:'The >6,000-lb GVWR line matters because…', c:['Heavier cars rent higher','It escapes luxury-auto caps into 179/bonus territory [VERIFY]','Insurance is free above it','It changes the title'], a:1, e:'Heavy SUVs get the large first-year deductions passenger cars are capped out of — and they’re the gentle-renter fleet cars anyway.'},
-    {q:'Depreciation you deduct now is…', c:['Free forever','Doubled at sale','Recaptured as income when you sell — plan for it','Transferred to the buyer'], a:2, e:'179/bonus is timing, not magic. The exit math includes recapture or the “edge” was a surprise tax bill.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.C4 = [
-  {q:'DTI compares…', c:['Cars to income','Assets to debts','Debt payments to income','Rent to income'], a:2, e:'Total monthly debt payments ÷ gross monthly income; PTI is the car payment alone.', d:1},
-  {q:'Two same-week car approvals usually work because…', c:['Lenders share instantly','Dealers waive checks','Scores update daily','The reporting lag hides the other fresh loan from each pull'], a:3, e:'New loans post on the next cycle (~30–45 days) — legal only if every app is truthful.', d:2},
-  {q:'Rolling negative equity means…', c:['Stacking the old car’s upside-down balance into the new loan','Paying early','Refinancing down','Leasing'], a:0, e:'Each roll deepens the hole — the $290k snowball mechanism.', d:1},
-  {q:'Stating income you no longer earn on an auto app is…', c:['Negotiation','Fine if payments are made','A gray area','Loan-application fraud (state + federal bank fraud)'], a:3, e:'18 U.S.C. §1344 territory — the felony line of c4_fraudline.', d:1},
-  {q:'Mainstream banks decline exotics mostly because…', c:['Borrowers are weak','Law forbids it','They dislike speed','Program boxes: caps, thin comps, hard remarketing'], a:3, e:'The asset breaks the normal-car assumptions; specialty lenders exist for exactly this.', d:2},
-  {q:'Specialty exotic lenders differentiate with…', c:['Very long terms, balloons/leases, asset-literate underwriting','Free insurance','No credit checks','Crypto payment'], a:0, e:'120–144mo terms [VERIFY], structures, and desks that know what a Performante is.', d:2},
-  {q:'The hidden cost of a 144-month term is…', c:['Paper fees','Registration','Higher insurance','Years underwater as equity builds slowly'], a:3, e:'Negative-equity fuel unless exit discipline is real.', d:2},
-  {q:'A balloon note ends with…', c:['Nothing','Automatic refi','A large lump due — a bet on the car’s value at term','Ownership transfer'], a:2, e:'Value ≥ balloon = ride was cheap. Value < balloon = five-figure problem.', d:2},
-  {q:'Closed-end leases fail fleet use because…', c:['Rates','Mileage caps that rental miles demolish','No insurance','Title issues'], a:1, e:'Depreciation-plus-rent pricing assumes capped personal miles.', d:2},
-  {q:'GAP coverage exists for…', c:['Maintenance','The payoff-vs-actual-value gap after a total loss','Deductibles','Storage'], a:1, e:'Exactly where long terms and balloons leave you exposed — verify commercial use isn’t excluded [VERIFY].', d:2},
-  {q:'The >6,000-lb GVWR tax significance is…', c:['Cheaper fuel','Lower registration','Free tolls','Escaping luxury-auto caps into Section 179/bonus territory [VERIFY]'], a:3, e:'Heavy SUVs (Urus/Cullinan-class [VERIFY]) get first-year deductions capped cars can’t touch.', d:3},
-  {q:'Depreciation taken under 179/bonus is…', c:['Recaptured as income at sale','Permanent','Transferable','Doubled'], a:0, e:'It is timing. The exit plan must include recapture or the edge becomes a surprise bill.', d:3}
-];
-
-// ═══════════════════════ TIER 1 · THREE LAWS & THE WATERFALL ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t1_threelaws', sub:'T1', title:'The three laws — who holds power in any deal',
-  predict:'Strip any exotic rental deal to its bones and only two people matter. Everyone else is standing between them. Who are the two — and if idle cars outnumber renters, which side of the deal holds the real market power?',
-  concept:'<p>Every deal reduces to <b>a person who owns a car and a person who wants to rent it</b>. Agency, broker, operator — every role you will ever hear named is just a different way of standing between those two points, taking on a piece of the work and taking out a piece of the money. Three laws govern everything that happens in between:</p>'
-    +'<p><b>Law 1 — Everyone eats from the same plate.</b> The money in a deal is fixed: whatever the renter pays. Every extra person between owner and renter takes a cut, which means everyone else keeps less. The game, for every player, is to <b>control more of the deal</b>. The most profitable position possible: you control the car AND you found the renter — nobody else is at the table, the deal is all yours. That is the dual-rail endgame (T0), stated as a law.</p>'
-    +'<p><b>Law 2 — The car side sets the floor.</b> Whoever controls the car quotes the minimum they will accept — the <b>wholesale rate</b>. Whoever controls the renter charges whatever they want above that floor and keeps the difference. Why does the car side set terms? Because in any single deal the car is the thing that is <i>real</i> — sitting there, insured, ready. The renter is a maybe until money clears. The asset quotes; the lead builds on top.</p>'
-    +'<p><b>Law 3 — Leads are scarcer than cars.</b> At any moment, more exotics sit idle than renters are looking. An unrented car is not neutral — it bleeds depreciation, storage, insurance, and payments while it sits. So while the car sets the floor in each deal, <b>across the market the people who can reliably produce renters hold the leverage</b>. Fleets negotiate, discount, and compete for good lead sources, because a fleet without bookings is a warehouse full of expensive metal.</p>'
-    +'<p><b>Hold all three at once</b> and the whole industry snaps into focus: control more → keep more (1); the asset prices the floor in the room (2); demand production rules the market outside the room (3). Every lesson after this is one of these laws wearing clothes.</p>',
-  example:'<p><b>Ex:</b> Friday night: a fleet’s Huracán sits unbooked (bleeding — Law 3). A broker calls holding a verified renter: “your floor?” Fleet quotes $800 wholesale (Law 2). Broker charges the client $1,050 and keeps $250 (Law 1: one more seat, one more cut). Everyone acted exactly as their position dictates.</p>',
-  teach:'State the three laws from memory and show how one Friday-night brokered deal expresses all three at once.',
-  cards:[
-    {f:'Law 1:', b:'Everyone eats from the same plate — the renter’s payment is fixed; every seat at the table is a cut. Control more of the deal to keep more.'},
-    {f:'Law 2:', b:'The car side sets the floor (the wholesale rate) — the asset is real, the renter is a maybe until money clears. The lead prices above the floor.'},
-    {f:'Law 3:', b:'Leads are scarcer than cars. Idle cars bleed; reliable renter-producers hold market leverage, and fleets compete for them.'},
-    {f:'The most profitable seat:', b:'Controlling the car AND the renter — nobody else at the table. The dual-rail endgame expressed as Law 1.'}
-  ],
-  quiz:[
-    {q:'The wholesale rate is set by…', c:['The renter','A price index','The broker','Whoever controls the car'], a:3, e:'Law 2: the asset is the real thing in the room, so its controller quotes the floor.'},
-    {q:'Across the whole market, leverage belongs to…', c:['Whoever owns the most cars','The platforms','The insurers','Whoever can reliably produce renters'], a:3, e:'Law 3: idle cars bleed daily. Demand production is the scarce skill fleets compete for.'},
-    {q:'Every added middleman in a deal…', c:['Grows the pie','Shrinks everyone else’s share of a fixed pie','Doubles the rate','Is illegal'], a:1, e:'Law 1: the renter’s payment is the whole plate — each seat is a cut from it.'}
-  ]},
-
-{ id:'t1_wholesale', sub:'T1', title:'Wholesale vs retail — the two prices on every car',
-  predict:'Every car in every fleet has two prices, and the gap between them is how everyone in this industry gets paid. A Huracán “costs $1,200/day.” What is its second, hidden price — and who gets to buy at it?',
-  concept:'<p><b>Retail</b> is what a renter pays — the public number on the website: Huracán $1,100–1,300/day, Urus $900–1,200, an M3 $400–500 <i>[VERIFY — market figures move]</i>. <b>Wholesale</b> (same thing as the <b>broker rate</b>) is the discounted price a fleet gives people who bring them deals — usually <b>20–30% below retail</b>. A $1,000 retail car might wholesale at $800: the deal-bringer pays the fleet $800 (or the fleet collects $1,000 and pays out $200 — mechanics in T6), and the spread is their pay for sourcing.</p>'
-    +'<p><b>The broker sheet.</b> Fleets that work with outside sourcers keep a list of every car with its wholesale rates. Holding a fleet’s broker sheet is, in a real sense, holding the keys to their inventory: <b>you can now sell their cars</b>. Getting your first sheet is a milestone (T7); getting your rates <i>improved</i> is a career.</p>'
-    +'<p><b>Duration discounts.</b> The longer the rental, the cheaper the day — full rate for 1 day, discounted weeks, seriously discounted months, with tier start-points varying by company. Wholesale rates are usually built off the same tiers. And a pricing myth to kill now: rates do <b>not</b> spike for big weekends the way hotels surge — the same daily rate applies on festival weekend as a random Tuesday <i>[VERIFY local practice]</i>. Discounts exist for long rentals and slow cars; that is about it.</p>'
-    +'<p><b>Everything is negotiated — there is no market price.</b> Different fleets give different wholesale rates to different people based on trust, track record, and volume. A sourcer holding a live client pushes the floor down, and fleets bend — because the alternative is the car sits (Law 3). But there is a limit with a name on it: cut a rate too deep and the loss lands unevenly — <b>the miles still go on the car, and depreciation lands on whoever OWNS it</b> (file that for T8: an owner should care how disciplined their fleet negotiates). The market’s real structure: <b>thousands of private prices</b>, each one a relationship. Proven partners buy inventory 10–20 points cheaper than strangers — which is why T7 will tell you reputation IS pricing.</p>',
-  example:'<p><b>Ex:</b> Same Huracán, same Saturday: website renter pays $1,200. New broker with one prior deal buys it at $1,050 (12% off). The broker who has sent the fleet forty clean clients buys it at $850 (29% off). Three prices, one car — the third broker’s margin per deal is 2–3× the first’s, purely on track record.</p>',
-  teach:'Explain retail vs wholesale, what holding a broker sheet means, and why this market has thousands of private prices instead of one public one.',
-  cards:[
-    {f:'Wholesale (broker) rate:', b:'The discounted price for deal-bringers — usually 20–30% under retail. The spread above it is the sourcer’s pay.'},
-    {f:'The broker sheet:', b:'A fleet’s full inventory with wholesale rates. Holding it = you can sell their cars. Milestone one of the lead door.'},
-    {f:'Pricing rules that surprise outsiders:', b:'Duration discounts (longer = cheaper/day), but NO event surge — festival Saturday prices like a Tuesday [VERIFY].'},
-    {f:'Why rates are relationships:', b:'Every rate is negotiated per person on trust/track record/volume — proven partners buy 10–20 points cheaper. Reputation IS pricing.'}
-  ],
-  quiz:[
-    {q:'A car retails $1,000/day; typical wholesale would be…', c:['$700–800','$950–990','$400–500','$1,100'], a:0, e:'20–30% under retail is the standard broker-rate band.'},
-    {q:'Holding a fleet’s broker sheet means…', c:['You can sell their inventory at known floors','You’re an employee','You own their cars','You set retail'], a:0, e:'The sheet is the keys to inventory — every car, every wholesale rate, yours to build deals on.'},
-    {q:'When a fleet discounts a rate too deep, the un-negotiable loss lands on…', c:['The car’s owner via miles and depreciation','The broker','The renter','Nobody'], a:0, e:'Cash discounts come off margins, but the MILES still hit the asset — and depreciation is the owner’s to eat.'}
-  ]},
-
-{ id:'t1_waterfall', sub:'T1', title:'The waterfall — same deal, three completely different paychecks',
-  predict:'One renter pays $1,000 for one day in a Lamborghini. Three people touch the deal: the broker who found the renter, the owner whose car it is, the agency that ran everything. Guess the split — then guess whose cut is nearly pure profit and whose is nearly an illusion.',
-  concept:'<p>The payout order is fixed industry-wide: <b>deal-sourcer first, owner second, agency keeps what is left.</b> Run the standard numbers: retail $1,000, wholesale $800, outside broker charged full retail. Broker’s cut off the top: <b>$200</b>. The $800 flows to the fleet, holding the car on a 50/50 consignment: owner <b>$400</b>, agency <b>$400</b>. On paper: broker 20%, owner 40%, agency 40%.</p>'
-    +'<p><b>The detail most owners never figure out:</b> that owner believes they are on a 50/50 deal — and they are. But it is 50% of <b>WHOLESALE</b>, not retail, whenever a broker is in the deal. The brokered deal quietly shrank the pie before their split was cut. Nothing dishonest happened; that is simply how the waterfall works. You now know something most car owners in this industry do not.</p>'
-    +'<p><b>Now subtract expenses, and watch the picture flip.</b> The broker’s $200 is <b>nearly pure profit</b> — no car payment, no insurance, no storage, no liability; leads came from content or referrals. The agency’s $400 must cover staff, software, warehouse, deliveries, marketing, and a serious commercial policy — what remains is real but earned by carrying nearly all the work. The owner’s $400 must absorb the two costs nobody can negotiate away: <b>depreciation and maintenance</b> — every mile is resale value leaving the building, and wear (tires, brakes, services) lands on the owner. (Renter-caused damage is different — recovered from the deposit, T6.) After those, a consignment owner typically nets a modest <b>15–20% of their split</b> <i>[VERIFY — model-dependent]</i>.</p>'
-    +'<p><b>The honest scoreboard, profit-per-effort:</b> broker — most margin, least work, zero liability. Agency — second most, nearly all the work. Owner — least margin, literally nothing to do. All three can be smart: the broker runs a no-capital hustle, the agency builds a business, the owner holds a semi-passive asset that happens to be a Lamborghini they can drive. <b>There is no correct seat — only the seat that fits what you are holding right now.</b> That question is the whole back half of this course.</p>',
-  example:'<p><b>Ex — the flip in one line:</b> Gross: broker $200 &lt; owner $400 = agency $400. Net: broker ~$200, agency $400 minus a real cost stack, owner $400 minus miles and wear ≈ $60–80. The smallest gross check goes home the fattest. Effort and liability, not gross, decide who actually got paid.</p>',
-  teach:'Run the $1,000 waterfall from memory — order, splits, the wholesale-not-retail detail — then flip it to net and explain why the broker goes home happiest per hour.',
-  cards:[
-    {f:'The payout order:', b:'Deal-sourcer first (their spread off the top), owner second (their split of wholesale), agency keeps the remainder.'},
-    {f:'The detail owners miss:', b:'A 50/50 split is 50% of WHOLESALE whenever a broker is in the deal — the pie shrank before the split was cut.'},
-    {f:'Whose cut is nearly pure profit?', b:'The broker’s — no payment, insurance, storage, or liability. The owner’s gross must absorb depreciation + maintenance, netting ~15–20% of the split [VERIFY].'},
-    {f:'The scoreboard truth:', b:'Broker: most margin/least work. Agency: second/all the work. Owner: least/none. No correct seat — only the seat that fits your situation.'}
-  ],
-  quiz:[
-    {q:'Renter pays $1,000; wholesale is $800; consignment is 50/50. The owner receives…', c:['$400','$500','$200','$800'], a:0, e:'The broker’s $200 came off first — the owner splits WHOLESALE, not retail.'},
-    {q:'The two owner costs nobody can negotiate away are…', c:['Marketing and fuel','Depreciation and maintenance','Insurance and storage','Deposits and fees'], a:1, e:'Every mile is resale value leaving; wear lands on the owner. Renter damage, by contrast, comes from the deposit.'},
-    {q:'Per effort and liability, the best-paid seat in a brokered deal is usually…', c:['The agency','The owner','The broker','The renter'], a:2, e:'~$200, near-zero costs, zero liability, hours of work. The agency earns more absolute dollars by carrying everything.'}
-  ]},
-
-{ id:'t1_70pct', sub:'T1', title:'The 70% truth — sourced deals run this industry',
-  predict:'What percentage of exotic rental deals do you think are found by the fleet that actually supplies the car — through their own website, their own Instagram, their own marketing? Guess before you look. The real number reorders the whole industry.',
-  concept:'<p>Roughly <b>70% of exotic rental deals are sourced by someone OTHER than the fleet supplying the car</b> — only ~30% of bookings come from a fleet’s own marketing landing on its own cars <i>[VERIFY — operator estimate]</i>. Sit with that: the companies with the warehouses, the insurance, the staff, and the cars are, most of the time, <b>filling deals someone else brought them</b>. Law 3, measured.</p>'
-    +'<p><b>What a broker actually is — mystery stripped.</b> A broker is anyone who sources a renter and connects them to a car they do not control. That is the entire definition. <b>No license. No exam. No minimum age, no required company, no certification.</b> Know someone who wants a Lamborghini and a fleet that has one, and you can broker that deal this week — and the fleet will happily pay you for it. Brokering’s bigger sibling — <b>sourcing vehicles</b> (the same connecting skill pointed at the supply side) — is how sourcers grow into something much larger (T7’s ladder).</p>'
-    +'<p><b>Where brokers come from.</b> Almost nobody sets out to be one, because almost nobody knows the role exists. They are <b>converted</b> from adjacent positions: the concierge asked for supercars weekly, the agent whose artists need cars in every city, the promoter, the jeweler, the club host — people already standing next to renters who one day stop giving referrals away free, ask a fleet for a wholesale rate, and get paid for the same phone calls. And increasingly: <b>people who can get attention online</b> — make content that reaches these renters and you can source deals without knowing a single celebrity (T7).</p>'
-    +'<p><b>The white-label reality.</b> When a fleet lacks the car a client wants, they do not lose the deal — they quietly book it from another fleet at wholesale and present it as their own. The client never knows; the supplying fleet keeps the secret, because next week the roles reverse. This is <b>white-labeling</b>, it is everywhere, and it is why every fleet’s Instagram seems to have infinite cars. Know it so you understand the machine — how you present sourced cars in <i>your</i> operation is a decision you will make with open eyes (T6 covers the clean mechanics).</p>'
-    +'<p><b>Put the pieces together:</b> deals are mostly sourced; sourcing needs no capital and no permission; the industry openly routes cars to whoever holds the renter. That is why the first door into this industry is not a car. <b>It is a lead.</b></p>',
-  example:'<p><b>Ex:</b> A hotel concierge fields “can you get me a Lambo for Saturday?” for the fifth time this month and, as always, hands it to a fleet for free. The week she instead asks that fleet “what’s your broker rate?”, the identical phone call starts paying her $200+ a deal. Nothing about the work changed — only the knowledge that the role existed.</p>',
-  teach:'Explain the 70/30 split of who sources deals, the licenseless definition of a broker, where brokers convert from, and what white-labeling is.',
-  cards:[
-    {f:'The 70% truth:', b:'~70% of deals are sourced by someone other than the supplying fleet [VERIFY]. The infrastructure owners mostly fill deals brought to them.'},
-    {f:'A broker is…', b:'Anyone who connects a renter to a car they don’t control. No license, exam, age, company, or certification required.'},
-    {f:'Where brokers come from:', b:'Converted from next-to-the-renter roles — concierges, agents, promoters, jewelers, hosts — plus, now, anyone who can source attention online.'},
-    {f:'White-labeling:', b:'Fleets book competitors’ cars at wholesale and present them as their own; the supplier keeps the secret because roles reverse weekly. Why every fleet looks infinite.'}
-  ],
-  quiz:[
-    {q:'The share of deals a typical fleet’s own marketing lands on its own cars is roughly…', c:['30%','50%','70%','90%'], a:0, e:'~30% [VERIFY]. The other ~70% arrive via sourcers — the measured form of Law 3.'},
-    {q:'To legally broker your first exotic deal you need…', c:['A broker’s license','An LLC and insurance','21 years of age','A renter and a fleet’s wholesale rate'], a:3, e:'The role has no license, exam, or age gate. The qualified lead IS the credential.'},
-    {q:'A fleet’s Instagram shows a car they don’t own being “their” rental. Most likely explanation:', c:['Fraud in progress','A stolen photo','White-labeling — booked from a peer at wholesale, presented as their own','A glitch'], a:2, e:'Completely normal here: fleets are each other’s suppliers constantly, and the client never knows.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T1 = [
-  {q:'Every role in the industry stands between…', c:['Two fleets','A bank and a dealer','A car owner and a renter','Insurance and the DMV'], a:2, e:'Owner and renter are the only two essential people; everyone else takes work and a cut.', d:1},
-  {q:'Law 1 says the money in a deal is…', c:['Growable','Set by the fleet','Fixed at what the renter pays — every seat is a cut','Set by insurers'], a:2, e:'Same plate, more forks = less each. Control more of the deal to keep more.', d:1},
-  {q:'The wholesale rate is quoted by…', c:['The car side','The lead side','The renter','The platform'], a:0, e:'Law 2: the asset is real, the renter is a maybe — the car controller sets the floor.', d:1},
-  {q:'Idle exotics are…', c:['Neutral','Tax write-offs automatically','Appreciating','Bleeding depreciation, storage, insurance, payments'], a:3, e:'Law 3’s engine: an unbooked car costs daily, which is why lead producers hold leverage.', d:2},
-  {q:'Typical wholesale sits…', c:['5% under retail','50% under retail','20–30% under retail','Above retail'], a:2, e:'The standard broker-rate band; the spread above it is the sourcer’s pay.', d:1},
-  {q:'The waterfall payout order is…', c:['Agency, owner, broker','Broker/sourcer, owner, agency','Owner, broker, agency','Simultaneous'], a:1, e:'Sourcer off the top, owner’s split of wholesale, agency keeps the rest.', d:2},
-  {q:'A 50/50 consignment owner in a brokered deal splits…', c:['Wholesale','Retail','The deposit','Net profit'], a:0, e:'The broker’s spread shrank the pie first — the detail most owners never learn.', d:2},
-  {q:'After depreciation and maintenance, a consignment owner typically nets about…', c:['15–20% of their split [VERIFY]','All of their split','Nothing ever','Double the agency'], a:0, e:'Miles are resale value leaving; wear is the owner’s. The gross check flatters the seat.', d:3},
-  {q:'The broker’s seat carries…', c:['Full liability','The insurance burden','No car costs and no liability — nearly pure-profit spreads','The storage bill'], a:2, e:'Which is why per-effort it is the best-paid seat in most deals.', d:2},
-  {q:'~70% of deals are sourced by…', c:['The supplying fleet','Walk-ins','Platforms','Someone other than the supplying fleet'], a:3, e:'The industry’s demand mostly arrives from outside — the first door is a lead, not a car.', d:1},
-  {q:'Becoming a broker requires…', c:['A license and bond','Fleet employment','An LLC','Nothing but a renter and a wholesale rate'], a:3, e:'No license, exam, age, or entity gate exists. The lead is the introduction.', d:1},
-  {q:'White-labeling is…', c:['Illegal deception','A wrap style','Fleets renting peers’ cars at wholesale, presented as their own — normal and mutual','A lease type'], a:2, e:'Roles reverse weekly, so the secret keeps itself. Every fleet looks infinite.', d:2}
-];
-
-// ═══════════════════════ TIER 2 · THE INSURANCE SPINE ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t2_asymmetry', sub:'T2', title:'The asymmetry that rules everything — only the renter can file',
-  predict:'A verified renter with real, transferring, full-coverage insurance totals your $200k Huracán… then blocks your number and disappears. The policy is real. The coverage is real. Why might nobody ever pay for that car?',
-  concept:'<p>If this course has one lesson that matters most, this is it. <b>Insurance is where exotic rental businesses die</b>, and the whole thing comes down to one rule almost nobody outside the industry knows.</p>'
-    +'<p><b>Two coverages, two behaviors.</b> When a renter wrecks — hits another car, someone gets hurt — two different coverages engage. <b>Liability</b> protects everyone <i>else</i>: the injured person, the other car, the street lamp. And liability pays <b>automatically</b> — the outside world goes after the driver’s policy directly; the renter doesn’t lift a finger for them to get paid. <b>Collision</b> is what covers <i>your</i> car, the rental itself. Insurers classify rentals as <b>non-owner vehicles</b>: if the renter carries full comprehensive/collision that transfers to non-owner vehicles, the totaled Huracán is covered by <b>the renter’s own policy</b>.</p>'
-    +'<p><b>The rule that changes everything: only the policyholder can file that claim.</b> You — the operator, the owner — cannot open a claim on someone else’s personal policy. You cannot force them to file. No court order makes a claim appear. If the renter cooperates: adjuster, valuation, repair — routine. If the renter <b>ghosts</b>: a fully insured, fully verified, completely real claim <b>simply never gets filed</b>. The car sits totaled and nobody pays. A cooperation clause (T5) gives you breach-of-contract leverage — which works on the 95% who respond to consequences and does nothing against someone judgment-proof. Suing a broke ghost puts you in line at their bankruptcy; it does not repair a Lamborghini.</p>'
-    +'<p><b>Who eats it.</b> Remember the agency model: that car likely belongs to a consignment owner who trusted the fleet. The fleet’s options are all bad — eat the loss, burn the commercial policy (T4 explains why that can kill the company), or watch a desperate owner contemplate lying to their own insurer about how the car was being used. <b>That last one is insurance fraud, and it is a line nobody ever crosses</b> — it converts a car-sized loss into a prison-sized one.</p>'
-    +'<p><b>The lesson underneath.</b> Every safety ritual you will learn — verification calls, background checks, trackers, deposits, video handoffs — exists as the industry’s answer to a single question: <i>how do we never hand keys to someone who would strand us with a claim we cannot file?</i> You cannot fix the rule. You can only choose renters like your business depends on it. It does.</p>',
-  example:'<p><b>Ex:</b> Two identical crashes. Renter A stays on the phone, files, cooperates: 6 weeks later the car is paid out — painful, routine. Renter B blocks everyone: same policy, same coverage, zero dollars, ever. The difference was never the insurance. It was the human — which is why T3 is about underwriting the human.</p>',
-  teach:'Explain liability vs collision on a rental, the non-owner-vehicle concept, and why a real policy can still pay nothing — in words a new operator can’t forget.',
-  cards:[
-    {f:'Liability vs collision in a rental crash:', b:'Liability protects everyone ELSE and pays automatically. Collision covers YOUR car — via the renter’s own policy (rentals = non-owner vehicles).'},
-    {f:'The asymmetry rule:', b:'Only the policyholder can file the collision claim. The operator cannot open, force, or court-order a claim on someone else’s personal policy.'},
-    {f:'What the cooperation clause actually does:', b:'Breach-of-contract leverage — works on the 95% who respond to consequences; worthless against a judgment-proof ghost. Selection beats litigation.'},
-    {f:'The fraud wall here:', b:'An owner lying to their carrier about how the car was used is insurance fraud. A car-sized loss is never converted into a prison-sized one.'}
-  ],
-  quiz:[
-    {q:'After a rental crash, the injured third parties get paid…', c:['Only if the renter files','From the fleet’s deposit','Automatically off the driver’s liability coverage','Never'], a:2, e:'Liability pays outward without the renter’s help. It is the collision claim on YOUR car that only the renter can open.'},
-    {q:'Your renter’s policy fully covers the totaled rental, but the renter ghosts. The claim…', c:['Can be filed by you with proof','Is filed automatically at 30 days','Transfers to your commercial policy free','Never gets filed — only the policyholder can open it'], a:3, e:'The asymmetry: coverage without cooperation pays nothing. Every industry ritual exists to prevent this person from getting keys.'},
-    {q:'Every verification ritual in this industry ultimately answers…', c:['How to charge more','How to win chargebacks','How to avoid taxes','How to never hand keys to someone who’d strand you with an unfiled claim'], a:3, e:'The rule can’t be fixed — renters can only be chosen. That is the spine of the entire protection stack.'}
-  ]},
-
-{ id:'t2_fourdocs', sub:'T2', title:'The four documents — and SERFF, where the fine print hides',
-  predict:'Someone “sends you their insurance.” What you receive is one page. A personal auto policy is actually four documents — and the answer to “will this pay for my Lamborghini?” lives in the two documents almost nobody has ever seen. Name the four.',
-  concept:'<p>To verify anyone’s insurance you must know what a policy physically <i>is</i>. Most people — including lifelong premium-payers — have seen one page of theirs. There are four:</p>'
-    +'<p><b>1 — The application.</b> What the insured filled out at purchase. You will rarely touch it.</p>'
-    +'<p><b>2 — The declarations page.</b> The summary of what they bought: named drivers, vehicles, coverage types, limits, deductibles, and the list of endorsements. When someone “sends their insurance,” this is what they send — and most of the industry stops reading here. <b>That is the mistake.</b> The dec page tells you what someone BOUGHT, not what it COVERS. “Will this pay for my Huracán?” is not answered anywhere on it.</p>'
-    +'<p><b>3 — The policy contract.</b> The actual fine print: what is covered, what is excluded, under exactly what conditions. <b>This is where rental-vehicle coverage lives</b>, usually under <b>non-owner vehicle</b> language — and where the traps live: high-value exclusions, rental exclusions, value caps.</p>'
-    +'<p><b>4 — The endorsements.</b> Amendments bolted onto the contract, each changing the rules. The dec page lists WHICH endorsements exist; the endorsement documents contain the changed rules themselves.</p>'
-    +'<p><b>The catch: the fine print is state-specific and often unpublished.</b> Policy contracts and endorsements vary by state even within one carrier, and many are not public — you will not Google your way to them. They all live in <b>SERFF</b> (System for Electronic Rate and Form Filing), the government database where insurers file their forms per state. The workflow: from the dec page, get the <b>carrier’s NAIC number</b> and the <b>form numbers</b> of the contract + listed endorsements → open that state’s SERFF portal → pull the exact filed documents <i>[VERIFY portal access varies by state]</i>. Underwriting-grade fine print, from a public database, for free — the single most gatekept skill in the industry, and it is a lookup.</p>'
-    +'<p><b>The modern shortcut, honestly framed.</b> You no longer read these forms cold: pull the right documents and hand them to an AI — “find the non-owner vehicle rules, value caps, and rental exclusions.” An evening becomes minutes. But the AI is only as good as the documents pulled: <b>someone still has to pull the RIGHT four</b>, for the RIGHT state, current versions. Now you know which four, and where they live.</p>',
-  example:'<p><b>Ex:</b> Dec page says: “Comprehensive ✓ Collision ✓ — endorsements: 32-4839, 32-5711.” It does NOT say those endorsements exist to cap non-owner vehicle coverage at $100k. The contract + 32-5711, pulled from SERFF, say exactly that. Two renters with identical dec pages — one covered for your car, one capped at half its value — and the dec pages cannot tell them apart.</p>',
-  teach:'Name the four documents, what each contains, why the dec page cannot answer the coverage question, and the SERFF pull workflow (NAIC → state portal → form numbers).',
-  cards:[
-    {f:'The four documents of a policy:', b:'Application, declarations page (what they BOUGHT), policy contract (what it COVERS — the fine print), endorsements (bolted-on rule changes).'},
-    {f:'The dec-page mistake:', b:'Most of the industry stops at the dec page. It lists coverages and endorsement numbers — the actual non-owner rules and caps live in the contract + endorsements.'},
-    {f:'SERFF:', b:'The state filing database holding every carrier’s policy forms. Workflow: NAIC number + form numbers from the dec page → state SERFF portal → exact filed documents.'},
-    {f:'The AI shortcut’s limit:', b:'AI reads the fine print in minutes — but only the documents you pulled. Right carrier, right state, right form versions: that part is still the skill.'}
-  ],
-  quiz:[
-    {q:'“Will this policy pay for my Lamborghini?” is answered in…', c:['The declarations page','The policy contract and endorsements','The application','The insurance card'], a:1, e:'The dec page shows what was bought. Non-owner rules, caps, and exclusions live in the contract + endorsements.'},
-    {q:'SERFF is…', c:['The state database where insurers file their policy forms','A carrier’s claims line','A credit bureau','A rental platform'], a:0, e:'NAIC number + form numbers in, exact state-specific fine print out — the gatekept skill that is actually a lookup.'},
-    {q:'The AI-era verification shortcut still requires a human to…', c:['Read every page manually','Pull the RIGHT documents — carrier, state, current form versions','Call the DMV','Notarize the dec page'], a:1, e:'Garbage in, garbage out: extraction is instant, but sourcing the correct filed forms is the enduring skill.'}
-  ]},
-
-{ id:'t2_caps', sub:'T2', title:'The caps are weird — carrier variance and the age-gate truth',
-  predict:'One major carrier covers rental cars up to $100,000 — and ABOVE that number, coverage drops to the value of the most expensive car on the renter’s own policy. Your renter drives a 2017 Sentra and totals a $105k car. The policy pays…?',
-  concept:'<p>Non-owner coverage varies <b>wildly</b> by carrier, and it is not simple. Some policies transfer full coverage to essentially any rental — even a car worth millions. Others cap it in ways nobody would guess:</p>'
-    +'<p><b>The cliff cap, worked.</b> One major carrier’s form covers rental vehicles to <b>$100,000</b>; above it, coverage drops to <b>the value of the most expensive vehicle ON the renter’s own policy</b> <i>[VERIFY — forms change]</i>. Total a $95k car → policy pays $95k. Same renter totals a $105k car → the payout is whatever their own car at home is worth. Sentra at home = maybe $10k against your $105k loss. <b>The difference between those outcomes is one paragraph of fine print nobody reads</b> — the paragraph T2·fourdocs taught you to pull. Other patterns in the wild: flat rental exclusions, “regular use” language, per-class limits — every carrier a snowflake, every form state-specific.</p>'
-    +'<p><b>The operational consequence: per-carrier fluency.</b> Operators who survive keep <b>living notes per carrier</b> — which transfer cleanly, which cap, which exclude, which change by state — refreshed constantly because forms update. Every verification is fresh (T3); the notes just tell you where the bodies are usually buried. This is the “carrier matrix” edge: unglamorous, compounding, and almost nobody outside serious fleets maintains one.</p>'
-    +'<p><b>And the age-gate truth that creates a market.</b> These carrier rules are <b>carrier-wide, not age-based</b>. A 21-year-old whose carrier transfers full coverage to non-owner vehicles is <b>truly covered</b> — the age walls you see on big platforms (25+ for one class, 30+ for the next) belong to <i>those platforms’ own insurance programs</i>, not to personal auto policies <i>[VERIFY current platform gates]</i>. That is the mechanical reason the 18–30 gap from T0 exists and why independents can serve it <b>legally</b>: the platform’s underwriter said no; the renter’s own carrier said yes; the operator who can verify the yes (T3’s stack) captures a market the platforms are structurally forbidden from touching. The edge is not recklessness — it is fine-print literacy.</p>',
-  example:'<p><b>Ex — the matrix in action:</b> Booking request, 22-year-old, $115k car. Note on their carrier: “transfers full ACV, no value cap, confirmed via SERFF + recorded call 3 months ago.” Proceed to full T3 verification. Same request, different carrier: “caps at $100k, drops to owned-vehicle value above.” Decline or steer to the $85k car. Two minutes of notes made the decision before emotion could.</p>',
-  teach:'Explain the $100k cliff cap with the Sentra example, why per-carrier notes are the real edge, and the exact reason a 21-year-old can be legitimately covered where platforms say no.',
-  cards:[
-    {f:'The cliff cap:', b:'One major form: rentals covered to $100k; above that, payout drops to the value of the renter’s own most expensive car [VERIFY]. $95k car = paid; $105k car + Sentra at home = ~$10k.'},
-    {f:'The carrier matrix:', b:'Living per-carrier notes — transfers, caps, exclusions, state variance — refreshed constantly. Unglamorous, compounding, nearly unique to serious operators.'},
-    {f:'Why age gates aren’t insurance law:', b:'Platform age walls (25+/30+) belong to the platforms’ own insurance programs. Personal-policy transfer is carrier-based — a covered 21-year-old is truly covered.'},
-    {f:'The 18–30 market’s mechanism:', b:'Platform underwriters say no; some renters’ own carriers say yes; the operator who can VERIFY the yes serves the gap legally. Fine-print literacy is the edge.'}
-  ],
-  quiz:[
-    {q:'Under the cliff-cap form, a Sentra-owning renter totals a $105k rental. The policy pays about…', c:['$105k','The Sentra’s value — maybe $10k','$100k','Nothing'], a:1, e:'Above the $100k line, coverage drops to the renter’s own most-expensive-vehicle value [VERIFY]. One unread paragraph, ~$95k of exposure.'},
-    {q:'The “carrier matrix” is…', c:['A rate comparison site','A platform feature','A state database','An operator’s living per-carrier notes on transfer rules, caps, and exclusions'], a:3, e:'Fresh verification every rental, but the notes tell you where each carrier usually hides the trap.'},
-    {q:'A 21-year-old can be legitimately covered in your $90k car when…', c:['They pay cash','A platform approves them','Their own carrier’s policy transfers full coverage to non-owner vehicles','They sign a waiver'], a:2, e:'Age walls are platform-program rules. Carrier-based transfer either exists or it doesn’t — verification, not age, decides.'}
-  ]},
-
-{ id:'t2_forms', sub:'T2', title:'Reading the actual form — exclusion anatomy for operators',
-  predict:'Policy contracts are built from a standard skeleton, and the exclusions that decide your business cluster in predictable places. If you could only search a 40-page form for three phrases, which three would find almost every trap?',
-  concept:'<p>The final layer of the spine: opening the form yourself and knowing where it bites. Most U.S. personal auto contracts descend from a standard industry skeleton (the ISO personal auto program — <b>PP 00 01</b>-family forms, carrier-modified and state-filed <i>[VERIFY form lineage per carrier]</i>), which means the traps cluster in searchable, recurring language:</p>'
-    +'<p><b>Search 1 — “non-owned auto” / “temporary substitute.”</b> The definitions section decides everything downstream: what counts as a non-owned auto, and whether physical-damage coverage extends to it at all. This is where you confirm the basic transfer exists — the yes/no of T2·asymmetry.</p>'
-    +'<p><b>Search 2 — “furnished or available for regular use.”</b> The classic exclusion: coverage for non-owned autos evaporates when the vehicle is furnished for the insured’s <i>regular use</i>. A one-day rental is fine; patterns that look like regular access — the same car every weekend, month-long arrangements — drift toward the exclusion. Long-term rentals are not just a pricing question (T1 duration tiers); they are a <b>coverage-drift</b> question almost nobody flags.</p>'
-    +'<p><b>Search 3 — “public or livery conveyance” / “rental to others.”</b> The business-use family of exclusions. Read carefully on BOTH sides of your deals: it is why a renter’s policy can exclude cars “rented to others” (aimed at the owner side but with sloppy carrier variants), and it is the entire reason <b>your own personal policy can never cover a car you rent out</b> (C4·bizbuy’s kill-shot, T4’s commercial-policy mandate). Plus the modern cousin: TNC/ride-share exclusions showing how fast carriers wall off new commercial uses.</p>'
-    +'<p><b>Then the endorsements re-decide everything.</b> Any bolted-on form can widen or narrow all three answers — which is why the dec page’s endorsement <i>list</i> (T2·fourdocs) is your reading list, not trivia. Read order for a verification: definitions → physical-damage section → exclusions → endorsements, extracting three sentences: <i>does coverage transfer, what is the cap, what uses void it.</i></p>'
-    +'<p><b>The AI-era workflow, complete:</b> SERFF-pull the contract + endorsements (fourdocs) → AI-extract answers to the three searches → note the carrier in your matrix (caps) → confirm on a recorded line (T3’s Layer 3). Four steps, minutes each, repeatable by exactly one kind of person: the one who knows these documents exist. That knowledge gap IS the moat around this business.</p>',
-  example:'<p><b>Ex:</b> A 38-page contract, three searches: “non-owned” → physical damage DOES extend. “regular use” → excluded if furnished for regular use — your client wants the car every weekend for a month; flag it, restructure to distinct short rentals with breaks, or decline [VERIFY carrier tolerance]. “rented to others” → present but aimed at vehicles the INSURED rents out; inapplicable to their renting yours. Three minutes, three sentences, decision-grade.</p>',
-  teach:'Name the three search phrases, what each exclusion family does, and the four-step AI-era verification workflow from SERFF pull to recorded call.',
-  cards:[
-    {f:'The three searches that find the traps:', b:'“Non-owned auto” (does transfer exist), “furnished/available for regular use” (coverage drift on long/repeat rentals), “livery/rental to others” (business-use walls).'},
-    {f:'The regular-use drift:', b:'One-day rentals are clean; same-car-every-weekend and month-long patterns drift toward the furnished-for-regular-use exclusion. Long rentals are a coverage question, not just pricing.'},
-    {f:'Why your personal policy can never cover your rental car:', b:'The business-use/livery exclusion family — the structural reason the commercial policy (T4) is mandatory, not optional.'},
-    {f:'The complete verification workflow:', b:'SERFF pull → AI-extract the three answers (transfer? cap? voiding uses?) → update carrier matrix → confirm on a recorded line (T3).'}
-  ],
-  quiz:[
-    {q:'The “furnished or available for regular use” exclusion threatens…', c:['Long or repeating same-car rental patterns','One-day rentals','Deliveries','Test drives'], a:0, e:'Regular access is what the exclusion targets — month-long or every-weekend patterns drift out of coverage.'},
-    {q:'The structural reason a fleet MUST have a commercial policy is…', c:['Marketing','The business-use/livery exclusion family voids personal coverage on rental operations','State registration fees','Platform rules'], a:1, e:'Personal forms wall off commercial use. There is no personal-policy version of this business.'},
-    {q:'The correct read-order on a pulled contract is…', c:['Back to front','Endorsements only','Definitions → physical damage → exclusions → endorsements','Dec page twice'], a:2, e:'Definitions decide the words, coverage grants the yes, exclusions the no, endorsements the override — in that order.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T2 = [
-  {q:'On a rental crash, liability coverage pays…', c:['Third parties, automatically','Your car','Only after a lawsuit','The deposit'], a:0, e:'Liability protects the outside world and needs no cooperation. Collision on YOUR car is the asymmetric one.', d:1},
-  {q:'Rental cars sit in personal policies as…', c:['Fleet vehicles','Commercial autos','Non-owner vehicles','Uninsurable'], a:2, e:'The non-owner classification is where transfer, caps, and exclusions all attach.', d:1},
-  {q:'The collision claim on a wrecked rental can be opened by…', c:['The operator with proof','Any lawyer','Only the renter (policyholder)','The DMV'], a:2, e:'The asymmetry that rules everything: coverage without cooperation pays nothing.', d:1},
-  {q:'A ghosting renter with real coverage means…', c:['The claim files itself','Automatic subrogation','A real claim that never gets filed — the loss sits','The platform pays'], a:2, e:'Every protection ritual exists to keep this person from ever holding your keys.', d:2},
-  {q:'The dec page tells you…', c:['What the insured BOUGHT','What the policy covers','The fine print','The caps'], a:0, e:'Coverage answers live in the contract + endorsements — the documents almost nobody pulls.', d:2},
-  {q:'SERFF holds…', c:['Claims histories','Carriers’ filed policy forms per state','Credit files','MVRs'], a:1, e:'NAIC + form numbers → the state portal → the exact fine print, free.', d:2},
-  {q:'Under the $100k cliff cap, coverage above the line drops to…', c:['The renter’s own most-expensive-vehicle value','Zero','50%','The deductible'], a:0, e:'The Sentra problem: $105k car, ~$10k payout [VERIFY]. One paragraph, one business.', d:3},
-  {q:'Platform age walls (25+/30+) come from…', c:['State law','The DMV','Carriers’ personal policies','The platforms’ own insurance programs'], a:3, e:'Personal-policy transfer is carrier-based — the mechanical source of the legal 18–30 gap.', d:2},
-  {q:'“Furnished or available for regular use” endangers…', c:['Short one-off rentals','Deliveries only','Repeat/long same-car patterns','Nothing'], a:2, e:'Regular access drifts out of non-owned coverage — long rentals are a coverage question.', d:3},
-  {q:'Your own personal auto policy covers cars you rent out…', c:['Fully','If disclosed','Up to $50k','Never — business-use/livery exclusions wall it off'], a:3, e:'The structural mandate for the commercial policy. No exceptions worth betting a car on.', d:1},
-  {q:'The carrier matrix is refreshed…', c:['Constantly — forms update and every verification is fresh','Never — set once','Annually by law','By the platforms'], a:0, e:'Notes tell you where traps usually are; the fresh pull tells you where they are today.', d:2},
-  {q:'The AI shortcut in fine-print work is bounded by…', c:['Token limits','Speed','Cost','Pulling the RIGHT documents — carrier, state, current versions'], a:3, e:'Extraction is instant; sourcing the correct filed forms remains the human skill.', d:2}
-];
-
-// ═══════════════════════ TIER 3 · THE VERIFICATION STACK ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t3_stack', sub:'T3', title:'Three layers, no exceptions — and Layer 1: capture the real dec page',
-  predict:'Fake insurance cards are cheap to make and good enough to fool a glance. If a printed card can be forged in minutes, what kind of capture proves a policy actually EXISTS — without trusting anything the renter hands you?',
-  concept:'<p>This is the process that separates operators who survive from operators who lose cars. It runs <b>before every rental, no exceptions</b>, stacking three layers so no single mistake puts an uncovered renter behind your wheel: <b>capture the dec page → read the fine print → confirm on a recorded line.</b> Each layer catches what the others miss.</p>'
-    +'<p><b>Layer 1 — carrier-connected capture.</b> The modern way to get a dec page is an insurance-connection tool (<b>Canopy Connect</b>-class <i>[VERIFY current tools]</i>): you send the client a link, they <b>log into their own carrier</b>, and the full declarations data flows to you <i>straight from the carrier’s systems</i> — vehicles, named insureds, coverages, limits, deductibles, endorsement list. This does two jobs at once: it hands you the real dec page, and — because the client authenticated with the carrier — it proves <b>the policy exists right now</b>. A forged card can’t log in. A cancelled policy can’t log in. That is the entire anti-forgery mechanism: <b>data from the source, never paper from the renter.</b></p>'
-    +'<p><b>What Layer 1 screens for</b> before anything else spends your time: policy active (not lapsed); <b>the renter is a named insured</b> (not borrowing a roommate’s account); comprehensive + collision actually present (liability-only is an instant no for the car itself); deductibles sane; and the endorsement list captured — that list is Layer 2’s reading list (T2). Red flags at this stage: a client who wants to email a PDF instead of connecting (“my login isn’t working”), a policy in a third party’s name, coverage bought <i>yesterday</i> — new-policy timing isn’t automatically disqualifying, but a policy born the day before a supercar rental is a pattern you notice out loud.</p>'
-    +'<p><b>Layer 2 in one line</b> (it is all of T2): from the captured carrier + form + endorsement numbers, pull the state’s filed contract, extract the three answers — transfer? cap? voiding uses? — against THIS car’s value, and log it in the carrier matrix. Fresh every time, because forms update.</p>'
-    +'<p><b>Who is forced to act.</b> Nobody forces any of this — that is the point. Platforms have programs; independents have process. The stack is self-imposed underwriting, and (T4 will show) the same stack literally becomes the pitch that buys your commercial policy. Build it as an asset, not a chore.</p>',
-  example:'<p><b>Ex:</b> Renter texts a crisp dec-page PDF. You send the connection link instead. “Weird, my login won’t work.” You hold the line: no connection, no keys. The PDF was a $40 template job — the fourth one this quarter. The tool never argued with anyone; it just asked the carrier.</p>',
-  teach:'Explain why carrier-connected capture beats any document a renter can hand you, and list the five things Layer 1 screens before deeper work begins.',
-  cards:[
-    {f:'The three layers:', b:'1: carrier-connected dec capture. 2: read the filed fine print (T2). 3: recorded carrier call. Every rental, no exceptions — each catches what the others miss.'},
-    {f:'Why connection beats documents:', b:'The client logs into their carrier; data flows from the source. Forged cards and lapsed policies can’t log in — existence is proven, not claimed.'},
-    {f:'Layer 1’s five screens:', b:'Active policy; renter is a NAMED insured; comp+collision present; sane deductibles; endorsement list captured for Layer 2.'},
-    {f:'Layer-1 red flags:', b:'Insists on emailing a PDF, “login not working,” third-party policyholder, coverage born yesterday before a supercar weekend.'}
-  ],
-  quiz:[
-    {q:'Carrier-connection capture defeats fake insurance because…', c:['The PDF looks better','It’s cheaper','It’s faster','The client must authenticate with the carrier — forgeries and lapsed policies can’t log in'], a:3, e:'Data from the source replaces paper from the renter. Existence is proven at capture time.'},
-    {q:'A renter offers a beautiful dec-page PDF but “can’t” use the connection link. The stack says…', c:['Accept the PDF with a bigger deposit','Call their agent instead','No connection, no keys','Skip to Layer 3'], a:2, e:'The insistence on documents over connection IS the tell. The tool never argues; it just asks the carrier.'},
-    {q:'Liability-only coverage on the renter’s policy means…', c:['Proceed with a waiver','Fine if under $100k','The car itself has no collision path — instant no for your vehicle','Charge double deposit'], a:2, e:'Liability protects others (T2). With no comp/collision to transfer, your car has no coverage story at all.'}
-  ]},
-
-{ id:'t3_call', sub:'T3', title:'Layer 3 — the recorded call: four questions, in order',
-  predict:'You already pulled the policy contract and it clearly covers non-owner vehicles at full value. Why burn 20 more minutes getting a live carrier agent to say the same thing on a recorded line — what does the tape buy you that the form didn’t?',
-  concept:'<p>Layer 3: call the carrier <b>with the fine print already in hand</b> and get the same answers from a live agent, on tape. The call is not research — Layer 2 was research. The call is <b>evidence manufacturing</b>: if a claim is later pushed back on, you hold the carrier’s own agent confirming coverage, before the rental. That recording has real weight in a dispute.</p>'
-    +'<p><b>Legal first.</b> Call-recording consent varies by state — some, including California, require <b>all parties</b> to consent. Get consent on the line or use a compliant method; carrier lines usually announce recording anyway, which helps <i>[VERIFY your state’s rule]</i>. And some carriers will only discuss a policy with the policyholder present — plan to conference your client in.</p>'
-    +'<p><b>The four questions, in order:</b></p>'
-    +'<p><b>Q1 — “Does the policy carry full comprehensive and collision?”</b> (You want: yes.)<br>'
-    +'<b>Q2 — “Does that coverage transfer to non-owner vehicles?”</b> Rentals are non-owner vehicles in carrier language. (Yes.)<br>'
-    +'<b>Q3 — “Are there any limits to the coverage that transfers?”</b> Here is where calls go sideways: agents routinely mishear this as a question about <i>liability</i> limits. Redirect, and keep redirecting: you are asking whether comprehensive and collision cover <b>the actual cash value — the ACV — of the non-owner vehicle being driven</b>. Rephrase until that exact question gets answered.<br>'
-    +'<b>Q4 — the scenario test, overshooting the value on purpose:</b> “So if this client rented a <b>Lamborghini Huracán</b> from my fleet and totaled it, the policy would cover the full actual cash value of that vehicle as determined at the time of loss?” You need a clean, unhedged <b>yes</b>.</p>'
-    +'<p><b>Why overshoot?</b> Naming a six-figure supercar forces the agent past the script and into the actual form. Vague questions get vague yeses; a Huracán with a dollar figure smokes out the $100k cliff cap (T2) in one sentence. If Layer 2 and Layer 3 disagree — the form says capped, the agent says covered — <b>the form wins and the deal pauses</b>: agents misread; filed forms don’t. Escalate, re-ask, or decline.</p>'
-    +'<p><b>Why three layers, restated as one sentence each:</b> the connection proves the policy is <i>real</i>; the fine print proves what it <i>says</i>; the call proves the carrier’s own people <i>agree with your reading</i> — on a record you can replay. When all three agree, you have done more diligence than 90% of this industry. And hold this thought for T4: <b>this stack, described to an insurance agent, is the pitch that gets YOUR commercial policy written.</b></p>',
-  example:'<p><b>Ex — the redirect, verbatim:</b> You: “Any limits on coverage that transfers to non-owner vehicles?” Agent: “Liability is 100/300.” You: “Understood — I’m asking about physical damage: would comprehensive and collision cover the actual cash value of the non-owner vehicle itself?” Agent: “Oh — checking… yes, ACV, no cap on this form.” Q4, on tape, clean yes. Eight minutes; a $200k answer.</p>',
-  teach:'Recite the four questions in order, the Q3 liability-mishear redirect, why Q4 overshoots with a named supercar, and what happens when the form and the agent disagree.',
-  cards:[
-    {f:'What the recorded call actually is:', b:'Not research — evidence. The carrier’s own agent confirming coverage pre-rental, on tape, with weight in a later dispute. (Consent per your state [VERIFY]; client conferenced if required.)'},
-    {f:'The four questions:', b:'1: Full comp+collision? 2: Transfers to non-owner vehicles? 3: Limits on what transfers — ACV of the driven vehicle? 4: Scenario test with a named supercar — clean yes required.'},
-    {f:'The Q3 trap:', b:'Agents mishear it as liability limits. Redirect until they answer: does comp/collision cover the ACV of the non-owner vehicle being driven?'},
-    {f:'When agent and form disagree:', b:'The filed form wins; the deal pauses. Agents misread — SERFF filings don’t. Escalate, re-ask, or decline.'}
-  ],
-  quiz:[
-    {q:'Q4 names a Lamborghini Huracán specifically to…', c:['Impress the agent','Comply with law','Force the agent past the script into the form — smoking out value caps','Speed up the call'], a:2, e:'Overshooting with a real six-figure car turns a vague yes into a tested one; the cliff cap dies or shows itself here.'},
-    {q:'The agent answers Q3 with “liability is 100/300.” You…', c:['Accept and move on','Mark the carrier bad','Hang up','Redirect: you’re asking if comp/collision covers the ACV of the driven non-owner vehicle'], a:3, e:'The classic mishear. Rephrase until the physical-damage ACV question is the one being answered.'},
-    {q:'Layer 2 says a $100k cap exists; the Layer 3 agent says “fully covered.” You…', c:['Trust the form; pause the deal and escalate','Trust the agent — it’s recorded','Average the two','Proceed with a bigger deposit'], a:0, e:'Filed forms outrank a misreading agent. The tape helps later only if the coverage was actually there.'}
-  ]},
-
-{ id:'t3_human', sub:'T3', title:'Underwrite the human — MVR, the deeper check, and the contact web',
-  predict:'Insurance verification tells you whether a claim WOULD pay. It cannot tell you one critical thing about the person holding the keys. What is that thing — and which two checks read it?',
-  concept:'<p>Insurance tells you whether a claim would pay. It tells you nothing about whether you are handing keys to someone who <b>creates</b> claims. For that, you check the human.</p>'
-    +'<p><b>The MVR — every renter, every time.</b> The motor vehicle record: tickets, accidents, DUIs, reckless driving. You are reading for <b>pattern</b>, not perfection: one speeding ticket three years ago is life; a string of violations, an at-fault history, or <i>anything</i> involving alcohol or reckless driving is a picture of how your car will be treated. The MVR is cheap, fast, and standard — it runs on every rental with no exceptions, exactly like the insurance stack.</p>'
-    +'<p><b>The criminal check — when anything is off.</b> The industry logic is one phrase: <b>habits transfer</b>. A grand-theft-auto charge is a history with other people’s cars. A vandalism pattern is how they treat things that aren’t theirs. Repeat offenses of any kind are how they treat rules — and your rental contract is a set of rules. When do you run it? When anything leaves a bad taste: addresses on license and insurance don’t match, the story doesn’t add up, the communication feels off. You do not need a defensible reason — <b>a check costs a few dollars and the car costs $200,000.</b></p>'
-    +'<p><b>The contact web — verify reachability itself.</b> Collect the full set: legal name, phone, email, license address, insurance address. Then <b>actually test them</b> — call the phone, send to the email. Why this matters more than it seems: T2’s asymmetry means that when things go wrong you need this person to <i>answer the phone and file a claim</i>. A dead number and a burner email quietly shut down your entire recovery path — claim, deposit, and if it ever comes to it, the skip trace — before the rental even started. Real contact info is not paperwork; it is your claim.</p>'
-    +'<p><b>Two lines that keep you clean.</b> First, law: using background-check services in rental decisions triggers <b>FCRA</b> duties — including adverse-action notices when you deny based on a report <i>[VERIFY your state’s add-ons]</i>. The rules are easy to follow and they are not optional. Second, ethics that is also underwriting skill: base decisions on <b>driving history, verification results, and behavior — never on who someone is</b>. Judging the record and the facts of the deal is good underwriting; judging a person’s group is wrong, illegal in many states, and — worth saying plainly — <i>worse at catching thieves</i> (T5’s straw-rental lesson proves it: the tell is incongruence, and incongruence shows up in every demographic).</p>',
-  example:'<p><b>Ex:</b> Everything passes — insurance clean, MVR one old ticket. But the license says Phoenix, the insurance says Atlanta, and the “local wedding” story doesn’t explain either. $8 criminal check: two priors for auto theft. The stack’s layers each did their job — the last one caught what the first two structurally couldn’t.</p>',
-  teach:'Explain MVR-always vs criminal-when-off, the habits-transfer logic, why tested contact info is literally your claim, and the FCRA + fact-based-judgment lines.',
-  cards:[
-    {f:'MVR policy:', b:'Every renter, every time. Read for PATTERN: strings of violations, at-fault history, anything alcohol/reckless — one old ticket is just life.'},
-    {f:'Criminal check trigger + logic:', b:'Run when anything is off — mismatched addresses, wobbly story, weird comms. Habits transfer: GTA priors, vandalism patterns, rule-breaking histories predict how your car is treated.'},
-    {f:'The contact web:', b:'Name, phone, email, both addresses — TESTED live. A dead number kills your claim path (only the renter can file, T2), your deposit recovery, and any skip trace.'},
-    {f:'The two clean lines:', b:'FCRA adverse-action duties when checks drive denials [VERIFY]; and judge records/facts/behavior — never groups. Fact-based reads are also simply better at catching thieves.'}
-  ],
-  quiz:[
-    {q:'The MVR runs…', c:['When the renter seems young','On every rental, no exceptions','Only above $150k cars','Only for new clients'], a:1, e:'Cheap, fast, standard — pattern-reading on every single renter, like the insurance stack.'},
-    {q:'“Habits transfer” justifies…', c:['Profiling by group','Bigger deposits only','Skipping the MVR','A criminal check when the deal’s facts feel off — priors with cars/property/rules predict treatment of yours'], a:3, e:'The check reads the record, not the person’s group — and it costs $8 against a $200k car.'},
-    {q:'Testing the phone and email before keys move protects, above all…', c:['Marketing lists','The delivery fee','Your claim path — a ghost with dead contacts can never be made to file','The playlist'], a:2, e:'T2’s asymmetry makes reachability the recovery path itself. Untested contacts = pre-ghosted.'}
-  ]},
-
-{ id:'t3_network', sub:'T3', title:'The network effect — individually gatekept, collectively defended',
-  predict:'A renter fails your verification with a fake ID and a cloned card. You decline and move on. Within days, every serious fleet in your metro somehow knows this person’s name. What happened — and why is joining that machine on day one one of the smartest moves you can make?',
-  concept:'<p>Here is what surprises newcomers about a famously secretive industry: <b>when someone fails verification badly — fake ID, fraudulent insurance, stolen card — the local industry hears about it.</b> Fleets in a region talk: group chats, shared blacklists, warning calls. Bad actors get broadcast across a metro in days. It is one of the healthiest habits this industry has: <b>individually gatekept, collectively defended.</b> The same operators who guard owner lists and broker rates (T0) share threat intelligence freely, because a thief who burns one fleet will try the next one tomorrow.</p>'
-    +'<p><b>Why it works on pure self-interest.</b> A warning costs the sender nothing and buys them reciprocity when it is their turn to catch the fake first. There is no central authority, no appeals process, no formal system — just relationship webs carrying reputational data at high speed. (T7 shows the same wire carrying <i>broker</i> reputations, which is why one dirty lead can end a career metro-wide.)</p>'
-    +'<p><b>Join it from day one.</b> Verify cleanly, decline politely, and when you catch a fraud — <b>warn the network</b>. The goodwill you earn warning others comes back as the warning that saves your car. For a new broker (T7) this is doubly true: sharing a catch is the cheapest possible proof that your screening is real, and fleets remember who told them first. What you share is facts — the failed verification, the documents, the behavior — not speculation about people; the fact-based line from t3_human governs here too.</p>'
-    +'<p><b>The discipline that completes the stack: freshness.</b> Verification is <b>per-rental, not per-person</b>. Policies get cancelled the day after a connection capture; endorsements change mid-year; MVRs grow new entries; last month’s clean client is this month’s cancelled policy. Repeat clients get streamlined courtesy (T6’s loyalty menu), <b>never skipped layers</b> — the connection re-runs, the call re-confirms when the form changed, the MVR refreshes on cadence <i>[VERIFY your risk tolerance]</i>. The stack’s power was never any single layer; it is that all three run, fresh, every time, on everyone — and that your whole metro runs beside you.</p>',
-  example:'<p><b>Ex:</b> Tuesday: a fleet across town posts a name + license photo to the group chat: fake dec page, real-looking card, verification failed at Layer 1. Thursday: the same person contacts YOU, story polished. The chat already did your Layer 0. You decline in one text and forward the attempt. Next month, someone returns the favor on a straw rental you never saw coming.</p>',
-  teach:'Explain how metro blacklist networks work on self-interest, what you share (facts, not speculation), and why verification is per-rental — never per-person.',
-  cards:[
-    {f:'Individually gatekept, collectively defended:', b:'Fleets guard owner lists and rates, but broadcast fraud catches metro-wide in days — group chats and warning calls, no central authority needed.'},
-    {f:'Why warnings flow on self-interest:', b:'A warning costs nothing and buys reciprocity — the thief who burned one fleet tries the next tomorrow. Sharing catches is also a new broker’s cheapest credibility.'},
-    {f:'What gets shared:', b:'Facts: the failed verification, documents, behavior. Not speculation, not group-judgments — the fact-based line governs the network too.'},
-    {f:'The freshness rule:', b:'Verification is per-RENTAL: policies cancel overnight, forms change, MVRs grow. Repeat clients get streamlined courtesy — never skipped layers.'}
-  ],
-  quiz:[
-    {q:'When a renter fails verification with fraud, the industry norm is…', c:['Silence — competitive advantage','A bad review','A police report only','Broadcast the facts to the metro’s fleets — collective defense'], a:3, e:'The thief tries the next fleet tomorrow. Warnings cost nothing and earn reciprocity.'},
-    {q:'A trusted repeat client books their sixth rental. Verification…', c:['Is skipped — they’re proven','Uses last month’s capture','Re-runs fresh — policies cancel and forms change; courtesy streamlines, never skips','Only needs the deposit'], a:2, e:'Per-rental, not per-person. Last month’s clean client can be this month’s lapsed policy.'},
-    {q:'The stack’s real power is…', c:['Any one brilliant layer','The recorded call alone','All layers, fresh, every time, on everyone — plus the metro network beside you','The MVR alone'], a:2, e:'Redundancy catches what any single check misses; the network catches what YOU miss.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T3 = [
-  {q:'The three layers of the stack are…', c:['Carrier-connected capture, fine-print read, recorded call','ID, deposit, contract','MVR, criminal, credit','Photos, video, GPS'], a:0, e:'Each catches what the others miss; all three run before every rental.', d:1},
-  {q:'Carrier-connection capture proves…', c:['The renter is rich','Address history','Driving skill','The policy exists NOW — forgeries and lapsed policies can’t log in'], a:3, e:'Data from the source replaces paper from the renter.', d:1},
-  {q:'A renter who insists on emailing a PDF instead of connecting is…', c:['Efficient','Saving you money','Preferred','A Layer-1 red flag — the insistence is the tell'], a:3, e:'No connection, no keys. The tool never argues; it asks the carrier.', d:2},
-  {q:'Liability-only renters are…', c:['Fine with waivers','An instant no for your car — nothing transfers to cover it','OK under $100k','Charged more'], a:1, e:'No comp/collision = no coverage story for the vehicle itself.', d:1},
-  {q:'The recorded call exists to…', c:['Research coverage','Meet the agent','Manufacture evidence — the carrier confirming coverage pre-rental, on tape','Negotiate rates'], a:2, e:'Layer 2 was research. The tape has weight when a claim gets pushed back on.', d:2},
-  {q:'Q3’s classic failure is the agent answering about…', c:['Deductibles','Liability limits instead of physical-damage ACV','The wrong state','Premiums'], a:1, e:'Redirect until comp/collision-covers-ACV-of-the-driven-vehicle is the question answered.', d:2},
-  {q:'Q4 overshoots with a named supercar to…', c:['Force the agent into the form and smoke out value caps','Flatter the client','End the call','Set the deposit'], a:0, e:'A Huracán with a dollar figure turns a scripted yes into a tested one.', d:2},
-  {q:'Form says capped; agent says covered. The ruling is…', c:['The agent — it’s recorded','Whichever helps','The filed form — pause and escalate','Flip a coin'], a:2, e:'Agents misread; SERFF filings don’t. The tape only helps if coverage was real.', d:3},
-  {q:'The MVR runs on…', c:['Suspicious renters','First-timers','Every renter, reading for pattern','Under-25s'], a:2, e:'Standard on all — one old ticket is life; patterns are the picture.', d:1},
-  {q:'The criminal check triggers on…', c:['Anything off — mismatched addresses, wobbly story, odd comms. Habits transfer','Every renter','Only felony cars','Never'], a:0, e:'$8 against a $200k car; the record, not the group, is what is read.', d:2},
-  {q:'Testing phone + email before keys move protects…', c:['Your claim path, deposit recovery, and skip trace — reachability IS recovery','The playlist','Marketing','Fuel billing'], a:0, e:'Only the renter can file (T2); a ghost with dead contacts was pre-ghosted.', d:2},
-  {q:'Verification freshness means…', c:['Per-RENTAL re-runs — policies cancel overnight and forms change','Annual re-checks','Once per client','Only after incidents'], a:0, e:'Repeat clients get streamlined courtesy, never skipped layers.', d:2}
-];
-
-// ═══════════════════════ TIER 4 · THE COMMERCIAL POLICY ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t4_pitch', sub:'T4', title:'The pitch — your verification stack buys you the policy',
-  predict:'There is no website with a quote button for exotic-fleet insurance. You sit across from an agent who can write it — and most applicants get a “no,” while a minority pay a fraction of what others are quoted. Same cars, same city. What are the cheap ones showing the agent?',
-  concept:'<p>Getting a commercial policy for an exotic fleet is not like buying car insurance. You sit down with an agent who holds the pen for the big carriers, and you <b>pitch them</b> — you are not filling out a form, you are selling them your business.</p>'
-    +'<p><b>Understand what insurance actually is.</b> Pooled risk. The carrier wins only if premiums in beat payouts out; a company that costs money gets dropped — and a dropped exotic fleet has almost nowhere to go. So the agent across the table is asking exactly one question: <i>will this business make us money or bleed us?</i> Your job is to answer with proof.</p>'
-    +'<p><b>The move most people never figure out: the verification stack IS the pitch.</b> Walk the agent through it, layer by layer: every renter carrier-connected so fake policies can’t get through (T3); every policy’s fine print checked against the state forms for non-owner coverage and value caps before keys move (T2); every coverage confirmed with the carrier on a recorded line — four questions, every rental (T3); MVRs on everyone, deeper checks when anything smells off; contracts with cooperation clauses; deposits held; then the physical layer — GPS + telematics in every car, geofencing, kill switches, documented video handoffs (T5). What you are describing is a business engineered so claims land on <b>renters’ personal policies</b> and almost never reach the commercial policy. That is exactly the customer a carrier wants in its pool. This pitch is the difference between “no” and “yes” — and between expensive and affordable.</p>'
-    +'<p><b>Telematics data is the closer.</b> Carriers love data, and telematics is the data they love most. Offer the feed: driving behavior on every rental — speed, harsh events, locations — plus booking records. Now the carrier isn’t taking your word for how your renters drive; <b>they can see it.</b> Operators who show up with one safety measure get one price. Operators with the full stack plus a telematics offer can pay <b>a fraction — the difference can be 2–3× cheaper every month</b> <i>[VERIFY]</i>, because the carrier prices what it can see.</p>'
-    +'<p><b>The triple payoff, named.</b> Step back and look at what the stack has become across three tiers: it <b>protects</b> the policy (claims never reach it), it <b>obtains</b> the policy (the stack is the pitch), and it <b>prices</b> the policy (every visible layer lowers premium). One system, built once, paying three ways. This is why T3 told you to build it as an asset — you were building your insurance application.</p>',
-  example:'<p><b>Ex:</b> Two applicants, same five cars. A: “we check licenses and insurance.” Quoted brutal, or declined. B walks the agent through carrier-connection, SERFF reads, recorded calls, MVR policy, telematics with a live dashboard, and offers the data feed. B gets written — at a fraction of A’s quote [VERIFY]. The cars were identical; the visible risk was not.</p>',
-  teach:'Explain why the commercial policy is pitched not purchased, how the verification stack answers the carrier’s one question, and the triple payoff.',
-  cards:[
-    {f:'What the agent is really asking:', b:'Will this business make the pool money or bleed it? A dropped exotic fleet has nowhere to go — so the answer must be proof, not promises.'},
-    {f:'The stack as pitch:', b:'Carrier-connected verification + fine-print reads + recorded calls + MVRs + contracts/deposits + telematics/kill switches = claims land on renters’ policies, not the commercial one.'},
-    {f:'The closer:', b:'Offer the telematics feed — speed, harsh events, locations, booking records. Priced-what-they-can-see can run 2–3× cheaper monthly [VERIFY].'},
-    {f:'The triple payoff:', b:'One stack: PROTECTS the policy (claims deflected), OBTAINS it (the pitch), PRICES it (every visible layer cuts premium).'}
-  ],
-  quiz:[
-    {q:'Commercial exotic-fleet insurance is obtained by…', c:['An online quote form','Pitching an agent with proof your operation deflects claims','State assignment','Joining a platform'], a:1, e:'No quote button exists. The agent underwrites YOU — the stack is the evidence.'},
-    {q:'The telematics offer changes pricing because…', c:['It’s trendy','It’s required by law','The carrier prices what it can SEE — verified driving data replaces assumed risk','It replaces deposits'], a:2, e:'Data converts you from an unknown risk to a measured one; measured risks price lower.'},
-    {q:'The “triple payoff” of the verification stack is…', c:['Speed, cost, marketing','Leads, cars, deals','Protects, obtains, and prices the commercial policy','None'], a:2, e:'One system built once: claims deflected, policy granted, premium cut.'}
-  ]},
-
-{ id:'t4_machinery', sub:'T4', title:'The machinery — how consigned cars get onto a commercial policy',
-  predict:'An owner’s personal policy excludes rental use (T2). The fleet’s commercial policy covers… the fleet’s vehicles. So by what legal machinery does a car OWNED by a private investor become insurable under a company’s commercial policy — and what fills the gaps when it isn’t moving?',
-  concept:'<p>The agency model runs on other people’s cars (T0) — but coverage follows structure, so the industry built machinery to align them:</p>'
-    +'<p><b>The lease-and-register move.</b> The standard mechanism: the owner <b>leases the car to the agency</b>, and the car is registered/insured under the company. Now the commercial policy covers it natively — it is, legally, a fleet vehicle. This is the machinery the Turo lesson will contrast, and it is why T8 warns owners to ask WHICH structure they are signing: a leased-and-registered car lives on the fleet’s policy; a loose consignment does not, so the owner keeps their own coverage — and the car must never sit in the gap between the two structures, because a car in the gap is a car nobody’s policy owns.</p>'
-    +'<p><b>The coverage stack around the rental itself.</b> A serious fleet’s insurance program is layered, and knowing the names lets you audit one (T8) and buy one (when you flip): the <b>commercial auto policy</b> with its covered-auto designations — the industry works off standardized commercial forms where numeric <b>symbols</b> define which autos are covered (owned only, hired, non-owned, any auto) <i>[VERIFY — CA 00 01-family forms and symbols]</i>; <b>garagekeepers coverage</b> — the piece that protects customers’/owners’ vehicles <i>in your care, custody, and control</i> (stored in your warehouse, being detailed, being repositioned) — the classic gap consignment owners never ask about (T8’s audit question: “does garaging coverage apply while my car sits with you?”); and <b>hired &amp; non-owned auto (HNOA)</b> liability for cars the business uses but doesn’t own. Names matter: an operator who says “our CA symbols, garagekeepers, and HNOA are structured for consignment” is speaking the agent’s language — that fluency IS the audit, in both directions.</p>'
-    +'<p><b>Why “just borrow the commercial policy” can kill the company.</b> T2 warned the fleet’s options after a ghost are all bad; here is the mechanism. The commercial policy is priced on the fleet’s loss history. Claims that should have landed on renters’ personal policies (the whole point of the stack) but hit the commercial policy instead spike the loss ratio → premiums double or the carrier non-renews → and a dropped exotic fleet has almost nowhere to go (t4_pitch). <b>The commercial policy is the business’s aorta: it exists to almost never be used.</b> Every layer of T2/T3/T5 exists to keep claims off it; every clean year prices the next year down.</p>'
-    +'<p><b>Where the E&amp;S market fits.</b> Exotic fleets are odd risks, so much of this business is written not by standard admitted carriers but in the <b>excess &amp; surplus lines market</b> — specialty carriers with freedom to craft odd-risk forms, accessed through wholesale brokers <i>[VERIFY]</i>. Practical meaning: fewer standardized protections, more form-by-form reading (T2 skills again), and relationships with the right specialty broker worth guarding like a broker sheet.</p>',
-  example:'<p><b>Ex — the audit question that reveals everything:</b> Owner to fleet: “If my car is leased and registered to you, your commercial policy owns it — show me the limit. If it’s loose consignment, my personal policy is void during rentals — so what covers it on rental days, and does your garagekeepers cover it in storage?” A real operator answers in form names. A shrug is the answer too (T8: walk).</p>',
-  teach:'Explain lease-and-register vs loose consignment, what garagekeepers and HNOA cover, and why the commercial policy must almost never be used.',
-  cards:[
-    {f:'Lease-and-register machinery:', b:'Owner leases the car to the agency; it registers/insures under the company — legally a fleet vehicle on the commercial policy. Loose consignment = owner keeps own coverage. Never the gap between.'},
-    {f:'Garagekeepers coverage:', b:'Protects vehicles in the fleet’s care, custody, and control — storage, detailing, repositioning. THE audit question consignment owners never ask [VERIFY forms].'},
-    {f:'HNOA + covered-auto symbols:', b:'Hired & non-owned auto liability for cars used-not-owned; numeric symbols on commercial forms define which autos are covered [VERIFY CA 00 01-family]. Fluency in the names IS the audit.'},
-    {f:'The aorta principle:', b:'The commercial policy is priced on loss history and exists to almost never be used — claims belong on renters’ policies; a spiked loss ratio means non-renewal with nowhere to go.'}
-  ],
-  quiz:[
-    {q:'A consigned car becomes native to the fleet’s commercial policy via…', c:['Lease-and-register: leased to the agency, registered/insured under the company','A handshake','A rider on the owner’s policy','Platform coverage'], a:0, e:'Structure aligns coverage. Loose consignment keeps the owner’s policy active — and the car must never sit between the two.'},
-    {q:'Garagekeepers coverage protects…', c:['The building','Lost keys','Renters’ liability','Customers’/owners’ vehicles in the fleet’s care, custody, and control'], a:3, e:'Storage, detailing, repositioning — the gap consignment owners never ask about until it matters.'},
-    {q:'The commercial policy “exists to almost never be used” because…', c:['It covers nothing','Claims are illegal','Its loss ratio prices next year — claims belong on renters’ policies or premiums spiral to non-renewal','Deductibles are huge'], a:2, e:'The aorta principle: the whole stack exists to deflect claims off it; a dropped fleet has nowhere to go.'}
-  ]},
-
-{ id:'t4_turo', sub:'T4', title:'The Turo exception — how one company rewrote the rules',
-  predict:'This chapter taught you an industry doing insurance the hard way: stacks, recorded calls, commercial policies. Meanwhile Turo exists — millions of trips, private owners listing with a few taps, no commercial policies. They are not cheating and not lucky. What did they change that nobody else changed?',
-  concept:'<p>Turo is not playing the same game with better moves. <b>Turo had the rules themselves rewritten.</b></p>'
-    +'<p><b>The legislative move.</b> You have seen the play: Uber didn’t fit taxi law, so a new classification was invented (the TNC). Turo — then RelayRides — ran the same play for car sharing: in 2010 California passed <b>AB 1871</b>, creating the <b>personal vehicle sharing program (PVSP)</b>: a company that helps people share private passenger vehicles for <i>noncommercial</i> use. Not a rental company — a new species with its own rules; other states followed with versions <i>[VERIFY state map]</i>. What the classification does is remarkable, because it solves BY LAW what this course teaches you to solve by hand: a shared private car is <b>not reclassified</b> as commercial (no lease-and-register machinery needed); the owner’s carrier <b>cannot cancel them</b> just for sharing (the fraud trap written out of existence); and in exchange the program takes on liability during sharing, provides state-minimum insurance, and must keep records of every trip — dates, times, locations, miles. That last requirement should sound familiar: it is the clock-out, the telematics, and the ledger from this course, <b>written into law at platform scale</b>.</p>'
-    +'<p><b>Why the exception cannot hold your business — two walls.</b> <b>Wall 1 is in the law itself</b>, and almost everyone misses it: the protection only holds while sharing stays truly noncommercial, and California draws that line with a <b>revenue test — the car’s annual sharing revenue must NOT exceed its annual ownership + operating costs</b> <i>[VERIFY statute]</i>. Read it again: the classification is legally built for <i>cost-offsetting</i> — a private owner covering their payment — and structurally forbids the thing a business exists to do: <b>profit</b>. An exotic fleet running for margin is commercial by definition and stands outside the shield. (Notice what this confirms: T8’s “consignment offsets a car you can already afford” is not just good advice — it is the exact shape the law itself blesses.) <b>Wall 2 is underwriting.</b> A PVSP still needs an insurance program behind it, and Turo’s carriers price with hard gates: Deluxe class (~$45–85k cars) requiring guests 25+, Super Deluxe (>$85k) 30+, and no listings above roughly <b>$200k</b> at all <i>[VERIFY current terms]</i>. Those gates are not law — <b>they are the price of insuring strangers at scale, set by carriers reading Turo’s own loss data</b>. Below the gates the platform works; above them the carriers said no.</p>'
-    +'<p><b>And that “no” is the moat.</b> The entire independent exotic industry — everything in this course — lives inside the space where Turo’s carriers refused to go. The gap (no PVSP for exotics, nobody insuring $200k+ cars at platform scale) is not a sad fact; it is the standing opportunity TX returns to with a plan.</p>',
-  example:'<p><b>Ex — the revenue test in one owner:</b> A Corolla owner nets $310/mo sharing against a $389 payment + costs: offsetting, shielded, legal PVSP use. Your Huracán grossing $9k/mo against $4k of costs: profit — commercial by definition, outside the shield, and REQUIRED to run this course’s machinery instead. Same platform-shaped activity; opposite legal species.</p>',
-  teach:'Explain what a PVSP is, the two walls (revenue test + underwriting gates), and why the platform carriers’ “no” above ~$200k is the independent industry’s moat.',
-  cards:[
-    {f:'The PVSP move:', b:'AB 1871 (CA, 2010) created a new species: personal vehicle sharing for NONcommercial use — no commercial reclassification, carriers can’t cancel owners for sharing, program carries trip liability + records [VERIFY states].'},
-    {f:'Wall 1 — the revenue test:', b:'Shield holds only while annual sharing revenue ≤ annual ownership/operating costs [VERIFY]. Cost-offsetting is blessed; profit is structurally outside — a fleet is commercial by definition.'},
-    {f:'Wall 2 — underwriting gates:', b:'Platform carriers price strangers-at-scale: 25+/30+ tiers, ~$200k listing cap [VERIFY]. Not law — loss-data pricing. Above the gates, the carriers said no.'},
-    {f:'The moat:', b:'The independent exotic industry lives entirely inside that carrier “no.” The un-built exotic PVSP is the standing opportunity (TX).'}
-  ],
-  quiz:[
-    {q:'A PVSP legally differs from a rental company in that…', c:['It pays more tax','It is federal','It skips insurance','It is a distinct classification for noncommercial sharing — no commercial reclassification, carrier-cancellation protection, program-carried liability'], a:3, e:'AB 1871’s new species — solving by statute what fleets solve with machinery [VERIFY states].'},
-    {q:'California’s revenue test means the PVSP shield fails when…', c:['Annual sharing revenue exceeds annual ownership/operating costs — i.e., profit','The car is red','Trips exceed 30 days','The owner is under 25'], a:0, e:'The law blesses cost-offsetting and structurally excludes running a business — a fleet is outside by definition.'},
-    {q:'Turo’s ~$200k listing cap and age tiers exist because…', c:['Federal law requires them','Its carriers priced the risk of strangers in valuable cars and said no above the gates','Owners voted','Marketing'], a:1, e:'Loss-data underwriting, not statute. That carrier “no” is the moat the independent industry lives inside.'}
-  ]},
-
-{ id:'t4_gap', sub:'T4', title:'The gap nobody has closed — and what would close it',
-  predict:'The demand for $200k+ rentals exists (this whole industry proves it). The legal classification exists (PVSP). So why has nobody built “Turo for exotics” — what is the ONE missing ingredient carriers demand before insuring something new?',
-  concept:'<p>Put the two walls together and look at what remains: <b>there is no personal-vehicle-sharing program for exotic cars.</b> Nobody has built the platform where a Huracán owner lists their car the way a Corolla owner lists theirs. The demand exists — you have seen it all course. The classification exists. What is missing is the thing carriers demand before they will insure something new: <b>data.</b></p>'
-    +'<p><b>Why data is the whole ballgame.</b> Recall what insurance is (t4_pitch): pooled risk, priced on what the carrier can see. Turo’s carriers set their gates by reading <i>Turo’s own loss history</i> — millions of trips of it. For exotics, that dataset does not exist anywhere: no verified-renter outcomes at scale, no telematics corpus on six-figure rentals, no documented loss history, no utilization or margin data (T0’s empty-data industry). Carriers won’t price what nobody can show them — so the gate stays down, not because the risk is unpriceable but because it is <b>unmeasured</b>.</p>'
-    +'<p><b>What closing it would take.</b> Whoever gathers that data first — verified renters at scale, telematics on every trip, clean loss records on six-figure cars — and pairs it with the compliance discipline to satisfy regulators state by state, gets to pitch carriers on something nobody has successfully insured. It is the t4_pitch move played at industry scale: the stack as the pitch, except the “stack” is a dataset covering thousands of rentals. If they succeed, they will have done for exotics what Turo did for everyday cars: <b>rewritten the rules while everyone else was still playing the old game.</b></p>'
-    +'<p><b>What this means for you, at every rung.</b> Until someone closes it, everything this course teaches remains the price of admission — the moat holds, and disciplined independents profit inside it. But notice who is best positioned to ever close it: an operator who has been logging verified rentals, telematics feeds, clock-outs, and clean claims from day one — because their operating records ARE the missing dataset in miniature (TX builds this into a plan). Turo is proof the insurance problem CAN be solved at the structural level. The exotic version is still sitting on the table, right next to the crown (T0). Every clean, documented rental you ever run is simultaneously income today and a brick in the dataset that could someday take both.</p>',
-  example:'<p><b>Ex — the dataset as pitch, miniature:</b> After 400 documented rentals: 400 carrier-connected verifications, 400 telematics trip logs, 9 deposit claims, 1 personal-policy claim, 0 commercial claims. That one-page table is what a carrier conversation about “insuring exotic sharing” starts with — and no incumbent fleet running on spreadsheets (T0) can produce it. Data compounds; gut feel doesn’t.</p>',
-  teach:'Explain why the exotic-PVSP gap persists (unmeasured, not unpriceable), what closing it requires, and why a disciplined operator’s records are the seed of that dataset.',
-  cards:[
-    {f:'The gap:', b:'No PVSP for exotics — no platform where a Huracán lists like a Corolla. Demand exists, classification exists; the missing ingredient is DATA.'},
-    {f:'Why carriers won’t move without it:', b:'Insurance prices what it can see. Turo’s gates came from Turo’s loss data; for six-figure rentals no such corpus exists — unmeasured, not unpriceable.'},
-    {f:'What closing it takes:', b:'Verified renters at scale + telematics on every trip + documented loss history + state-by-state compliance → the t4_pitch played at industry scale.'},
-    {f:'Your position in it:', b:'Every clean documented rental is income today AND a brick in the missing dataset. The operator logging everything from day one holds the seed (TX).'}
-  ],
-  quiz:[
-    {q:'“Turo for exotics” doesn’t exist mainly because…', c:['Demand is too small','No law allows it','The loss/telematics dataset carriers need to price it has never been assembled','Exotics can’t carry trackers'], a:2, e:'Unmeasured, not unpriceable: carriers price what they can see, and nobody has shown them exotic-sharing data at scale.'},
-    {q:'The party best positioned to eventually close the gap is…', c:['A hedge fund','A carrier acting alone','An operator who has documented verified rentals, telematics, and clean claims from day one','A car manufacturer'], a:2, e:'Operating records ARE the dataset in miniature — the t4_pitch at industry scale requires exactly what disciplined operators accumulate.'},
-    {q:'Until the gap closes, the practical meaning for independents is…', c:['The moat holds — this course’s machinery is the price of admission, and disciplined operators profit inside it','The business is doomed','Insurance is optional','Only platforms win'], a:0, e:'The carrier “no” protects the independent industry; the machinery is what admission costs.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T4 = [
-  {q:'The commercial exotic policy is obtained via…', c:['Online quote','State pool','A pitch to an agent, with the verification stack as proof','A platform'], a:2, e:'No quote button exists; you sell the agent on a claims-deflecting operation.', d:1},
-  {q:'The carrier’s single underlying question is…', c:['How many followers you have','Your age','How fast the cars are','Will this business make the pool money or bleed it'], a:3, e:'Pooled risk: prove claims land on renters’ policies, not theirs.', d:1},
-  {q:'The telematics feed offer matters because…', c:['It’s legally required','It replaces contracts','Carriers price what they can SEE — measured risk beats assumed risk','It tracks employees'], a:2, e:'The closer: visible driving data can cut premiums to a fraction [VERIFY].', d:2},
-  {q:'The stack’s triple payoff is…', c:['Cheaper cars','More leads','Protects, obtains, and prices the commercial policy','Better photos'], a:2, e:'One system: claims deflected, policy granted, premium reduced.', d:2},
-  {q:'Consigned cars natively join the fleet’s policy via…', c:['A verbal deal','The owner’s rider','Lease-and-register under the agency','PVSP status'], a:2, e:'Structure aligns coverage; loose consignment leaves the owner’s policy active instead — never the gap between.', d:2},
-  {q:'Garagekeepers coverage answers the owner question…', c:['Who pays tolls','What’s the split','Who fuels it','What covers my car in your storage, detailing, and repositioning'], a:3, e:'Care, custody, and control — the audit question owners never ask [VERIFY forms].', d:3},
-  {q:'The commercial policy is “the aorta” because…', c:['It exists to almost never be used — its loss ratio prices survival','It’s expensive','It covers everything','It’s mandatory'], a:0, e:'Claims that hit it spike loss ratios toward non-renewal, and dropped fleets have nowhere to go.', d:2},
-  {q:'Much exotic-fleet insurance is written in…', c:['The admitted mass market','Federal pools','The excess & surplus (E&S) specialty market via wholesale brokers [VERIFY]','Platform programs'], a:2, e:'Odd risks, custom forms, broker relationships worth guarding like a rate sheet.', d:3},
-  {q:'A PVSP (AB 1871-style) is…', c:['A distinct legal species for NONcommercial private-car sharing','A rental company','A tax status','A franchise'], a:0, e:'New classification: no commercial reclassification, carrier-cancellation protection, program-carried trip liability [VERIFY].', d:2},
-  {q:'California’s PVSP revenue test forbids…', c:['Luxury cars','Sharing revenue exceeding ownership/operating costs — i.e., profit','Young drivers','Long trips'], a:1, e:'Cost-offsetting is blessed; a business running for margin is commercial by definition — outside the shield.', d:3},
-  {q:'Turo’s age tiers and ~$200k cap come from…', c:['Its carriers pricing loss data on strangers in valuable cars','Statute','User votes','The DMV'], a:0, e:'Underwriting gates, not law — and the carriers’ “no” above the gates is the independents’ moat.', d:2},
-  {q:'The exotic-PVSP gap persists because…', c:['It’s illegal','No entrepreneurs','No demand','The loss/telematics dataset carriers need has never been assembled'], a:3, e:'Unmeasured ≠ unpriceable. Whoever assembles the data gets to pitch the rewrite (TX).', d:2}
-];
-
-// ═══════════════════════ TIER 5 · PROTECTION & ENFORCEMENT ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t5_telematics', sub:'T5', title:'The car that reports home — telematics, geofences, kill switches',
-  predict:'Your Huracán is 40 miles away with a renter. From your phone, what can a properly-equipped car tell you RIGHT NOW — and what is the one thing a kill switch must never be used to do?',
-  concept:'<p>Every serious rental car carries <b>telematics</b>: a device reporting where the car is and how it is being driven, in real time. Platforms like Zubie, One Step GPS, and Smartcar (worth knowing for its strong API if you ever build on your data — TX) turn your fleet into something you can actually watch <i>[VERIFY current platforms]</i>.</p>'
-    +'<p><b>What you track.</b> Location, always. Then the behavior layer: speed, harsh acceleration, hard braking, hard cornering, g-forces. Modern units distinguish “doing 90 on the freeway” from “doing donuts in a parking lot” — drifts, launches, and spins have signatures, and the gap between those two facts matters enormously when you decide what to do about it.</p>'
-    +'<p><b>Geofencing — two uses.</b> Draw lines on a map, get alerts when a car crosses them. First, the <b>perimeter</b>: the area the rental is allowed in; leaving it triggers an alert. Second, <b>blacklisted zones</b>: known chop-shop areas, specific spots you never want a car parked — a car entering one is information you want within <i>seconds</i>, not at return time.</p>'
-    +'<p><b>The kill switch.</b> Every rental car should carry one: the ability to remotely disable the car <b>once it is stopped</b>. Standard practice pairs it with the geofence — car crosses miles past the boundary with no explanation, car gets disabled. It is not a toy, and the iron rule: <b>never on a car in motion</b> — disabling a moving vehicle endangers everyone near it and converts your theft problem into a liability catastrophe. It is the last-resort tool that turns “our car is being taken” into “their trip is over.”</p>'
-    +'<p><b>The honest warning</b> — this course does not sell false security: a determined thief loads the killed car into an enclosed trailer and drives away anyway. Telematics shrinks the window and raises the cost of stealing from you; it does not cancel the basic rule that <b>picking good clients is the real security system</b> (T3). And remember the quiet second job: this same data stream is the closer in your commercial-policy pitch (T4) — the tracker you installed to watch renters is also the device that convinces a carrier to insure you at all. The tracking layer is not paranoia; <b>it is infrastructure that pays for itself twice.</b></p>',
-  example:'<p><b>Ex:</b> 11:40pm alert: car exited the perimeter, heading toward a blacklisted zone. Phone shows 12 minutes of hard-cornering signatures. You call — no answer. Car stops at a gas station: kill switch, doors stay unlocked, tow dispatched, deposit forfeited per contract. Total loss avoided because the car talked and the contract had teeth (next lessons).</p>',
-  teach:'Explain the behavior layer vs raw speed, the two geofence uses, the stopped-cars-only kill rule, and why the tracker pays for itself twice.',
-  cards:[
-    {f:'What telematics reports:', b:'Location always, plus behavior: speed, harsh accel/braking/cornering, g-forces — with signatures that distinguish freeway speeding from donuts.'},
-    {f:'The two geofences:', b:'Perimeter (where the rental may be) and blacklisted zones (chop-shop areas, never-park spots). Zone entry = seconds-matter information.'},
-    {f:'The kill-switch rules:', b:'Remote disable ONCE STOPPED, paired with geofence breaches. Never on a moving car — that trades a theft for a catastrophe.'},
-    {f:'The honest limits:', b:'Enclosed trailers beat kill switches. Telematics shrinks the window and raises the thief’s cost; client selection remains the real security. Same feed = insurance closer (T4).'}
-  ],
-  quiz:[
-    {q:'The kill switch may be used…', c:['Any time GPS shows speeding','Never legally','On moving cars in emergencies','Only on a stopped car, typically after an unexplained geofence breach'], a:3, e:'Disabling a moving car endangers everyone near it. Stopped-only turns theft-in-progress into trip-over.'},
-    {q:'Modern telematics can distinguish…', c:['Nothing beyond location','Freeway speed from drift/donut/launch signatures','Driver identity by weight','Fuel brand'], a:1, e:'Behavior signatures — not just velocity — are what let you respond proportionately.'},
-    {q:'The tracker “pays for itself twice” because…', c:['It’s tax deductible','It polices renters AND closes your commercial-policy pitch as the data feed carriers price on','It reduces fuel use','It replaces deposits'], a:1, e:'T4’s closer is this exact stream: measured risk prices lower.'}
-  ]},
-
-{ id:'t5_clockout', sub:'T5', title:'The clock-out ritual — documentation that wins every later argument',
-  predict:'A renter returns your car with a curbed wheel and says “that was there when I picked it up.” Whether you eat $1,200 or they do was actually decided three days EARLIER — by what?',
-  concept:'<p>Every handoff runs a ritual, and the ritual is the evidence. The industry calls it <b>clock-out</b> (keys leaving) and <b>clock-in</b> (keys returning), and its entire purpose is to make every later dispute a matter of record instead of memory.</p>'
-    +'<p><b>Clock-out, the sequence.</b> With the renter present: a <b>full walkaround video</b> — slow, continuous, close on wheels, lips, bumpers, glass — plus photo sets of every panel; <b>odometer and fuel level</b> on camera; the interior (smell disputes are real — smoking forfeits deposits, T5·contract); and the <b>license video</b>: the renter holding their license, on camera, at handoff — face, document, car, and moment bound together in one artifact (the straw-rental lesson explains what this quietly defeats). Timestamped, uploaded, never only on a phone.</p>'
-    +'<p><b>Clock-in mirrors it.</b> Same video, same angles, same odometer/fuel frames, before any refund conversation. Damage found now is provable NEW damage — the clock-out video is the baseline that makes “that was already there” checkable in thirty seconds. This pair of artifacts is also your <b>chargeback defense</b> (T6): a card issuer shown license video + signed contract + walkaround pair rules for the merchant far more often than for a “fraud” claim from someone visibly holding the keys <i>[VERIFY processor practice]</i>.</p>'
-    +'<p><b>The deposit’s quiet window.</b> Clock-in clean does not mean release now: the deposit sits <b>3–5 days</b> before refund. Not red tape — you are watching for what clock-in cannot catch: damage you missed in the dark, and the classic — <b>a warning light that stayed off at return because someone had a shop clear the code</b>, and comes back on two days later. When the window closes clean, the deposit releases minus documented deductions.</p>'
-    +'<p><b>Who is disciplined by the ritual — everyone, on purpose.</b> The renter, who knows every scratch is on camera before they ever drive. Your own staff and delivering brokers (T6’s double clock-out extends this exact ritual through middlemen — the gap between two clock-outs is miles someone must own). And future-you, who will someday face an insurance adjuster, a chargeback panel, or a small-claims judge with a folder instead of a story. In a business where T2 taught you the claim may depend on a stranger’s cooperation, <b>the ritual is the one witness you fully control.</b></p>',
-  example:'<p><b>Ex:</b> Return at dusk: looks clean, deposit held per policy. Day 2: check-engine light. Shop pulls codes: over-rev event, cleared the day before return. Telematics confirms a 9k-RPM spike Saturday 1:14am. Deposit applied to the inspection per contract; the renter’s “it just came on” dissolves against three independent records. The window existed for exactly this.</p>',
-  teach:'Walk the clock-out sequence (video, photos, odo/fuel, license video), why clock-in mirrors it, and what the 3–5 day deposit window is really for.',
-  cards:[
-    {f:'Clock-out artifacts:', b:'Continuous walkaround video + per-panel photos, odometer + fuel on camera, interior, and the license video binding face/document/car/moment. Timestamped, uploaded.'},
-    {f:'Why clock-in mirrors clock-out:', b:'The pair makes new damage provable and “already there” checkable in seconds — and doubles as chargeback evidence with the signed contract.'},
-    {f:'The 3–5 day deposit window:', b:'Catches missed damage and the cleared-code trick — the warning light that returns two days after drop-off. Then release minus documented deductions.'},
-    {f:'Who the ritual disciplines:', b:'Renters (on camera before driving), staff and delivering brokers (T6’s double clock-out), and future-you (a folder, not a story, in every dispute).'}
-  ],
-  quiz:[
-    {q:'“That scratch was already there” is settled by…', c:['Whoever sounds confident','A discount','The clock-out walkaround video from three days earlier','The deposit automatically'], a:2, e:'The baseline artifact makes the claim checkable in seconds — that is the ritual’s entire purpose.'},
-    {q:'The deposit holds 3–5 days after a clean return because…', c:['Banks are slow','The contract forgot','Interest accrues','Missed damage and cleared warning-light codes surface in days, not minutes'], a:3, e:'The window exists for what clock-in structurally cannot catch.'},
-    {q:'The license video at handoff binds…', c:['Rate and duration','Face, document, car, and moment into one artifact','Fuel and odometer','Nothing legally'], a:1, e:'One continuous artifact ties the verified person to the physical handoff — quiet poison for straw setups and chargebacks alike.'}
-  ]},
-
-{ id:'t5_contract', sub:'T5', title:'The contract, clause by clause — the risk model with a signature',
-  predict:'Five clauses do almost all the work in a serious exotic rental contract. You already know the industry’s failure modes from T2–T3. Predict the five — each one exists because of a specific way operators get destroyed.',
-  concept:'<p>The contract is where everything you have learned becomes enforceable. Each clause traces to a lesson — it is the industry’s risk model, written down and signed. (Education, not legal advice: a lawyer adapts yours to your state.)</p>'
-    +'<p><b>1 — The cooperation clause.</b> The renter agrees to cooperate fully in filing and pursuing an insurance claim after a loss. You know from T2 why this is load-bearing: <b>only the renter can file.</b> Honest truth: it cannot FORCE a filing — it creates breach-of-contract leverage that works on the 95% who respond to consequences. Nothing works on the other 5%, which is why verification and selection came first.</p>'
-    +'<p><b>2 — No other drivers.</b> Nobody drives but the verified renter. No seat-swapping, no “my friend just moved it.” This is the industry’s most dangerous gap: an unverified friend crashes and you have <b>no verified coverage and no contract with that person</b>. The clause makes the renter liable for allowing it — your only real protection against the one risk verification cannot reach.</p>'
-    +'<p><b>3 — Telemetry + strike policy, in writing.</b> Sustained speeding past a threshold (say 20-over) = a strike: alert, contact, knock it off. Strike two, same. Strike three: rental over, car returns or is repossessed, deposit forfeited. Some behavior skips strikes entirely — <b>drifting or crossing 100 mph voids on the spot</b>. In practice you will use judgment, firm without being trigger-happy — but the policy lives in the contract so that WHEN you act, the right is already yours. <b>Flexible in practice, absolute on paper.</b></p>'
-    +'<p><b>4 — The fee schedule, no surprises:</b> mileage allowance (<b>100 mi/day</b> standard, roughly halved on long-terms) and THIS car’s overage rate; delivery fees; refueling at a premium per-gallon rate (~$7 — the premium is your time); <b>smoking of any kind = entire deposit</b>, the industry standard because smoke damage is real, expensive, and impossible to pre-document; deposit amount, coverage, and the 3–5-day refund window (t5_clockout). Attached: the <b>invoice</b> — rate, duration, fees, deposit, itemized, signed with every number visible.</p>'
-    +'<p><b>5 — The CDW, a clause that is also a product.</b> The collision damage waiver: an optional daily charge (~$300/day at the exotic level <i>[VERIFY]</i>) waiving the renter’s responsibility for casual accidental damage — curb rash, a scraped lip. Reckless behavior always excluded. Renters love it (a scrape stops meaning an insurance claim); operators love it because most rentals come back clean, making CDW <b>one of the healthiest margin lines in the business</b> and a fund that quietly pays for the fleet’s dings. Legal flag: damage waivers are <b>regulated products</b> in many states — California has specific disclosure and pricing law — check your state before selling one <i>[VERIFY]</i>.</p>'
-    +'<p><b>Read the whole once more:</b> cooperation ← the claim asymmetry; no-other-drivers ← the verification gap; strikes ← telemetry without enforcement is just watching; fees ← miles, fuel, and smoke are the real recurring costs; CDW ← priced risk transfer. Nothing is boilerplate. Everything is a scar with a signature line.</p>',
-  example:'<p><b>Ex:</b> Telematics shows 27-over for six minutes. Because clause 3 exists: one call — “strike one, per section 8.” It happens twice more: car repossessed from a valet stand, deposit forfeited, zero argument in small claims — the renter initialed the strike schedule. Without the clause, the same night is a shouting match and a chargeback.</p>',
-  teach:'Recite the five load-bearing clauses and, for each, the specific failure mode from earlier tiers it exists to survive.',
-  cards:[
-    {f:'Cooperation clause:', b:'Contractual duty to file/pursue the claim — leverage on the 95%, because only the renter can file (T2). Selection handles the other 5%.'},
-    {f:'No-other-drivers:', b:'The unverified-friend crash is the gap verification can’t reach — the clause pins liability for allowing it on your renter.'},
-    {f:'Strike policy:', b:'20-over = strike; three = repossession + deposit. Drifting or 100+ voids instantly. Flexible in practice, absolute on paper.'},
-    {f:'Fees + CDW:', b:'100 mi/day (halved long-term), ~$7/gal refuel, smoking = full deposit, itemized invoice; CDW ~$300/day [VERIFY] — healthy margin, regulated product (check your state).'}
-  ],
-  quiz:[
-    {q:'The cooperation clause honestly provides…', c:['Breach-of-contract leverage that moves the 95% who respond to consequences','A guaranteed claim filing','Direct claim access for the operator','Nothing'], a:0, e:'It cannot force a filing (T2’s rule stands) — it makes ghosting expensive for anyone with something to lose.'},
-    {q:'The no-other-drivers clause exists because…', c:['Insurance costs more for two','Valets are risky','Renters share fuel costs','An unverified friend crashing = no coverage and no contract with that person'], a:3, e:'The one risk verification can’t reach — so the contract makes the renter own it.'},
-    {q:'CDW is best described as…', c:['Required insurance','An optional priced waiver of casual-damage responsibility — high-margin, state-regulated [VERIFY]','A deposit substitute','A platform fee'], a:1, e:'Renters buy peace over scrapes; operators bank a margin line that funds the fleet’s dings. Reckless always excluded.'}
-  ]},
-
-{ id:'t5_wrong', sub:'T5', title:'When it goes wrong — the accident, the ghost, and the order of money',
-  predict:'A renter calls: they crashed your consigned Huracán. Four moves happen in the next hour, and doing them in the wrong ORDER can cost you the owner relationship, the claim, or both. What are the four — in order?',
-  concept:'<p>Every wall is built and something still gets through. What separates a bad week from a lost business is the sequence you run next.</p>'
-    +'<p><b>The accident, done right — four moves in order.</b> <b>First, people:</b> is everyone okay? Everything else is replaceable. <b>Second, the picture:</b> the renter’s story while it is fresh; telematics pulled for speed and location at impact; dashcam if equipped — the truth locked into your records before stories can change. <b>Third — and do not delay it: call the car’s owner.</b> On a consigned car the owner hears it from YOU, immediately, with facts and a plan. The call is painful and it is the moment that defines you as an operator: <b>owners forgive accidents; they do not forgive finding out late.</b> <b>Fourth, the claim:</b> walk the renter through filing on their personal policy — the coverage you verified in T3, the car a non-owner vehicle under their policy (T2). The claim is theirs to file and <b>yours to shepherd</b>: adjuster, valuation, shop — stay on it daily, and use a repair shop you know; the relationship buys honest timelines and fair pricing.</p>'
-    +'<p><b>The order of money, memorized.</b> Small stuff: the deposit does its job. Bigger damage runs a fixed sequence: <b>deposit → renter pays directly (give a short window, a day or two) → then the insurance claim.</b> Most accidents with cooperative, verified renters resolve as a process, not a disaster.</p>'
-    +'<p><b>The ghost.</b> The disaster version you understood in T2: the renter stops answering. The cooperation clause gives legal leverage; the tested contact web gives you ways to reach them (T3); persistence solves many. But some ghosts stay ghosts, and then the choices are the bad ones from T2 — eat it, or touch the commercial policy (T4’s aorta). This is not a problem you solve after; it was only ever solvable <b>before, in who got the keys</b>. Every operator who has lived it says the same sentence: <i>the ghost was almost always a rental they had a bad feeling about and did anyway.</i></p>'
-    +'<p><b>What this lesson is really teaching.</b> Crisis order is owner-relationship management (T8’s consignment trust runs on that third move), evidence discipline (t5_clockout’s artifacts now earn their keep), and emotional sequencing — people, facts, partner, money. Operators who run the sequence calmly get to have a second accident someday; operators who improvise get to have a first owner pull every car.</p>',
-  example:'<p><b>Ex:</b> 2:30am call: curb strike, wheel and suspension. 2:35: renter okay, photos + story captured. 2:41: telematics pulled — 34 mph residential, no strike history. 2:50: owner called with facts + plan. 9:00am: renter files, your shop quotes, adjuster looped, deposit holds the small stuff. Owner’s text that afternoon: “appreciate the call.” The car left the fleet six weeks; the owner never did.</p>',
-  teach:'Run the four accident moves in order, the deposit→direct-pay→claim money sequence, and why the ghost was decided before the keys moved.',
-  cards:[
-    {f:'The four moves, in order:', b:'1: People okay? 2: Lock the picture — story, telematics at impact, dashcam. 3: Call the owner NOW with facts + plan. 4: Shepherd the renter’s claim daily.'},
-    {f:'The owner call:', b:'Immediate, factual, with a plan. Owners forgive accidents; they never forgive hearing it late — the moment that defines you as an operator.'},
-    {f:'The order of money:', b:'Deposit → renter pays directly (short window, 1–2 days) → then the personal-policy claim. Cooperative verified renters = process, not disaster.'},
-    {f:'The ghost’s true lesson:', b:'Leverage and persistence solve many; some stay ghosts and the options are all bad. It was solvable only BEFORE — the bad-feeling rental you did anyway.'}
-  ],
-  quiz:[
-    {q:'The third move after any accident on a consigned car is…', c:['Call the owner immediately with facts and a plan','Call your lawyer','Post about it','Wait for the police report'], a:0, e:'Owners forgive accidents, not late news. The call is painful and it is the relationship.'},
-    {q:'The money order for real damage is…', c:['Claim → deposit → renter','Commercial policy first','Renter → claim → deposit','Deposit → renter pays directly → insurance claim'], a:3, e:'Deposit absorbs first, direct payment gets a short window, the claim is the third resort — and the commercial policy never (T4).'},
-    {q:'Veteran operators say the ghost rental was almost always…', c:['Random bad luck','Underpriced','A platform booking','One they had a bad feeling about and did anyway'], a:3, e:'Selection is the only ghost-solver. The feeling was the data; the override was the mistake.'}
-  ]},
-
-{ id:'t5_straw', sub:'T5', title:'The straw rental — when every check passes and the deal is still wrong',
-  predict:'A renter clears everything: real license, clean MVR, verified transferring insurance, tested contacts. They park your car at a busy lot, leave the keys in it, walk into a store — and it vanishes. “It was stolen, not my fault.” Why did every layer of your stack fail — and what is the only layer that catches this?',
-  concept:'<p>Now the sophisticated version of theft, because it beats every check you have built. A renter applies and passes — genuinely passes, because <b>the person you checked was never the person taking the car</b>. They are a hired face: they rent it, stage a “theft,” and the car rolls off in someone else’s hands. Nothing links your renter to the crew. Your checks all passed because the checks were aimed at the wrong human.</p>'
-    +'<p><b>The defense is a layer above the checklist: incongruence.</b> Does this rental make sense <i>as a whole</i>? The car requested vs who is renting and what they say it is for. A profile, stated purpose, and finances that do not fit the vehicle they are insisting on. Someone strangely relaxed about price on a car that fits no normal use they can explain. Pressure to skip steps. A rental that feels like it is being <b>run by someone who is not in the room</b> — scripted answers, a phone that gets checked before decisions. Straw rentals are set up by people who cannot pass your checks, using someone who can — <b>and the seam almost always shows as a mismatch between the renter and the rental.</b></p>'
-    +'<p><b>Be precise about what this means — the line from T3, applied under pressure.</b> You are reading the <b>facts of the deal</b>: the car, the story, the behavior, the paperwork. Never profiling the person. Fact-based judgment is good underwriting; judging people by group is wrong, illegal in many states, and — say it plainly — <b>worse at catching thieves</b>, because mismatches show up in every demographic and group-guessing blinds you to the quiet, well-dressed straw who fits your prejudice’s “safe” picture.</p>'
-    +'<p><b>What the ritual quietly does here.</b> The license video (t5_clockout) binds the verified face to the handoff — making “I wasn’t even there” impossible and making the renter’s criminal exposure explicit, which deters the rational end of the hired-face market. Telematics + blacklisted-zone alerts (t5_telematics) shrink the window between staging and recovery. But the real save happens at the desk:</p>'
-    +'<p><b>The checklist has a ceiling. Above it sits judgment.</b> When the checks all pass but the deal does not make sense, <b>the deal is wrong, and you can simply say no.</b> No justification owed, no discount offered, no “maybe with a bigger deposit.” The car in your warehouse tonight is worth more than the booking you turned away. Write that sentence somewhere you will see it on a slow month.</p>',
-  example:'<p><b>Ex:</b> Mid-week request: base-model renter profile, insists on the Aventador specifically, shrugs at $2,900/day, purpose “just want to drive it,” answers arriving in delayed bursts like they are being relayed. Every check passes. You decline anyway. Two weeks later the metro group chat (T3) lights up: same profile, different fleet, staged “theft” at a mall. The checklist passed him; the mismatch didn’t.</p>',
-  teach:'Explain why straw rentals beat every check, the incongruence tells, the fact-based (never group-based) line, and the permission to decline a passing deal.',
-  cards:[
-    {f:'Why the stack can’t catch a straw:', b:'Every check aims at the renter — who is real and clean. The taker is someone else entirely. The seam shows only in the DEAL, not the documents.'},
-    {f:'Incongruence tells:', b:'Car/renter/purpose mismatch; odd price indifference; pressure to skip steps; scripted or relayed answers — a rental run by someone not in the room.'},
-    {f:'The precision line:', b:'Read the facts of the deal — car, story, behavior, paperwork. Never groups: wrong, often illegal, and worse at catching thieves. Mismatch is the tell, in every demographic.'},
-    {f:'The ceiling rule:', b:'When checks pass but the deal makes no sense, the deal is wrong — decline without justification. Tonight’s car in the warehouse beats the booking you turned away.'}
-  ],
-  quiz:[
-    {q:'A straw rental defeats verification because…', c:['The verified renter is real — but was never the person taking the car','The documents are fake','The MVR lags','Insurance lies'], a:0, e:'A hired clean face passes honestly; the crew stays invisible. Only the deal’s incongruence shows the seam.'},
-    {q:'The straw defense that actually works is…', c:['Reading the whole deal for incongruence — and declining when it doesn’t make sense','Bigger deposits','Group-based screening','More paperwork'], a:0, e:'Judgment above the checklist. And fact-based reads beat profiling at the actual job of catching thieves.'},
-    {q:'All checks pass; the deal feels assembled by someone off-scene. You…', c:['Decline. No justification owed; the car is worth more than the booking','Proceed — checks are checks','Add $500 deposit','Ask for a cosigner'], a:0, e:'The checklist has a ceiling; above it sits judgment with full permission to say no.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T5 = [
-  {q:'Telematics behavior data can distinguish…', c:['Freeway speeding from drifting/launch signatures','Nothing beyond GPS','Driver age','Passenger count'], a:0, e:'Signatures, not just velocity — proportionate response depends on it.', d:1},
-  {q:'The two geofence types are…', c:['City and state','Perimeter and blacklisted zones','Day and night','Fast and slow'], a:1, e:'Where the rental may be, and the places you want seconds-level alerts about.', d:1},
-  {q:'The kill switch is used…', c:['Only on stopped cars — usually after unexplained geofence breach','On moving cars if theft is certain','Weekly as a test','Never'], a:0, e:'A moving-car kill trades theft for catastrophe. Stopped-only, last resort.', d:1},
-  {q:'Telematics’ honest limit is…', c:['Cost','Range','Battery life','An enclosed trailer defeats it — client selection remains the real security'], a:3, e:'It shrinks windows and raises thief cost; it does not replace T3.', d:2},
-  {q:'Clock-out’s license video binds…', c:['Rate to duration','Face, document, car, and moment into one artifact','Fuel to odometer','Nothing'], a:1, e:'Quiet poison for straw setups and chargebacks alike.', d:2},
-  {q:'The 3–5 day deposit window exists to catch…', c:['Bank delays','Missed damage and cleared warning-light codes that resurface','Interest','Late fees'], a:1, e:'What clock-in structurally cannot see surfaces in days.', d:2},
-  {q:'The strike ladder standard is…', c:['One strike, repossession','Five warnings','~20-over = strike; three strikes = rental over + deposit; drifting/100+ voids instantly','Fines only'], a:2, e:'Flexible in practice, absolute on paper — the right pre-exists the moment.', d:2},
-  {q:'Smoking in the car costs…', c:['$50','The entire deposit — industry standard','A cleaning fee','Nothing if windows open'], a:1, e:'Smoke damage is real, expensive, and impossible to pre-document.', d:1},
-  {q:'CDW at the exotic level is…', c:['Mandatory insurance','Platform-only','A deposit','~$300/day optional waiver of casual damage — high margin, state-regulated [VERIFY]'], a:3, e:'Reckless always excluded; check your state’s waiver law before selling.', d:2},
-  {q:'After an accident, the owner is called…', c:['Immediately — third move, with facts and a plan','After the claim settles','Next business day','Never'], a:0, e:'Owners forgive accidents, not late news.', d:1},
-  {q:'The money order for damage is…', c:['Deposit → direct payment window → personal-policy claim','Claim first','Commercial policy first','Small claims first'], a:0, e:'And the commercial policy stays untouched (T4’s aorta).', d:2},
-  {q:'The straw rental’s seam shows in…', c:['The mismatch between renter and rental — incongruence','The documents','The MVR','The deposit'], a:0, e:'Every check passes because the checked person is real. The deal is what doesn’t parse.', d:3},
-  {q:'When all checks pass but the deal makes no sense…', c:['Proceed with padding','Escalate the deposit','Decline — no justification owed','Ask the platform'], a:2, e:'The checklist has a ceiling; the warehouse beats the booking.', d:2}
-];
-
-// ═══════════════════════ TIER 6 · THE DEAL MACHINE ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t6_direct', sub:'T6', title:'A booking, start to finish — the baseline deal',
-  predict:'A lead lands: they want “the Ferrari” for Saturday. Before you even check availability, there is one quietly profitable move a good operator makes with every inbound request. What is it — and why does it work on THIS industry’s customer specifically?',
-  concept:'<p>Run one complete deal through the machine — the simplest setup: a client books directly with the agency controlling the car. Every step uses something you already know.</p>'
-    +'<p><b>Land the client on the right car.</b> First move, and quietly one of the most profitable habits in the industry: <b>try to land them on a car YOU control.</b> These clients are flexible (T0 — they rent the image): they came for a Ferrari, they leave happy in a Lamborghini that photographs as hard. Your own consigned cars carry your best margins; a car sourced from another fleet carries a wholesale cost (T1). <b>Convert first, source second.</b></p>'
-    +'<p><b>Verification, in order.</b> License and insurance collected; MVR on the license, full background check if anything is off; the insurance stack — dec capture, fine print, the recorded four-question call; contacts tested (all of T3). You know it cold by now.</p>'
-    +'<p><b>Contract, then money, all upfront.</b> Contract signed, invoice attached (T5). Then payment — <b>everything before keys move</b>: full rental, all fees, and the deposit. Deposits scale with the car and with what commonly breaks on it: under-$100k cars ~$1,000; Lamborghini tier ~$1,500; Rolls territory ~$2,000; Aventador level $3,000–5,000 <i>[VERIFY]</i> — and cars with a known expensive weak point run higher (a Huracán’s front lip gets scraped constantly). <b>Payment methods:</b> for larger totals favor payments that cannot be reversed — wire, Zelle, ACH, cash. Cards are convenient and common, but a card payment can be charged back <i>months</i> later, and at five-figure totals that risk deserves respect. Your handoff video (t5_clockout) is your defense if you do take cards.</p>'
-    +'<p><b>Delivery.</b> If the client wants the car brought to them, delivery is a charged service — priced flat by zone, each way, not by the mile: one number for the metro (say $200), bigger for the next city out ($300), bigger again beyond ($400) <i>[VERIFY local norms]</i>. <b>The party doing the delivering keeps the delivery fee.</b> At handoff: full clock-out ritual, license video, keys.</p>'
-    +'<p><b>Return and settlement.</b> Clock-in, then the math: miles against the allowance (100/day standard) with overage billed per mile at a rate scaling with the car’s depreciation — roughly $3/mile on a BMW, $5 on a Lamborghini, $6+ on a Ferrari, $10–15 on an Aventador <i>[VERIFY]</i>. <b>Overmileage is by far the most common deposit deduction in the industry</b> — renters routinely decide the miles were worth it, and that choice is a real revenue line. Fuel short of clock-out bills at your per-gallon rate; damage comes from the deposit, then the direct-pay window, then the claim (T5). The deposit sits its 3–5 days, then releases minus documented deductions. That is a complete deal — the baseline the next two lessons add middlemen to.</p>',
-  example:'<p><b>Ex:</b> Inbound: “Ferrari, Saturday, content shoot.” Your Ferrari is sourced (wholesale cost); your consigned Huracán is idle. “The Huracán shoots harder at night — want first slot?” Client swaps happily. Same revenue line for them; for you the difference between paying a peer’s floor and keeping the full margin. Convert first, source second.</p>',
-  teach:'Walk a direct booking end to end: the convert-first move, verification, money-before-keys with deposit tiers, zone delivery, and the settlement math.',
-  cards:[
-    {f:'Convert first, source second:', b:'Land flexible image-renters on cars YOU control (best margins) before sourcing a peer’s car at wholesale. The most profitable habit per sentence spoken.'},
-    {f:'Money before keys:', b:'Contract + invoice signed, then FULL rental + fees + deposit collected upfront. Large totals favor irreversible rails (wire/Zelle/ACH/cash) — cards can charge back months later.'},
-    {f:'Deposit tiers:', b:'~$1,000 under-$100k; ~$1,500 Lambo tier; ~$2,000 Rolls; $3–5k Aventador+ [VERIFY] — higher when the model has a famous weak point (Huracán front lip).'},
-    {f:'Settlement:', b:'100 mi/day; overage ~$3 BMW / $5 Lambo / $6+ Ferrari / $10–15 Aventador per mile [VERIFY] — the #1 deposit deduction and a real revenue line. Fuel at your rate; deposit window 3–5 days.'}
-  ],
-  quiz:[
-    {q:'The quietly profitable first move on any inbound lead is…', c:['Quote higher','Convert them onto a car you control before sourcing elsewhere','Ask for referrals','Check their followers'], a:1, e:'Image-flexible clients swap badges happily; your controlled cars carry your best margins (T0+T1 combined).'},
-    {q:'At five-figure totals, payment preference runs toward…', c:['Irreversible rails — wire, Zelle, ACH, cash — because cards charge back months later','Cards for convenience','Crypto','Invoicing net-30'], a:0, e:'Reversibility is the risk. If cards are taken, the clock-out artifacts are the defense.'},
-    {q:'The most common deposit deduction industry-wide is…', c:['Overmileage','Smoking','Fuel','Curb rash'], a:0, e:'Renters routinely decide the miles were worth it — which makes the overage schedule a genuine revenue line.'}
-  ]},
-
-{ id:'t6_broker', sub:'T6', title:'When a broker is in the deal — three rules and the double clock-out',
-  predict:'An outside broker brings a renter for your fleet’s car. Three questions decide whether this goes smoothly or ends in disaster: WHO verifies the renter, WHOSE contract gets signed, and WHO holds the deposit. Answer all three — then explain why the mileage ritual doubles.',
-  concept:'<p>Add one seat: an outside broker sourced the renter; the car is your fleet’s. ~70% of the industry looks like some version of this (T1), so these are not edge rules — they are the main event.</p>'
-    +'<p><b>Rule 1 — verification never delegates.</b> The broker may pre-screen (good ones do), and the agency verifies anyway — every layer, every time, no exceptions for trusted brokers. The logic is cold: the car is yours (or your consigned owner’s), so the risk is yours, so the verification is yours. A broker cannot carry the loss, which makes their screening advisory. <b>The asset owner runs the stack.</b></p>'
-    +'<p><b>Rule 2 — the client signs the AGENCY’s contract.</b> Whatever the broker’s branding, the paper is yours: the fleet’s commercial policy and legal protections attach to the fleet’s own contract (T4/T5). A rental on a broker’s homemade paperwork is a rental running outside the machine. Pricing on that contract: the broker chose the retail; the client sees $1,000; the $800 wholesale lives in your records; the $200 spread is the broker’s, tracked internally and paid at close — <b>this industry pays by Zelle, not net-30</b>. (A broker who prices below retail shrank their own spread; the wholesale floor protects everyone else.)</p>'
-    +'<p><b>Rule 3 — the deposit follows the asset.</b> The agency holds it. Always. Picture the failure otherwise: car returns, the broker sweetly refunds their client, and THEN clock-in finds rim rash — the recovery money is gone, refunded by someone with no authority over the asset. <b>Whoever bears the damage risk holds the damage money.</b> No exceptions.</p>'
-    +'<p><b>Brokers who deliver, and the double clock-out.</b> Brokers often want to deliver personally — their client, their relationship, and honestly their content: footage of them handing over a Lamborghini is how they source the next client (T7). Fine, <b>with structure</b>: a delivering broker gets verified like a renter (MVR, background, insurance that transfers) plus a signed <b>broker agreement</b> spelling out liability if THEY crash it. And the mileage ritual doubles: agency clocks out to the broker; broker clocks out to the client at delivery; mirrored on return; agency collects and compares both sets. Why? <b>The gap between the two clock-outs is miles the BROKER drove.</b> Without the double ritual, a broker can joyride 100 miles between warehouse and driveway and hand you paperwork showing only the client’s miles. Two clock-outs make every mile belong to someone. (Delivery fees and even overage spreads are negotiable — some brokers charge their client a higher overage rate than yours and keep the difference. All of it agreed before the car moves.)</p>'
-    +'<p><b>What the broker actually risks: everything and nothing.</b> No insurance liability, no damage exposure, no chargeback risk — if the deal goes bad, the agency eats it. The broker’s entire stake is <b>reputational</b> — and in a small, talkative industry (T3’s network), that stake is enormous: one stolen-car referral ends them metro-wide in days, no appeals process, because nobody owes anyone their cars. The reverse is the whole game: brokers known for clean clients get rates 10–20 points better (T1). <b>In the broker economy, track record IS pricing</b> — which is exactly where T7 begins.</p>',
-  example:'<p><b>Ex:</b> Broker delivers your Urus. Your clock-out: 8,412 mi at the warehouse. Broker’s clock-out to client: 8,498. That 86-mile gap is the broker’s — the “quick delivery” included a detour. Because the double ritual exists, the conversation is a line item, not an accusation: 86 miles at the agreed rate, deducted from their spread. They never detour again.</p>',
-  teach:'State the three rules and their cold logic, then explain what the double clock-out makes visible and why delivering brokers get renter-grade verification.',
-  cards:[
-    {f:'Rule 1 — verification never delegates:', b:'Broker screening is advisory; the asset side runs the full stack every time. Risk follows the car, so verification follows the car.'},
-    {f:'Rule 2 — the agency’s paper:', b:'Client signs the fleet’s contract (policy + protections attach to it). Client sees the broker’s retail; wholesale lives in your records; spread paid at close by Zelle.'},
-    {f:'Rule 3 — deposit follows the asset:', b:'The agency holds it, always. Whoever bears damage risk holds damage money — a broker refund before clock-in is the classic disaster.'},
-    {f:'The double clock-out:', b:'Agency→broker, broker→client, mirrored on return, both compared: the gap between clock-outs is the BROKER’s miles. Delivering brokers get renter-grade verification + a broker agreement.'}
-  ],
-  quiz:[
-    {q:'A deeply trusted broker pre-screens a client perfectly. The agency…', c:['Skips verification to honor trust','Runs the full stack anyway — risk follows the asset','Verifies only insurance','Splits verification duties'], a:1, e:'Rule 1 has no trust exception: the broker cannot carry the loss, so their screening is advisory by definition.'},
-    {q:'The deposit is held by…', c:['The broker who knows the client','A neutral escrow app','The agency — whoever bears the damage risk holds the damage money','The client'], a:2, e:'Rule 3: a broker refunding “their” client before clock-in is how recovery money vanishes.'},
-    {q:'The double clock-out exists to expose…', c:['Client speeding','Fuel theft','The broker’s own miles — the gap between the two clock-outs','Detailing time'], a:2, e:'Two artifacts make every mile belong to someone; without them, delivery joyrides hide inside client paperwork.'}
-  ]},
-
-{ id:'t6_agency', sub:'T6', title:'Agency to agency — the courtesy tier and the liability chain',
-  predict:'When one fleet sources a client for another fleet’s car, two things FLIP compared to the solo-broker deal: what the car-owning agency is allowed to know, and whose contract the client signs. Predict both flips — and the document that makes the second one safe.',
-  concept:'<p>The third setup: the party bringing the client is another agency. Functionally still a brokered deal — the sourcing agency IS the broker — but between established companies the etiquette changes, and the changes teach you what this industry respects.</p>'
-    +'<p><b>Flip 1 — the client stays theirs.</b> With a solo broker, the agency gets the client’s full contact information. Between agencies: <b>no.</b> The car-owning agency does not ask for the client’s phone or email, does not contact the client, and never will. The client IS the sourcing agency’s asset — the whole value they bring (T0: the guarded lists). Everyone understands that taking a peer’s client info is how you end a relationship. The car-owning agency receives exactly what protecting its asset requires — <b>the license and the insurance</b> — and runs its own verification on them, because <b>Rule 1 never changes: verification follows the asset, at every trust level.</b></p>'
-    +'<p><b>Flip 2 — the contract flips.</b> Solo broker: client signs the car-owner’s paper. Agency-to-agency: the client signs the <b>SOURCING agency’s</b> contract — no company wants its client at a signing table reading a competitor’s name at the top of the page. The client may never learn another fleet was involved at all: white-labeling at full courtesy (T1).</p>'
-    +'<p><b>But T4/T5 taught you what a contract carries, so you already see the problem:</b> the car-owner’s protections attach to its own paper — which is not in this deal. The solution is a second document: an <b>inter-agency agreement</b> between the two companies that passes liability through. The car-owning fleet is protected by its agreement with the sourcing agency, which is protected by its client contract. Before any car moves, the car-owning agency <b>reads the other company’s rental contract</b> and confirms the chain actually holds. A courtesy deal with a broken liability chain is not courtesy — <b>it is exposure with extra steps.</b></p>'
-    +'<p><b>Everything is pre-agreed, and the ritual survives.</b> Wholesale rate, delivery fees, overage split, deposit handling — negotiated up front between companies that know exactly what these numbers mean. And the double clock-out runs at full strength: <b>the courtesy tier trusts contracts, not odometers.</b> Car clocks out to the sourcing agency, again to their client, mirrored home.</p>'
-    +'<p><b>Why this tier matters beyond mechanics.</b> It reveals the industry’s deepest structural fact: <b>competitors are also each other’s suppliers and customers, constantly.</b> The fleet across town is your rival on Google and your inventory on Saturday night. The relationship culture is not sentiment — it is the actual infrastructure. Fleets that burn peers run out of cars to source and partners to sell to; fleets that handle these deals cleanly get access to everyone’s inventory without owning any of it. That sentence is the whole business model of the ladder’s upper rungs (T7/T8).</p>',
-  example:'<p><b>Ex:</b> Fleet A’s client wants a Cullinan; only Fleet B has one. A sends B the license + insurance (nothing else); B verifies fully. Client signs A’s contract at A’s branding; A and B sign the inter-agency agreement; B reads A’s rental contract first — cooperation clause present, strike policy present, chain holds. Double clock-out both directions. The client never learns B existed. Next month the roles reverse.</p>',
-  teach:'Explain both flips, what the car-owning agency still receives and why, and how the inter-agency agreement + contract-read keeps the liability chain unbroken.',
-  cards:[
-    {f:'Flip 1 — client protection:', b:'The car-owning agency never gets or contacts the client — the client is the sourcing agency’s guarded asset. It receives license + insurance only, and verifies them itself.'},
-    {f:'Flip 2 — the contract:', b:'The client signs the SOURCING agency’s paper (no competitor’s name at the table) — white-labeling at full courtesy.'},
-    {f:'The inter-agency agreement:', b:'Passes liability through: car-owner ← agreement ← sourcing agency ← client contract. Read the peer’s rental contract first — a broken chain is exposure with extra steps.'},
-    {f:'The structural reveal:', b:'Competitors are suppliers and customers simultaneously. Clean peer-deal handling = access to everyone’s inventory without owning any of it.'}
-  ],
-  quiz:[
-    {q:'In an agency-to-agency deal, the car-owning fleet receives…', c:['Full client contact info','The client’s payment details','Nothing at all','License and insurance only — and verifies them itself'], a:3, e:'Flip 1: the client stays the sourcing agency’s asset; Rule 1 (verify at the asset) still never delegates.'},
-    {q:'The client signs…', c:['The car-owning agency’s contract','Both contracts','The sourcing agency’s contract','No contract at the courtesy tier'], a:2, e:'Flip 2 — which is exactly why the inter-agency agreement must pass liability through behind the scenes.'},
-    {q:'Before any car moves between agencies, the car-owner reads…', c:['The client’s Instagram','The client’s MVR only','The broker sheet','The sourcing agency’s rental contract — confirming the liability chain holds'], a:3, e:'Protections attach to paper that isn’t yours in this deal; verify the chain or the courtesy is exposure.'}
-  ]},
-
-{ id:'t6_repeat', sub:'T6', title:'Clients who come back — reward in value, never in price',
-  predict:'Your best repeat client books their fifth rental. Most operators reach for the obvious thank-you — and it quietly damages the business every time. What is the wrong reward, why is it wrong here specifically, and what does the smart operator hand out instead?',
-  concept:'<p>A repeat client is worth many times a new one: pre-verified, a track record with your cars, zero marketing cost on every future booking. Operators naturally want to reward them — and then reach for the one reward that quietly damages the business: <b>the discount.</b></p>'
-    +'<p><b>Why discounting is usually the wrong move — run the logic.</b> Your repeat client paid retail last time, happily. <b>Price was never their objection</b> — if it were, they would not be a repeat exotic renter. Cutting 20% to say thanks removes no barrier (there was none); it donates 20 points of margin to someone who didn’t ask, and it quietly <b>reprices every future rental, because nobody un-remembers a discount.</b> The principle: <b>reward loyalty in value, not in price</b> — and this industry hands you unusually good tools, because so much of what you control costs little and means a lot:</p>'
-    +'<p><b>The reward menu.</b> <b>Extra miles</b> — 150–200/day instead of 100: real but modest depreciation cost, feels generous, and is a per-rental gift, not a permanent repricing. <b>Softer overage</b> — drop their rate from $5/mile toward $2–3: you discounted the <i>penalty</i>, not the product. <b>Lighter deposit</b> — $1,000 instead of $2,000 for a clean-history client: costs you a little risk tolerance on a known person, removes a real annoyance (frozen card money). <b>First access</b> — new car lands, before it hits the site: “Nobody has rented this yet. Want to be first?” Full retail — and they thank you, because <b>status is literally the product your clients buy</b> (T0). <b>Bring them inside</b> — fleets get invited to shows and events (“bring your five best cars”): invite a favorite client to rent one and roll with the fleet. One operation with spare festival passes offered them to a renter, who took the passes and booked a Ferrari at full rate for the trip — an experience money can’t easily buy, a full-price multi-day rental, and a story that markets itself.</p>'
-    +'<p><b>The pattern, and the test for any loyalty move you invent:</b> high perceived value, low real cost, <b>zero permanent repricing</b>. If it makes the client feel like an insider, use it. If it just makes your product cheaper, save it for a car that will not rent — <b>discounts are inventory tools, not relationship tools.</b> That closes the deal machine: structure at every trust level, and the clients who come back. The rest of the course is about you — the two doors, and how each grows.</p>',
-  example:'<p><b>Ex:</b> Fifth booking, great client. Wrong: “15% off this time.” They smile — and every future quote is now anchored 15% lower, forever, for someone who never once mentioned price. Right: “I bumped you to 200 miles a day, dropped your hold to $1,000 — and the new Urus arrives Thursday; nobody’s had it. First slot is yours.” Costs: a little depreciation and risk tolerance. Feels like: membership.</p>',
-  teach:'Explain why discounts misfire on image-buying repeat clients, recite the five-item reward menu, and state the three-part test for any loyalty move.',
-  cards:[
-    {f:'Why discounts misfire here:', b:'Price was never the repeat client’s objection — a discount removes no barrier, donates margin, and permanently reprices future rentals (nobody un-remembers one).'},
-    {f:'The reward menu:', b:'Extra miles (150–200/day), softer overage ($5→$2–3), lighter deposit, first access at full retail, inside events — status IS the product.'},
-    {f:'The three-part test:', b:'High perceived value, low real cost, zero permanent repricing. Insider feeling = use it; cheaper product = save it for a car that won’t rent.'},
-    {f:'Where discounts DO belong:', b:'Inventory tools for slow cars — never relationship tools for good clients.'}
-  ],
-  quiz:[
-    {q:'Discounting a happy repeat client mostly…', c:['Builds loyalty','Costs nothing','Increases frequency','Donates margin and permanently reprices future rentals'], a:3, e:'Price was never their objection; the anchor moves forever. Reward in value instead.'},
-    {q:'“New car lands Thursday — nobody’s rented it. Want first slot at full rate?” works because…', c:['Scarcity is illegal','It hides fees','It’s cheaper','Status is the actual product these clients buy'], a:3, e:'First access sells insider status at zero discount — the purest form of value-not-price.'},
-    {q:'The test for any loyalty move is…', c:['Cost under $100','Client asks for it','High perceived value + low real cost + zero permanent repricing','Competitors do it'], a:2, e:'Insider feeling without anchor damage. Discounts stay in the inventory toolbox.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T6 = [
-  {q:'“Convert first, source second” means…', c:['Convert leads to email lists','Convert currencies','Land clients on cars you control before sourcing a peer’s at wholesale','Upsell insurance'], a:2, e:'Image-flexible clients swap badges; controlled cars carry your best margins.', d:1},
-  {q:'Everything collected before keys move includes…', c:['Half the rental','Deposit only','Full rental + fees + deposit','A card on file'], a:2, e:'Money before keys, always — with irreversible rails favored at five figures.', d:1},
-  {q:'Deposits scale with…', c:['Client age','Season','Car value and its famous weak points','Distance'], a:2, e:'~$1k under-$100k → $3–5k Aventador+ [VERIFY]; the Huracán lip raises its tier.', d:2},
-  {q:'The #1 deposit deduction industry-wide is…', c:['Overmileage','Smoke','Fuel','Late return'], a:0, e:'Renters decide the miles were worth it — a real revenue line.', d:1},
-  {q:'Delivery is priced…', c:['Per mile','Flat by zone, each way — deliverer keeps the fee','Free over $1k','By weight'], a:1, e:'Zone flats ($200/$300/$400-style [VERIFY]); the party delivering keeps it.', d:2},
-  {q:'Rule 1 of brokered deals:', c:['Verification never delegates — the asset side runs the stack','Broker verifies','Split verification','Platform verifies'], a:0, e:'The broker can’t carry the loss, so their screening is advisory.', d:1},
-  {q:'In a solo-broker deal the client signs…', c:['The agency’s contract','The broker’s paper','Nothing','Both'], a:0, e:'Policy and protections attach to the fleet’s own paper.', d:2},
-  {q:'The deposit in any brokered deal is held by…', c:['The broker','Escrow','The agency (asset side)','The client’s bank'], a:2, e:'Whoever bears damage risk holds damage money — no exceptions.', d:1},
-  {q:'The double clock-out’s gap equals…', c:['Client miles','Fuel burned','The broker’s own miles','GPS error'], a:2, e:'Two artifacts make every mile belong to someone.', d:2},
-  {q:'Agency-to-agency, the car owner receives…', c:['Full client contacts','License + insurance only, and verifies them itself','The client’s deposit','Nothing'], a:1, e:'The client stays the sourcing agency’s asset; verification still follows the car.', d:2},
-  {q:'The inter-agency agreement exists to…', c:['Set retail prices','Pass liability through when the client signs the sourcing agency’s paper','Share clients','Split marketing'], a:1, e:'Read the peer’s contract too — a broken chain is exposure with extra steps.', d:3},
-  {q:'The loyalty reward test is…', c:['High perceived value, low real cost, zero permanent repricing','Under $50','Client-requested','Annual'], a:0, e:'Miles, overage softening, lighter holds, first access, inside events — never standing discounts.', d:2}
-];
-
-// ═══════════════════════ TIER 7 · THE LEAD DOOR (NO MONEY) ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t7_translate', sub:'T7', title:'Brokering translated — and your first deal, blow by blow',
-  predict:'You know lead generation from the internet economy — clipping pages, DMs, funnels, audiences. This industry runs on the same skill wearing different words. Translate: what do “broker,” “wholesale rate,” “broker sheet,” and “prequalification” map to in marketer language?',
-  concept:'<p>If you have ever run a clipping page, managed ads, closed in DMs, or built any audience — you already hold the core skill of this door. What you are missing is vocabulary and a map. Here is both.</p>'
-    +'<p><b>The translation layer.</b> A <b>broker</b> = a lead generator for exotic rentals — you find the person who wants the car and connect them to the fleet that has it. The <b>wholesale rate</b> = your cost of goods (T1): the fleet quotes their number, everything you charge above it is margin. The <b>broker sheet</b> = your rate card — the fleet’s inventory with wholesale pricing; holding one means you can sell their cars. <b>Prequalification</b> = lead qualification, and it is what you are actually PAID for: a raw “my guy wants a Lambo” is worth nothing; a lead with license, insurance documents, and working contacts attached is worth 20% of a four-figure deal. The gap between those two is your entire job. And your <b>reputation</b> = your quality score — it prices everything (next lesson).</p>'
-    +'<p><b>The economics that deserve your attention:</b> tickets run several hundred to several thousand a day; your spread on a single deal is commonly <b>$150–300+</b> <i>[VERIFY]</i>; and ~70% of the industry’s deals flow through people doing exactly this (T1). You would not be squeezing into a crowded niche — you would be staffing the industry’s largest and most understaffed role.</p>'
-    +'<p><b>What you need to start: almost nothing.</b> No license, no certification, no minimum age, no LLC on day one, no capital (T1). Fleets do not care what state you are in or how old you are — they care whether your lead is real. Many working brokers have no formal agreement at all with their fleets: qualified leads go in, spreads come back, the relationship runs on performance. One line of adult advice: <b>that income is taxable whether or not anyone sends a 1099.</b> Keep records from day one; the obligation is yours either way. (And the C3 move: form the entity early anyway — the business-credit clock starts at formation.)</p>'
-    +'<p><b>Your first deal, blow by blow.</b> Someone in your world wants a car — from your content, your network, wherever. <b>Step 1:</b> contact the fleet — is the car available for those dates? Get your wholesale rate. <b>Step 2:</b> back to your client with the retail price (do not overthink pricing: <b>charge what the fleet lists the car for</b> — they know their market; your spread is already built into the wholesale gap). <b>Step 3:</b> collect license, insurance card, and dec page — the prequalification that makes you worth paying. <b>Step 4:</b> send the package to the fleet; they run full verification — their car, their risk, their checks (T6 Rule 1). <b>Step 5:</b> verification passes, client signs the fleet’s contract, money moves, car goes out, your spread arrives at close — promptly, casually, by Zelle.</p>'
-    +'<p><b>And the move that answers “how do I get a fleet to work with me with no track record”: walk in holding the deal.</b> You need no permission to find a renter. Find one first, then approach the fleet with the right car: “I have a verified renter who wants your Huracán this weekend — can you give me a broker rate?” <b>No fleet on earth turns down a qualified deal because you are new. The lead IS the introduction.</b> Land it, and the broker-sheet conversation happens on its own.</p>',
-  example:'<p><b>Ex:</b> A follower DMs your car page: “can you get a Urus for Saturday?” You call the local fleet: available, wholesale $850. You quote the fleet’s own listed retail, $1,100. Collect license + dec page, send the package, fleet verifies, client signs, car delivers. Sunday night: $250 hits your Zelle. Total capital deployed: zero. Total permission required: zero.</p>',
-  teach:'Run the translation layer from memory, then the five-step first deal — and explain why walking in holding a deal beats any introduction.',
-  cards:[
-    {f:'The translation layer:', b:'Broker = lead-gen. Wholesale = cost of goods. Broker sheet = rate card. Prequalification = the qualification that makes a lead worth 20% of a deal. Reputation = quality score.'},
-    {f:'What you’re actually paid for:', b:'The gap between “my guy wants a Lambo” (worthless) and a package with license + insurance + tested contacts + fitting car (worth $150–300+).'},
-    {f:'The five steps:', b:'1 fleet: availability + wholesale. 2 client: quote the fleet’s retail. 3 collect license/insurance/dec. 4 package to fleet — they verify. 5 signed, paid, delivered — spread by Zelle at close.'},
-    {f:'The cold-start answer:', b:'Walk in holding the deal. No fleet refuses a qualified renter because you’re new — the lead IS the introduction, and the broker sheet follows.'}
-  ],
-  quiz:[
-    {q:'As a new broker, your retail pricing strategy is…', c:['Undercut the fleet by 10%','Charge what the fleet lists — your spread is already inside the wholesale gap','Add 50%','Auction it'], a:1, e:'They know their market. Underpricing only shrinks your own spread (T6’s pricing note).'},
-    {q:'A lead becomes worth paying for when…', c:['The person is famous','They follow you','It carries license, insurance docs, and working contacts — prequalified','They text twice'], a:2, e:'Qualification is the job. Raw names are worth nothing; packages are worth 20% of the deal.'},
-    {q:'With zero track record, fleets work with you because…', c:['You signed an NDA','You offered to work free','You walked in holding a verified deal — the lead is the introduction','You know cars'], a:2, e:'Nobody turns down qualified business for being new. Land one; the rate-sheet talk starts itself.'}
-  ]},
-
-{ id:'t7_reputation', sub:'T7', title:'Reputation is your pricing power — the spread spread',
-  predict:'Two brokers with identical marketing skill and identical lead flow work the same fleet, the same Lamborghini, the same weekend. One’s maximum possible margin is double or triple the other’s. No negotiation trick closes the gap. What sets it?',
-  concept:'<p>In most marketing work, track record gets you clients. In this industry it does something more direct: <b>it literally sets your unit economics.</b></p>'
-    +'<p><b>The spread spread.</b> Fleets do not give everyone the same wholesale rate. A new or unproven broker might get <b>10–15% off retail</b>. A broker the fleet trusts deeply — a history of clean clients — might get <b>30–35% off the same cars</b> <i>[VERIFY]</i>. Same fleet, same Lamborghini, same weekend: one broker’s maximum margin is double or triple the other’s, and <b>only track record closes it.</b> Reputation here is not a soft asset that helps you win deals — it is a hard multiplier on every deal you will ever do.</p>'
-    +'<p><b>What builds it.</b> The fleet’s scoreboard on you is simple: <b>what happens after your leads take the keys?</b> Clients who pay without drama, treat cars well, come back on time, never become a story. Every clean deal compounds: better rates, first access to new cars, faster responses, delivery privileges (T6 — where broker content comes from), flexibility. So <b>vet your own leads before sending them</b>: not the fleet’s full stack — that is their job (T6 Rule 1) — but your own filter: Is this person real? Does the story make sense? <b>Would I hand THEM my own car?</b> You are not paid to forward names; you are paid to send renters a fleet is glad it met. The harder you filter, the more each lead earns — on this deal and on every future rate you are quoted.</p>'
-    +'<p><b>What destroys it, and how fast.</b> Fleets in a region talk constantly — shared blacklists, group chats, warnings (T3’s network, now pointed at YOU). Send one lead that becomes a stolen car or an ugly chargeback and you are not banned from one fleet; <b>the story travels to every fleet in the metro within days.</b> A broker with no fleet access has no inventory, and a broker with no inventory is not a broker. No appeals process exists, because nobody owes you their cars. Harsh? Completely. <b>It is also why the opportunity exists:</b> the stakes keep most dabblers small and sloppy, and the minority who treat client quality as their actual product end up holding the best rate cards in their market. The barrier is not skill. It is discipline, kept up over time.</p>'
-    +'<p><b>One more thing worth writing down:</b> because your reputation is your pricing, your incentives and the car owners’ incentives point the same direction — you want clean clients; owners want protected cars. That alignment becomes very useful in two lessons, when brokers start sourcing not just renters, but cars.</p>',
-  example:'<p><b>Ex:</b> Broker A (three months, unproven): Huracán wholesale $1,050 against $1,200 retail — $150 ceiling. Broker B (forty clean deals): same car at $800 — $400 ceiling. Same weekend, same skill, same effort per deal: B earns 2.7× per deal and gets the new arrivals first. The forty clean deals WERE the negotiation.</p>',
-  teach:'Explain the 10–15% vs 30–35% spread spread, the would-I-hand-them-my-own-car filter, and the metro-wide speed of reputational death.',
-  cards:[
-    {f:'The spread spread:', b:'Unproven: 10–15% off retail. Deeply trusted: 30–35% [VERIFY]. Double-to-triple margin on identical deals — closed only by track record.'},
-    {f:'The fleet’s scoreboard on you:', b:'What happens AFTER your leads take keys: no drama, cars respected, on time, never a story. Every clean deal compounds into rates, access, privileges.'},
-    {f:'Your own filter:', b:'Before sending any lead: real person? story adds up? would I hand THEM my own car? You’re paid to send renters fleets are glad they met.'},
-    {f:'Reputational death:', b:'One stolen car or ugly chargeback from your lead = metro-wide broadcast in days, no appeals. The stakes are why disciplined brokers own the best rate cards.'}
-  ],
-  quiz:[
-    {q:'The gap between a 10% broker and a 35% broker is closed by…', c:['Track record of clean clients — nothing else','Volume promises','Negotiation seminars','Lower retail pricing'], a:0, e:'Fleets price trust. The spread spread is the compounding return on client quality.'},
-    {q:'Your pre-send filter on leads exists because…', c:['Fleets don’t verify','It speeds delivery','It’s legally required','Each lead’s outcome prices ALL your future deals — you’re paid for renters fleets are glad they met'], a:3, e:'The fleet still runs its stack (Rule 1); your filter protects the asset that sets your rates: your name.'},
-    {q:'One catastrophic lead typically costs a broker…', c:['One fleet relationship','Every fleet in the metro, within days, no appeals','A fine','Nothing if apologized for'], a:1, e:'The network that protects fleets (T3) is the same wire that carries your name. No inventory = not a broker.'}
-  ]},
-
-{ id:'t7_leads', sub:'T7', title:'Where leads live — three ecosystems and the premium niche',
-  predict:'Exotic rental leads come from exactly three ecosystems — one harvests intent, one creates it, one is invisible from outside. Name them. Then: which single CATEGORY of lead is so low-risk that fleets will price you like royalty for reliably producing it?',
-  concept:'<p><b>Ecosystem 1 — Search: the intent channel.</b> The highest-intent lead types “lamborghini rental [your city]” into Google. Classic SEO plus the maps pack is the single best natural source, because the searcher already decided — someone just has to be standing where they look. The winning shape: a site listing available cars for your area (with fleet relationships and broker sheets, the inventory you can market is far larger than anything you own — white-labeling, T1), local landing pages, fast follow-up. What should make a marketer’s eyes light up: much of this industry competes on search with tactics from 5–10 years ago — <b>the bar in most local markets is remarkably low</b> — and the newest surface, showing up in AI-generated answers, is barely contested at all (TX).</p>'
-    +'<p><b>Ecosystem 2 — Social: the demand-creation channel.</b> Search harvests intent; content creates it. Supercar content reaches exactly the demographic from T0 — image-driven, young, extremely online. A clip that runs gets seen by renters, fleets, and the whole local scene at once (hold that — the personal-brand lesson closes this chapter). This is why clippers and content people convert so naturally into brokers: <b>making car content perform IS lead generation here</b>, finally pointed at a paycheck. The honest catch: content requires access to cars, and fleets do not hand cars to strangers for shoots. The chicken-and-egg is real, every new broker hits it, it bends as trust builds (delivering cars is the classic content moment, T6), and there are modern shortcuts in the AI chapter (TX). The wall is a trust problem, not a permanent one.</p>'
-    +'<p><b>Ecosystem 3 — The referral web: the invisible channel.</b> People who already stand next to renters: concierges, celebrity and athlete agents and managers, promoters, club hosts, event planners, luxury realtors, jewelers. They get asked for supercars constantly and give the referral away free <b>because they do not know wholesale rates exist</b> (T1’s converted brokers). If you are, or know, one of these people, you are one conversation away from being paid for calls you already receive.</p>'
-    +'<p><b>The premium sub-niche: low-risk leads.</b> Recall the risk logic (T2–T5): the dangerous rental is someone who wants to DRIVE the car. So the most valuable lead category is the opposite — <b>rentals where the car is used for something other than driving</b>: photo/video shoots, music videos, film and commercial sets, weddings and proms (chauffeured), events where the car parks front and center. Minimal miles, minimal risk, full rates. The renter profile flips too: working professionals, production companies, event planners — people renting the <i>image of the car for a purpose</i>, not adrenaline. And you can target them where they already shop: wedding-vendor platforms, event-planning circles, production and real-estate communities. A broker who reliably delivers this category is sending fleets <b>the best business that exists</b> — and per the last lesson, gets priced accordingly.</p>',
-  example:'<p><b>Ex:</b> One month, one metro: 6 search leads from a city landing page that outranks every spreadsheet-run fleet; 4 from a reel that hit 400k views; 3 from one wedding planner who now texts you first (she used to give these away). The planner’s three: chauffeured Rolls, 11 total miles, full rate, zero risk. Guess which channel the fleets ask you to grow.</p>',
-  teach:'Name the three ecosystems and what each does to intent, the chicken-and-egg of content access, and why non-driving rentals are the royalty-pricing niche.',
-  cards:[
-    {f:'The three ecosystems:', b:'Search (harvests intent — SEO/maps, low local bar), Social (creates intent — car content IS lead-gen), Referral web (invisible — concierges/agents/planners giving away referrals for free).'},
-    {f:'The content chicken-and-egg:', b:'Content needs car access; access needs trust. It bends via delivery moments (T6) and AI-era shortcuts (TX). A trust problem, not a permanent wall.'},
-    {f:'The premium niche:', b:'Non-driving rentals — shoots, music videos, film sets, chauffeured weddings, display events. Minimal miles, minimal risk, full rates, professional renters.'},
-    {f:'Where to hunt the niche:', b:'Wedding-vendor platforms, event-planner circles, production communities, luxury real estate — where purpose-renters already shop.'}
-  ],
-  quiz:[
-    {q:'The highest-intent lead source is…', c:['Viral reels','Billboards','Club promoters','Local search — “lamborghini rental [city]”'], a:3, e:'The searcher already decided; the ecosystem contest is just who is standing there — and the local bar is years out of date.'},
-    {q:'Concierges, agents, and planners are the invisible channel because…', c:['They hide their clients','They only work with platforms','They give supercar referrals away free, not knowing wholesale rates exist','They fear fleets'], a:2, e:'One conversation converts them from free-referrers to paid sourcers — the classic broker origin (T1).'},
-    {q:'Fleets price non-driving-lead brokers like royalty because…', c:['The invoices are bigger','They tip in cash','Minimal miles + minimal risk + full rates = the best business that exists','The cars stay cleaner'], a:2, e:'The risk logic runs backwards: a parked, chauffeured, or filmed car is revenue without the dangerous part.'}
-  ]},
-
-{ id:'t7_ladder', sub:'T7', title:'The ladder — leads, then cars, then the whole machine',
-  predict:'Rung 1 is sourcing renters. Rung 4 is being the agency. Rung 3 is the leap almost nobody sees coming — the same connecting skill pointed at a different target, creating a seat where you keep ~10% of every deal on a car you don’t own and didn’t rent. What is Rung 3?',
-  concept:'<p>Brokering leads is the entry, not the destination. Here is the ladder as it is actually climbed. Nobody is required to climb; every rung is a real place to stay — but see the whole thing before choosing your pace.</p>'
-    +'<p><b>Rung 1 — source leads.</b> The last three lessons: no capital, no liability, spreads on every deal, reputation compounding. Many people build a real income here and stop. Completely reasonable.</p>'
-    +'<p><b>Rung 2 — formalize.</b> At some volume the hustle becomes a business: an LLC, money through a business account, records (C3 — the fundability clock you already started). You verify your own leads to a higher standard, handle more of the client experience, and become — in the fleet’s eyes — less a tipster, more a peer.</p>'
-    +'<p><b>Rung 3 — source cars.</b> The leap most never see: the connecting skill that finds renters can find <b>vehicles</b>. Somewhere in your network — or reachable by your content — is a person with an exotic sitting idle, curious whether it could earn. You are now brokering the <b>supply side</b>. Watch the structure closely: you sign an agreement with the owner (say a 50/50 revenue split), then place the car with an established agency on, say, 60/40 terms — 60 to you as the car’s controller. Revenue flows: agency keeps 40; of the 60 that reaches you, 50 points pass through to the owner; <b>you keep 10% of every deal for standing in the middle.</b> Why does the owner accept that instead of going direct? <b>Because you are their advocate:</b> you watch the payout reports, police the mileage (T8’s ledger), and if the agency underperforms, you move the car to a better fleet — an option the owner could barely exercise alone. Owners are buying alignment and portability. And notice: your Rung-1 reputation is exactly what makes fleets take your cars and owners take your calls. <b>The rungs stack.</b></p>'
-    +'<p><b>Rung 4 — the agency itself.</b> Control 3–5 cars — sourced from owners or eventually your own — and the math changes: you are feeding a serious block of inventory through other people’s operations, paying for infrastructure you could own. You face the two obstacles from T4 (your own commercial policy, your own warehouse), and crossing them makes you the agency: same activities, dramatically more of each deal kept.</p>'
-    +'<p><b>The honest math of the climb.</b> Rung 1: 15–30% of deals you touch, zero risk. Rung 3: ~10% of every deal on cars you control <i>plus</i> your lead spreads, with the agency still carrying operational risk. Rung 4: the majority of every deal — and all of the risk and work in this course. <b>Each rung trades simplicity for margin. There is no correct stopping point — only the honest question of how much machine you want to own.</b> And at Rung 3 the two doors of this course merge: the lead-sourcer who sources cars needs everything a car owner knows. That is T8.</p>',
-  example:'<p><b>Ex — Rung 3 in dollars:</b> A dentist’s Huracán sits 25 days a month. Your agreement: 50/50. Placed at a fleet on 60/40. A $1,000 rental day: agency $400, you $600 → owner $500, <b>you $100</b>. Twelve rental days a month = $1,200/mo for watching reports and policing miles on a car you neither own nor rented to anyone — while your lead spreads continue separately. Three such cars and the fleet cannot afford to lose you.</p>',
-  teach:'Walk the four rungs with the Rung-3 money structure (50/50 owner, 60/40 agency, keep 10), and explain what the owner is really buying from you.',
-  cards:[
-    {f:'The four rungs:', b:'1: source leads (15–30%, zero risk). 2: formalize (LLC, records, peer status). 3: source cars (~10% of every deal + spreads). 4: the agency (majority of deals, all the risk).'},
-    {f:'Rung 3’s structure:', b:'Owner agreement (e.g., 50/50) + placement at an agency (e.g., 60/40 to you as controller): agency 40, owner 50, YOU 10 — on every deal, forever.'},
-    {f:'What the owner buys from you:', b:'Alignment and portability: you audit payouts, police miles, and can MOVE the car to a better fleet — leverage they could barely use alone.'},
-    {f:'Why the rungs stack:', b:'Rung-1 reputation is why fleets take your cars and owners take your calls. Each rung’s asset powers the next.'}
-  ],
-  quiz:[
-    {q:'Rung 3 (sourcing cars) pays you…', c:['A one-time finder’s fee','~10% of every deal on the car, standing between owner and agency','The agency’s 40%','Nothing until Rung 4'], a:1, e:'50/50 with the owner, 60/40 with the agency: 10 points ride every deal for as long as the car earns.'},
-    {q:'An owner accepts your 10 points instead of going direct because…', c:['You are their advocate — auditing payouts, policing miles, able to MOVE the car','They can’t find fleets','It’s customary','Fleets require it'], a:0, e:'Alignment + portability is the product. Your incentives already pointed their way (t7_reputation).'},
-    {q:'The ladder’s honest trade at every rung is…', c:['Simplicity for margin','Money for time','Risk for fame','Speed for safety'], a:0, e:'15–30% no-risk → 10%+spreads low-risk → majority-with-all-risk. No correct stop; only how much machine you want to own.'}
-  ]},
-
-{ id:'t7_brand', sub:'T7', title:'The personal brand — the highest-leverage asset almost nobody holds',
-  predict:'A person with a big audience in a completely unrelated niche — zero car content, zero rental track record — approaches exotic fleets about brokering. Every fleet says “sure, why not.” What did the fleets actually see, and why did the niche not matter?',
-  concept:'<p>Close the chapter with the single highest-leverage asset in this industry — one taught from receipts, because it is how the source operator got in.</p>'
-    +'<p><b>The door-opener.</b> Approaching fleets with no rental track record but an audience in the tens of thousands — built around a <i>completely different niche</i> — every fleet said yes. Here is the part that should rearrange your thinking: <b>the audience did not prove the ability to source exotic renters. It proved the ability to source ATTENTION.</b> And this industry — starved for demand (T0), 70% dependent on outside sourcing (T1) — treats visible reach as qualification enough to hand you a rate card. Read it as a marketer: <b>the asset transferred across niches. The followers were not customers; they were leverage.</b></p>'
-    +'<p><b>The magnet.</b> The door-opener is half. Posting the journey into the industry publicly created what cold outreach never could: an established fleet owner found the content, saw what was being built — and reached out <b>inbound</b>. One conversation became cars placed on consignment, a brokering relationship, and paid consulting inside a working operation. Several seats at one table, started by the other side. A personal brand does not just open doors; <b>it makes you findable by exactly the people you would have spent months chasing — and you arrive pre-sold, because they watched you work.</b></p>'
-    +'<p><b>The reach cuts every direction at once.</b> This industry is small and extremely online: post consistently about it and the renters, fleets, brokers, and owners in your region ALL see it, faster than you expect. One documented example of the network effect: a single sentence in one video — a friend seeking luxury-chauffeur work — found a viewer who knew someone, and the friend ended up driving a six-figure SUV for a living. One sentence, one video, a real career moved. That is the machine a face and a posting habit builds.</p>'
-    +'<p><b>Why the lane is open.</b> Almost nobody in this industry does this. Fleets are companies, not faces. Brokers work private networks. Owners are invisible by design (T0). Very few people anywhere show the inside of this industry with their face attached. In a relationship business where <b>reputation is pricing</b> (t7_reputation), being the visible, findable, documented person in your market is a compounding advantage that costs <b>content and consistency instead of capital</b> — the one currency the broke operator has infinite access to. You do not need a head start; a small, consistent, niche-focused audience opens the same doors at smaller scale, and it grows while you sleep.</p>'
-    +'<p><b>If you take one directive from this chapter: whatever else you do in this industry, do it in public.</b> (The REPS ladder’s Build-In-Public counter exists precisely for this — it is a daily rep, not a someday plan.)</p>',
-  example:'<p><b>Ex:</b> Month 1–3: you post the metro map you built (REPS), dec-page teardown clips, delivery-day footage as it starts. Month 4: a fleet DMs — they need weekend lead help. Month 7: an owner DMs — his Urus sits idle; could you place it? (Rung 3, inbound.) None of these people were cold-called. The content was the outreach, running 24/7 at zero marginal cost.</p>',
-  teach:'Explain why attention transfers across niches as leverage, the door-opener vs the magnet, and why the visible-person lane is structurally open in this industry.',
-  cards:[
-    {f:'The door-opener:', b:'A non-car audience still proved the scarce thing: the ability to source ATTENTION. In a demand-starved industry, visible reach = a rate card.'},
-    {f:'The magnet:', b:'Building in public makes the right people find YOU — fleets, owners, partners arriving inbound, pre-sold, having watched you work.'},
-    {f:'Why the lane is open:', b:'Fleets are faceless companies, brokers work private webs, owners hide by design. The visible documented person in a metro has almost no competition.'},
-    {f:'The directive:', b:'Whatever else you do in this industry, do it in public. Content + consistency is the capital of the capital-less — and it compounds while you sleep.'}
-  ],
-  quiz:[
-    {q:'The non-car audience opened fleet doors because…', c:['Fleets love influencers','It proved the ability to source attention — the industry’s scarcest input','It guaranteed renters','It was luck'], a:1, e:'Demand-starved industries read reach as qualification. The asset transferred across niches as leverage.'},
-    {q:'The “magnet” effect of building in public is…', c:['The right people find you inbound, pre-sold from watching you work','More likes','Cheaper ads','Platform verification'], a:0, e:'The fleet owner who reached out created consignment, brokering, and consulting seats — from one piece of content.'},
-    {q:'The visible-person lane is open because…', c:['It’s expensive','It’s regulated','Fleets are faceless, brokers private, owners hidden by design — almost nobody shows this industry with a face','It requires a car'], a:2, e:'In a reputation-priced business, being findable and documented compounds against no competition.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T7 = [
-  {q:'A broker, translated to marketer language, is…', c:['An agent','A dealer','A lead generator for exotic rentals','A driver'], a:2, e:'Find the renter, connect to the fleet, keep the spread above wholesale.', d:1},
-  {q:'You are actually PAID for…', c:['Knowing cars','Prequalification — the license/insurance/contact package on a fitting car','Introductions','Volume'], a:1, e:'Raw names are worthless; qualified packages are worth 20% of a deal.', d:1},
-  {q:'Broker income with no 1099 is…', c:['Taxable — records from day one, the obligation is yours','Tax-free','The fleet’s problem','Deferred'], a:0, e:'Zelle spreads are income. Keep records; form the entity early (C3).', d:2},
-  {q:'The cold-start move is…', c:['Walk in holding a verified deal','Cold-email fleets','Offer free work','Buy ads'], a:0, e:'No fleet refuses qualified business for newness. The lead is the introduction.', d:1},
-  {q:'The spread spread runs…', c:['5% vs 8%','50% vs 60%','10–15% (unproven) vs 30–35% (trusted) [VERIFY]','Fixed by law'], a:2, e:'Double-to-triple margin on identical deals — priced by track record alone.', d:2},
-  {q:'Your pre-send lead filter question is…', c:['Would I hand THEM my own car?','Can they pay?','Are they famous?','Do they follow me?'], a:0, e:'You’re paid to send renters fleets are glad they met — the filter prices your future.', d:2},
-  {q:'One catastrophic lead costs…', c:['That fleet only','Nothing','A fee','The metro — the story travels every fleet in days, no appeals'], a:3, e:'No inventory = not a broker. The stakes are why disciplined brokers hold the best cards.', d:2},
-  {q:'The three lead ecosystems are…', c:['Ads, email, SMS','Search (intent), social (creation), referral web (invisible)','TV, radio, print','Platforms only'], a:1, e:'Harvest, create, convert-the-connected — each with its own playbook.', d:1},
-  {q:'The premium lead niche is…', c:['Bachelor parties','Long road trips','Track days','Non-driving rentals — shoots, sets, chauffeured weddings, display events'], a:3, e:'Minimal miles + risk at full rates: the best business that exists, priced accordingly.', d:2},
-  {q:'Rung 3 of the ladder is…', c:['Opening a lot','Sourcing CARS — owner agreements placed at agencies, keeping ~10% of every deal','Franchising','Buying a fleet'], a:1, e:'The connecting skill pointed at supply; the seat almost nobody sees.', d:2},
-  {q:'The Rung-3 owner is buying…', c:['Your driving','Alignment + portability — audited payouts, policed miles, the power to move the car','Insurance','Marketing'], a:1, e:'An advocate with options beats going direct alone.', d:3},
-  {q:'The personal brand’s door-opening asset is…', c:['Car knowledge','A logo','Proven ability to source ATTENTION — transferable across niches','Equipment'], a:2, e:'Demand-starved fleets read reach as qualification; the followers were leverage, not customers.', d:2},
-  {q:'The chapter’s one directive:', c:['Stay quiet until big','Post only wins','Buy followers','Do it in public — content + consistency is the broke operator’s compounding capital'], a:3, e:'The visible documented person in a metro compounds against no competition.', d:1}
-];
-
-// ═══════════════════════ TIER 8 · THE VEHICLE DOOR (CAPITAL) ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'t8_customer', sub:'T8', title:'Choosing the car — every model summons its renter',
-  predict:'Strangest rule of fleet economics: you are not choosing a car. You are choosing a customer. A Huracán, a Urus, and an M4 each “summon” a completely different human. Describe the three humans — and which car quietly runs the best business.',
-  concept:'<p>The second door: capital or credit, and a car going on the table. Before anything else, the rule that governs the purchase: <b>every make and model summons a specific renter, and that renter — their driving style, risk profile, money — determines your returns far more than the spec sheet does.</b></p>'
-    +'<p><b>The demographic physics.</b> Two-door supercars — Huracáns, McLarens, any low aggressive coupe — summon people who want THE DRIVE: canyons, launches, speed. Highest risk class of use. (Higher price points partly self-correct: Ferrari-tier daily rates filter for older, wealthier, calmer renters.) SUVs and luxury summon a different human: the Urus renter is flexing, not attacking corners; Rolls, Bentley, and Maybach renters are renting <i>presence</i> and drive like it — <b>the gentlest use profile in the industry, worth real money in avoided damage.</b> And the sub-$100k performance tier — the BMW M cars — summons <b>the youngest, most aggressive demographic in the business.</b> Hold that thought.</p>'
-    +'<p><b>The proven earners.</b> The benchmarks: <b>Huracán</b> (~$1,100–1,300/day) and <b>Urus</b> (~$900–1,200/day) <i>[VERIFY]</i>. The Urus is <b>quietly the better business</b> for many owners: it rides high, so nobody scrapes a front lip (the Huracán’s most common repair); it spends less time in the shop; its renters treat it gentler. More days on the road, fewer claims. And Lamborghinis in general <b>hold value under miles better than Ferraris</b> — the resale market forgives a driven Lambo and punishes a driven Ferrari, which matters enormously when your business model is putting miles on the asset.</p>'
-    +'<p><b>The starter trap.</b> The classic first fleet car is an M3/M4: $70–90k to buy, $400–500/day to rent <i>[VERIFY]</i>. On paper, beautiful. Eyes open: this price tier rents to the youngest demographic, and BMWs specifically attract renters who drive them hard — <b>expect the highest accident and abuse rates of any class you can own.</b> It is workable (many operators start here), but it is a trap for anyone who buys the spreadsheet without pricing the customer. If you go this route: <b>current-generation body styles only</b> (G80 M3 / G82 M4) — because of the rule that governs the whole buying decision:</p>'
-    +'<p><b>Perceived age is everything.</b> Renters cannot tell years apart; they can only tell <i>fresh</i> from <i>dated</i>. A supercar with timeless styling can be 7–8 years old and read as new — older McLarens and Ferraris pass easily. Sub-$100k cars age visibly. The teaching example: a 2018 Porsche 911 whose exterior fools everyone — and whose analog cabin reads its true age the moment a renter sits down. It barely rents, while older Ferraris on the same lot rent fine. <b>Buy cars that look new to a non-car-person, inside AND out, whatever the model year.</b></p>'
-    +'<p><b>Where the budget math lands.</b> Realistically the door opens around <b>$100k of car</b>. Below sits a dead zone — the $60–90k bracket has almost nothing that rents well except the M cars with their demographic tax (Maseratis, tempting on price, rent worse than BMWs and cost more to maintain). At $100–120k real options appear: <b>Aston Martin Vantage, Audi R8, older McLarens</b> — supercars that age gracefully and summon better renters. And the luxury tier, if reachable, buys the gentlest customers in the industry. <b>Choose the customer. The car comes with them.</b></p>',
-  example:'<p><b>Ex:</b> Same $100k, two buys. Buy A: a loaded M4 — youngest, hardest-driving renters, highest claim odds, ages visibly. Buy B: a clean R8 — supercar presence, calmer summoned renter, timeless cabin. B books similar money at lower risk and still photographs like an event. The spreadsheet said A; the CUSTOMER said B.</p>',
-  teach:'Explain “choosing the customer,” the three demographic classes, why the Urus quietly beats the Huracán for owners, the M-car starter trap, and perceived age.',
-  cards:[
-    {f:'The strangest rule:', b:'You are choosing a CUSTOMER, not a car — each model summons a renter whose driving style and risk decide your returns more than the spec sheet.'},
-    {f:'The three summons:', b:'Low 2-door supercars → THE DRIVE (highest risk; price partly filters). Luxury/SUV → presence, gentlest use. Sub-$100k M cars → youngest, most aggressive class in the business.'},
-    {f:'Urus vs Huracán, for owners:', b:'Urus: no front lip to scrape, less shop time, gentler renters — more days out, fewer claims. And Lambos forgive miles at resale; Ferraris punish them.'},
-    {f:'Perceived age + budget:', b:'Renters see fresh vs dated, inside AND out (the analog-cabin 911 that won’t rent). Door opens ~$100k; dead zone $60–90k; $100–120k = Vantage, R8, older McLarens.'}
-  ],
-  quiz:[
-    {q:'The renter summoned by a sub-$100k M car is…', c:['The gentlest in the industry','Older collectors','Identical to a Rolls renter','The youngest, most aggressive class — highest accident/abuse rates'], a:3, e:'The starter trap: beautiful on paper, priced with a demographic tax the spreadsheet doesn’t show.'},
-    {q:'A 2018 911 with a timeless exterior barely rents because…', c:['Porsches don’t rent','It’s too cheap','Its analog cabin reads dated the moment a renter sits down — perceived age is inside AND out','No delivery zone'], a:2, e:'Renters judge fresh-vs-dated, not model years. Older Ferraris on the same lot pass; the cabin fails the 911.'},
-    {q:'For an owner’s actual returns, the Urus quietly beats the Huracán because…', c:['No scrapeable lip, less shop time, gentler renters — more days out, fewer claims','Higher retail rate','Better exhaust','Cheaper insurance always'], a:0, e:'Utilization and avoided damage beat headline rate — the customer the car summons IS the economics.'}
-  ]},
-
-{ id:'t8_trim', sub:'T8', title:'Minimum viable trim — and spec taste that actually rents',
-  predict:'A Huracán Performante costs a massive premium over a base Evo three years older. How much more does the Performante rent for per day — and what does that answer tell you about how to spec every fleet car you ever buy?',
-  concept:'<p>The rule that saves first-time fleet buyers tens of thousands, because almost everyone gets it wrong in the same direction:</p>'
-    +'<p><b>Renters cannot see trims.</b> A car person buys the Performante — the carbon, the titanium exhaust, the badge. New fleet buyers assume the top trim rents for more. <b>It does not.</b> A Performante rents for almost exactly the same daily rate as a base Evo three years older, because the renter — not a car person (T0) — cannot tell them apart and does not care. Both are low, loud, aggressive Lamborghinis; <b>the photo is identical.</b> Meanwhile you paid a massive premium: bigger payment, bigger depreciation, same revenue. Hence the doctrine: <b>minimum viable trim — buy the cheapest version of the car that delivers the LOOK the renter is paying for.</b> Every dollar above that works for your ego, not your business. (If the car doubles as your personal dream car, spec it up with open eyes — you are buying a luxury, not an asset.)</p>'
-    +'<p><b>The pro move: buy base, build the look.</b> The sharper version, used by smart operators everywhere: buy the absolute base, then spend $10–20k aftermarket making it LOOK like the top trim — a tune and exhaust, a body kit that reads as the performance package, carbon pieces, an interior refresh. You end up with a car that <b>photographs like the top trim while you financed the cheap one</b>; the savings in payment, interest, and depreciation pay back the mod budget fast. Nobody is tricked: they are renting the look, and the look is real.</p>'
-    +'<p><b>Spec taste is demographic-specific — taught from a real wallet.</b> An M4 Competition, top trim, six-figure sticker, in loud lime green with a convertible top — bought on the theory that flashy rents. <b>It barely rents.</b> The M-car demographic (young, aggressive, image-focused) wants dark, mean, hardtop cars: blacks, deep greens, deep blues, pearl white — a bright drop-top reads <i>goofy</i> to them, and goofy does not flex. Meanwhile an M3 in deep Isle-of-Man green over a bright orange interior with carbon and a starlight headliner — same money — <b>rents nonstop.</b> The punchline: that same lime convertible AS A HURACÁN would rent fine, because the Lamborghini demographic embraces loud colors and open tops. <b>The taste rules belong to the customer each car summons</b> — which is why the last lesson came first.</p>'
-    +'<p><b>The patterns that consistently work:</b> <b>colored interiors are the single biggest desirability lever</b> — orange above all (it reads as Rolls-Royce). <b>Black exterior over a loud interior</b> is the closest thing to a universal win (colored stitching helps too). On BMWs the <b>carbon-fiber interior package is nearly mandatory</b> — its absence visibly cheapens the cabin against the identical car down the street at the same rate. A tasteful <b>exhaust</b> raises desirability on any supercar — it will not raise your price, but it fills your calendar, which is better. And <b>bad factory colors are not fatal: wraps are standard practice</b> — a satin-black wrap over a loud interior has rescued many awkward builds. Remember the competitive frame: your car rents next to every similar car in your metro, and the renter picks the one that photographs best. <b>Spec is your storefront.</b></p>',
-  example:'<p><b>Ex:</b> Two Huracáns, same fleet: a $280k Performante and a $195k base Evo wearing a $14k kit + exhaust + orange-interior refresh [VERIFY prices]. Same daily rate. Same booking count. One carries an $85k premium in payment and depreciation for zero extra revenue. The renter’s camera cannot tell them apart — and the renter IS the camera.</p>',
-  teach:'State the minimum-viable-trim doctrine, the buy-base-build-the-look move, and three spec patterns that consistently rent — plus why taste rules are demographic-specific.',
-  cards:[
-    {f:'Minimum viable trim:', b:'Renters can’t see trims — a Performante rents like a base Evo. Buy the cheapest version that delivers the LOOK; everything above works for ego, not business.'},
-    {f:'Buy base, build the look:', b:'Base car + $10–20k of tune/exhaust/kit/carbon/interior = photographs like top trim on the cheap car’s payment. The look is real; nobody is tricked.'},
-    {f:'Demographic-specific taste:', b:'Lime drop-top M4 reads goofy to the M demographic (wants dark, mean, hardtop); the same lime as a Huracán rents fine. Taste rules belong to the summoned customer.'},
-    {f:'The reliable patterns:', b:'Colored interiors #1 (orange = Rolls). Black-over-loud-interior = universal. BMW carbon cabin nearly mandatory. Exhaust fills calendars. Wraps rescue bad colors. Spec is your storefront.'}
-  ],
-  quiz:[
-    {q:'The Performante premium over a base Evo buys a fleet owner…', c:['~$200/day more','Lower insurance','Faster bookings','Almost nothing — same rate, same photo, bigger payment and depreciation'], a:3, e:'Renters can’t see trims. Minimum viable trim: pay for the look, never the badge under it.'},
-    {q:'The lime-green convertible M4 failed because…', c:['Its SUMMONED demographic wants dark, mean, hardtops — the same spec as a Huracán would rent fine','Flashy never rents','It was overpriced','BMWs don’t rent'], a:0, e:'Taste rules are demographic-specific. The customer the car summons writes the spec sheet.'},
-    {q:'The single biggest spec desirability lever is…', c:['Horsepower','A colored interior — orange above all','Wheel size','A spoiler'], a:1, e:'It reads as Rolls-Royce in photos — and the photo is the product (T0).'}
-  ]},
-
-{ id:'t8_place', sub:'T8', title:'Placing your car — the fleet audit and the contract traps',
-  predict:'You are about to hand a six-figure asset to a company that will let strangers drive it. You hold more power in this negotiation than you think. What makes cars the scarce resource here — and what are the four contract traps that turn a good placement into a hostage situation?',
-  concept:'<p>You own the right car, specced right. Now the decision that outweighs everything since: <b>which fleet operates it.</b></p>'
-    +'<p><b>You hold the power — spend it on diligence.</b> Cars are the scarcest resource in this industry (Law 3’s other face: fleets always need inventory), and a good car walking in the door is an event. <b>Fleets will court you. That courtship buys you the right to ask hard questions — and their answers ARE the audit.</b> You have read this course, so you know what a serious operation looks like from inside. Use the earlier chapters as your checklist: walk me through your booking process (listening for the verification stack: insurance capture, fine-print awareness, the recorded call, MVRs, deposits scaled to the car — T3/T6). What happens on overmileage, on damage, on a renter who ghosts after an accident (T5)? Show me the commercial policy — that it exists, and that its coverage is big enough for MY car’s value (a policy capped below your car protects them, not you — T4). Who besides renters drives the cars — staff, delivering brokers — and are they verified and insured to the same standard (T6)? How are cars stored, and does garaging coverage apply while mine sits in your warehouse (T4)? <b>An operator who runs a real machine answers all of it fluently — most will proudly show off (they pitched an insurance agent with this exact material). If they cannot explain their process, that IS the answer. Walk.</b></p>'
-    +'<p><b>The contract traps, in order of danger.</b> <b>Term length:</b> sign <b>month-to-month, always.</b> A 12-month lock-in destroys your only real power — pulling the car from an underperformer. Locked in, you are furniture; month-to-month, you are a partner they must keep earning. <b>Exit fees:</b> language charging thousands in “marketing costs” to withdraw your own car. Refuse it. <b>Liability disclaimers</b> — the worst one, and it exists in the wild: clauses saying the fleet is not responsible for damage during rentals THEY set up. Under that clause they can total your car and hand it back with an apology. <b>The agency must bear responsibility for the car while housing and renting it. Non-negotiable.</b> <b>The split</b>, for perspective: 50/50 common at smaller fleets, 60/40 in your favor at established ones — and <b>process quality is worth far more than 10 points of split: a disciplined fleet at 50/50 beats a sloppy one at 60/40 every quarter of the year.</b></p>'
-    +'<p><b>The broker-in-agency-clothing trap.</b> Some “fleets” with polished sites own no operation at all — they are brokers routing every deal through other companies (T1’s white-labeling, now aimed at YOU). Place your car with one unknowingly and your contract is with a middleman while your car is operated by a company you never vetted; if the liability chain between them is not papered, a loss can land on you. The defense: ask directly <b>who operates the rentals and who holds the commercial policy.</b> A transparent broker-placement CAN be legit — that is Rung 3 (T7), and an aligned broker genuinely fights for you — but only when the whole chain is disclosed and papered: your agreement, their agency agreement, liability passing cleanly through both (T6’s inter-agency logic).</p>'
-    +'<p><b>Two adult items before signing anything.</b> <b>Your lender:</b> most consumer auto loans prohibit commercial use (C4’s trap — the fleet will not check; the risk is yours; read your note, expect their contract to put that responsibility on you). <b>Your insurance:</b> depends on the structure — leased-and-registered to the agency = their commercial coverage owns it; loose consignment = keep your own policy active. <b>Ask which structure you are signing, and never let your car sit in the gap between the two</b> (T4).</p>',
-  example:'<p><b>Ex — the audit in four answers:</b> Fleet A: walks you through Canopy captures, shows the recorded-call script, quotes garagekeepers limits from memory, offers month-to-month 50/50. Fleet B: “we’ve never had a problem,” offers 65/35 — with a 12-month term, a $3,500 exit fee, and a damage disclaimer in clause 9. A’s worse split earns more by New Year’s, and your car survives to see it.</p>',
-  teach:'Run the audit question list from the course’s own chapters, name the four contract traps in danger order, and explain the broker-in-agency-clothing defense.',
-  cards:[
-    {f:'Why you hold power:', b:'Cars are the industry’s scarcest resource — a good car is courted. The courtship buys hard questions, and their fluency (or shrug) IS the audit.'},
-    {f:'The audit checklist:', b:'Their verification stack; overmileage/damage/ghost handling; commercial policy ≥ YOUR car’s value; who else drives and to what standard; storage + garagekeepers.'},
-    {f:'The four traps:', b:'Term (month-to-month always), exit fees (refuse), liability disclaimers for their own rentals (non-negotiable — walk), split (process > 10 points; 50/50 disciplined beats 60/40 sloppy).'},
-    {f:'Broker-in-agency-clothing:', b:'Polished “fleet,” no operation — your car runs at a company you never vetted. Ask who operates and who holds the policy; transparent Rung-3 placement is fine only fully papered.'}
-  ],
-  quiz:[
-    {q:'The single most important contract term for an owner is…', c:['The split','The delivery fee','Month-to-month duration — the power to pull the car is your only real leverage','Naming rights'], a:2, e:'Locked in, you are furniture. Month-to-month makes the fleet keep earning you every month.'},
-    {q:'A clause disclaiming fleet responsibility for damage during their own rentals means…', c:['Standard boilerplate','They can total your car and apologize — non-negotiable, walk','Lower fees','Better insurance'], a:1, e:'The agency must bear responsibility while housing and renting the car. This clause exists in the wild; read for it.'},
-    {q:'A disciplined fleet at 50/50 vs a sloppy one at 60/40:', c:['Take the 60/40 — math is math','Split the difference','The 50/50 — process quality outearns 10 points every quarter','Alternate months'], a:2, e:'Verification, enforcement, and clean settlements protect the asset that IS your return. Fine print > split.'}
-  ]},
-
-{ id:'t8_owner', sub:'T8', title:'Owner etiquette and the ledger — chill, firm, and watching ghost miles',
-  predict:'Fleets talk about their owners the way they talk about brokers — and there is a type they all dread, and a type they fight to keep. Describe both. Then: the monthly report arrives showing 3 rentals totaling 300 miles, but the odometer climbed 1,000. What are the 700?',
-  concept:'<p>Your car is placed. Now the part nobody teaches: how to BE an owner.</p>'
-    +'<p><b>Chill and firm — the owner everyone wants.</b> The dreaded type: the overprotective owner — texting during every rental, demanding client names, narrating every telemetry ping. Hard truth: once placed, client vetting is the agency’s job and <b>client information is their guarded asset</b> (T0) — demanding it marks you as someone who does not understand the industry. The owner every fleet fights to keep is <b>chill and firm</b>: hands off the day-to-day, trusting the process you audited before signing, easy to deal with — and immovable about the things that are genuinely yours to watch. <b>You get to be firm precisely BECAUSE you are chill: an owner who escalates rarely is taken seriously when they do.</b> Telemetry example: you see 110 mph. One message — “I see 110 on the tracker. What is going on with the car?” That is firm. Silence the rest of the time is chill.</p>'
-    +'<p><b>The ledger — what is genuinely yours to watch.</b> Your enemies are depreciation and maintenance (T1), and both arrive by the mile. So the thing you are entitled to — and must insist on — is the monthly <b>partner report</b>: every rental, each marked <b>wholesale or retail</b> (you know from T1 exactly why that difference hits your wallet), damages and deposits kept, and above all <b>START AND END ODOMETER FOR EVERY RENTAL.</b> That last column is the whole game: rental miles are accounted-for miles. <b>The danger is the gap.</b></p>'
-    +'<p><b>Ghost miles, and the two valves that control them.</b> Report says 3 rentals, 300 miles; odometer climbed 1,000. Where did 700 go? There are honest answers — deliveries, repositioning — and there are answers quietly eating your car. <b>Valve 1, deliveries:</b> clients pay the fleet for delivery, but a 100-mile-each-way drop-off means the client paid the fleet while YOU paid the depreciation. You can request long deliveries be <b>flatbedded</b> — the client pays either way; flatbedding just lands the miles on a truck instead of your odometer. <b>Valve 2, content:</b> fleets and their brokers shoot with the cars — events, photo shoots, delivery clips. Real marketing that fills your calendar, and you should want it. But uncapped, “content” becomes free joyriding, and it can genuinely reach thousands of unaccounted miles — on the wrong car, $10–20k of resale value quietly gone. Damage is model-specific: <b>BMWs and Lamborghinis shrug off miles; on a Ferrari every 1,000 miles is real money</b> (t8_customer’s resale asymmetry, now weaponized). The fix is one firm clause: <b>a monthly cap on non-rental miles</b> — a real number, say 100/month, with the plain understanding that a blown cap means the car comes home. Every legit fleet accepts it, because legit use fits comfortably inside it.</p>'
-    +'<p><b>Why this matters beyond this month’s check.</b> The chill-firm reputation and the clean ledger are <b>position</b>: the owner who audits like a professional, watches the right numbers, and never nitpicks becomes the owner fleets prioritize, confide in, and show off for. And when the day comes that you want more than a split — next lesson — every bit of that standing converts directly into negotiating power. <b>Passive does not mean asleep. The best owners are wide awake, quietly.</b></p>',
-  example:'<p><b>Ex:</b> Month 4 report: 9 rentals, 7 retail 2 wholesale, 840 rental miles — odometer up 1,310. Your one message: “470 unaccounted — deliveries or content?” Answer: two San Diego deliveries (280) + a video shoot (190). Your reply: “Flatbed anything past 50 miles going forward, and let’s set the 100/month content cap from the agreement.” Tone: easy. Position: immovable. The fleet’s takeaway: this owner reads the column that matters.</p>',
-  teach:'Describe chill-and-firm with the 110-mph example, list the partner report’s required columns, and explain the two ghost-mile valves and the cap clause.',
-  cards:[
-    {f:'Chill and firm:', b:'Hands off daily ops (client info is the fleet’s guarded asset), immovable on what is yours to watch. Rare escalation is what makes escalation land — 110 mph gets ONE message.'},
-    {f:'The partner report:', b:'Every rental marked wholesale-or-retail, damages and deposits kept, and START/END ODOMETER per rental — the column that is the whole game.'},
-    {f:'Ghost miles + the two valves:', b:'The gap between rental miles and odometer climb. Valve 1: flatbed long deliveries (client pays either way; miles land on a truck). Valve 2: a monthly non-rental-mile cap (~100) — blown cap, car comes home.'},
-    {f:'Model-specific mile damage:', b:'BMWs and Lambos shrug miles; Ferraris bleed real money per 1,000. The cap clause matters most on exactly the cars that punish miles.'}
-  ],
-  quiz:[
-    {q:'An owner demanding renter names and narrating telemetry pings is…', c:['Diligent','The dreaded overprotective owner — asking for the fleet’s guarded asset and marking themselves an outsider','Standard','Legally entitled'], a:1, e:'Client info IS the fleet’s business (T0). Chill on operations, firm on the ledger — that owner gets kept.'},
-    {q:'The partner report column that is “the whole game” is…', c:['Start/end odometer per rental','Revenue per rental','Client ratings','Fuel levels'], a:0, e:'Rental miles are accounted-for miles; everything outside them is the gap you audit.'},
-    {q:'700 unaccounted miles are best controlled by…', c:['Pulling the car immediately','Accepting them as marketing','Flatbedding long deliveries + a firm monthly non-rental-mile cap (~100), car comes home if blown','A bigger split'], a:2, e:'Honest uses fit inside the valves; the clause exists so the conversation is a line item, not a fight.'}
-  ]},
-
-{ id:'t8_flip', sub:'T8', title:'The owner ladder — consignment as apprenticeship, then the flip',
-  predict:'After months of consignment and standing earned, an owner walks into the fleet and says one sentence that changes their species — from investor to peer, from courted to competitor. What is the sentence, and what does it do to their take on every future deal?',
-  concept:'<p>The final lesson of this door — the one that turns a parked asset into a career, if you want it to. Owning is a fine place to stay: the most passive seat, a real if modest net, a supercar you can drive. This lesson is for owners who want more.</p>'
-    +'<p><b>Your car is a key.</b> You hold the scarcest resource in the industry (t8_place), and it does more than earn a split: <b>it opens doors.</b> The fleet courting your car shows you their operation, their process, their software, their warehouse — every audit is also an education. <b>Placing a car well is the closest thing this industry has to an apprenticeship:</b> you are inside a working agency, watching how it runs, meeting everyone, treated as a partner instead of a competitor. Spend that access on purpose: meet the other owners, learn the operation. Month-to-month contract, always — so the key stays in your hand.</p>'
-    +'<p><b>The moves from one car, all funded by its own cash flow.</b> <b>Source more cars</b> — Rung 3 from the other side: you know other people with idle exotics; bring their cars in under YOUR agreements. Every car you control deepens the fleet’s dependence on you — losing you now means losing a block of inventory. <b>Build the financial spine</b> — the C3 machine, now with revenue: LLC, splits flowing through a real business account at a major bank (the kind that does business lending, not a fintech app), payment history, records. Season it and car #2 gets financed by the business instead of your personal name (C3/C4). <b>Work both doors</b> — run T7’s lead sourcing pointed at your own car and collect the broker spread AND the owner split on the same deal. Both ends of the table: the dual-rail (T0), now operational — and the fastest legitimate route through this industry.</p>'
-    +'<p><b>The flip: from investor to peer.</b> Then the endgame sentence: <b>“Stop splitting revenue with me. Broker my car FROM me instead — at a wholesale rate I set.”</b> Feel the difference: on a 60/40 split of a wholesale-diluted deal, you netted your share of whatever they collected (T1’s shrinking pie). As the car’s controller quoting wholesale, <b>you keep everything above your own floor</b> — your effective take jumps to 65, 70, even 80% <i>[VERIFY math per deal]</i>. And a flipped owner’s rate is a FLOOR, guaranteed; a split owner’s income sinks with every discounted deal.</p>'
-    +'<p><b>The honest fine print, all four teeth.</b> <b>You must have earned it</b> — day-1 demands with one car get a deserved no; the flip works after consignment has proven you, and lands far easier when you control several cars. <b>You become the work</b> — agency treatment means agency duties: your own verification, your own checks, your own risk. The passivity is over; that was the trade. <b>The relationship changes species</b> — as a consignment owner you were their investor, courted and protected; quoting wholesale you are their supplier and partly their competitor. Expect your car to lose priority against cars they keep bigger margins on — rational, not personal. The answer is <b>diversification: 2, 3, 5 fleets brokering your cars</b>, none a single point of failure — with sweeteners (keep storing the car with the original fleet, an exclusivity window) to keep the first relationship warm through the transition. <b>And the final gate is the same two obstacles as always:</b> your own commercial policy and your own warehouse (T4). Cross them and you are not flipping anything. <b>You ARE the agency.</b> Both doors of this course end in the same room: controlling cars, sourcing demand, running the machine.</p>',
-  example:'<p><b>Ex:</b> Month 10: two cars consigned (yours + a sourced R8), ledger clean, standing earned. The flip: your Urus moves to “broker from me at $700/day floor.” A $1,000 retail day now nets you $700+ instead of a $400-ish split share — and when the original fleet deprioritizes it, two other fleets already hold your rate sheet. Diversified, floored, and suddenly reading T4 not as an owner’s audit checklist but as your own to-do list.</p>',
-  teach:'Explain consignment-as-apprenticeship, the three moves from one car, the flip sentence and its economics, and all four teeth of the fine print.',
-  cards:[
-    {f:'The car as a key:', b:'Placement is an apprenticeship inside a working agency — process, software, people, other owners. Month-to-month keeps the key in your hand. Spend the access on purpose.'},
-    {f:'The moves from one car:', b:'Source more cars under YOUR agreements (dependence deepens); build the C3 spine with real revenue (car #2 on business credit); work both doors — spread + split on your own deals.'},
-    {f:'The flip:', b:'“Broker my car FROM me at a wholesale I set.” Take jumps from a split share to everything above your floor (65–80%) — and a floor is guaranteed; splits sink with every discount.'},
-    {f:'The four teeth:', b:'Earned, not demanded. You become the work. Species change: supplier/competitor now — diversify across 2–5 fleets with sweeteners. Final gate: your own policy + warehouse = you ARE the agency.'}
-  ],
-  quiz:[
-    {q:'The flip changes an owner’s economics because…', c:['The split improves to 70/30','Insurance drops','Deposits transfer','They quote a wholesale FLOOR and keep everything above it — no more shrinking-pie splits'], a:3, e:'A floor is guaranteed; a split share sinks with every discounted deal (T1). 65–80% effective take is the species change.'},
-    {q:'After the flip, expect the original fleet to…', c:['Deprioritize it against higher-margin cars — rational, answered by multi-fleet diversification','Prioritize your car harder','Buy the car','Cancel the relationship'], a:0, e:'You are now supplier and partial competitor. 2–5 fleets holding your rate sheet, plus sweeteners, is the answer.'},
-    {q:'The final gate between a flipped owner and being the agency is…', c:['A license','More Instagram followers','Their own commercial policy and warehouse','A fleet’s permission'], a:2, e:'T4’s two obstacles, one last time. Cross them and both doors of the course arrive in the same room.'}
-  ]},
-
-{ id:'t8_door', sub:'T8', title:'Which door, why not agency-first, and the hybrid unlock',
-  predict:'The ambitious voice says: skip the ladder, start the agency, go straight to the top. Day one as an agency means taking on five things at once — with none of the three assets that make them survivable. Name the five burdens and the three missing assets.',
-  concept:'<p>The closing argument of the course’s strategy layer — three questions, answered honestly.</p>'
-    +'<p><b>Why you don’t start as an agency.</b> Day one as a full agency means, all at once: a commercial policy at roughly <b>$2,000 per car per month</b> <i>[VERIFY]</i> — if anyone will even write a no-track-record fleet; a warehouse lease, which often requires that policy first; cars — capital sunk or owners who trusted a company with no history; <b>full liability</b> for everything that happens to every car; and every system in this course running correctly from the first rental, because the first mistake arrives with a six-figure price tag. Meanwhile you hold none of the three assets that make those survivable: <b>no reputation</b> in an industry that prices everything on it (T7), <b>no relationships</b> in an industry that runs on them (T6), and <b>no instincts</b> — because instincts are what the ladder builds. The learning curve is real; an agency structure means taking it at maximum financial exposure. One ghost, one straw rental, one insurance misread, and the overhead machine you built eats you while you recover. <b>The ladder is not the slow path. The ladder IS the path</b> — look at who actually lasts: they sourced deals until fleets trusted them, placed a car and watched an operation from inside, stacked relationships, instincts, and capital, and became agencies when the two obstacles were a step instead of a cliff. Skip it and you pay the same tuition at agency prices.</p>'
-    +'<p><b>Which door fits you — answered by what you are holding.</b> <b>No capital?</b> The lead door — and it is a genuinely good door: no license, no LLC on day one, no risk, first deal possible this month by walking in holding it (T7). Costs: time and consistency. Assets built: content, relationships, a reputation that literally sets your margins. <b>Capital or credit (~$100k of car)?</b> The vehicle door: the most passive seat, best for someone with a career that eats their time who wants a position, not a job — with two honest framings. First, returns are modest after depreciation and maintenance (T1) — this seat is capital efficiency and access, not getting rich on one car; anyone promising otherwise is selling something. Second — <b>the affordability line, bluntly, because this industry’s version of this pitch hurts people: consignment can offset the cost of a car you can already afford. It should never be the REASON you can afford it.</b> If the math only works when rental income shows up, you do not own an asset — you own a payment with a fragile plan attached. Utilization swings with seasons, cities, and luck: some cars go out 20 days a month, some 8 <i>[VERIFY]</i> — your payment does not swing with them. Buy the car your income carries on its own; let the splits be the bonus. That rule is the difference between owners who survive slow winters and owners who become cautionary tales. (Recall T4: the PVSP revenue test is the law agreeing with this exact framing.)</p>'
-    +'<p><b>The hybrid unlock.</b> For a certain kind of person, the third answer: <b>both doors at once — the dual-rail.</b> A car you control placed on consignment AND a lead operation feeding renters into the industry. The rails feed each other: <b>you collect both ends of your own deals</b> (spread + split, nobody diluting you); <b>each rail strengthens the other’s position</b> — the car makes you an insider (fleets open up, owners talk to you as a peer), the lead flow makes you valuable (a fleet holding your car AND receiving your renters does not push you to the back of the line — and the flip lands far easier when you are also their lead source); <b>the intel compounds</b> — sourcing teaches demand, owning teaches supply, and every serious agency owner needs both halves. The honest warning: the hybrid is faster because it is MORE — more attention, more relationships, more reputational stakes stacked. A neglected placement bleeds depreciation while you chase leads; a half-built lead operation embarrasses you with fleets that also hold your car. <b>The doors work one at a time. Choose one, run it properly, and let the second rail come when the first is steady</b> — that order is completely legitimate and most people should take it. But with the capital, the hours, and the appetite: the dual-rail is the fastest legitimate route through this industry that exists. Your entry door is not your ceiling. It is just where the climb starts.</p>',
-  example:'<p><b>Ex — the affordability line, in two owners:</b> Owner A finances a Urus their salary carries alone; splits arrive as bonus; a dead February is an annoyance. Owner B needs 14 rental days a month to make the payment; February delivers 6; by April the car sells at a loss into a soft market. Same car, same fleet, same city. The difference was never the business — it was which owner obeyed the line.</p>',
-  teach:'Argue why agency-first fails (five burdens, three missing assets), state the affordability line word-for-word, and explain how the dual-rail’s three feedback loops compound.',
-  cards:[
-    {f:'Agency-first, day one:', b:'~$2k/car/month policy [VERIFY] + warehouse (needs the policy) + cars + full liability + every system perfect from rental #1 — with no reputation, no relationships, no instincts. Tuition at agency prices.'},
-    {f:'The door test:', b:'What are you holding? Nothing → lead door (first deal this month, reputation compounds). ~$100k of car → vehicle door (modest net, capital efficiency + access, never a get-rich seat).'},
-    {f:'The affordability line:', b:'Consignment offsets a car you can ALREADY afford — never the reason you can. Utilization swings (20 days or 8); your payment doesn’t. Splits are the bonus, or you own a fragile plan.'},
-    {f:'The dual-rail’s three loops:', b:'Both ends of your own deals; car = insider status while leads = leverage (the flip lands easier); demand-intel + supply-intel compounding into the full operator skillset.'}
-  ],
-  quiz:[
-    {q:'The ladder beats agency-first because…', c:['Agencies are illegal at first','Warehouses are scarce','It is more profitable immediately','It builds reputation, relationships, and instincts while someone else carries the liability'], a:3, e:'The five burdens are survivable only with the three assets — and the ladder is where those get built.'},
-    {q:'“The math on your Urus only works if the rental income shows up.” The course’s verdict:', c:['Smart leverage','Fine if insured','Standard practice','You own a payment with a fragile plan — the affordability line exists exactly for you'], a:3, e:'Buy what your income carries; let splits be bonus. Utilization swings — payments don’t.'},
-    {q:'The dual-rail makes the flip (t8_flip) land easier because…', c:['Contracts require it','It is cheaper','You are the fleet’s inventory AND its demand — leverage on both sides of their business','Owners vote'], a:2, e:'A fleet losing you loses cars and bookings at once. That is the hybrid’s compounding position.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.T8 = [
-  {q:'Choosing a fleet car is really choosing…', c:['A brand','A payment','A color','The customer the model summons'], a:3, e:'The renter’s risk profile and style determine returns more than the spec sheet.', d:1},
-  {q:'The gentlest renter class is summoned by…', c:['M cars','Two-door supercars','Luxury/SUV — Rolls, Bentley, Urus tier','Base coupes'], a:2, e:'Presence renters drive like presence renters — worth real money in avoided damage.', d:1},
-  {q:'The M3/M4 “starter trap” is…', c:['Bad margins','Slow bookings','High insurance','The youngest, hardest-driving demographic hidden inside pretty spreadsheet math'], a:3, e:'Workable with open eyes, current-gen only — the customer is the tax.', d:2},
-  {q:'Perceived age means…', c:['Model year','Mileage','Fresh-vs-dated to a non-car-person, inside AND out','Warranty status'], a:2, e:'Timeless supercars pass at 8 years old; an analog cabin fails a 2018 911.', d:2},
-  {q:'Minimum viable trim says…', c:['Buy the Performante','Buy two base cars','Buy used only','Buy the cheapest version delivering the LOOK — trims are invisible to renters'], a:3, e:'Same rate, same photo, smaller payment. Ego pays the premium otherwise.', d:1},
-  {q:'The single biggest spec desirability lever is…', c:['A colored interior (orange above all)','Wheels','Exhaust','Tint'], a:0, e:'It reads as Rolls in photos — and the photo is the product.', d:2},
-  {q:'The most dangerous owner-contract clause is…', c:['A liability disclaimer for damage during the fleet’s own rentals','The split','Delivery fees','Storage terms'], a:0, e:'Under it they can total your car and apologize. Non-negotiable: walk.', d:2},
-  {q:'Term length for placements is…', c:['Month-to-month, always — pulling the car is your only real power','12 months for stability','5 years','Per rental'], a:0, e:'Locked in, you are furniture; month-to-month, a partner they keep earning.', d:1},
-  {q:'The partner report’s critical column is…', c:['Start/end odometer per rental','Revenue','Client names','Fuel'], a:0, e:'Rental miles are accounted-for; the gap is ghost miles eating resale.', d:2},
-  {q:'Ghost miles are controlled by…', c:['Trust','Flatbedding long deliveries + a monthly non-rental-mile cap (~100)','Bigger splits','GPS alone'], a:1, e:'Client pays delivery either way — the miles just land on a truck. Blown cap = car comes home.', d:2},
-  {q:'The flip sentence is…', c:['“Raise my split”','“Add insurance”','“Sell my car”','“Broker my car FROM me at a wholesale rate I set”'], a:3, e:'From split share to everything above your floor — investor becomes peer/supplier.', d:2},
-  {q:'After flipping, smart owners…', c:['Stay exclusive','Diversify across 2–5 fleets with sweeteners for the original','Sell immediately','Stop brokering'], a:1, e:'You are partly a competitor now; no single fleet may be your point of failure.', d:3},
-  {q:'The affordability line:', c:['Finance the max','Buy two','Splits are guaranteed','Consignment offsets a car you can ALREADY afford — never the reason you can'], a:3, e:'Utilization swings 8–20 days; payments don’t. Survivors obey the line.', d:1},
-  {q:'The dual-rail is fastest because…', c:['It is easier','Both ends of your own deals + insider/leverage loops + compounding demand-and-supply intel','It skips verification','Fleets prefer it'], a:1, e:'More, run well, compounds — but doors still work one at a time first.', d:3}
-];
-
-// ═══════════════════════ TIER X · THE OPERATOR SEAT ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'tx_behind', sub:'TX', title:'How far behind this industry actually is',
-  predict:'Some of the biggest exotic fleets in California run their entire operation on one piece of software. Guess what it is — and what that single fact tells you about the sharpest edge available to anyone entering right now.',
-  concept:'<p>Everything you have learned — the relationships, the handshake deals, the gatekeeping — has a technology shadow: <b>this industry runs on almost no software and almost no data.</b></p>'
-    +'<p><b>The inventory of what is missing.</b> There is no purpose-built platform that properly fits the broker-and-consignment model you now understand — the general rental platforms were built for companies that <i>own</i> their cars, which (T0) is not this industry. Established fleets, including some of the biggest names in California, run their operations on <b>spreadsheets</b>. Marketing tactics are years out of date (T7’s low search bar). And reliable industry data — utilization by car and city, seasonal demand, real margins — <b>basically does not exist anywhere.</b> Every number in this course’s source material came from operating and from sitting down with people and asking, because there was nothing to look up (T0’s empty-data industry, now seen from the builder’s side).</p>'
-    +'<p><b>Put that next to what you know about the insiders</b> (T0): brilliant with cars and relationships, thin on systems. The empty seat at this industry’s table is the <b>operator seat</b> — and AI just made it absurdly cheap to sit down in it. The moat protecting incumbents (relationship webs) does not defend against someone who brings the other half; it can’t, because the other half was never present to compete with.</p>'
-    +'<p><b>Why the gap persists — the same three reasons it opened.</b> The people who built the industry came up as car people, not systems people. The gatekeeping culture (T0) means nobody publishes numbers, so no shared tooling ever emerged. And the businesses are small and profitable enough that nobody was forced to modernize (T0’s no-forced-actor). None of those reasons is a law of physics. All three fall to one disciplined entrant with modern tools — and the next lessons are the build order.</p>'
-    +'<p><b>Who benefits.</b> You, precisely because you are entering broke: systems and data are the one form of capital that compounds from zero. A spreadsheet-run incumbent cannot copy your stack without becoming a different company; you can copy their relationships one clean deal at a time (T7). Asymmetric war, fought with homework.</p>',
-  example:'<p><b>Ex:</b> You ask three fleets for their Urus utilization last March. Fleet 1: “pretty good, I think.” Fleet 2 checks a spreadsheet tab: “booked… some.” Fleet 3 has no idea. You, six months in, answer from your dashboard: 62% March utilization across the metro’s Uruses you track, median 11-day gap in mid-month. Nobody can argue with you — nobody else has numbers to argue WITH.</p>',
-  teach:'Describe the industry’s technology shadow (spreadsheets, no purpose-built platform, no data), why the gap persists, and why it favors a broke entrant specifically.',
-  cards:[
-    {f:'The technology shadow:', b:'No purpose-built platform for broker+consignment; big fleets on spreadsheets; marketing years stale; utilization/margin/seasonal data effectively nonexistent.'},
-    {f:'Why general rental software fails here:', b:'It was built for companies that OWN their cars. This industry is agencies operating consigned cars with brokers in 70% of deals — a different data model entirely.'},
-    {f:'Why the gap persists:', b:'Car-people founders, gatekeeping that prevented shared tooling, and comfortable small profits — none of which is a law of physics.'},
-    {f:'Why it favors the broke entrant:', b:'Systems compound from zero capital. Incumbents can’t copy your stack without becoming different companies; you can copy their relationships one clean deal at a time.'}
-  ],
-  quiz:[
-    {q:'Some of the biggest exotic fleets run their operations on…', c:['Custom platforms','Nothing at all','Dealer software','Spreadsheets'], a:3, e:'The operator seat is empty at the top of the market — that is the entire opportunity.'},
-    {q:'General rental platforms fail this industry because…', c:['Too expensive','Banned','Too complex','Built for owner-operators — not agencies running consigned cars with brokers in most deals'], a:3, e:'The broker/consignment data model (splits, sheets, double clock-outs, owner ledgers) simply isn’t in them.'},
-    {q:'The incumbents’ relationship moat…', c:['Blocks all entrants','Is illegal','Doesn’t defend against the systems half — which was never present to compete with','Is fake'], a:2, e:'Asymmetric: they can’t copy your stack without changing species; you can build relationships one clean deal at a time.'}
-  ]},
-
-{ id:'tx_stack', sub:'TX', title:'The operator stack — the build that took one person one week',
-  predict:'With broker relationships and rate sheets in hand, one person stood up a site listing 100+ cars from a metro’s top fleets in about a week, alone. What did the heavy lifting — and what TWO-stage funnel does the site feed that almost no fleet in the industry runs?',
-  concept:'<p>Not theory — the documented entry build, generalized into your checklist.</p>'
-    +'<p><b>The storefront.</b> A site listing every car you can sell — which, with fleet relationships and broker sheets, is <b>far larger than anything you own</b> (T1 white-labeling as an inventory strategy). AI automations do the heavy lifting: every car added triggers automated research filling specs, horsepower, 0–60, features; listings sync against availability. Optimized not just for Google but for <b>AI search</b> — being the answer when someone asks a chatbot where to rent a Lamborghini nearby. A surface almost nobody in this industry knows exists yet <i>[VERIFY the current state of that surface]</i>: structured data, consistent NAP (C3’s fundability work doing double duty), pages that answer questions the way answer-engines quote.</p>'
-    +'<p><b>The two-stage funnel — the part that matters more than any tool.</b> <b>Booking software cannot nurture.</b> It cannot remarket, cannot text the lead who clicked once and vanished. A <b>CRM sits IN FRONT of whatever booking system you use</b>: capture → qualify → nurture → book. Named stacks from the source build: GoHighLevel as the CRM (ActiveCampaign a fine alternative); Booqable as a solid general booking layer — knowing it does NOT natively handle broker relationships or owner payouts, which operators bolt on outside it <i>[VERIFY all]</i>. Most of this industry has <b>neither stage</b> and runs on DMs and memory. A lead that says “maybe next month” is, in a DM-run fleet, gone forever; in your CRM it is a scheduled follow-up that closes in month two at zero marginal cost.</p>'
-    +'<p><b>The telematics-to-API layer.</b> Zubie and One Step GPS are industry standards; <b>Smartcar matters for its API</b> — the difference between a tracker you look at and a data stream you can BUILD on (T5’s infrastructure, now feeding TX’s dashboards): automated trip logs into the partner ledger, geofence events into your alerting, behavior data into your insurance file (T4’s closer, automated).</p>'
-    +'<p><b>The content wall’s modern workaround.</b> T7’s chicken-and-egg — content needs car access — bends two ways now: the classic trust route (delivery moments), and <b>AI video generation producing marketing content from photos before you ever hold keys</b> <i>[VERIFY tools/policies — label AI content honestly]</i>. The wall is a trust problem AND a tooling problem, and both halves now have answers.</p>'
-    +'<p><b>The frontier: the analytics layer.</b> An AI layer reading fleet operations data — telematics, odometers, utilization, margins — and pointing at the friction: which car idles Thursdays, which broker’s clients overrun miles, which zone’s deliveries eat margin. The analytics layer this industry has never had, buildable today by one person who knows the industry (you, now) pointing modern tools at it. <b>None of this required an engineering team. It required knowing the machine — which is what the last nine tiers were.</b></p>',
-  example:'<p><b>Ex — the week, day by day:</b> D1: domain, site shell, brand. D2: broker sheets → listing schema; AI fills specs. D3: 100+ cars live, availability synced. D4: CRM wired — every form → pipeline, auto-text in 5 min. D5: local pages + structured data for AI answers. D6: telematics API keys for the two consigned cars you steward. D7: first AI-search referral books a Urus weekend. One person. [VERIFY tool specifics.]</p>',
-  teach:'Describe the storefront (white-label inventory + AI research + AI-search optimization), the CRM-before-booking funnel, the API-grade telematics layer, and the analytics frontier.',
-  cards:[
-    {f:'The storefront:', b:'List everything your broker sheets let you sell (inventory >> ownership); AI auto-research fills specs; optimize for Google AND AI-answer surfaces — nearly uncontested [VERIFY].'},
-    {f:'The two-stage funnel:', b:'CRM (GoHighLevel-class) IN FRONT of booking (Booqable-class, which lacks broker/owner-payout models [VERIFY]). Booking software can’t nurture; most fleets have neither stage.'},
-    {f:'The API layer:', b:'Zubie/One Step standard; Smartcar’s API turns trackers into data streams — auto trip logs, ledger entries, geofence alerts, insurance-grade behavior files.'},
-    {f:'The frontier:', b:'An AI analytics layer over ops data pointing at friction — idle patterns, mile-overrunning brokers, margin-eating zones. Never existed here; one fluent person can build it.'}
-  ],
-  quiz:[
-    {q:'The site could list 100+ cars in a week because…', c:['The builder owned them','Broker sheets made peers’ inventory sellable, and AI automated the listing research','They were fake','A platform provided them'], a:1, e:'White-labeling as inventory strategy + automation as labor. Knowing the industry was the prerequisite, not capital.'},
-    {q:'The CRM sits in front of booking software because…', c:['It’s cheaper','It handles payments','Fleets require it','Booking systems can’t nurture, remarket, or text the vanished lead — capture-and-follow-up is a separate stage'], a:3, e:'Most of the industry runs on DMs and memory; the two-stage funnel converts the leads they lose.'},
-    {q:'Smartcar-class tools matter specifically for…', c:['Cheaper hardware','Longer battery','The API — turning tracking into a buildable data stream for ledgers, alerts, and insurance files','Prettier maps'], a:2, e:'A tracker you look at polices one rental; a stream you build on compounds into the analytics layer.'}
-  ]},
-
-{ id:'tx_data', sub:'TX', title:'The data moat — log everything from day one',
-  predict:'T4 ended with: whoever assembles the exotic-rental dataset first gets to pitch carriers on rewriting the rules. You are one broke operator doing your first deals. What exactly should you be logging from day one so that, years out, YOU hold that dataset — and it cost you nothing extra to collect?',
-  concept:'<p>The T4 gap lesson gave the thesis; this is the practice. <b>The dataset that unlocks the industry’s endgame is a byproduct of running your operation correctly — if you log it.</b></p>'
-    +'<p><b>What to log, per deal, forever:</b> the verification record (carrier, form numbers, transfer/cap answers, the recorded call’s outcome — your carrier matrix growing one row per rental); the telematics trip file (miles, speed profile, harsh events, zones); the money (retail, wholesale, spread, split, deposit outcome, deductions and why); the asset (odometer in/out, damage incidents, repair costs, days-to-repair); and the human outcome (clean return? late? strike? ghost-risk signals?). Every field is something T3–T8 already told you to capture <b>operationally</b> — the moat is just refusing to let it die in a chat thread.</p>'
-    +'<p><b>Why this compounds into three different assets.</b> <b>Asset 1 — operations:</b> your own pricing, buying, and placement decisions sharpen (which cars idle, which brokers overrun, which zones eat margin — tx_stack’s analytics need this substrate). <b>Asset 2 — the T4 pitch, industrialized:</b> your loss-ratio table (rentals run / verifications passed / claims by type / commercial-policy touches: ideally zero) is the exact artifact that prices your policy down every renewal — and at scale, the seed of the carrier conversation nobody has been able to start. <b>Asset 3 — market intelligence nobody else has</b> (tx_behind): in an industry where utilization numbers are learned over coffee, a year of logged deals makes you the person fleets ask. That status converts to rates, cars, and partnerships (T7’s reputation, now with receipts).</p>'
-    +'<p><b>The honest scale question.</b> One operator’s logs are not the industry dataset — carriers price on volume you will not have alone for years. The compounding paths: your own growth (every rung multiplies deals logged); <b>data partnerships</b> — the fleets you broker for and steward cars at have the same operational exhaust dying in spreadsheets, and the person who aggregates it (anonymized, by agreement) is playing the platform game without writing a platform <i>[VERIFY data-sharing agreements with counsel]</i>; and the long game — TX’s endgame lesson. Meanwhile the discipline costs you <b>nothing</b>: you were required to collect every field anyway. The moat is a habit wearing a spreadsheet.</p>'
-    +'<p><b>Who is forced to act — nobody. Which is the point.</b> No incumbent is forced to log anything, and their culture (gatekeeping, gut feel) ensures most never will. A moat nobody is racing you toward is the cheapest moat in business. Start the log on deal one.</p>',
-  example:'<p><b>Ex — the same deal, two operators:</b> Operator A closes a $1,100 Urus weekend, high-fives, moves on. Operator B closes the identical deal and 90 seconds later the log gains: carrier + cap answers, 212 trip miles / zero harsh events, $850 wholesale / $250 spread, deposit released clean, odo delta 214. Two years later A has stories; B has 600 rows — a loss table for carriers, a pricing model for buys, and the only utilization dataset in the metro. Same deals. One habit apart.</p>',
-  teach:'List the five per-deal log categories, the three assets the log compounds into, and why the moat costs nothing because operations already required every field.',
-  cards:[
-    {f:'The five log categories per deal:', b:'Verification record (carrier matrix row), telematics trip file, money (retail/wholesale/spread/split/deposit), asset (odo/damage/repair), human outcome.'},
-    {f:'The three compounding assets:', b:'1: sharper ops decisions. 2: the loss-ratio table that prices your policy down — and seeds the carrier pitch. 3: the metro’s only market intelligence — status that converts to rates and partnerships.'},
-    {f:'The scale paths:', b:'Own growth (rungs multiply logged deals), anonymized data partnerships with fleets whose exhaust dies in spreadsheets [VERIFY with counsel], and the endgame play.'},
-    {f:'Why the moat is free:', b:'T3–T8 already require capturing every field operationally. The moat is refusing to let the data die in a chat thread — a habit wearing a spreadsheet.'}
-  ],
-  quiz:[
-    {q:'The data moat costs a disciplined operator…', c:['A data team','Years of unpaid work','$50k in software','Almost nothing — every field was already operationally required; the moat is logging instead of losing it'], a:3, e:'Verification, telematics, money, asset, and outcome records all exist per-deal by construction. Structure them or lose them.'},
-    {q:'The loss-ratio table (rentals / verifications / claims / policy touches) is…', c:['The artifact that prices your commercial policy down every renewal — and seeds the T4 carrier conversation at scale','Vanity metrics','A tax document','Required by law'], a:0, e:'T4’s pitch, industrialized: carriers price what they can see, and you are building the thing to show them.'},
-    {q:'Nobody racing you toward this moat is…', c:['A warning sign','Irrelevant','Temporary','The point — incumbent culture (gatekeeping, gut feel) ensures most never log, making it the cheapest moat in business'], a:3, e:'An uncontested compounding asset, started on deal one, in an industry that learns its own numbers over coffee.'}
-  ]},
-
-{ id:'tx_endgame', sub:'TX', title:'The endgame — the crown on the table',
-  predict:'Assemble everything: no player past ~$10M, an empty operator seat, a legal blueprint (PVSP) proven in another market, and a missing dataset you now know how to build. Describe the company that takes the crown — and the honest sequence that gets one person from here to there.',
-  concept:'<p>The course’s closing argument, assembled from every tier.</p>'
-    +'<p><b>The crown, restated precisely.</b> T0: nobody has scaled past roughly $5–10M/year <i>[VERIFY]</i> — no national brand, in an industry of four-figure daily rates. The reasons were never demand: they are the gatekeeping that starved the industry of shared knowledge (T0), the insurance wall that caps casual entry (T2–T4), and the missing operator half (tx_behind). Each of those is also a door, and you now hold keys to all three.</p>'
-    +'<p><b>What the crown-taker looks like — three stages, each profitable on its own.</b> <b>Stage 1 — the metro operator</b> (this course, executed): dual-rail (T8), operator stack (tx_stack), data log (tx_data), spotless verification record. A profitable business that happens to be accumulating the industry’s missing dataset. <b>Stage 2 — the multi-metro network:</b> the playbook repeated across markets — each with its own relationship web (the moat you must rebuild each time; there are no shortcuts through T7), but the SAME systems, brand, and data spine. This is where the ~$10M ceiling lives, and where systems—not relationships—become the binding constraint, which is exactly why car-people incumbents never crossed it. <b>Stage 3 — the platform move:</b> with scale data (tx_data’s partnerships + your own volume), the T4 conversation becomes possible: pitch carriers on an insurance program for high-value sharing — the exotic PVSP, or its commercial equivalent — built on verified renters, telematics on every trip, and a documented loss history nobody else possesses. Succeed, and you have done for exotics what Turo did for Corollas: <b>rewritten the rules while everyone else played the old game.</b> The crown was never “biggest fleet.” It is <b>the rule-rewrite</b> — infrastructure, not inventory.</p>'
-    +'<p><b>The honest odds, stated like an operator.</b> Stage 3 is a moonshot: regulators state by state, carriers who move at carrier speed, capital at platform scale <i>[VERIFY everything at that altitude]</i>. But notice the shape of the bet: <b>every stage is independently worth running.</b> Stage 1 is a good business. Stage 2 is a great one. Stage 3 is the asymmetric upside sitting on top of a stack you wanted anyway — the rare moonshot whose failure mode is “merely a thriving multi-metro operation.” That is the kind of bet you take.</p>'
-    +'<p><b>And the sequence never changes.</b> Every rung of it starts exactly where you are: map the metro, pull your file, build the log, walk in holding a deal (T7), place the first car right (T8), do it in public (t7_brand). The crown is a decade of Tuesdays executed cleanly. The course ends here so the reps can start — REPS is next, and it is the odometer for all of it.</p>',
-  example:'<p><b>Ex — the bet’s shape:</b> Year 1: dual-rail metro operator, 300 logged deals, policy priced down twice. Year 3: three metros, shared stack, 4,000 deals, two fleets contributing anonymized data. Year 5: the carrier meeting — not a pitch deck of dreams but a loss table nobody else on earth can produce. If the answer is no: you own a multi-metro operation with the industry’s best unit economics. If yes: the rules change under your name. Both branches were worth the Tuesdays.</p>',
-  teach:'Restate the crown as the rule-rewrite, walk the three stages and why each is independently profitable, and explain why the moonshot’s failure mode makes the bet sound.',
-  cards:[
-    {f:'The crown, precisely:', b:'Not the biggest fleet — the rule-rewrite: an insurance program for high-value sharing (the exotic PVSP or commercial equivalent), built on the dataset nobody else has.'},
-    {f:'The three stages:', b:'1: dual-rail metro operator with the log (profitable). 2: multi-metro — same systems and data spine, relationships rebuilt per market (the ceiling breaks here). 3: the carrier pitch at scale.'},
-    {f:'Why incumbents never crossed the ceiling:', b:'Past one metro, SYSTEMS become the binding constraint — the exact half the car-people founders never carried (tx_behind).'},
-    {f:'The bet’s shape:', b:'Every stage worth running alone; the moonshot’s failure mode is “merely a thriving operation.” Asymmetric upside on a stack you wanted anyway — a decade of clean Tuesdays.'}
-  ],
-  quiz:[
-    {q:'The crown of this industry is best understood as…', c:['A 50-car warehouse','The rule-rewrite: insuring high-value sharing at scale, unlocked by the missing dataset','A celebrity clientele','A franchise chain'], a:1, e:'Turo’s play, pointed at exotics: infrastructure and rules, not inventory, is what nobody has taken.'},
-    {q:'The ~$10M ceiling exists because past one metro…', c:['Demand runs out','Cars get scarce','Regulators forbid growth','Systems become the binding constraint — the half the industry’s founders never carried'], a:3, e:'Relationship webs scale linearly and personally; only the operator half scales past them.'},
-    {q:'The Stage-3 moonshot is a sound bet because…', c:['Its failure mode is a thriving multi-metro business — every stage beneath it is independently profitable','It always succeeds','Carriers are desperate','It needs no capital'], a:0, e:'Asymmetric upside stacked on operations you wanted anyway. Take that shape of bet every time.'}
-  ]}
-
-]);
-
-// ═══════════════════════ REPS · THE ODOMETER ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'reps_system', sub:'REPS', title:'The reps system — knowledge is the map, reps are the odometer',
-  predict:'Two students finish this course. One can recite every tier; the other has 12 fleet audits, 40 dec-page reads, and 5 closed deals logged. Every fleet in the metro can only see one of them. Which — and what does that tell you about what this app’s counters are actually for?',
-  concept:'<p>Lessons teach the machine; <b>reps build the operator.</b> The counters on this realm’s dashboard are not gamification — they are the odometer of your actual entry into this industry, and each one was chosen because it is a unit of the real work:</p>'
-    +'<p><b>The observation reps</b> (open from day zero): <b>Fleet Mapped</b> — one local fleet’s inventory, pricing, socials, positioning; ten of these and you know your metro better than most people working in it (the course’s literal first assignment). <b>Build In Public</b> — the daily content rep (t7_brand’s directive with a streak attached). <b>Score Pull</b> — the credit rail’s first physical act (C0).</p>'
-    +'<p><b>The skill reps:</b> <b>Dec-Page Read</b> (target: 25) — the T2 muscle, built one real declarations page at a time until carrier language reads like English. <b>Carrier Call</b> — the four-question script run live (T3), consent observed. <b>Credit Move</b> — one lever pulled on your own file (C1’s tune-up, rep by rep). <b>Verification Run</b> — the full stack executed on a real or mock renter, <i>graded</i>: did the layers agree, and would you have handed keys?</p>'
-    +'<p><b>The deal reps — the graded ones that become your track record:</b> <b>Lead Sourced</b> (target: 20) — a qualified package assembled (t7_translate’s step 3), graded when the fleet responds. <b>Deal Closed</b> (target: 5) — a booking that ran clean start to finish; five clean deals is a track record fleets price on (t7_reputation). <b>Business Tradeline</b> (target: 5) — the C3 ladder, rung by rung. <b>Fleet Audit</b> — t8_place’s checklist run on a real operation (as research long before you own a car). <b>Car Sourced</b> — Rung 3 attempted, graded when a car lands.</p>'
-    +'<p><b>Why grading matters — misses are the curriculum.</b> Gradeable reps log first and grade later (hit/miss), exactly like the source discipline this app’s second realm teaches: a miss with a written why is worth more than an ungraded win, because <b>the industry grades you the same way — on outcomes, after the fact</b> (t7_reputation’s scoreboard). The counters make your record visible to the only person who can act on it early: you.</p>'
-    +'<p><b>The answer to the predict question, plainly:</b> fleets can only see the second student — because reps leave artifacts (deals, audits, posts, calls) and knowledge alone leaves none. In a reputation-priced industry, <b>the visible record IS the résumé</b>. The map matters; the odometer is what they pay.</p>',
-  example:'<p><b>Ex — a real week of reps:</b> Mon: Fleet Mapped #7 + the daily post. Tue: two Dec-Page Reads (one had the $100k cliff — flagged in your matrix). Wed: Carrier Call #4, clean tape. Thu: Lead Sourced #9 — graded HIT Friday when the fleet confirmed. Sat: Verification Run on the booking, graded hit; Deal Closed #2 logged Sunday night. Seven counters moved; every one of them is something a fleet, an owner, or a carrier will someday pay you for having done.</p>',
-  teach:'Explain observation vs skill vs deal reps, why gradeable reps log-then-grade, and why the visible record beats knowledge in a reputation-priced industry.',
-  cards:[
-    {f:'The three rep families:', b:'Observation (map fleets, build in public, pull scores) — open day zero. Skill (dec reads, carrier calls, credit moves, verification runs). Deal (leads, closes, tradelines, audits, cars) — graded, your track record.'},
-    {f:'Log-then-grade:', b:'Gradeable reps record first, grade hit/miss when the outcome lands. A graded miss with a written why beats an ungraded win — the industry grades you on outcomes too.'},
-    {f:'The targets that matter:', b:'25 dec-page reads (fluency), 20 leads sourced, 5 clean deals (the track record fleets price), 5 reporting tradelines (a PAYDEX exists).'},
-    {f:'Why reps beat knowledge:', b:'Reps leave artifacts — deals, audits, tapes, posts. Knowledge leaves none. In a reputation-priced industry the visible record IS the résumé.'}
-  ],
-  quiz:[
-    {q:'The app’s counters exist because…', c:['Reps leave visible artifacts and knowledge doesn’t — the record is the résumé in a reputation-priced industry','Streaks are fun','The engine requires them','Fleets check the app'], a:0, e:'The odometer measures actual entry: deals, audits, reads, calls — the things the industry eventually pays for.'},
-    {q:'A graded MISS on a sourced lead is…', c:['Deleted','A reason to stop','Half a point','Curriculum — a written why on a real outcome, exactly how the industry itself will grade you'], a:3, e:'Log-then-grade builds the judgment the checklist can’t teach (t5_straw’s ceiling).'},
-    {q:'The “track record fleets price on” milestone is…', c:['100 followers','A logo','One big deal','5 clean closed deals'], a:3, e:'t7_reputation’s spread spread starts moving in your favor on a visible record of clean outcomes.'}
-  ]},
-
-{ id:'reps_road', sub:'REPS', title:'The road after — your first 90 days, then the decade',
-  predict:'The course is over. It is Monday. You have no money, a phone, and this app. Sequence your first 90 days from the reps ladder — weeks 1–2, 3–6, 7–12 — such that by day 90 a fleet in your metro knows your name for the right reason.',
-  concept:'<p>The map is complete. Here is the road, paced like the course’s own closing advice: <b>go slower than your excitement wants and faster than your fear wants</b> — this industry rewards the person who shows up consistently for months, not the one who sprints for two weeks.</p>'
-    +'<p><b>Weeks 1–2 — see the battlefield (all observation reps).</b> Map every exotic fleet within an hour: inventory, pricing, socials (Fleet Mapped ×5–10 — one afternoon each; by ten you know the metro better than most people working in it). Pull all three credit reports; log the Score Pull and the one ugliest item (C0). Start Build In Public — day one, your voice, your face (t7_brand: the directive is a daily rep, not a someday plan). Form nothing, buy nothing, pitch nobody yet.</p>'
-    +'<p><b>Weeks 3–6 — build the muscles (skill reps).</b> Dec-Page Reads ×8–10: your own policy, family’s, friends’ — with the SERFF pull and the three-answer extraction each time (T2). Carrier Calls ×2–3 on those policies, consent observed, tape kept (T3). Credit Moves weekly: the C1 tune-up run as reps — disputes filed, AZEO staged, CLIs requested. File the LLC + EIN + business bank account when the first spread lands in sight (C3’s clock — start it while still brokering). Keep posting: the metro map, the teardown clips, the journey.</p>'
-    +'<p><b>Weeks 7–12 — enter the market (deal reps).</b> Work your world for the first renter (the content is already fishing). Assemble the first qualified package — license, dec page, tested contacts, fitting car (Lead Sourced #1, graded when the fleet answers). <b>Walk in holding it</b> (t7_translate) — the introduction that cannot be refused. Run the Verification stack alongside the fleet’s (Verification Run, graded: would YOU have handed keys?). Close it clean: Deal Closed #1 — then repeat toward five, the track record that moves your rates (t7_reputation). Open the first net-30s once revenue exists (Business Tradeline ×2–3). And Fleet Audit #1 — as pure research, on the operation you know best now.</p>'
-    +'<p><b>Day 90, honestly measured:</b> a metro map nobody else your age has, a tuned personal file with a business clock running, 25+ documented skill reps, one-to-three real deals, and a public record of all of it. That person is no longer outside the industry — <b>they are the newest node in its network, with receipts.</b></p>'
-    +'<p><b>Then the decade, in one paragraph.</b> Months 4–12: deals toward twenty, tradelines toward a PAYDEX, the audition loan when the business can obviously carry it (C3). Year 2: the placement or the first business-financed car (T8/C4 — customer first, affordability line sacred), the dual-rail forming. Years 3–5: Rung 3 cars, the flip when earned, the operator stack and the log compounding (TX). The crown stays on the table exactly as long as nobody executes a decade of clean Tuesdays. <b>The course ends here. The odometer starts now.</b></p>',
-  example:'<p><b>Ex — day 90, one real ledger:</b> 9 fleets mapped · 84 daily posts · file: 640→688, 2 disputes won, AZEO staged · LLC + EIN + account open · 11 dec reads (2 cliff-caps caught) · 3 taped carrier calls · 6 leads sourced (4 hit) · 2 deals closed clean · first net-30 reporting · 1 fleet audit done as research. Total capital deployed: under $500. The fleet that closed both deals just texted about a third — and asked if you ever do Saturdays.</p>',
-  teach:'Lay out the 90-day arc (observe → skill → deal) with its rep counts, and the decade arc in one breath — ending at why the crown waits for consistent Tuesdays.',
-  cards:[
-    {f:'Weeks 1–2:', b:'Observation only: 5–10 fleets mapped, three reports pulled, daily public posting begun. Form nothing, pitch nobody — see the battlefield first.'},
-    {f:'Weeks 3–6:', b:'Skill reps: 8–10 dec reads with SERFF pulls, 2–3 taped carrier calls, weekly credit moves (the C1 tune-up as reps), LLC/EIN/account when the first spread nears.'},
-    {f:'Weeks 7–12:', b:'Deal reps: first qualified package, walk in holding it, verification run alongside the fleet’s, Deal Closed #1 → toward five, first net-30s, first fleet audit as research.'},
-    {f:'The pace rule + the decade:', b:'Slower than excitement, faster than fear. Deals→20, PAYDEX, audition loan, placement/dual-rail, Rung 3, the flip, the stack + log — the crown waits for clean Tuesdays.'}
-  ],
-  quiz:[
-    {q:'The first two weeks contain…', c:['Observation reps only — map the metro, pull the file, start posting. See the battlefield before entering it','The first pitch','LLC formation','A car purchase'], a:0, e:'Ten mapped fleets = more market knowledge than most working brokers, for the cost of afternoons.'},
-    {q:'The LLC forms…', c:['When the first spread is in sight — the C3 clock starts early but only once brokering is real','Day one, before anything','After the first car','Never for brokers'], a:0, e:'Time-in-business compounds (C3), but weeks 1–2 are for seeing, not filing.'},
-    {q:'By day 90 the goal is…', c:['An agency','$10k/month','A fleet knowing your name for the right reason — deals closed clean, record public, file tuned','A placed car'], a:2, e:'The newest node in the network, with receipts. The decade builds from exactly there.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.TX = [
-  {q:'The industry’s technology reality is…', c:['Cutting-edge','Fully automated','Platform-dominated','Spreadsheets at the top, no purpose-built platform, no shared data'], a:3, e:'The operator seat is empty even at the biggest fleets.', d:1},
-  {q:'General rental software fails the industry because…', c:['Price','Speed','Language','It models owner-operators, not agencies + consignment + brokers'], a:3, e:'70% brokered deals and owner ledgers simply are not in its data model.', d:2},
-  {q:'The two-stage funnel is…', c:['Two websites','CRM in front of booking software — capture/nurture before transactions','Two brokers','A/B testing'], a:1, e:'Booking systems can’t text the vanished lead; most fleets have neither stage.', d:2},
-  {q:'Smartcar-class telematics matters for…', c:['Cheaper devices','The API — data streams you can build ledgers, alerts, and insurance files on','Longer range','Resale'], a:1, e:'A dashboard polices; a stream compounds.', d:2},
-  {q:'The AI-search surface is valuable because…', c:['High-intent answers with almost zero industry competition [VERIFY]','It’s trendy','It’s free forever','Fleets fear it'], a:0, e:'Being the chatbot’s answer for “rent a Lamborghini near me” is the new maps-pack — uncontested.', d:2},
-  {q:'The data moat’s five per-deal categories are…', c:['Photos, video, posts, likes, shares','Rate, date, name, car, city','Verification, telematics trip, money, asset, human outcome','None'], a:2, e:'All operationally required anyway — the moat is structured logging.', d:2},
-  {q:'The loss-ratio table matters because…', c:['Carriers price what they can see — it cuts premiums now and seeds the endgame pitch','Investors like tables','Taxes','It’s required'], a:0, e:'T4’s pitch industrialized, one clean deal at a time.', d:2},
-  {q:'The ~$10M ceiling breaks on…', c:['More cars','Luck','Systems — the binding constraint past one metro, the half incumbents never carried','Celebrity clients'], a:2, e:'Relationship webs scale personally and linearly; only the operator half scales past them.', d:3},
-  {q:'The Stage-3 endgame is…', c:['The biggest warehouse','An exit to Turo','A franchise','The rule-rewrite: an insured high-value sharing program built on the missing dataset'], a:3, e:'Infrastructure, not inventory — Turo’s play pointed at exotics.', d:3},
-  {q:'The moonshot is a sound bet because…', c:['Each stage beneath it is independently profitable — failure mode is a thriving operation','It can’t fail','Carriers promised','It’s cheap'], a:0, e:'Asymmetric upside on a stack worth building anyway.', d:2},
-  {q:'The reps ladder’s deal-tier milestone is…', c:['1 deal','5 clean closed deals — the track record fleets price on','50 leads','A viral post'], a:1, e:'The spread spread starts moving on a visible record of clean outcomes.', d:1},
-  {q:'The 90-day arc runs…', c:['Pitch → buy → scale','Observe (map/pull/post) → skill (reads/calls/moves) → deal (source/verify/close)','LLC → car → agency','Content only'], a:1, e:'See the battlefield, build the muscles, enter holding a deal.', d:1}
-];
-
-// ═══════════════════════ BRAND 0 · THE ASSET ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b0_asset', sub:'B0', title:'What a personal brand actually is — attention × trust × proof',
-  predict:'Two accounts post the same clip. One has 100,000 followers and gets nothing from it — no DMs, no deals, no doors. One has 4,000 followers and books two rentals and a fleet meeting off it. Same content. What does the second account have that the follower count cannot measure?',
-  concept:'<p>Strip the word “brand” of its fog. A personal brand is an <b>asset</b> with three components, and it is worth exactly their product: <b>attention × trust × proof.</b></p>'
-    +'<p><b>Attention</b> is the ability to summon eyeballs on demand — not a follower count. Followers are a stored <i>proxy</i> for attention, and like any proxy they can be faked, bought, or dead. What the asset actually is: when you post, do the right people see it? <b>Trust</b> is what those people believe about you — built parasocially: a stranger who has watched you work across thirty clips treats you like a known quantity. That is the mechanism cold outreach can never buy: by the time they DM you, <b>the relationship already exists; you just weren’t present for it.</b> <b>Proof</b> is the receipts — deliveries documented, deals closed, reps logged (the REPS ladder is literally a proof generator). Attention without trust is noise; trust without proof is a claim; all three multiplied is the thing this industry pays for.</p>'
-    +'<p><b>Why multiplication, not addition.</b> A zero anywhere zeroes the asset. 100k followers × zero trust (bought, botted, or wrong-niche) = the first account in the predict question. 4k followers × deep trust × visible receipts = deals. This is the same lesson as the credit spine’s opening: <b>the number everyone looks at is a compressed proxy; the professionals read the file underneath.</b> Follower count is your VantageScore. The DMs are your FICO Auto.</p>'
-    +'<p><b>The fraud wall, drawn on day zero.</b> Because attention has proxies, a market sells them: bought followers, engagement pods, botted views. Understand them exactly the way you understood bought tradelines (C1): <b>a rented costume that the underwriter discounts.</b> Here the underwriter is the algorithm itself — it reads engagement-per-view, and a padded denominator <i>suppresses</i> your distribution (10k dead followers means every post tests against an audience that never engages, and the test fails — B2 explains the machine). Bought attention is not merely useless; it is <b>actively corrosive</b>. The asset only compounds when every unit of it is real.</p>'
-    +'<p><b>Who is forced to act.</b> Nobody hands you attention — but nobody can gatekeep it either. Every fleet needs demand (T0’s starving industry); every algorithm needs content to test; every phone is a studio. The personal brand is the one asset in this course with <b>zero entry cost and zero permission structure</b> — which is exactly why the broke entrant builds it first, and why this spine sits beside the credit spine as the second bridge between the doors.</p>',
-  example:'<p><b>Ex — the two accounts, decomposed:</b> Account A: 100k bought-and-drifted followers × near-zero trust × zero receipts = an expensive number. Account B: 4,000 followers, 3,100 of them in one metro’s car scene, 30 clips of real deliveries, a pinned review reel = attention that converts. A fleet owner scrolling both knows in eight seconds which one is real — and so does the algorithm.</p>',
-  teach:'Explain attention × trust × proof, why it multiplies instead of adds, and why bought followers are the tradeline-rental of the brand world.',
-  cards:[
-    {f:'The brand asset formula:', b:'Attention × trust × proof. Followers are a proxy for attention; parasocial familiarity is the trust; receipts (documented deals, reps) are the proof. A zero anywhere zeroes the product.'},
-    {f:'The parasocial mechanism:', b:'Thirty clips of watching you work = a stranger treats you as a known quantity. The relationship exists before the DM — cold outreach can never buy that.'},
-    {f:'Bought followers, precisely:', b:'The tradeline-rental of brand: a padded denominator that suppresses distribution (engagement-per-view drops), discounted by the algorithm-as-underwriter. Corrosive, not just useless.'},
-    {f:'Why this asset comes first for the broke entrant:', b:'Zero entry cost, zero permission structure — and the industry (demand-starved, reputation-priced) pays for it directly.'}
-  ],
-  quiz:[
-    {q:'A 100k-follower account that generates no DMs or deals is missing…', c:['Better editing','Trust and proof — the follower count is a proxy, and the product multiplies','More hashtags','A verified badge'], a:1, e:'Attention × trust × proof: a zero anywhere zeroes the asset. The number is the VantageScore; the DMs are the FICO.'},
-    {q:'Bought followers damage the asset because…', c:['They cost money','They unfollow eventually','Everyone can see them','They pad the denominator — engagement-per-view drops and the algorithm suppresses your tests'], a:3, e:'The algorithm underwrites you on ratios. A dead audience fails every test pool — corrosive, exactly like rented tradelines.'},
-    {q:'The trust component of the brand is built primarily by…', c:['Credentials','Paid ads','Repeated parasocial exposure — people watching you actually work over time','A logo'], a:2, e:'Thirty clips of the real climb create a known quantity. By the time they DM, the relationship already exists.'}
-  ]},
-
-{ id:'b0_document', sub:'B0', title:'Document, don’t perform — the premise that never runs dry',
-  predict:'Two broke 20-year-olds start posting about exotic rentals the same week. One positions as an expert sharing “tips.” One documents learning the industry from zero, in public, mistakes included. Twelve months later one of them is trusted, prolific, and inbound-rich — and it is almost always the same one. Why does the documenter beat the performer?',
-  concept:'<p>The single most important strategic choice you will make is the <b>premise</b> — the standing answer to “what is this account?” And for you, entering broke and unknown, one premise beats everything else available: <b>“I am building my way into the exotic rental industry from zero. Watch.”</b></p>'
-    +'<p><b>Why documenting beats performing — three mechanisms.</b> <b>1: Infinite supply.</b> The performer must invent content; the documenter’s content is generated by the work itself. Every fleet mapped, dec page read, carrier call taped, deal attempted (your REPS ladder) is a clip that already happened. The content mine refills daily because the mine is your life. <b>2: Zero credibility gap.</b> The expert-positioner makes claims their receipts can’t cash — and this industry’s talkative network (T7) shreds inflated claims fast. The documenter claims only “I am doing this,” which is unfalsifiable because it is visibly true. You never defend a position you never took. <b>3: Narrative gravity.</b> Humans follow <i>stories</i>, not information. An expert’s tip competes with every other tip on earth; a person you have watched since chapter one has you invested in the outcome. The climb IS the hook, and it renews every episode.</p>'
-    +'<p><b>The proof from the source itself.</b> The operator who built the course you are studying entered exactly this way — posting the journey publicly was what made an established fleet owner reach out <i>inbound</i>, turning into consignment, brokering, and consulting seats (t7_brand’s magnet). The premise was the strategy.</p>'
-    +'<p><b>What documenting is NOT.</b> Not a diary (nobody owes you attention for unedited life), not confession theater, and not performed fake struggle. It is the <b>work, packaged</b>: the metro map you actually built, the cliff-cap you actually caught in a dec page, the first deal that actually closed — selected, hooked, and cut (B1’s machine) so a stranger cares in three seconds. And misses are content GOLD, not damage: a graded miss with a written why (the REPS discipline, on camera) builds more trust per second than any win, because it is the thing performers cannot fake.</p>'
-    +'<p><b>Who benefits.</b> You, three times: the premise removes the content-ideas problem (the #1 quitting reason), removes the credibility problem (the #2), and pre-frames every future win as a story payoff the audience was waiting for. The zero you are starting from is not your weakness on camera. <b>It is the entire show.</b></p>',
-  example:'<p><b>Ex — same event, two framings:</b> The performer: “5 tips for renting exotics” (claims authority he doesn’t have; competes with every guru alive). The documenter: “I called 6 insurance carriers today to learn the one question that decides if a 21-year-old can rent a Lamborghini — here’s the tape of an agent getting it wrong.” Same afternoon of work. One is a commodity; one is an episode of a show only you can make.</p>',
-  teach:'Explain the three mechanisms that make documenting beat performing, and what separates documentation from a diary.',
-  cards:[
-    {f:'The premise for the broke entrant:', b:'“I am building my way into the exotic rental industry from zero. Watch.” — infinite supply, zero credibility gap, narrative gravity.'},
-    {f:'Why supply never runs dry:', b:'The work generates the content: every rep on the ladder (fleets mapped, dec pages read, deals attempted) is a clip that already happened.'},
-    {f:'Documenting ≠ diary:', b:'It is the work, PACKAGED — selected, hooked, cut so a stranger cares in 3 seconds. Unedited life earns nothing.'},
-    {f:'Misses on camera:', b:'A graded miss with a written why builds more trust per second than any win — it is the one thing performers cannot fake.'}
-  ],
-  quiz:[
-    {q:'The documenter beats the expert-performer because…', c:['Infinite content supply, no credibility gap, and narrative gravity — the climb is the show','Better cameras','Luck','Longer videos'], a:0, e:'The work generates the content, the claims are visibly true, and audiences follow stories over tips.'},
-    {q:'“I’m doing X, watch” is unfalsifiable because…', c:['Nobody checks','It claims only what is visibly happening — you never defend a position you never took','Lawyers approved it','It’s vague'], a:1, e:'The expert’s inflated claims get shredded by a talkative industry; the documenter made none.'},
-    {q:'Documentation differs from a diary in that…', c:['It is the work packaged — selected, hooked, and cut for a stranger’s three seconds','It is longer','It is private','It skips failures'], a:0, e:'Nobody owes attention to unedited life. Packaging (B1) is what turns the real work into episodes.'}
-  ]},
-
-{ id:'b0_position', sub:'B0', title:'Category of one — positioning so you compete with nobody',
-  predict:'“Exotic car content” is an ocean with ten million creators. Yet a specific positioning exists that would make you literally the only account on earth doing it — with three narrowing cuts. What are the cuts?',
-  concept:'<p>Positioning is deciding <b>which game you are the only player of.</b> Broad games (“car content”) are won by whoever has the most resources — never the broke entrant. So you narrow until the competition is zero:</p>'
-    +'<p><b>Cut 1 — the niche:</b> not cars, not even exotics — <b>the exotic RENTAL industry</b>: the business behind the Lamborghini post. Almost nobody shows it (t7_brand: fleets are faceless, brokers private, owners hidden by design). The lane is structurally empty. <b>Cut 2 — the angle:</b> not reviewing it, <b>building into it from zero</b> (b0_document’s premise) — which converts your only apparent weakness into differentiation. <b>Cut 3 — the ground:</b> YOUR metro. “Exotic rentals” is global noise; “the person documenting [your city]’s exotic rental scene from the inside” is a coordinate. Local cut = local relevance = the exact audience that can actually rent, refer, consign, or hire (B2’s local gravity makes this mechanical).</p>'
-    +'<p><b>The test of a real position: the sentence.</b> “I document building an exotic rental operation from zero in [metro] — the deals, the cars, the money, the mistakes.” If a stranger can hear your sentence once and (a) repeat it, (b) know exactly who should follow you, and (c) name nobody else doing it — the position holds. If any of the three fails, cut again.</p>'
-    +'<p><b>Positioning ≠ prison.</b> The fear: “won’t narrowing shrink my audience?” Mechanically backwards. The algorithm (B2) finds audiences <i>through</i> specificity — a sharply-defined account teaches the recommender exactly who to test it on, and passes those tests harder. Broad accounts confuse the classifier and get tested on nobody in particular. You narrow to grow, then <b>widen from strength</b> later (the national voice grows out of the metro voice — TX’s multi-metro arc has a brand rail running beside it). Every large creator you admire started as a category of one in a niche you have forgotten they occupied.</p>'
-    +'<p><b>And the position is a moat.</b> A competitor can copy your format tomorrow. They cannot copy <b>being you, this far into this documented climb, with these receipts, in this city</b> — the position deepens with every rep logged, which is why it pairs with the data moat (TX) as the two assets nobody can fork.</p>',
-  example:'<p><b>Ex — the three cuts, applied:</b> “Car guy” (10M competitors) → “exotic rental industry inside-look” (a few dozen worldwide) → “building in from zero” (a handful) → “…in Phoenix” (you, alone). Followers: smaller at first. DMs from people who can rent/consign/hire in Phoenix: incomparably higher. The ocean was never the market — the metro was.</p>',
-  teach:'Walk the three narrowing cuts, the one-sentence position test, and why narrowing accelerates growth instead of capping it.',
-  cards:[
-    {f:'The three cuts:', b:'Industry (rental business, not car content) → angle (building in from zero, not reviewing) → ground (YOUR metro). Each cut removes millions of competitors.'},
-    {f:'The sentence test:', b:'One hearing: can they repeat it, know who it’s for, and name no one else doing it? Any failure = cut again.'},
-    {f:'Why narrow grows faster:', b:'Specificity teaches the recommender exactly who to test you on — and those tests pass harder. Broad confuses the classifier. Narrow to grow, widen from strength.'},
-    {f:'The position as moat:', b:'Format is copyable; being YOU, this deep into a documented climb, with receipts, in this city, is not — and it deepens with every logged rep.'}
-  ],
-  quiz:[
-    {q:'The broke entrant narrows positioning because…', c:['Broad games are won by resources they don’t have — narrow games can have zero competitors','Niches are trendy','Hashtags work better','It’s easier to film'], a:0, e:'You pick the game you are the only player of: industry → angle → metro.'},
-    {q:'A sharply-narrow account often grows FASTER because…', c:['The recommender learns exactly who to test it on, and the tests pass harder','Less content needed','Narrow audiences share more','It posts less'], a:0, e:'Specificity is machine-readable. Broad accounts get tested on nobody in particular (B2).'},
-    {q:'The positioning test is…', c:['A logo review','One sentence a stranger can repeat, aim, and find nobody else doing','A follower milestone','A/B testing bios'], a:1, e:'Repeatable + aimable + unoccupied = a real category of one.'}
-  ]},
-
-{ id:'b0_identity', sub:'B0', title:'The character sheet — consistency is recognition is trust',
-  predict:'You can name what a famous creator will wear, how their videos open, the phrase they always say, and the set behind them — without checking. That is not an accident of fame. Which direction does the causality actually run?',
-  concept:'<p>Recognition precedes trust, and recognition is engineered through <b>consistency</b>. Before fame makes your patterns famous, your patterns make you recognizable. Build the character sheet deliberately, on day zero:</p>'
-    +'<p><b>The name layer.</b> One handle, identical everywhere — the brand’s NAP consistency (C3’s fundability lesson, verbatim logic: mismatches read as unreal to humans AND to search/AI-answer systems that will someday assemble your entity from these fragments — TX). Pick a handle you can say out loud once and type from memory; own the matching domain the same week ($12 — the cheapest asset in this course).</p>'
-    +'<p><b>The visual layer.</b> Your face (non-negotiable — faceless accounts build audiences, not trust, and this industry pays for trust); a recurring frame (the same garage corner, car seat, walking-and-talking street — a “set” costs nothing and reads as a show); one color/grade treatment; consistent thumbnail/cover geometry. The test: <b>your clip recognized with the thumb over the handle.</b></p>'
-    +'<p><b>The verbal layer.</b> A repeatable open (never “hey guys, welcome back” — B1 kills intros — but a signature cold-open PATTERN); a sign-off; named recurring segments (“Dec-Page Friday,” “The Ledger,” “Trap of the Week” — series turn strangers into appointment viewers and hand you infinite prompts); and a consistent register — how technical, how profane, how fast. The register IS the brand voice; drift reads as inauthenticity.</p>'
-    +'<p><b>The integrity layer — the sheet’s spine.</b> Character consistency includes <b>claims discipline</b>: the no-income-claims rule (the source course’s own posture, adopted as brand strategy), no rented-lifestyle props presented as owned, no “my fleet” over cars that are white-labeled inventory — say “cars I can get you” and the claim is bulletproof (T1 taught you the industry’s polite fictions; your brand does not need them, because the documented-climb premise makes honesty the differentiator in a flexer-saturated niche). One exposed fake kills the trust term of the asset — and B0 taught you what a zero does to a product.</p>'
-    +'<p><b>Why this all compounds.</b> Every consistent element is a memory hook; memory hooks compound into familiarity; familiarity is pre-trust. The character sheet is boring administrative work that makes every future clip 5% more effective forever — the AZEO of brand: no new content, just staged presentation, free points.</p>',
-  example:'<p><b>Ex — a day-zero character sheet:</b> Handle: @[name]drives (everywhere, domain owned). Set: driver’s seat + the same parking structure roof at golden hour. Grade: one warm preset. Open: cold, mid-action, fact first. Sign-off: “odometer’s running.” Series: Dec-Page Friday · The Metro Map · Miss of the Month. Register: technical, calm, zero hype, no income talk ever. Cost: $12 and a decision. Value: recognition from clip one.</p>',
-  teach:'Lay out the four layers of the character sheet (name, visual, verbal, integrity) and explain why consistency mechanically converts to trust.',
-  cards:[
-    {f:'The four layers:', b:'Name (one handle everywhere + domain), visual (face, recurring set, one grade), verbal (signature open/sign-off/series/register), integrity (claims discipline).'},
-    {f:'The recognition test:', b:'Your clip identifiable with the thumb covering the handle — set, grade, and voice doing the work fame will later amplify.'},
-    {f:'The integrity layer’s rules:', b:'No income claims, no rented props as owned, no “my fleet” over white-labeled cars — “cars I can get you” is bulletproof. One exposed fake zeroes the trust term.'},
-    {f:'Why the sheet is the AZEO of brand:', b:'No new content required — staged presentation that makes every future clip compound. Free points, claimed once, paid forever.'}
-  ],
-  quiz:[
-    {q:'Causality between fame and consistency runs…', c:['Fame first, then patterns become known','They are unrelated','Patterns first — consistency creates recognition, which becomes trust, which scales','Platforms assign it'], a:2, e:'Recognition is engineered before it is amplified. The character sheet is day-zero work.'},
-    {q:'Calling white-labeled inventory “my fleet” is a brand error because…', c:['It’s modest','One exposed fake zeroes the trust term of the asset — “cars I can get you” claims the same power honestly','Fleets forbid it','It confuses the algorithm'], a:1, e:'The documented-climb premise makes honesty the differentiator; polite industry fictions are for fleets, not for your face.'},
-    {q:'Named recurring series (“Dec-Page Friday”) exist because…', c:['They turn strangers into appointment viewers and hand you infinite prompts','They’re fun to name','Platforms require them','They lengthen videos'], a:0, e:'Series are consistency machines: recognition hooks + a standing answer to “what do I post today?”'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B0 = [
-  {q:'The brand asset equals…', c:['Followers','Views × posts','Attention × trust × proof','Engagement rate'], a:2, e:'A multiplied product — a zero anywhere zeroes it. Followers are just a proxy for one term.', d:1},
-  {q:'Parasocial trust means…', c:['Fake friendship','Family support','Paid loyalty','Strangers who watched you work treat you as known — the relationship precedes the DM'], a:3, e:'The mechanism cold outreach cannot buy; thirty clips = a known quantity.', d:1},
-  {q:'Bought followers parallel which credit-spine trap?', c:['Rented tradelines — a costume the underwriter (algorithm) discounts','The CPN','Balloon notes','Shelf corps'], a:0, e:'Padded denominators suppress distribution; every unit of attention must be real.', d:2},
-  {q:'The documenter’s premise is…', c:['“I’m an expert — tips inside”','“Daily vlogs”','“Reviews of cars”','“I’m building into this industry from zero. Watch.”'], a:3, e:'Infinite supply, zero credibility gap, narrative gravity.', d:1},
-  {q:'Misses on camera are…', c:['Brand damage','Private only','To be deleted','Trust gold — graded misses are the one thing performers can’t fake'], a:3, e:'The REPS discipline in public: a written why builds more trust per second than wins.', d:2},
-  {q:'The three positioning cuts are…', c:['Industry → angle → metro','Price, speed, quality','Age, gender, income','Platform, format, length'], a:0, e:'Rental business (not car content) → building from zero (not reviewing) → YOUR city.', d:2},
-  {q:'Narrowing accelerates growth because…', c:['Less competition for hashtags','Cheaper production','Fewer haters','Specificity teaches the recommender who to test you on — and tests pass harder'], a:3, e:'Broad confuses the classifier; sharp definitions route to the right test pools (B2).', d:2},
-  {q:'The position test sentence must be…', c:['Repeatable, aimable, and unoccupied after one hearing','Poetic','Under 5 words','Approved by a fleet'], a:0, e:'Repeat it, know who it’s for, name nobody else doing it — or cut again.', d:2},
-  {q:'The character sheet’s four layers:', c:['Name, visual, verbal, integrity','Logo, font, color, tone','Bio, link, grid, story','Camera, mic, light, edit'], a:0, e:'Handle/domain, face/set/grade, open/sign-off/series/register, and claims discipline.', d:2},
-  {q:'“Cars I can get you” beats “my fleet” because…', c:['It’s shorter','It ranks better','Fleets prefer it','It claims the same power without the fake that zeroes trust when exposed'], a:3, e:'White-label fictions are for companies; a face account survives on verifiable claims.', d:2},
-  {q:'The no-income-claims rule as brand strategy…', c:['Differentiates you in a flexer-saturated niche and keeps every claim cashable','Limits growth','Is legally required','Is temporary'], a:0, e:'Trust arbitrage: in a market of inflated screenshots, the account that never lies wins the long game.', d:3}
-];
-
-// ═══════════════════════ BRAND 1 · THE CONTENT MACHINE ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b1_engine', sub:'B1', title:'The five pillars — a content engine that runs on your actual work',
-  predict:'The #1 reason accounts die is “I don’t know what to post.” Yet an operator running this course’s reps generates raw material for roughly five distinct content categories every single week without trying. Name as many of the five as you can before looking.',
-  concept:'<p>“What do I post?” is never answered daily — it is answered <b>once, structurally</b>, with pillars: standing categories that turn your existing work into a queue. Yours, in order of strategic weight:</p>'
-    +'<p><b>Pillar 1 — The Climb (the spine).</b> The documented journey itself: mapping fleets, first calls, first deal, first placement. This is the premise (b0_document) made visible — the serialized story that makes strangers invested. Every other pillar hangs off it.</p>'
-    +'<p><b>Pillar 2 — The Intel (the authority builder).</b> Teardowns of what you are learning — and notice: <b>this course is the content mine.</b> The waterfall run on a real deal. The $100k cliff cap explained over a real dec page. Why the Urus out-earns the Huracán. The straw-rental tells. Sixty-eight topics in this app = a year of intel clips, each one demonstrating fluency no flexer account can fake.</p>'
-    +'<p><b>Pillar 3 — The Metal (the reach engine).</b> The cars: deliveries, walkarounds, cold starts, POVs. This pillar borrows the niche’s native virality — supercar content out-reaches everything else you can film — and every delivery you earn (T6’s broker-delivery privilege) is a set. Use its reach to fund the other pillars’ depth.</p>'
-    +'<p><b>Pillar 4 — The Scene (the local moat).</b> Your metro’s car world: meets, spots, fleet features (with permission), event coverage. This is B2’s local gravity fed deliberately — the pillar that makes you unavoidable in the one geography that pays you.</p>'
-    +'<p><b>Pillar 5 — The Ledger (the trust anchor).</b> Periodic honest accounting: reps logged, deals attempted, misses graded, lessons. Monthly “state of the build.” Lowest reach, highest trust-per-view — and the receipts pillar that proof (b0_asset) lives in.</p>'
-    +'<p><b>The operating rule.</b> Weight roughly toward reach early (Metal + Climb) and depth later (Intel + Ledger grow as receipts accumulate) <i>[VERIFY against your own analytics — B1’s tape-reading lesson]</i>. Every rep on the REPS ladder maps to a pillar — which means the answer to “what do I post today?” is permanently: <b>“what did I DO today?”</b> The machine runs on the work. No work, no content — which is itself the accountability loop the streak counter enforces.</p>',
-  example:'<p><b>Ex — one ordinary Tuesday, five clips:</b> Mapped fleet #6 (Climb). Explained their pricing vs the waterfall (Intel). Filmed their Urus arriving for a delivery you tagged along on (Metal). Covered the Thursday meet announcement (Scene). Logged lead #4 as a graded miss with the why (Ledger). One day of actual reps = a full week of queue.</p>',
-  teach:'Name the five pillars, what each does strategically (spine, authority, reach, moat, trust), and the operating rule that ties posting to the reps ladder.',
-  cards:[
-    {f:'The five pillars:', b:'Climb (serialized journey), Intel (teardowns — this course is the mine), Metal (cars = native reach), Scene (metro moat), Ledger (receipts = trust anchor).'},
-    {f:'The strategic weights:', b:'Metal+Climb buy reach early; Intel+Ledger deepen trust as receipts accumulate. Rebalance off your own tape, not vibes.'},
-    {f:'Why the queue never empties:', b:'Every REPS-ladder rep maps to a pillar. “What do I post?” permanently becomes “what did I do?” — the machine runs on the work.'},
-    {f:'The accountability loop:', b:'No work, no content — the daily Build-In-Public streak enforces the reps, and the reps feed the streak.'}
-  ],
-  quiz:[
-    {q:'“What do I post today?” is answered by…', c:['Trend-chasing','Reposting others','Buying ideas','Structure — five standing pillars fed by the day’s actual reps'], a:3, e:'Pillars turn the work into a queue: Climb, Intel, Metal, Scene, Ledger.'},
-    {q:'The Intel pillar’s content mine is…', c:['News sites','Forums','Other creators','This course itself — 68 topics of teardowns demonstrated on real documents and deals'], a:3, e:'The waterfall, the cliff cap, the Urus math — fluency content no flexer can fake.'},
-    {q:'The Metal pillar’s strategic job is…', c:['Trust depth','Borrowing the niche’s native virality to fund the deeper pillars’ reach','Local networking','Receipts'], a:1, e:'Supercar footage out-reaches everything; its audience then meets your Climb and Intel.'}
-  ]},
-
-{ id:'b1_hook', sub:'B1', title:'The hook doctrine — the first three seconds are the whole game',
-  predict:'A viewer decides whether to keep watching in under three seconds, and the platform decides whether to keep distributing based on how many stay (B2). Given those two facts, what is mathematically wrong with opening any clip with “hey guys, welcome back to the channel”?',
-  concept:'<p>Retention is the currency (B2 will show the machine); the hook buys it or doesn’t. Doctrine, not taste:</p>'
-    +'<p><b>Rule 1 — never introduce.</b> “Hey guys, welcome back” spends your three seconds saying nothing to the 95% of a test pool who have never seen you (recommendation-fed viewers are strangers by construction). Cold-open into the most interesting thing you have: the claim, the number, the moment. Context can be back-filled at second 20 for whoever survived.</p>'
-    +'<p><b>Rule 2 — open a loop.</b> The hook’s job is an <b>information gap</b> the viewer needs closed: “This carrier pays $95k on a $95k car — and $10k on a $105k one.” (A real cliff-cap from T2 — your intel pillar is FULL of these.) Questions, contradictions, and stakes open loops; statements of topic (“today we’re talking about insurance”) do not.</p>'
-    +'<p><b>Rule 3 — hook in every channel at once.</b> The first frame (visual: motion, a car, a document with a highlighted number — not your face saying hi), the first line (spoken), and the <b>on-screen text overlay</b> (readable with sound off — most first impressions are muted <i>[VERIFY platform sound-on rates]</i>) should each carry the hook independently. Three hooks, one moment.</p>'
-    +'<p><b>Rule 4 — earn every subsequent 3 seconds.</b> Retention past the hook is pacing: a cut, angle change, zoom, caption punch, or new information every 2–4 seconds; ruthless deletion of every breath that delays payoff (“um,” walking to the car, unlocking the door). The edit’s question for every second: <i>what is the viewer getting RIGHT NOW for staying?</i></p>'
-    +'<p><b>Rule 5 — pay the loop off, then re-open one.</b> Close the promised gap (or the clip is clickbait and trust — the asset’s middle term — pays the bill), and near the close, open the next: “that’s the cap trick — Friday I’m reading the form that hides it.” Serialized loops turn clips into episodes and viewers into appointment viewers (b0_identity’s series doing double duty).</p>'
-    +'<p><b>The discipline.</b> Write the hook FIRST — before filming, not in the edit. A brilliant clip with a weak hook was never seen; a decent clip with a killer hook gets tested, retested, and taught the algorithm who you are. Effort allocation for a 40-second clip: roughly a third of it on the first three seconds. That ratio feels absurd and is correct.</p>',
-  example:'<p><b>Ex — same content, two opens:</b> A: “Hey guys, welcome back! Today I want to talk a little about insurance for rentals…” (3 seconds spent; loop opened: none; strangers gone). B: first frame = a dec page with $100,000 circled in red; overlay: “this number totals Lamborghinis”; voice: “Her policy said full coverage. The fine print paid ten grand on a hundred-and-five-thousand-dollar car.” Same lesson. One is a topic; one is a trap the viewer must see sprung.</p>',
-  teach:'Recite the five hook rules and explain why effort concentrates absurdly on the first three seconds.',
-  cards:[
-    {f:'Rule 1 + why:', b:'Never introduce — test-pool viewers are strangers by construction. Cold-open on the most interesting thing; back-fill context at second 20.'},
-    {f:'The loop mechanic:', b:'Hooks open information gaps (claims, contradictions, stakes) the viewer needs closed. “Today we’re talking about X” opens nothing.'},
-    {f:'Triple-channel hooking:', b:'First frame (visual), first line (audio), text overlay (sound-off readable) each carry the hook independently.'},
-    {f:'Retention past the hook:', b:'New value every 2–4 seconds — cut, zoom, caption, information. Delete every breath that delays payoff. Then close the loop and open the next one.'}
-  ],
-  quiz:[
-    {q:'“Hey guys, welcome back” fails mathematically because…', c:['It’s unfashionable','Platforms penalize greetings','It’s too short','Test-pool viewers are strangers — the three deciding seconds are spent saying nothing to them'], a:3, e:'Recommendation feeds serve people who never saw you. The cold-open speaks to them; the greeting speaks to nobody.'},
-    {q:'A hook “opens a loop” when it…', c:['Asks viewers to subscribe','Plays loud music','States the topic','Creates an information gap the viewer needs closed — a claim, contradiction, or stake'], a:3, e:'“This paid $10k on a $105k car” demands resolution; “today we discuss insurance” demands nothing.'},
-    {q:'The correct effort allocation on a 40-second clip is…', c:['Even across all seconds','On the caption only','Mostly on the outro','Disproportionate on the first three — an unseen brilliant clip equals zero'], a:3, e:'The hook decides whether the rest exists. A third of the effort on 3/40ths of the runtime is the working ratio.'}
-  ]},
-
-{ id:'b1_package', sub:'B1', title:'Packaging beats content — the same clip is a different clip',
-  predict:'A creator re-uploads an old video that flopped, changing nothing but the title, cover frame, and caption. It does 40× the views. Nothing in the video changed. What does that prove about where “quality” actually lives?',
-  concept:'<p>Hard truth from every serious creator’s analytics: <b>the packaging IS part of the content.</b> The same footage under different packaging is, to both the viewer and the recommender, a different piece of media. Packaging is everything consumed <i>before and around</i> the play: cover frame, title/overlay line, caption, and the promise they jointly make.</p>'
-    +'<p><b>The cover frame.</b> On profile grids and some feeds, the cover is your storefront (B3 makes the profile a menu — covers are the labels). Doctrine: one consistent geometry (b0_identity), a human face or a car in motion, one readable emotion or number, never a random mid-blink frame. Choose it deliberately per clip.</p>'
-    +'<p><b>The title/overlay line.</b> The written hook. The craft is <b>specificity</b>: numbers beat adjectives (“$10,000 payout on a $105,000 car” beats “insurance can surprise you”), named things beat categories (“Huracán” beats “supercar”), stakes beat topics (“this clause totals your deposit” beats “know your contract”). Specificity is also <i>credibility</i> — vague lines pattern-match to the flexer accounts you are differentiating against (b0_identity’s integrity layer).</p>'
-    +'<p><b>The caption.</b> Three jobs, in order: (1) a first line that re-hooks (feeds preview text), (2) substance for the readers — the detail, the [VERIFY]-grade nuance, the story — because caption-readers are your highest-intent minority (future DMs live here), and (3) machine-legible context: plain-language description of what/where, because captions and transcripts are how search and AI-answer systems understand you (TX’s surface — every caption is quietly SEO). Hashtags: a few, specific, local — discovery garnish, not strategy <i>[VERIFY current platform weighting]</i>.</p>'
-    +'<p><b>The promise discipline.</b> Packaging makes a promise; the clip must cash it. Over-promise (“INSANE loophole!!”) and retention collapses at the reveal + trust erodes — the clickbait tax is paid in both currencies (B2 shows the machine punishing it mechanically: the crash at second 4 kills the test). Under-promise (“my thoughts on insurance”) and nobody arrives. The craft is the <b>maximum honest promise</b>: the most compelling true framing of what is actually inside.</p>'
-    +'<p><b>The workflow consequence.</b> Because packaging decides whether content is ever seen, it is not a post-production garnish: <b>title and cover are drafted with the hook, before filming</b> (B1’s write-the-hook-first, extended). And flopped clips with strong content earn a repackage pass before they earn a eulogy — the 40× re-upload is a real, repeatable phenomenon.</p>',
-  example:'<p><b>Ex — one clip, two packages:</b> Package A: cover = you mid-sentence; title “Rental insurance explained”; caption “Part 3 of my series.” Package B: cover = the dec page, $100,000 circled; overlay “the $10k Lamborghini payout”; caption opening “She had ‘full coverage.’ The carrier paid $10,113. Here’s the paragraph that decided it —” Same 42 seconds of footage. A is a topic nobody chose; B is a story 40× more people opened.</p>',
-  teach:'Explain the three packaging surfaces (cover, title/overlay, caption) with their doctrines, and the maximum-honest-promise rule.',
-  cards:[
-    {f:'Packaging’s claim:', b:'The same footage under different cover/title/caption is a DIFFERENT piece of media — to viewers and to the recommender. Repackaging flops is a real, repeatable play.'},
-    {f:'Title/overlay doctrine:', b:'Specificity: numbers beat adjectives, named things beat categories, stakes beat topics. Specificity is also credibility.'},
-    {f:'The caption’s three jobs:', b:'Re-hook in line one, substance for the high-intent readers (your future DMs), machine-legible context for search/AI surfaces. Hashtags are garnish.'},
-    {f:'Maximum honest promise:', b:'The most compelling TRUE framing. Over-promise pays the clickbait tax in retention and trust; under-promise means nobody arrives.'}
-  ],
-  quiz:[
-    {q:'A repackaged flop doing 40× proves…', c:['Packaging is part of the content — the promise decides whether the clip is ever consumed','Luck rules','Old content ages well','Algorithms are random'], a:0, e:'Cover + title + caption make the promise; the promise makes the click; no click, no clip.'},
-    {q:'“$10,000 payout on a $105,000 car” beats “insurance can surprise you” because…', c:['It’s longer','Specific numbers open sharper loops AND read as credible against flexer vagueness','Adjectives are banned','It ranks for keywords'], a:1, e:'Specificity is both hook-craft and integrity signaling — the double win.'},
-    {q:'The clickbait tax is paid in…', c:['Retention (the crash at the reveal kills the test) and trust (the asset’s middle term)','Money','Followers only','Nothing measurable'], a:0, e:'The machine AND the audience punish uncashed promises. Maximum honest promise is the craft.'}
-  ]},
-
-{ id:'b1_system', sub:'B1', title:'The production system — daily output without daily heroics',
-  predict:'Daily posting for a year = 365 creative acts of willpower… or roughly 50 working sessions and a system. The second version is how every consistent creator you follow actually operates. What does the system look like?',
-  concept:'<p>Consistency (the streak, the algorithm’s trust, the audience’s habit) cannot run on inspiration. It runs on a <b>system</b> with four gears:</p>'
-    +'<p><b>Gear 1 — capture always.</b> The phone films <i>everything</i> loosely as B-roll while you do the reps: the drive to the fleet, the dec page on the desk, the walkaround. Documenting (B0) means the footage exists as a byproduct — the capture habit costs ~zero marginal effort and kills the “nothing to film” failure mode. One rule from T5 carried over: <b>never film illegal driving</b> — content that voids your insurance thesis and arms every future adversary is not content.</p>'
-    +'<p><b>Gear 2 — batch the talking.</b> Scripted-ish pieces (Intel pillar) film in <b>batches</b>: one session, one setup, 5–8 clips back to back off one-line outlines (this course’s topics ARE the outlines). Batching amortizes setup, keeps the character sheet consistent, and detaches output from mood — the whole point. A weekly 90-minute batch + daily 15-minute capture covers the calendar.</p>'
-    +'<p><b>Gear 3 — the 1→10 cut.</b> Every substantial thing you make fragments: a long fleet-audit walkthrough yields the full piece (trust format) plus 5–10 short verticals (reach format) — each fragment re-hooked and re-packaged as a standalone (B1’s other lessons apply per fragment, not per source). Cross-post fragments everywhere the audience lives (B2’s map) — recut per platform’s native shape rather than lazy-mirrored where formats differ <i>[VERIFY current platform norms]</i>.</p>'
-    +'<p><b>Gear 4 — the minimum viable stack.</b> A current phone, a $20 lav or wired mic, natural light (golden hour is the car world’s free cinematographer), a phone tripod, and one editing app you actually know. The doctrine: <b>audio quality > video quality</b> — viewers forgive soft 1080p and never forgive unintelligible audio; the cheap mic is the highest-ROI purchase in your entire brand <i>[VERIFY nothing — this one is universal]</i>. Upgrade gear only when a specific, recurring limitation says so. The M4-spec lesson (T8) applies to creators too: kit above the minimum viable trim works for your ego, not your output.</p>'
-    +'<p><b>The cadence contract.</b> Pick a floor you can sustain forever — the working standard for the growth phase is one short daily <i>[VERIFY per platform era]</i> — and treat it like autopay (C1): the streak survives bad weeks BECAUSE the system, not the mood, produces the content. Miss the quality bar some days; never miss the rep. Volume with feedback beats polish without reps — the 100-clip rule arrives next lesson to make that precise.</p>',
-  example:'<p><b>Ex — one week, systematized:</b> Sun 90-min batch: 6 intel clips off course outlines (one setup, one grade). Daily: capture reps as they happen (fleet visit, dec read, meet). Wed: the fleet-audit long piece → cut into 7 verticals across the week. Total creative-heroics required: zero. Total output: 13 pieces. The streak never depended on feeling like it.</p>',
-  teach:'Describe the four gears (capture, batch, 1→10, minimum stack), the audio-beats-video doctrine, and the cadence-as-autopay contract.',
-  cards:[
-    {f:'The four gears:', b:'Capture always (documenting = free footage), batch the talking (one session, 5–8 clips), the 1→10 cut (long → re-hooked fragments), minimum viable stack.'},
-    {f:'Audio > video:', b:'Viewers forgive soft picture and never forgive bad audio. The $20 mic is the highest-ROI purchase in the entire brand.'},
-    {f:'The creator’s minimum viable trim:', b:'Phone, mic, light, tripod, one known editor. Gear above the limitation you actually hit works for ego, not output (T8’s lesson, re-aimed).'},
-    {f:'Cadence as autopay:', b:'A sustainable-forever floor (one short daily in growth [VERIFY]), produced by the system not the mood. Miss the quality bar sometimes; never miss the rep.'}
-  ],
-  quiz:[
-    {q:'Daily consistency is achieved by…', c:['Willpower','Posting less','Hiring editors','A system: constant capture, weekly batches, 1→10 fragmentation, a minimum stack'], a:3, e:'~50 working sessions + a system = 365 posts. Inspiration is not an input.'},
-    {q:'The highest-ROI gear purchase is…', c:['A 4K camera','A cheap microphone — audio is the unforgivable quality axis','A drone','Studio lights'], a:1, e:'Soft picture is forgiven; unintelligible audio never is. Everything else waits for a recurring limitation.'},
-    {q:'Filming illegal driving for content is…', c:['Edgy growth','Fine if popular','Excluded absolutely — it voids your insurance thesis and arms every future adversary','A gray area'], a:2, e:'T5’s discipline applies to the camera too: the brand documents an operator, not a liability.'}
-  ]},
-
-{ id:'b1_volume', sub:'B1', title:'The 100-clip rule — volume, variance, and reading the tape',
-  predict:'A creator’s biggest clip ever is usually one they almost didn’t post, and their most polished labor-of-love usually underperforms. This pattern is nearly universal. What does it tell you about how many clips you must ship before judging ANYTHING — and what to do with the results?',
-  concept:'<p>The uncomfortable statistics of content, stated plainly so they never demoralize you:</p>'
-    +'<p><b>Outcomes are power-law distributed.</b> A tiny fraction of clips will produce most of your reach; the rest form the floor. This is not a quality verdict — it is the structure of test-pool distribution (B2) compounding small differences. Consequences: <b>no single clip is evidence of anything</b>; polish cannot force an outlier; and the only way to “catch” outliers is to be constantly in the water. Hence the <b>100-clip rule</b>: ship one hundred packaged, hooked, honest clips before rendering ANY verdict on the project, the niche, or yourself. Below that sample, your data is noise and your feelings are lying to you.</p>'
-    +'<p><b>Creators cannot pre-identify winners.</b> The almost-didn’t-post banger is universal because makers judge effort and audiences judge <i>effect</i>. So: ship at the floor of your quality bar rather than gatekeeping at its ceiling, and let the audience vote. The 20-minute clip you are embarrassed by teaches you more than the masterpiece you sat on for a week.</p>'
-    +'<p><b>But volume without reading the tape is just noise production.</b> Weekly, run the review (a REPS-grade discipline): sort by <b>retention and shares</b> — not views (views measure the test pool you were given; retention measures what you did with it — B2). For the top 3: what was the hook, the pillar, the format, the length? For the bottom 3: where exactly did the retention graph cliff — second 2 (hook failed), second 9 (payoff too slow), 50% (loop closed early)? <b>Double down on patterns, not one-offs:</b> a pillar/hook-type that wins three times is a series (b0_identity); a format that dies three times is retired without mourning.</p>'
-    +'<p><b>The variance survival kit.</b> Downweeks are structural, not personal — distribution breathes <i>[VERIFY platform seasonality]</i>. The floor metric that matters in month one is not views: it is <b>shipping percentage</b> (did the rep happen) and <b>DM quality</b> (are the right people arriving — B3). A 400-view clip that makes one fleet owner in your metro think “this kid is serious” outperformed a 40k-view clip of random global teenagers. You are not farming views. <b>You are compounding attention × trust × proof in one city</b> — read the tape with that scoreboard, and let the power law do its job on top.</p>',
-  example:'<p><b>Ex — the week-6 tape read:</b> Top clips: two dec-page teardowns + one delivery POV (pattern: document-on-screen hooks win → “Dec-Page Friday” becomes a series). Bottom: three talking-head opinion clips, all cliffing at second 2 (pattern: no-document, no-hook → retired). One 380-view clip produced a DM from a broker asking who does your screening. Verdict at clip 41 of 100: keep shipping, shift weight, judge nothing yet.</p>',
-  teach:'Explain power-law outcomes and the 100-clip rule, the ship-at-the-floor principle, and the weekly tape-read (retention/shares, cliff diagnosis, patterns-not-one-offs).',
-  cards:[
-    {f:'The 100-clip rule:', b:'Outcomes are power-law; no single clip is evidence. One hundred packaged honest clips before ANY verdict — below that, data is noise and feelings lie.'},
-    {f:'Ship at the floor:', b:'Makers judge effort; audiences judge effect. The almost-didn’t-post banger is universal — let the audience vote, don’t gatekeep at your ceiling.'},
-    {f:'The weekly tape-read:', b:'Sort by retention + shares (not views). Diagnose cliffs (sec 2 = hook, sec 9 = payoff, 50% = early loop close). Series from 3-time winners; retire 3-time losers.'},
-    {f:'The real month-one scoreboard:', b:'Shipping percentage and DM quality. One right local viewer beats 40k wrong ones — you compound attention × trust × proof in ONE city.'}
-  ],
-  quiz:[
-    {q:'The 100-clip rule exists because…', c:['Platforms reward volume','Outcomes are power-law distributed — below ~100 shipped clips, no verdict has data behind it','Editors need practice','It’s a challenge'], a:1, e:'Outliers carry the reach and cannot be pre-identified; the sample must be large before judgment.'},
-    {q:'Views are the wrong sort key for the tape-read because…', c:['They measure the test pool you were handed; retention and shares measure what you did with it','They’re inflated','They lag','They’re private'], a:0, e:'B2’s machine: the pool is the platform’s variable, the survival rate is yours.'},
-    {q:'A 400-view clip that lands one serious fleet-owner DM is…', c:['A flop','A win on the real scoreboard — trust and proof compounding in the city that pays you','Worth deleting','A fluke to ignore'], a:1, e:'You are not farming global views; you are building an asset in one metro. Read the tape with that scoreboard.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B1 = [
-  {q:'The five pillars are…', c:['News, memes, trends, duets, lives','Hooks, cuts, caps, tags, links','Cars, money, fame, travel, food','Climb, Intel, Metal, Scene, Ledger'], a:3, e:'Journey, teardowns, cars, metro, receipts — each with a distinct strategic job.', d:1},
-  {q:'The permanent answer to “what do I post?” is…', c:['“What did I DO today?” — pillars fed by the reps','Trends','Whatever competitors post','Polls'], a:0, e:'The machine runs on the work; the course itself is the Intel mine.', d:1},
-  {q:'Cold-opening beats greetings because…', c:['It saves time','Greetings are rude','Test-pool viewers are strangers — the deciding seconds must carry the most interesting thing','Platforms ban intros'], a:2, e:'Context back-fills at second 20 for survivors; the greeting speaks to nobody.', d:1},
-  {q:'A hook works when it…', c:['Is loud','States the topic','Opens an information gap that demands closing','Shows your face'], a:2, e:'Claims, contradictions, stakes — “today we discuss X” opens nothing.', d:2},
-  {q:'The three simultaneous hook channels:', c:['Intro, middle, outro','Like, comment, share','Title, tags, link','First frame, first line, sound-off text overlay'], a:3, e:'Most first impressions are muted [VERIFY]; each channel must carry the hook alone.', d:2},
-  {q:'Packaging is…', c:['Part of the content — same footage, different package = different media','Post-production garnish','Optional','Thumbnails only'], a:0, e:'Drafted with the hook, before filming. Repackaging strong flops is a real play.', d:2},
-  {q:'Title specificity doctrine:', c:['Adjectives sell','ALL CAPS','Vague is intriguing','Numbers beat adjectives, named things beat categories, stakes beat topics'], a:3, e:'Specificity opens sharper loops AND signals credibility against flexer vagueness.', d:2},
-  {q:'The clickbait tax is paid in…', c:['Retention (crash at the reveal) and trust','Ad revenue','Storage','Nothing'], a:0, e:'Maximum HONEST promise: the most compelling true framing of what is inside.', d:2},
-  {q:'The four production gears:', c:['Write, film, edit, post','Idea, script, thumb, title','Plan, shoot, grade, ship','Capture always, batch talking, 1→10 cut, minimum stack'], a:3, e:'Documenting makes footage a byproduct; batching detaches output from mood.', d:2},
-  {q:'The unforgivable quality axis is…', c:['Resolution','Color grade','Audio','Frame rate'], a:2, e:'Soft 1080p is forgiven; unintelligible audio never — the $20 mic is the ROI king.', d:1},
-  {q:'The 100-clip rule forbids…', c:['Posting daily','Reposts','Short clips','Judging the project, niche, or yourself before ~100 shipped clips'], a:3, e:'Power-law outcomes mean small samples are pure noise.', d:2},
-  {q:'The correct tape-read sort keys are…', c:['Views and likes','Retention and shares','Followers gained','Posting time'], a:1, e:'The pool is the platform’s variable; survival and spread are yours.', d:2},
-  {q:'Month-one’s real scoreboard is…', c:['Views','Follower count','Shipping percentage and DM quality in your metro','Viral count'], a:2, e:'One right local viewer beats 40k wrong ones — the asset compounds in one city.', d:3}
-];
-
-// ═══════════════════════ BRAND 2 · THE ALGORITHM ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b2_algo', sub:'B2', title:'How distribution actually works — test pools, not gatekeepers',
-  predict:'Your clip gets 200 views. Your friend with the same follower count posts a similar clip and gets 2 million. Most people explain the gap with luck or “shadowbans.” Both are almost always wrong. Describe what actually happened to each clip after upload.',
-  concept:'<p>Demystify the machine once and the myths lose their grip forever. Modern short-form distribution is, mechanically, a <b>ladder of test pools</b> <i>[VERIFY per platform — the architecture is general, the details shift]</i>:</p>'
-    +'<p><b>The ladder.</b> Upload → the system classifies the clip (visuals, audio, caption, your history) → serves it to a <b>small test audience</b> (a few hundred: some followers, some strangers matched to the classification) → measures how they behave → and the behavior decides everything: strong signals promote the clip to a larger pool, where the test repeats; weak signals end distribution quietly. “Virality” is not an event — it is <b>passing the same exam at escalating scale</b>, pool after pool. Your 200-view clip failed its first exam. Your friend’s passed twelve in a row. Same machine, no gatekeeper, no grudge.</p>'
-    +'<p><b>The signals, ranked</b> <i>[VERIFY weights — direction is stable, numbers aren’t]</i>: <b>watch time</b> — completion percentage and (the monster) <b>re-watch</b> — sits at the top; then <b>shares</b> (the strongest active signal: a viewer spending social capital on you); then <b>saves</b> (declared reference value); then <b>comments</b> (conversation = session time); then follows-per-view; and lastly likes — the politest, weakest signal. Now reread B1 with the machine in view: hooks defend completion, loops manufacture re-watch, “send this to someone who…” engineers shares, reference-grade intel (your dec-page teardowns) farms saves. <b>The doctrine was never taste. It was signal engineering.</b></p>'
-    +'<p><b>Your account file.</b> The system also reads YOU — a history: what your clips are about, who engages, how consistently you ship, how your last N tests went. A coherent, consistent account (B0’s positioning + character sheet) builds a clean file that routes every new clip to the RIGHT first pool; a scattered account gets tested on random audiences and fails on relevance, not quality. You already know this object from the credit spine: <b>the account file is a credit file, the test pool is the underwriter, and consistency is payment history.</b></p>'
-    +'<p><b>What “shadowban” usually is.</b> Occasionally real (guideline strikes, flagged audio <i>[VERIFY]</i>) — usually a mislabel for: weak first-pool performance, a confused account file, or platform-wide distribution breathing. The operator’s response to a flop is never superstition; it is the tape-read (B1): where did the retention graph cliff, and what does the next clip change? The machine is not fair, but it is <b>consistent</b> — and consistent machines can be learned, which is the entire point of this tier.</p>',
-  example:'<p><b>Ex — one clip’s ride:</b> Pool 1 (400 people): 62% completion, 9 shares → promote. Pool 2 (4,000): holds → promote. Pool 3 (40,000): completion sags to 31% at second 6 — the payoff arrived too slow for a colder audience → distribution ends at 61k views. Not luck, not a ban: a specific exam failed at a specific second, visible in the retention graph, fixable in the next edit.</p>',
-  teach:'Explain the test-pool ladder, the ranked signals, the account-file-as-credit-file parallel, and what “shadowbanned” usually mislabels.',
-  cards:[
-    {f:'The test-pool ladder:', b:'Classify → small mixed test audience → measure behavior → promote or stop → repeat at scale. Virality = passing the same exam at escalating pool sizes.'},
-    {f:'The signals, ranked:', b:'Watch time (completion + re-watch) > shares > saves > comments > follows-per-view > likes. B1’s doctrine is signal engineering, not taste.'},
-    {f:'The account file:', b:'Your history routes new clips to the RIGHT first pool. Coherence = a clean file; scatter = testing on random audiences. Consistency is payment history.'},
-    {f:'“Shadowban,” decoded:', b:'Usually weak first-pool performance, a confused file, or distribution breathing — occasionally real strikes [VERIFY]. The response is a tape-read, never superstition.'}
-  ],
-  quiz:[
-    {q:'A clip “goes viral” when…', c:['It passes the same behavioral exam through escalating test pools','A platform employee promotes it','It’s posted at the right hour','Hashtags align'], a:0, e:'Each pool measures watch/share/save behavior; strong signals promote to the next. No gatekeeper exists.'},
-    {q:'The strongest ACTIVE signal a viewer can send is…', c:['A like','A slow scroll','A profile visit','A share — social capital spent on your behalf'], a:3, e:'Above it sits only watch-time itself. Likes are the politest, weakest vote.'},
-    {q:'A scattered account underperforms because…', c:['Followers dislike variety','Its confused file gets clips tested on random audiences — failing on relevance, not quality','Editing suffers','Platforms punish range'], a:1, e:'The classifier routes the first pool. Positioning (B0) is machine-readable — the account file is your credit file.'}
-  ]},
-
-{ id:'b2_map', sub:'B2', title:'The platform map — where this industry actually lives',
-  predict:'For THIS business, one platform is the town square where fleets, brokers, and owners all check each other out; one is the discovery engine; one is the searchable trust archive; and one surface is where every deal actually closes. Map them.',
-  concept:'<p>Platforms are not interchangeable megaphones — each has a job in this industry’s specific geography <i>[VERIFY — platform roles drift over years]</i>:</p>'
-    +'<p><b>Instagram — the town square.</b> The source course says it plainly: this industry lives on IG. Fleets post inventory there, brokers deliver there, owners lurk there, and — decisive — <b>industry people vet you by your grid before ever replying.</b> Your profile is the storefront (B3); Reels are the reach engine feeding it; Stories are the daily pulse for people already inside (deliveries, polls, behind-the-scenes — where familiarity compounds); DMs are the deal room. If you run ONE platform seriously, it is this one — t7_brand’s magnet story happened here for a reason, and B5 is this platform’s full playbook.</p>'
-    +'<p><b>TikTok-class short-form — the discovery engine.</b> The coldest, largest test pools and the fastest path from zero to reach (its recommender leans hardest on per-clip merit over account size <i>[VERIFY]</i>). Its job in your system: top-of-funnel awareness that you deliberately walk toward owned ground (“full teardown on IG/YT”). Treat its audience as borrowed, always.</p>'
-    +'<p><b>YouTube — the trust archive.</b> Long-form (fleet audits, full teardowns, monthly Ledgers) does what shorts cannot: 8 minutes of watching you work builds the parasocial asset (B0) at 20× the rate of 30 seconds. And YouTube is a <b>search engine</b>: “how much to rent a Lamborghini in [metro]” gets answered for YEARS by one well-titled video — shelf-life no feed post has. Shorts there feed the long-form. This is also prime territory for TX’s AI-answer surface: transcripts are machine-food.</p>'
-    +'<p><b>X and the money corner.</b> Smaller lane, specific audience: the crypto/trading money that RENTS these cars (T0’s customer) lives there. Written-thread teardowns of your intel pillar travel in that world. Optional until the core loop runs.</p>'
-    +'<p><b>The DM — the only platform that pays.</b> Every rental, placement, and partnership in your future closes in a direct message. Everything above exists to make the right people open one (B3 is entirely about what happens then).</p>'
-    +'<p><b>Deployment doctrine.</b> Phase 1: <b>IG as home base + one discovery engine</b>, fed by the 1→10 cut (B1) — two surfaces, done properly, beats five done thin. Phase 2 (system running, ~month 3+): add YouTube for the archive. Cross-post everything the formats allow, recut where they don’t. And plant the flag EVERYWHERE on day zero: register the handle (b0_identity) on every platform you may ever use — squatted handles are a tax on future you.</p>',
-  example:'<p><b>Ex — one delivery, mapped:</b> The Urus handoff films once. TikTok gets the 21-second POV (discovery). IG gets the Reel + a 5-frame Story arc + the grid cover (town square + pulse). YouTube gets the 9-minute “what a delivery actually involves” with the double clock-out explained (archive + search). X gets the thread on who actually rents these (money corner). Four platforms, one afternoon, each doing its actual job — and two DMs by Friday.</p>',
-  teach:'Assign each platform its job (town square, discovery, archive, money corner, deal room) and state the two-phase deployment doctrine.',
-  cards:[
-    {f:'The map:', b:'IG = the industry’s town square + storefront + DM deal room. TikTok-class = coldest/fastest discovery. YouTube = trust archive + search shelf-life. X = the money corner. [VERIFY drift]'},
-    {f:'Why IG is home base:', b:'Fleets, brokers, and owners all vet you by your grid before replying — the industry literally lives there (source course + the magnet story).'},
-    {f:'Long-form’s irreplaceable job:', b:'8 minutes of watching you work compounds parasocial trust ~20× faster than shorts — and search gives one video years of shelf-life.'},
-    {f:'Deployment doctrine:', b:'Phase 1: IG + one discovery engine, done properly. Phase 2: add the YouTube archive. Handles registered EVERYWHERE on day zero.'}
-  ],
-  quiz:[
-    {q:'For this industry specifically, the home-base platform is…', c:['YouTube','TikTok','Instagram — the town square where fleets, brokers, and owners vet you before replying','X'], a:2, e:'The industry lives there (source course); the grid is your storefront and the DM is the deal room.'},
-    {q:'Long-form’s unique contribution to the asset is…', c:['Trust velocity (8 minutes of you working) plus search shelf-life measured in years','More ad revenue','Higher resolution','Easier editing'], a:0, e:'Shorts discover; long-form convinces — and answers “[car] rental [metro]” queries for years.'},
-    {q:'Phase-1 deployment is…', c:['All five platforms at once','IG home base + one discovery engine, properly — with handles squatted everywhere for later','YouTube only','Whichever trends'], a:1, e:'Two surfaces done well beat five done thin; the 1→10 cut feeds both from one day’s work.'}
-  ]},
-
-{ id:'b2_local', sub:'B2', title:'Local gravity — winning one metro instead of the world',
-  predict:'Your clip about YOUR city’s exotic scene will lose the global race to a Dubai supercar page every single time — and still make you more money than they earn from a million views. What do the recommendation systems do with location that makes the metro game winnable, and why is winning it worth more?',
-  concept:'<p>The global game is rigged against you; the local game is rigged FOR you. Two mechanisms:</p>'
-    +'<p><b>Mechanism 1 — recommenders geo-route.</b> Platforms read location signals (geotags, named places in caption/speech/overlay, the engagement graph of who interacts) and preferentially test local-flavored content on local users <i>[VERIFY strength per platform]</i>. A clip titled “what $900 rents you in [metro] this weekend” gets served to <b>your metro’s</b> pool — where it competes against almost nobody (the industry’s accounts are faceless fleets; B0), instead of against every supercar page on earth. You cannot win “Lamborghini.” You can absolutely own “Lamborghini + [your city].”</p>'
-    +'<p><b>Mechanism 2 — only local attention converts.</b> Run the funnel math: a million global views contain a handful of people who could ever rent from your metro’s fleets — a local thousand might contain fifty. Renters must be HERE; fleets that hand you rate cards are HERE; owners with idle cars are HERE; the concierge referral web (T7) is HERE. The asset (attention × trust × proof) only monetizes inside driving distance — so the metro pool is not the consolation bracket. <b>It is the entire paying market.</b></p>'
-    +'<p><b>Feeding the gravity, deliberately.</b> Name the city constantly — in speech, overlay, caption (machine-readable AND human-filtering). Geotag real places. Cover the Scene pillar (meets, spots, events — B1). Collaborate locally: every fleet feature, detailer walkthrough, or meet recap tags accounts whose followers are EXACTLY your target pool — a collab with a 3k-follower local detailer out-converts a shoutout from a 500k global page. And notice the compounding loop this feeds: local content → local reach → fleet access (they’ve seen you) → delivery/content privileges (T6) → better local content. <b>The access flywheel is the local loop spinning.</b></p>'
-    +'<p><b>The search shelf, localized.</b> “[car] rental [metro]” queries — classic search AND the AI-answer surface (TX) — have astonishingly weak competition in most cities (the industry’s marketing is years stale; T7). Your YouTube archive + captioned clips + consistent NAP (b0_identity) make YOU the answer. That position, once taken, is the closest thing to free rent in this business.</p>'
-    +'<p><b>The endgame of the metro game.</b> “Unavoidable in one city’s car scene” is a finish line a broke solo creator can actually cross in months — and it is the exact asset T7 prices (fleets treat visible LOCAL reach as qualification) and TX scales (the multi-metro arc replays the playbook city by city). Win the metro. The world was never the assignment.</p>',
-  example:'<p><b>Ex — the two races:</b> Clip A: “POV: Lamborghini Huracán” — tested against the entire planet’s car content; dies in pool 2. Clip B: “Every exotic you can actually rent in Phoenix under $1,000, ranked” — geo-routed to Phoenix pools, near-zero competition, saved by half the metro’s car scene, quoted in three DMs, and ranking on search for months. B had a tenth of A’s ceiling and a hundred times its value.</p>',
-  teach:'Explain the two mechanisms (geo-routing, local-only conversion), the four deliberate gravity feeds, and why the metro is the whole paying market.',
-  cards:[
-    {f:'Mechanism 1 — geo-routing:', b:'Recommenders test local-flavored content on local pools [VERIFY]. You can’t win “Lamborghini”; you can own “Lamborghini + [city]” against near-zero competition.'},
-    {f:'Mechanism 2 — conversion geography:', b:'Renters, fleets, owners, and the referral web are all within driving distance. The asset only monetizes locally — the metro IS the paying market.'},
-    {f:'Feeding the gravity:', b:'Name the city constantly, geotag, cover the Scene pillar, collab local (a 3k local detailer beats a 500k global shoutout) — spinning the access flywheel.'},
-    {f:'The localized search shelf:', b:'“[car] rental [metro]” has weak competition and an open AI-answer surface — one archive video + consistent NAP can BE the answer for years.'}
-  ],
-  quiz:[
-    {q:'The metro game is winnable because…', c:['Locals are nicer','Fewer rules','It’s cheaper','Geo-routing tests you on local pools where the industry’s faceless accounts barely compete'], a:3, e:'Location signals route distribution; “Lamborghini + [city]” is an ownable lane the global race never was.'},
-    {q:'A million global views usually lose to a thousand local ones because…', c:['Only people within driving distance can rent, refer, consign, or hand you a rate card','Global views are fake','Locals watch longer','Ads pay less globally'], a:0, e:'The asset monetizes inside one metro — conversion geography beats vanity reach.'},
-    {q:'The best collab for a month-two account is…', c:['A 500k global supercar page','A 3k-follower local detailer whose audience is exactly your metro’s car scene','A celebrity','A meme page'], a:1, e:'Follower overlap with the paying pool is the metric — and local collabs spin the access flywheel.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B2 = [
-  {q:'Distribution works by…', c:['Editor picks','Escalating test pools measuring viewer behavior','Chronological feeds','Paid placement only'], a:1, e:'Classify → small pool → signals → promote or stop → repeat. No gatekeeper.', d:1},
-  {q:'The top-ranked signal family is…', c:['Watch time — completion and re-watch','Likes','Comments','Profile visits'], a:0, e:'Then shares, saves, comments, follows. Likes are the weakest vote.', d:1},
-  {q:'Hooks, loops, and “send this to…” prompts are really…', c:['Style choices','Tricks that stopped working','Signal engineering — completion, re-watch, and share manufacturing','Platform requirements'], a:2, e:'B1’s doctrine mapped onto the machine’s actual exam.', d:2},
-  {q:'The account file parallels…', c:['A credit file — history routes your first pool; consistency is payment history','A resume','A police record','A portfolio'], a:0, e:'Coherent accounts get tested on the right audiences; scattered ones fail on relevance.', d:2},
-  {q:'“Shadowbanned” most often mislabels…', c:['Real bans','Copyright strikes','Hacked accounts','Weak first-pool performance, a confused file, or normal distribution breathing'], a:3, e:'Occasionally real [VERIFY]; the operator’s response is a tape-read, not superstition.', d:2},
-  {q:'This industry’s town square is…', c:['TikTok','LinkedIn','Instagram — grid storefront, Stories pulse, DM deal room','YouTube'], a:2, e:'Fleets, brokers, and owners vet your grid before replying.', d:1},
-  {q:'YouTube’s two irreplaceable jobs:', c:['Memes and lives','Trust velocity via long-form + search shelf-life in years','Shorts and polls','Ads and merch'], a:1, e:'8 minutes of you working compounds parasocial trust; one title answers metro queries for years.', d:2},
-  {q:'Phase-1 platform deployment:', c:['Everything at once','Rotate weekly','YouTube only','IG home base + one discovery engine, handles squatted everywhere'], a:3, e:'Two done properly beat five done thin; the 1→10 cut feeds both.', d:2},
-  {q:'The only “platform” that pays is…', c:['The grid','Stories','The DM — every rental, placement, and partnership closes there','The algorithm'], a:2, e:'Everything else exists to make the right people open one (B3).', d:1},
-  {q:'Geo-routing means…', c:['Recommenders test local-flavored content on local pools [VERIFY]','Ads by zip code','GPS tracking','Region locks'], a:0, e:'Name the city, geotag, cover the scene — own “Lamborghini + [metro]”.', d:2},
-  {q:'A 3k local detailer collab beats a 500k global shoutout because…', c:['Audience overlap with the paying pool is total — and it spins the access flywheel','It’s cheaper','Detailers edit well','Global pages decline'], a:0, e:'Conversion geography: the metro is the entire market that can pay you.', d:2},
-  {q:'The local search shelf matters because…', c:['Hashtags expired','“[car] rental [metro]” queries have weak competition and an open AI-answer surface — one video can be the answer for years','SEO is dead','It’s free'], a:1, e:'The industry’s marketing is years stale (T7); the shelf is unclaimed rent.', d:3}
-];
-
-// ═══════════════════════ BRAND 3 · THE CONVERSION ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b3_funnel', sub:'B3', title:'The profile is the storefront — engineering the click after the clip',
-  predict:'A stranger loves your clip, taps your name, looks at your profile for four seconds… and leaves forever. Rebuild what those four seconds showed them — and what five elements would have converted the visit instead.',
-  concept:'<p>Content wins attention; the <b>profile converts it.</b> Every viral test pool ends with a fraction of viewers tapping your name — and the profile has about four seconds to turn that tap into a follow, a DM, or a click. Engineer it like a storefront:</p>'
-    +'<p><b>Element 1 — the bio as a positioning statement.</b> Three lines, three jobs: WHO/WHAT (“Building an exotic rental operation from zero in [metro]” — b0_position’s sentence, compressed), PROOF (“47 deliveries documented · every deal logged” — numbers, receipts, no adjectives), CTA (“DM ‘WEEKEND’ for cars + dates” — one action, named). No inspirational quotes, no emoji walls, no “DM for collab.” The bio is read by renters, fleets, AND owners simultaneously (this profile is B2C and B2B at once — a theme this whole tier runs on).</p>'
-    +'<p><b>Element 2 — the pinned proof row.</b> The first content a visitor sees is chosen, not chronological: pin (a) the best statement-of-premise clip (who you are in 30 seconds), (b) the hardest proof (a delivery, a closed deal, the monthly Ledger), and (c) the best-performing intel teardown (fluency on display). Three pins = premise, receipts, competence.</p>'
-    +'<p><b>Element 3 — highlights as a menu.</b> Story highlights become permanent shelves: CARS (what you can get — the white-label inventory, honestly framed per b0_identity), DELIVERIES, INTEL, REVIEWS (with permission), START HERE. A stranger can now self-serve the entire pitch without you being awake.</p>'
-    +'<p><b>Element 4 — the link that works.</b> One link, pointed at the current objective (booking inquiry form feeding the CRM — TX’s two-stage funnel — or the site). Link-in-bio pages with nine options convert like menus with nine cuisines: poorly. One objective at a time.</p>'
-    +'<p><b>Element 5 — grid coherence.</b> Covers with consistent geometry and grade (b0_identity) so the grid reads as a SHOW, not a camera roll. Industry people judge the grid in seconds (B2: IG is where they vet you) — coherence signals operator; chaos signals hobbyist.</p>'
-    +'<p><b>The audit habit.</b> Monthly, visit your own profile as a stranger (log out, four-second test): What do I do? Why believe me? What do I do next? If any answer takes longer than the attention span that brought them, the storefront — not the content — is where your funnel leaks. Fix the cheapest leak first; it is almost always this one.</p>',
-  example:'<p><b>Ex — the four-second rebuild:</b> Before: bio “🚗💨 chasing dreams | DM for collab,” grid of mixed memes and cars, no pins, linktree with 8 links. After: “Building an exotic rental operation from zero in Phoenix · 47 deliveries documented · DM ‘WEEKEND’ for cars + dates,” three pins (premise / delivery / cliff-cap teardown), five highlight shelves, one booking link. Same content library. The second profile converts the identical tap traffic at multiples of the first.</p>',
-  teach:'Rebuild the five storefront elements from memory and describe the monthly logged-out four-second audit.',
-  cards:[
-    {f:'The bio’s three lines:', b:'WHO/WHAT (the positioning sentence), PROOF (numbers and receipts, no adjectives), CTA (one named action). Read by renters, fleets, and owners at once.'},
-    {f:'Pins + highlights:', b:'Three pins = premise, receipts, competence. Highlights = permanent shelves (CARS, DELIVERIES, INTEL, REVIEWS, START HERE) — the pitch, self-served.'},
-    {f:'The link rule:', b:'One link, one current objective (inquiry form → CRM). Nine-option link pages convert like nine-cuisine menus.'},
-    {f:'The four-second audit:', b:'Monthly, logged out: What do I do? Why believe me? What next? Any slow answer = the funnel’s cheapest leak, found.'}
-  ],
-  quiz:[
-    {q:'The profile’s job in the funnel is…', c:['Converting the post-clip name-tap into a follow, DM, or click within ~4 seconds','More content','Archiving','Aesthetics'], a:0, e:'Content wins the attention; the storefront converts it — and it is usually the cheapest leak to fix.'},
-    {q:'The bio’s proof line should contain…', c:['Numbers and receipts — “47 deliveries documented,” never “passionate about cars”','Adjectives and emojis','A quote','Hashtags'], a:0, e:'Receipts differentiate against the flexer baseline; adjectives are claims, numbers are proof.'},
-    {q:'Pinned content is chosen as…', c:['The three newest clips','The three most viral','Premise, receipts, competence — who you are, proof it’s real, fluency on display','Rotating weekly'], a:2, e:'First impressions are curated, not chronological.'}
-  ]},
-
-{ id:'b3_dm', sub:'B3', title:'The DM protocol — speed, qualification, and moving money off-platform',
-  predict:'Two identical “how much for the Urus this weekend?” DMs arrive at two accounts. One replies in 4 minutes, one in 7 hours. Industry-wide, across every lead-driven business, roughly how differently do those two conversations end — and what does the fast one say FIRST?',
-  concept:'<p>Every dollar this brand ever makes passes through a DM (B2’s last law). Treat the inbox as the deal room it is:</p>'
-    +'<p><b>Law 1 — speed-to-lead.</b> Lead-conversion research across industries shows response inside minutes converts at multiples of response inside hours <i>[VERIFY figures — the direction is overwhelming]</i>; an exotic-rental inquiry is an impulse with a countdown. Operationalize: notifications on, template library ready, and the CRM (TX) catching what you miss. The first reply’s job is not to close — it is to <b>respond while the impulse lives</b> and start qualification.</p>'
-    +'<p><b>Law 2 — qualify with the T7 script.</b> You already know the questions; they are the prequalification that makes a lead worth 20% of a deal (t7_translate): <b>dates · car (or the look they want — T0’s flexibility lesson) · city · purpose · budget band.</b> Two texts’ worth, conversational, not a form. The answers route the lead: real + fits → package and move; vague + drifting → nurture; incongruent (T5’s straw tells apply in DMs verbatim — wrong-fitting car, odd urgency, someone-not-in-the-room vibes) → decline politely and early.</p>'
-    +'<p><b>Law 3 — move it off the feed.</b> Serious threads escalate: DM → phone/WhatsApp → (for a booking) the fleet’s verification flow — because deals need documents, calls, and records DMs handle badly, and because your CRM must own the relationship (the platform can throttle reach tomorrow; it cannot take a phone number — B4’s owned-attention doctrine starting early). Never negotiate in comments: pricing debates in public anchor every future client and feed competitors; “DM’d you” is the whole public reply.</p>'
-    +'<p><b>Law 4 — the unglamorous majority.</b> Most DMs are tire-kickers, price-shoppers, and kids. Templates handle them kindly in seconds (“Not booking this month? All good — following along is free. 🤝”), because today’s 16-year-old tire-kicker is quietly this niche’s future 24-year-old renter (T0’s demographic literally ages into your book), and because public rudeness screenshots forever. The filter is warm; the calendar is protected.</p>'
-    +'<p><b>Law 5 — the two-sided inbox.</b> Renter DMs are half the story. The other half — fleets sounding you out, owners asking “could my car earn?”, brokers probing your screening — is the B2B magnet traffic (t7_brand) that turns into rate cards and Rung-3 placements. Recognize these in one line and route them UP: voice note → call → coffee. The inbox is simultaneously your sales floor and your business-development desk; triage accordingly, and log every qualified lead as the graded rep it is (the DM→Qualified counter exists for exactly this).</p>',
-  example:'<p><b>Ex — the 4-minute thread:</b> 6:02 DM: “urus this weekend??” 6:06 you: “Can do — what dates, and Phoenix pickup or delivery?” 6:09: dates + delivery. 6:11: “Purpose helps me fit the car — shoot, event, or just the weekend? And rough budget band?” 6:14: shoot, $2k-ish. 6:17: two options + “easiest to lock this on a quick call — number?” 6:31: on the phone. The 7-hour reply found the same person already booked elsewhere — the impulse had a countdown.</p>',
-  teach:'Recite the five DM laws — speed, the T7 qualification script, off-platform escalation, warm filtering, and the two-sided inbox.',
-  cards:[
-    {f:'Speed-to-lead:', b:'Minutes-vs-hours changes outcomes at multiples [VERIFY] — an exotic inquiry is an impulse on a countdown. Notifications, templates, CRM backstop.'},
-    {f:'The qualification script:', b:'Dates · car/look · city · purpose · budget band — T7’s prequalification, conversationally. Route: package / nurture / decline (straw tells apply in DMs).'},
-    {f:'Off the feed, never in comments:', b:'DM → phone → verification flow; the CRM owns the relationship the platform can’t revoke. Public price debates anchor futures — “DM’d you” is the whole reply.'},
-    {f:'The two-sided inbox:', b:'Renters are half; fleets/owners/brokers sounding you out are the B2B half — recognize in one line, route UP to calls, log the graded rep.'}
-  ],
-  quiz:[
-    {q:'The first reply’s job is…', c:['Closing the deal','Responding while the impulse lives and opening qualification','Sending prices','Sending the contract'], a:1, e:'Speed-to-lead: minutes-vs-hours converts at multiples. The close comes after the script.'},
-    {q:'Public comment price negotiations are refused because…', c:['Platforms ban them','They’re slow','They anchor every future client and feed competitors — “DM’d you” is the whole reply','Clients prefer email'], a:2, e:'Pricing lives in the DM; the feed is the storefront, not the negotiating table.'},
-    {q:'An owner DMing “could my car earn with you?” is…', c:['A tire-kicker','A renter','Spam','B2B magnet traffic — route up to a call; it’s a potential Rung-3 placement'], a:3, e:'The two-sided inbox: half sales floor, half business development. One line of recognition, then escalate.'}
-  ]},
-
-{ id:'b3_mix', sub:'B3', title:'Growth content vs conversion content — the 80/20 that pays',
-  predict:'An account posts ONLY entertaining car content: huge reach, empty inbox. Another posts ONLY “DM to book this Urus”: dead reach, and the few who see it feel sold to. Between them sits a ratio and a disguise trick that fills inboxes while still growing. Describe both.',
-  concept:'<p>Two species of content, two jobs, one ratio:</p>'
-    +'<p><b>Growth content</b> (the ~80): built to pass test pools — broad hooks, the Metal and Climb pillars, entertainment value a stranger anywhere enjoys. Its job is REACH and the account file (B2). It cannot close: no offer, no urgency. <b>Conversion content</b> (the ~20): built for the metro’s buyers — “this Urus is open this weekend in [city],” “two slots left for prom season,” the review reel, the how-to-book walkthrough. Low test-pool ceilings (the algorithm correctly reads it as commercial <i>[VERIFY]</i>), but it is the species that fills the DM queue. All-growth = famous and broke; all-conversion = a classifieds page nobody follows. <b>Roughly 80/20, tuned by season</b> (heavier conversion into prom/wedding/event windows — the premium niche calendar from T7).</p>'
-    +'<p><b>The disguise trick — conversion wearing growth’s clothes.</b> The best converting content doesn’t look like an ad: the <b>delivery POV</b> (pure Metal entertainment… that demonstrates the exact service and city), the <b>“what $X rents you in [metro]” ranking</b> (intel format, inventory function), the <b>client-story recap</b> (narrative wrapper, social proof core). The offer arrives as the natural last beat — “this one’s open next weekend” — not as the premise. Same DM yield as the hard ad, none of the reach penalty.</p>'
-    +'<p><b>Write for both audiences on purpose.</b> Every piece is read by renters AND by the industry (B2: the town square). The delivery POV shows renters the experience and shows fleets your handoff discipline (clock-out visible in frame — T5 as content!). The dec-page teardown educates renters and tells owners their car would be safe with you. This dual-write is free — it costs one moment of asking, per clip, <i>“what does the OTHER audience see here?”</i> — and it is how the magnet effect (t7_brand) is engineered rather than hoped for.</p>'
-    +'<p><b>The inventory advantage, restated for content.</b> Because broker sheets make peers’ cars sellable (T1/TX), your conversion content is never limited to cars you own: “cars I can get you in [city] this weekend” is an honest, endless conversion series — the white-label site (TX) in clip form. The account becomes the metro’s de facto availability channel, which is a position, not a post.</p>'
-    +'<p><b>The calendar discipline.</b> Conversion content is scheduled off the industry’s real calendar — event weekends, wedding season, graduation, the premium non-driving niche (T7) — not off your mood. Growth runs daily; conversion runs where money is standing. The mix is a dial you read off the tape (B1) and the booking book, not a superstition.</p>',
-  example:'<p><b>Ex — one week’s mix (6 growth / 2 conversion):</b> Mon–Sat: delivery POV, cliff-cap teardown, meet recap, Climb update, cold-start Metal clip, Ledger short. Wed: “What $800–1,200 actually rents you in Phoenix this weekend, ranked” (disguised inventory). Fri: “Prom season: the three cars that always go first — two dates left on the white Urus.” Result: the growth kept testing; the two conversion pieces produced eleven DMs; the ratio paid both bills.</p>',
-  teach:'Define the two species and their jobs, the 80/20 seasonal dial, the disguise trick, and the dual-audience write.',
-  cards:[
-    {f:'The two species:', b:'Growth (~80): broad, entertaining, builds reach + the account file; cannot close. Conversion (~20): metro-specific offers; fills the inbox; low reach ceiling.'},
-    {f:'The disguise trick:', b:'Conversion wearing growth’s clothes — delivery POVs, “what $X rents in [metro]” rankings, client stories. The offer is the last beat, not the premise.'},
-    {f:'The dual-audience write:', b:'Every clip is read by renters AND fleets/owners. One question per clip: “what does the OTHER audience see?” — the magnet effect, engineered.'},
-    {f:'The inventory advantage:', b:'Broker sheets make “cars I can get you this weekend” an honest, endless conversion series — the account becomes the metro’s availability channel.'}
-  ],
-  quiz:[
-    {q:'All-growth accounts end up…', c:['Rich','Banned','Famous and broke — reach without offers fills no inbox','Verified'], a:2, e:'Growth builds the audience; only conversion content asks it for anything. ~80/20, tuned by season.'},
-    {q:'The best-converting content typically looks like…', c:['A hard ad','A story poll','A pinned price list','Entertainment with the offer as the natural last beat — the delivery POV, the metro ranking'], a:3, e:'Conversion in growth’s clothes keeps the reach AND fills the DMs.'},
-    {q:'The dual-audience write means…', c:['Posting twice','Two accounts','Asking per clip what the industry side (fleets/owners) sees — engineering the inbound magnet','Translating captions'], a:2, e:'The clock-out visible in a delivery POV is a renter’s reassurance and a fleet’s audit — one clip, two sales.'}
-  ]},
-
-{ id:'b3_proof', sub:'B3', title:'Social proof without lying — receipts, permission, and the fatal shortcut',
-  predict:'In this niche the fastest-looking shortcut is faking it: renting a car for a day and calling it yours, screenshotting staged “bookings,” flexing borrowed lifestyles. Some of the biggest accounts did exactly that. Why is it still the single dumbest available move for YOU specifically — mechanically, not morally?',
-  concept:'<p>Proof is the third term of the asset (b0_asset) — and the only one with a fraud market attached. Draw the line mechanically:</p>'
-    +'<p><b>What honest proof looks like, engineered.</b> <b>Document transactions as they happen:</b> the delivery clip IS the receipt (date, car, city, client’s consent — ask every time; image-renters usually love it, but a “yes” on camera beats an assumption — and NEVER film a client who declined: T0’s quiet-luxury customers exist here too). <b>Reviews with permission,</b> screenshotted and shelved (B3’s highlight menu). <b>The Ledger pillar</b> (B1) as rolling proof-of-work: reps logged, deals graded, misses included — the REPS system broadcast. <b>Specific numbers over vibes:</b> “deal #9 closed, 214 miles, deposit released clean” outperforms “another one 🔥” with every audience that matters. Notice the pattern: <b>honest proof is just your T5 documentation discipline, pointed outward.</b> You already produce it; publishing it is free.</p>'
-    +'<p><b>Why the fake is mechanically fatal here — three separate detonators.</b> <b>1: The metro knows.</b> Your market is one city’s tight, talkative scene (T3’s network, T7’s reputation wire). The fleet that ACTUALLY owns “your” Lamborghini sees the post within days — and the story of the kid who faked it travels the same blacklist wire that kills bad brokers, before you ever held a rate card. <b>2: The premise collapses.</b> Your entire positioning is the documented-from-zero climb (B0). One staged flex doesn’t just embarrass — it <b>falsifies the show retroactively</b>: every prior receipt becomes suspect, and the trust term zeroes the product. The flexer-guru can survive exposure (fantasy was the product); the documenter cannot (truth was). <b>3: The B2B audience is the one you can’t fool.</b> Renters might miss a staged clip; fleets and owners — the audience deciding your rate cards and placements — rent cars for a living and clock a one-day rental posed as ownership instantly. The exact viewers the fake targets are the ones it disqualifies you with.</p>'
-    +'<p><b>The honest version of the same aspiration.</b> You do not need to fake proximity to the cars — the whole industry runs on legitimate access without ownership: “cars I can get you” (b0_identity), delivery privileges earned through trust (T6), white-label inventory (T1). Say what is true — “not mine; I placed it / I deliver it / I can get it” — and the truth is <b>more</b> impressive to every audience that pays, because access-without-capital is the actual skill this course teaches. The climb premise makes honesty the flex.</p>'
-    +'<p><b>And the standing rules, restated once:</b> no income claims ever (the differentiator in a screenshot-faking niche — b0_identity), no fabricated urgency (“2 slots left” only when true — the loyalty lessons of T6 apply to audiences too), no staged “stolen/crashed” drama bait (T5’s discipline: the brand documents an operator). Proof compounds only while every unit of it is real — the same law as attention (B0), the same law as the file (C1).</p>',
-  example:'<p><b>Ex — the two flexes:</b> Fake: “new addition to the fleet 😤” over a one-day rental. The owning fleet sees it Thursday; the group chat has it by Friday; the rate-card conversation never happens. Honest: “I don’t own this — I delivered it, ran the clock-out, and it’s available through me next weekend.” Same car, same photo. The second caption impressed the only three audiences that pay: renters (access), fleets (discipline), owners (honesty with other people’s cars).</p>',
-  teach:'List the four honest-proof mechanisms, the three detonators that make faking fatal in this niche specifically, and the honest reframe of access-without-ownership.',
-  cards:[
-    {f:'Honest proof, engineered:', b:'Deliveries documented with consent, permissioned reviews, the Ledger pillar (reps + graded misses), specific numbers over vibes — T5’s discipline pointed outward.'},
-    {f:'The three detonators of faking:', b:'The metro’s blacklist wire sees it in days; the documented-climb premise falsifies retroactively; and the B2B audience (fleets/owners) clocks it instantly — the viewers it targets are the ones it disqualifies you with.'},
-    {f:'The honest reframe:', b:'“Not mine — I placed it / deliver it / can get it.” Access without capital IS the skill; the truth outflexes the fake with every paying audience.'},
-    {f:'The standing rules:', b:'No income claims, no fabricated urgency, no staged drama, consent before filming clients. Proof compounds only while every unit is real.'}
-  ],
-  quiz:[
-    {q:'The audience a staged “my fleet” post cannot fool is…', c:['Fleets and owners — who rent cars for a living and decide your rate cards','Teenagers','Global viewers','The algorithm'], a:0, e:'Detonator 3: the fake targets exactly the viewers it disqualifies you with.'},
-    {q:'For a documenter, one exposed fake is worse than for a flexer because…', c:['Fines are higher','Followers unfollow faster','It falsifies the show retroactively — truth was the product, so every prior receipt becomes suspect','Platforms deboost'], a:2, e:'The premise IS the asset. The flexer sold fantasy and survives exposure; the documenter sold truth and cannot.'},
-    {q:'The honest version of car proximity is…', c:['“Not mine — I delivered it / placed it / can get it,” which impresses every paying audience MORE','Silence about ownership','Renting monthly for content','Blurring plates'], a:0, e:'Access-without-capital is the course’s actual skill; the climb premise makes honesty the flex.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B3 = [
-  {q:'The profile’s conversion window is roughly…', c:['A minute','A full scroll','Four seconds — who you are, why believe you, what to do next','One video'], a:2, e:'The storefront converts the name-tap or loses it; it is the funnel’s cheapest fix.', d:1},
-  {q:'The bio’s three lines are…', c:['Quote, emoji, link','Name, age, city','Positioning sentence, receipts, one named CTA','Motto, goals, thanks'], a:2, e:'WHO/WHAT · PROOF (numbers) · CTA — read by renters and industry at once.', d:1},
-  {q:'Speed-to-lead matters because…', c:['Politeness','Templates expire','Algorithms reward it','Minutes-vs-hours converts at multiples — the inquiry is an impulse on a countdown [VERIFY]'], a:3, e:'First reply’s job: respond while the impulse lives, open the script.', d:1},
-  {q:'The DM qualification script asks…', c:['Age and job','Follower count','Dates · car/look · city · purpose · budget band','References'], a:2, e:'T7’s prequalification, conversational — routing to package/nurture/decline.', d:2},
-  {q:'Price talk in public comments is…', c:['Transparency','Refused — it anchors future clients and feeds competitors; “DM’d you” is the reply','Efficient','Required'], a:1, e:'The feed is the storefront; the deal room is the DM.', d:2},
-  {q:'Straw-rental tells in DMs…', c:['Apply verbatim — wrong-fit car, odd urgency, someone-not-in-the-room vibes = decline early','Don’t exist','Are the fleet’s problem','Mean charge more'], a:0, e:'T5’s incongruence reading starts at the first message, not the handoff.', d:3},
-  {q:'The growth/conversion ratio runs roughly…', c:['50/50','80/20, tuned to the industry’s seasonal calendar','95/5 always','100/0 until 10k'], a:1, e:'All-growth = famous and broke; all-conversion = a classifieds page. The dial reads off the tape and the booking book.', d:2},
-  {q:'The disguise trick is…', c:['Hidden ads','Clickbait','Fake giveaways','Conversion wearing growth’s clothes — POVs and metro rankings with the offer as the last beat'], a:3, e:'Same DM yield as the hard ad, none of the reach penalty.', d:2},
-  {q:'The dual-audience write asks, per clip…', c:['Is it viral?','What does the OTHER audience (fleets/owners) see here?','Is it short enough?','Does it trend?'], a:1, e:'The clock-out in frame sells renters comfort and fleets discipline — the magnet, engineered.', d:2},
-  {q:'Honest proof is mostly…', c:['Expensive to produce','Testimonial ads','Your T5 documentation discipline pointed outward — deliveries, ledgers, permissioned reviews','Press coverage'], a:2, e:'You already produce it operationally; publishing it is free.', d:2},
-  {q:'Faking ownership detonates because…', c:['It’s illegal everywhere','Cars get recognized by AI','Editing is hard','The metro wire sees it, the premise falsifies retroactively, and the B2B audience clocks it instantly'], a:3, e:'Three detonators — and the third disqualifies you with the exact audience the fake targets.', d:2},
-  {q:'“Not mine — I can get it for you” is…', c:['Weak','A downgrade','Legally required','The stronger flex — access without capital is the actual skill, and every paying audience knows it'], a:3, e:'The climb premise makes honesty outperform the fake with renters, fleets, and owners alike.', d:2}
-];
-
-// ═══════════════════════ BRAND 4 · THE MOAT ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b4_owned', sub:'B4', title:'Rented vs owned attention — the landlord can always raise the rent',
-  predict:'An account spends three years building 200k followers on one platform. The platform changes its recommendation weighting — or suspends the account on a false flag. Overnight reach drops 90%. What did that creator actually own the whole time — and what should every viral moment have been quietly converting into?',
-  concept:'<p>The hardest structural truth in the creator economy, learned early or learned expensively:</p>'
-    +'<p><b>Three tiers of attention ownership.</b> <b>Rented:</b> algorithmic reach — the test pools (B2). You control inputs, never outcomes; the platform can reprice it any morning, and periodically does <i>[VERIFY each era’s shifts]</i>. <b>Leased:</b> your follower graph — better (they chose you), but the landlord still owns the delivery: platforms throttle what fraction of YOUR followers see YOUR post, and the leash tightens over time. <b>Owned:</b> channels no platform sits between — the phone number, the email list, the community server, the CRM (TX’s two-stage funnel is exactly this, built for business). Nobody can throttle a text message.</p>'
-    +'<p><b>The conversion doctrine.</b> Every unit of rented attention should have a chance to become owned: the profile link into the inquiry form (B3), “text WEEKEND to …” on conversion content, the booking flow capturing phone + email as a matter of course (every closed deal = an owned contact, forever), a simple monthly email/SMS drop (“what’s available this month in [metro]” — the availability-channel position from b3_mix, delivered to a list the algorithm can’t touch). The metric that matters: <b>owned contacts per thousand views.</b> A viral clip that converts nothing owned was a firework; one that adds 40 numbers was infrastructure. (The Owned-Channel Signup rep counts exactly this.)</p>'
-    +'<p><b>Diversification without dilution.</b> The multi-platform map (B2) is also risk management — the 1→10 cut means one platform’s repricing never zeroes your reach — but diversification stays downstream of the system: same pillars, same character sheet, recut per surface. Five thin presences protect nothing; two strong ones plus an owned list survive anything.</p>'
-    +'<p><b>Why this is doubly true for YOU.</b> Your business’s deal flow (B3) and your industry’s B2B relationships both live in DMs on rented ground. The relationships themselves — saved numbers, the CRM, coffee with the fleet owner (T7’s network is the ORIGINAL owned channel) — are the durable asset. The platform is where relationships are <i>discovered</i>; the phone is where they <i>live</i>. Operators who understood this survived every algorithm apocalypse of the last decade without noticing; creators who didn’t rebuilt from zero, twice.</p>',
-  example:'<p><b>Ex — the apocalypse test:</b> Creator A: 200k followers, zero list. Reach repriced → income gone → rebuild from zero on the next platform. Operator B: 9k followers, but 1,400 owned contacts (every past renter + inquiry), 30 fleet/owner numbers, a CRM, a monthly availability text. Same repricing → B’s bookings barely move; the metro’s demand already lived in B’s phone. B owned the asset; A owned a scoreboard.</p>',
-  teach:'Explain the three ownership tiers, the owned-contacts-per-thousand-views metric, and why the phone — not the platform — is where this business’s relationships live.',
-  cards:[
-    {f:'The three tiers:', b:'Rented (algorithmic reach — repriceable any morning), leased (followers — the platform still owns delivery), owned (phone, email, community, CRM — nothing sits between).'},
-    {f:'The conversion doctrine:', b:'Every viral moment converts some rented attention to owned: inquiry links, “text WEEKEND,” booking flows capturing contacts, the monthly availability drop. Metric: owned contacts per 1,000 views.'},
-    {f:'Diversification’s real shape:', b:'Two strong surfaces + an owned list beats five thin presences. Same system, recut per platform — risk management downstream of the machine.'},
-    {f:'The operator’s version:', b:'Deal flow and B2B life live in DMs on rented ground; saved numbers, the CRM, and coffee are the durable asset. Discovered on-platform; lives on the phone.'}
-  ],
-  quiz:[
-    {q:'Follower counts are “leased” rather than owned because…', c:['They fluctuate','They can be bought','The platform still decides what fraction of your own followers see each post','They’re public'], a:2, e:'The landlord owns delivery. Only phone/email/community/CRM remove the intermediary.'},
-    {q:'The metric that separates fireworks from infrastructure is…', c:['Views','Follower growth','Likes per post','Owned contacts per thousand views'], a:3, e:'A viral clip that captured nothing owned evaporates; 40 numbers compound forever.'},
-    {q:'The algorithm-apocalypse survivors are operators who…', c:['Moved relationships to owned ground — lists, CRMs, saved numbers — while renting reach for discovery','Posted more','Went multi-platform thin','Bought ads'], a:0, e:'Discovery is rented; relationships are owned. The phone survives every repricing.'}
-  ]},
-
-{ id:'b4_opsec', sub:'B4', title:'Opsec for the six-figure niche — visible operator, invisible targets',
-  predict:'Your content niche involves broadcasting the locations of $200,000 machines, the identities of their hidden owners, and your own daily patterns — to an audience that statistically includes thieves. Name three broadcast habits that get cars stolen or relationships killed, and the discipline that prevents each.',
-  concept:'<p>Most creators’ worst-case is embarrassment. Yours includes a flatbed with someone else’s Lamborghini on it. The niche has a security layer nobody teaches:</p>'
-    +'<p><b>Rule 1 — delay-post locations.</b> Live-posting a delivery = broadcasting a six-figure car’s real-time position to strangers (T5 taught you thieves scout; your feed must never be their telemetry). The discipline: film live, <b>post on delay</b> — hours, or next-day — and strip precise location from anything showing where a car SLEEPS. Geotag the city, never the garage. The Scene pillar geotags venues (public, populated); the Metal pillar geotags nothing tighter than the metro.</p>'
-    +'<p><b>Rule 2 — the owners stay invisible.</b> T0’s first law: the owner list is the industry’s most guarded asset, and fleets will judge you by whether you protect it. Never film an owner, their garage, their plate-to-name trail, or context that triangulates them (“this doctor’s Cullinan in Scottsdale…”), without explicit invitation. When an owner IS willing (some love it), it is their call, on camera, every time. Same for fleets’ operational interiors — warehouse layouts, key systems, tracker installs: showing security architecture is drawing burglars a map. The rule that keeps every relationship: <b>you are the visible one; everyone else in your content opted in.</b></p>'
-    +'<p><b>Rule 3 — clients get consent, and “no” gets respected forever.</b> b3_proof said it; the security angle doubles it: image-renters usually want the camera, but the quiet-luxury customer (T0) and plenty of ordinary clients do not — and a client filmed against their wish is a review bomb, a lost repeat book, and occasionally a legal problem <i>[VERIFY your state’s recording/publicity law]</i>. Ask on camera, honor it permanently, blur plates by default on client cars.</p>'
-    +'<p><b>Rule 4 — your own pattern is data.</b> A daily-posting documenter leaks routine by default: same garage every morning, kids’ school in frame, home street sign behind the cold start. Audit your backgrounds like an adversary would (T5’s incongruence reading, aimed at yourself). Delay-posting solves most of it; a PO-box/virtual address for the business (C3’s fundability stack, doing security double-duty) solves the rest.</p>'
-    +'<p><b>Rule 5 — never hand the prosecution the tape.</b> Restated from B1 because it belongs in every tier that touches a camera: no filmed speed, no “just this once” launch clip on a client car, no content of YOU breaching the rules you enforce on renters. Your telematics-and-contracts brand (the dual-audience write, b3_mix) is falsified by one reckless clip — and in any future claim, dispute, or deposition, <b>your own feed is discoverable evidence</b>. The operator’s camera only ever films the operator operating.</p>'
-    +'<p><b>The quiet payoff.</b> Fleets and owners notice opsec the way carriers notice verification stacks (T4): the account that blurs plates, delays locations, and asks consent IS the audit. Your discipline on camera becomes the reason people trust you with what stays off camera — which is where the best deals in this industry live.</p>',
-  example:'<p><b>Ex — the same delivery, two ways:</b> Careless: live story from the client’s driveway, house number in frame, “dropping the Aventador here for the weekend!” Disciplined: filmed everything, posted at noon next day, geotagged “Phoenix,” plate blurred, client’s yes on camera, house unidentifiable. Same content value. One of them told 40,000 strangers where a $400k car would sleep for two nights.</p>',
-  teach:'Recite the five opsec rules (delay locations, invisible owners, client consent, self-pattern audit, never film violations) and why opsec itself becomes a trust signal.',
-  cards:[
-    {f:'Rule 1 — delay + degrade locations:', b:'Film live, post on delay; geotag the metro, never where a car sleeps. Your feed must never be a thief’s telemetry.'},
-    {f:'Rule 2 — owners and fleet security stay invisible:', b:'The owner list is the industry’s crown jewel (T0); warehouses/key systems/trackers are burglar maps. Everyone but you opts in, on camera.'},
-    {f:'Rules 3–4 — consent + self-audit:', b:'Clients asked on camera, “no” honored forever, plates blurred by default; your own backgrounds audited like an adversary reads them. Business address ≠ home.'},
-    {f:'Rule 5 — the discoverable feed:', b:'No filmed violations, ever — one reckless clip falsifies the telematics-and-contracts brand, and your feed is evidence in every future dispute.'}
-  ],
-  quiz:[
-    {q:'Delivery content is posted on delay because…', c:['Editing takes time','Engagement is better later','Live location of a six-figure car is telemetry for thieves — delay and degrade the geotag','Clients prefer it'], a:2, e:'Film live, post next-day, metro-level tags only, nothing showing where cars sleep.'},
-    {q:'Filming a consigning owner without invitation is…', c:['Good content','Standard','Fine if positive','A relationship-killer — the owner list is the industry’s most guarded asset (T0), and fleets judge you by protecting it'], a:3, e:'You are the visible one; every other person in your content opted in, on camera.'},
-    {q:'One filmed 120-mph pull on a client car costs…', c:['A fine at most','Nothing if deleted','The telematics-and-contracts brand’s credibility AND a discoverable exhibit in every future claim','Just that client'], a:2, e:'Rule 5: the operator’s camera only films the operator operating. The feed is evidence.'}
-  ]},
-
-{ id:'b4_dip', sub:'B4', title:'The dip — months 3 to 6, where every competitor quits',
-  predict:'Month 1 is exciting. Month 9 is compounding. Between them sits a stretch where views flatline, nobody seems to care, and the work feels invisible — and it is precisely where the majority of would-be competitors exit. Why is the dip structural rather than a verdict — and what are the three things that carry an operator through it?',
-  concept:'<p>Chart every successful account’s first year and the same shape appears: early novelty bump → long flat valley → the knee of the compounding curve. The valley — <b>the dip, roughly months 3–6</b> <i>[VERIFY: varies; the shape doesn’t]</i> — is where this game is actually decided, so understand it mechanically:</p>'
-    +'<p><b>Why the dip is structural.</b> Three curves cross it. The <b>novelty audience</b> (friends, early curiosity) exhausts before the <b>algorithmic audience</b> matures — the account file (B2) is still learning who you’re for, and test pools are still small. The <b>skill lag</b>: your hooks/edit/packaging improve WEEKLY through the 100-clip apprenticeship (B1), but the compounding effects of skill arrive months delayed. And <b>trust accrual is invisible</b>: the fleet owner who will DM you in month 7 started silently watching in month 3 — parasocial equity (B0) accumulates with zero telemetry. Nothing is broken. <b>The asset is loading, unobserved.</b></p>'
-    +'<p><b>The three carriers through.</b> <b>1: The system, not the mood</b> (B1’s gears) — cadence-as-autopay was engineered for exactly this stretch; the streak survives because production never depended on enthusiasm. <b>2: The real scoreboard</b> (b1_volume): shipping percentage, DM quality, owned contacts, reps logged — metrics that move DURING the dip while views refuse to. An operator reading the right dials sees progress in the valley; one reading views sees failure and quits on schedule. <b>3: The identity frame:</b> you are not “a creator hoping to pop” — you are <b>an operator whose business logs its work in public</b> (B0’s premise). The reps were happening anyway; the camera is overhead, not the job. Quitting content would mean quitting the climb, which was never on the table.</p>'
-    +'<p><b>What the dip filters — and pays.</b> Recall why the brand lane is open at all (t7_brand): almost nobody in this industry does this. The dip is WHY — the flexers exit when the dopamine does. Every week you ship through the valley, the lane empties further; the moat (b0_position: “this far into this documented climb”) literally deepens with each week survived, because <b>time-in-consistency cannot be bought, faked, or fast-followed</b> — the shelf-corp lesson (C3) in brand form. The dip is not the obstacle to the moat. <b>The dip IS the moat</b> — the entry fee only the disciplined pay, priced in months of unobserved work.</p>'
-    +'<p><b>Dip protocol, practical.</b> Halve nothing, double nothing: hold cadence, run the weekly tape-read (patterns still speak in small numbers), ship the Ledger monthly (proof accrues even unwatched — it is for month 9’s audience, who WILL scroll back), keep converting the trickle to owned ground (b4_owned — dip-era followers are your highest-intent people), and mark the calendar: no verdicts before clip 100 AND month 6. Then let the knee of the curve find you working.</p>',
-  example:'<p><b>Ex — month 4, read two ways:</b> The views dial: 300–600 per clip for six straight weeks; feels like death. The operator dials, same weeks: 41 clips shipped on schedule, 9 qualified DMs, 2 deals closed, 130 owned contacts, first fleet re-share, dec-read fluency visibly doubled on tape. Reader one quits in week 19. Reader two is the only account left in the metro when the curve knees at week 31 — and month 9’s inbound assumes the survivor was “everywhere all along.”</p>',
-  teach:'Explain the three crossing curves that make the dip structural, the three carriers through it, and why the dip is itself the moat.',
-  cards:[
-    {f:'Why the dip is structural:', b:'Novelty audience exhausts before the algorithmic one matures; skill compounds on a delay; trust accrues invisibly. The asset loads unobserved — nothing is broken.'},
-    {f:'The three carriers:', b:'The system not the mood (cadence-as-autopay), the real scoreboard (shipping %, DM quality, owned contacts, reps), and the identity frame (operator logging work, not creator hoping to pop).'},
-    {f:'The dip IS the moat:', b:'It filters everyone whose fuel was dopamine; time-in-consistency can’t be bought or fast-followed (the shelf-corp law, brand edition). Each shipped week deepens the lane’s emptiness.'},
-    {f:'Dip protocol:', b:'Hold cadence, weekly tape-reads, monthly Ledger (for month 9’s back-scrollers), convert the trickle to owned ground, no verdicts before clip 100 AND month 6.'}
-  ],
-  quiz:[
-    {q:'Views flatline in months 3–6 mainly because…', c:['The niche is dead','Novelty exhausts before the account file matures — while skill and trust compound invisibly','Platforms punish new accounts','Content worsens'], a:1, e:'Three curves cross: audience handoff, delayed skill payoff, untelemetered trust. The asset is loading.'},
-    {q:'The dials that DO move during the dip are…', c:['Views and likes','Follower count','Shipping percentage, DM quality, owned contacts, logged reps','Watch hours'], a:2, e:'The real scoreboard shows the valley’s progress; the vanity dial schedules your quit date.'},
-    {q:'The dip functions as the moat because…', c:['It’s short','Competitors are lazy','Platforms protect survivors','It prices the lane in months of unobserved work — the one currency that can’t be bought or fast-followed'], a:3, e:'Time-in-consistency is the shelf-corp lesson in brand form: the clock only counts if it really ran.'}
-  ]},
-
-{ id:'b4_arc', sub:'B4', title:'The 12-month arc — from first clip to inbound gravity',
-  predict:'Month 1’s job is not growth. Month 12’s prize is not fame. Sequence the year: what is each quarter actually FOR — and what single signal tells you the brand has crossed from chasing to attracting?',
-  concept:'<p>The spine closes with the calendar — each quarter has ONE job, and confusing them is how good accounts die of impatience:</p>'
-    +'<p><b>Q1 (months 1–3) — voice and volume.</b> Job: the apprenticeship. Ship toward the 100-clip mark (B1), run the character sheet from day zero (B0), feed the metro signals (B2), build the storefront (B3). Measured on: shipping percentage and tape-read learning velocity. Growth here is noise either way — you are teaching the machine who you are and teaching yourself the craft. (Everything runs on Q1’s side budget: ~$50 — mic, domain, tripod. The brand is the cheapest asset in this course by two orders of magnitude.)</p>'
-    +'<p><b>Q2 (months 4–6) — the dip, survived deliberately.</b> Job: hold (b4_dip’s protocol). Double down on tape-read winners — the series that emerged (b0_identity) become the schedule’s spine. Conversion content enters seriously (b3_mix’s 80/20) as deal reps ramp on the REPS ladder. Measured on: the operator dials — DM quality, owned contacts, deals attempted, weeks-on-cadence unbroken.</p>'
-    +'<p><b>Q3 (months 7–9) — the knee.</b> If Q1–Q2 ran honestly, compounding surfaces here <i>[VERIFY: timing varies, sequence doesn’t]</i>: test pools warm (the file is trained), the metro recognizes you at meets, fleets re-share, the back-catalog works while you sleep (search + the archive, B2). Job: <b>convert the surfacing attention into structure</b> — the availability-channel position (b3_mix), the monthly owned-list drop (b4_owned), collab features with the local industry, and the first Ledger episodes with real numbers behind them (the data moat, TX, now has receipts to show).</p>'
-    +'<p><b>Q4 (months 10–12) — inbound gravity.</b> The crossing signal — write it down and watch for it: <b>the week the DMs invert</b>, when industry inquiries (a fleet offering the rate card unprompted, an owner asking about placement, a broker probing your screening) begin arriving without outreach. That inversion is t7_brand’s magnet, no longer anecdote but schedule. Job: route it — inbound fleets → rate cards (T7), inbound owners → Rung-3 conversations, inbound renters → the machine that now runs itself. The brand has become what it was always designed to be: <b>the demand engine of the operation and the moat around it</b> — the asset that makes the two doors (T0) open from the other side.</p>'
-    +'<p><b>And the arc doesn’t end — it hands off.</b> Year 2’s brand rail runs beside the business ladder: the flip (T8) lands easier because you are also the fleet’s lead source; the multi-metro play (TX) replays this exact year per city with a trained playbook; the data moat and the brand moat — the two unforkable assets — compound into each other, receipts feeding content feeding deals feeding receipts. You now hold the complete blueprint: the asset defined (B0), the machine built (B1), the distribution understood (B2), the conversion engineered (B3), the moat dug (B4). <b>The odometer’s running.</b></p>',
-  example:'<p><b>Ex — one real-shaped year:</b> Q1: 94 clips, voice found by #60, $50 spent. Q2: cadence unbroken through a 6-week flatline; 2 deals; 240 owned contacts. Q3: back-catalog DMs begin (“saw your Urus ranking from March”); first fleet re-share; availability drop launches to 400 contacts. Q4, week 44: a fleet owner DMs first — rate card attached. Week 47: an idle-Cullinan owner asks “could yours earn?” The DMs inverted on schedule. Year 2 starts with both doors open from the other side.</p>',
-  teach:'Assign each quarter its single job, name the inversion signal that marks inbound gravity, and explain how the brand rail hands off into the business ladder’s year 2.',
-  cards:[
-    {f:'The four quarters’ jobs:', b:'Q1 voice+volume (the 100-clip apprenticeship), Q2 survive the dip deliberately, Q3 convert the knee into structure, Q4 route inbound gravity.'},
-    {f:'The crossing signal:', b:'The week the DMs invert — industry inquiries (rate cards, placement asks, screening probes) arriving unprompted. The magnet as schedule, not anecdote.'},
-    {f:'What each quarter is measured on:', b:'Q1 shipping % + learning velocity; Q2 the operator dials; Q3 structures built on surfacing attention; Q4 inbound routed into T7/T8 machinery.'},
-    {f:'The year-2 handoff:', b:'Brand rail beside the business ladder: the flip lands easier (you’re also the demand), multi-metro replays the year per city, and the two unforkable moats — data + brand — compound into each other.'}
-  ],
-  quiz:[
-    {q:'Q1 is measured on…', c:['Follower growth','Shipping percentage and learning velocity — growth in either direction is noise while the file trains','Revenue','Viral count'], a:1, e:'The first quarter is the apprenticeship: teaching the machine who you are and yourself the craft.'},
-    {q:'The signal that the brand crossed into inbound gravity is…', c:['100k followers','The DM inversion — industry inquiries arriving without outreach','Verification','A viral clip'], a:1, e:'A fleet offering the rate card unprompted is the magnet effect graduating from anecdote to schedule.'},
-    {q:'In year 2, the brand and data moats interact by…', c:['Compounding — receipts feed content, content feeds deals, deals feed receipts; neither can be forked','Competing for time','Merging into ads','Being sold'], a:0, e:'The two unforkable assets (TX + B-spine) are one flywheel: the operation’s demand engine and its documentation.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B4 = [
-  {q:'The three attention-ownership tiers are…', c:['Free, paid, earned','Small, medium, large','Rented (algorithmic), leased (followers), owned (phone/email/CRM)','Organic, viral, boosted'], a:2, e:'The landlord reprices rented and throttles leased; nothing sits between you and owned.', d:1},
-  {q:'Owned contacts per thousand views measures…', c:['Ad value','List hygiene','Engagement rate','Whether viral moments became infrastructure or fireworks'], a:3, e:'40 captured numbers compound forever; uncaptured views evaporate.', d:2},
-  {q:'This business’s relationships ultimately live…', c:['On the phone — saved numbers, the CRM, coffee; platforms only host the discovery','In the grid','In comments','In analytics'], a:0, e:'Deal flow rides rented ground; the durable asset is owned ground.', d:2},
-  {q:'Delivery locations are posted…', c:['Live for engagement','On delay, geotagged no tighter than the metro — never where cars sleep','With full addresses','Only at night'], a:1, e:'Your feed must never be a thief’s telemetry (T5’s adversaries watch content too).', d:1},
-  {q:'Filming a consigning owner uninvited…', c:['Adds authenticity','Boosts reach','Is fine if flattering','Violates the industry’s most guarded asset and marks you untrustable with secrets'], a:3, e:'T0’s law: owners are invisible by design. Everyone but you opts in, on camera.', d:2},
-  {q:'A filmed 120-mph pull costs…', c:['A ticket at most','The contracts-and-telematics brand plus a discoverable exhibit in future disputes','Nothing if it goes viral','One client'], a:1, e:'The operator’s camera only films the operator operating. The feed is evidence.', d:2},
-  {q:'The dip (months ~3–6) is caused by…', c:['Bad luck','Platform punishment','Novelty exhausting before the account file matures, while skill and trust compound invisibly','Niche death'], a:2, e:'Three curves crossing — the asset loads unobserved.', d:2},
-  {q:'The dip is survived on…', c:['The system, the real scoreboard, and the operator identity frame','Motivation','Bigger budgets','Posting pauses'], a:0, e:'Cadence-as-autopay + dials that move in the valley + “the reps were happening anyway.”', d:2},
-  {q:'The dip functions as…', c:['A flaw in the plan','A platform test','The moat itself — pricing the lane in unbuyable months of consistency','A myth'], a:2, e:'It filters the dopamine-fueled; time-in-consistency can’t be fast-followed.', d:3},
-  {q:'Q1 of the arc optimizes…', c:['Revenue','Voice and volume — the 100-clip apprenticeship on a ~$50 budget','Follower count','Collabs'], a:1, e:'Teaching the machine who you are and yourself the craft; growth is noise either way.', d:1},
-  {q:'The DM inversion is…', c:['Inbox zero','A platform feature','Muting DMs','Industry inquiries arriving unprompted — the magnet graduating from anecdote to schedule'], a:3, e:'Rate cards offered, placements asked, screening probed: the doors opening from the other side.', d:2},
-  {q:'Year 2’s two unforkable moats are…', c:['The data moat and the brand moat, compounding into each other','Money and fame','Cars and warehouses','Followers and views'], a:0, e:'Receipts feed content feed deals feed receipts — TX and the B-spine as one flywheel.', d:3}
-];
-
-// ═══════════════════════ BRAND 5 · THE INSTAGRAM MACHINE ═══════════════════════
-window.REDLINE_CURRICULUM = window.REDLINE_CURRICULUM.concat([
-
-{ id:'b5_surfaces', sub:'B5', title:'How Instagram actually ranks — two audiences, one disclosed metric',
-  predict:'Instagram’s own leadership has publicly named the single ratio they watch most closely when deciding whether a reel deserves more reach. It is not likes, not comments, not follows. What behavior — measured against reach, not in absolute count — moves distribution hardest?',
-  concept:'<p>B2 gave the general machine; this tier is the specific one. Instagram is not one algorithm — it is <b>separate ranking systems per surface</b> (Feed, Stories, Explore, Reels), each weighing its own signals <i>[VERIFY — IG publishes periodic explainers; read them, they are underused]</i>. What follows is the disclosed-plus-practitioner core:</p>'
-    +'<p><b>The two-audience test.</b> A reel distributes in stages: first to a slice of <b>connected reach</b> (your followers), then — if signals clear — to <b>unconnected reach</b> (Reels tab, Explore, suggested posts). The two pools are scored differently: connected reach responds to <i>relationship</i> signals (do these people DM you, reply to stories, visit your profile?); unconnected reach responds almost purely to <i>content</i> signals (watch behavior and sends). Practical consequence most creators never connect: <b>Stories, replies, and DM conversations are not vanity upkeep — they warm the connected pool whose early behavior seeds every reel’s cold test.</b> An account that ignores its existing audience handicaps every future test with strangers.</p>'
-    +'<p><b>The disclosed metric: sends per reach.</b> IG leadership has publicly stated that <b>shares-per-viewer (“sends per reach”)</b> is among the strongest ranking inputs, alongside <b>watch time</b> and likes-per-reach <i>[VERIFY current statements — they re-confirm this often]</i>. A send is a viewer spending social capital to put YOUR content in a private conversation — the highest-cost, highest-honesty vote the platform can observe. Design for it deliberately (b5_reels and b5_formats operationalize this): the question for every clip is no longer just “will they watch?” but <b>“who, specifically, would send this to whom?”</b> If no answer exists, the ceiling is low before you film.</p>'
-    +'<p><b>Trial Reels — the cold-audience laboratory.</b> IG now offers <b>trial reels</b>: publish a reel shown ONLY to non-followers; if it performs, promote it to everyone <i>[VERIFY availability on your account]</i>. Read what this really is: a free hook-testing lab that cannot embarrass you in front of your audience and cannot pollute your grid. The practitioner play: trial 2–3 hook variants of the same content, read the retention + sends data, publish the winner properly. Almost nobody in this industry uses it. You will.</p>'
-    +'<p><b>What quietly caps reach</b> <i>[VERIFY each — IG has confirmed versions of all]</i>: visibly watermarked reposts from other platforms (deprioritized explicitly), engagement-bait phrasing (“comment YES if…” — detected and discounted; note this is different from the legitimate comment-keyword automation in b5_formats, which uses a natural CTA), sub-720p uploads and letterboxed non-native aspect ratios, and audio flagged/limited for commercial use. None of these are bans; they are silent taxes. The checklist costs nothing: native 9:16, clean export, original or cleared audio, no borrowed watermarks.</p>',
-  example:'<p><b>Ex — the same reel, two accounts:</b> Account A posts cold: connected pool ignores it (they never interact), test seeds weak, unconnected push never comes — 400 views. Account B spent the week in Stories polls and DM replies; its connected slice opens strong (relationship-primed), watch + sends clear the bar, the reel graduates to the Reels tab — 40,000. The clip was identical. The <i>account’s relationships</i> weren’t.</p>',
-  teach:'Explain connected vs unconnected reach and what each pool scores, why sends-per-reach is the disclosed king metric, what trial reels actually offer, and the silent-tax checklist.',
-  cards:[
-    {f:'The two-audience test:', b:'Connected reach (followers — scored on relationship signals) seeds the test; unconnected reach (Reels tab/Explore — scored on watch + sends) is the prize. Stories/DMs warm the pool that seeds every test.'},
-    {f:'The disclosed king metric:', b:'Sends per reach — shares-per-viewer, publicly named by IG leadership alongside watch time [VERIFY]. Ask per clip: who would send this to whom?'},
-    {f:'Trial reels:', b:'Publish to non-followers only; promote winners [VERIFY availability]. A free cold-audience hook lab — test 2–3 variants, publish the winner. Nearly nobody in this niche uses it.'},
-    {f:'The silent taxes:', b:'Watermarked reposts, engagement-bait phrasing, sub-720p/letterboxed uploads, flagged audio — not bans, quiet distribution taxes. The clean-export checklist costs nothing.'}
-  ],
-  quiz:[
-    {q:'The ratio IG leadership has publicly named among its strongest ranking inputs is…', c:['Likes per post','Sends per reach — shares measured against viewers','Comments per hour','Follows per day'], a:1, e:'A send spends the viewer’s social capital — the highest-honesty vote the platform observes. Design for it before filming.'},
-    {q:'Stories and DM replies affect your reels because…', c:['They don’t — separate surfaces','They warm the connected pool whose early behavior seeds every reel’s cold test','They count as views','Stories share watch time'], a:1, e:'The two-audience test: relationship-primed followers open strong, and that seed performance earns the unconnected push.'},
-    {q:'Trial reels are best used as…', c:['Extra posting volume','A cold-audience laboratory — test hook variants on non-followers, publish the winner','A story replacement','Follower rewards'], a:1, e:'Testing without audience embarrassment or grid pollution — the practitioner’s free A/B lab [VERIFY availability].'}
-  ]},
-
-{ id:'b5_reels', sub:'B5', title:'The Reels fast-attention doctrine — loops, first frames, and the length lie',
-  predict:'A 22-second reel shows “average watch time: 31 seconds” in its analytics. That is not a glitch — it is the single most powerful retention trick in short-form, working as designed. What happened, and how do you build it on purpose?',
-  concept:'<p>B1 taught hooks universally. Reels have their own physics — five doctrines:</p>'
-    +'<p><b>Doctrine 1 — the loop is the cheat code.</b> Reels autoplay on repeat, and <b>looped watches count toward watch time</b> — which is how a 22-second reel averages 31 seconds: viewers watched 1.4× before scrolling <i>[VERIFY metric definitions]</i>. Build <b>seamless loops</b> deliberately: end the sentence so it flows into the opening line; cut the final frame to match frame one (the car pull-in that ends where the pull-in begins); or structure a “wait for it” payoff so late that the rewatch is automatic. A loop that hides its seam buys 120–150% average watch time — a signal almost nothing else can produce.</p>'
-    +'<p><b>Doctrine 2 — frame one is a thumbnail, not a beginning.</b> Before autoplay, feed and profile-grid impressions show your first frame (or chosen cover) as a static image. Design frame one like B1’s packaging lesson: readable overlay text (≤8 words), a face or a car mid-motion, zero dead frames (never a black frame, a blur, or your chin). The reel is competing as a <i>picture</i> before it ever competes as a video.</p>'
-    +'<p><b>Doctrine 3 — the length lie.</b> “Short reels do better” is slop. The truth: <b>length is downstream of retention shape.</b> The machine rewards total watch time AND completion — a 60-second reel holding 70% beats a 15-second reel holding 80% on watch time while losing little on completion <i>[VERIFY current weighting]</i>. The rule is not a duration; it is <b>no dead seconds</b> (B1’s 2–4s value cadence): cut until nothing survives that a cold viewer wouldn’t miss. Your dec-page teardowns can run 60–90s IF every second earns; your Metal-pillar loops belong at 7–15s where the loop math dominates.</p>'
-    +'<p><b>Doctrine 4 — audio is a strategy layer, not a ranking hack.</b> IG has stated trending audio is not a direct ranking input <i>[VERIFY]</i> — but audio still works three ways: <b>early-trend audio</b> (rising sounds with low use-counts) correlates with discovery pockets; <b>original audio</b> on talking content builds an audio page that funnels reuse traffic back to you; and for this niche, <b>the cars ARE the audio</b> — a cold-start V10 spike in the first second is a pattern interrupt no licensed track matches. Captions burned in always: most viewers are muted, and IG’s systems transcribe speech for indexing (next doctrine).</p>'
-    +'<p><b>Doctrine 5 — Instagram is a search engine now.</b> Hashtag reach is largely dead (IG removed hashtag-following; leadership has said tags don’t meaningfully drive distribution <i>[VERIFY]</i>) — but <b>keyword indexing is alive</b>: captions, on-screen text (OCR’d), spoken audio (transcribed), and location all feed IG search and suggested-content classification. The play: write captions with the phrases people actually search (“exotic car rental Phoenix,” “Urus rental cost”), say the money phrases out loud in the clip, put the city on screen. Your B2 local-gravity and TX AI-search theses run THROUGH this mechanism on IG — every reel is quietly a search result with a shelf life.</p>',
-  example:'<p><b>Ex — one Metal clip, doctrine-built:</b> Frame 1: Urus mid-launch, overlay “what $349 rents in Phoenix” (thumbnail + search phrase + local). 0–1s: cold-start V10 spike (interrupt). 1–11s: three cuts, no dead air, price on screen. 11–12s: the final pan lands exactly on frame one’s composition — seamless loop. Analytics next day: 12s runtime, 19s average watch, sends 41 (“bro. $349.”), and it ranks in IG search for the phrase it spoke. Every element was a decision from this lesson.</p>',
-  teach:'Recite the five doctrines — loop construction, frame-one-as-thumbnail, length-downstream-of-retention, audio’s three real uses, and IG-as-search-engine.',
-  cards:[
-    {f:'The loop cheat code:', b:'Looped watches count — seamless loops (seam-hidden endings, late payoffs) buy 120–150% average watch time, a signal nothing else produces.'},
-    {f:'Frame one:', b:'It competes as a static image in feed/grid before autoplay: ≤8-word overlay, face or car in motion, never a dead frame. The reel is a picture first.'},
-    {f:'The length lie:', b:'No magic duration — length is downstream of retention shape. No dead seconds: teardowns earn 60–90s, Metal loops live at 7–15s where loop math dominates.'},
-    {f:'Audio + search:', b:'Audio: early-trend pockets, original-audio pages, the car as pattern interrupt; captions always. And IG indexes captions, OCR text, and SPEECH — every reel is a search result. Say the money phrases out loud.'}
-  ],
-  quiz:[
-    {q:'A 22s reel averaging 31s of watch time means…', c:['The loop worked — viewers rewatched past the hidden seam, averaging 1.4 plays','An analytics bug','Bots','It was longer than labeled'], a:0, e:'Looped watches count. Seamless construction is the most powerful retention trick in short-form.'},
-    {q:'“Keep reels under 15 seconds” is slop because…', c:['Long is always better','Completion doesn’t matter','Reels have no length limit','Length is downstream of retention shape — total watch time rewards longer holds with no dead seconds'], a:3, e:'A 60s teardown holding 70% wins on watch time. The rule is no dead seconds, not a stopwatch.'},
-    {q:'Saying “exotic car rental Phoenix” OUT LOUD in a reel matters because…', c:['It sounds professional','IG transcribes speech and indexes it for search and classification — the spoken phrase is a ranking asset','Viewers demand it','It triggers trending audio'], a:1, e:'Captions, OCR’d overlays, and transcribed audio all feed IG’s search engine — hashtags’ old job, reassigned.'}
-  ]},
-
-{ id:'b5_formats', sub:'B5', title:'The format arsenal — carousels, collabs, and the comment-to-DM machine',
-  predict:'One IG format quietly earns the highest saves-per-reach on the platform and gets a SECOND chance in feed when ignored the first time. It is not reels. What is it — and why is it perfect for exactly your intel content?',
-  concept:'<p>Reels are the reach engine, not the whole arsenal. Four formats with mechanical edges:</p>'
-    +'<p><b>The carousel — the save machine.</b> Carousels hold the platform’s best saves-per-reach, and an unswiped carousel can <b>re-serve in feed starting from slide 2</b> — a built-in second impression <i>[VERIFY]</i>. They also now take music and can surface in reels-adjacent placements <i>[VERIFY]</i>. This is the native format for your Intel pillar: “The $100k cliff cap, in 6 slides” — slide 1 hooks like a frame-one, middle slides carry the teardown, last slide CTAs (“save this before you rent”). <b>Saves are the declared-reference-value signal (B2), and reference content is what you uniquely have.</b> A weekly teardown carousel beside daily reels is the two-engine layout: reels reach strangers; carousels convince them.</p>'
-    +'<p><b>The Collab post — audience merging, one tap.</b> IG’s Collab feature publishes ONE post to BOTH accounts’ audiences simultaneously — shared likes, shared reach, both grids. For the metro strategy (B2) this is the single highest-leverage button on the platform: a delivery reel collabed with the fleet’s account puts you in front of their entire audience as a co-author, not a tag. Detailers, photographers, meet pages, fleets — every local relationship (T7) is also a collab pipeline. One good collab with a 20k local fleet outperforms months of solo cold testing, and it costs a question.</p>'
-    +'<p><b>Comment-keyword → DM automation — the conversion machine.</b> The play running under every serious IG business: “Comment <b>WEEKEND</b> and I’ll send you the list” → an automation tool DMs the commenter the link/menu <i>[VERIFY tools + current API rules]</i>. Why it is a double play: comments spike (a ranking signal — and each is a real micro-conversation, not detected bait because the keyword has genuine utility), AND every commenter lands in your DMs — where deals close (B3) and contacts convert to owned ground (B4). Your conversion-content pieces (b3_mix) should carry a keyword CTA as standard equipment. This single mechanic is how accounts turn one viral reel into hundreds of qualified DM threads instead of a view count.</p>'
-    +'<p><b>Stories + the relationship layer.</b> Stories don’t create reach; they create the <b>relationship signals that seed reach</b> (b5_surfaces). Daily story cadence: the pulse (today’s rep, a poll — “Urus or Huracán for Saturday’s delivery?”), interactive stickers (every tap is a relationship signal), and the 15-minutes-after move: story-pointer to the new reel AFTER its cold test opens, adding warm fuel without smothering the test <i>[VERIFY timing folklore — test both against your own data]</i>. Plus two structural tools: <b>pinned comments</b> (your second hook or the keyword CTA, permanently on top) and <b>reply-to-comment reels</b> — answer a real comment with a new reel: infinite prompts, guaranteed-notified first viewer, and public proof you respond (the two-sided inbox, on stage).</p>',
-  example:'<p><b>Ex — one week, full arsenal:</b> Mon/Wed/Fri reels (doctrine-built). Tue: “Deposit tiers by car, in 5 slides” carousel — 90 saves. Thu: delivery reel as a COLLAB with the fleet — their 24k followers meet you as co-author. Sat: conversion reel, “comment WEEKEND for what’s available” — 63 comments, 63 automated DM threads, 19 qualified (the DM→Qualified rep feasting). Stories daily. Every format did the one job it is mechanically best at.</p>',
-  teach:'Explain the carousel’s save/re-serve mechanics, why Collab posts are the metro strategy’s highest-leverage button, the comment-keyword double play, and Stories’ real job.',
-  cards:[
-    {f:'The carousel:', b:'Highest saves-per-reach + a second impression from slide 2 when unswiped [VERIFY]. The native Intel-pillar format: teardowns in slides, “save this” as the honest CTA.'},
-    {f:'The Collab post:', b:'One post, both audiences, co-author billing. Every local relationship is a collab pipeline — one 20k-fleet collab beats months of solo cold tests.'},
-    {f:'Comment-keyword → DM automation:', b:'“Comment WEEKEND…” spikes a ranking signal AND fills the DMs where deals close [VERIFY tools]. Standard equipment on conversion content — one viral reel becomes hundreds of threads.'},
-    {f:'Stories’ real job:', b:'Not reach — relationship signals that seed reach. Daily pulse + stickers; story-point to new reels after the cold test opens; pinned comments and reply-with-reels round the kit.'}
-  ],
-  quiz:[
-    {q:'The Intel pillar’s native IG format is…', c:['Live video','Long captions alone','Notes','The carousel — top saves-per-reach and a second-serve from slide 2'], a:3, e:'Reference content farms saves (the declared-value signal); reels reach strangers, carousels convince them.'},
-    {q:'A Collab post with a local fleet…', c:['Splits your reach in half','Only shares likes','Violates guidelines','Publishes to both audiences as co-author — the highest-leverage button in the metro strategy'], a:3, e:'Audience merging in one tap; every T7 relationship doubles as a collab pipeline.'},
-    {q:'“Comment WEEKEND and I’ll DM you the list” is powerful because…', c:['Comments (a ranking signal) and DM threads (where deals close) spike together — utility keeps it legitimate','It begs engagement','It’s trendy','It replaces captions'], a:0, e:'The double play: distribution fuel + funnel filling in one CTA. Bait detection targets empty asks, not genuine utility [VERIFY].'}
-  ]},
-
-{ id:'b5_diagnostics', sub:'B5', title:'Reading the dashboard — six ratios and the diagnostic tree',
-  predict:'Four reels fail four different ways: one dies at 200 views, one holds viewers but never leaves your followers, one reaches 60% non-followers who don’t follow, one gets reach but zero DMs. Same dashboard, four different diseases. Diagnose each before reading.',
-  concept:'<p>IG’s professional dashboard answers everything if you read ratios instead of totals. The six that matter, then the tree:</p>'
-    +'<p><b>The six ratios</b> (all per-reel, all in Insights <i>[VERIFY metric names as IG renames them]</i>): <b>1 · Retention shape</b> — the watch graph: where exactly does it cliff? <b>2 · Average watch ÷ length</b> — is the loop working (over 100% = yes)? <b>3 · Follower vs non-follower reach split</b> — did it escape the connected pool? <b>4 · Sends per reach</b> — the king metric (b5_surfaces). <b>5 · Saves per reach</b> — reference value (carousel territory). <b>6 · Follows per reach + profile visits per reach</b> — did the stranger traffic convert to audience?</p>'
-    +'<p><b>The diagnostic tree — four diseases, four prescriptions:</b></p>'
-    +'<p><b>Disease 1 — dies instantly (low views, retention cliffs at 1–2s).</b> The hook or frame one failed; the content never got judged. Prescription: B1/b5_reels surgery on the open — and trial-reel the next three hook variants before publishing (b5_surfaces).</p>'
-    +'<p><b>Disease 2 — holds viewers but never escapes followers (good retention, 90%+ follower reach).</b> Content passed; the SEED failed — your connected pool is cold or small, or the account file is confused (B2). Prescription: warm the relationship layer (stories/DMs, b5_formats), check niche coherence, and consider trial reels to bypass the cold seed entirely.</p>'
-    +'<p><b>Disease 3 — reaches strangers who don’t stick (60%+ non-follower reach, near-zero follows-per-reach).</b> Distribution worked; the STOREFRONT leaked — strangers tapped a profile that didn’t convert in four seconds, or the clip was reach-bait off-positioning (viral to the wrong crowd converts nobody). Prescription: b3_funnel audit tonight; re-check the clip against the positioning sentence (B0) — was this even for your buyer?</p>'
-    +'<p><b>Disease 4 — reach without revenue (healthy reach, empty DMs).</b> The mix is broken: all growth, no conversion (b3_mix), or conversion content missing its keyword CTA (b5_formats). Prescription: reinstate the 80/20, arm every conversion piece with the comment-keyword machine, and check that the bio’s CTA still points at the current offer.</p>'
-    +'<p><b>The weekly ritual, upgraded.</b> B1’s tape-read now runs on these six ratios: sort the week by sends-per-reach (not views), diagnose every underperformer to ONE disease (never “it just flopped” — the tree always names a suspect), and log the pattern beside your REPS entries. Twelve weeks of this and you will read your dashboard the way T3 taught you to read a dec page — <b>which is the actual skill: the metrics are a policy document, and almost nobody in your industry can read it. That illiteracy is your edge.</b></p>',
-  example:'<p><b>Ex — the four patients, treated:</b> Reel A (dies at 2s): trial-reeled three new hooks; variant 2 held — published, 18k. Reel B (great retention, 94% follower reach): a week of story polls + 40 DM replies later, the rerun escaped to 55% non-follower. Reel C (61% strangers, 2 follows): profile audit found a dead bio CTA and no pins — fixed in an hour. Reel D (22k reach, silent inbox): it was a growth clip doing conversion’s job — Saturday’s availability reel with “comment WEEKEND” produced 31 threads. Four diseases, four cures, zero superstition.</p>',
-  teach:'Name the six ratios, walk the four-disease diagnostic tree with prescriptions, and explain why dashboard literacy is itself an industry edge.',
-  cards:[
-    {f:'The six ratios:', b:'Retention shape · average-watch ÷ length (loop check) · follower/non-follower split · sends per reach · saves per reach · follows + profile visits per reach.'},
-    {f:'Diseases 1–2:', b:'Dies at 2s = hook/frame-one failure (trial-reel variants). Never escapes followers = cold seed or confused file (warm the relationship layer, check coherence).'},
-    {f:'Diseases 3–4:', b:'Strangers don’t stick = storefront leak or off-positioning reach-bait (b3_funnel audit). Reach without DMs = broken 80/20 or missing keyword CTA.'},
-    {f:'The ritual:', b:'Weekly sort by sends-per-reach; every underperformer diagnosed to ONE disease; patterns logged beside reps. Dashboard literacy = dec-page literacy — an edge because nobody in the niche has it.'}
-  ],
-  quiz:[
-    {q:'A reel with great retention that never leaves your follower pool has…', c:['A content problem','A length problem','A seed problem — cold connected pool or confused account file, not a bad clip','Shadowban'], a:2, e:'Disease 2: the content passed its exam; the relationship layer that seeds cold testing failed it.'},
-    {q:'60% non-follower reach with near-zero follows-per-reach points at…', c:['The storefront (profile) leaking, or reach-bait that hit the wrong crowd','The algorithm','Posting time','Audio choice'], a:0, e:'Disease 3: distribution did its job; the four-second profile conversion (b3_funnel) or the positioning didn’t.'},
-    {q:'The weekly sort key for the IG tape-read is…', c:['Views','Follower growth','Likes','Sends per reach'], a:3, e:'The disclosed king metric ranks the week; the tree names every underperformer’s single disease.'}
-  ]},
-
-{ id:'b5_launch', sub:'B5', title:'The launch protocol — your first 14 days, exactly',
-  predict:'Day one: a blank account, a phone, this course. If the first two weeks were prescribed move-by-move — setup, first posts, first reels, first tests — what goes live on day 1, and what does the account look like on day 14?',
-  concept:'<p>Everything in five tiers, compressed into a two-week prescription. Run it exactly; deviate only on data.</p>'
-    +'<p><b>Days 1–2 — the foundation (no posts yet).</b> Professional account ON (unlocks the dashboard — b5_diagnostics is blind without it). Handle per b0_identity, everywhere, domain bought. Bio built to b3_funnel’s three lines. Character-sheet decisions written down: set, grade, open, sign-off, series names. Follow the metro: every fleet, detailer, photographer, meet page, venue (this also teaches the classifier your neighborhood — B2). Story daily from day 1, even pre-content: the metro map in progress, the first fleet visit — <b>the account is alive before it performs.</b></p>'
-    +'<p><b>Day 3 — the grid opens.</b> Three posts, same hour: (1) the premise reel — 30 seconds, face on camera, b0_document’s sentence: “I’m building into the exotic rental industry from zero, in [city]. Watch.” (2) A carousel: “What I’ve learned mapping [city]’s exotic scene — 6 slides” (Intel, instant save-bait, instantly local). (3) A Metal clip from the first fleet visit or meet (shot on b1_system’s stack). The grid now answers all three storefront questions (b3_funnel) for every stranger the next year sends.</p>'
-    +'<p><b>Days 4–14 — the cadence contract:</b> one reel daily, alternating pillars (Climb → Intel → Metal → Scene → repeat; the Ledger debuts in week 3 with real numbers). Every reel doctrine-built: frame-one thumbnail, ≤8-word overlay, cold open, seam-hidden loop where the format allows, city said OUT LOUD, caption carrying the search phrase. Stories daily (poll or sticker minimum). Every comment answered inside the hour — at this size each is a relationship signal you cannot afford to waste, and one per week becomes a reply-with-reel (b5_formats).</p>'
-    +'<p><b>The embedded tests (this is where the edge compounds):</b> <b>Day 5:</b> first trial reel — three hook variants of one Intel piece; publish the winner day 6 (b5_surfaces). <b>Day 8:</b> first collab ask — the friendliest local account you now know (detailer, meet page): “shot this at your spot — post it as a collab?” <b>Day 10:</b> first conversion piece with the comment-keyword CTA armed (even pre-automation, answer manually — the DM→Qualified rep starts here). <b>Day 12:</b> first dashboard read against the six ratios; diagnose everything shipped so far to the tree; adjust NOTHING except what the tree names.</p>'
-    +'<p><b>Day 14 — what exists if you executed:</b> a coherent grid (premise + proof + intel), 11–12 doctrine-built reels with baseline data, one trial-tested hook, one collab live or asked, one conversion piece armed, a warmed story audience, every metro player followed and several following back, the diagnostic ritual installed — and the habit that carries the dip (B4) already ten days old. Views are irrelevant at day 14 (b1_volume’s scoreboard). <b>What was actually built is the machine</b> — and from here, the course’s promise holds: run B1’s cadence through B4’s dip reading B5’s dashboard, and the arc (b4_arc) does the rest. The blueprint ends where your odometer starts.</p>',
-  example:'<p><b>Ex — day 14, real shape:</b> 12 reels (best: the trial-tested cliff-cap teardown, 2,900 views, 34 sends), 1 carousel (61 saves), 1 collab pending with the detailer, 6 qualified-ish DMs (2 tire-kickers filtered warmly, 1 real lead packaged — T7’s first walk-in candidate), 214 followers of which ~70 metro car scene, story replies from one fleet’s account. Tiny numbers. Perfect machine. The 100-clip apprenticeship is 12% complete and already producing deal flow.</p>',
-  teach:'Walk the protocol from memory: days 1–2 foundation, day 3’s three-post grid opening, the daily cadence rules, the four embedded tests, and what day 14 must contain.',
-  cards:[
-    {f:'Days 1–2:', b:'Professional account, handle + domain, three-line bio, character sheet written, follow the entire metro, stories live before content. Alive before it performs.'},
-    {f:'Day 3 — the grid opens:', b:'Three posts, one hour: the premise reel (face, the sentence), the metro-map carousel (save-bait, local), the first Metal clip. The storefront answers everything from day 3.'},
-    {f:'The cadence + doctrine:', b:'One reel daily rotating pillars; frame-one thumbnails, loops, city out loud, search-phrase captions; stories daily; every comment answered in the hour.'},
-    {f:'The four embedded tests:', b:'Day 5 trial-reel hooks · day 8 collab ask · day 10 keyword-CTA conversion piece · day 12 six-ratio diagnosis. Day 14 = the machine exists; views are irrelevant.'}
-  ],
-  quiz:[
-    {q:'The account goes “alive before it performs” by…', c:['Daily stories of the real work (metro map, fleet visits) before the first reel ever posts','Buying starter followers','A launch announcement','Following celebrities'], a:0, e:'The relationship layer starts warming — and the classifier starts learning the neighborhood — from day 1.'},
-    {q:'Day 3 publishes exactly…', c:['One perfect reel','The premise reel + the metro carousel + a Metal clip, same hour — the storefront trio','Nine grid photos','A giveaway'], a:1, e:'Premise, proof-of-work, and reach-format: every future stranger’s three questions answered at once.'},
-    {q:'On day 12 you adjust…', c:['Everything that underperformed','The niche','Only what the six-ratio diagnostic tree names — nothing else','The posting time first'], a:2, e:'Data over vibes at a 12-reel sample: the tree names one disease per patient; superstition names ten.'}
-  ]}
-
-]);
-
-window.REDLINE_QBANK.B5 = [
-  {q:'Instagram ranks…', c:['With one global algorithm','By follower count','Chronologically','Per surface — Feed, Stories, Explore, Reels each score their own signals'], a:3, e:'Separate systems, separate signals [VERIFY IG’s own explainers].', d:1},
-  {q:'A reel’s distribution runs…', c:['Straight to Explore','Followers only','Connected pool first (relationship-scored), then unconnected (content-scored) if signals clear','Randomly'], a:2, e:'The two-audience test: warm followers seed the cold push.', d:1},
-  {q:'The publicly-named king ratio is…', c:['Likes per post','Saves per day','Comments per view','Sends per reach'], a:3, e:'Shares-per-viewer — social capital spent on you, watched alongside watch time [VERIFY].', d:1},
-  {q:'Trial reels let you…', c:['Post twice daily','Buy reach','Skip the algorithm','Test on non-followers only, then promote winners'], a:3, e:'The free cold-audience hook lab almost nobody in the niche uses [VERIFY availability].', d:2},
-  {q:'Silent distribution taxes include…', c:['Long captions','Original audio','Posting daily','Watermarked reposts, engagement-bait phrasing, sub-720p/letterboxed video, flagged audio'], a:3, e:'Not bans — quiet discounts. The clean-export checklist costs nothing [VERIFY].', d:2},
-  {q:'A seamless loop matters because…', c:['It looks artistic','Audio syncs','It saves editing','Looped watches count — average watch time can exceed 100% of length'], a:3, e:'The single strongest retention trick in short-form: hide the seam, buy 1.4 plays.', d:2},
-  {q:'Frame one of a reel is…', c:['A throwaway','A thumbnail competing as a static image in feed and grid before autoplay','Always skipped','Auto-selected forever'], a:1, e:'≤8-word overlay, face or motion, never a dead frame — the reel is a picture first.', d:2},
-  {q:'“Keep it under 15 seconds” is…', c:['The rule','IG policy','Slop — length is downstream of retention shape; the rule is no dead seconds','True for carousels'], a:2, e:'A 60s teardown holding 70% wins on watch time. Duration follows content.', d:2},
-  {q:'IG’s search indexing reads…', c:['Hashtags only','Captions, OCR’d on-screen text, transcribed speech, location','Nothing','Alt text only'], a:1, e:'Say the money phrase out loud; every reel becomes a search result with shelf life [VERIFY].', d:2},
-  {q:'The carousel’s mechanical edges are…', c:['Cheapest to make','Longest captions','Top saves-per-reach + a second serve from slide 2 when unswiped','Auto-collab'], a:2, e:'The Intel pillar’s native format: reference content farms the save signal [VERIFY].', d:2},
-  {q:'A Collab post…', c:['Publishes one post to both accounts’ audiences as co-authors','Tags a friend','Splits revenue','Requires 10k followers'], a:0, e:'Audience merging in one tap — the metro strategy’s highest-leverage button.', d:1},
-  {q:'“Comment WEEKEND and I’ll DM you” works because…', c:['Begging works','A ranking signal (comments) and the deal room (DMs) fill simultaneously, with real utility','It’s new','It tricks the filter'], a:1, e:'The double play: distribution fuel + owned-funnel filling [VERIFY automation rules].', d:2},
-  {q:'Great retention but 90%+ follower-only reach means…', c:['A cold seed — warm the relationship layer; the clip passed its exam','Bad content','Wrong audio','Too long'], a:0, e:'Disease 2 in the tree: stories/DMs warm the pool that seeds cold tests.', d:3},
-  {q:'Day 3 of the launch protocol posts…', c:['Nothing','A giveaway','The premise reel, the metro carousel, and a Metal clip in one hour','Nine photos'], a:2, e:'The storefront trio: premise, proof, reach — every stranger’s questions answered from day 3.', d:2}
-];
+// Zero experience to professional creator, strategist, account manager, and
+// agency operator. Durable principles are taught as mechanisms; volatile UI,
+// feature, eligibility, and policy details are marked [VERIFY LIVE]. Research
+// notes and first-party sources live in REDLINE_RESEARCH.md.
+// ES5 only: this file is consumed directly by the shared dark-realm engine.
+
+(function () {
+  'use strict';
+
+  var MODULES = [];
+  var RAW = [];
+
+  function mod(k, name, blurb) { MODULES.push({ k:k, name:name, blurb:blurb }); }
+  function add(sub, id, title, predict, core, mechanism, playbook, diagnose, assignment, testQ, testA) {
+    RAW.push({ sub:sub, id:id, title:title, predict:predict, core:core, mechanism:mechanism,
+      playbook:playbook, diagnose:diagnose, assignment:assignment, testQ:testQ, testA:testA });
+  }
+  function pos(id, salt) {
+    var n = salt || 0, i;
+    for (i = 0; i < id.length; i++) n = (n + id.charCodeAt(i) * (i + 3)) % 997;
+    return n % 4;
+  }
+  function choices(correct, id, salt, wrong) {
+    var out = [], p = pos(id, salt), i, w = 0;
+    for (i = 0; i < 4; i++) out.push(i === p ? correct : wrong[w++]);
+    return { c:out, a:p };
+  }
+  function lesson(r) {
+    var one = choices(r.testA, r.id, 1, [
+      'Copy the largest account and treat its result as a universal rule.',
+      'Change the topic, format, hook, and audience simultaneously.',
+      'Judge success from raw views without checking audience or business outcome.'
+    ]);
+    var two = choices(r.diagnose, r.id, 2, [
+      'Assume the account is suppressed and start over immediately.',
+      'Increase posting volume before identifying the failed stage.',
+      'Ignore the evidence and follow the original plan unchanged.'
+    ]);
+    return {
+      id:r.id, sub:r.sub, title:r.title, predict:r.predict,
+      concept:'<p><b>The professional standard.</b> '+r.core+'</p>'
+        +'<p><b>How the machine works.</b> '+r.mechanism+'</p>'
+        +'<p><b>Operating playbook.</b> '+r.playbook+'</p>'
+        +'<p><b>Diagnosis before tactics.</b> '+r.diagnose+'</p>'
+        +'<p><b>Field rep.</b> '+r.assignment+' Save the artifact and the result. A claim without a record is a story; a dated artifact plus outcome is evidence.</p>',
+      example:'<p><b>Applied example.</b> Imagine the result missed. Do not call it a flop. Locate the broken stage, write one hypothesis, change one meaningful variable, and run the next rep. In this lesson the first suspect is: '+r.diagnose+'</p>',
+      teach:'Teach this lesson without jargon: state the principle, trace the mechanism, show the procedure, name the failure signal, and explain the field rep.',
+      cards:[
+        { f:r.title+' — principle', b:r.core },
+        { f:'What mechanism produces the result?', b:r.mechanism },
+        { f:'What does the operator actually do?', b:r.playbook },
+        { f:'What evidence proves the rep happened?', b:r.assignment }
+      ],
+      quiz:[
+        { q:r.testQ, c:one.c, a:one.a, e:r.testA },
+        { q:'What is the most useful first diagnosis when this lesson’s result misses?', c:two.c, a:two.a, e:r.diagnose }
+      ]
+    };
+  }
+
+  // ── Z0 · TRUE ZERO ───────────────────────────────────────
+  mod('Z0', 'Level 0 · Start at True Zero', 'Accounts, language, safety, tools, and the first publish. No experience is assumed.');
+  add('Z0','z0_map','The social media map — media, network, search, and marketplace',
+    'Why can the same video win on TikTok and fail on LinkedIn without either platform being random?',
+    'A platform is not an empty stage. It is a product with a user job: entertainment, connection, search, professional identity, inspiration, or purchase. Strategy begins with that job.',
+    'Ranking systems match eligible content to a person and surface. The same creative creates different predictions because intent, relationships, format norms, and feedback signals differ.',
+    'Map Instagram, TikTok, YouTube, Facebook, Threads, LinkedIn, X, and Pinterest by user job, discovery surface, relationship surface, search behavior, native formats, and likely business role.',
+    'If every platform receives the same file and caption, platform fit—not effort—is the first suspect.',
+    'Create a one-page platform map and label one primary, one secondary, and one listening platform for a practice brand.',
+    'What decides whether content is native to a platform?', 'It serves the user job and surface while using the platform’s expected format and behavior.');
+  add('Z0','z0_language','The operator vocabulary — reach is not revenue',
+    'A post has 100,000 views and produces no followers, leads, or sales. Was it successful?',
+    'Impressions, reach, views, watch time, retention, engagement, followers, leads, conversions, revenue, and profit answer different questions. Professionals never collapse them into “engagement.”',
+    'A funnel is a chain of denominators: impressions become viewers, some viewers consume, some act, some identify themselves, and some buy. Each ratio locates a different leak.',
+    'Build a metric dictionary with the exact platform definition, numerator, denominator, business meaning, and known limitation. [VERIFY LIVE] because platforms rename and recount metrics.',
+    'A large total beside a weak rate often hides the problem; a strong rate on a tiny sample often exaggerates certainty.',
+    'Translate one creator analytics screenshot into a funnel and write what can and cannot be concluded.',
+    'Why should a report use rates and denominators?', 'They reveal where the audience journey leaked and prevent large totals from disguising weak performance.');
+  add('Z0','z0_accounts','Account architecture, access, and security',
+    'Why should an agency never run a client account from a shared password in a group chat?',
+    'Ownership and access are business infrastructure. The client should own the account and assets; operators should receive role-based access that can be revoked without destroying history.',
+    'Shared passwords erase accountability and magnify compromise. Native business managers, permission levels, two-factor authentication, recovery contacts, and documented asset ownership create a chain of custody.',
+    'Create the account, professional/business profile, business manager, ad account, pixel/data source, billing owner, 2FA, password manager record, backup codes, and offboarding checklist. [VERIFY LIVE] menus.',
+    'If nobody can say who owns the email, phone, page, ad account, data, and payment method, the account is not client-ready.',
+    'Run a security audit on your own practice account and create an access register with owner, role, date granted, and revoke procedure.',
+    'What is the correct client account ownership model?', 'The client owns assets and operators receive named, least-privilege access through native permission tools.');
+  add('Z0','z0_toolchain','The minimum viable creator toolchain',
+    'What is the first equipment upgrade when your phone footage looks fine but people leave because they cannot understand you?',
+    'Clarity beats expensive gear. A phone, clean lens, stable support, intelligible audio, controlled light, storage, editor, design tool, scheduler, analytics sheet, and backup system can run a professional starter workflow.',
+    'Image quality has diminishing returns; bad sound, exposure, framing, or file loss can make usable ideas unusable. The toolchain exists to remove failure points and shorten cycle time.',
+    'Standardize capture, naming, ingest, two-copy backup, edit, captions, review, export, publish, and archive. Upgrade only the bottleneck proven by repeated work.',
+    'Buying gear before identifying a constraint creates prettier procrastination; recurring audio failures justify a microphone before a new camera.',
+    'Build the complete workflow using only tools already available and publish a 20-second test with clean voice, captions, and stable exposure.',
+    'What should determine the next tool purchase?', 'A repeated, measured production bottleneck—not the prestige or novelty of the tool.');
+  add('Z0','z0_firstpost','Your first post and the anti-perfection contract',
+    'How can a beginner improve retention without yet knowing what good retention looks like?',
+    'Skill arrives after contact with the work. The first posts are calibration samples, not verdicts on talent. Publishing creates the footage, timing, audience reaction, and emotional exposure needed to learn.',
+    'Perfectionism delays the feedback loop. A controlled volume of complete reps reveals recurring failure patterns faster than endlessly polishing an untested premise.',
+    'Use one audience, one useful promise, one clear opening, one idea, one proof/example, one next step, captions, and a clean export. Log the result after the platform has had time to distribute.',
+    'If the draft count rises while the published count stays at zero, fear—not quality control—is governing the system.',
+    'Publish a 20–45 second introduction: who you are, what you are learning/building, who it is for, and what the next documented rep will show.',
+    'What is the purpose of the first ten posts?', 'To create complete feedback loops and reveal patterns—not to prove permanent talent or guarantee virality.');
+  add('Z0','z0_observation','Train the eye before chasing tactics',
+    'What can you learn from a viral post that its public view count cannot tell you?',
+    'A strong operator separates observation from explanation. You can see the hook, structure, comments, packaging, and public outcome; you cannot see private retention, audience mix, distribution history, conversion, or causality.',
+    'Reverse engineering works when it names observable choices and generates a testable hypothesis. It fails when one winner becomes a superstition such as “red text makes videos viral.”',
+    'Maintain a swipe file with link, date, audience, promise, opening device, structure, proof, emotion, format, CTA, and a hypothesis worth testing. Save failures too.',
+    'If the explanation depends on hidden data or a single example, label it hypothesis rather than fact.',
+    'Deconstruct ten posts in one niche: five winners and five ordinary posts. Extract three differences that can be tested.',
+    'What makes a swipe-file observation professionally useful?', 'It records observable choices, acknowledges hidden variables, and produces a testable hypothesis.');
+
+  // ── B0 · RALSTON BRAND SPINE ─────────────────────────────
+  mod('B0', 'Level 1 · Brand Architecture (Ralston Spine)', 'Caleb Ralston’s Brand Journey and Catalyst/Core Truth/Proof frameworks, expanded into a complete positioning system.');
+  add('B0','b0_journey','The Brand Journey — reverse-engineer what you want',
+    'If your content succeeds, what exact life or business outcome should it cause one year from now?',
+    'Caleb Ralston’s Brand Journey starts at the outcome and works backward: what must happen, what must you be known for, what must you repeatedly do, and what must you learn to do it.',
+    'The chain prevents random content. Outcomes require reputation; reputation is an association in other people’s minds; associations are reinforced by visible actions; actions require capability.',
+    'Write one concrete outcome, three required associations, recurring public proof for each association, and the skills still missing. Reject vague goals such as “grow a following.”',
+    'If a proposed post cannot strengthen a required association, serve the audience, or test a needed skill, it is probably noise.',
+    'Complete the four-question Brand Journey and turn it into a 90-day learning-and-publishing roadmap.',
+    'What is the correct order of the Brand Journey?', 'Desired outcome → needed reputation → repeated actions that prove it → skills required to execute.');
+  add('B0','b0_catalyst','The Catalyst — why this brand must exist',
+    'What did you see that made remaining silent or staying the same unacceptable?',
+    'Ralston’s Catalyst is the change, gap, or opportunity that makes the brand necessary. It is not a dramatic trauma requirement; it is the honest reason the work deserves to exist.',
+    'A catalyst creates narrative tension between the current reality and a better one. It supplies stakes, audience relevance, and a durable source of topics.',
+    'Write the current broken state, what you noticed that others ignore, who pays the cost, what better state you pursue, and why you are willing to act publicly.',
+    'If the catalyst is interchangeable with thousands of bios, it has not reached a specific tension or audience cost.',
+    'Record three 30-second catalyst versions: factual, emotional, and contrarian. Test which creates the clearest audience response.',
+    'What makes a useful brand catalyst?', 'A specific change or opportunity with real stakes that explains why the work exists and why the audience should care.');
+  add('B0','b0_coretruth','The Core Truth — the belief you can own',
+    'What do you believe about your field that a smart competitor could honestly disagree with?',
+    'Ralston’s Core Truth is a defensible conviction that distinguishes the brand. It is not controversy for attention; it is a useful belief that changes what you do.',
+    'Distinct beliefs create memory because they compress many choices into one association. The belief becomes credible when content, offers, decisions, and tradeoffs consistently express it.',
+    'Write ten beliefs, remove clichés and claims you cannot defend, then choose one with evidence, audience consequence, and enough depth to generate a year of demonstrations.',
+    'If the belief never costs a choice, changes a method, or risks disagreement, it is probably a slogan rather than a core truth.',
+    'Publish a belief post that states the common assumption, your alternative, evidence, limitations, and what the audience should do differently.',
+    'How is a Core Truth different from empty controversy?', 'It is defensible, useful, reflected in real decisions, and changes audience action—not disagreement manufactured for reach.');
+  add('B0','b0_proof','The Proof — identity is a pattern, not a claim',
+    'Which artifact would make a stranger believe your positioning without reading your bio?',
+    'Ralston’s Proof is repeated visible evidence of the identity you want the market to assign you. Saying “strategist” is cheap; showing research, decisions, experiments, and outcomes builds the association.',
+    'Audiences infer identity from repeated behavior. Process footage, before/after work, annotated analytics, client artifacts, informed predictions, and honest lessons turn a claim into a record.',
+    'Build a proof ladder: personal reps first, then practice projects, collaborations, testimonials, client outcomes, and durable intellectual property. Never invent access, metrics, or results.',
+    'If the proof cannot be inspected, dated, or connected to your contribution, its credibility is weak.',
+    'Create a proof inventory and publish one artifact with context: problem, your decision, work shown, result, limitation, and next iteration.',
+    'What establishes a brand association over time?', 'A repeated pattern of inspectable actions and outcomes that proves the identity, not a one-time self-description.');
+  add('B0','b0_positioning','Positioning — category, person, problem, promise, proof',
+    'Can a stranger tell in four seconds who the account is for and why it is worth following?',
+    'Positioning chooses the mental shelf the brand should occupy. It defines the audience, costly problem or desired identity, distinct promise, category context, and reason to believe.',
+    'Specificity reduces the number of people who initially identify while increasing recognition and relevance among the right people. Broad reach and clear positioning are not opposites: topics can broaden while the promise remains coherent.',
+    'Write: “For [specific person] who [tension], this account helps [valuable change] through [distinct mechanism], proven by [evidence].” Then remove every word that could describe a competitor.',
+    'If content attracts people who will never value the offer, reach is growing outside the positioning.',
+    'Interview five target people and ask them to paraphrase the positioning after seeing only the profile and three posts.',
+    'What is the test of strong positioning?', 'The right stranger can quickly name who it is for, the valuable change, the distinct mechanism, and a reason to believe.');
+  add('B0','b0_identity','Identity system — recognizable without becoming repetitive',
+    'If the logo disappeared, what repeated cues would still make a post recognizable?',
+    'Brand identity is a memory system: voice, beliefs, recurring series, visual grammar, sonic cues, environments, vocabulary, and behavior. A logo is one cue, not the brand.',
+    'Consistent cues lower recognition effort while varied ideas protect novelty. The goal is coherent range: many executions that feel authored by the same mind.',
+    'Define five voice traits with do/don’t examples, color/type rules, caption style, framing, recurring opening or sign-off, series names, thumbnail grammar, and accessibility rules.',
+    'If consistency requires every post to look identical, the identity system is too shallow; if nothing repeats, memory cannot compound.',
+    'Build a one-page brand system and restyle three different formats so they remain recognizable without a logo.',
+    'What balance should an identity system create?', 'Repeated recognizable cues with enough format and idea variation to preserve novelty.');
+
+  // ── A0 · AUDIENCE ────────────────────────────────────────
+  mod('A0', 'Level 2 · Audience Intelligence', 'Research people deeply enough to predict attention, language, objections, sharing, and purchase.');
+  add('A0','a0_segments','Segments, jobs, and moments',
+    'Why is “women 18–34” usually too weak to direct a useful piece of content?',
+    'A useful audience is grouped by shared situation, desired progress, constraint, awareness, and context—not demographics alone. People use content to accomplish emotional, social, and practical jobs.',
+    'The same person enters different intent moments: discovering a problem, comparing options, seeking identity, solving now, or validating a purchase. Each moment needs different content.',
+    'Map segment, triggering moment, desired progress, current workaround, fear, objection, vocabulary, trusted proof, share recipient, and next action.',
+    'If the brief describes who people are but not what is happening when they need the content, it cannot guide an idea.',
+    'Create three audience moment cards for one niche and write a distinct post premise for each.',
+    'What makes an audience segment actionable for content?', 'A shared situation, desired progress, constraints, language, and intent moment that can direct a specific message.');
+  add('A0','a0_listening','Social listening without guessing',
+    'Where do you find the phrases an audience uses before marketers sanitize them?',
+    'Social listening collects naturally occurring questions, complaints, comparisons, jokes, search phrases, reviews, comments, support tickets, community discussions, and competitor reactions.',
+    'Repeated language reveals demand and emotional stakes; gaps between what people ask and what brands publish reveal opportunity. Listening is evidence collection, not silent imitation.',
+    'Search platform autocomplete, Creator Search Insights, forums, reviews, comments, FAQs, ad libraries, and sales/support logs. Tag entries by pain, desire, objection, trigger, proof, and phrase.',
+    'If research produces only topic nouns and no verbatim tensions or situations, it is too shallow.',
+    'Collect fifty audience statements and cluster them into five recurring jobs with exact phrases preserved.',
+    'What is the most valuable output of social listening?', 'Recurring audience tensions and language that reveal demand, context, objections, and content gaps.');
+  add('A0','a0_interviews','Audience interviews that uncover decisions',
+    'Why does asking “Would you buy this?” often produce misleading research?',
+    'People are poor at predicting hypothetical behavior and often answer politely. Strong interviews reconstruct a real recent event: trigger, search, alternatives, doubts, decision, and aftermath.',
+    'Specific past behavior exposes the forces that moved or blocked action. Follow-up questions turn broad opinions into scenes, language, tradeoffs, and proof requirements.',
+    'Ask for the last time the problem happened, what changed, first action, exact searches, considered options, hesitation, decision rule, and what would have made the process easier. Do not pitch.',
+    'If most answers are adjectives or future promises, return to a real episode and ask “what happened next?”',
+    'Conduct five 20-minute interviews, transcribe key phrases, and update the audience moment cards.',
+    'What should an audience interview reconstruct?', 'A real recent decision journey from trigger through search, alternatives, objection, choice, and outcome.');
+  add('A0','a0_competitors','Competitor and category intelligence',
+    'Should you copy the best-performing format in your niche?',
+    'Competitor research maps category promises, conventions, proof, formats, gaps, and audience reactions. It should reveal where to conform for comprehension and where to differ for memory.',
+    'A content winner may reflect distribution history, brand equity, timing, or hidden spend. Pattern frequency across competitors is stronger evidence than one visible outlier.',
+    'Audit ten accounts across positioning, series, formats, hooks, proof, cadence, comments, offers, funnels, and creative quality. Mark table stakes, overused claims, white space, and stealable principles.',
+    'If the plan can be described as “do what they do, but better,” it lacks a distinct strategic choice.',
+    'Build a category map with sameness clusters and design three concepts that exploit verified white space.',
+    'What is the goal of competitor research?', 'To understand category conventions and gaps so the brand can be legible where needed and meaningfully distinct where it matters.');
+  add('A0','a0_personas','Behavioral personas and anti-personas',
+    'Who should your content intentionally repel or decline to serve?',
+    'A persona is useful only when it changes choices. It captures behavior, awareness, motivation, barriers, evidence standards, content habits, and decision power; an anti-persona protects positioning and service fit.',
+    'Trying to satisfy incompatible audiences weakens voice, offer, and community. Clear exclusions improve qualification and reduce future client or customer conflict.',
+    'Create primary, secondary, and anti-persona cards. For each, define what to say, show, avoid, ask, offer, and measure.',
+    'If two personas require opposite promises or tones, they may need separate series, channels, or offers.',
+    'Use the cards to accept, revise, or kill ten draft ideas and record the decision logic.',
+    'When is a persona valuable?', 'When its behavioral details and exclusions change content, proof, CTA, channel, or offer decisions.');
+  add('A0','a0_insight','Turn research into an insight',
+    'What separates a fact about an audience from a strategic insight?',
+    'An observation states what happens. An insight explains a meaningful tension or cause and creates a new decision. “People save tutorials” is data; the reason they save but never act may change the format and offer.',
+    'Strong insights connect evidence, human tension, implication, and action while remaining falsifiable. They compress many observations into a useful explanation.',
+    'Use: “We observed [pattern] among [people/context]. This likely happens because [tension]. Therefore we will [decision] and expect [measurable change].”',
+    'If the “insight” does not alter a choice or cannot be disproved, it is description or opinion.',
+    'Write five insight statements from the listening dataset and rank them by evidence strength and strategic consequence.',
+    'What must a strategic insight produce?', 'A falsifiable explanation of a meaningful pattern that changes a decision and predicts an outcome.');
+
+  // ── C0 · CONTENT STRATEGY + IDEAS ────────────────────────
+  mod('C0', 'Level 3 · Content Strategy &amp; Idea Engine', 'Goals, pillars, formats, editorial systems, trend judgment, and an idea bank that never depends on inspiration.');
+  add('C0','c0_goal','Business goal → audience behavior → content job',
+    'Why is “increase engagement” not a complete content objective?',
+    'Content is a means to an audience behavior that supports a business outcome. Awareness, consideration, conversion, retention, advocacy, and recruiting require different messages and measures.',
+    'A clear objective links business goal, audience, desired behavior, content job, distribution, CTA, KPI, and time horizon. Vanity activity cannot substitute for the chain.',
+    'Write one objective per funnel stage using a single primary behavior and KPI. Define guardrails so growth does not damage trust, margin, or positioning.',
+    'If a post cannot be evaluated without saying “it got good engagement,” its intended job was never specified.',
+    'Turn a vague brand goal into a 90-day objective tree with leading and lagging indicators.',
+    'What makes a content objective complete?', 'It connects a business goal to a specific audience behavior, content job, primary KPI, and time horizon.');
+  add('C0','c0_pillars','Pillars that generate range instead of cages',
+    'How many distinct audience needs can one useful content pillar serve?',
+    'A pillar is a repeatable territory at the intersection of brand authority, audience demand, and business relevance. It is not a broad noun such as “motivation.”',
+    'Each pillar needs subtopics, audience moments, points of view, proof sources, native formats, and a business role. Series create recognizable containers inside pillars.',
+    'Choose three to five pillars. Build a matrix crossing each with educate, entertain, inspire, prove, converse, and convert; then name recurring series.',
+    'If a pillar cannot generate fifty distinct premises without repetition, it is either too narrow or insufficiently understood.',
+    'Produce a 100-idea matrix and flag the first twenty balanced across jobs and funnel stages.',
+    'What three forces should every pillar intersect?', 'Brand authority or right to speak, demonstrated audience demand, and relevance to the business goal.');
+  add('C0','c0_formats','Format follows the communication problem',
+    'When should one idea become a carousel instead of a short video?',
+    'Format is a delivery mechanism. Demonstration, transformation, argument, reference, intimacy, conversation, search answer, and spectacle have different native containers.',
+    'Video carries motion, voice, and emotion; carousels support sequence and reference; text supports precision and dialogue; live supports depth and interaction; long-form compounds search and trust.',
+    'For each idea, choose the format by required evidence, complexity, consumption context, platform surface, production cost, and desired action—not trend pressure alone.',
+    'If changing format destroys the core value, identify what affordance the idea actually needs.',
+    'Express one premise as short video, carousel, text post, live segment, and long-form outline; compare what each gains and loses.',
+    'What should determine content format?', 'The communication job, evidence, complexity, consumption context, platform surface, and desired audience action.');
+  add('C0','c0_ideaquality','The idea score — demand before polish',
+    'Can excellent editing rescue an idea nobody wants?',
+    'Creative performance begins with the premise: who cares, why now, what tension, what novelty, what payoff, and what proof. Production multiplies an idea; it rarely creates demand from nothing.',
+    'A high-potential idea combines audience relevance, clear stakes, curiosity or utility, credible proof, platform fit, and brand alignment. Broad appeal may come from universal framing, not diluted positioning.',
+    'Score ideas 1–5 on demand evidence, clarity, stakes, novelty, proof, visual potential, brand fit, conversion role, and production feasibility. Kill weak premises before scripting.',
+    'Strong retention on low reach can still indicate narrow demand; weak retention after strong selection points to delivery.',
+    'Score twenty ideas, script the top five, and record why the bottom five should not be produced.',
+    'What is the earliest major performance lever?', 'The strength and clarity of the premise—audience demand, stakes, novelty, payoff, proof, and fit.');
+  add('C0','c0_trends','Trend intelligence — borrow the structure, not the costume',
+    'When does joining a trend weaken a brand even if it increases reach?',
+    'A trend is a rising shared behavior, topic, format, sound, phrase, aesthetic, or cultural tension. Use it only when the brand has a native contribution and timing remains open.',
+    'Trend value depends on velocity, saturation, audience overlap, creative fit, production speed, and reputational risk. Mimicry borrows attention but may build no memory.',
+    'Track source, date, velocity, lifecycle, examples, audience, adaptable structure, brand angle, risk, and deadline. Decide join, adapt, counter, explain, or ignore.',
+    'If removing the trend leaves no valuable message, the concept is rented attention with no brand residue.',
+    'Use TikTok Creative Center, platform search, Google Trends, Pinterest Trends, news, and communities to build a weekly trend brief. [VERIFY LIVE] tools.',
+    'What is the correct use of a trend?', 'Apply a relevant structure or cultural moment to a native brand contribution while timing, fit, and risk remain favorable.');
+  add('C0','c0_calendar','The editorial calendar as a decision system',
+    'Why can a full calendar still represent a broken strategy?',
+    'A calendar should encode strategic balance and production reality, not merely dates. It makes audience job, pillar, format, funnel stage, owner, status, CTA, and measurement visible.',
+    'Capacity, dependencies, approvals, platform windows, campaigns, cultural moments, and evergreen inventory interact. A backlog and status workflow prevent urgency from consuming strategy.',
+    'Use idea → brief → script → capture → edit → review → approved → scheduled → live → measured → repurpose. Reserve capacity for reactive content and experimentation.',
+    'If most work becomes urgent near publish time, the bottleneck is probably upstream planning or approval—not creator speed.',
+    'Build a four-week calendar at 80% planned capacity, including evergreen, campaign, community, experimental, and conversion content.',
+    'What should an editorial calendar make visible?', 'Strategic purpose, production status, ownership, dependencies, capacity, distribution, CTA, and measurement.');
+  add('C0','c0_brief','The creative brief that protects the idea',
+    'What must every editor know before opening the timeline?',
+    'A brief aligns outcome, audience, insight, single-minded message, proof, format, tone, mandatories, CTA, references, deliverables, deadlines, and success measure. It protects intent through production.',
+    'Without a brief, reviewers introduce conflicting opinions late. With excessive prescription, specialists cannot improve the work. The brief should fix the problem and guardrails while leaving execution room.',
+    'Write the audience moment, desired change, one sentence they should remember, why they should believe it, required assets, platform versions, accessibility, approval owner, and definition of done.',
+    'If reviewers argue about the objective after the edit exists, the brief failed before production began.',
+    'Brief one of the scored concepts, hand it to another person, and ask them to explain the intended piece without further context.',
+    'What is the brief’s single most important job?', 'Preserve a shared understanding of the audience problem, intended change, message, proof, and definition of success.');
+
+  // ── W0 · WRITING + STORY ─────────────────────────────────
+  mod('W0', 'Level 4 · Hooks, Scripts &amp; Story (Ralston Spine)', 'Attention, retention, persuasion, Caleb Ralston’s story framework, interviews, CTAs, and ethical copy.');
+  add('W0','w0_hook','Hooks are promises under time pressure',
+    'Why does a loud first sentence fail when the next seconds do not deliver it?',
+    'A hook earns the next moment by making a clear, credible promise: useful change, unresolved tension, surprising evidence, identity relevance, spectacle, or emotional stakes.',
+    'The opening frame, spoken line, on-screen text, title, thumbnail, and first action work together. Curiosity without clarity becomes confusion; exaggeration creates selection but destroys satisfaction.',
+    'Draft at least ten openings per premise using outcome, mistake, question, contrast, proof-first, demonstration, confession, prediction, challenge, and open loop. Select for audience fit and payoff integrity.',
+    'High selection with early abandonment means the package promised something the delivery did not immediately confirm.',
+    'Film five opening variants against the same body and test them with a small audience or trial feature where available. [VERIFY LIVE].',
+    'What makes a hook sustainable?', 'It creates fast, specific interest and immediately begins fulfilling the exact promise it made.');
+  add('W0','w0_structure','Short-form structure — promise, proof, progression, payoff',
+    'What should happen immediately after a short-form hook?',
+    'Strong short-form removes orientation debt. It confirms the promise, supplies proof, advances through meaningful beats, varies attention, and delivers a payoff before asking for action.',
+    'Retention falls when information stops progressing. New evidence, visual change, escalating stakes, questions, pattern interruption, and compression renew attention when they serve the idea.',
+    'Outline beats before sentences: hook, confirmation, context, value beat one, complication, value beat two, payoff, CTA or loop. Cut any beat that repeats without increasing value.',
+    'A retention cliff after the hook often means context arrived before evidence or the script delayed the promised value.',
+    'Rewrite a 60-second script to 35 seconds without removing the central proof or payoff; label every beat’s job.',
+    'What should the first beat after the hook do?', 'Confirm the promised value or tension immediately so the viewer knows the content will deliver.');
+  add('W0','w0_story','Ralston story structure — hook, problem, journey, lesson, action',
+    'Why is a chronological life story usually weaker than one shaped around a lesson?',
+    'Caleb Ralston’s content story moves through hook, specific problem/stakes, messy journey, useful lesson, and natural action. Origin, failure, success, customer, and industry stories supply different proof.',
+    'Stories hold attention through change and causality. Details create scenes; obstacles create tension; decisions reveal character; the lesson transfers personal experience into audience value.',
+    'Start near the moment of change, specify stakes, select only events that alter the outcome, show the decision, earn the lesson, and connect the CTA to what the story proved.',
+    'If removing the chronology leaves no changed belief, decision, or useful takeaway, the story is an anecdote without strategic purpose.',
+    'Write one failure story in seven beats and record it under 90 seconds without hiding the mistake or overstating the lesson.',
+    'What are the five moves in Ralston’s storytelling playbook?', 'Hook → specific problem and stakes → journey through change → useful lesson → natural next action.');
+  add('W0','w0_interview','Extract stories from founders, experts, and clients',
+    'What follow-up turns “we finally closed the deal” into usable content?',
+    'The interviewer’s job is to locate scenes, decisions, contrast, proof, and transferable lessons—not merely collect polished answers. Ralston emphasizes process, universality, and replicable advice follow-ups.',
+    'Good follow-ups ask what changed, what happened next, what almost failed, what the person noticed, what evidence mattered, whether the lesson generalizes, and what someone can repeat.',
+    'Prepare themes, not a rigid script. Listen for compression words such as “eventually” or “somehow,” then reopen the hidden sequence. Capture room tone, names, dates, and permissions.',
+    'If every answer sounds like a keynote summary, the interviewer did not reach the scene or decision.',
+    'Interview someone for 20 minutes and extract three standalone clips, one written post, and one long-form outline.',
+    'What are three high-value follow-up directions?', 'Ask for the process that changed the result, test whether it generalizes, and extract replicable advice.');
+  add('W0','w0_copy','Clarity, specificity, and voice',
+    'Which is more persuasive: a bigger adjective or a concrete detail?',
+    'Strong social copy is clear enough to understand, specific enough to believe, and voiced enough to remember. Concrete nouns, active verbs, numbers with context, sensory detail, and clean sentence rhythm beat inflated claims.',
+    'Specificity lowers interpretation effort and raises credibility. Voice comes from consistent judgment, vocabulary, cadence, humor, and omissions—not intentional confusion or misspelling.',
+    'Draft for meaning, rewrite for structure, read aloud for rhythm, cut throat-clearing, replace abstraction with proof, verify claims, and adapt to the platform without erasing identity.',
+    'If the copy could be pasted onto a competitor’s post unchanged, it lacks proprietary observation or voice.',
+    'Rewrite ten generic captions into specific claims supported by a detail, example, or artifact.',
+    'What creates credible social copy?', 'Clear meaning, concrete specificity, supportable proof, active language, and a consistent point of view.');
+  add('W0','w0_cta','Calls to action that continue the value',
+    'Why can “follow for more” reduce an otherwise strong ending?',
+    'A CTA asks for the next behavior appropriate to the audience’s readiness and the content’s job. It should feel like the next useful step, not rent demanded after attention.',
+    'Low-friction actions include watch, save, share, reply, comment, or follow; higher-friction actions include DM, click, subscribe, book, trial, or purchase. Too many simultaneous asks split response.',
+    'Choose one primary action, state the user benefit, remove uncertainty, match the platform, and track the correct denominator. Use conversational CTAs only when the answer genuinely matters.',
+    'High attention with weak action can mean the CTA is misaligned, vague, too costly, or offered before sufficient proof.',
+    'Write six CTAs for one post at different commitment levels and select the one matched to its funnel job.',
+    'What makes a CTA effective?', 'One clear, valuable next step matched to audience readiness, content proof, platform behavior, and measurement.');
+
+  // ── P0 · PRODUCTION + EDITING ────────────────────────────
+  mod('P0', 'Level 5 · Production, Editing &amp; Design (Ralston Spine)', 'Phone-to-studio capture, talent direction, visual grammar, editing, audio, graphics, accessibility, and file systems.');
+  add('P0','p0_prepro','Pre-production — spend thought before money',
+    'Which production problem is cheapest to solve before filming starts?',
+    'Pre-production turns a strategy into a shootable plan: objective, concept, script or beats, locations, people, props, permissions, shot list, schedule, gear, risk, deliverables, and backups.',
+    'Every unresolved decision becomes time pressure on set. Shot planning protects the opening, proof, transitions, coverage, and platform crops instead of hoping the edit can invent missing evidence.',
+    'Run a creative brief review, feasibility check, visual treatment, shot list, call sheet, releases, weather/noise check, gear test, storage check, and contingency plan.',
+    'If the edit lacks the exact image that proves the claim, pre-production failed even if the footage is beautiful.',
+    'Pre-produce a 60-minute batch shoot that yields three shorts, one carousel asset set, and one long-form segment.',
+    'What does pre-production primarily protect?', 'The idea and required proof by resolving people, place, shots, assets, schedule, risk, and deliverables before capture.');
+  add('P0','p0_camera','Phone camera fundamentals',
+    'Why does moving closer to a window often improve video more than buying a camera?',
+    'Exposure, light direction, focus, lens choice, composition, stability, frame rate, shutter behavior, white balance, and clean lenses determine whether footage communicates clearly.',
+    'Large soft light creates readable faces; backlight without compensation creates silhouettes; digital zoom destroys detail; mixed color temperatures weaken skin tone; unstable framing raises cognitive friction.',
+    'Clean the lens, select resolution and frame rate intentionally, lock focus/exposure where useful, protect highlights, compose for the final crop, create depth, and record a ten-second test.',
+    'If skin tone shifts between cuts or the subject competes with the background, control white balance, light, and composition before adding filters.',
+    'Film the same 15-second delivery in window light, overhead light, and backlight; compare exposure, skin, and background separation.',
+    'What is the highest-leverage beginner lighting move?', 'Use a large soft source such as a window, place the subject intentionally, and remove conflicting or harsh light.');
+  add('P0','p0_audio','Audio that keeps attention',
+    'Why can viewers tolerate imperfect images but leave clear ideas with bad sound?',
+    'Speech intelligibility is non-negotiable. Microphone distance, room reflections, clothing noise, wind, gain, monitoring, backup capture, music balance, and loudness consistency shape comprehension and trust.',
+    'A microphone close to the mouth captures more voice relative to noise. Soft rooms reduce reflections. Monitoring catches failures the camera meter cannot explain.',
+    'Choose the quietest workable space, place and conceal the mic correctly, monitor with headphones, record a backup, capture room tone, prevent clipping, and mix dialogue before music.',
+    'If captions are required to decipher rather than support speech, fix capture or dialogue mixing first.',
+    'Record and compare phone-distance audio, lav audio, and close directional audio in the same room; document the failure modes.',
+    'What usually improves spoken audio most?', 'Reduce microphone distance and environmental noise, monitor the signal, and protect a clean backup.');
+  add('P0','p0_talent','Directing talent and the filming environment',
+    'How does the person behind the camera change the performance in front of it?',
+    'Ralston’s filming playbook treats trust and energy as production variables. Prepared gear, a comfortable environment, clear expectations, active listening, positive reinforcement, and useful follow-ups improve performance.',
+    'Self-conscious talent monitors themselves instead of communicating. Warm-up time, conversational prompts, visible engagement, hydration, breaks, and specific feedback reduce that load.',
+    'Set tone early, explain the process, begin with easy wins, film in chunks, keep rolling through useful moments, ask deeper follow-ups, mark strong soundbites, and end by naming what worked.',
+    'If talent becomes flatter across the session, examine fatigue, interruption, unclear direction, excessive correction, or loss of psychological safety.',
+    'Direct a 30-minute interview and produce a talent note: energy pattern, strongest prompt, weak prompt, best clip, and next-session adjustment.',
+    'What is the director’s core responsibility with talent?', 'Create a prepared, trusting environment and use attentive prompts and feedback to help the person communicate naturally.');
+  add('P0','p0_edit','Editing for comprehension and retention',
+    'Should every pause be removed from a social video?',
+    'Editing controls information, emotion, time, and attention. The goal is not maximum cut density; it is minimum confusion and purposeful progression.',
+    'Cuts remove dead time, reorder logic, emphasize reactions, reveal proof, and vary stimulus. B-roll, punch-ins, graphics, captions, sound, and pacing should support meaning rather than camouflage a weak premise.',
+    'Build the clean story first, tighten redundancies, strengthen the opening, place visual proof at the spoken claim, vary only when attention needs renewal, mix audio, caption, and watch without sound.',
+    'If the edit feels fast but viewers cannot restate the point, stimulation replaced comprehension.',
+    'Create restrained and high-stimulation edits from the same footage; test recall, perceived credibility, and retention.',
+    'What is the editor optimizing before cut frequency?', 'Clear progression, proof, emotion, comprehension, and delivery of the promised payoff.');
+  add('P0','p0_design','On-screen text, thumbnails, carousels, and accessibility',
+    'What must a thumbnail communicate before a viewer reads every word?',
+    'Design creates hierarchy under small-screen constraints. Contrast, scale, spacing, type, color, safe zones, imagery, sequence, and accessibility guide attention and communicate value.',
+    'A thumbnail or first slide makes a selection promise; captions provide access and silent comprehension; carousel pacing turns slides into beats; alt text and readable contrast expand usability.',
+    'Use one focal idea, minimal high-value text, tested mobile legibility, safe margins, consistent identity, accurate captions, meaningful alt text, and platform-specific crops. [VERIFY LIVE] dimensions.',
+    'If the asset works only when enlarged on a desktop, it fails the actual consumption context.',
+    'Design three thumbnail directions and a seven-slide carousel; run a five-second clarity test on a phone.',
+    'What is the first job of social design?', 'Create immediate hierarchy and comprehension on the actual device while preserving accuracy, identity, and accessibility.');
+
+  // ── D0 · WATERFALL DISTRIBUTION ──────────────────────────
+  mod('D0', 'Level 6 · Waterfall Distribution (Ralston Spine)', 'Pillar content, native adaptation, cadence, publishing QA, engagement, and content lifecycle.');
+  add('D0','d0_pillar','Choose pillar content worth mining',
+    'If the audience consumed only one piece this week, what would deserve that attention?',
+    'Ralston’s Waterfall starts with a dense pillar: long-form video, podcast, newsletter, deep post, interview, live, or research asset containing multiple complete insights.',
+    'A strong pillar supplies proof, stories, examples, objections, quotes, demonstrations, and clear sections. Thin source material creates repetitive micro-content.',
+    'Choose one strategic question, build a deep answer, capture clean chapter boundaries and visual moments, then mark standalone ideas while recording.',
+    'If clips require missing context or all repeat the same claim, improve the pillar before asking editors for more output.',
+    'Create one 15–30 minute pillar designed to yield at least twelve distinct derivatives.',
+    'What makes content suitable as a Waterfall pillar?', 'It is a high-value, structured source with enough distinct proof, stories, examples, and sections to create native derivatives.');
+  add('D0','d0_mining','Mine micro-content without making leftovers',
+    'When does a clip from a great interview still become weak short-form?',
+    'Micro-content must stand alone. Mining finds complete tensions, claims, stories, demonstrations, questions, quotes, and objections, then rebuilds context and packaging for each unit.',
+    'A timestamp is not a finished clip. The derivative needs its own opening, setup, progression, payoff, captions, crop, and CTA; sometimes the best derivative is rewritten rather than clipped.',
+    'Log candidate moment, audience job, premise, missing context, format, new hook, proof, platform, CTA, and status. Rank by independent value, not celebrity of the source.',
+    'If a viewer must have watched the full episode to understand the clip, it has not been adapted.',
+    'Extract twelve derivatives: clips, carousel, thread, quote graphic, email, story sequence, and follow-up premise.',
+    'What turns an excerpt into true micro-content?', 'A complete standalone promise, context, progression, payoff, and native package for its audience and surface.');
+  add('D0','d0_native','Native adaptation across platforms',
+    'Why is changing aspect ratio not enough to call content repurposed?',
+    'The Waterfall preserves the core message while adapting presentation to audience expectations and platform behavior. Native does not mean abandoning brand identity.',
+    'Hook language, pacing, duration, title, thumbnail, caption, search terms, interaction, CTA, and format conventions alter selection and satisfaction on each surface.',
+    'Create a master message and platform briefs: what remains true, what changes, what surface receives it, what action fits, and what metric evaluates it.',
+    'If every version shares the same first frame, caption, duration, and CTA, distribution has become duplication.',
+    'Adapt one idea into TikTok, Reel, Short, LinkedIn post, X thread, Pinterest pin, Story, and email without losing the core claim.',
+    'What should repurposing preserve and what should it change?', 'Preserve the core truth and proof; change packaging, pacing, context, format, CTA, and metadata for the platform and surface.');
+  add('D0','d0_cadence','Cadence is a capacity promise',
+    'Is the highest sustainable posting frequency always the best cadence?',
+    'Cadence balances strategic coverage, audience expectation, quality threshold, learning speed, production capacity, and team health. Consistency means a reliable system, not daily punishment.',
+    'Publishing more creates samples but also consumes ideas, review capacity, and community attention. Quality over quantity does not excuse an insufficient sample; volume does not excuse low value.',
+    'Estimate weekly capacity by stage, set a minimum viable cadence, batch compatible work, protect reactive space, and review whether frequency improves learning or merely output.',
+    'Repeated missed dates indicate a capacity, scope, or approval problem—not a motivation slogan shortage.',
+    'Run a four-week cadence experiment and log planned vs shipped, hours, quality misses, response, and recovery cost.',
+    'How should a professional set cadence?', 'At the highest sustainable level that preserves strategic value, learning speed, community care, quality, and team health.');
+  add('D0','d0_publish','Publishing QA, metadata, and timing',
+    'Can an excellent video underperform because the upload package is careless?',
+    'Publishing is the final production stage: account, file, cover, title, caption, tags, links, location, disclosure, accessibility, collaborators, permissions, and timing must be correct.',
+    'Metadata helps humans and systems classify the content; timing can affect initial audience availability but rarely repairs weak demand. Eligibility and policy issues can limit recommendation.',
+    'Use a two-person checklist for high-risk posts. Confirm correct account, clean master, safe zones, spelling, claims, rights, disclosures, CTA destination, tracking, and scheduled time. [VERIFY LIVE] features.',
+    'If results collapse after a workflow change, inspect export, rights, eligibility, audience settings, link, and publish configuration before rewriting strategy.',
+    'Build and use a platform QA checklist on the next ten posts; record every prevented error.',
+    'What is the correct view of posting time?', 'A contextual distribution variable worth testing—not a substitute for audience demand, packaging, or content satisfaction.');
+  add('D0','d0_aftercare','The first 24 hours and the content lifecycle',
+    'Does a creator’s job end when the post becomes public?',
+    'Publishing opens a feedback event. Community response, moderation, corrections, story support, collaborator activation, comment mining, and early diagnostics create value beyond the upload.',
+    'Comments reveal confusion and new premises; shares and saves reveal utility or identity value; platform-specific curves differ. Evergreen winners can be reframed, updated, expanded, or redistributed.',
+    'Monitor appropriately, answer real comments, pin useful context, correct errors visibly, capture questions, log initial signals, avoid compulsive refreshing, and schedule later measurement windows.',
+    'Deleting a slow starter too early destroys evidence and may interrupt delayed discovery; ignoring a harmful error protects neither trust nor performance.',
+    'Run a 24-hour aftercare protocol and convert at least five audience responses into backlog entries or improvements.',
+    'What should happen after publishing?', 'Community care, risk monitoring, question capture, measured diagnostics, and lifecycle decisions—not panic or abandonment.');
+
+  // ── V0 · VIRALITY OPERATING SYSTEM ──────────────────────
+  mod('V0', 'Level 7 · The Virality Operating System', 'A rigorous formula for increasing viral probability: demand, packaging, hold, retention, satisfaction, spread, and iteration.');
+  add('V0','v0_formula','The virality formula — probability, not magic',
+    'If two posts have identical retention, why might one reach ten times more people?',
+    'Virality is nonlinear distribution created when a strong idea repeatedly satisfies expanding groups of suitable viewers. No formula guarantees it; a formula makes the controllable stages visible.',
+    'Use: qualified demand × eligibility × packaging/selection × opening hold × sustained consumption × satisfaction × spread × audience expansion × iteration speed. A near-zero stage constrains the product.',
+    'Score every concept and published post across the stages. Improve the weakest plausible constraint before polishing an already-strong stage.',
+    'Strong retention with limited expansion can mean narrow demand, weak share motive, competition, seasonality, or insufficient evidence—not necessarily suppression.',
+    'Create a virality scorecard for twenty posts and write one next-test hypothesis for each.',
+    'What is the value of a virality formula if it cannot guarantee virality?', 'It decomposes a nonlinear outcome into controllable stages, diagnostics, and testable improvements.');
+  add('V0','v0_demand','Demand, timing, and addressable audience',
+    'Can a perfectly delivered idea exceed the number of people who care about it?',
+    'Reach begins with addressable demand: the number and intensity of people for whom the idea is relevant now or can be framed through a universal tension.',
+    'Topic interest, seasonality, novelty, news cycles, cultural context, competition, and audience saturation change the available pool. Strong framing can widen entry without falsifying the specialist value.',
+    'Validate through search behavior, comment frequency, competitor patterns, community intensity, trend velocity, recurring questions, and sales evidence. Classify evergreen, seasonal, reactive, and emerging ideas.',
+    'High satisfaction among a tiny expert group can be a strategic win even when it is not a mass-distribution candidate.',
+    'Take one narrow expert topic and produce three accurate framings: specialist, adjacent, and universal.',
+    'What sets the upper boundary on viral reach?', 'The size and intensity of qualified demand, modified by timing, framing, competition, and audience expansion.');
+  add('V0','v0_selection','Selection — win the click, stop, or swipe',
+    'What does a viewer know before deciding to consume?',
+    'Selection is the content’s external promise: topic, first frame, title, thumbnail, opening motion, source, and context. It must communicate value and tension faster than competing options.',
+    'Feeds measure stops or watches; YouTube exposes impressions and CTR; short-form surfaces expose viewed-versus-swiped or early hold where available. Selection must be interpreted by traffic source and audience breadth.',
+    'Generate multiple packages before production, clarity-test them with target people, ensure each truthfully predicts the payoff, and preserve learning by changing one main variable.',
+    'High selection plus a first-seconds cliff means packaging overpromised, confused, or attracted the wrong person.',
+    'Create ten packages for one body of content and run a blind five-second promise test.',
+    'What should selection packaging accomplish?', 'Make the right person quickly understand and desire the truthful value the content will immediately begin delivering.');
+  add('V0','v0_retention','Retention engineering — every second earns the next',
+    'Is completion rate alone enough to compare a 12-second clip and a 90-second explanation?',
+    'Retention is a curve, not one number. Opening hold, average watch time, percentage viewed, completion, rewatches, peaks, dips, and exits reveal different behavior and depend on length and intent.',
+    'Progression, unanswered questions, stakes, proof, pattern changes, emotional turns, visual causality, compression, and anticipated payoff maintain attention. Filler and delayed value create avoidable exits.',
+    'Annotate the curve against script beats. Move late peaks earlier, inspect steep dips, distinguish satisfying completion from accidental loops, and compare like lengths and traffic sources.',
+    'A dip at a specific claim may indicate confusion, disbelief, repetition, or an unwanted CTA—not simply “short attention spans.”',
+    'Perform a second-by-second retention autopsy on five videos and rewrite the weakest segment.',
+    'How should retention be analyzed?', 'As a length- and source-aware curve aligned to content beats, not as one universal completion benchmark.');
+  add('V0','v0_satisfaction','Satisfaction — the hidden reason watch time is insufficient',
+    'Why might people finish a video and still teach the platform not to recommend it?',
+    'Platforms aim to create useful or enjoyable sessions, so completion without satisfaction can be hollow. Positive actions, survey feedback, continued viewing, follows, saves, shares, comments, and negative feedback add context.',
+    'Content can hold attention through outrage or deception while producing regret, hiding, dislikes, distrust, or no future consumption. Durable growth aligns the click, experience, and after-effect.',
+    'Define the intended after-effect: informed, entertained, moved, capable, connected, curious, or ready to act. Ask whether the payoff and CTA created it.',
+    'High watch with weak follows, saves, shares, return viewers, or conversion may mean passive curiosity rather than brand value.',
+    'Survey ten viewers immediately and one day later: expected value, actual value, recall, feeling, and next action.',
+    'What is content satisfaction?', 'The viewer’s positive evaluation and after-effect after consumption—not merely time spent.');
+  add('V0','v0_spread','Share psychology and social transmission',
+    'What does a share allow the sender to say about themselves or their relationship?',
+    'People share to help, entertain, signal identity, strengthen a relationship, participate culturally, express emotion, warn, advocate, or start a conversation. Spread is a human motive before it is a metric.',
+    'Private sends often carry stronger relational intent than public likes. The recipient and message context determine whether a piece can travel beyond its initial audience.',
+    'Design for a named transfer: “who sends this to whom, and why now?” Create useful compression, quotable language, identity recognition, emotional charge, or timely relevance without begging.',
+    'Strong consumption with weak sharing may mean the content was personally useful but not socially useful—or the receiver was unclear.',
+    'Rewrite five good ideas around five distinct share motives and predict the sender-recipient pair.',
+    'What is the core question behind shareable content?', 'Who will send this to whom, what relationship or identity does the send serve, and why now?');
+  add('V0','v0_loops','Growth loops, series, and viral follow-through',
+    'What should happen after a post breaks out so the attention compounds?',
+    'A viral event becomes growth only when the profile, content library, series, follow-up, community, and offer help new viewers continue. Otherwise reach evaporates.',
+    'Loops connect output to new input: comments create response posts, winners create sequels, viewers contribute examples, collaborations merge audiences, customers create proof, and owned channels return attention.',
+    'Prepare pinned orientation, clear bio, strongest proof, next episode, response capacity, email/lead path, and sequel rules. Protect quality instead of flooding copies of the winner.',
+    'A view spike with flat profile actions, followers, return viewers, or leads signals a capture problem or wrong-audience breakout.',
+    'Build a breakout checklist and a five-part sequel tree for the highest-potential series.',
+    'What converts a viral post into durable growth?', 'A profile, library, series, follow-up, community, and funnel that capture and continue the new viewer’s interest.');
+
+  // ── N0 · ANALYTICS + EXPERIMENTATION ────────────────────
+  mod('N0', 'Level 8 · Analytics &amp; Experimentation', 'Metric trees, clean tests, retention diagnosis, attribution, reporting, and decision-making under uncertainty.');
+  add('N0','n0_tree','Build a metric tree from revenue backward',
+    'Which leading metric would you monitor before monthly revenue can answer?',
+    'A metric tree links business outcome to conversion, qualified demand, traffic, content response, and production inputs. It distinguishes controllable leading indicators from delayed lagging results.',
+    'Revenue may equal customers × average value; customers depend on qualified leads × close rate; leads depend on CTA response × qualified reach; reach depends on output and content performance.',
+    'Draw the tree, define each metric and source, select one north-star outcome plus stage KPIs and guardrails, and assign review frequency and owner.',
+    'If the team celebrates reach while qualified demand, retention, or profit falls, the dashboard is optimizing a disconnected branch.',
+    'Build metric trees for a creator brand, local service, ecommerce brand, and B2B expert.',
+    'Why use a metric tree?', 'To connect daily content signals and controllable inputs to funnel behavior and the actual business outcome.');
+  add('N0','n0_measure','Measurement hygiene and data dictionary',
+    'Can two platforms report “views” that mean different things?',
+    'Metrics are products with definitions, windows, exclusions, estimates, and revisions. Professional analysis records exactly what was counted, where, when, and for which population.',
+    'Inconsistent naming, timezone, organic/paid mixing, duplicated conversions, missing UTM parameters, and changing attribution windows create false comparisons.',
+    'Maintain metric name, platform definition, formula, source, timezone, window, extraction date, limitations, owner, and change log. Freeze snapshots before platforms age out details. [VERIFY LIVE].',
+    'A sudden performance jump that coincides with a definition or reporting change is a data-quality suspect before a strategy victory.',
+    'Create a data dictionary and QA one month of exported analytics for missing, duplicated, or incompatible fields.',
+    'What makes cross-platform reporting trustworthy?', 'Explicit definitions, compatible denominators and windows, source records, change logs, and separation of unlike metrics.');
+  add('N0','n0_test','Single-variable creative experiments',
+    'Why does changing the hook and topic together destroy useful learning?',
+    'An experiment starts with a falsifiable hypothesis, primary metric, controlled variable, comparable audience, sufficient exposure, decision rule, and documented result.',
+    'Simultaneous changes confound cause. Platform delivery also introduces noise, so repeated directional tests and native split-test tools are stronger than comparing two unrelated posts.',
+    'Write “If we change X for audience Y, metric Z should move because mechanism M.” Keep other high-impact variables stable, predefine duration/sample and stopping rule, then record outcome and limitation.',
+    'A winner on a tiny or mismatched sample is a lead for replication, not a law.',
+    'Run a four-variant hook test against one content body and replicate the winner on a second premise.',
+    'What makes a creative test interpretable?', 'A clear hypothesis, one main variable, comparable exposure, predefined metric and rule, and documented limitations.');
+  add('N0','n0_stats','Sample size, variance, and false certainty',
+    'Does a 40% improvement on 20 views prove a creative winner?',
+    'Organic distribution is noisy. Audience composition, timing, competition, topic, and random exposure can produce large percentage swings on small samples.',
+    'Confidence grows through more observations, replication, similar comparison groups, effect size, and consistent direction. Statistical significance does not guarantee business significance.',
+    'Report sample, absolute counts, rate, baseline, range, test conditions, and confidence level. Label anecdotal, directional, and decision-grade evidence.',
+    'If one outlier dominates the average, inspect median, distribution, and content mix before declaring a new baseline.',
+    'Analyze a 30-post dataset using totals, medians, rates, ranges, and outliers; write what remains uncertain.',
+    'How should small-sample wins be treated?', 'As directional hypotheses requiring more exposure or replication, with absolute counts and uncertainty disclosed.');
+  add('N0','n0_attribution','Attribution, UTMs, pixels, and incrementality',
+    'If three platforms claim credit for one sale, which one caused it?',
+    'Attribution assigns observed credit under a rule; incrementality estimates what would not have happened without the activity. They are related but not identical.',
+    'Clicks, views, cookies, device changes, privacy controls, offline actions, branded search, and multiple touches create competing claims. Pixels/server events, UTMs, CRM source, promo codes, surveys, and experiments provide partial evidence.',
+    'Define conversion events, UTM taxonomy, platform data connections, deduplication, CRM capture, attribution windows, and periodic holdout or lift tests where feasible. [VERIFY LIVE] consent and tools.',
+    'A platform-reported ROAS that ignores returns, margin, existing demand, or duplicate credit can overstate business value.',
+    'Trace five mock customer journeys and show how last-click, first-click, platform view-through, and incrementality would differ.',
+    'What is the difference between attribution and incrementality?', 'Attribution distributes observed credit; incrementality asks what outcome was caused beyond what would have occurred anyway.');
+  add('N0','n0_report','Reporting that causes decisions',
+    'What should a client know after reading the first page of a report?',
+    'A report is a decision document: objective, executive result, why it happened, evidence, risk, next action, owner, and expected effect. Data dumps transfer interpretation work to the client.',
+    'Separate output, audience, creative, funnel, and business layers. Compare with target and relevant baseline, explain anomalies, surface learning, and connect recommendations to evidence.',
+    'Use summary, KPI scorecard, winners/losers with diagnosis, audience insight, funnel impact, experiments, risks, next-month plan, and appendix definitions.',
+    'If every metric is green but the client is unsure what changed in the business, the report lacks a decision narrative.',
+    'Build a one-page executive report and a detailed appendix from the same mock dataset; present it in ten minutes.',
+    'What is the primary purpose of client reporting?', 'Turn evidence into shared understanding, decisions, ownership, and a testable next plan.');
+
+  // ── IG · INSTAGRAM ───────────────────────────────────────
+  mod('IG', 'Platform Lab · Instagram', 'Reels, Feed, Stories, search, DMs, collaborations, trials, profiles, Insights, and conversion.');
+  add('IG','ig_surfaces','One app, many ranking surfaces',
+    'Why does a tactic that improves Story reach not necessarily improve Explore distribution?',
+    'Instagram Feed, Stories, Reels, Explore, Search, profile, DMs, broadcast/community features, and ads serve different user jobs and use distinct ranking or retrieval systems.',
+    'Connected surfaces emphasize relationship and predicted interaction; unconnected discovery retrieves and ranks eligible content for likely interest. No single “Instagram algorithm” controls everything.',
+    'Assign each format a surface job: Reels for discovery and entertainment, Feed/carousels for value and identity, Stories/DMs for relationship, Search for intent, profile for conversion. [VERIFY LIVE].',
+    'If reach is strong but concentrated only among existing followers, inspect discovery eligibility, idea breadth, share behavior, and surface fit.',
+    'Audit thirty posts by format, surface, follower/non-follower reach, action, and business outcome.',
+    'How should Instagram strategy treat its surfaces?', 'As distinct user contexts with different jobs, signals, formats, and success measures.');
+  add('IG','ig_reels','Reels — discovery, watch, and sends',
+    'What makes a Reel travel beyond people who already know the account?',
+    'Reels compete for unconnected discovery through eligible, original, relevant content that viewers choose, watch, enjoy, and share. Messaging and resharing are central to how Reels move between people.',
+    'The idea, first frame, spoken/on-screen promise, progression, payoff, audio, visual legibility, and send motive create the response the recommender observes.',
+    'Produce vertical, mobile-first, clean-original exports; make the topic and value obvious; use speech/text classification cues; earn sends; and inspect retention and follower mix. [VERIFY LIVE] guidance.',
+    'High plays with weak watch and sends usually indicate selection without delivery; good watch with no expansion may indicate narrow demand or weak transmission.',
+    'Publish twelve Reels across three repeatable series and run weekly formula-stage diagnoses.',
+    'What combination most supports Reels discovery?', 'Eligible original content with clear demand, strong selection and watch behavior, satisfaction, and genuine person-to-person sharing.');
+  add('IG','ig_feed','Carousels and Feed — reference value and identity',
+    'Why can a carousel be more valuable than a Reel with more views?',
+    'Feed posts and carousels can build depth, saves, shares, comments, profile understanding, and durable brand associations. Sequential slides support teaching, proof, comparison, and narrative.',
+    'The cover earns entry; each slide resolves and opens tension; hierarchy makes scanning easy; concrete value earns saves; a coherent ending directs action.',
+    'Use one promise per carousel, mobile-readable design, progressive beats, examples/proof, no filler slides, a strong final synthesis, accessibility, and a matched caption.',
+    'High cover exposure with few swipes or actions points to unclear promise; strong saves with weak follows points to profile or positioning capture.',
+    'Create six carousel archetypes: guide, teardown, before/after, myth, checklist, and story.',
+    'When is a carousel strategically superior?', 'When sequence, reference value, proof, comparison, or saveable instruction matters more than motion or personality.');
+  add('IG','ig_stories','Stories — relationship, research, and conversion',
+    'Are Stories primarily a cold-audience growth tool?',
+    'Stories serve the connected audience: daily presence, intimacy, context, research, objection handling, launch sequencing, social proof, and low-friction response.',
+    'Replies, sticker interactions, completion, exits, and relationship history help determine relevance. Story sequences can move from attention to tension, proof, interaction, and action.',
+    'Mix pulse, process, proof, participation, teaching, offer, and response. Use polls/questions for real decisions, not decorative engagement. Keep text readable and disclose paid relationships.',
+    'Consistent first-card exits suggest weak relevance or excessive setup; views without replies or clicks may indicate passive documentation with no audience role.',
+    'Run a seven-day Story arc with one audience research question and one conversion sequence.',
+    'What is Stories’ primary strategic advantage?', 'Deepening relationships and moving known viewers through context, participation, proof, conversation, and action.');
+  add('IG','ig_profile','Profile, search, collaborations, and Trial Reels',
+    'What happens between a non-follower seeing a Reel and deciding to follow?',
+    'The profile converts attention into understanding: recognizable identity, searchable name/category, clear promise, proof, pinned orientation, highlights, link, and recent content consistency.',
+    'Collab posts merge distribution and social proof; search uses content and query relevance; Trial Reels can test with non-followers before broader sharing. Availability and behavior change. [VERIFY LIVE].',
+    'Optimize photo/name/bio, pin premise/proof/start-here, organize highlights, use descriptive spoken/text/caption language, propose aligned collaborations, and test ideas through available trial tools.',
+    'Strong non-follower reach with weak profile visits or follows points to off-positioning content, weak curiosity, or a leaking profile.',
+    'Run a four-second profile test with ten target strangers and deploy one aligned Collab or Trial Reel experiment.',
+    'What should an Instagram profile answer immediately?', 'Who this is for, what valuable change it offers, why to believe it, and what to do next.');
+  add('IG','ig_dm','Comments, DMs, broadcast, and community operations',
+    'When should a public comment move into a private conversation?',
+    'Instagram’s relationship layer turns content into conversation and qualification. Comments provide public value; DMs handle personal context, sensitive details, service qualification, and follow-up.',
+    'Response quality affects trust and produces research. Keyword automation can route useful resources when platform/API rules permit, but spam, deceptive bait, and unconsented outreach damage accounts and brand.',
+    'Create response tiers, saved replies with human customization, escalation rules, lead qualification, service-level targets, moderation, privacy limits, and CRM handoff. [VERIFY LIVE] automation.',
+    'Many comments with empty qualified conversations may mean the CTA attracts low-intent participation or the handoff adds friction.',
+    'Process fifty interactions, tag intent, response type, sentiment, and outcome, then improve the reply library.',
+    'What distinguishes community management from replying quickly?', 'Intentional public value, human conversation, qualification, moderation, escalation, privacy, and recorded learning.');
+  add('IG','ig_insights','Instagram diagnostics and the 14-day launch',
+    'What should a new account optimize before follower count?',
+    'A new Instagram account needs a coherent profile, enough posts to create a baseline, and disciplined reps. Views are noisy; the machine is the early asset.',
+    'Read accounts reached, follower mix, watch/retention where available, shares/sends, saves, comments, profile activity, follows, link/DM actions, and content-type patterns. [VERIFY LIVE] metric names.',
+    'Days 1–2: profile, security, research, series. Day 3: premise, proof, useful reference. Days 4–14: one sustainable daily rep, Stories, community response, two hook tests, one collaboration ask, and two diagnostics.',
+    'Do not diagnose “shadowban” until checking eligibility/status, originality, policy, export, demand, packaging, retention, satisfaction, audience, and sample.',
+    'Execute the launch, save every creative and metric snapshot, then write a stage-by-stage review.',
+    'What is the correct success standard for the first 14 days?', 'A secure coherent account, complete publishing/measurement loops, baseline evidence, and installed iteration habits.');
+
+  // ── TT · TIKTOK ──────────────────────────────────────────
+  mod('TT', 'Platform Lab · TikTok', 'For You, search, Creative Center, native creative, community, LIVE, Shop/brand work, analytics, and launch.');
+  add('TT','tt_recommender','For You ranking and eligibility',
+    'Which generally weighs more on TikTok For You: device settings or watch behavior?',
+    'TikTok describes recommendation factors as user interactions, content information, and user information; for most users, interactions including time spent watching generally weigh more than device or location signals.',
+    'Each feed ranks eligible candidates for an individual. Full watches, skips, shares, comments, follows, content/topic/audio information, language, and context help prediction; safety eligibility limits some allowed content.',
+    'Make topic and payoff legible, create strong early hold and ongoing value, use native format, avoid policy/eligibility traps, and analyze viewer response instead of hunting a mythical account-wide trick. [VERIFY LIVE].',
+    'Large initial exposure followed by a stop suggests the next audience cohort responded worse; inspect the response curve rather than inventing fixed test-pool numbers.',
+    'Deconstruct twenty For You videos and tag interaction, content, user-context, and eligibility hypotheses.',
+    'What factor group generally carries strong weight in TikTok recommendations?', 'User interactions—especially consumption behavior such as time watched, completion, or skipping—alongside content and user information.');
+  add('TT','tt_native','TikTok-first creative grammar',
+    'Why can over-polished brand creative feel easier to skip?',
+    'TikTok-first creative is vertical, mobile-native, human, sound-aware, culturally fluent, fast to value, and designed for participation or entertainment rather than adapted television.',
+    'Official creative guidance emphasizes 9:16, safe zones, clear proposition, hook/body/close, people, captions/text, sound, trend relevance, and continuous testing; organic work still requires audience-specific judgment.',
+    'Study native openings, direct address, demonstration, POV, reply videos, green screen, stitches/duets where available, lists, stories, and search answers. Use polish only when it supports the idea.',
+    'If the video looks like an ad before it creates value, selection may fall even when production quality is high.',
+    'Produce one premise in five native TikTok formats and compare hold, watch, comments, and profile actions.',
+    'What does “TikTok-first” mean?', 'Creative built for vertical mobile behavior, native culture, human delivery, sound, fast value, and platform interaction—not merely resized.');
+  add('TT','tt_search','Creator Search Insights and TikTok SEO',
+    'Where can a creator find frequently searched topics with possible content gaps?',
+    'TikTok is both recommendation and search. Creator Search Insights exposes popular searches, content gaps, related topics, and search analytics where available. [VERIFY LIVE].',
+    'Search ranking considers query match and content information alongside behavior. Spoken words, on-screen text, captions, topic clarity, and useful completion help a post answer intent.',
+    'Research exact queries, choose one intent, say and show the phrase naturally, answer early, demonstrate proof, cover follow-up questions, and monitor search traffic and inspired-post performance.',
+    'High search impressions with weak watch suggests the content matched the phrase but not the answer quality or expectation.',
+    'Build a 30-query map from Creator Search Insights and publish five content-gap answers.',
+    'What is the correct TikTok SEO priority?', 'Match a real query with clearly classified content that provides an immediate, satisfying answer—not keyword stuffing.');
+  add('TT','tt_trends','Creative Center, trends, and cultural permission',
+    'Does a trending sound automatically transfer its reach to a brand?',
+    'TikTok Creative Center provides trend, keyword, ad, and creative-pattern intelligence. Trends are community templates, not free distribution coupons. [VERIFY LIVE].',
+    'A trend works when the audience understands the reference, timing remains alive, and the brand adds a fitting twist. Late or forced use signals distance from the culture.',
+    'Track region, industry, growth curve, examples, semantic meaning, creator/community origin, commercial music rights, saturation, brand angle, and production deadline.',
+    'If the idea depends entirely on recognition of the trend and says nothing distinctive, it builds the trend more than the brand.',
+    'Create a weekly TikTok trend memo and execute one join, one adaptation, and one intentional rejection.',
+    'What determines whether a trend is usable?', 'Audience relevance, cultural understanding, timing, a native brand contribution, rights, and acceptable risk.');
+  add('TT','tt_community','Comments, replies, LIVE, and community loops',
+    'Why can a critical comment become a stronger post than the original?',
+    'TikTok communities co-create meaning through comments, reply videos, stitches/duets, LIVE, recurring jokes, and creator interaction. The response surface is an idea engine and trust layer.',
+    'Public questions reveal unmet context; reply videos inherit a visible prompt; LIVE creates depth and real-time feedback; recurring audience contributions create participation loops.',
+    'Tag comments by question, objection, story, sentiment, request, and risk. Reply publicly when useful, privately when personal, escalate threats, and convert repeated questions into series.',
+    'High comments dominated by confusion may signal a clarity failure, not successful community engagement.',
+    'Run one LIVE or structured Q&A, create five reply posts, and document recurring language and moderation needs.',
+    'What is the most strategic use of TikTok comments?', 'Serve people publicly while converting repeated questions, objections, and stories into research, replies, and series.');
+  add('TT','tt_commerce','Creators, brands, Spark Ads, Shop, and disclosure',
+    'Who owns approval and disclosure when creator content becomes a paid ad?',
+    'TikTok brand work can include organic partnerships, creator marketplace tools, Spark Ads, paid content, affiliate/Shop content, and direct ads. Each adds rights, disclosure, claims, measurement, and approval obligations.',
+    'Spark-style amplification uses organic creator or brand posts with authorization; commerce content must preserve truthful experience and clear material-connection disclosure. Features vary by market. [VERIFY LIVE].',
+    'Document brief, deliverables, usage term, territories, paid amplification, whitelisting/authorization, exclusivity, revisions, disclosure, claims, music rights, reporting, and payment.',
+    'A high-view creator post can still fail commercially when audience fit, offer, landing experience, tracking, or usage rights were weak.',
+    'Draft a creator partnership brief and rights matrix for organic-only, 30-day paid use, and extended usage.',
+    'What must be agreed before using creator content commercially?', 'Deliverables, rights and duration, paid amplification authorization, disclosure, claims, approvals, measurement, and payment.');
+  add('TT','tt_analytics','TikTok analytics and the 30-post apprenticeship',
+    'What does a strong average watch time hide if the opening loses most viewers?',
+    'TikTok diagnosis combines traffic source, viewed/skipped or early hold where shown, average watch, percentage viewed, completion, shares, saves/favorites, comments, follows, profile actions, search, and audience data. [VERIFY LIVE].',
+    'One average can hide an opening cliff and a small highly engaged remainder. Analyze the curve or available retention moments, content length, cohort, and outcome together.',
+    'Publish 30 controlled reps across three series: ten search-led, ten share-led, ten story/personality-led. Review every five posts and alter one stage at a time.',
+    'If a post earns views but no profile action, verify whether the premise represents the brand and whether the profile continues the promise.',
+    'Complete the apprenticeship with a scorecard, five replicated learnings, five disproved beliefs, and the next 30-post plan.',
+    'What is the purpose of the 30-post apprenticeship?', 'Create enough structured evidence to distinguish recurring audience and creative patterns from isolated wins or losses.');
+
+  // ── YT · YOUTUBE ─────────────────────────────────────────
+  mod('YT', 'Platform Lab · YouTube', 'Long-form, Shorts, Search, Home, Suggested, packaging, retention, channel architecture, monetization, and analytics.');
+  add('YT','yt_system','YouTube recommendations — appeal, engagement, satisfaction',
+    'Does YouTube push videos to an audience, or find videos for viewers?',
+    'YouTube describes recommendations as helping each viewer find videos they want and maximizing long-term satisfaction. Content performance can be understood through appeal, engagement, and satisfaction.',
+    'Personalization and context shape candidate fit; when offered, the viewer chooses or ignores, watches or leaves, and reports satisfaction through behavior and feedback. Topic interest and competition affect impressions.',
+    'Know the audience, make a compelling truthful package, deliver the promise, use series/playlists/end screens to continue value, and prioritize sustainable quality over arbitrary volume.',
+    'Good CTR and watch time do not guarantee unlimited impressions when the addressable audience is small or competing videos perform better.',
+    'Audit ten channel videos across traffic source, appeal, engagement, satisfaction proxies, and audience size.',
+    'What are YouTube’s three useful content-performance buckets?', 'Appeal—did they choose it; engagement—did they keep watching; satisfaction—did they value the experience.');
+  add('YT','yt_ideas','YouTube ideas and audience expansion',
+    'How can a specialist topic become broadly clickable without becoming inaccurate?',
+    'YouTube ideas scale when a core audience cares intensely and an adjacent audience has an accessible entry. Universal stakes, familiar objects, timely events, surprising questions, or transformations can widen framing.',
+    'Search-led ideas answer explicit demand; browse-led ideas create desire before a query; suggested-led series continue an existing viewing path. Each requires different packaging and expectations.',
+    'Write the core viewer, potential viewer, tension, promise, proof, visual concept, traffic-source hypothesis, and follow-on video before production.',
+    'A topic that performs only in Search may solve a narrow need; forcing it into broad entertainment packaging can reduce qualified satisfaction.',
+    'Build a 25-idea slate split across search, browse, suggested-series, and Shorts discovery.',
+    'How should a YouTube idea widen its audience?', 'Use an accessible truthful framing around universal stakes or curiosity while preserving the specialist payoff and proof.');
+  add('YT','yt_package','Titles and thumbnails — one promise, two assets',
+    'Should the title repeat every word shown on the thumbnail?',
+    'The title and thumbnail cooperate to communicate topic, value, tension, and credibility. Redundancy wastes limited space; contradiction or deception destroys satisfaction.',
+    'Impressions and CTR measure opportunity and selection within traffic-source context. CTR often changes as the video expands beyond core viewers; a lower CTR can accompany healthy larger reach.',
+    'Develop packages before filming, create distinct concepts rather than cosmetic variations, test mobile legibility, ensure the opening confirms the package, and use native Test & Compare where available. [VERIFY LIVE].',
+    'High CTR with weak early retention means the package attracted a click the video did not quickly justify.',
+    'Create twenty title/thumbnail pairs for three ideas and run a blind expectation test.',
+    'How should title and thumbnail work together?', 'They communicate one truthful promise through complementary—not wastefully duplicated—information.');
+  add('YT','yt_long','Long-form structure and retention',
+    'Is there one ideal YouTube video length?',
+    'YouTube states there is no universal optimal length; the right length delivers the value without filler. Long-form earns time through structured progression and satisfying depth.',
+    'The opening confirms the package; roadmap reduces uncertainty; chapters create progression; stories, examples, proof, contrast, and open questions renew attention; the ending resolves and continues the session.',
+    'Outline cold open, promise confirmation, stakes, roadmap, escalating sections, pattern changes, midpoint re-hook, payoff, synthesis, and next-view bridge. Remove repeated introductions and premature CTAs.',
+    'A late retention spike suggests the compelling material should have appeared earlier; a sudden dip can mark confusion, repetition, or an unwanted segment.',
+    'Produce an 8–15 minute video and annotate every retention change against its edit/script beat.',
+    'What determines ideal YouTube length?', 'The precise time needed to deliver and sustain the promised value for that audience—without filler.');
+  add('YT','yt_shorts','YouTube Shorts as discovery and format',
+    'Will a Shorts viewer automatically become a long-form viewer?',
+    'Shorts are their own viewing format and discovery surface. Cross-format recommendation is possible, but viewer preferences differ; format bridges must be designed rather than assumed.',
+    'Stayed-to-watch or early selection, consumption, satisfaction, topic fit, and continued viewing matter. A Short can test premises, tell complete stories, answer queries, or open a path to related depth.',
+    'Make a complete short-form payoff, then connect interested viewers through related video tools, pinned context, series, profile organization, and topic consistency. [VERIFY LIVE].',
+    'High Shorts reach with no long-form movement may reflect format preference, weak bridge, or a promise not represented in long-form.',
+    'Create six Shorts: two complete originals, two long-form derivatives, and two search answers; compare audience and continuation.',
+    'What is the correct role of Shorts?', 'A complete native format for discovery and value that can bridge to depth when the topic, viewer intent, and path align.');
+  add('YT','yt_channel','Channel architecture, Search, and session continuation',
+    'What should a new viewer watch after the first useful video?',
+    'A channel is a library and recommendation graph. Clear topic clusters, series, playlists, home sections, descriptions, end screens, cards, comments, and follow-on promises help people discover more.',
+    'Search matches query relevance and engagement; Home predicts broad personalized appeal; Suggested continues a viewing context. Architecture should serve all without keyword stuffing.',
+    'Create a start-here path, three series, consistent packaging grammar, playlists by viewer job, end-screen logic, description/search context, and a next-video CTA tied to unresolved need.',
+    'Many one-off views with few return viewers or second videos indicate isolated answers rather than a coherent viewing proposition.',
+    'Map a 12-video cluster where each video answers one question and creates a legitimate next question.',
+    'How does channel architecture compound growth?', 'It helps viewers and recommendation systems understand the promise and find a satisfying next video or series.');
+  add('YT','yt_analytics','YouTube Studio diagnostics and monetization integrity',
+    'What does rising impressions with falling CTR sometimes indicate?',
+    'YouTube Studio connects impressions, CTR, views, watch time, average duration, retention moments, traffic sources, viewers, return behavior, subscribers, end screens, revenue, and format-specific signals.',
+    'Context prevents false diagnosis: Browse CTR differs from Search; broader expansion can lower CTR; revenue varies by audience, geography, topic, season, advertiser demand, and format.',
+    'Review idea demand, package, opening, curve, satisfaction actions, traffic source, viewer type, continuation, and business result. Separate monetization from editorial integrity and disclose sponsorships.',
+    'Changing a thumbnail may help when CTR is low and impressions are weak, but it cannot repair a video that fails its promise after the click.',
+    'Produce a full video postmortem and choose exactly one package test plus one future-content learning.',
+    'How should YouTube CTR be interpreted?', 'With impressions, traffic source, audience breadth, watch behavior, satisfaction, and business context—not as an isolated universal benchmark.');
+
+  // ── PX · FACEBOOK, THREADS, LINKEDIN, X, PINTEREST ──────
+  mod('PX', 'Platform Lab · Facebook, Threads, LinkedIn, X &amp; Pinterest', 'Master the remaining major networks by user intent instead of treating them as repost bins.');
+  add('PX','px_facebook','Facebook — communities, Pages, Groups, Reels, and local reach',
+    'Why might a useful post thrive in a Facebook Group and fail on a brand Page?',
+    'Facebook combines relationship Feed, recommended content, Groups, Pages, Events, Marketplace, video/Reels, messaging, and ads. Each surface carries different trust, identity, and intent.',
+    'Groups reward relevant participation within a community context; Pages create an owned public identity; Reels support discovery; local features and Events can translate attention into real-world action.',
+    'Build Page fundamentals, participate before promoting in Groups, adapt Reels natively, use Events and local proof where relevant, and avoid unrelated captions, engagement gaming, or mass repost spam. [VERIFY LIVE].',
+    'Reach without meaningful comments, messages, event responses, or site behavior can indicate entertainment detached from the business job.',
+    'Create a Page audit, a community participation plan, one native Reel, one discussion post, and one local/event concept.',
+    'What determines the correct Facebook surface?', 'The audience relationship and job: discovery, community discussion, public brand identity, local action, event participation, or conversion.');
+  add('PX','px_threads','Threads — conversational authority and fast feedback',
+    'What makes a short text post start a real conversation instead of collecting empty agreement?',
+    'Threads is a public conversation network connected to Instagram identity. It favors timely ideas, replies, distinct voice, community participation, and text-led experimentation more than polished campaign broadcasting.',
+    'A useful post creates a clear claim, observation, question, tension, or story that leaves room for others. Replies reveal language and objections that can become deeper assets elsewhere.',
+    'Publish compact original thoughts, respond with substance, quote/repost with added context, build recurring themes, and use links or promotion selectively. [VERIFY LIVE] features and analytics.',
+    'Many impressions with shallow replies may mean the prompt invited reflex rather than a meaningful point of view.',
+    'Run a 14-day conversational sprint: one original idea and ten valuable replies daily, then cluster what resonated.',
+    'What is Threads’ strongest strategic role?', 'Fast public conversation that develops voice, relationships, audience language, and testable ideas.');
+  add('PX','px_linkedin','LinkedIn — professional identity, expertise, and demand',
+    'Why is a useful LinkedIn audience often more valuable than a larger general audience?',
+    'LinkedIn connects professional identity, network relationships, expertise, hiring, partnerships, and B2B demand. Viewer demographics and downstream conversations can matter more than raw reach.',
+    'Text, images, documents/carousels, native video, articles, newsletters, comments, and profiles create different depths. Specific experience and business consequence outperform generic inspiration.',
+    'Optimize the profile promise and proof, publish lessons with concrete decisions/results, teach frameworks, comment where the right network gathers, use newsletters for recurring depth, and measure viewer quality. [VERIFY LIVE].',
+    'High impressions with the wrong titles, industries, geographies, or seniority can be an audience-quality failure rather than success.',
+    'Publish six formats and compare out-of-network reach, viewer demographics, profile actions, qualified connections, and conversations.',
+    'How should LinkedIn performance be judged?', 'By relevant professional reach, authority, relationships, qualified opportunities, and business action—not impressions alone.');
+  add('PX','px_x','X — real-time ideas, networks, and information velocity',
+    'When does a reply create more strategic value than an original post?',
+    'X is an interest graph and real-time information network where concise ideas, news response, threads, replies, lists, Spaces, and network position shape discovery and authority.',
+    'Strong participation depends on timing, information value, distinct interpretation, conversational density, and credible sources. Replies can place expertise inside an existing high-relevance discussion.',
+    'Build source lists, monitor the niche, publish original observations and useful threads, reply with additional evidence, use media intentionally, and move durable insight into owned archives.',
+    'A spike from outrage or unrelated news may create followers with no durable interest in the brand’s work.',
+    'Run a two-week listening-and-contribution protocol, then turn the best discussion into a sourced long-form asset.',
+    'What makes an X reply strategically valuable?', 'It adds timely evidence or interpretation inside a relevant conversation where the intended network is already paying attention.');
+  add('PX','px_pinterest','Pinterest — visual search, planning, and evergreen discovery',
+    'Why can a Pin continue driving discovery after a short-form trend disappears?',
+    'Pinterest is a visual discovery and planning system where people search, save, compare, and prepare future actions. Content can compound through evergreen queries and seasonal planning.',
+    'Keyword relevance, image clarity, useful destination, board/topic context, freshness, saves, clicks, and commercial intent work differently from personality-first feeds. Trends often begin before the event itself.',
+    'Research Pinterest Trends, create search-led titles/descriptions, design vertical legible assets, organize boards by audience job, link to a relevant destination, and plan seasonal content early. [VERIFY LIVE].',
+    'High saves with weak outbound clicks can mean the Pin satisfies inspiration but the destination promise or CTA is weak.',
+    'Build three boards and fifteen Pins across evergreen, seasonal, tutorial, product, and idea formats.',
+    'What makes Pinterest strategically distinct?', 'Users arrive to discover, plan, save, and act, creating search-led and often longer-lived distribution.');
+  add('PX','px_portfolio','Cross-platform portfolio strategy',
+    'Should a beginner attempt to publish every day on every major platform?',
+    'Platform mastery is demonstrated by native decisions, not account count. A primary platform builds deep feedback; secondary distribution expands useful assets; listening platforms supply intelligence.',
+    'Audience overlap, content affordances, business model, production capacity, shelf life, conversion path, and operator skill determine channel priority. Spreading too early prevents sufficient reps anywhere.',
+    'Score channels on audience, intent, format fit, business role, organic opportunity, paid opportunity, conversion, measurement, risk, and sustainable capacity. Revisit quarterly.',
+    'If every platform is underfed and no dataset reaches a useful sample, reduce scope before increasing effort.',
+    'Choose a 90-day primary/secondary/listening portfolio and define the conditions that would earn expansion.',
+    'When should a brand add another active platform?', 'When audience and business value are clear and the team can execute natively without starving the proven primary system.');
+
+  // ── F0 · COMMUNITY, FUNNEL, AND REVENUE ──────────────────
+  mod('F0', 'Level 10 · Community, Funnel &amp; Conversion', 'Turn attention into trust, owned audience, qualified demand, sales, retention, and advocacy without corrupting the brand.');
+  add('F0','f0_profile','The profile storefront and conversion path',
+    'What are the four questions a profile must answer before a stranger leaves?',
+    'A profile converts a moment of interest into continued relationship. It must communicate identity, audience, valuable change, proof, and a low-friction next step.',
+    'Photo/name create recognition; bio positions; pinned work demonstrates; highlights organize proof; link hub or landing page routes intent; recent content confirms consistency.',
+    'Audit promise, proof, navigation, offer, CTA, mobile load, tracking, accessibility, and message continuity from post to destination.',
+    'Strong content reach with weak profile-to-follow or profile-to-action rates indicates a storefront or audience-fit leak.',
+    'Run a four-second test and a task test with ten target users; revise until they can explain and act without coaching.',
+    'What must the profile make obvious?', 'Who it serves, what valuable change it creates, why to believe it, and the best next action.');
+  add('F0','f0_value','Value ladder, lead magnets, and owned audience',
+    'Why should a creator move some audience relationship off algorithmic platforms?',
+    'Social reach is rented access. Email, SMS, community, CRM records, and direct customer relationships create permission-based continuity, but only when the exchange gives real value and respects consent.',
+    'A value ladder can move from free content to resource, conversation, diagnostic, entry offer, core service, and ongoing relationship. Each step should solve a complete problem and qualify the next.',
+    'Create a useful resource tied to a repeated audience job, a clear landing promise, minimal form, consent language, delivery, welcome sequence, tagging, and UTM tracking.',
+    'High clicks with weak signups indicate message/landing friction; high signups with no later activity means the resource attracted curiosity without ongoing fit.',
+    'Build and test one lead magnet with a three-message welcome sequence and explicit opt-out.',
+    'What is the strategic purpose of an owned channel?', 'Create permission-based continuity and customer knowledge that does not depend entirely on future platform distribution.');
+  add('F0','f0_dm','DM qualification and ethical outreach',
+    'What is the difference between a conversation and a copied sales pitch?',
+    'DMs can discover context, help, qualify, and schedule the next step. Ethical outreach is relevant, specific, permission-aware, truthful, and easy to decline.',
+    'Qualification identifies situation, desired outcome, current effort, urgency, authority, resources, constraints, fit, and next action without interrogating or manipulating.',
+    'Open from genuine context, ask one useful question, diagnose before offering, state fit and limits honestly, obtain consent for follow-up, record the interaction, and stop when declined.',
+    'Many replies but few qualified next steps may mean the opener earns curiosity while the offer, audience, or qualification path lacks fit.',
+    'Conduct twenty permission-based conversations and grade response, qualification, next step, and reason for loss.',
+    'What makes social outreach ethical and effective?', 'Specific relevance, honest intent, useful diagnosis, permission, easy refusal, privacy, and a fit-based next step.');
+  add('F0','f0_community','Community design and moderation',
+    'What transforms an audience that watches into a community that participates?',
+    'Community forms around shared identity, repeated rituals, useful member-to-member interaction, safety, recognition, leadership access, and meaningful contribution—not follower count alone.',
+    'Norms and moderation shape who remains. Prompts, challenges, office hours, member spotlights, feedback loops, and roles create participation; enforcement protects trust.',
+    'Define purpose, ideal member, norms, prohibited behavior, moderation ladder, response times, rituals, member journey, feedback channels, privacy, crisis escalation, and success measures.',
+    'High member count with low returning participation or unsafe behavior indicates acquisition without community health.',
+    'Design a 30-day community pilot with three rituals and a moderation simulation.',
+    'What creates durable community?', 'Shared purpose and identity, safe norms, recurring rituals, member contribution, relationships, recognition, and responsive leadership.');
+  add('F0','f0_conversion','Conversion content and offer-message fit',
+    'Why can an account build trust yet never produce a sale?',
+    'Conversion content makes the problem, desired outcome, mechanism, proof, offer, risk, fit, and next step explicit. Valuable organic content does not automatically explain what can be purchased.',
+    'Growth content earns new attention; authority content builds belief; conversion content resolves objections and routes demand. A healthy mix depends on business maturity and campaign stage.',
+    'Build problem, method, case study, FAQ, comparison, process, behind-the-scenes, testimonial, offer, deadline, and objection formats. Keep claims truthful and typicality clear.',
+    'Reach and trust signals with empty demand may mean the offer is invisible, unclear, poorly matched, weakly proven, or difficult to access.',
+    'Publish a ten-piece conversion sequence and map each item to one buyer question.',
+    'What does conversion content add to valuable content?', 'A clear offer, fit, mechanism, proof, objection resolution, risk context, and next step.');
+  add('F0','f0_retention','Customer content, retention, and advocacy',
+    'Does social strategy end when a lead becomes a customer?',
+    'Social content can onboard, educate, support, retain, expand, and turn customers into advocates. Existing customers supply high-value questions and credible proof.',
+    'Expectation-setting reduces churn; education increases success; recognition deepens identity; customer stories provide proof; feedback reveals product and messaging gaps.',
+    'Map post-purchase moments, common failure points, onboarding content, success milestones, support routes, review/testimonial consent, referral invitation, and customer community.',
+    'Strong acquisition with weak retention may mean content promised an experience the product or service cannot deliver.',
+    'Build a 30-day customer content journey and an ethical case-study request process.',
+    'How does content support retention?', 'It sets expectations, helps customers succeed, reinforces progress and belonging, captures feedback, and enables advocacy.');
+
+  // ── AD · PAID SOCIAL ─────────────────────────────────────
+  mod('AD', 'Level 11 · Paid Social &amp; Creative Performance', 'Objectives, tracking, audiences, creative, testing, economics, scaling, and the relationship between organic and paid.');
+  add('AD','ad_foundation','Paid media is an auction and optimization system',
+    'Why can the highest bidder still lose an ad opportunity?',
+    'Paid social delivery balances bid or budget, predicted action, creative/ad quality, user experience, objective, eligibility, and auction competition. Buying impressions does not buy attention or profit.',
+    'The chosen objective tells the system which behavior to seek. Wrong events, weak data, bad creative, poor offer, or broken landing experience teach optimization toward the wrong outcome.',
+    'Define business outcome, conversion event, objective, audience, budget, bid/optimization, placements, creative, destination, attribution, guardrails, and stopping rules before launch.',
+    'Cheap clicks with expensive qualified acquisition indicate the campaign optimized an upstream behavior disconnected from value.',
+    'Build three campaign plans for awareness, lead generation, and sales, each with a different event and KPI chain.',
+    'What does a paid-social objective do?', 'It directs delivery toward people and placements predicted to produce the selected behavior, so it must match business value.');
+  add('AD','ad_tracking','Pixels, server events, consent, and event quality',
+    'Why install both browser and server-side event connections where appropriate?',
+    'Measurement and optimization depend on reliable, consented event data. Browser pixels and server/event APIs can complement each other when deduplicated and implemented under platform, privacy, and legal requirements.',
+    'A full event journey—view, lead, add-to-cart, checkout, purchase, value, CRM/offline outcome—helps systems learn, but collecting unnecessary data creates privacy and governance risk.',
+    'Create an event map, data owner, consent basis, parameter specification, deduplication key, test procedure, diagnostics review, retention rule, access control, and privacy notice. [VERIFY LIVE].',
+    'If platform conversions disagree sharply with analytics and CRM, inspect firing, deduplication, event value, windows, consent loss, and source definitions.',
+    'QA a mock web journey with test-event tools and reconcile browser, server, analytics, and CRM records.',
+    'What makes conversion tracking decision-grade?', 'Correct events, consent, tested firing, browser/server deduplication, consistent values, documented windows, and reconciliation.');
+  add('AD','ad_audience','Audience strategy — broad, signal, retargeting, exclusion',
+    'When can broad targeting outperform an elaborate interest stack?',
+    'Modern systems can use conversion signals and creative to find responders, while custom, lookalike/similar, interest, demographic, contextual, and retargeting approaches shape the candidate pool. [VERIFY LIVE].',
+    'Broad gives optimization room but needs event quality and creative variety. Narrow can improve relevance yet restrict learning and raise cost. Retargeting captures intent but can overclaim conversions that would happen anyway.',
+    'Segment by funnel and economics, exclude existing customers where appropriate, control overlap, limit sensitive or discriminatory targeting, tailor creative, and compare incrementality—not platform ROAS alone.',
+    'Rising frequency with flat conversions and worsening cost suggests saturation, weak novelty, or an audience too small for spend.',
+    'Design a broad-vs-signal test with equal offer, creative, optimization, budget logic, and a predefined business metric.',
+    'How should broad and narrow targeting be chosen?', 'By event quality, audience size, creative relevance, economics, policy, and controlled test evidence—not ideology.');
+  add('AD','ad_creative','Performance creative — hook, body, proof, offer, action',
+    'What is the biggest paid-social lever after the campaign is technically sound?',
+    'Creative determines who stops, what they understand, what they believe, and whether they act. Strong ads feel native while clearly presenting a relevant problem, mechanism, proof, offer, and CTA.',
+    'Angle, concept, format, creator, hook, body, proof, offer, CTA, and execution are separate test levels. Tiny caption changes cannot rescue a weak concept or offer.',
+    'Build a matrix of audience tension × angle × format × proof. Produce multiple genuine concepts, then variations inside winners. Use platform-safe music, disclosures, and substantiated claims.',
+    'High thumb-stop with low conversion may mean entertaining delivery without belief or offer fit; strong clicks with weak landing conversion moves the suspect downstream.',
+    'Produce twelve ads from three concepts, two hooks, and two proof executions; label the variable hierarchy.',
+    'What should creative testing prioritize?', 'Large meaningful differences in premise, angle, format, proof, and offer before cosmetic micro-variations.');
+  add('AD','ad_testing','Paid experiments and creative fatigue',
+    'How do split tests avoid two variants competing for the same people?',
+    'Native experiment tools can divide audiences into exclusive groups and hold key variables stable. TikTok, Meta, Google/YouTube, and LinkedIn capabilities differ and change. [VERIFY LIVE].',
+    'A valid test uses one main variable, enough budget/time, a preselected metric, comparable exposure, and a no-peeking decision rule. Fatigue appears when repeated exposure reduces response; it is not fixed by duplicating chaos.',
+    'Maintain hypothesis, control, treatment, audience, event, budget, duration, power/confidence guidance, result, limitation, and replication. Refresh concepts before the account exhausts them.',
+    'Performance decline can be fatigue, audience saturation, auction change, seasonality, tracking failure, offer decay, or landing problems; diagnose before replacing creative.',
+    'Design a platform-native split test and a four-week creative refresh plan with triggers.',
+    'Why use an exclusive split test?', 'It isolates one variable and prevents audience overlap or delivery competition from contaminating the comparison.');
+  add('AD','ad_economics','Unit economics, attribution, scaling, and guardrails',
+    'Can a campaign with positive platform ROAS still lose money?',
+    'Paid growth is constrained by contribution margin, customer acquisition cost, payback, lifetime value quality, refunds, fulfillment, cash flow, capacity, and incrementality—not revenue alone.',
+    'Scaling changes auction, audience breadth, frequency, and marginal performance. Vertical scaling raises spend; horizontal scaling adds audiences, markets, placements, offers, or concepts; both require operational capacity.',
+    'Model revenue, COGS, variable fulfillment, fees, refunds, gross/contribution margin, CAC, payback, repeat behavior, attribution uncertainty, and capacity. Increase spend in controlled steps with guardrails.',
+    'Average ROAS can hide declining marginal returns; blended business results and cohort quality reveal whether additional spend creates value.',
+    'Build a campaign P&L and three scaling scenarios: conservative, target, and failure case.',
+    'What determines whether paid social is truly profitable?', 'Incremental contribution after acquisition, product, fulfillment, fees, refunds, cash timing, and customer quality—not reported revenue alone.');
+
+  // ── S0 · SELL THE SERVICE ────────────────────────────────
+  mod('S0', 'Level 12 · Build and Sell the Service', 'Choose a niche, productize value, prospect, diagnose, propose, price, contract, and close without fake authority.');
+  add('S0','s0_skillproof','Earn the right to sell',
+    'What can a beginner show before claiming client results?',
+    'Professional credibility begins with demonstrated skills and honest scope. A self-directed account, practice brand, teardown, sample strategy, spec creative, measured experiment, and documented process can prove ability without inventing clients.',
+    'The proof ladder moves from knowledge artifact to executed work, measured personal result, collaboration, pilot, client outcome, and repeatable system. Each level supports larger claims and prices.',
+    'Choose one niche, grow or operate a real practice account, build a portfolio of briefs/scripts/edits/reports, disclose which work is spec, and request narrow pilots with clear success criteria.',
+    'If the portfolio is screenshots without objectives, decisions, contribution, or outcomes, it shows activity rather than capability.',
+    'Complete three practice case studies: organic strategy, content production, and analytics diagnosis.',
+    'How can a beginner market honestly?', 'Show executed practice work, artifacts, reasoning, and measured personal experiments while clearly labeling spec and avoiding fake results.');
+  add('S0','s0_niche','Niche and ideal client profile',
+    'Which is better: a wealthy industry you cannot reach or a modest niche with urgent demand and access?',
+    'A service niche should combine painful valuable problems, ability to pay, reachable decision-makers, repeatable content opportunity, measurable outcomes, ethical fit, and your credible access or interest.',
+    'The ideal client profile includes business model, stage, margin, sales cycle, audience, current content system, internal resources, decision structure, constraints, and disqualifiers.',
+    'Score candidate niches on demand, economics, access, proof path, content richness, measurement, fulfillment complexity, competition, regulation, and personal durability.',
+    'Many calls with low urgency or no budget can mean the niche problem is admired but not purchased.',
+    'Interview ten businesses in the leading niche before finalizing the service.',
+    'What makes a strong SMMA niche?', 'Valuable urgent problems, paying capacity, reachable buyers, repeatable delivery, measurable impact, proof opportunity, and ethical fit.');
+  add('S0','s0_offer','Productize the offer around an outcome',
+    'Why is “30 posts per month” a weak offer by itself?',
+    'An offer connects a qualified client problem to a defined outcome through a credible mechanism, scope, deliverables, responsibilities, timeline, measurement, limits, and price.',
+    'Deliverables make work tangible but outcomes create value. The agency can promise process and quality; it should not guarantee virality, revenue, or platform behavior outside its control.',
+    'Define diagnose, strategy, production, publishing, community, reporting, paid media, or consulting modules; state inputs, exclusions, revision limits, approval windows, KPIs, and change-order rules.',
+    'If every prospect needs a completely new delivery system, the offer is consulting-shaped but priced like a repeatable package.',
+    'Create good/better/best packages and a one-page service boundary for the chosen niche.',
+    'What makes a social service productized?', 'A repeatable problem, mechanism, scope, responsibilities, timeline, evidence, limits, and pricing logic with room for justified customization.');
+  add('S0','s0_prospect','Prospecting with relevance and proof',
+    'What should a prospect learn from your first message before accepting a call?',
+    'Good prospecting demonstrates relevance, observation, and a plausible useful next step. It does not manufacture urgency, spam generic compliments, or pretend a relationship.',
+    'Trigger events, visible content gaps, hiring, launches, new locations, weak funnels, and active campaigns create timely reasons to reach out. Proof reduces perceived risk.',
+    'Research the business, identify one consequential observation, show a small useful artifact or question, state credible relevance, ask permission for the next step, follow up finitely, and record outcomes.',
+    'Low replies point to list, timing, relevance, credibility, or message; replies without calls often reveal an unclear or costly next step.',
+    'Send fifty high-relevance outreaches across two message hypotheses and grade each stage.',
+    'What belongs in a strong cold outreach?', 'A timely specific observation, credible relevance, useful value, honest intent, and a low-friction permission-based next step.');
+  add('S0','s0_discovery','Discovery calls and social audits',
+    'Why should a proposal never be written before understanding the sales and fulfillment system?',
+    'Discovery diagnoses the business, not merely the Instagram feed. Content cannot repair a weak offer, poor close rate, capacity shortage, broken site, or absent proof without coordinated change.',
+    'Understand goals, economics, audience, offer, sales path, past performance, channels, brand constraints, approvals, assets, team, budget, risk, and decision process. Separate symptoms from root causes.',
+    'Open with agenda, ask current-state and consequence questions, inspect data/artifacts, summarize the diagnosis, test priority and fit, explain limits, and agree the next decision.',
+    'If the prospect wants “more followers” but cannot name business value, qualification must clarify the objective before tactics.',
+    'Run five mock discoveries using different business models and produce an evidence-based audit for each.',
+    'What must discovery connect social activity to?', 'The client’s audience, offer, sales process, unit economics, operations, constraints, and decision criteria.');
+  add('S0','s0_proposal','Proposal, pricing, contract, and close',
+    'Should price be based only on the number of posts?',
+    'A proposal translates diagnosis into objective, strategy, scope, timeline, roles, KPIs, assumptions, investment, risks, and next step. Pricing should reflect value, complexity, expertise, capacity, risk, and market—not fantasy income claims.',
+    'Common models include project, monthly retainer, day rate, performance component, paid-media percentage, or hybrid. Performance pay requires clean definitions, tracking, control, caps, and legal review.',
+    'Include situation, diagnosis, desired state, approach, deliverables, client inputs, schedule, communication, measurement, exclusions, fees, payment, IP/usage, termination, confidentiality, and signatures. Use counsel for contracts.',
+    'Scope ambiguity, unlimited revisions, missing client duties, or vague ownership creates unpriced risk even when the fee looks attractive.',
+    'Create a proposal and statement of work, then role-play procurement, price, scope, guarantee, and timeline objections.',
+    'What should pricing account for?', 'Client value and economics, scope, complexity, expertise, capacity, risk, usage, and delivery cost—not content quantity alone.');
+
+  // ── O0 · CLIENT DELIVERY + TEAM ──────────────────────────
+  mod('O0', 'Level 13 · Client Delivery &amp; Agency Operations (Ralston Spine)', 'Onboarding, workflow, approvals, reporting, hiring, 30/60/90, 1:1s, and maker/manager systems.');
+  add('O0','o0_onboard','Client onboarding and the first 30 days',
+    'What must be true before the agency publishes the first client post?',
+    'Onboarding converts a signed promise into shared operating reality. It secures access, context, assets, strategy, communication, approvals, measurement, safety, and expectations before speed.',
+    'The first month should move through discovery, audit, access, research, strategy, baseline, production test, approval calibration, launch, and review. Skipping alignment creates expensive rework.',
+    'Use kickoff, stakeholder map, asset/access register, brand and legal intake, past data, audience interviews, competitor map, content workshop, KPI baseline, calendar, escalation, and definition of done.',
+    'If the team cannot say who approves what by when, missed dates will be misdiagnosed as creative failure.',
+    'Build and simulate the full onboarding checklist for a mock client.',
+    'What is onboarding designed to prevent?', 'Misaligned strategy, unsafe access, missing inputs, unclear approvals, measurement gaps, and expectation failure.');
+  add('O0','o0_workflow','The content operating system and approval chain',
+    'Where should feedback live so the team does not edit from conflicting messages?',
+    'A delivery system creates one source of truth from idea through measurement. Status, owner, version, deadline, dependencies, feedback, approval, publish record, and performance must remain traceable.',
+    'Review stages should separate strategy, factual/legal, brand, and final QA. Consolidated feedback from one client owner prevents contradictory revision loops.',
+    'Define RACI, intake, backlog, brief, production, internal review, client review, versioning, approval cutoff, scheduling, aftercare, reporting, archive, and retrospective.',
+    'Growing work-in-progress with low throughput means a bottleneck—often approval, editing, or unclear briefs—not insufficient task creation.',
+    'Map the workflow, set WIP limits and service levels, then run a ten-asset simulation including a late change.',
+    'What creates a reliable approval process?', 'Named decision rights, one source of truth, consolidated feedback, version control, deadlines, escalation, and explicit approval.');
+  add('O0','o0_account','Account management, communication, and renewal',
+    'What should happen when results miss before the client asks?',
+    'Account management protects trust through proactive context, honest evidence, expectation control, fast risk communication, decision records, and consistent business understanding.',
+    'Clients judge results and the experience of reaching them. Surprises, unexplained silence, and hidden scope tension destroy confidence faster than one weak content week.',
+    'Run weekly async update, regular decision call, risk log, action register, scope tracker, report, quarterly review, renewal plan, stakeholder map, and documented wins/lessons.',
+    'Repeated emergency requests can signal unclear priorities, weak planning, or an unspoken trust gap; accepting all of them worsens the system.',
+    'Role-play an underperformance conversation and produce a recovery memo with facts, diagnosis, plan, owner, and checkpoint.',
+    'What sustains client trust during weak performance?', 'Early truthful communication, clear diagnosis, owned actions, documented decisions, and a credible checkpointed recovery plan.');
+  add('O0','o0_hire','Ralston hiring funnel and role design',
+    'Should the first hire be the role everyone else seems to hire?',
+    'Caleb Ralston’s hiring approach begins at the bottleneck: define the role, responsibilities, requirements, results, availability, compensation, and values before sourcing people.',
+    'The funnel uses application, screening, technical interview, realistic paid skill test, culture/working-style evaluation, and final alignment. Early specialists may wear adjacent hats; fake generalists create quality risk.',
+    'Choose employee, contractor, or agency based on duration, control, flexibility, expertise, speed, cost, integration, and legal classification. Never use unpaid speculative client work.',
+    'If a job description lists tasks but cannot define success at 90 days, hiring cannot reliably evaluate fit.',
+    'Write one results-based role scorecard and run a structured mock interview plus paid test rubric.',
+    'What should determine the next hire?', 'The highest-value recurring bottleneck and a clearly defined result—not industry fashion or vague overwhelm.');
+  add('O0','o0_306090','Ralston 30/60/90 onboarding and quality standards',
+    'When should a new hire begin owning measurable work?',
+    'Ralston’s 30/60/90 model moves from learning and immersion to contribution and execution to ownership and impact. Each phase needs objectives, tasks, artifacts, metrics, support, and review.',
+    'Quality becomes scalable when examples, checklists, definitions, decision principles, feedback, and escalation teach judgment—not when every task waits for founder approval.',
+    'Days 1–30: context, shadowing, standards, small wins. Days 31–60: independent recurring work and feedback. Days 61–90: own a result, improve a system, and present learning.',
+    'If the new hire remains dependent at day 90, inspect unclear outcomes, missing documentation, weak feedback, wrong scope, or selection—not just effort.',
+    'Build a role-specific 30/60/90 plan with weekly evidence and a final ownership project.',
+    'What is the progression of a strong 30/60/90 plan?', 'Learning and immersion → contribution and execution → ownership and measurable impact.');
+  add('O0','o0_lead','Ralston 1:1s, maker time, culture, and retention',
+    'Why should an editor’s calendar look different from an account manager’s?',
+    'Ralston distinguishes makers who need uninterrupted creative blocks from managers whose work depends on coordination. Team systems should protect both while maintaining accountability.',
+    'Effective 1:1s cover wins, roadblocks, priorities, two-way feedback, and growth; managers listen, follow up, and avoid turning them into status reports. Content hackathons create protected experimentation.',
+    'Block maker mornings or days, cluster meetings, use async status, run weekly/biweekly 1:1s, hold retrospectives, create growth paths, pay fairly, and schedule periodic hackathons with real tests.',
+    'High output with burnout, turnover, or declining originality is an operating failure even if this month’s dashboard is green.',
+    'Design a weekly maker/manager schedule, 1:1 template, quarterly hackathon, and team-health scorecard.',
+    'What is the purpose of maker/manager separation?', 'Protect deep creative work while giving coordination predictable space, reducing context switching and burnout.');
+
+  // ── X0 · LEGAL, RISK, AND CAPSTONE ───────────────────────
+  mod('X0', 'Level X · Law, Risk, Crisis &amp; Professional Capstone', 'Copyright, disclosure, privacy, accessibility, platform safety, crisis response, AI ethics, portfolio, and graduation.');
+  add('X0','x0_rights','Copyright, music, trademarks, releases, and usage rights',
+    'Does crediting a creator automatically give permission to reuse their work?',
+    'Credit is not a license. Social operators must understand ownership, licensed use, platform music terms, fair-use uncertainty, trademarks, publicity/privacy rights, model/location releases, and client/contractor IP assignment.',
+    'Organic platform music may not permit brand, ad, cross-platform, or perpetual use. Creator content rights differ by term, territory, media, edit, exclusivity, whitelisting, and paid amplification.',
+    'Maintain source, owner, license, receipt, permitted media, commercial use, term, territory, modifications, attribution, release, expiration, and archive. Get legal advice for uncertain or high-risk use.',
+    'If the team cannot produce a license or signed permission, assume the asset is not cleared rather than relying on “everyone uses it.”',
+    'Build a rights ledger and clear every asset in a mock campaign across organic, paid, and website use.',
+    'Why is creator credit insufficient?', 'Attribution acknowledges authorship but does not itself grant the legal rights required to copy, edit, publish, or advertise.');
+  add('X0','x0_disclosure','FTC endorsements, testimonials, claims, and disclosure',
+    'Must a creator disclose a free product they were not explicitly paid to mention?',
+    'Material connections—payment, free products, discounts, employment, family, or other value—can affect how people evaluate endorsements and generally require clear, conspicuous disclosure.',
+    'The FTC emphasizes disclosure with the endorsement, hard to miss, understandable, and appropriate to format; video may require visual and audible disclosure. Endorsements must be honest and claims substantiated.',
+    'Use clear language such as ad or sponsored where appropriate, disclose each qualifying post, place it before avoidance points, train creators, pre-approve high-risk claims, monitor, and correct. Get counsel for campaigns.',
+    'A disclosure buried after “more,” in hashtags, comments, a profile, or vague language may not be clear and conspicuous.',
+    'Audit ten mock posts for connection, claim, substantiation, placement, readability, language, and platform tool use.',
+    'What is the practical FTC disclosure standard?', 'Clearly and conspicuously reveal a material connection where people will notice and understand it with the endorsement itself.');
+  add('X0','x0_privacy','Privacy, data, children, accessibility, and sensitive categories',
+    'Should a social agency collect every audience field a platform makes available?',
+    'Data minimization, consent, purpose limitation, security, retention, deletion, access control, children’s protections, sensitive-category rules, and accessibility are professional requirements, not optional polish.',
+    'Pixels, forms, DMs, CRM, contests, uploads, custom audiences, and location or health/financial information create distinct risks. Laws vary by place and facts; platform policies may be stricter. [VERIFY LIVE].',
+    'Inventory data, document purpose and lawful/consent basis with counsel, collect the minimum, secure access, honor rights, create retention/deletion rules, caption video, add alt text, and test readability.',
+    'If nobody can explain why a field is collected, who sees it, and when it is deleted, stop collecting it.',
+    'Complete a data-flow map and accessibility audit for a mock lead campaign.',
+    'What is data minimization?', 'Collect and retain only the information genuinely needed for a defined purpose, with appropriate consent, security, access, and deletion.');
+  add('X0','x0_crisis','Moderation, account incidents, and crisis response',
+    'What should happen in the first hour after a harmful post or account compromise?',
+    'A crisis plan separates detection, containment, fact-finding, decision authority, legal/safety escalation, communication, recovery, and retrospective. Speed matters, but unverified statements can magnify harm.',
+    'Incidents include compromise, impersonation, misinformation, harmful comments, leaked information, employee posts, campaign backlash, rights claims, platform enforcement, or real-world threats.',
+    'Secure accounts and evidence, pause risky automation/scheduling, classify severity, alert named owners, protect affected people, verify facts, choose holding/correction response, monitor, document, and learn.',
+    'Deleting criticism without preserving evidence or addressing valid harm can worsen trust; public debate with a threat should never replace safety escalation.',
+    'Run tabletop exercises for compromise, false claim, creator misconduct, and campaign backlash.',
+    'What is the correct first crisis sequence?', 'Contain harm and access, preserve evidence, classify and escalate, verify facts, then communicate and recover under named authority.');
+  add('X0','x0_ai','AI-assisted social media without synthetic slop',
+    'Which parts of creative judgment should never be delegated blindly to a model?',
+    'AI can accelerate research organization, transcription, ideation, variants, rough cuts, captions, translation, tagging, reporting, and workflow—but the operator remains responsible for truth, taste, rights, privacy, bias, and brand voice.',
+    'Models can fabricate facts, flatten distinctiveness, leak confidential inputs, reproduce bias, and create unauthorized likeness or voice. Human review and source verification are required.',
+    'Define allowed tools/data, prohibited inputs, disclosure rules, rights checks, source requirements, approval, human sign-off, provenance, quality rubric, and incident process. Use AI to widen options, not outsource accountability.',
+    'If output is faster but indistinguishable, unverified, or disconnected from real audience evidence, efficiency has reduced strategic value.',
+    'Create an AI policy and compare human-only, AI-assisted, and AI-led outputs against accuracy, voice, novelty, time, and performance.',
+    'What is the operator’s responsibility when using AI?', 'Remain accountable for accuracy, originality, rights, privacy, bias, disclosure, brand fit, and final judgment.');
+  add('X0','x0_capstone','The professional capstone — prove you can run the machine',
+    'What evidence would convince a skeptical brand to trust you with its account and reputation?',
+    'Graduation requires demonstrated operation, not lesson completion: research, positioning, strategy, creation, distribution, community, analytics, conversion, paid plan, client systems, legal controls, and reflective judgment.',
+    'The capstone uses a real self-owned account, consenting business, nonprofit, or clearly labeled practice brand. It runs long enough to create a baseline, experiments, failures, iteration, and a defensible case study.',
+    'Deliver audit, audience research, Ralston Brand Journey/story, platform plan, 30-piece system, six-week publishing record, analytics, three experiments, funnel, report, crisis/legal checklist, proposal, and retrospective.',
+    'A polished deck without raw artifacts, dated results, failed tests, limitations, or proof of contribution does not meet the professional standard.',
+    'Complete the capstone, present it to three skeptical reviewers, revise from objections, and publish an honest portfolio case study.',
+    'What proves professional readiness?', 'A complete body of inspectable work showing research, judgment, execution, measurement, iteration, ethics, communication, and business relevance.');
+
+  // ── BUILD THE ENGINE DATA ────────────────────────────────
+  var subjects = {}, order = [], i, built = [], qbank = {};
+  for (i = 0; i < MODULES.length; i++) {
+    subjects[MODULES[i].k] = { name:MODULES[i].name, blurb:MODULES[i].blurb };
+    order.push(MODULES[i].k);
+    qbank[MODULES[i].k] = [];
+  }
+  for (i = 0; i < RAW.length; i++) {
+    var t = lesson(RAW[i]), q, j;
+    built.push(t);
+    for (j = 0; j < t.quiz.length; j++) {
+      q = t.quiz[j];
+      qbank[t.sub].push({ q:q.q, c:q.c, a:q.a, e:q.e, d:(i + j) % 3 + 1 });
+    }
+  }
+
+  window.REDLINE_CONFIG = {
+    brand:'REDLINE',
+    name:'REDLINE — Social Media Operator Masterclass',
+    tagline:'True zero to professional creator, strategist, account manager, and agency operator. Build a real brand, increase viral probability with evidence, master the major platforms, convert attention into business, and deliver client work ethically.',
+    subjects:subjects,
+    order:order,
+    drills:{ n:12, min:18, gate:85 },
+    srs:[1,1,3,7,21,45],
+    perfectTo:3,
+    reps:[
+      {k:'observe',tier:'Z0',name:'Post Deconstruction',target:100,hint:'Deconstruct one winner or ordinary post into audience, premise, hook, structure, proof, emotion, CTA, and a testable hypothesis.'},
+      {k:'publish',tier:'Z0',name:'Published Rep',daily:true,target:100,hint:'Ship one complete native content rep. Record platform, idea, format, goal, and link. The first 100 are the apprenticeship.'},
+      {k:'journey',tier:'B0',name:'Brand Proof Artifact',target:25,hint:'Publish an artifact that reinforces one Brand Journey association through visible action or evidence.'},
+      {k:'listen',tier:'A0',name:'Audience Evidence',target:100,hint:'Capture one real question, phrase, objection, review, search, or interview insight with source and context.'},
+      {k:'idea',tier:'C0',name:'Idea Scored',target:100,hint:'Score a premise for demand, clarity, stakes, novelty, proof, visual potential, brand fit, and business role.'},
+      {k:'hook',tier:'W0',name:'Hook Variant',target:100,hint:'Write or film a distinct truthful opening against the same core idea. Variants create learning only when the body stays comparable.'},
+      {k:'shoot',tier:'P0',name:'Production Session',target:25,hint:'Run a prepared capture session with shot list, audio check, backups, and post-shoot notes.'},
+      {k:'waterfall',tier:'D0',name:'Native Derivative',target:100,hint:'Turn pillar material into a standalone, platform-native asset—not a contextless leftover.'},
+      {k:'diagnose',tier:'V0',name:'Formula Diagnosis',g:true,target:100,hint:'Diagnose one post to demand, eligibility, selection, hold, retention, satisfaction, spread, capture, or conversion; later grade whether the next test supported it.'},
+      {k:'test',tier:'N0',name:'Controlled Experiment',g:true,target:25,hint:'Run one falsifiable, single-variable test with metric and decision rule defined before results.'},
+      {k:'igrep',tier:'IG',name:'Instagram Native Rep',target:30,hint:'Publish one Reel, carousel, Story sequence, Collab, search-led asset, or community conversion rep and log the native job.'},
+      {k:'ttrep',tier:'TT',name:'TikTok Native Rep',target:30,hint:'Publish one TikTok-first search, trend, story, reply, community, or creator-commerce rep and log the signal hypothesis.'},
+      {k:'ytrep',tier:'YT',name:'YouTube Native Rep',target:20,hint:'Publish or package a long-form, Short, search, browse, or series rep and record appeal, engagement, and satisfaction evidence.'},
+      {k:'cross',tier:'PX',name:'Cross-Platform Adaptation',target:30,hint:'Adapt one core truth to another platform by changing the native package, context, format, CTA, and metadata.'},
+      {k:'community',tier:'F0',name:'Qualified Conversation',g:true,target:50,hint:'Run one relevant, permission-aware conversation to a clear fit/no-fit or next step; grade the outcome honestly.'},
+      {k:'adtest',tier:'AD',name:'Paid Creative Analysis',target:25,hint:'Build or analyze one paid creative against audience, hook, body, proof, offer, CTA, tracking, and unit economics.'},
+      {k:'prospect',tier:'S0',name:'Relevant Outreach',g:true,target:50,hint:'Send one researched, useful, permission-based prospect message; grade reply, qualification, and next step.'},
+      {k:'client',tier:'O0',name:'Client System Artifact',target:25,hint:'Create or improve one brief, calendar, report, SOP, approval, onboarding, meeting, hiring, or quality artifact.'},
+      {k:'risk',tier:'X0',name:'Rights &amp; Risk Check',target:25,hint:'Audit one asset or campaign for claims, disclosures, copyright, releases, privacy, accessibility, platform policy, and escalation.'},
+      {k:'capstone',tier:'X0',name:'Capstone Milestone',target:12,hint:'Complete one inspectable milestone in the professional portfolio: research, system, content, test, report, funnel, proposal, or retrospective.'}
+    ]
+  };
+
+  window.REDLINE_CURRICULUM = built;
+  window.REDLINE_QBANK = qbank;
+}());

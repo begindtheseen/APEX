@@ -58,7 +58,8 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | --- | --- |
 | `index.html` | The entire app — UI, logic, and `localStorage` persistence. |
 | `obsidian.js` / `obsviz.js` | Obsidian curriculum data + its animated mechanism diagrams. |
-| `redline.js` / `redlineviz.js` | REDLINE curriculum data (exotic rental + credit engineering) + diagrams. |
+| `redline.js` / `redlineviz.js` | REDLINE social-media operator curriculum + mechanism diagrams. |
+| `REDLINE_RESEARCH.md` | REDLINE source map, update policy, and curriculum coverage. |
 | `manifest.json` | PWA metadata (name, colors, icon) for home-screen install. |
 | `sw.js` | Service worker — caches the app shell for offline use. |
 | `icon.svg` | App icon used by the manifest and home screen. |
@@ -90,13 +91,17 @@ completely different curriculum, with completely separate progress.
 
 ## REDLINE — the third curriculum (red side)
 
-**REDLINE** runs the same engine on the exotic-rental industry — how the
-agency/consignment machine works, the money waterfall, insurance, a full
-credit-engineering rail (personal file → business credit → financing the
-car), and a personal-brand rail (positioning → content machine → algorithm →
-conversion → the moat). Content lives in **`redline.js`** (+ `redlineviz.js` diagrams), progress
-under its own key (`apex_redline_v1`) with its own Export/Restore/Reset.
-Educational only — never financial, legal, tax, or insurance advice.
+**REDLINE** is a zero-experience-to-professional social-media operator
+masterclass. It teaches brand architecture, audience research, content
+strategy, scripting, production, editing, distribution, a testable virality
+system, analytics, Instagram, TikTok, YouTube, Facebook, Threads, LinkedIn, X,
+Pinterest, community and conversion, paid social, client acquisition, agency
+delivery, team leadership, legal/compliance, and a portfolio capstone. Caleb
+Ralston's Brand Journey, Brand Story, Waterfall Distribution, filming,
+experimentation, hiring, onboarding, 1:1, and maker/manager frameworks form a
+major operating spine. Content lives in **`redline.js`** (+ `redlineviz.js`
+diagrams), sources in **`REDLINE_RESEARCH.md`**, and new progress under
+`apex_redline_v2` with its own Export/Restore/Reset.
 
 ## The science behind it
 
