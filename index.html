@@ -696,6 +696,12 @@ body{color:var(--text);font-family:var(--sans);}
   transition:transform .18s ease;
 }
 .ls-panel:active{transform:scale(.96);}
+/* Below 560px four panels in a row shrink until their sublabels are clipped
+   away entirely. Two by two keeps every name and count readable. */
+@media(max-width:560px){
+  .ls-row{flex-wrap:wrap;gap:12px;}
+  .ls-panel{flex:0 0 calc(50% - 6px);max-width:calc(50% - 6px);aspect-ratio:10/9;}
+}
 /* travelling sheen, staggered per panel so the page never sits still.
    will-change promotes each animated piece to its own compositor layer so
    the sweep/float never trigger paint — transform/opacity only. */
@@ -5214,7 +5220,12 @@ function obsImport(ev) {
   reader.onload = function() {
     try {
       var s = JSON.parse(reader.result);
+      // Both realms export the same shape, so the shape alone cannot tell them
+      // apart. The stamp was written and never read; read it.
       if (!s || !s.topics) { toast('Not a valid ' + realm().dataName + ' backup', 'warn'); return; }
+      if (s.appVersion && s.appVersion !== realm().key) {
+        toast('That backup belongs to a different realm — nothing was changed.', 'warn'); return;
+      }
       if (!confirm('Restore this ' + realm().dataName + ' backup? It replaces the ' + realm().dataName + ' progress on this device.')) return;
       OBS_ST.topics = s.topics || {};
       OBS_ST.subs = s.subs || {};
@@ -7152,7 +7163,11 @@ function lpDoneCount() {
   try {
     var key = (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.key) || 'apex_launchpad_v1';
     var s = JSON.parse(localStorage.getItem(key) || '{}');
-    var mods = s.mods || {}, n = 0;
+    // The rename migration runs in lpLoad, which has not happened yet if the
+    // realm was never opened. Count what lpLoad would see, not what is stored.
+    var mods = (typeof lpMigrate === 'function'
+      ? lpMigrate({ mods: s.mods || {}, ids: s.ids || 1 }).mods
+      : (s.mods || {})), n = 0;
     var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
     for (var i = 0; i < all.length; i++) {
       var e = mods[all[i].id];
@@ -7164,6 +7179,9 @@ function lpDoneCount() {
 }
 function goLauncher() {
   if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
+  // An APEX drill left running while another realm is on screen keeps ticking
+  // and can mark itself finished behind your back.
+  if (typeof EXAM !== 'undefined' && EXAM && EXAM.timer) { clearInterval(EXAM.timer); EXAM.timer = null; }
   OBS_EXAM = null; OBS_VIEW = null;
   var app = document.getElementById('obsidianApp');
   app.classList.remove('active');
@@ -7185,6 +7203,9 @@ function routeRealm(name) {
     if (!ST.onboardDone) { document.getElementById('onboardScreen').classList.add('active'); }
     else {
       document.getElementById('mainApp').classList.add('active');
+      // A drill paused by leaving the realm starts ticking again on return.
+      if (typeof EXAM !== 'undefined' && EXAM && !EXAM.done && !EXAM.timer
+          && typeof startExamTimer === 'function') startExamTimer();
       ACTIVE_TAB = 'today';
       renderActiveTab();
     }
