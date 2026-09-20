@@ -6140,7 +6140,8 @@ function lpHowHTML() {
     ['DELTA.md', 'What you got wrong, written down after reading the primary source.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
-    ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.']
+    ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.'],
+    ['Primary source', 'The official documentation or specification for the thing — not a tutorial about it.']
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
@@ -6300,7 +6301,7 @@ function lpModulesHTML(API) {
   var sum = API.progressSummary(P);
 
   var h = '<div class="lx-hero">'
-        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · build order</span></div>'
+        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · dependency order</span></div>'
         + '<div class="lx-title">The ladder</div>'
         + '<div class="lx-sub">A module opens when every module it depends on has its gate passed, '
         + 'and its three claims can only be made in order. '
@@ -6555,7 +6556,7 @@ function lpDetailHTML(API, id) {
 
   if (m.concepts && m.concepts.length) {
     h += lxSec(pad() + ' · UNDERSTAND', 'book', 'What you have to hold in your head',
-               'Read the primary source, not a summary of it. The DELTA.md you write is the proof you did.',
+               'Read the primary source — the official docs or spec, not a tutorial — and write down where you were wrong. That DELTA.md is the proof you read.',
                lxList(m.concepts));
   }
 
