@@ -2,10 +2,6 @@
 
 ## A curriculum for becoming a hireable remote AI product engineer
 
-**Version 2** — rebuilt after adversarial review. Built from 24 parallel research agents, then attacked
-by 10 critics from 10 lenses, then re-cut. The review broke one of the five structural bets this
-document was resting on and found a sixth it had never named. Both corrections are on this page.
-
 ---
 
 ## The honest numbers
@@ -16,12 +12,10 @@ document was resting on and found a sixth it had never named. Both corrections a
 | **Parallel track hours** (10 tracks, all mandatory) | **~459** |
 | **Real total** | **~1,480 focused hours** |
 
-Version 1 of this document said 963 hours. **That was wrong, and it was wrong in the most dangerous
-direction.** It excluded the eight parallel tracks — which it simultaneously described as mandatory.
-Three critics priced those tracks independently and converged on 350–480 hours. The headline
-understated the commitment by roughly 40%.
+**The parallel tracks are mandatory, so they are in the total.** A module-only headline would
+understate the commitment by roughly 40%, and that error runs in the most dangerous direction.
 
-That matters more than any other correction here, because M0's entire claim to authority is *runway
+It matters more than anything else on this page, because M0's entire claim to authority is *runway
 sets the deadline*. A deadline computed from a number 40% low is not authority. It is a miscalculation
 you experience as a felt sense of perpetual lateness somewhere in month nine — which this document
 itself names as the mechanism that turns a bad stretch into quitting.
@@ -32,11 +26,9 @@ itself names as the mechanism that turns a bad stretch into quitting.
 - To finish in **13 months** you need **~25 h/week**, every week, for a year.
 - Wall-clock runs 1.3–1.5× focused hours once you count setup, yak-shaving, and re-reading what decayed.
 
-> **This number went up by 58 hours in v2 and I am not hiding that.** The adversarial review produced 25
-> improvements beyond the critical fixes — mutation testing, a record-replay model client built once
-> instead of four times, inter-annotator agreement, train/test discipline, agent containment, a data
-> deletion path, the consent surface, behavioral material. Each earns its place. **Collectively they cost
-> 58 hours and the honest thing is to print the new total rather than quietly re-describe the old one.**
+> **Every hour in that total is there on purpose.** Mutation testing, a record-replay model client built
+> once instead of four times, inter-annotator agreement, train/test discipline, agent containment, a data
+> deletion path, the consent surface, behavioral material — each earns its place, and none is free.
 >
 > If that is too much, the release valve is below — and it is a designed exit, not a failure.
 
@@ -56,15 +48,14 @@ and full-time (~35 h/wk) — and take the one that matches your actual life.
 
 Do not attempt the full program. The honest short path is **514 module hours** (about 727 with the tracks it carries): M0, M1, M2, M3, M4, M7, M5, M9,
 M10, M6, M12, M27, M28 — **375 module hours plus ~40 track hours plus M30's 10-hour forward-load.** At
-18 h/week that is **~5.4 months**, not the 4.7 an earlier draft claimed by pricing it module-only.
+18 h/week that is **~5.4 months** — priced with the tracks it carries, not module-only.
 
 **Spine track policy:** T2 (OSS PRs) and T7 (writing) suspended · T4 (cold re-build) biweekly · T5
 (reviewer) and T8 (re-plan) unchanged.
 
 **M27 and M28 are non-droppable in every variant, including this one.** M27 is 11 hours against a
 first-year cost that exceeds the value of this entire curriculum. M28 is in because the spine exists to
-get you to a job and M27's own gate needs a recruiter screen, which needs a resume — an earlier draft
-cut the resume from the variant designed to produce a hire.
+get you to a job and M27's own gate needs a recruiter screen, which needs a resume.
 
 **Numbered cut order**, if you need hours back before switching: ① M26 (23h — OAuth is the most
 learn-on-demand module here) · ② M25's second half (~20h — if the trip-wire says your funnel accepts
@@ -77,51 +68,51 @@ is half the stated goal.
 
 ## The six bets this curriculum is making
 
-A red team was asked to break all of these. Here is what survived.
+Each of these was stress-tested by a red team. The attack on each, and why the bet stands, is stated
+so you can judge it yourself.
 
 **BET 1 — TypeScript first, Python late. → HOLDS.** The attack was that Python appears in the large
 majority of AI-engineer postings and that resolving for TS costs most of your funnel. It fails: your
 entire body of shipped evidence is TypeScript, your gap is a *reasoning* gap rather than a
 language-count gap, and learning correctness twice is strictly worse than learning it once and porting
 it. The postings read "Python **or** TypeScript," and the live AI-*product* roles are TS-native.
-**What was wrong was the hedge, not the bet** — v1 named this "the biggest open bet" and then gave it
-no trigger, no threshold, and no pre-written alternative. Fixed in M27 and M24/M25.
+**A bet this large needs a hedge** — a trigger, a threshold, and a pre-written alternative. Those live
+in M0's trip-wire, M24/M25, and M27.
 
-**BET 2 — the hour budget. → WAS WRONG.** Corrected above. This is the single most important change in v2.
+**BET 2 — the hour budget includes the parallel tracks.** They are mandatory, so they are priced; see
+the honest numbers above. Everything M0 derives — weekly hours, the application date, the runway
+arithmetic — rests on that total being complete.
 
 **BET 3 — an artifact per module. → HOLDS, with one addition.** The attack (27 artifacts produce a
-portfolio of toys) fails on the document's own facts — it already collapses many modules onto one
-flagship and selects down to four pinned repos. The real defect was never distinguishing **artifacts
-built to learn** from **artifacts built to show.** Every artifact is now tagged `LAB` or `EVIDENCE`.
-Costs nothing.
+portfolio of toys) fails: many modules collapse onto one flagship and the portfolio selects down to
+four pinned repos. The addition is the distinction between **artifacts built to learn** and
+**artifacts built to show.** Every artifact is tagged `LAB` or `EVIDENCE`. Costs nothing.
 
-**BET 4 — gating the AI layer behind the fundamentals. → WAS PARTLY WRONG.** The justification ("an
+**BET 4 — gating the AI layer behind the fundamentals. → HOLDS, narrowly.** The justification ("an
 eval harness built by someone who cannot write a concurrent data pipeline is a dashboard, not a skill")
 supports putting evals after the runtime and observability modules. It does **not** support putting
-them after 150 hours of Postgres, git, agents, and scoping. Worse, it collided with the month-5
-application date: the differentiator finished around month 10 while you were already interviewing.
-**Fixed: the model layer, ingestion, and evals now run immediately after observability**, and the
-ramp-and-collaboration modules move after them.
+them after 150 hours of Postgres, git, agents, and scoping — and doing so would collide with the month-5
+application date, with the differentiator finishing around month 10 while you were already interviewing.
+**So the model layer, ingestion, and evals run immediately after observability**, and the
+ramp-and-collaboration modules come after them.
 
 **BET 5 — that a curriculum is the right instrument at all. → HOLDS.** You named a real reasoning gap
 and the 2026 market for unproven remote juniors is genuinely hostile; competence work is necessary. But
 the honest residue of the attack stands: **the three activities most directly responsible for whether
 you get hired — applications that reach a human, merged OSS PRs, public writing about measurements —
-were the only parts of v1 with no hours, no artifact, and no gate,** while every technical module had
+are the easiest to leave with no hours, no artifact, and no gate,** while every technical module has
 all four. Under time pressure, unbudgeted ungated work goes first. That is how this becomes eighteen
-months of excellent code and four interviews. All three now carry hours and gates.
+months of excellent code and four interviews. So all three carry hours and gates here.
 
-**BET 6 — THE ONE V1 NEVER NAMED: that the flagship exists, qualifies, and has real traffic.**
-Five of ten lenses found this independently — the most corroborated finding in the entire review. It
-gates twelve modules. It had no specification, no acquisition plan, no hours, and no fallback. **It is
+**BET 6 — that the flagship exists, qualifies, and has real traffic.** It gates twelve modules. **It is
 the only prerequisite in this document that cannot be satisfied by working harder** — it needs other
-humans using your app, months in advance. It is now a hard gate with a spec, hours, and a written
-fallback. See M0 and the Layer 3 gate.
+humans using your app, months in advance. So it is a hard gate with a spec, an acquisition plan, hours,
+and a written fallback. See M0, M2, and the Layer 3 gate.
 
-> The review verified the concrete version of this risk: the one app currently in this repo is a static
-> `index.html` with `localStorage` — no backend, no accounts, no users, no model calls. That is not
-> proof your flagship will fail. It is proof that an app can pass M0 as v1 wrote it and satisfy **zero**
-> of the twelve requirements.
+> The concrete version of this risk: the one app currently in this repo is a static `index.html` with
+> `localStorage` — no backend, no accounts, no users, no model calls. That is not proof your flagship
+> will fail. It is proof that an app can feel like a flagship and satisfy **zero** of the twelve
+> requirements.
 
 ---
 
@@ -135,8 +126,8 @@ fallback. See M0 and the Layer 3 gate.
 
 **3. Five concepts have exactly one owning module** and are consumed, never re-taught: **streaming**
 (M7), **the durable queue** (M8), **observability** (M10), **evals** (M12), **the trust boundary** (M3).
-v1 claimed this rule and then violated it twice — idempotency and cost had no declared owner. Now:
-**idempotency** is owned by M7, **cost** by M20.
+Two more concepts that are easy to leave without an owner also have exactly one: **idempotency** is
+owned by M7, **cost** by M20.
 
 **4. Four concepts are deliberately taught twice, at different depths.** This is not a violation; it is
 a spiral, and naming the pairs prevents someone "fixing" it later: observability (M10 → M12), pooling and
@@ -147,9 +138,8 @@ build the artifact, read the **primary sources** for that module's fast-moving c
 `DELTA.md`: *what this document says · what is true now · what I changed.*
 
 > This is the answer to "the space grows every day," and it is the only mechanism here that scales.
-> v1 put a currency warning on one module and called the rest fundamentals — then the review found
-> stale claims in nine modules, four of them in layers labeled durable. A static document about a
-> moving field rots silently. **A per-module verification habit does not**, because it runs at the
+> A currency warning on one module is not enough — stale claims turn up in modules labeled durable,
+> too. A static document about a moving field rots silently. **A per-module verification habit does not**, because it runs at the
 > moment you actually need the truth.
 >
 > Each `DELTA.md` is also interview material. "Here is where the docs I learned from had gone stale and
@@ -159,24 +149,22 @@ build the artifact, read the **primary sources** for that module's fast-moving c
 
 ## Flow — how this is meant to be read, and what was checked
 
-"Beginner to expert with no confusion points" is a property you can test rather than claim, so it was
-tested. Four checks, run against the module data:
+"Beginner to expert with no confusion points" is a property this document is built to have. Four
+things to rely on as you read:
 
-**1. Nothing is used before it is explained.** Every cross-module reference was extracted and sorted by
-position. 21 of 22 forward references live in `exports` — *"the streaming proxy you are building feeds
-M19, M20 and M22"* — which is motivation, not confusion: it tells you why the work matters while you do
-it. The one genuine forward dependency (M11 asking you to record an embedding model's dimensionality
-because of a ceiling you meet in M18) is now **self-explaining at the point of use**, so the decision is
-never blind.
+**1. Nothing is used before it is explained.** Almost every forward reference lives in `exports` —
+*"the streaming proxy you are building feeds M19, M20 and M22"* — which is motivation, not confusion:
+it tells you why the work matters while you do it. The one genuine forward dependency (M11 asking you
+to record an embedding model's dimensionality because of a ceiling you meet in M18) is
+**self-explaining at the point of use**, so the decision is never blind.
 
-**2. Vocabulary is defined before it is used.** Twenty-four pieces of in-group jargon were traced to the
-module that teaches each. Three are used slightly early — *idempotency*, *SSRF*, *blast radius* — and all
-three are in Appendix B, which exists precisely because you have no colleagues to ask.
+**2. Vocabulary is defined before it is used.** Three terms are used slightly early — *idempotency*,
+*SSRF*, *blast radius* — and all three are in Appendix B, which exists precisely because you have no
+colleagues to ask.
 
-**3. Every module over 30 hours has named checkpoints.** This was the single largest flow defect: the
-document required them and only two of fifteen modules had them. All fifteen do now, plus M22 — **99 checkpoints,
-averaging 7.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
-legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
+**3. Every module over 30 hours has named checkpoints** — **99 in total, averaging 7.4 hours apart.**
+Each is a sub-goal with its own done-state and each is an explicit legitimate stopping point in a bad
+week. Forty hours into a module with no intermediate target is where
 people conclude they are lost rather than mid-module.
 
 **4. Every module opens with a win, not a wall.** Checkpoints are ordered easiest-first. M5 opens with a
@@ -245,8 +233,7 @@ chain has slack, which is where the Compressed Spine's cuts come from.
 
 **Hire before completion is the modal good outcome, not a failure.** Applications start ~month 5;
 Layers 0–3 finish around month 9. A hire at month 7–10 arrives with much of Layers 5–6 undone. That is
-the plan *succeeding*. M31 exists because v1 treated it as a footnote and designed every feedback
-instrument to terminate on hire day.
+the plan *succeeding*. M31 exists so that no feedback instrument terminates on hire day.
 
 ---
 
@@ -257,10 +244,10 @@ instrument to terminate on hire day.
 ## M0 — The Plan (12h) · `dependsOn: —`
 
 This is day one, and the reader on day one has never written code. So every item below is something a
-person can do with a notebook and an internet connection, said in words they already have. Five items
-that used to live here need code the reader has not written yet — a commit queue, a model-call log, a
-smoke test for tools not yet installed — and each has moved to the module where that code exists
-(marked below). What remains is the contract: the money, the hours, the date, the people, the rules.
+person can do with a notebook and an internet connection, said in words they already have. Items that
+need code the reader has not written yet — a commit queue, a model-call log, a smoke test for tools not
+yet installed — live in the module where that code exists, and are pointed to below. What is here is
+the contract: the money, the hours, the date, the people, the rules.
 
 **The artifact** `LAB` — one repo, one directory per module, plus `PLAN.md` containing:
 
