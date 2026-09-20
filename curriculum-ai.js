@@ -261,7 +261,7 @@ var AI_CURRICULUM = [
          pass:'State your floor out loud without hedging, recorded. AND deliver a 30-second background answer with no apology, no hedge and no mention of coursework, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since?',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
-{ id:'M26', layer:7, hours:8, dependsOn:['M11'], kind:'EVIDENCE',
+{ id:'M26', layer:7, hours:8, dependsOn:['M7'], kind:'EVIDENCE',
   trigger:'The application date (~month 5). Applications need a resume at month 5, not month 15.',
   title:'The Evidence Layer v1',
   artifact:'A resume mapping each claim to a repo. Two pinned repos. A README in product-spec form. ONLY EVIDENCE artifacts are pinned — the labs are private. Final pinned four: the flagship, the OSS contribution history, one design doc or public write-up, one genuinely separate small product.',
@@ -287,7 +287,7 @@ var AI_CURRICULUM = [
          onFail:'Watch the transcript back and name where you delegated something you should have verified. That is the rep.' } },
 
 // ─────────────── LAYER 8 · EMPLOYED MODE ───────────────
-{ id:'M29', layer:8, hours:10, dependsOn:[], kind:'LAB',
+{ id:'M29', layer:8, hours:10, dependsOn:['M0'], kind:'LAB',
   trigger:'FIRST ONSITE \u2014 the same event as M30, and the last moment the pre-hire half can be written with a clear head. It reliably lands one to three weeks before an offer. Written pre-hire, executed post-hire; hire-before-completion is the modal good outcome.',
   title:'Employed Mode',
   artifact:'A second operating contract: a realistic employed weekly budget (5-8h, not 18) and a module order driven by what the job needs first. Track 4 retargeted from your own artifacts to a component of the employer codebase. The reviewer relationship re-contracted or deliberately replaced, decided BEFORE the start date. The monthly re-plan surviving with new inputs. The estimate log continuing against real tickets from week one. Plus two scheduled written manager checkpoints at week 6 and week 14, scripted before the start date.',
@@ -295,7 +295,7 @@ var AI_CURRICULUM = [
          pass:'You asked directly whether you are where they would expect, and you have the written answer.',
          onFail:'Week one is the wrong time to ask — that is when a manager answer is most generic.' } },
 
-{ id:'M30', layer:8, hours:6, dependsOn:[], kind:'LAB',
+{ id:'M30', layer:8, hours:6, dependsOn:['M0'], kind:'LAB',
   trigger:'First onsite.',
   title:'The First 90 Days',
   artifact:'A 30/60/90 plan against a real posting with week-one manager questions. A reusable asking-for-help template practiced FOR REAL by posting three genuine questions in an OSS project Discord or Slack, responses kept. An org map inferred from git blame and log. A handoff note good enough for a stranger to continue. Plus inheriting an AI system you did not build: reading someone else prompts, evals and traces; prompt archaeology on a system with no decision log. Plus a WIP policy computed from your OWN Track 2 review-latency data.',
@@ -371,7 +371,7 @@ var AI_TRACKS = [
        + 'is the answer to being interviewed at month 20 on month-1 material.' }
 ];
 
-var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M6','M7','M9','M11','M25','M26'];
+var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M4','M6','M7','M9','M11','M25','M26'];
 // M25 AND M26 are non-droppable in every variant. The spine exists to get you to a job,
 // and M25's own gate needs a recruiter screen, which needs a resume, which is M26.
 // Spine track policy: T2 and T7 suspended, T4 biweekly, T5 and T8 unchanged (~40h). // 364h, for runway under 9 months
@@ -408,6 +408,10 @@ var AI_CURRICULUM_API = {
   isUnlocked: function (id, progress) {
     var m = this.byId(id);
     if (!m) return false;
+    // Layers 4-6 are the twelve modules the hard gate exists to hold back.
+    // Rendering the checklist without consulting it here left the gate
+    // decorative, which Rule 1 of this curriculum specifically forbids.
+    if (m.layer >= 4 && m.layer <= 6 && !this.flagshipGate(progress).open) return false;
     if (m.trigger && m.dependsOn.length === 0) return true;
     return m.dependsOn.every(function (d) {
       return progress && progress[d] && progress[d].gate;
@@ -444,7 +448,7 @@ var AI_CURRICULUM_API = {
   plan: function (setup) {
     var WK = 4.345;                                  // weeks per month
     var tot = this.totalHours();
-    var full = tot.modules + tot.tracks;             // 1057 + 425
+    var full = tot.modules + tot.tracks;             // 1023 + 459
     var self = this;
     var spineMods = (typeof AI_COMPRESSED_SPINE !== 'undefined' ? AI_COMPRESSED_SPINE : [])
       .reduce(function (a, id) { var m = self.byId(id); return a + (m ? m.hours : 0) }, 0);
@@ -701,6 +705,25 @@ M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The askin
 // early and the module opens with a win rather than a wall.
 // ============================================================
 var AI_CHECKPOINTS = {
+  M4:['The 3-hour win: 50k rows, one slow query, one EXPLAIN, one index, one measured speedup you can state as a number',
+      'Reading a plan out loud: seq scan vs index scan vs bitmap heap, and which line of EXPLAIN told you',
+      'The 5M-row rig loaded, with a load generator you wrote rather than a benchmark you downloaded',
+      'Six of the twelve queries with plans captured before and after',
+      'All twelve, plus the wall-clock table that shows the slow->fast loop closing',
+      'An RLS policy set benchmarked correct-but-slow against correct-and-fast, with the plan diff that explains it',
+      'Asymptotic complexity written against your own measurements, not against a textbook curve',
+      'The legacy-key rotation performed and documented as a procedure someone else could follow'],
+  M11:['The harness skeleton: Postgres tables plus a TypeScript runner that scores one case end to end',
+      'Session 1 of 4: twenty-five traces hand-read and labelled, no taxonomy yet',
+      'Sessions 2-4 done: 100 labelled traces and a failure taxonomy with counts, written after the reading rather than before',
+      'Dev/test split made at creation and recorded, so it cannot be quietly re-drawn later',
+      'Assertion graders covering the failures that do not need judgement',
+      'A judge with a measured confusion matrix against your own labels',
+      'Inter-annotator agreement: the reviewer labels 30 from your rubric alone, and the rubric is what gets revised',
+      'The tiered CI gate: a smoke set on every push, the full set nightly, recorded fixtures so graders cost nothing',
+      'The fail condition stated as a statistical threshold with its bootstrap interval, not as a single number',
+      'A deliberate model-family migration gated only by this eval set',
+      'stats-lab: the four tests you will actually use, each run once against your own data'],
   M1:['Hello, event loop: predict the output order of 6 mixed sync/setTimeout/promise lines, then run it and reconcile',
       'One failing async test you wrote, fixed for the right reason',
       'MiniPromise: then/catch/chaining passing your own tests',

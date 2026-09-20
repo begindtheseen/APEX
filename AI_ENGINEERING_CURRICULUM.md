@@ -54,14 +54,14 @@ and full-time (~35 h/wk) — and take the one that matches your actual life.
 
 ### The Compressed Spine — if your runway is under nine months
 
-Do not attempt the full program. The honest short path is **~425 focused hours**: M0, M1, M2, M3, M6,
+Do not attempt the full program. The honest short path is **436 module hours** (about 630 with the tracks it carries): M0, M1, M2, M3, M4, M6,
 M7, M9, M11, M25, M26 — **375 module hours plus ~40 track hours plus M28's 10-hour forward-load.** At
 18 h/week that is **~5.4 months**, not the 4.7 an earlier draft claimed by pricing it module-only.
 
 **Spine track policy:** T2 (OSS PRs) and T7 (writing) suspended · T4 (cold re-build) biweekly · T5
 (reviewer) and T8 (re-plan) unchanged.
 
-**M25 and M26 are non-droppable in every variant, including this one.** M25 is 8 hours against a
+**M25 and M26 are non-droppable in every variant, including this one.** M25 is 11 hours against a
 first-year cost that exceeds the value of this entire curriculum. M26 is in because the spine exists to
 get you to a job and M25's own gate needs a recruiter screen, which needs a resume — an earlier draft
 cut the resume from the variant designed to produce a hire.
@@ -174,8 +174,8 @@ module that teaches each. Three are used slightly early — *idempotency*, *SSRF
 three are in Appendix B, which exists precisely because you have no colleagues to ask.
 
 **3. Every module over 30 hours has named checkpoints.** This was the single largest flow defect: the
-document required them and only two of sixteen modules had them. All sixteen do now — **91 checkpoints,
-averaging 8.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
+document required them and only two of fifteen modules had them. All fifteen do now, plus M20 — **99 checkpoints,
+averaging 7.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
 legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
 people conclude they are lost rather than mid-module.
 
@@ -232,7 +232,7 @@ Presented in execution order. Hours are focused hours.
 | **M30** | The First 90 Days · *trigger* | 6 | — |
 
 
-**The critical path is 453 hours**: `M0 → M1 → M2 → M4 → M6 → M7 → M11 → M17 → M19 → M24`.
+**The critical path is 448 hours**: `M0 → M1 → M2 → M4 → M6 → M7 → M11 → M17 → M19 → M24`.
 
 That is the longest chain of strict dependencies — the floor on calendar time even if everything else
 ran in parallel. **Total hours is the floor on effort; the critical path is the floor on time. They are
@@ -261,7 +261,7 @@ four things that were previously assumed, unassigned, or discovered too late.
 variants (employed ~12 h/wk, full-time ~35 h/wk) with the weekly hours **derived** from them, not
 assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
-**2. The hour budget** — **1,057** module hours + ~425 track hours = **~1,482**, with the line-item
+**2. The hour budget** — **1,023** module hours + **459** track hours = **1,482**, with the line-item
 track table below and your date arithmetic shown. **Derive these from `curriculum-ai.js`, do not copy
 them from here** — the JS sums itself and the prose is what rots. An earlier draft of this very line
 said 999, which is the exact class of error this module exists to prevent, sitting in the module whose

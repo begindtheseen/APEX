@@ -970,1051 +970,452 @@ body{color:var(--text);font-family:var(--sans);}
   .mo-lift:hover,.mo-btn:hover,.ls-panel:hover,.stopic:hover,.sbtn:hover{transform:none!important;}
 }
 
-/* ═══ LAUNCHPAD — AI product engineering realm ═══════════════
-   Palette is APEX's own blue. A realm that changes colour on entry reads as
-   a different product; the launcher is blue, so this is blue.              */
-.lsLp{--rc:#4db8ff;}
+/* ═══ REALM SHELL ════════════════════════════════════════════════
+   One shell, four realms. Every value here resolves through the realm's
+   own custom properties, so OBSIDIAN and REDLINE keep their palettes and
+   LAUNCHPAD overrides only what the reference measures differently.
+
+   This replaces five stacked passes that each overrode the last by
+   specificity rather than replacing it. That layering is what produced
+   a 24px button with a 36px line-height, a mobile rail stuck at 187px,
+   and monospace labels surviving a pass whose own comment said the
+   reference has no monospace in it. One pass, one value per property. */
+.lsLp{--rc:#4889fa;}
 #launchpadApp{background:var(--rbg);color:var(--rtext);flex-direction:column;}
 #launchpadApp.active{display:flex;}
-.lp-shell{display:flex;flex:1;min-height:0;}
-
-/* Rail — a left sidebar on wide screens, a scrolling strip on phones.
-   The old single-column scroll was the navigation complaint: everything
-   was reachable only by scrolling past everything else. */
-.lp-side{width:194px;flex-shrink:0;background:var(--rrail);border-right:1px solid var(--rline);
-  display:flex;flex-direction:column;padding:16px 0;}
-.lp-wordmark{font:700 15px/1 var(--mono);letter-spacing:.22em;color:var(--rbright);padding:4px 18px 22px;}
+.lp-shell{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
+.lp-side{width:187px;flex-shrink:0;background:var(--rrail);border-right:1px solid var(--rline);
+  display:flex;flex-direction:column;padding:0;}
+.lp-wordmark{font:700 15px/1 var(--sans);letter-spacing:.28em;color:var(--rbright);padding:26px 22px 34px;}
 .lp-wordmark span{color:var(--rc);}
-.lp-navbtn{display:flex;align-items:center;gap:11px;background:none;border:0;width:100%;
-  padding:11px 18px;cursor:pointer;color:var(--rdim);font:500 13px/1 var(--sans);text-align:left;
-  border-left:2px solid transparent;transition:color .15s,background .15s;}
-.lp-navbtn:hover{color:var(--rtext);background:color-mix(in srgb,var(--rc) 7%,transparent);}
-.lp-navbtn.on{color:var(--rbright);background:color-mix(in srgb,var(--rc) 12%,transparent);}
-.lp-navi{display:flex;align-items:center;justify-content:center;width:20px;height:20px;}
-.lp-side-foot{margin-top:auto;padding:18px;font:600 8.5px/1.9 var(--mono);letter-spacing:.2em;
-  color:var(--rdim);opacity:.5;text-transform:uppercase;}
-.lp-main{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.lp-topbar{display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid var(--rline);
-  position:sticky;top:0;background:color-mix(in srgb,var(--rbg) 93%,transparent);backdrop-filter:blur(10px);z-index:5;}
-.lp-crumb{font:600 9.5px/1 var(--mono);letter-spacing:.17em;color:var(--rdim);text-transform:uppercase;
-  margin-left:auto;opacity:.8;}
-.lp-crumb b{color:var(--rc);font-weight:600;}
-.lp-body{padding:22px;max-width:1180px;}
-
-/* Hero */
-.lp-hero{position:relative;border:1px solid #12233d;border-radius:14px;padding:24px;margin-bottom:18px;
-  background:radial-gradient(120% 140% at 88% 8%,rgba(77,184,255,.16),rgba(5,11,22,0) 58%),#070f1d;overflow:hidden;}
-.lp-hero::after{content:'';position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,212,255,.13),transparent 68%);pointer-events:none;}
-.lp-greet{font:400 13px/1 var(--sans);color:#5b7fa6;}
-.lp-name{font:700 30px/1.15 var(--sans);color:#eaf4ff;margin:5px 0 7px;letter-spacing:-.01em;}
-.lp-sub{font:400 13.5px/1.55 var(--sans);color:#7fa3c4;max-width:60ch;}
-.lp-heroBar{height:3px;width:210px;border-radius:2px;background:#0d1c31;margin-top:16px;overflow:hidden;}
-.lp-heroBar span{display:block;height:100%;background:linear-gradient(90deg,#4db8ff,#00d4ff);}
-
-/* ── Craft pass. The gap against a designed comp is usually not colour,
-      it is type scale, breathing room, and real iconography. ── */
+.lp-navbtn{position:relative;display:flex;align-items:center;gap:14px;background:none;border:0;
+  width:100%;height:52px;padding:0 22px;cursor:pointer;color:var(--rdim);
+  font:400 13px/52px var(--sans);text-align:left;transition:color .15s,background .15s;}
+.lp-navbtn::after{content:'';position:absolute;left:0;top:50%;width:4px;height:0;border-radius:0 2px 2px 0;
+  background:var(--rc);transform:translateY(-50%);transition:height .2s var(--e-out);}
+.lp-navbtn.on::after{height:48px;}
+.lp-navi{display:flex;align-items:center;justify-content:center;width:22px;height:22px;}
 .lp-svg{width:20px;height:20px;display:block;}
-.lp-navi{width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
-.lp-navi .lp-svg{width:18px;height:18px;}
-.lp-layi .lp-svg{width:21px;height:21px;}
-.lp-bico .lp-svg{width:16px;height:16px;}
-.lp-lki .lp-svg{width:15px;height:15px;}
-.lp-arrow .lp-svg{width:14px;height:14px;}
-.lp-layi,.lp-bico,.lp-lki{color:var(--rc);}
-
-/* Hero: full-bleed art behind, content above, generous type. */
-.lp-hero-lg{padding:0;min-height:216px;display:flex;align-items:center;}
-.lp-heroArt{position:absolute;inset:0;width:100%;height:100%;opacity:.92;pointer-events:none;}
-.lp-heroIn{position:relative;z-index:2;padding:30px 32px;max-width:62%;}
-@media(max-width:620px){
-  .lp-hero-lg{min-height:186px;}
-  .lp-heroIn{padding:22px 20px;max-width:78%;}
-  .lp-heroArt{opacity:.7;}
-}
-.lp-greet{font:400 14px/1 var(--sans);color:var(--rdim);letter-spacing:.01em;}
-.lp-name{font:300 40px/1.06 var(--sans);color:var(--rbright);margin:9px 0 10px;letter-spacing:-.025em;}
-.lp-name b,.lp-name strong{font-weight:600;}
-@media(max-width:620px){.lp-name{font-size:29px;}}
-.lp-sub{font:400 14px/1.6 var(--sans);color:#8fb4d6;max-width:46ch;}
-.lp-heroBar{height:4px;width:230px;border-radius:3px;background:rgba(255,255,255,.07);margin-top:20px;}
-.lp-heroBar span{border-radius:3px;}
-
-/* Cards get more air and a lit top edge, which is most of what reads as depth. */
-.lp-card,.lp-lay,.lp-quote{position:relative;padding:20px;border-radius:15px;
-  background:linear-gradient(180deg,rgba(255,255,255,.022),transparent 46%),var(--rsurf);}
-.lp-card::before,.lp-lay::before{content:'';position:absolute;top:0;left:14px;right:14px;height:1px;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--rc) 26%,transparent),transparent);}
-.lp-ct{font-size:11.5px;letter-spacing:.16em;}
-.lp-layt{font-size:17.5px;letter-spacing:-.01em;}
-.lp-layd{font-size:13px;line-height:1.6;margin-top:6px;}
-.lp-layi{width:46px;height:46px;border-radius:12px;}
-.lp-mods{margin-top:16px;gap:8px 18px;}
-.lp-mrow{font-size:12.5px;}
-.lp-layf{margin-top:18px;}
-.lp-go{padding:11px 19px;border-radius:9px;font-size:12.5px;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 92%,#fff),var(--rc));color:#041220;font-weight:600;}
-.lp-blab{font-size:12.5px;}
-.lp-btr{height:6px;border-radius:4px;}
-.lp-btr span{border-radius:4px;}
-.lp-bico{width:34px;height:34px;border-radius:10px;}
-.lp-ring{width:96px;height:96px;}
-.lp-rv{font-size:23px;}
-.lp-tt{font-size:13px;}
-.lp-lkt{font-size:13px;}
-.lp-qt{font-size:20px;line-height:1.36;letter-spacing:-.015em;}
-.lp-dp{font-size:13px;line-height:1.68;}
-.lp-body{padding:26px;}
-@media(max-width:820px){.lp-body{padding:16px;}}
-
-/* Layer card: copy on the left, a generated scene where the comp puts a
-   screenshot. Stacks under 760px so the art never squeezes the text. */
-.lp-layTop{display:flex;gap:20px;align-items:stretch;}
-.lp-layMain{flex:1;min-width:0;display:flex;flex-direction:column;}
-.lp-artWrap{width:200px;flex:0 0 200px;border-radius:11px;overflow:hidden;
-  border:1px solid var(--rline);background:linear-gradient(158deg,#0a1526,#050b16);
-  display:flex;align-items:center;justify-content:center;padding:8px;}
-.lp-art{width:100%;height:auto;display:block;}
-@media(max-width:760px){
-  .lp-layTop{flex-direction:column;gap:14px;}
-  .lp-artWrap{width:100%;flex:0 0 auto;}
-  .lp-art{max-height:128px;}
-}
-
-/* Two-column dashboard */
-.lp-cols{display:grid;grid-template-columns:1fr 316px;gap:16px;align-items:start;}
-@media(max-width:1000px){.lp-cols{grid-template-columns:1fr;}}
-
-.lp-card{border:1px solid #12233d;border-radius:13px;background:#070f1d;padding:17px;margin-bottom:16px;}
-.lp-ch{display:flex;align-items:center;gap:10px;margin-bottom:15px;}
-.lp-ct{font:600 11px/1 var(--mono);letter-spacing:.15em;color:#a8cdf0;text-transform:uppercase;}
-.lp-cmeta{margin-left:auto;font:600 9.5px/1 var(--mono);letter-spacing:.11em;color:#2d5070;text-transform:uppercase;}
-
-/* Readiness ring + per-layer bars */
-.lp-ready{display:flex;align-items:center;gap:20px;}
-.lp-bars{flex:1;min-width:0;}
-.lp-brow{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
-.lp-bico{width:31px;height:31px;border-radius:8px;background:rgba(77,184,255,.1);border:1px solid #17304f;
-  display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-.lp-bwrap{flex:1;min-width:0;}
-.lp-blab{font:500 12px/1 var(--sans);color:#c8dff5;margin-bottom:6px;}
-.lp-btr{height:5px;border-radius:3px;background:#0d1c31;overflow:hidden;}
-.lp-btr span{display:block;height:100%;background:linear-gradient(90deg,#4db8ff,#7dd3fc);
-  transition:width .5s cubic-bezier(.4,0,.2,1);}
-.lp-bpct{font:600 11px/1 var(--mono);color:#5b7fa6;width:32px;text-align:right;flex-shrink:0;}
-.lp-ring{position:relative;width:88px;height:88px;flex-shrink:0;}
-.lp-ring svg{transform:rotate(-90deg);}
-.lp-ring .rbg{fill:none;stroke:#0d1c31;stroke-width:7;}
-.lp-ring .rfg{fill:none;stroke:#4db8ff;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .6s;}
-.lp-rtx{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.lp-rv{font:700 21px/1 var(--mono);color:#eaf4ff;}
-.lp-rk{font:600 7.5px/1 var(--mono);letter-spacing:.13em;color:#2d5070;margin-top:3px;}
-
-/* Layer cards on the home view */
-.lp-lay{border:1px solid #12233d;border-radius:13px;background:#070f1d;padding:17px;margin-bottom:13px;
-  display:block;width:100%;text-align:left;cursor:pointer;transition:border-color .16s,background .16s;}
-.lp-lay:hover{border-color:#1e3a5f;background:#091426;}
-.lp-layh{display:flex;align-items:flex-start;gap:13px;}
-.lp-layi{width:42px;height:42px;border-radius:10px;background:rgba(77,184,255,.1);border:1px solid #17304f;
-  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-.lp-layt{font:600 16px/1.25 var(--sans);color:#eaf4ff;}
-.lp-layd{font:400 12.5px/1.55 var(--sans);color:#7fa3c4;margin-top:5px;}
-.lp-mods{margin:13px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;}
-@media(max-width:560px){.lp-mods{grid-template-columns:1fr;}}
-.lp-mrow{display:flex;align-items:center;gap:8px;font:400 12px/1.4 var(--sans);color:#7fa3c4;}
-.lp-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid #1e3a5f;flex-shrink:0;}
-.lp-mrow.done .lp-dot{background:#4db8ff;border-color:#4db8ff;}
-.lp-mrow.done{color:#a8cdf0;}
-.lp-mrow.lock{opacity:.42;}
-.lp-layf{display:flex;align-items:center;gap:12px;margin-top:15px;}
-.lp-go{background:#1e6fd0;border:0;border-radius:7px;color:#fff;font:600 12px/1 var(--sans);
-  padding:10px 17px;cursor:pointer;transition:background .15s;}
-.lp-go:hover{background:#2a82e8;}
-.lp-pctlab{margin-left:auto;font:600 9px/1 var(--mono);letter-spacing:.11em;color:#2d5070;text-transform:uppercase;}
-
-/* Right column lists */
-.lp-task{display:flex;align-items:flex-start;gap:11px;padding:11px 0;cursor:pointer;
-  border-top:1px solid #0d1c31;}
-.lp-task:first-of-type{border-top:0;}
-.lp-box{width:16px;height:16px;border-radius:50%;border:1.5px solid #1e3a5f;flex-shrink:0;margin-top:1px;
-  display:flex;align-items:center;justify-content:center;font:700 9px/1 var(--mono);color:#050b16;}
-.lp-task.on .lp-box,.lp-chk.on .lp-box{background:#4db8ff;border-color:#4db8ff;}
-.lp-tt{font:500 12.5px/1.4 var(--sans);color:#c8dff5;}
-.lp-task.on .lp-tt{color:#4db8ff;}
-.lp-ts{font:400 10.5px/1.3 var(--sans);color:#3d6183;margin-top:4px;}
-.lp-link{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #0d1c31;
-  cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;}
-.lp-link:first-of-type{border-top:0;}
-.lp-lki{width:30px;height:30px;border-radius:8px;background:rgba(77,184,255,.09);border:1px solid #17304f;
-  display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
-.lp-lkt{font:500 12.5px/1.3 var(--sans);color:#c8dff5;}
-.lp-lks{font:400 10.5px/1.3 var(--sans);color:#3d6183;margin-top:3px;}
-.lp-arrow{margin-left:auto;color:#1e3a5f;font-size:13px;}
-.lp-quote{border:1px solid #12233d;border-radius:13px;padding:20px;margin-bottom:16px;
-  background:radial-gradient(130% 120% at 20% 0%,rgba(77,184,255,.13),rgba(5,11,22,0) 62%),#070f1d;}
-.lp-qt{font:600 19px/1.35 var(--sans);color:#eaf4ff;}
-.lp-qa{font:400 12px/1 var(--sans);color:#4db8ff;margin-top:11px;}
-
-/* Module list + detail. The row, tag and kind styling lives with the
-   ladder further down; only the hours cell survives from the old list. */
-.lp-mhr{font:500 10px/1 var(--mono);color:#3d6183;flex-shrink:0;}
-.lp-dp{font:400 12.5px/1.6 var(--sans);color:#a8cdf0;}
-.lp-warn{border:1px solid #17304f;border-radius:9px;padding:11px 13px;margin-top:12px;
-  background:rgba(77,184,255,.05);font:400 11.5px/1.55 var(--sans);color:#7fa3c4;}
-.lp-warn b{color:#00d4ff;font:600 10px/1 var(--mono);letter-spacing:.08em;}
-.lp-chk{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;
-  font:400 12.5px/1.4 var(--sans);color:#a8cdf0;border-top:1px solid #0d1c31;}
-.lp-chk .lp-box{border-radius:4px;}
-.lp-chk.on{color:#4db8ff;}
-.lp-gate{border:1px solid #17304f;border-radius:12px;padding:15px;margin:16px 0;
-  background:linear-gradient(160deg,rgba(77,184,255,.08),rgba(5,11,22,0));}
-.lp-gate.shut{border-color:#2d5070;}
-.lp-gt{font:700 11px/1 var(--mono);letter-spacing:.13em;color:#4db8ff;text-transform:uppercase;}
-.lp-gs{font:400 12px/1.55 var(--sans);color:#7fa3c4;margin:8px 0 11px;}
-.lp-back{background:none;border:1px solid var(--rline);border-radius:8px;color:var(--rdim);
-  font:600 10px/1 var(--mono);letter-spacing:.1em;padding:9px 14px;cursor:pointer;margin-bottom:15px;}
+.lp-navi .lp-svg{width:22px;height:22px;}
+.lp-side-foot{margin-top:auto;padding:22px;font:600 9px/2.1 var(--sans);letter-spacing:.28em;
+  color:var(--rdim);opacity:.55;text-transform:uppercase;}
+.lp-main{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;}
+.lp-topbar{display:flex;align-items:center;gap:12px;padding:14px 17px;position:sticky;top:0;
+  background:color-mix(in srgb,var(--rbg) 92%,transparent);backdrop-filter:blur(10px);z-index:5;}
+.lp-crumb{margin-left:auto;font:500 9.5px/1 var(--sans);letter-spacing:.2em;color:var(--rdim);
+  text-transform:uppercase;}
+.lp-crumb b{color:var(--rbright);font-weight:500;}
+.lp-body{padding:0 17px 40px 14px;max-width:1180px;}
+.lp-back{background:none;border:1px solid var(--rline);border-radius:7px;color:var(--rdim);
+  font:600 10px/1 var(--sans);letter-spacing:.14em;padding:9px 13px;cursor:pointer;
+  transition:border-color .15s,color .15s;}
 .lp-back:hover{border-color:color-mix(in srgb,var(--rc) 50%,transparent);color:var(--rc);}
 
-/* M0 plan panel */
-.lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0;}
-.lp-f label{display:block;font:600 8.5px/1 var(--mono);letter-spacing:.11em;color:#3d6183;
-  text-transform:uppercase;margin-bottom:6px;}
-.lp-f input{width:100%;background:#050b16;border:1px solid #12233d;border-radius:7px;color:#4db8ff;
-  font:600 15px/1 var(--mono);padding:10px;-webkit-appearance:none;}
-.lp-f input:focus{outline:none;border-color:#4db8ff;}
-.lp-f.wide{grid-column:1/-1;}
-.lp-f.wide input{font:500 13px/1.3 var(--sans);color:#dcecff;}
-.lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px;}
-.lp-path{border:1px solid #12233d;border-radius:9px;padding:11px;background:rgba(77,184,255,.03);}
-.lp-path.on{border-color:#4db8ff;background:rgba(77,184,255,.1);}
-.lp-pn{font:600 9px/1 var(--mono);letter-spacing:.1em;color:#3d6183;text-transform:uppercase;}
-.lp-path.on .lp-pn{color:#4db8ff;}
-.lp-pv{font:700 19px/1 var(--mono);color:#eaf4ff;margin:8px 0 4px;}
-.lp-ps{font:400 10.5px/1.4 var(--sans);color:#5b7fa6;}
-.lp-vrec{font:700 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:#4db8ff;margin-top:14px;}
-.lp-vwhy{font:400 12.5px/1.6 var(--sans);color:#a8cdf0;margin-top:9px;}
+/* Card, header, and the two rail row shapes — defined once and used by
+   every view. A view that wants a different card is a bug, not a variant. */
+.lp-card,.lp-lay,.lp-quote{position:relative;border:1px solid var(--rline);border-radius:9px;
+  background:var(--rsurf);padding:16px;margin-bottom:13px;}
+.lp-ch{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.lp-ct{display:flex;align-items:center;gap:10px;font:500 13px/1 var(--sans);letter-spacing:.06em;
+  color:var(--rbright);text-transform:uppercase;}
+.lp-ct .lp-svg{width:17px;height:17px;color:var(--rtext);flex-shrink:0;}
+.lp-cmeta{margin-left:auto;font:500 11px/1 var(--sans);letter-spacing:.07em;color:var(--rdim);
+  text-transform:uppercase;}
+.lp-cols{display:grid;grid-template-columns:minmax(0,1fr) 269px;gap:15px;align-items:start;}
+.lp-dp{font:400 13px/1.62 var(--sans);color:var(--rtext);}
+.lp-warn{border:1px solid color-mix(in srgb,var(--rc) 28%,transparent);border-radius:9px;
+  padding:14px 16px;margin:13px 0;background:color-mix(in srgb,var(--rc) 6%,transparent);
+  font:400 12.5px/1.6 var(--sans);color:var(--rtext);}
+.lp-warn b{display:block;font:600 9.5px/1 var(--sans);letter-spacing:.14em;color:var(--rc);
+  text-transform:uppercase;margin-bottom:7px;}
 
-@media(max-width:820px){
-  .lp-shell{flex-direction:column;}
-  .lp-side{width:100%;flex-direction:row;overflow-x:auto;padding:0;border-right:0;
-    border-bottom:1px solid #12233d;scrollbar-width:none;}
-  .lp-side::-webkit-scrollbar{display:none;}
-  .lp-wordmark,.lp-side-foot{display:none;}
-  .lp-navbtn{width:auto;flex-shrink:0;padding:14px 15px;border-left:0;border-bottom:2px solid transparent;
-    gap:8px;font-size:12.5px;}
-  .lp-navbtn.on{border-left:0;border-bottom-color:var(--rc);background:none;}
-  .lp-body{padding:16px;}
-  .lp-topbar{padding:12px 16px;}
-  .lp-name{font-size:24px;}
-  /* Ring beside the bars leaves a dead column at phone width; put it on top. */
-  .lp-ready{flex-direction:column-reverse;align-items:stretch;gap:14px;}
-  .lp-ring{align-self:center;}
+/* ═══ LAUNCHPAD ══════════════════════════════════════════════════
+   Values measured off the reference raster: sidebar edge x=187, cards
+   x=201 w=521, rail x=738 w=269, content ends x=1007, first card y=242.
+   Fill #020c1a on #00030a, hairline #0c213a. */
+#launchpadApp{
+  --rbg:#00030a;--rrail:#01040b;--rsurf:#020c1a;--rline:#0c213a;
+  --rc:#4889fa;--rc2:#5e9bf8;--rbright:#ffffff;--rtext:#b9c6d6;--rdim:#6c7b8d;
+  /* The reference is an Inter-class grotesque, not DM Sans — and the DM
+     webfont is loaded from Google, which an offline PWA cannot reach. A
+     system stack resolves to SF Pro on the devices this is used on and
+     needs no network. */
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',Roboto,'Helvetica Neue',Arial,sans-serif;
 }
-/* ═══ LAUNCHPAD — instrument pass ════════════════════════════════
-   The comp reads as flight hardware, not as a website: a lit readout
-   on a dark panel. Three things carry that and nothing else does —
-   a survey grid under everything, corner brackets that frame content
-   the way a viewfinder does, and numbers set in tabular mono so they
-   sit in columns instead of drifting. */
+#launchpadApp .lp-side{background:linear-gradient(180deg,#01050d,#000308);border-right-color:#041c2e;}
+#launchpadApp .lp-wordmark{padding:29px 22px 40px;letter-spacing:.3em;}
+#launchpadApp .lp-navbtn{color:#aab6c4;}
+#launchpadApp .lp-navbtn .lp-navi{color:#93a1b0;}
+#launchpadApp .lp-navbtn:hover{background:rgba(72,137,250,.06);color:#dbe6f2;}
+#launchpadApp .lp-navbtn.on{color:#8fb8e8;background:none;
+  background-image:linear-gradient(90deg,rgba(1,20,45,.98),rgba(1,14,34,.4) 60%,transparent);
+  background-repeat:no-repeat;background-size:100% 48px;background-position:0 center;}
+#launchpadApp .lp-navbtn.on .lp-navi{color:var(--rc2);}
+#launchpadApp .lp-navbtn.on .lp-svg{fill:rgba(72,137,250,.2);}
+#launchpadApp .lp-back{border-color:rgba(255,255,255,.1);background:rgba(0,3,10,.5);color:#93a0b0;}
+#launchpadApp .lp-crumb{color:#4a5c6d;text-transform:none;letter-spacing:.05em;font-size:11px;}
+#launchpadApp .lp-crumb a{color:#7f8ea0;text-decoration:none;}
+#launchpadApp .lp-crumb a:hover{color:var(--rc2);}
 
-/* Survey grid. 44px cells, barely visible, masked to a soft vertical
-   fade so it never reads as a table. Sits under the nebula. */
-#launchpadApp .lp-main{position:relative;}
-#launchpadApp .lp-main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:
-    repeating-linear-gradient(90deg,rgba(77,184,255,.055) 0 1px,transparent 1px 44px),
-    repeating-linear-gradient(0deg,rgba(77,184,255,.045) 0 1px,transparent 1px 44px);
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.2) 42%,transparent 78%);
-  mask-image:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.2) 42%,transparent 78%);}
-#launchpadApp .lp-body{position:relative;z-index:1;}
-
-/* Corner brackets. Drawn with two gradient-filled pseudo-elements per
-   corner would need four nodes; instead one element carries all four as
-   a single repeating background, which costs nothing to paint. */
-
-/* Hero. The art is full-bleed behind the copy, so the copy needs its own
-   floor: a scrim keyed to the reading direction, not a flat overlay that
-   would kill the limb glow on the right. */
-/* Column, not row: the copy takes the free space and the readout sits on
-   the floor at full width, the way an instrument panel is laid out. */
-.lp-hero-lg{min-height:300px;flex-direction:column;align-items:stretch;justify-content:flex-end;}
-.lp-heroIn{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;}
-.lp-heroScrim{position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:
-    linear-gradient(97deg,rgba(3,8,17,.94) 0%,rgba(3,8,17,.82) 34%,rgba(3,8,17,.28) 62%,transparent 84%),
-    linear-gradient(0deg,rgba(3,8,17,.88) 0%,transparent 46%);}
-.lp-heroIn{max-width:60%;padding:32px 34px 26px;}
-.lp-name{font-size:46px;}
-.lp-name b{background:linear-gradient(97deg,#eaf4ff 10%,var(--rc) 62%,var(--rc2) 96%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;}
-.lp-sub{max-width:40ch;color:#9dc0de;}
-
-/* Eyebrow reads as a live status line: pulsing lamp, mono, tracked out. */
-.lp-eyebrow{display:flex;align-items:center;gap:9px;
-  font:600 10px/1 var(--mono);letter-spacing:.2em;color:var(--rdim);text-transform:uppercase;}
-.lp-lamp{width:6px;height:6px;border-radius:50%;background:var(--rc2);flex-shrink:0;
-  box-shadow:0 0 0 0 color-mix(in srgb,var(--rc2) 60%,transparent);animation:lplamp 2.4s ease-out infinite;}
-@keyframes lplamp{
-  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--rc2) 55%,transparent);opacity:1;}
-  70%{box-shadow:0 0 0 7px transparent;opacity:.55;}
-  100%{box-shadow:0 0 0 0 transparent;opacity:1;}}
-
-/* Hero readout. Four cells on a hairline rule, tabular so the digits
-   stay in their columns as progress changes. */
-.lp-heroStats{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:0;
-  border-top:1px solid color-mix(in srgb,var(--rc) 17%,transparent);
-  background:linear-gradient(180deg,transparent,rgba(3,8,17,.55));}
-.lp-hs{flex:1 1 0;min-width:88px;padding:13px 18px;
-  border-left:1px solid color-mix(in srgb,var(--rc) 11%,transparent);}
-.lp-hs:first-child{border-left:0;padding-left:34px;}
-.lp-hsv{font:600 19px/1 var(--mono);color:var(--rbright);font-variant-numeric:tabular-nums;
-  text-shadow:0 0 18px color-mix(in srgb,var(--rc) 40%,transparent);}
-.lp-hsv small{font-size:11px;color:var(--rdim);font-weight:500;margin-left:2px;}
-.lp-hsk{font:600 8.5px/1 var(--mono);letter-spacing:.16em;color:var(--rdim);
-  text-transform:uppercase;margin-top:7px;}
-@media(max-width:620px){
-  .lp-hero-lg{min-height:0;display:block;}
-  .lp-heroIn{max-width:100%;padding:24px 20px 20px;}
-  .lp-name{font-size:31px;}
-  /* Stacked scrim, kept light enough at the top that the limb still shows
-     through behind the headline. */
-  .lp-heroScrim{background:linear-gradient(180deg,rgba(3,8,17,.5),rgba(3,8,17,.88) 62%);}
-  .lp-heroArt{opacity:.9;}
-  .lp-hs{flex:1 1 44%;min-width:0;padding:11px 14px;}
-  .lp-hs:first-child{padding-left:20px;}
-  /* Two per row: cell 3 starts a new row, so it takes the row rule and
-     drops the column rule. */
-  .lp-hs:nth-child(3){border-left:0;padding-left:20px;}
-  .lp-hs:nth-child(n+3){border-top:1px solid color-mix(in srgb,var(--rc) 11%,transparent);}
-  .lp-hsv{font-size:16px;}
-}
-
-/* Layer card. A ghost numeral anchors the eye to the ladder position —
-   the comp does the same thing with its section numbers. */
-/* The bracket pseudo-element takes ::before, which the layer card was
-   using for its lit top edge; an inset shadow gives the edge back. */
-.lp-lay{overflow:hidden;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--rc) 15%,transparent);}
-/* A ghost numeral was tried here and cut: wherever it landed it sat under
-   live text and read as a rendering fault rather than as depth. The rail,
-   the chip and the brackets already carry the ladder position. */
-/* A status rail on the leading edge, so the three states read at a glance
-   down the column even before the chips are legible. */
-.lp-lay::after{content:'';position:absolute;left:0;top:14px;bottom:14px;width:2px;border-radius:2px;
-  background:#173050;transition:background var(--t-state) var(--e-out);}
-.lp-lay.st-ac::after{background:linear-gradient(180deg,var(--rc2),var(--rc));
-  box-shadow:0 0 14px color-mix(in srgb,var(--rc) 65%,transparent);}
-.lp-lay.st-cl::after{background:#7dd3fc;box-shadow:0 0 14px rgba(125,211,252,.55);}
-.lp-layTop,.lp-layf{position:relative;z-index:1;}
-.lp-layc{display:flex;align-items:center;gap:9px;margin-top:2px;}
-.lp-chip{font:600 8.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
-  padding:5px 8px;border-radius:4px;border:1px solid;}
-.lp-chip.lk{color:#456787;border-color:#173050;background:rgba(23,48,80,.3);}
-.lp-chip.ac{color:var(--rc2);border-color:color-mix(in srgb,var(--rc2) 40%,transparent);
-  background:color-mix(in srgb,var(--rc2) 11%,transparent);}
-.lp-chip.cl{color:#7dd3fc;border-color:rgba(125,211,252,.35);background:rgba(125,211,252,.09);}
-.lp-hrs{font:600 9px/1 var(--mono);letter-spacing:.12em;color:var(--rdim);text-transform:uppercase;}
-
-/* Diagram plate. The comp frames every figure the same way: a hairline
-   box, a tracked-out caption bar along the top, and a sweep that crosses
-   it slowly so the plate reads as live instrumentation rather than as a
-   static image. */
-.lp-artWrap{position:relative;padding:0;align-items:stretch;flex-direction:column;
-  background:linear-gradient(158deg,#0b1930,#050b16 72%);}
-.lp-artCap{display:flex;align-items:center;gap:7px;padding:8px 10px;
-  border-bottom:1px solid color-mix(in srgb,var(--rc) 14%,transparent);
-  font:600 8px/1 var(--mono);letter-spacing:.15em;color:var(--rdim);text-transform:uppercase;}
-.lp-artCap b{color:var(--rc);font-weight:600;}
-.lp-artCap i{margin-left:auto;font-style:normal;color:#2d5070;letter-spacing:.1em;}
-.lp-artBox{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;
-  position:relative;overflow:hidden;}
-/* Scan sweep: one thin lit band, 7s, low contrast. Any faster or brighter
-   and it becomes the thing you look at instead of the diagram. */
-.lp-artBox::after{content:'';position:absolute;left:0;right:0;height:38%;pointer-events:none;
-  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--rc) 9%,transparent),transparent);
-  animation:lpscan 7s linear infinite;}
-@keyframes lpscan{0%{transform:translateY(-120%);}100%{transform:translateY(320%);}}
-@media (prefers-reduced-motion: reduce){.lp-artBox::after{animation:none;opacity:0;}}
-
-/* A locked layer showing a full-strength primary button promises an action
-   that is not there yet. Ghost it and say what it does. */
-.lp-go.ghost{background:none;border:1px solid #1b3557;color:#7fa3c4;font-weight:500;}
-.lp-go.ghost:hover{background:rgba(77,184,255,.07);border-color:#2a5484;color:var(--rbright);}
-
-/* The detail-view figure is the same kind of object as a layer scene, so
-   it gets the same plate: caption bar, hairline frame, slow scan. */
-.lp-viz{padding:0;overflow:hidden;background:linear-gradient(158deg,#0b1930,#050b16 72%);}
-.lp-vizBox{padding:16px 12px;position:relative;overflow:hidden;}
-.lp-vizBox::after{content:'';position:absolute;left:0;right:0;height:30%;pointer-events:none;
-  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--rc) 8%,transparent),transparent);
-  animation:lpscan 9s linear infinite;}
-@media (prefers-reduced-motion: reduce){.lp-vizBox::after{animation:none;opacity:0;}}
-
-/* Readiness rows get a mono layer code in place of the bare icon box, so
-   the column scans as L0…L8 rather than as eight similar glyphs. */
-.lp-bcode{font:600 9.5px/1 var(--mono);letter-spacing:.06em;color:var(--rc);
-  width:20px;flex-shrink:0;opacity:.75;}
-.lp-bpct{font-variant-numeric:tabular-nums;color:#a8cdf0;}
-.lp-rv{text-shadow:0 0 22px color-mix(in srgb,var(--rc) 55%,transparent);}
-
-/* ═══ THE LADDER — the modules view ══════════════════════════════
-   The old list was 31 identical rows with the information crammed into
-   one line. The comp's unit is a card with a leading tile, a title
-   block, chips, and a meta column on the right, so that is the unit
-   here too — at row density rather than card density, because there
-   are 31 of them and the point of this view is the order. */
-.lp-secH{display:flex;align-items:center;gap:12px;margin:26px 0 12px;}
-.lp-secH .n{font:600 10px/1 var(--mono);letter-spacing:.14em;color:var(--rc);
-  border:1px solid color-mix(in srgb,var(--rc) 34%,transparent);border-radius:4px;padding:5px 7px;}
-.lp-secH .t{font:600 11.5px/1 var(--mono);letter-spacing:.16em;color:#a8cdf0;text-transform:uppercase;}
-.lp-secH .r{flex:1;height:1px;background:linear-gradient(90deg,
-  color-mix(in srgb,var(--rc) 22%,transparent),transparent);}
-.lp-secH .h{font:600 9.5px/1 var(--mono);letter-spacing:.11em;color:var(--rdim);}
-
-.lp-mod{position:relative;display:flex;align-items:stretch;gap:14px;width:100%;text-align:left;
-  padding:14px 16px 14px 18px;margin-bottom:9px;border:1px solid var(--rline);border-radius:12px;
-  background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 50%),var(--rsurf);
-  cursor:pointer;overflow:hidden;
-  transition:border-color var(--t-state) var(--e-out),transform var(--t-state) var(--e-out);}
-.lp-mod::after{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:2px;
-  background:#173050;}
-.lp-mod:not(.lock):not(.done)::after{background:linear-gradient(180deg,var(--rc2),var(--rc));
-  box-shadow:0 0 12px color-mix(in srgb,var(--rc) 60%,transparent);}
-.lp-mod.done::after{background:#7dd3fc;box-shadow:0 0 12px rgba(125,211,252,.5);}
-@media(hover:hover){.lp-mod:not(:disabled):hover{border-color:color-mix(in srgb,var(--rc) 42%,transparent);
-  transform:translateY(-1px);}}
-.lp-mod.lock{opacity:.5;cursor:default;}
-.lp-mod:disabled{pointer-events:none;}
-
-/* The leading tile carries the state, so the row never needs a word for it. */
-.lp-modI{width:38px;height:38px;flex-shrink:0;border-radius:10px;display:flex;align-items:center;
-  justify-content:center;border:1px solid #17304f;background:rgba(77,184,255,.07);
-  font:600 10.5px/1 var(--mono);letter-spacing:.02em;color:var(--rc);}
-.lp-mod.done .lp-modI{border-color:rgba(125,211,252,.4);background:rgba(125,211,252,.1);color:#7dd3fc;}
-.lp-mod.lock .lp-modI{color:#456787;border-color:#14283f;background:none;}
-.lp-modB{flex:1;min-width:0;}
-.lp-modT{font:600 14.5px/1.3 var(--sans);color:var(--rbright);}
-.lp-mod.lock .lp-modT{color:#7fa3c4;}
-.lp-modM{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px;}
-.lp-tag{font:600 8.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:4px 6px;
-  border-radius:4px;border:1px solid color-mix(in srgb,var(--rc) 30%,transparent);
-  color:var(--rc);background:color-mix(in srgb,var(--rc) 9%,transparent);}
-.lp-tag.open{color:var(--rc2);border-color:color-mix(in srgb,var(--rc2) 45%,transparent);
-  background:color-mix(in srgb,var(--rc2) 12%,transparent);}
-.lp-dep{font:400 10.5px/1 var(--mono);color:var(--rdim);letter-spacing:.02em;}
-/* Right meta column: hours, kind, and the three-step track, stacked so the
-   numbers line up down the whole list. */
-.lp-modR{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;}
-.lp-modHr{font:600 13px/1 var(--mono);color:#a8cdf0;font-variant-numeric:tabular-nums;}
-.lp-kind{font:600 8px/1 var(--mono);letter-spacing:.12em;padding:3px 5px;border-radius:3px;
-  border:1px solid #1b3557;color:var(--rdim);}
-.lp-kind.ev{color:var(--rc2);border-color:color-mix(in srgb,var(--rc2) 38%,transparent);}
-/* Three empty segments on a locked row say nothing and read as noise;
-   the row is already dimmed and its tile already says locked. */
-.lp-steps{display:flex;gap:3px;}
-.lp-mod.lock .lp-steps{visibility:hidden;}
-.lp-step{width:16px;height:3px;border-radius:2px;background:#1a3557;}
-.lp-step.on{background:var(--rc);box-shadow:0 0 8px color-mix(in srgb,var(--rc) 70%,transparent);}
-@media(max-width:560px){
-  .lp-mod{padding:13px 13px 13px 15px;gap:11px;}
-  .lp-modI{width:32px;height:32px;font-size:9.5px;}
-  .lp-modT{font-size:13.5px;}
-  .lp-modR{gap:6px;}
-}
-
-/* ═══ THE LESSON ═════════════════════════════════════════════════
-   A module is not one long page of prose. It is five numbered moves,
-   in the order you make them, each on its own plate with a leading
-   tile — the comp's card, applied to content instead of to a nav. */
-/* Scaled up and pushed off the right edge so the scene's own labels crop
-   away and only its geometry shows. At full size they read as stray page
-   text sitting next to the headline. */
-.lx-heroArt{position:absolute;right:-16%;top:50%;width:52%;max-width:420px;
-  transform:translateY(-50%) scale(1.4);transform-origin:50% 50%;
-  opacity:.16;pointer-events:none;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);
-  mask-image:linear-gradient(90deg,transparent,#000 55%);}
-.lx-heroIn{position:relative;z-index:1;}
-@media(max-width:820px){.lx-heroArt{display:none;}}
-.lx-hero{position:relative;overflow:hidden;border:1px solid var(--rline);border-radius:16px;
-  padding:26px 28px;margin-bottom:18px;
-  background:radial-gradient(120% 150% at 88% 0%,color-mix(in srgb,var(--rc) 13%,transparent),
-    transparent 62%),linear-gradient(180deg,rgba(255,255,255,.022),transparent 46%),var(--rsurf);}
-.lx-eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;}
-.lx-id{font:600 11px/1 var(--mono);letter-spacing:.1em;color:#041220;background:var(--rc);
-  padding:5px 8px;border-radius:4px;}
-.lx-mt{font:600 9.5px/1 var(--mono);letter-spacing:.14em;color:var(--rdim);text-transform:uppercase;}
-.lx-title{font:300 32px/1.12 var(--sans);color:var(--rbright);letter-spacing:-.025em;margin-bottom:10px;}
-.lx-sub{font:400 13.5px/1.6 var(--sans);color:#8fb4d6;max-width:62ch;}
-/* The three steps read as a track, not as three separate widgets. */
-.lx-track{display:flex;align-items:center;gap:0;margin-top:20px;flex-wrap:wrap;}
-.lx-tk{display:flex;align-items:center;gap:8px;padding:0 16px 0 0;}
-.lx-tk .d{width:13px;height:13px;border-radius:50%;border:1.5px solid #1e3a5f;flex-shrink:0;}
-.lx-tk.on .d{background:var(--rc);border-color:var(--rc);
-  box-shadow:0 0 12px color-mix(in srgb,var(--rc) 70%,transparent);}
-.lx-tk span{font:600 9.5px/1 var(--mono);letter-spacing:.13em;color:var(--rdim);text-transform:uppercase;}
-.lx-tk.on span{color:#a8cdf0;}
-.lx-tkr{width:26px;height:1px;background:#173050;margin-right:16px;}
-@media(max-width:620px){
-  .lx-hero{padding:22px 20px;}
-  .lx-title{font-size:25px;}
-  .lx-tkr{display:none;}
-  .lx-tk{padding:0 14px 8px 0;}
-}
-
-.lx-sec{position:relative;border:1px solid var(--rline);border-radius:15px;padding:20px;
-  margin-bottom:14px;overflow:hidden;
-  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent 46%),var(--rsurf);}
-.lx-secH{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;}
-.lx-secI{width:42px;height:42px;flex-shrink:0;border-radius:11px;display:flex;align-items:center;
-  justify-content:center;border:1px solid #17304f;background:rgba(77,184,255,.08);color:var(--rc);}
-.lx-secI .lp-svg{width:20px;height:20px;}
-.lx-secN{font:600 9px/1 var(--mono);letter-spacing:.18em;color:var(--rdim);margin-bottom:6px;}
-.lx-secT{font:600 16px/1.25 var(--sans);color:var(--rbright);letter-spacing:-.01em;}
-.lx-secD{font:400 12.5px/1.55 var(--sans);color:var(--rdim);margin-top:5px;}
-
-/* Content primitives. A bullet is a ring, a step is a number in a ring,
-   a pitfall is a cross — the shape says what kind of line it is. */
-.lx-li{display:flex;gap:11px;align-items:flex-start;padding:9px 0;
-  border-top:1px solid color-mix(in srgb,var(--rc) 8%,transparent);}
-.lx-li:first-child{border-top:0;padding-top:0;}
-.lx-li b{flex-shrink:0;width:16px;height:16px;margin-top:2px;border-radius:50%;
-  border:1.5px solid #1e3a5f;display:block;}
-.lx-li p{font:400 13px/1.6 var(--sans);color:#a8cdf0;margin:0;}
-.lx-li.num b{border-color:color-mix(in srgb,var(--rc) 40%,transparent);color:var(--rc);
-  font:600 8.5px/13px var(--mono);text-align:center;}
-.lx-li.bad b{border:0;color:#ff6b5e;font:600 13px/1 var(--sans);width:12px;text-align:center;}
-.lx-li.bad p{color:#93b4d2;}
-.lx-body{font:400 13.5px/1.68 var(--sans);color:#a8cdf0;}
-
-/* The gate is a specification, so it is set as one: fixed-width keys in
-   mono, values in prose, one rule per row. */
-.lx-gate{border:1px solid color-mix(in srgb,var(--rc) 22%,transparent);border-radius:11px;overflow:hidden;}
-.lx-gr{display:flex;gap:16px;padding:13px 15px;
-  border-top:1px solid color-mix(in srgb,var(--rc) 13%,transparent);}
-.lx-gr:first-child{border-top:0;}
-.lx-gk{flex:0 0 86px;font:600 9px/1.5 var(--mono);letter-spacing:.13em;color:var(--rc);text-transform:uppercase;}
-.lx-gr.fail .lx-gk{color:#ff6b5e;}
-.lx-gv{flex:1;min-width:0;font:400 12.8px/1.6 var(--sans);color:#bcd8f2;}
-@media(max-width:620px){.lx-gr{flex-direction:column;gap:6px;}.lx-gk{flex:none;}}
-
-/* Rail cards. The comp's right column is three shapes — a checklist, a
-   key/value block, and a list of links with chevrons. */
-.lx-rk{display:flex;align-items:center;gap:10px;padding:11px 0;
-  border-top:1px solid color-mix(in srgb,var(--rc) 9%,transparent);}
-.lx-rk:first-of-type{border-top:0;}
-.lx-rk .k{font:400 12px/1 var(--sans);color:var(--rdim);}
-.lx-rk .v{margin-left:auto;font:600 12px/1 var(--mono);color:#cfe6ff;
-  font-variant-numeric:tabular-nums;text-align:right;}
-.lx-link{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 0;
-  background:none;border:0;border-top:1px solid color-mix(in srgb,var(--rc) 9%,transparent);
-  cursor:pointer;color:inherit;transition:padding-left var(--t-state) var(--e-out);}
-.lx-link:first-of-type{border-top:0;}
-@media(hover:hover){.lx-link:hover{padding-left:5px;}.lx-link:hover .lx-lt{color:var(--rbright);}}
-.lx-li2{min-width:0;flex:1;}
-.lx-lt{display:block;font:500 12.8px/1.3 var(--sans);color:#c8dff5;transition:color var(--t-state);}
-.lx-ls{display:block;font:400 10.5px/1 var(--mono);color:var(--rdim);margin-top:5px;}
-.lx-link .lp-arrow{margin-left:auto;color:var(--rdim);flex-shrink:0;}
-
-@media (prefers-reduced-motion: reduce){
-  .lp-lamp{animation:none;}
-  #launchpadApp .lp-main::before{opacity:.6;}
-}
-
-/* ═══ THE COMP, MEASURED ═════════════════════════════════════════
-   An honest look at the reference kills most of what was added in the
-   name of looking like it. There is no survey grid in it, no corner
-   brackets, no scan sweep, no drifting nebula, no glass, no glow, and
-   no monospace anywhere — not one character. What it actually has is:
-   one photographic hero bleeding off the top-right with nothing on top
-   of it but text; flat near-black cards separated by a single hairline;
-   a strict type ladder in one sans; and a card anatomy repeated without
-   variation. The futurism is in the restraint and the photography.
-   Everything below either removes something or nails a measurement. */
-
-/* Palette, read off the reference. The page is nearly black with a blue
-   cast; the card is one step up from it, not a pane of glass. */
-#launchpadApp{--rbg:#05070c;--rrail:#000206;--rsurf:#0a0e15;--rline:#171e29;
-  --rc:#4db8ff;--rc2:#2f7ae0;--rbright:#ffffff;--rtext:#c3ccd8;--rdim:#6b7686;}
-
-/* ── Removals ────────────────────────────────────────────────── */
-#launchpadApp::before, #launchpadApp::after{display:none;}
-#launchpadApp .lp-main::before{display:none;}
-#launchpadApp .lp-trace::after{display:none;}
-#launchpadApp .lp-artBox::after, #launchpadApp .lp-vizBox::after{display:none;}
-#launchpadApp .lp-hud::after{display:none;}
-#launchpadApp .lp-card, #launchpadApp .lp-lay, #launchpadApp .lp-quote, #launchpadApp .lp-artWrap{
-  background:var(--rsurf);backdrop-filter:none;-webkit-backdrop-filter:none;
-  border:1px solid var(--rline);box-shadow:none;}
-#launchpadApp .lp-card::before, #launchpadApp .lp-lay::before{display:none;}
-#launchpadApp .lp-lay::after{display:none;}
-#launchpadApp .lp-lay{box-shadow:none;}
-@media(hover:hover){
-  #launchpadApp .mo-lift:hover{box-shadow:none;border-color:#25324a;}
-}
-#launchpadApp .lp-rv, #launchpadApp .lp-hsv{text-shadow:none;}
-#launchpadApp .lp-btr span, #launchpadApp .lp-heroBar span, #launchpadApp .lp-step.on{box-shadow:none;}
-#launchpadApp .lp-lamp{display:none;}
-
-/* ── Type. One sans. Labels are tracked caps, not monospace. ──── */
-#launchpadApp{font-family:var(--sans);}
-#launchpadApp .lp-ct,
-#launchpadApp .lp-cmeta,
-#launchpadApp .lp-crumb,
-#launchpadApp .lp-wordmark,
-#launchpadApp .lp-side-foot,
-#launchpadApp .lp-hsk,
-#launchpadApp .lp-artCap,
-#launchpadApp .lp-secH .n,
-#launchpadApp .lp-secH .t,
-#launchpadApp .lp-secH .h,
-#launchpadApp .lp-tag,
-#launchpadApp .lp-kind,
-#launchpadApp .lp-dep,
-#launchpadApp .lp-chip,
-#launchpadApp .lp-hrs,
-#launchpadApp .lx-mt,
-#launchpadApp .lx-id,
-#launchpadApp .lx-secN,
-#launchpadApp .lx-gk,
-#launchpadApp .lx-ls,
-#launchpadApp .lp-pctlab,
-#launchpadApp .lp-ts,
-#launchpadApp .lp-lks,
-#launchpadApp .lp-bpct,
-#launchpadApp .lp-modHr,
-#launchpadApp .lp-rv,
-#launchpadApp .lp-rk,
-#launchpadApp .lp-rk .v,
-#launchpadApp .lp-gt,
-#launchpadApp .lx-tk span,
-#launchpadApp .lp-back,
-#launchpadApp .lp-lkt,
-#launchpadApp .lp-tt,
-#launchpadApp .lp-blab,
-#launchpadApp .lp-layt,
-#launchpadApp .lx-secT,
-#launchpadApp .lx-title,
-#launchpadApp .lx-gv,
-#launchpadApp .lx-lt,
-#launchpadApp .lp-modT,
-#launchpadApp .lp-qt{font-family:var(--sans)!important;}
-/* A rail card's header is an icon and a label on one line. */
-#launchpadApp .lp-ct{display:flex;align-items:center;gap:9px;font-weight:600;font-size:12px;
-  letter-spacing:.085em;color:#e8eef6;}
-#launchpadApp .lp-ct .lp-svg{width:15px;height:15px;color:#5a9fe0;flex-shrink:0;}
-#launchpadApp .lp-cmeta{font-weight:500;font-size:10px;letter-spacing:.085em;color:var(--rdim);}
-
-/* ── Shell ───────────────────────────────────────────────────── */
-#launchpadApp .lp-side{width:188px;background:var(--rrail);border-right:1px solid #0d1219;padding:0;}
-#launchpadApp .lp-wordmark{font:700 16px/1 var(--sans);letter-spacing:.26em;color:#fff;padding:26px 22px 24px;}
-#launchpadApp .lp-navbtn{gap:14px;padding:14px 22px;font:400 14.5px/1 var(--sans);color:#79839180;
-  color:#7b8593;border-left:0;background:none;}
-#launchpadApp .lp-navbtn .lp-navi{color:#79838f;}
-#launchpadApp .lp-navbtn:hover{background:rgba(255,255,255,.028);color:#c3ccd8;}
-#launchpadApp .lp-navbtn.on{color:#fff;background:rgba(77,184,255,.08);}
-#launchpadApp .lp-navbtn.on .lp-navi{color:var(--rc);}
-#launchpadApp .lp-navbtn::after{width:3px;background:var(--rc);}
-#launchpadApp .lp-navbtn.on::after{height:100%;top:0;transform:none;}
-#launchpadApp .lp-side-foot{font:600 9.5px/2.1 var(--sans);letter-spacing:.28em;color:#39424f;padding:22px;}
-#launchpadApp .lp-topbar{padding:16px 32px;border-bottom:0;background:none;}
-#launchpadApp .lp-crumb{font:600 10.5px/1 var(--sans);letter-spacing:.16em;color:#59636f;}
-#launchpadApp .lp-crumb b{color:#fff;font-weight:600;}
-#launchpadApp .lp-back{font:600 10px/1 var(--sans);letter-spacing:.14em;padding:9px 13px;border-radius:7px;
-  border-color:rgba(255,255,255,.12);background:rgba(5,7,12,.5);color:#93a0b0;}
-#launchpadApp .lp-body{padding:0 32px 40px;max-width:1160px;}
-@media(max-width:820px){#launchpadApp .lp-body{padding:0 16px 32px;}#launchpadApp .lp-topbar{padding:12px 16px;}}
-
-/* ── Hero. Full bleed off the top and right, no frame, nothing on it
-      but the four text elements the reference has. ─────────────── */
-#launchpadApp .lp-topbar{position:relative;z-index:3;}
-#launchpadApp .lp-main{position:relative;}
-#launchpadApp .lp-hero-lg{border:0;border-radius:0;margin:-53px -32px 26px;padding:0;min-height:300px;
-  background:none;overflow:hidden;position:relative;display:block;}
-#launchpadApp .lp-heroArt{position:absolute;inset:0;width:100%;height:100%;opacity:1;
-  object-fit:cover;}
+/* Hero: full bleed under the breadcrumb, copy inset 43px, band ends y=242.
+   One uniform light weight — the stems in the reference measure the same
+   across both words, so the bold half was invented. */
+#launchpadApp .lp-hero-lg{position:relative;display:block;overflow:hidden;border:0;border-radius:0;
+  margin:-52px -17px 0 -14px;padding:0;min-height:0;background:none;}
+#launchpadApp .lp-heroArt{position:absolute;inset:0;width:100%;height:100%;}
 #launchpadApp .lp-heroScrim{position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:linear-gradient(100deg,#05070c 0%,rgba(5,7,12,.93) 26%,rgba(5,7,12,.5) 52%,
-    rgba(5,7,12,.08) 72%,transparent 86%),
-    linear-gradient(0deg,#05070c 0%,rgba(5,7,12,.3) 22%,transparent 46%);}
-#launchpadApp .lp-heroIn{position:relative;z-index:2;padding:100px 32px 44px;max-width:56%;display:block;}
-#launchpadApp .lp-eyebrow{font:400 15px/1 var(--sans);letter-spacing:0;color:#93a0b0;text-transform:none;
-  display:block;margin-bottom:10px;}
-#launchpadApp .lp-name{font:300 44px/1.1 var(--sans);color:#fff;letter-spacing:-.02em;margin:0 0 12px;}
-#launchpadApp .lp-name b{font-weight:600;color:#fff;background:none;-webkit-background-clip:initial;
-  background-clip:initial;}
-#launchpadApp .lp-sub{font:400 14px/1.5 var(--sans);color:#8b96a5;max-width:44ch;}
-/* One thin rule under the copy, exactly as the reference has it: a
-   progress line, not a labelled widget. */
-#launchpadApp .lp-heroBar{height:2px;width:142px;border-radius:2px;background:rgba(255,255,255,.14);
-  margin-top:22px;overflow:hidden;}
-#launchpadApp .lp-heroBar span{display:block;height:100%;background:#4a90e2;border-radius:2px;}
+  background:linear-gradient(100deg,#00030a 0%,rgba(0,3,10,.92) 26%,rgba(0,3,10,.48) 52%,
+    rgba(0,3,10,.07) 72%,transparent 86%),
+    linear-gradient(0deg,#00030a 0%,rgba(0,3,10,.28) 22%,transparent 46%);}
+#launchpadApp .lp-heroIn{position:relative;z-index:2;display:block;padding:92px 43px 24px;max-width:58%;}
+#launchpadApp .lp-eyebrow{display:block;font:300 19px/1 var(--sans);color:#f3f6fa;margin-bottom:12px;}
+#launchpadApp .lp-name{font:300 40px/1.1 var(--sans);color:#fff;letter-spacing:-.015em;margin:0 0 16px;}
+#launchpadApp .lp-name b{font-weight:300;}
+#launchpadApp .lp-sub{font:400 14px/1.5 var(--sans);color:#c2d0eb;max-width:46ch;}
+#launchpadApp .lp-heroBar{width:141px;height:4px;border-radius:2px;background:#05101f;
+  margin-top:19px;overflow:hidden;}
+#launchpadApp .lp-heroBar span{display:block;height:100%;border-radius:2px;background:#4889fa;}
 #launchpadApp .lp-heroStats{display:none;}
-@media(max-width:820px){
-  #launchpadApp .lp-hero-lg{margin:-48px -16px 20px;min-height:0;}
-  #launchpadApp .lp-heroIn{padding:74px 16px 28px;max-width:100%;}
-  #launchpadApp .lp-name{font-size:31px;}
-  #launchpadApp .lp-heroScrim{background:linear-gradient(180deg,rgba(5,7,12,.45),#05070c 78%);}
-}
 
-/* ── Grid ────────────────────────────────────────────────────── */
-#launchpadApp .lp-cols{grid-template-columns:minmax(0,1fr) 269px;gap:16px;}
-@media(max-width:1000px){#launchpadApp .lp-cols{grid-template-columns:1fr;}}
-#launchpadApp .lp-card{border-radius:10px;padding:20px;margin-bottom:16px;}
-#launchpadApp .lp-ch{margin-bottom:18px;}
+/* Card chrome: 16px padding, a brighter top hairline, 9px radius. */
+#launchpadApp .lp-card,#launchpadApp .lp-lay{
+  background:linear-gradient(180deg,#02101f,#000913 70%);border-color:#0c213a;
+  box-shadow:inset 0 1px 0 rgba(56,86,123,.5);}
+#launchpadApp .lp-rc .lp-ch{padding-bottom:13px;margin-bottom:2px;border-bottom:1px solid #0d2340;}
+#launchpadApp .lp-mc .lp-cmeta{color:#8ab4dd;}
 
-/* ── Mission progress. Row = tile, label over bar, percent. The ring
-      sits beside the whole block, once, at the right. ──────────── */
-#launchpadApp .lp-ready{gap:26px;align-items:flex-start;}
-#launchpadApp .lp-brow{gap:14px;margin-bottom:15px;align-items:center;}
-#launchpadApp .lp-brow:last-child{margin-bottom:0;}
+/* Mission progress: 44px circular tiles, 55px pitch, 7px bars, 73px ring. */
+#launchpadApp .lp-ready{display:flex;align-items:flex-start;gap:22px;}
+#launchpadApp .lp-bars{flex:1;min-width:0;}
+#launchpadApp .lp-brow{display:flex;align-items:center;gap:17px;height:55px;}
+#launchpadApp .lp-bico{width:44px;height:44px;flex-shrink:0;border-radius:50%;border:1px solid #27394d;
+  background:none;color:#e6edf5;display:flex;align-items:center;justify-content:center;}
+#launchpadApp .lp-bico .lp-svg{width:23px;height:23px;}
 #launchpadApp .lp-bcode{display:none;}
-#launchpadApp .lp-bico{width:40px;height:40px;border-radius:10px;border:1px solid #1d2733;
-  background:rgba(255,255,255,.02);color:#5a9fe0;}
-#launchpadApp .lp-bico .lp-svg{width:17px;height:17px;}
-#launchpadApp .lp-blab{font:400 13px/1 var(--sans);color:#dfe7f0;margin-bottom:9px;}
-#launchpadApp .lp-btr{height:4px;border-radius:2px;background:#1c2634;}
-#launchpadApp .lp-btr span{background:#3d86dd;border-radius:2px;}
-#launchpadApp .lp-bpct{font:400 12px/1 var(--sans);color:#8b96a5;width:34px;font-variant-numeric:tabular-nums;}
-#launchpadApp .lp-ring{width:66px;height:66px;margin-top:4px;}
-#launchpadApp .lp-ring .rbg{stroke:#141c27;stroke-width:5;}
-#launchpadApp .lp-ring .rfg{stroke:#3d86dd;stroke-width:5;}
-#launchpadApp .lp-rv{font:500 15px/1 var(--sans);color:#fff;}
+#launchpadApp .lp-bwrap{flex:1;min-width:0;}
+#launchpadApp .lp-blab{font:500 12.5px/1 var(--sans);color:#f4f7f6;margin-bottom:8px;}
+#launchpadApp .lp-btr{height:7px;border-radius:4px;background:#0c1e34;overflow:hidden;}
+#launchpadApp .lp-btr span{display:block;height:100%;border-radius:4px;background:#4889fa;}
+#launchpadApp .lp-bpct{flex-shrink:0;width:34px;text-align:right;font:400 13px/1 var(--sans);
+  color:#9fb0c4;font-variant-numeric:tabular-nums;}
+#launchpadApp .lp-ring{position:relative;width:73px;height:73px;flex-shrink:0;margin-top:6px;}
+#launchpadApp .lp-ring svg{width:73px;height:73px;transform:rotate(-90deg);}
+#launchpadApp .lp-ring .rbg{fill:none;stroke:#0c294d;stroke-width:6;}
+#launchpadApp .lp-ring .rfg{fill:none;stroke:#5f94f2;stroke-width:6;stroke-linecap:round;
+  transition:stroke-dashoffset .6s;}
+#launchpadApp .lp-rtx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+#launchpadApp .lp-rv{font:500 20px/1 var(--sans);color:#fff;}
 #launchpadApp .lp-rk{display:none;}
-@media(max-width:1000px){#launchpadApp .lp-ready{flex-direction:column-reverse;align-items:center;gap:18px;}#launchpadApp .lp-bars{width:100%;}}
 
-/* ── The subject card. The reference repeats one anatomy and never
-      varies it: a tile in a left gutter, the copy column beside it,
-      a fixed media plate top-right, and a footer with the action at
-      the far left and the percentage above a short bar at the far
-      right. Every measurement here is off that card. ───────────── */
-#launchpadApp .lp-lay{border-radius:10px;padding:22px;margin-bottom:16px;}
-#launchpadApp .lp-layTop{gap:20px;align-items:flex-start;}
-#launchpadApp .lp-layh{gap:16px;align-items:flex-start;}
-#launchpadApp .lp-layi{width:46px;height:46px;border-radius:12px;border:1px solid #1d2733;
-  background:rgba(255,255,255,.02);color:#5a9fe0;}
-#launchpadApp .lp-layi .lp-svg{width:21px;height:21px;}
-#launchpadApp .lp-layt{font:600 19px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
-#launchpadApp .lp-layd{font:400 12.5px/1.6 var(--sans);color:#8b96a5;margin-top:8px;max-width:46ch;}
-/* The status chip and hour count crowded the title in the reference's
-   place; they belong with the rest of the meta, in the footer. */
+/* Subject card: 52px tile in a left gutter, copy column, a 148px plate top
+   right, and a footer with the action left and the percentage right. */
+#launchpadApp .lp-lay{padding:16px;}
+#launchpadApp .lp-layTop{display:flex;gap:18px;align-items:flex-start;}
+#launchpadApp .lp-layMain{flex:1;min-width:0;display:flex;flex-direction:column;}
+#launchpadApp .lp-layh{display:flex;gap:18px;align-items:flex-start;}
+#launchpadApp .lp-layi{width:52px;height:52px;flex-shrink:0;border-radius:14px;border:1px solid #1b304a;
+  background:rgba(120,170,230,.04);color:#e6edf5;display:flex;align-items:center;justify-content:center;}
+#launchpadApp .lp-layi .lp-svg{width:28px;height:28px;}
+#launchpadApp .lp-layt{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
+#launchpadApp .lp-layd{font:400 12px/1.3 var(--sans);color:#a8b8cc;margin-top:8px;max-width:46ch;}
 #launchpadApp .lp-layc{display:none;}
-#launchpadApp .lp-mods{display:block;margin:16px 0 0;padding-left:62px;}
-#launchpadApp .lp-mrow{gap:11px;font:400 12.5px/1.45 var(--sans);color:#93a0b0;padding:4px 0;}
-#launchpadApp .lp-dot{width:13px;height:13px;border:1.5px solid #27333f;}
+#launchpadApp .lp-mods{display:block;margin:14px 0 0;padding-left:70px;}
+#launchpadApp .lp-mrow{display:flex;align-items:flex-start;gap:7px;min-height:16.5px;
+  font:400 11px/1.5 var(--sans);color:#c5d2e0;}
+#launchpadApp .lp-dot{width:12px;height:12px;margin-top:2px;border-radius:50%;border:1.3px solid #3a5a7a;
+  flex-shrink:0;}
+#launchpadApp .lp-mrow.lock{color:#8593a4;}
+#launchpadApp .lp-mrow.lock .lp-dot{border-color:#27394c;}
+#launchpadApp .lp-mrow.done{color:#e6edf5;}
 #launchpadApp .lp-mrow.done .lp-dot{background:var(--rc);border-color:var(--rc);}
-#launchpadApp .lp-mrow.done{color:#cfe0f0;}
-#launchpadApp .lp-mrow.lock{opacity:1;color:#5d6875;}
-/* Fixed plate, top-aligned with the tile — not stretched to the card. */
-#launchpadApp .lp-artWrap{width:152px;flex:0 0 152px;height:148px;border-radius:8px;
-  border:1px solid #1a2330;background:#070c14;}
+#launchpadApp .lp-artWrap{width:148px;flex:0 0 148px;height:149px;border-radius:6px;overflow:hidden;
+  border:0;background:#04101d;display:flex;flex-direction:column;}
 #launchpadApp .lp-artCap{display:none;}
-#launchpadApp .lp-artBox{padding:12px;}
-#launchpadApp .lp-art{max-height:118px;}
-@media(max-width:760px){
-  #launchpadApp .lp-artWrap{width:100%;flex:0 0 auto;height:130px;}
-  #launchpadApp .lp-mods{padding-left:0;}
-}
-#launchpadApp .lp-layf{display:flex;align-items:flex-end;gap:16px;margin-top:22px;}
-#launchpadApp .lp-go{padding:0 20px;height:38px;border-radius:8px;font:600 13px/38px var(--sans);
-  background:linear-gradient(180deg,#3b82e8,#2a6dd0);color:#fff;border:0;}
-#launchpadApp .lp-go:hover{background:linear-gradient(180deg,#4a90f0,#3176d8);}
-#launchpadApp .lp-go.ghost{background:none;border:1px solid #232d3c;color:#8b96a5;line-height:36px;}
-#launchpadApp .lp-go.ghost:hover{background:rgba(255,255,255,.03);border-color:#2f3d50;color:#c3ccd8;}
-#launchpadApp .lp-pctlab{margin-left:auto;width:190px;max-width:52%;}
-#launchpadApp .lp-pctlab .k{display:block;font:600 9.5px/1 var(--sans);letter-spacing:.13em;
-  color:#6f7a89;text-transform:uppercase;margin-bottom:8px;}
-#launchpadApp .lp-pctlab .t{display:block;height:4px;border-radius:2px;background:#1c2634;overflow:hidden;}
-#launchpadApp .lp-pctlab .t i{display:block;height:100%;background:#3d86dd;border-radius:2px;}
-@media(max-width:560px){
-  #launchpadApp .lp-layf{flex-direction:column;align-items:stretch;gap:14px;}
-  #launchpadApp .lp-pctlab{margin-left:0;width:100%;max-width:100%;}
-}
+#launchpadApp .lp-artBox{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;}
+#launchpadApp .lp-art{width:100%;height:auto;display:block;max-height:130px;}
+#launchpadApp .lp-layf{display:flex;align-items:flex-end;gap:16px;margin-top:16px;}
+#launchpadApp .lp-go{height:26px;padding:0 15px;border-radius:8px;cursor:pointer;
+  font:500 12.5px/24px var(--sans);background:#021630;border:1px solid #3264aa;color:#86d1f4;
+  transition:background .15s,border-color .15s,color .15s;}
+#launchpadApp .lp-go:hover{background:#052243;border-color:#4a8ad0;color:#b9e3fb;}
+#launchpadApp .lp-go.ghost{background:none;border-color:#1d3350;color:#7f8ea0;}
+#launchpadApp .lp-go.ghost:hover{background:rgba(72,137,250,.07);border-color:#3264aa;color:#b4bfcb;}
+#launchpadApp .lp-pctlab{margin-left:auto;width:158px;max-width:52%;}
+#launchpadApp .lp-pctlab .k{display:block;font:600 9px/1 var(--sans);letter-spacing:.13em;
+  color:#8fb3d2;text-transform:uppercase;margin-bottom:8px;}
+#launchpadApp .lp-pctlab .t{display:block;height:5px;border-radius:3px;background:#081626;overflow:hidden;}
+#launchpadApp .lp-pctlab .t i{display:block;height:100%;border-radius:3px;background:#5992f7;}
 
-/* ── Rail. Three shapes, each used once and consistently. ─────── */
-#launchpadApp .lp-task{gap:12px;padding:13px 0;border-top:1px solid #141b25;}
-#launchpadApp .lp-task:first-of-type{border-top:0;padding-top:0;}
-#launchpadApp .lp-box{width:15px;height:15px;border:1.5px solid #27333f;}
-#launchpadApp .lp-tt{font:400 13px/1.35 var(--sans);color:#dfe7f0;}
-#launchpadApp .lp-ts{font:400 11px/1 var(--sans);color:#6f7a89;margin-top:5px;letter-spacing:0;}
-#launchpadApp .lp-link{gap:12px;padding:13px 0;border-top:1px solid #141b25;}
-#launchpadApp .lp-link:first-of-type{border-top:0;padding-top:0;}
-#launchpadApp .lp-lki{width:34px;height:34px;border-radius:9px;border:1px solid #1d2733;
-  background:rgba(255,255,255,.02);color:#5a9fe0;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;}
-#launchpadApp .lp-lkt{font:400 13px/1.3 var(--sans);color:#dfe7f0;}
-#launchpadApp .lp-lks{font:400 11px/1 var(--sans);color:#6f7a89;margin-top:5px;letter-spacing:0;}
-#launchpadApp .lp-arrow{color:#48525f;}
-/* A resource is one line and a small mark — no tile, no subtitle. */
-#launchpadApp .lp-res{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
-  background:none;border:0;padding:10px 0;cursor:pointer;color:#a9b5c3;
-  font:400 12.5px/1.3 var(--sans);transition:color var(--t-micro) linear;}
-#launchpadApp .lp-res .lp-svg{width:15px;height:15px;color:#4a5665;flex-shrink:0;}
-@media(hover:hover){#launchpadApp .lp-res:hover{color:#fff;}#launchpadApp .lp-res:hover .lp-svg{color:var(--rc);}}
-/* Full-width secondary action closing a rail card. */
-#launchpadApp .lp-wide{display:block;width:100%;margin-top:16px;padding:12px;border-radius:8px;
-  border:1px solid #232d3c;background:rgba(255,255,255,.022);color:#c3ccd8;
-  font:500 12.5px/1 var(--sans);cursor:pointer;text-align:center;
-  transition:background var(--t-micro) linear,border-color var(--t-micro) linear;}
-@media(hover:hover){#launchpadApp .lp-wide:hover{background:rgba(255,255,255,.05);border-color:#2f3d50;}}
+/* Rail: one row shape for a task, one for a link, one closing action. */
+#launchpadApp .lp-task{display:flex;gap:13px;align-items:flex-start;padding:10px 0;
+  border-top:1px solid #0d2340;cursor:pointer;}
+#launchpadApp .lp-task:first-of-type{border-top:0;}
+#launchpadApp .lp-box{width:16px;height:16px;border-radius:50%;border:1.6px solid #8494a8;
+  flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--rc);}
+#launchpadApp .lp-tt{font:400 12.5px/1.35 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-ts{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:8px;}
+#launchpadApp .lp-link{display:flex;gap:13px;align-items:center;width:100%;text-align:left;
+  background:none;border:0;border-top:1px solid #0d2340;padding:10px 0;cursor:pointer;color:inherit;}
+#launchpadApp .lp-link:first-of-type{border-top:0;}
+#launchpadApp .lp-lki{width:36px;height:36px;flex-shrink:0;border-radius:10px;border:1px solid #1b304a;
+  background:rgba(120,170,230,.04);color:#cfdbe8;display:flex;align-items:center;justify-content:center;}
+#launchpadApp .lp-lki .lp-svg{width:19px;height:19px;}
+#launchpadApp .lp-lkt{font:500 12px/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-lks{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lp-arrow{margin-left:auto;color:#4a5c6d;flex-shrink:0;}
+#launchpadApp .lp-arrow .lp-svg{width:14px;height:14px;}
+#launchpadApp .lp-wide{display:block;width:100%;height:36px;margin-top:14px;border-radius:7px;
+  background:linear-gradient(180deg,#0c2036,#14304f);border:1px solid #20395a;cursor:pointer;
+  font:500 12.5px/34px var(--sans);color:#fff;text-align:center;}
+#launchpadApp .lp-wide:hover{background:linear-gradient(180deg,#123052,#1b4472);border-color:#2d5182;}
+#launchpadApp .lx-rk{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #0d2340;}
+#launchpadApp .lx-rk:first-of-type{border-top:0;}
+#launchpadApp .lx-rk .k{font:400 12px/1 var(--sans);color:#a8b8cc;}
+#launchpadApp .lx-rk .v{margin-left:auto;font:500 12px/1 var(--sans);color:#fff;
+  font-variant-numeric:tabular-nums;text-align:right;}
 
-/* ── Secondary pages. The reference gives the home page one image and
-      then gets out of the way; a bordered, glowing panel at the top of
-      every other view was the old design asserting itself again. These
-      are a page title on the page, nothing more. ─────────────────── */
-#launchpadApp .lx-hero{border:0;border-radius:0;background:none;padding:34px 0 26px;margin:0 0 4px;}
-#launchpadApp .lx-hero.lx-lesson{padding-bottom:30px;border-bottom:1px solid var(--rline);margin-bottom:22px;}
-#launchpadApp .lx-heroArt{display:none;}
-#launchpadApp .lx-eyebrow{gap:10px;margin-bottom:14px;}
-#launchpadApp .lx-mt{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#6b7686;}
-#launchpadApp .lx-id{font:600 11px/1 var(--sans);letter-spacing:.08em;background:#2f7ae0;color:#fff;
-  padding:5px 9px;border-radius:5px;}
-#launchpadApp .lx-title{font:300 36px/1.12 var(--sans);color:#fff;letter-spacing:-.022em;margin-bottom:12px;}
-#launchpadApp .lx-sub{font:400 13.5px/1.6 var(--sans);color:#8b96a5;max-width:62ch;}
-#launchpadApp .lx-tk span{font:500 10.5px/1 var(--sans);letter-spacing:.11em;color:#6b7686;}
-#launchpadApp .lx-tk.on span{color:#dfe7f0;}
-#launchpadApp .lx-tk .d{width:12px;height:12px;border-color:#27333f;}
-#launchpadApp .lx-tkr{background:#1c2634;}
-
-/* ── Ladder. The reference has almost no chips in it; the ones kept here
-      carry information a row cannot state another way, set quietly. ── */
-#launchpadApp .lp-secH{margin:30px 0 12px;gap:11px;}
-#launchpadApp .lp-secH .n{border:0;padding:0;font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#4d5867;}
-#launchpadApp .lp-secH .t{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#c3ccd8;}
-#launchpadApp .lp-secH .r{background:var(--rline);}
-#launchpadApp .lp-secH .h{font:500 10.5px/1 var(--sans);letter-spacing:.06em;color:#4d5867;}
-#launchpadApp .lp-mod{border-radius:10px;padding:15px 18px 15px 19px;margin-bottom:10px;
-  background:var(--rsurf);}
-#launchpadApp .lp-mod::after{background:#1c2634;box-shadow:none;}
-#launchpadApp .lp-mod:not(.lock):not(.done)::after{background:#3d86dd;box-shadow:none;}
-#launchpadApp .lp-mod.done::after{background:var(--rc);box-shadow:none;}
-#launchpadApp .lp-mod.lock{opacity:.62;}
-#launchpadApp .lp-modI{width:38px;height:38px;border-radius:10px;border:1px solid #1d2733;
-  background:rgba(255,255,255,.02);color:#5a9fe0;font:500 11px/1 var(--sans);letter-spacing:.04em;}
-#launchpadApp .lp-mod.done .lp-modI{border-color:rgba(77,184,255,.4);background:rgba(77,184,255,.1);color:var(--rc);}
-#launchpadApp .lp-mod.lock .lp-modI{color:#4d5867;}
-#launchpadApp .lp-modT{font:500 14px/1.3 var(--sans);color:#e6edf5;}
-#launchpadApp .lp-mod.lock .lp-modT{color:#8b96a5;}
-#launchpadApp .lp-tag{font:500 10px/1 var(--sans);letter-spacing:.03em;text-transform:none;
-  border:0;padding:0;background:none;color:#5a7d9f;}
-#launchpadApp .lp-tag.open{color:var(--rc);background:none;border:0;}
-#launchpadApp .lp-tag::after{content:'\00B7';margin-left:7px;color:#2b3543;}
-#launchpadApp .lp-dep{font:400 10.5px/1 var(--sans);letter-spacing:0;color:#59636f;}
-#launchpadApp .lp-modHr{font:500 13px/1 var(--sans);color:#c3ccd8;}
-#launchpadApp .lp-kind{font:500 9.5px/1 var(--sans);letter-spacing:.1em;border:0;padding:0;color:#4d5867;}
-#launchpadApp .lp-kind.ev{color:#5a7d9f;}
-#launchpadApp .lp-step{background:#1c2634;}
-#launchpadApp .lp-step.on{background:#3d86dd;}
-
-/* ── Lesson sections. Same card, same tile, same hairline as everywhere
-      else — the reference never introduces a second card treatment. ── */
-#launchpadApp .lx-sec{border-radius:10px;padding:22px;margin-bottom:16px;background:var(--rsurf);
-  border:1px solid var(--rline);}
-#launchpadApp .lx-secH{gap:16px;margin-bottom:18px;}
-#launchpadApp .lx-secI{width:46px;height:46px;border-radius:12px;border:1px solid #1d2733;
-  background:rgba(255,255,255,.02);color:#5a9fe0;}
-#launchpadApp .lx-secN{font:600 10px/1 var(--sans);letter-spacing:.15em;color:#59636f;margin-bottom:7px;}
-#launchpadApp .lx-secT{font:600 18px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
-#launchpadApp .lx-secD{font:400 12.5px/1.6 var(--sans);color:#8b96a5;margin-top:7px;max-width:52ch;}
-#launchpadApp .lx-li{border-top:1px solid #141b25;padding:11px 0;}
-#launchpadApp .lx-li b{border-color:#27333f;width:15px;height:15px;}
-#launchpadApp .lx-li p{font:400 13px/1.6 var(--sans);color:#a9b5c3;}
-#launchpadApp .lx-li.num b{border-color:#2b4a6b;color:#5a9fe0;font:500 9px/13px var(--sans);}
-#launchpadApp .lx-li.bad b{color:#e0675c;}
-#launchpadApp .lx-body{font:400 13.5px/1.7 var(--sans);color:#a9b5c3;}
-#launchpadApp .lx-gate{border-color:#1d2733;border-radius:9px;}
-#launchpadApp .lx-gr{border-top-color:#141b25;padding:14px 16px;}
-#launchpadApp .lx-gk{font:600 9.5px/1.5 var(--sans);letter-spacing:.13em;color:#5a9fe0;}
-#launchpadApp .lx-gr.fail .lx-gk{color:#e0675c;}
-#launchpadApp .lx-gv{font:400 13px/1.62 var(--sans);color:#b6c4d3;}
-#launchpadApp .lx-rk{border-top-color:#141b25;padding:12px 0;}
-#launchpadApp .lx-rk .k{font:400 12.5px/1 var(--sans);color:#8b96a5;}
-#launchpadApp .lx-rk .v{font:500 12.5px/1 var(--sans);color:#dfe7f0;}
-#launchpadApp .lx-link{border-top-color:#141b25;padding:12px 0;}
-#launchpadApp .lx-lt{font:400 13px/1.3 var(--sans);color:#dfe7f0;}
-#launchpadApp .lx-ls{font:400 11px/1 var(--sans);letter-spacing:0;color:#6f7a89;margin-top:5px;}
-#launchpadApp .lp-chk{gap:12px;padding:13px 0;border-top:1px solid #141b25;}
-#launchpadApp .lp-chk:first-of-type{border-top:0;}
-#launchpadApp .lp-gate{border-radius:10px;border-color:#1d2733;background:var(--rsurf);padding:18px;}
-#launchpadApp .lp-gt{font:600 10.5px/1 var(--sans);letter-spacing:.13em;color:var(--rc);}
-#launchpadApp .lp-gs{font:400 12.5px/1.6 var(--sans);color:#8b96a5;}
-#launchpadApp .lp-warn{border-radius:10px;}
-
-/* Quote cards carry an image in the reference, so they carry one here —
-   the hero's own sky, dimmed, rather than a flat panel. */
-#launchpadApp .lp-quote{position:relative;overflow:hidden;padding:26px 24px;border-radius:10px;
-  min-height:200px;display:flex;flex-direction:column;justify-content:center;}
-/* The sky is scaled up and pushed down so the bright limb sits below the
-   text rather than through it, then held under a heavy scrim: the image
-   is depth behind a quote, not a picture with words on it. */
+/* Quote card: sky behind a scrim, hanging indent, 224px tall. */
+#launchpadApp .lp-quote{overflow:hidden;padding:24px;min-height:224px;display:flex;
+  flex-direction:column;justify-content:center;}
 #launchpadApp .lp-quoteArt{position:absolute;inset:0;z-index:0;overflow:hidden;}
 #launchpadApp .lp-quoteArt .lp-heroArt{width:215%;height:100%;left:-115%;top:0;}
-#launchpadApp .lp-quoteArt .lp-heroArt{opacity:1;}
 #launchpadApp .lp-quote::after{content:'';position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(2,9,18,.3),rgba(2,9,18,.72) 78%),
-    linear-gradient(90deg,rgba(2,9,18,.62),rgba(2,9,18,.06) 62%);}
-#launchpadApp .lp-qt, #launchpadApp .lp-qa{position:relative;z-index:2;}
-#launchpadApp .lp-qt{font:300 19px/1.42 var(--sans);color:#fff;letter-spacing:-.01em;}
-#launchpadApp .lp-qt b{font-weight:600;}
-#launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#93a0b0;margin-top:12px;}
+  background:linear-gradient(180deg,rgba(0,3,10,.3),rgba(0,3,10,.72) 78%),
+    linear-gradient(90deg,rgba(0,3,10,.6),rgba(0,3,10,.05) 62%);}
+#launchpadApp .lp-qt,#launchpadApp .lp-qa{position:relative;z-index:2;}
+#launchpadApp .lp-qt{font:300 20px/1.42 var(--sans);color:#fff;letter-spacing:-.01em;
+  text-indent:-8px;padding-left:8px;}
+#launchpadApp .lp-qt b{font-weight:500;}
+#launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#95a9c9;margin-top:13px;}
 
-/* ═══ MEASURED AGAINST THE REFERENCE ═════════════════════════════
-   Not estimated this time. Every number below came off the reference
-   raster: sidebar edge at x=187, card column at x=201, rail at x=738,
-   content ending at x=1007 — so the page gutter is 14px, not 32. Card
-   fill #020c18 on #00060e, hairline #13253d. Type measured from ink
-   extents rather than guessed from the thumbnail, which is how a 15.5px
-   tracked card title had ended up at 12px and a 17px card heading at 19.
-   Two structural things were simply wrong: the row tiles are circles,
-   and the card's action is an outlined pill while the rail's is the
-   filled one — I had them the other way round. */
+/* Rows sit after a header div, so `:first-of-type` matched the header and
+   never the first row — every rail card opened with two hairlines 4px
+   apart. Adjacency does not care about element type. */
+#launchpadApp .lp-ch + .lp-task,#launchpadApp .lp-ch + .lx-rk,
+#launchpadApp .lp-ch + .lp-gloss,#launchpadApp .lp-ch + .lp-chk,
+#launchpadApp .lp-dp + .lp-chk,#launchpadApp .lp-gs + .lp-chk{border-top:0;}
 
-#launchpadApp{--rbg:#00060e;--rrail:#00060e;--rsurf:#020c18;--rline:#13253d;
-  --rc:#4a90e2;--rc2:#6d9af5;--rbright:#ffffff;--rtext:#c5d2e0;--rdim:#7f8ea0;}
+/* Contrast. These are 9-11px labels on a near-black surface; at #38434f
+   and #4d5867 they measured 2.0:1 and 2.7:1, which is not readable text,
+   it is decoration shaped like text. */
+#launchpadApp .lp-side-foot{color:#5d6b7c;opacity:1;}
+#launchpadApp .lp-kind,#launchpadApp .lp-mod.lock .lp-modI{color:#8593a4;}
+#launchpadApp .lp-secH .n,#launchpadApp .lp-secH .h{color:#7f8ea0;}
+#launchpadApp .lp-dep,#launchpadApp .lx-secN{color:#8593a4;}
+#launchpadApp .lp-crumb{color:#7f8ea0;opacity:1;}
+#launchpadApp .lx-mt,#launchpadApp .lx-tk span,#launchpadApp .lp-tag{color:#93a2b3;}
 
-/* ── Frame ───────────────────────────────────────────────────── */
-#launchpadApp .lp-side{width:187px;border-right:1px solid #0a1520;
-  background:linear-gradient(180deg,#00070f,#00040a);}
-#launchpadApp .lp-body{padding:0 17px 40px 14px;max-width:1180px;}
-#launchpadApp .lp-topbar{padding:14px 17px 14px 14px;}
-#launchpadApp .lp-crumb{font:600 10.5px/1 var(--sans);letter-spacing:.15em;color:#5d6b7c;}
-#launchpadApp .lp-crumb b{color:#fff;}
+/* A checkbox you cannot reach with a keyboard is not a checkbox. */
+#launchpadApp .lp-chk:focus-visible,#launchpadApp .lp-task:focus-visible,
+#launchpadApp .lp-go:focus-visible,#launchpadApp .lp-link:focus-visible,
+#launchpadApp .lx-link:focus-visible,#launchpadApp .lp-wide:focus-visible,
+#launchpadApp .lp-mod:focus-visible,#launchpadApp .lp-navbtn:focus-visible,
+#launchpadApp .lp-back:focus-visible,#launchpadApp .lp-crumb a:focus-visible{
+  outline:2px solid var(--rc2);outline-offset:2px;border-radius:6px;}
+#launchpadApp .lp-f input:focus{outline:2px solid var(--rc2);outline-offset:1px;}
 
-/* Nav: 52px pitch, a 3px lit edge, and the active row's icon filled
-   rather than outlined — that swap is most of what reads as "selected". */
-#launchpadApp .lp-wordmark{font:700 15.5px/1 var(--sans);letter-spacing:.3em;padding:24px 20px 22px;}
-#launchpadApp .lp-navbtn{gap:15px;padding:0 20px;height:52px;font:400 14.5px/52px var(--sans);
-  color:#b4bfcb;}
-#launchpadApp .lp-navbtn .lp-navi{color:#93a0ad;}
-#launchpadApp .lp-navbtn .lp-svg{width:19px;height:19px;}
-#launchpadApp .lp-navbtn:hover{background:rgba(74,144,226,.06);color:#dbe6f2;}
-#launchpadApp .lp-navbtn.on{color:#8fb8e8;
-  background:linear-gradient(90deg,rgba(13,43,79,.95),rgba(8,26,50,.35) 62%,transparent);}
-#launchpadApp .lp-navbtn.on .lp-navi{color:#4a90e2;}
-#launchpadApp .lp-navbtn.on .lp-svg{fill:rgba(74,144,226,.22);}
-#launchpadApp .lp-navbtn::after{width:3px;background:#4a90e2;}
-#launchpadApp .lp-side-foot{font:600 9px/2.2 var(--sans);letter-spacing:.3em;color:#38434f;padding:20px;}
+/* The vocabulary card. */
+#launchpadApp .lp-gloss{padding:10px 0;border-top:1px solid #0d2340;}
+#launchpadApp .lp-gloss b{display:block;font:500 12px/1 var(--sans);color:#e6edf5;margin-bottom:5px;}
+#launchpadApp .lp-gloss span{display:block;font:400 11.5px/1.5 var(--sans);color:#93a2b3;}
 
-/* ── Hero: bleeds to the sidebar edge, copy inset 43px ───────── */
-#launchpadApp .lp-hero-lg{margin:-58px -17px 0 -14px;min-height:0;}
-#launchpadApp .lp-heroIn{padding:98px 43px 26px;max-width:58%;}
-#launchpadApp .lp-eyebrow{font:400 15.5px/1 var(--sans);color:#c8d4e2;margin-bottom:9px;}
-#launchpadApp .lp-name{font:300 40px/1.1 var(--sans);color:#fff;letter-spacing:-.018em;margin:0 0 11px;}
-#launchpadApp .lp-name b{font-weight:600;}
-#launchpadApp .lp-sub{font:400 14px/1.5 var(--sans);color:#b0bdcc;}
-#launchpadApp .lp-heroBar{width:143px;height:3px;margin-top:20px;background:#2a3a4e;}
-#launchpadApp .lp-heroBar span{background:#7aa8e8;}
+@media(prefers-reduced-motion:reduce){
+  #launchpadApp .lp-mod,#launchpadApp .lx-link,#launchpadApp .lp-navbtn::after,
+  #launchpadApp .lp-go,#launchpadApp .lp-wide{transition:none!important;}
+}
+@media(max-width:620px){
+  /* `slice` on a 3.4:1 artwork in a 1.8:1 box crops to the middle third,
+     which is exactly where the vehicle is not. Widen and offset so the
+     right of the frame is what survives. */
+  #launchpadApp .lp-heroArt{width:160%;left:-50%;}
+}
 
-/* ── Cards ───────────────────────────────────────────────────── */
-#launchpadApp .lp-card, #launchpadApp .lp-lay{border:1px solid var(--rline);border-radius:12px;
-  background:linear-gradient(180deg,#03101d,#010a15 62%);margin-bottom:14px;padding:20px;}
-#launchpadApp .lp-ch{margin-bottom:20px;}
-#launchpadApp .lp-ct{font:600 14.5px/1 var(--sans);letter-spacing:.045em;color:#fff;gap:11px;}
-#launchpadApp .lp-rc .lp-ct{font-size:12px;letter-spacing:.085em;}
-#launchpadApp .lp-ct .lp-svg{width:17px;height:17px;color:#c8d4e2;}
-#launchpadApp .lp-cmeta{font:500 11px/1 var(--sans);letter-spacing:.075em;color:#7f8ea0;}
-#launchpadApp .lp-mc .lp-cmeta{color:#8ab4dd;}
-/* Rail cards carry a rule under the header; the progress card does not. */
-#launchpadApp .lp-rc .lp-ch{padding-bottom:15px;margin-bottom:4px;border-bottom:1px solid #16283d;}
+/* ═══ THE LADDER — modules ═══════════════════════════════════════
+   A locked row is still a row you have to read: the reference never
+   fades content, so state is carried by the tile and the rail, not by
+   dropping the whole row to 62% opacity. */
+#launchpadApp .lp-secH{display:flex;align-items:center;gap:11px;margin:26px 0 11px;}
+#launchpadApp .lp-secH .n{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#5a6a7c;}
+#launchpadApp .lp-secH .t{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#c3ccd8;
+  text-transform:uppercase;}
+#launchpadApp .lp-secH .r{flex:1;height:1px;background:var(--rline);}
+#launchpadApp .lp-secH .h{font:500 10.5px/1 var(--sans);letter-spacing:.05em;color:#5a6a7c;}
+#launchpadApp .lp-mod{position:relative;display:flex;align-items:center;gap:14px;width:100%;
+  text-align:left;padding:13px 16px 13px 17px;margin-bottom:9px;border:1px solid var(--rline);
+  border-radius:9px;background:var(--rsurf);cursor:pointer;overflow:hidden;
+  transition:border-color .2s var(--e-out),transform .2s var(--e-out);}
+#launchpadApp .lp-mod::after{content:'';position:absolute;left:0;top:11px;bottom:11px;width:2px;
+  border-radius:0 2px 2px 0;background:#1b3350;}
+#launchpadApp .lp-mod:not(.lock):not(.done)::after{background:var(--rc);}
+#launchpadApp .lp-mod.done::after{background:#5f94f2;}
+#launchpadApp .lp-mod.lock{opacity:1;cursor:default;}
+#launchpadApp .lp-mod:disabled{pointer-events:none;}
+#launchpadApp .lp-modI{width:38px;height:38px;flex-shrink:0;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;border:1px solid #1b304a;background:rgba(120,170,230,.04);
+  font:500 11px/1 var(--sans);letter-spacing:.03em;color:#8fb8e8;}
+#launchpadApp .lp-mod.done .lp-modI{border-color:rgba(72,137,250,.45);background:rgba(72,137,250,.12);
+  color:#8fc0ff;}
+#launchpadApp .lp-mod.lock .lp-modI{color:#6c7b8d;border-color:#16283d;}
+#launchpadApp .lp-modB{flex:1;min-width:0;}
+#launchpadApp .lp-modT{display:block;font:500 13.5px/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-mod.lock .lp-modT{color:#93a2b3;}
+#launchpadApp .lp-modM{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
+#launchpadApp .lp-tag{font:500 10px/1 var(--sans);color:#5f87ad;}
+#launchpadApp .lp-tag.open{color:var(--rc2);}
+#launchpadApp .lp-tag::after{content:'\00B7';margin-left:6px;color:#2b3543;}
+#launchpadApp .lp-dep{font:400 10.5px/1 var(--sans);color:#5a6a7c;}
+#launchpadApp .lp-modR{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
+#launchpadApp .lp-modHr{font:500 12.5px/1 var(--sans);color:#c3ccd8;font-variant-numeric:tabular-nums;}
+#launchpadApp .lp-kind{font:500 9.5px/1 var(--sans);letter-spacing:.1em;color:#5a6a7c;}
+#launchpadApp .lp-kind.ev{color:#5f87ad;}
+#launchpadApp .lp-steps{display:flex;gap:3px;}
+#launchpadApp .lp-mod.lock .lp-steps{visibility:hidden;}
+#launchpadApp .lp-step{width:16px;height:3px;border-radius:2px;background:#1b3350;}
+#launchpadApp .lp-step.on{background:var(--rc);}
+#launchpadApp .lp-gate{border:1px solid #1b304a;border-radius:9px;padding:16px;margin:16px 0;
+  background:var(--rsurf);}
+#launchpadApp .lp-gt{font:600 10.5px/1 var(--sans);letter-spacing:.13em;color:var(--rc2);
+  text-transform:uppercase;}
+#launchpadApp .lp-gs{font:400 12.5px/1.6 var(--sans);color:#a8b8cc;margin:9px 0 11px;}
+#launchpadApp .lp-chk{display:flex;align-items:flex-start;gap:12px;padding:11px 0;cursor:pointer;
+  border-top:1px solid #0d2340;color:var(--rtext);font:400 12.5px/1.4 var(--sans);}
+#launchpadApp .lp-chk:first-of-type{border-top:0;}
+#launchpadApp .lp-chk .lp-box{border-radius:50%;}
+#launchpadApp .lp-chk.on{color:#e6edf5;}
+#launchpadApp .lp-chk.on .lp-box{background:var(--rc);border-color:var(--rc);color:#02101f;}
 
-/* ── Mission progress: circular tiles, 55px pitch, 6px bars ──── */
-#launchpadApp .lp-ready{gap:24px;}
-#launchpadApp .lp-brow{gap:18px;margin-bottom:0;height:55px;}
-#launchpadApp .lp-bico{width:41px;height:41px;border-radius:50%;border:1px solid #2a3a4c;
-  background:none;color:#cfdbe8;}
-#launchpadApp .lp-bico .lp-svg{width:19px;height:19px;}
-#launchpadApp .lp-blab{font:400 13.5px/1 var(--sans);color:#dfe7f0;margin-bottom:10px;}
-#launchpadApp .lp-btr{height:6px;border-radius:3px;background:#142438;}
-#launchpadApp .lp-btr span{background:linear-gradient(90deg,#6d9af5,#93b6fa);border-radius:3px;}
-#launchpadApp .lp-bpct{font:400 14px/1 var(--sans);color:#9fb0c4;width:40px;}
-#launchpadApp .lp-ring{width:71px;height:71px;margin-top:2px;}
-#launchpadApp .lp-ring .rbg{stroke:#1c2f47;stroke-width:6;}
-#launchpadApp .lp-ring .rfg{stroke:#6d9af5;stroke-width:6;}
-#launchpadApp .lp-rv{font:600 20px/1 var(--sans);color:#fff;}
+/* ═══ THE LESSON ═════════════════════════════════════════════════ */
+#launchpadApp .lx-hero{border:0;border-radius:0;background:none;padding:30px 0 22px;margin:0 0 4px;
+  position:relative;overflow:visible;}
+#launchpadApp .lx-hero.lx-lesson{padding-bottom:26px;border-bottom:1px solid var(--rline);
+  margin-bottom:18px;}
+#launchpadApp .lx-heroArt{display:none;}
+#launchpadApp .lx-heroIn{position:relative;z-index:1;}
+#launchpadApp .lx-eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:13px;}
+#launchpadApp .lx-mt{font:500 10.5px/1 var(--sans);letter-spacing:.13em;color:#6c7b8d;
+  text-transform:uppercase;}
+#launchpadApp .lx-id{font:600 10.5px/1 var(--sans);letter-spacing:.07em;background:var(--rc);color:#fff;
+  padding:5px 8px;border-radius:5px;}
+#launchpadApp .lx-title{font:300 34px/1.14 var(--sans);color:#fff;letter-spacing:-.02em;margin-bottom:12px;}
+#launchpadApp .lx-sub{font:400 13.5px/1.6 var(--sans);color:#a8b8cc;max-width:64ch;}
+#launchpadApp .lx-track{display:flex;flex-wrap:wrap;align-items:center;margin-top:20px;}
+#launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;}
+#launchpadApp .lx-tk .d{width:12px;height:12px;border-radius:50%;border:1.4px solid #27394c;flex-shrink:0;}
+#launchpadApp .lx-tk.on .d{background:var(--rc);border-color:var(--rc);}
+#launchpadApp .lx-tk span{font:500 10.5px/1 var(--sans);letter-spacing:.11em;color:#6c7b8d;
+  text-transform:uppercase;}
+#launchpadApp .lx-tk.on span{color:#e6edf5;}
+#launchpadApp .lx-tkr{width:24px;height:1px;background:#1b3350;margin-right:14px;}
+#launchpadApp .lx-sec{border:1px solid var(--rline);border-radius:9px;padding:16px;margin-bottom:13px;
+  background:linear-gradient(180deg,#02101f,#000913 70%);
+  box-shadow:inset 0 1px 0 rgba(56,86,123,.5);}
+#launchpadApp .lx-secH{display:flex;align-items:flex-start;gap:18px;margin-bottom:15px;}
+#launchpadApp .lx-secI{width:52px;height:52px;flex-shrink:0;border-radius:14px;border:1px solid #1b304a;
+  background:rgba(120,170,230,.04);color:#e6edf5;display:flex;align-items:center;justify-content:center;}
+#launchpadApp .lx-secI .lp-svg{width:28px;height:28px;}
+#launchpadApp .lx-secN{font:600 9.5px/1 var(--sans);letter-spacing:.15em;color:#5a6a7c;margin-bottom:7px;}
+#launchpadApp .lx-secT{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
+#launchpadApp .lx-secD{font:400 12px/1.55 var(--sans);color:#a8b8cc;margin-top:7px;max-width:54ch;}
+#launchpadApp .lx-li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
+  border-top:1px solid #0d2340;}
+#launchpadApp .lx-li:first-child{border-top:0;padding-top:0;}
+#launchpadApp .lx-li b{flex-shrink:0;width:14px;height:14px;margin-top:2px;border-radius:50%;
+  border:1.3px solid #3a5a7a;display:block;}
+#launchpadApp .lx-li p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-li.num b{border-color:#2b4a6b;color:var(--rc2);font:500 8.5px/12px var(--sans);
+  text-align:center;}
+#launchpadApp .lx-li.bad b{border:0;width:11px;text-align:center;color:#e0675c;font:500 12px/1 var(--sans);}
+#launchpadApp .lx-body{font:400 13px/1.7 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-gate{border:1px solid #1b304a;border-radius:8px;overflow:hidden;}
+#launchpadApp .lx-gr{display:flex;gap:16px;padding:13px 15px;border-top:1px solid #0d2340;}
+#launchpadApp .lx-gr:first-child{border-top:0;}
+#launchpadApp .lx-gk{flex:0 0 84px;font:600 9.5px/1.5 var(--sans);letter-spacing:.13em;color:var(--rc2);
+  text-transform:uppercase;}
+#launchpadApp .lx-gr.fail .lx-gk{color:#e0675c;}
+#launchpadApp .lx-gv{flex:1;min-width:0;font:400 12.5px/1.6 var(--sans);color:#b6c4d3;}
+#launchpadApp .lx-link{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:none;border:0;border-top:1px solid #0d2340;padding:11px 0;cursor:pointer;color:inherit;
+  transition:padding-left .2s var(--e-out);}
+#launchpadApp .lx-link:first-of-type{border-top:0;}
+#launchpadApp .lx-li2{flex:1;min-width:0;}
+#launchpadApp .lx-lt{display:block;font:400 12.5px/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lx-ls{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
 
-/* ── Subject card ────────────────────────────────────────────── */
-#launchpadApp .lp-lay{padding:20px;}
-#launchpadApp .lp-layh{gap:18px;}
-#launchpadApp .lp-layi{width:50px;height:50px;border-radius:14px;border:1px solid #1e3148;
-  background:rgba(120,170,230,.045);color:#dbe6f2;}
-#launchpadApp .lp-layi .lp-svg{width:23px;height:23px;}
-#launchpadApp .lp-layt{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
-#launchpadApp .lp-layd{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;margin-top:8px;max-width:44ch;}
-#launchpadApp .lp-mods{padding-left:68px;margin-top:14px;}
-#launchpadApp .lp-mrow{gap:12px;font:400 12px/1.35 var(--sans);color:#c5d2e0;padding:3px 0;height:18px;}
-#launchpadApp .lp-dot{width:15px;height:15px;border:1.5px solid #3a5a7a;}
-#launchpadApp .lp-mrow.lock{color:#7b8a9c;}
-#launchpadApp .lp-mrow.lock .lp-dot{border-color:#27394c;}
-#launchpadApp .lp-mrow.done .lp-dot{background:#6d9af5;border-color:#6d9af5;}
-#launchpadApp .lp-artWrap{width:155px;flex:0 0 155px;height:148px;border-radius:10px;
-  border:1px solid #1a2d44;background:#02080f;}
-#launchpadApp .lp-layf{align-items:flex-end;margin-top:18px;}
-/* The card's action is an outlined pill. The filled one belongs to the
-   rail; I had the two swapped, which is why the grid read as loud. */
-#launchpadApp .lp-go{height:24px;padding:0 17px;border-radius:12px;
-  font:500 13px/22px var(--sans);background:none;border:1px solid #2f5a8f;color:#9ec8f5;}
-#launchpadApp .lp-go:hover{background:rgba(74,144,226,.12);border-color:#4a8ad0;color:#dbeaff;}
-#launchpadApp .lp-go.ghost{border-color:#22354b;color:#7f8ea0;}
-#launchpadApp .lp-go.ghost:hover{border-color:#2f4f7a;color:#b4bfcb;background:rgba(74,144,226,.06);}
-#launchpadApp .lp-pctlab{width:188px;max-width:54%;}
-#launchpadApp .lp-pctlab .k{font:600 10px/1 var(--sans);letter-spacing:.14em;color:#8fa0b5;
-  margin-bottom:9px;}
-#launchpadApp .lp-pctlab .t{height:6px;border-radius:3px;background:#0d1a2a;}
-#launchpadApp .lp-pctlab .t i{background:linear-gradient(90deg,#7aa8f0,#a8c8f8);border-radius:3px;}
-
-/* ── Rail rows ───────────────────────────────────────────────── */
-#launchpadApp .lp-task{gap:14px;padding:15px 0;border-top:1px solid #16283d;align-items:flex-start;}
-#launchpadApp .lp-box{width:16px;height:16px;border:1.6px solid #8494a8;margin-top:1px;}
-#launchpadApp .lp-tt{font:400 13px/1.35 var(--sans);color:#e6edf5;}
-#launchpadApp .lp-ts{font:400 11.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
-#launchpadApp .lp-link{gap:14px;padding:14px 0;border-top:1px solid #16283d;}
-#launchpadApp .lp-lki{width:36px;height:36px;border-radius:10px;border:1px solid #1e3148;
-  background:rgba(120,170,230,.045);color:#cfdbe8;}
-#launchpadApp .lp-lki .lp-svg{width:17px;height:17px;}
-#launchpadApp .lp-lkt{font:400 13px/1.3 var(--sans);color:#e6edf5;}
-#launchpadApp .lp-lks{font:400 11.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
-#launchpadApp .lp-arrow{color:#55657a;}
-/* The rail's action is the filled one. */
-#launchpadApp .lp-wide{height:36px;padding:0;border-radius:8px;margin-top:16px;
-  background:linear-gradient(180deg,#0d2137,#14304f);border:1px solid #20395a;
-  font:500 13px/34px var(--sans);color:#fff;}
-#launchpadApp .lp-wide:hover{background:linear-gradient(180deg,#123052,#1b4472);border-color:#2d5182;}
-#launchpadApp .lx-rk{border-top-color:#16283d;padding:13px 0;}
-#launchpadApp .lx-rk .k{font:400 12.5px/1 var(--sans);color:#a8b8cc;}
-#launchpadApp .lx-rk .v{font:500 12.5px/1 var(--sans);color:#fff;}
-#launchpadApp .lp-qt{font:300 19px/1.4 var(--sans);color:#fff;}
-#launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#8ab4dd;margin-top:13px;}
-
-/* Plan + Tracks, brought onto the same system. Field labels are tracked
-   sans like every other label; the verdict is a status line, not a banner. */
-#launchpadApp .lp-f label{font:600 10px/1 var(--sans);letter-spacing:.14em;color:#8fa0b5;
-  text-transform:uppercase;margin-bottom:9px;display:block;}
-#launchpadApp .lp-f input{font:400 14px/1 var(--sans);background:#02090f;border:1px solid #1b2c40;
-  border-radius:8px;color:#fff;padding:12px 14px;width:100%;}
-#launchpadApp .lp-f input:focus{border-color:#2f5a8f;outline:none;}
+/* ═══ PLAN + TRACKS ══════════════════════════════════════════════ */
+#launchpadApp .lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+#launchpadApp .lp-f.wide{grid-column:1 / -1;}
+#launchpadApp .lp-f label{display:block;font:600 10px/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;
+  text-transform:uppercase;margin-bottom:9px;}
+#launchpadApp .lp-f input{width:100%;padding:12px 14px;border-radius:8px;border:1px solid #1b304a;
+  background:#010a14;color:#fff;font:400 14px/1 var(--sans);}
+#launchpadApp .lp-f input:focus{border-color:#3264aa;outline:none;}
 #launchpadApp .lp-f input::placeholder{color:#4d5867;}
-#launchpadApp .lp-vrec{font:600 12px/1 var(--sans);letter-spacing:.11em;color:#8ab4dd;margin:20px 0 10px;}
-#launchpadApp .lp-vwhy{font:400 13px/1.62 var(--sans);color:#a8b8cc;}
-#launchpadApp .lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-@media(max-width:620px){#launchpadApp .lp-paths{grid-template-columns:1fr;}}
-#launchpadApp .lp-path{border:1px solid #1b2c40;border-radius:10px;padding:16px;background:#02090f;}
-#launchpadApp .lp-path.on{border-color:#2f5a8f;background:rgba(74,144,226,.06);}
+#launchpadApp .lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+#launchpadApp .lp-path{border:1px solid #1b304a;border-radius:9px;padding:15px;background:#010a14;}
+#launchpadApp .lp-path.on{border-color:#3264aa;background:rgba(72,137,250,.06);}
 #launchpadApp .lp-pn{font:600 10px/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;text-transform:uppercase;}
-#launchpadApp .lp-pv{font:300 26px/1 var(--sans);color:#fff;margin:12px 0 8px;font-variant-numeric:tabular-nums;}
+#launchpadApp .lp-pv{font:300 26px/1 var(--sans);color:#fff;margin:12px 0 8px;
+  font-variant-numeric:tabular-nums;}
 #launchpadApp .lp-path.on .lp-pv{color:#9ec8f5;}
 #launchpadApp .lp-ps{font:400 12px/1.5 var(--sans);color:#7f8ea0;}
-#launchpadApp .lp-tk .lp-ch{margin-bottom:14px;}
-#launchpadApp .lp-tkc{font:500 12px/1 var(--sans);color:#8ab4dd;margin-bottom:10px;letter-spacing:.02em;}
-#launchpadApp .lp-tkr{font:400 13px/1.62 var(--sans);color:#a8b8cc;}
+#launchpadApp .lp-vrec{font:600 11.5px/1 var(--sans);letter-spacing:.11em;color:var(--rc2);
+  margin:18px 0 10px;text-transform:uppercase;}
+#launchpadApp .lp-vwhy{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;margin-bottom:8px;}
+#launchpadApp .lp-tkc{font:500 11.5px/1 var(--sans);color:#8ab4dd;margin-bottom:9px;}
+#launchpadApp .lp-tkr{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;}
 
+/* Mechanism figure: the same plate as everything else. */
+#launchpadApp .lp-viz{border:1px solid var(--rline);border-radius:8px;background:#04101d;
+  padding:0;overflow:hidden;margin-top:10px;}
+#launchpadApp .lp-vizBox{padding:14px 12px;}
+
+/* ═══ RESPONSIVE ═════════════════════════════════════════════════
+   The rail became a 187px strip on phones because a scoped desktop width
+   out-specified the unscoped mobile one. Four tabs, equal quarters, no
+   horizontal scrolling, and touch targets that clear 44px. */
+@media(max-width:900px){
+  #launchpadApp .lp-cols{grid-template-columns:1fr;}
+}
 @media(max-width:820px){
+  #launchpadApp .lp-shell{flex-direction:column;}
+  #launchpadApp .lp-side{width:100%;flex-direction:row;border-right:0;
+    border-bottom:1px solid var(--rline);background:#01050d;}
+  #launchpadApp .lp-wordmark,#launchpadApp .lp-side-foot{display:none;}
+  #launchpadApp .lp-navbtn{flex:1 1 0;min-width:0;height:56px;padding:0 4px;gap:7px;
+    flex-direction:column;justify-content:center;font:500 11px/1 var(--sans);}
+  #launchpadApp .lp-navbtn::after{left:0;right:0;top:auto;bottom:0;width:auto;height:0;
+    transform:none;border-radius:0;}
+  #launchpadApp .lp-navbtn.on::after{height:3px;}
+  #launchpadApp .lp-navbtn.on{background-image:none;background:rgba(72,137,250,.08);}
   #launchpadApp .lp-body{padding:0 14px 32px;}
   #launchpadApp .lp-topbar{padding:12px 14px;}
-  #launchpadApp .lp-hero-lg{margin:-54px -14px 0;}
-  #launchpadApp .lp-heroIn{padding:80px 14px 24px;max-width:100%;}
-  #launchpadApp .lp-name{font-size:31px;}
-  /* A 30px pill is a fine mouse target and a poor thumb target. */
-  #launchpadApp .lp-go{height:42px;border-radius:21px;line-height:40px;padding:0 22px;}
-  #launchpadApp .lp-wide{height:44px;line-height:42px;}
+  #launchpadApp .lp-hero-lg{margin:-52px -14px 0;}
+  #launchpadApp .lp-heroIn{padding:76px 14px 22px;max-width:100%;}
+  #launchpadApp .lp-heroScrim{background:linear-gradient(180deg,rgba(0,3,10,.42),#00030a 76%);}
+  #launchpadApp .lp-name{font-size:30px;}
+  #launchpadApp .lp-eyebrow{font-size:16px;}
+  #launchpadApp .lx-title{font-size:27px;}
+  /* A 26px pill is a fine mouse target and a poor thumb target. */
+  #launchpadApp .lp-go,#launchpadApp .lp-wide{height:44px;line-height:42px;}
+  #launchpadApp .lp-go{padding:0 20px;}
+  #launchpadApp .lp-task,#launchpadApp .lp-link,#launchpadApp .lx-link,
+  #launchpadApp .lp-chk{padding:13px 0;}
+}
+@media(max-width:760px){
+  #launchpadApp .lp-layTop{flex-direction:column;gap:14px;}
+  #launchpadApp .lp-artWrap{width:100%;flex:0 0 auto;height:130px;}
+  #launchpadApp .lp-mods{padding-left:0;}
+  #launchpadApp .lp-fields,#launchpadApp .lp-paths{grid-template-columns:1fr;}
+}
+@media(max-width:620px){
+  #launchpadApp .lp-ready{flex-direction:column-reverse;align-items:center;gap:16px;}
+  #launchpadApp .lp-bars{width:100%;}
+  #launchpadApp .lp-layf{flex-direction:column;align-items:stretch;gap:13px;}
+  #launchpadApp .lp-pctlab{margin-left:0;width:100%;max-width:100%;}
+  #launchpadApp .lx-gr{flex-direction:column;gap:6px;}
+  #launchpadApp .lx-gk{flex:none;}
+  #launchpadApp .lx-tkr{display:none;}
 }
 
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
@@ -6289,9 +5690,15 @@ function renderLaunchpad(keepScroll) {
   lpSideHTML();
   var crumb = document.getElementById('lpCrumb');
   if (crumb) {
-    crumb.innerHTML = LP_VIEW
-      ? 'LAUNCHPAD / <b>' + LP_VIEW + '</b>'
-      : 'PREPARE / BUILD / <b>' + (LP_TAB || 'home').toUpperCase() + '</b>';
+    var TABNAME = { home:'Home', modules:'Modules', plan:'The Plan', tracks:'Tracks' };
+    if (LP_VIEW) {
+      var vm = API.byId(LP_VIEW);
+      var vl = (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).filter(function (L) {
+        return vm && L.id === vm.layer; })[0];
+      crumb.innerHTML = '<a href="#" onclick="lpTab(\'modules\');return false">Modules</a> / ' + (vl ? esc(vl.name) + ' / ' : '') + '<b>' + LP_VIEW + '</b>';
+    } else {
+      crumb.innerHTML = '<b>' + (TABNAME[LP_TAB] || 'Home') + '</b>';
+    }
   }
   var body = LP_VIEW ? lpDetailHTML(API, LP_VIEW)
     : LP_TAB === 'modules' ? lpModulesHTML(API)
@@ -6351,12 +5758,31 @@ var LP_NAV = [
   ['plan',    'target', 'The Plan'],
   ['tracks',  'loop',   'Tracks']
 ];
+// Space and Enter on the div-based rows. They carry onclick and were not
+// reachable by keyboard at all, so progress could not be claimed without a
+// mouse.
+function lpKey(e) {
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault(); e.currentTarget.click();
+  }
+}
+// SMIL ignores prefers-reduced-motion, so the twelve animated scenes on the
+// home view kept running for someone who asked them not to.
+function lpStillIfAsked(root) {
+  try {
+    if (!window.matchMedia || !matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var svgs = (root || document).querySelectorAll('#launchpadApp svg');
+    for (var i = 0; i < svgs.length; i++) {
+      if (svgs[i].pauseAnimations) svgs[i].pauseAnimations();
+    }
+  } catch (e) {}
+}
 function lpSideHTML() {
   var el = document.getElementById('lpSide');
   if (!el) return;
   var h = '<div class="lp-wordmark">LAUNCH<span>PAD</span></div>';
   LP_NAV.forEach(function (n) {
-    h += '<button class="lp-navbtn' + (LP_TAB === n[0] && !LP_VIEW ? ' on' : '') + '" onclick="lpTab(\'' + n[0] + '\')">'
+    h += '<button class="lp-navbtn' + ((LP_VIEW ? 'modules' : LP_TAB) === n[0] ? ' on' : '') + '" onclick="lpTab(\'' + n[0] + '\')">'
        + '<span class="lp-navi">' + (LP_ICON[n[1]] || '') + '</span>' + n[2] + '</button>';
   });
   h += '<div class="lp-side-foot">Build it.<br>Explain it.<br>Ship it.</div>';
@@ -6492,7 +5918,12 @@ function lpLayerArt(n) {
 // one thin lit arc, and the only bright object is the vehicle.
 // `quiet` drops the vehicle: the quote cards reuse this sky, and a second
 // copy of the same rocket sitting in the rail reads as a tiling artefact.
+var LP_ART_SEQ = 0;
 function lpHeroArt(quiet) {
+  // Each instance gets its own id namespace: the home view paints this three
+  // times (hero + two quote cards) and duplicate ids made every url(#...)
+  // reference resolve to the first copy in the document.
+  var NS = 'lpA' + (++LP_ART_SEQ) + '_';
   var seed = 20260920;
   function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
   function f(n, d) { return n.toFixed(d === undefined ? 1 : d); }
@@ -6546,40 +5977,40 @@ function lpHeroArt(quiet) {
 
   return '<svg class="lp-heroArt" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
     + '<defs>'
-    +   '<linearGradient id="lpSky" x1="0" y1="0" x2="0.5" y2="1">'
+    +   '<linearGradient id="' + NS + 'lpSky" x1="0" y1="0" x2="0.5" y2="1">'
     +     '<stop offset="0" stop-color="#01060f"/><stop offset="0.6" stop-color="#03131f"/>'
     +     '<stop offset="1" stop-color="#07263c"/></linearGradient>'
-    +   '<radialGradient id="lpDawn" cx="0.88" cy="0.9" r="0.72">'
+    +   '<radialGradient id="' + NS + 'lpDawn" cx="0.88" cy="0.9" r="0.72">'
     +     '<stop offset="0" stop-color="#2a8ad8" stop-opacity=".55"/>'
     +     '<stop offset="0.45" stop-color="#0e4a7a" stop-opacity=".2"/>'
     +     '<stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient>'
-    +   '<linearGradient id="lpBody" x1="0.1" y1="0" x2="0.6" y2="1">'
+    +   '<linearGradient id="' + NS + 'lpBody" x1="0.1" y1="0" x2="0.6" y2="1">'
     +     '<stop offset="0" stop-color="#0c2439"/><stop offset="0.4" stop-color="#04121e"/>'
     +     '<stop offset="1" stop-color="#01070d"/></linearGradient>'
-    +   '<linearGradient id="lpRim" x1="0" y1="0" x2="1" y2="0">'
+    +   '<linearGradient id="' + NS + 'lpRim" x1="0" y1="0" x2="1" y2="0">'
     +     '<stop offset="0" stop-color="#5fa8e8" stop-opacity=".12"/>'
     +     '<stop offset="0.35" stop-color="#a9d6ff" stop-opacity=".6"/>'
     +     '<stop offset="0.72" stop-color="#ffffff" stop-opacity=".95"/>'
     +     '<stop offset="1" stop-color="#d6ecff" stop-opacity=".85"/></linearGradient>'
-    +   '<radialGradient id="lpPlume" cx="0.5" cy="0.1" r="0.9">'
+    +   '<radialGradient id="' + NS + 'lpPlume" cx="0.5" cy="0.1" r="0.9">'
     +     '<stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>'
     +     '<stop offset="0.28" stop-color="#ffcf9a" stop-opacity=".6"/>'
     +     '<stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>'
-    +   '<filter id="lpSoft" x="-50%" y="-50%" width="200%" height="200%">'
+    +   '<filter id="' + NS + 'lpSoft" x="-50%" y="-50%" width="200%" height="200%">'
     +     '<feGaussianBlur stdDeviation="4"/></filter>'
-    +   '<filter id="lpTight" x="-60%" y="-60%" width="220%" height="220%">'
+    +   '<filter id="' + NS + 'lpTight" x="-60%" y="-60%" width="220%" height="220%">'
     +     '<feGaussianBlur stdDeviation="1.3"/></filter>'
-    +   '<clipPath id="lpBelow"><path d="' + body + '"/></clipPath>'
+    +   '<clipPath id="' + NS + 'lpBelow"><path d="' + body + '"/></clipPath>'
     + '</defs>'
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#lpSky)"/>'
-    + '<rect width="' + W + '" height="' + H + '" fill="url(#lpDawn)"/>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#' + NS + 'lpSky)"/>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#' + NS + 'lpDawn)"/>'
     + far + near
-    + '<path d="' + d + '" fill="none" stroke="#3f9ee0" stroke-opacity=".3" stroke-width="22" filter="url(#lpSoft)"/>'
-    + '<path d="' + d + '" fill="none" stroke="#8fd0ff" stroke-opacity=".34" stroke-width="7" filter="url(#lpSoft)"/>'
-    + '<path d="' + body + '" fill="url(#lpBody)"/>'
-    + '<g clip-path="url(#lpBelow)">' + lights + clouds + '</g>'
-    + '<path d="' + d + '" fill="none" stroke="url(#lpRim)" stroke-width="2.4" filter="url(#lpTight)"/>'
-    + '<path d="' + d + '" fill="none" stroke="url(#lpRim)" stroke-width="0.7"/>'
+    + '<path d="' + d + '" fill="none" stroke="#3f9ee0" stroke-opacity=".3" stroke-width="22" filter="url(#' + NS + 'lpSoft)"/>'
+    + '<path d="' + d + '" fill="none" stroke="#8fd0ff" stroke-opacity=".34" stroke-width="7" filter="url(#' + NS + 'lpSoft)"/>'
+    + '<path d="' + body + '" fill="url(#' + NS + 'lpBody)"/>'
+    + '<g clip-path="url(#' + NS + 'lpBelow)">' + lights + clouds + '</g>'
+    + '<path d="' + d + '" fill="none" stroke="url(#' + NS + 'lpRim)" stroke-width="2.4" filter="url(#' + NS + 'lpTight)"/>'
+    + '<path d="' + d + '" fill="none" stroke="url(#' + NS + 'lpRim)" stroke-width="0.7"/>'
     // Sits low enough that its bloom never reaches the breadcrumb, which
     // shares this band with it.
     // The vehicle, at the reference's proportions: about 28x106 in these
@@ -6591,7 +6022,7 @@ function lpHeroArt(quiet) {
     // is on the right.
     + (quiet ? '' :
         '<g>'
-    +     '<ellipse cx="470" cy="132" rx="19" ry="24" fill="#ffb066" opacity=".2" filter="url(#lpSoft)"/>'
+    +     '<ellipse cx="470" cy="132" rx="19" ry="24" fill="#ffb066" opacity=".2" filter="url(#' + NS + 'lpSoft)"/>'
     +     '<path d="M470 20 C466 32 463 43 462 50 L478 50 C477 43 474 32 470 20 Z" fill="#232c37"/>'
     +     '<path d="M470 20 C472 32 476 43 477 50 L478 50 C477 43 474 32 470 20 Z" fill="#9fb6cc"/>'
     +     '<rect x="462" y="50" width="16" height="72" fill="#1c242e"/>'
@@ -6602,20 +6033,23 @@ function lpHeroArt(quiet) {
     +     '<path d="M462 98 L456 116 L456 124 L462 118 Z" fill="#141a21"/>'
     +     '<path d="M478 98 L484 116 L484 124 L478 118 Z" fill="#3a4859"/>'
     +     '<rect x="463" y="122" width="14" height="3.6" rx="1.2" fill="#2b3642"/>'
-    +     '<ellipse cx="470" cy="141" rx="6" ry="16" fill="url(#lpPlume)">'
+    +     '<ellipse cx="470" cy="141" rx="6" ry="16" fill="url(#' + NS + 'lpPlume)">'
     +       '<animate attributeName="ry" values="16;22;16" dur="1.7s" repeatCount="indefinite"/>'
     +       '<animate attributeName="opacity" values=".85;1;.85" dur="1.7s" repeatCount="indefinite"/></ellipse>'
     +     '<ellipse cx="470" cy="128" rx="3" ry="4.2" fill="#ffffff" opacity=".92">'
     +       '<animate attributeName="opacity" values=".72;1;.72" dur="1.7s" repeatCount="indefinite"/></ellipse>'
     +   '</g>')
-    '</svg>';
+    + '</svg>';
 }
 
+// 73px outer with a 6px stroke, which is what the reference measures. The
+// svg was 88px inside a 71px box, so the ring overflowed its own container
+// and sat 18px lower than the reference's.
 function lpRing(pct) {
-  var r = 38, c = 2 * Math.PI * r;
-  return '<div class="lp-ring"><svg width="88" height="88" viewBox="0 0 88 88">'
-    + '<circle class="rbg" cx="44" cy="44" r="' + r + '"/>'
-    + '<circle class="rfg" cx="44" cy="44" r="' + r + '" stroke-dasharray="' + c + '" '
+  var S = 73, r = (S - 6) / 2, c = 2 * Math.PI * r, m = S / 2;
+  return '<div class="lp-ring"><svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '">'
+    + '<circle class="rbg" cx="' + m + '" cy="' + m + '" r="' + r + '"/>'
+    + '<circle class="rfg" cx="' + m + '" cy="' + m + '" r="' + r + '" stroke-dasharray="' + c + '" '
     + 'stroke-dashoffset="' + (c * (1 - pct / 100)) + '" style="--dash:' + c + '"/></svg>'
     + '<div class="lp-rtx"><div class="lp-rv">' + pct + '%</div><div class="lp-rk">READY</div></div></div>';
 }
@@ -6641,10 +6075,17 @@ function lpImport(ev) {
   var f = ev.target.files && ev.target.files[0];
   if (!f) return;
   var r = new FileReader();
+  r.onerror = function () { toast('Could not read that file', 'warn'); };
   r.onload = function () {
     try {
       var d = JSON.parse(r.result);
-      // Restoring a year of gates is not an undoable tap.
+      // Any JSON used to pass this: an OBSIDIAN backup, an array, {"a":1}.
+      // It then wiped every gate and reported success. Check the shape
+      // before destroying a year of progress.
+      if (!d || typeof d !== 'object' || Array.isArray(d) ||
+          (typeof d.mods !== 'object' && typeof d.flagship !== 'object' && typeof d.setup !== 'object')) {
+        toast('That file is not a LAUNCHPAD backup', 'warn'); ev.target.value = ''; return;
+      }
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
       LP_ST = { mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {} };
       lpSave(); renderLaunchpad();
@@ -6653,6 +6094,26 @@ function lpImport(ev) {
     ev.target.value = '';
   };
   r.readAsText(f);
+}
+
+// The vocabulary this curriculum runs on, glossed once, where a first-time
+// reader meets it. Without this, "gate", "referee" and "DELTA" are jargon
+// the product uses constantly and never defines.
+function lpHowHTML() {
+  var rows = [
+    ['Module', 'A unit of work. 31 of them, in dependency order.'],
+    ['Artifact', 'The thing you build. A module is not done until it runs.'],
+    ['DELTA.md', 'What you got wrong, written down after reading the primary source.'],
+    ['Gate', 'A pass condition with a named person who says yes or no.'],
+    ['Referee', 'That person. A gate with no referee is decorative.'],
+    ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.']
+  ];
+  var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">'
+        + LP_ICON.book + 'HOW THIS WORKS</div></div>';
+  rows.forEach(function (r) {
+    h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
+  });
+  return h + '</div>';
 }
 
 function lpHomeHTML(API) {
@@ -6666,8 +6127,9 @@ function lpHomeHTML(API) {
   var h = '<div class="lp-hero lp-hero-lg">' + lpHeroArt()
         + '<div class="lp-heroScrim"></div><div class="lp-heroIn">';
   h += '<div class="lp-eyebrow">Welcome back,</div>';
-  h += '<div class="lp-name">Future <b>Engineer</b></div>';
-  h += '<div class="lp-sub">Discipline today. Opportunities tomorrow.</div>';
+  h += '<div class="lp-name">Future Engineer</div>';
+  h += '<div class="lp-sub">31 modules, first principles to hired. '
+     + 'Each one ends in something you built and can explain out loud.</div>';
   h += '<div class="lp-heroBar"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
   h += '</div></div>';
 
@@ -6695,6 +6157,10 @@ function lpHomeHTML(API) {
     var done = mods.filter(function (m) { return P[m.id] && P[m.id].gate }).length;
     var pct = mods.length ? Math.round(done / mods.length * 100) : 0;
     var open = mods.some(function (m) { return API.isUnlocked(m.id, P); });
+    // The next thing to actually do in this layer, so Continue continues.
+    var nx = mods.filter(function (m) {
+      return API.isUnlocked(m.id, P) && !(P[m.id] && P[m.id].gate); })[0];
+    var nextIn = nx ? nx.id : null;
 
     h += '<div class="lp-lay mo-lift">'
        + '<div class="lp-layTop"><div class="lp-layMain">'
@@ -6710,8 +6176,9 @@ function lpHomeHTML(API) {
     h += '</div></div><div class="lp-artWrap"><div class="lp-artBox">'
        + lpLayerArt(Lr.id) + '</div></div></div>';
     h += '<div class="lp-layf">'
-       + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="lpTab(\'modules\')">'
-       +   (open ? 'Continue' : 'Preview') + ' →</button>'
+       + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="'
+       +   (nextIn ? 'lpOpen(\'' + nextIn + '\')' : 'lpTab(\'modules\')') + '">'
+       +   (nextIn ? 'Continue' : 'View') + ' →</button>'
        + '<div class="lp-pctlab"><span class="k">' + pct + '% complete</span>'
        + '<span class="t"><i style="width:' + pct + '%"></i></span></div>'
        + '</div></div>';
@@ -6724,13 +6191,14 @@ function lpHomeHTML(API) {
      + '<div class="lp-qt">"A gate with no referee is decorative."</div>'
      + '<div class="lp-qa">— Rule 1</div></div>';
 
+  h += lpHowHTML();
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'TODAY’S FOCUS</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
   if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
   avail.slice(0, 4).forEach(function (m) {
-    h += '<div class="lp-task mo-lift" onclick="lpOpen(\'' + m.id + '\')">'
+    h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lp-box"></span><div><div class="lp-tt">' + esc(m.title) + '</div>'
-       + '<div class="lp-ts">' + m.id + ' · ' + m.hours + 'h · ' + m.kind + '</div></div></div>';
+       + '<div class="lp-ts">' + m.id + ' · ' + m.hours + 'h · ' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</div></div></div>';
   });
   h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all 31 modules →</button></div>';
 
@@ -6799,7 +6267,7 @@ function lpModulesHTML(API) {
          + 'it is the only prerequisite here that cannot be satisfied by working harder.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
-        h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpFlag(\'' + it.key + '\')">'
+        h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
            + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
       });
       h += '</div>';
@@ -6824,7 +6292,7 @@ function lpModulesHTML(API) {
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites')
          + '</span></span></span>';
       h += '<span class="lp-modR"><span class="lp-modHr">' + m.hours + 'h</span>'
-         + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">EVID' : 'lab">LAB') + '</span>'
+         + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">Evidence' : 'lab">Lab') + '</span>'
          + '<span class="lp-steps">'
          + '<span class="lp-step' + (pr.delta ? ' on' : '') + '"></span>'
          + '<span class="lp-step' + (pr.artifact ? ' on' : '') + '"></span>'
@@ -6836,18 +6304,18 @@ function lpModulesHTML(API) {
   h += '</div><div>';
 
   // Rail: what is open, what the path costs, and the rule the view enforces.
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Open now</div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Open now</div>'
      + '<div class="lp-cmeta">' + avail.length + ' unlocked</div></div>';
   if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
   avail.slice(0, 6).forEach(function (m) {
     h += '<button class="lx-link" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lx-li2"><span class="lx-lt">' + esc(m.title) + '</span>'
-       + '<span class="lx-ls">' + m.id + ' · ' + m.hours + 'h · ' + m.kind + '</span></span>'
+       + '<span class="lx-ls">' + m.id + ' · ' + m.hours + 'h · ' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</span></span>'
        + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
   });
   h += '</div>';
 
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">By the numbers</div></div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">By the numbers</div></div>';
   [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
    ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
    ['Critical path', API.criticalPath().hours + 'h'],
@@ -6871,7 +6339,7 @@ function lpTracksHTML(API) {
         + '<div class="lx-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
         + 'version understate the commitment by 40%.</div></div>';
   T.forEach(function (t) {
-    h += '<div class="lp-card lp-tk"><div class="lp-ch"><div class="lp-ct">' + esc(t.title) + '</div>'
+    h += '<div class="lp-card lp-rc lp-tk"><div class="lp-ch"><div class="lp-ct">' + esc(t.title) + '</div>'
        + '<div class="lp-cmeta">' + t.id + ' · ' + (t.hours ? t.hours + 'h' : 'continuous') + '</div></div>'
        + '<div class="lp-tkc">' + esc(t.cadence) + '</div>'
        + '<div class="lp-tkr">' + esc(t.rule) + '</div></div>';
@@ -6955,8 +6423,7 @@ function lpDetailHTML(API, id) {
   var pr = (LP_ST.mods && LP_ST.mods[id]) || {};
   var P = lpProgress();
   var layer = (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).filter(function (L) { return L.id === m.layer; })[0];
-
-  var h = '<button class="lp-back mo-btn" onclick="lpTab(\'modules\')">← ALL MODULES</button>';
+  var h = '';
 
   // Hero: identity, one sentence of context, and the three-step track that
   // the rail's checkboxes drive. The track is here because it is the answer
@@ -6964,8 +6431,8 @@ function lpDetailHTML(API, id) {
   h += '<div class="lx-hero lx-lesson">';
   h += '<div class="lx-heroArt">' + lpLayerArt(m.layer) + '</div><div class="lx-heroIn">';
   h += '<div class="lx-eyebrow"><span class="lx-id">' + m.id + '</span>'
-     + '<span class="lx-mt">' + m.kind + '</span><span class="lx-mt">·</span>'
-     + '<span class="lx-mt">' + m.hours + ' focused hours</span><span class="lx-mt">·</span>'
+     + '<span class="lx-mt">' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</span>'
+     + '<span class="lx-mt">' + m.hours + 'h</span>'
      + '<span class="lx-mt">L' + m.layer + (layer ? ' ' + esc(layer.name) : '') + '</span></div>';
   h += '<div class="lx-title">' + esc(m.title) + '</div>';
   h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + ' have passed.' : 'No prerequisites — this is where the curriculum starts.')
@@ -7020,7 +6487,7 @@ function lpDetailHTML(API, id) {
   // The figure closes the left column: the mechanism, after the words.
   var VZ = (typeof LAUNCHPAD_VIZ !== 'undefined') ? LAUNCHPAD_VIZ : null;
   if (VZ && VZ[m.id]) {
-    h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Mechanism</div>'
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Mechanism</div>'
        + '<div class="lp-cmeta">how it actually works</div></div>'
        + '<div class="lp-viz">'
        + '<div class="lp-artCap"><b>Fig. ' + esc(m.id) + '</b> · mechanism<i>L' + m.layer + '</i></div>'
@@ -7030,7 +6497,7 @@ function lpDetailHTML(API, id) {
   h += '</div><div>';
 
   // Rail. Claim the three steps, then the facts, then where this leads.
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Claim progress</div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Claim progress</div>'
      + '<div class="lp-cmeta">in order</div></div>'
      + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">The gate unlocks everything downstream, '
      + 'so it is the one claim worth making carefully.</div>';
@@ -7038,15 +6505,15 @@ function lpDetailHTML(API, id) {
    ['artifact', 'Artifact built and running', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
-    h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
+    h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
        + '<span class="lp-box">' + (on ? '✓' : '') + '</span>'
        + '<span><span style="display:block">' + st[1] + '</span>'
        + '<span class="lx-ls">' + st[2] + '</span></span></div>';
   });
   h += '</div>';
 
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">This module</div></div>';
-  var facts = [['Hours', m.hours + 'h'], ['Kind', m.kind], ['Layer', 'L' + m.layer],
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">This module</div></div>';
+  var facts = [['Hours', m.hours + 'h'], ['Kind', m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab'], ['Layer', 'L' + m.layer],
                ['Depends on', m.dependsOn.length ? m.dependsOn.join(', ') : '—']];
   if (m.owns) facts.push(['Owns', m.owns.join(', ')]);
   if (m.exports) facts.push(['Exports', m.exports.join(', ')]);
@@ -7061,7 +6528,7 @@ function lpDetailHTML(API, id) {
     return x.dependsOn && x.dependsOn.indexOf(m.id) !== -1;
   });
   if (opens.length) {
-    h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Passing this opens</div>'
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Passing this opens</div>'
        + '<div class="lp-cmeta">' + opens.length + '</div></div>';
     opens.forEach(function (x) {
       var un = API.isUnlocked(x.id, P);
