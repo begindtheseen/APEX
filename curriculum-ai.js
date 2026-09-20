@@ -65,15 +65,15 @@ var AI_CURRICULUM = [
      + 'this is the one place where going slower is going faster.',
   gate:{ referee:'Screen recording, watched back.',
          pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real `as`-cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
-         onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.' } },
+         onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — three attempts, 45 minutes each, on an UNSEEN async bug from M0’s second blind queue, scored against the maintainer’s merged diff. Pass 2 of 3. Narrating your own harness cannot distinguish understanding the runtime from remembering what you built.' } },
 
 { id:'M2', layer:1, hours:45, dependsOn:['M1'], kind:'LAB',
   title:'The Machine Model: Ten Seams',
   artifact:'seams: ten reproductions, each a failing script + fix + proving test. Leak proved with a heap snapshot; money wrong by a cent; UTF-8 grapheme split across streamed chunks; pool exhausted under load; lost update in Postgres; four-timezone digest scheduler with an injected fake clock pinned across spring-forward and fall-back.',
   exports:['fake clock -> M6'],
   gate:{ referee:'Reviewer picks which of the ten, without telling you.',
-         pass:'Name the seam and the instrument within 60 seconds, 8 of 10. Then point at the wrong-typed columns in your own shipped schema.',
-         onFail:'Rewrite the three you missed from empty. Re-attempt in 7 days.' } },
+         pass:'Name the seam and the instrument within 60 seconds, 7 of 9. Then point at the wrong-typed columns in your own shipped schema.',
+         onFail:'Rewrite the two you missed from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — two attempts on an UNSEEN data-seam bug (encoding, money, timezone, pooling) from M0’s blind queue, scored against the merged diff. Pass 1 of 2.' } },
 
 { id:'M3', layer:1, hours:45, dependsOn:['M1','M2'], kind:'EVIDENCE', owns:['streaming','idempotency'],
   title:'HTTP, Streaming, and the Wire',
@@ -89,7 +89,7 @@ var AI_CURRICULUM = [
   artifact:'pg-lab against a local Supabase stack. OPEN WITH A 3-HOUR WIN: 50k rows, one slow query, one EXPLAIN, one index, one measured 200x speedup. Then the 5M-row rig: twelve hand-written queries with plans before and after, a slow->fast loop with wall-clock numbers from a load generator you wrote, an RLS policy set benchmarked correct-but-slow vs fast, and the legacy-key rotation as an artifact. Plus asymptotic complexity, taught here because here it is measurable.',
   exports:['load generator -> M22'],
   gate:{ referee:'An EXPLAIN plan you have never seen — from the reviewer or an OSS slow-query log.',
-         pass:'Name the fix before reading the query, 3 of 4. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
+         pass:'State estimated vs actual rows FIRST, then name the fix before reading the query, 3 of 4. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
          onFail:'Re-run the slow->fast loop on three new queries.' } },
 
 // ─────────────── LAYER 2 · THE CRAFT I ───────────────
@@ -151,20 +151,27 @@ var AI_CURRICULUM = [
          onFail:'Your judge is uncalibrated. Re-label 30 traces and recompute.' },
   note:'A gate that has never fired is indistinguishable from one that is misconfigured.' },
 
+{ id:'M21', layer:3, hours:15, dependsOn:['M5','M7'], kind:'EVIDENCE',
+  title:'System Design and the Design Doc',
+  artifact:'A one-page design doc with two rejected options for a bounded AI system, REVIEWED AND PUSHED BACK ON by a real reader before any code exists. Keep both the proposed and the built version; the delta is the interview material. PLUS three timed 45-minute design reps, 1h each, one per month from the application date, each on a different bounded system and at least one deliberately OUTSIDE your stack — you will walk in with real p99 numbers, a real durable queue and a real cost-per-completed-task table, and no reps at saying any of it.',
+  gate:{ referee:'The mock interviewer, who must ask questions you did not anticipate. This gate is unadministrable alone.',
+         pass:'45 minutes at a whiteboard on one bounded AI system end to end including observability and the failure path, surviving three unscripted follow-ups. Plus: here is where my design was wrong and how I found out.',
+         onFail:'Rehearse the weak branch and re-book.' } },
+
 // ─────────────── LAYER 4 · THE CRAFT II ───────────────
 { id:'M12', layer:4, hours:52, dependsOn:['M5','M6','M7'], kind:'EVIDENCE',
   title:'Reading and Changing Code You Did Not Write',
   artifact:'Four pieces. (1) A written end-to-end trace of one user action in a real repo with file:line at every hop, plus getting it running from a cold clone and writing the setup doc that was missing. (2) Characterization tests locking in an untested module including its bugs, then a behavior change behind a flag with both paths green. (3) A resumable backfill over 100k rows on M5 queue. (4) A dual-run cutover on a DETERMINISTIC feature — not an AI one; that is an eval and M11 owns it.',
   exports:['characterization tests -> M13'],
   gate:{ referee:'git revert a merged bug-fix commit from M0 blind queue. Score against the maintainer actual merged diff.',
-         pass:'60 minutes, narrating, arrive at a fix matching the maintainer on behavior, 3 of 5 attempts. Then defend three things you thought were wrong and deliberately did not change.',
+         pass:'State the root cause out loud in ONE SENTENCE before writing any fix — scored separately, and a correct diagnosis with an unfinished patch passes the diagnosis half. Then arrive at a fix matching the maintainer on behavior, 3 of 5 attempts, two tightened to 45 minutes. Then defend three things you thought were wrong and deliberately did not change.',
          onFail:'Pull the next commit from the queue in 7 days. Never read the fix commits.' } },
 
-{ id:'M13', layer:4, hours:44, dependsOn:['M12'], kind:'EVIDENCE',
+{ id:'M13', layer:4, hours:46, dependsOn:['M12'], kind:'EVIDENCE',
   title:'Git, Review, and Code Other People Maintain',
-  artifact:'Four pieces to a real reviewer. A recovery-lab log of eight deliberate disasters. A file you have personally been confused by while editing, with 3+ responsibilities, chosen and justified in writing before you touch it, restructured behind M12 characterization tests with a line-item rationale per boundary moved. Every failure path in one feature rewritten to actionable messages. AND one PR through a full round trip with 15+ comments, 2+ pushed back on with reasoning, 1+ where you changed your mind and said so.',
+  artifact:'Four pieces to a real reviewer. A recovery-lab log of six deliberate disasters. A file you have personally been confused by while editing, with 3+ responsibilities, chosen and justified in writing before you touch it, restructured behind M12 characterization tests with a line-item rationale per boundary moved. Every failure path in one feature rewritten to actionable messages. AND one PR through a full round trip with 15+ comments, 2+ pushed back on with reasoning, 1+ where you changed your mind and said so.',
   gate:{ referee:'A real maintainer review thread.',
-         pass:'Three review rounds completed, every comment addressed or argued in writing, zero structural comments on the final round.',
+         pass:'Three review rounds completed, every comment addressed or argued in writing, zero structural comments on the final round. PLUS twenty consecutive working-day updates posted in public, and the reviewer can reconstruct your month from the thread alone without asking you.',
          onFail:'The structural comments ARE the curriculum. Address and resubmit.' },
   note:'Gate on what you control. v1 gated on "merged", which conditions progress on a stranger inbox.' },
 
@@ -187,7 +194,7 @@ var AI_CURRICULUM = [
   title:'Retrieval You Actually Measured',
   artifact:'Retrieval over M10 corpus, on M11 runner and tables. A measured recall@k baseline, then FIVE interventions measured independently: hybrid+RRF, reranker, contextual retrieval, A LONG-CONTEXT BASELINE (same queries, no retrieval), and an ITERATIVE/AGENTIC SEARCH ARM. Then span-level citation verification against M10 offsets. Embedding lifecycle: batched generation with rate-limit handling, measured cost per 1,000 chunks, a re-embed as a resumable backfill behind a dual-index read switch. Inherits M11 dev/test split.',
   gate:{ referee:'Your held-out test set, half hand-written.',
-         pass:'State recall@10 before and after with the hnsw.iterative_scan setting NAMED and the dev-test gap stated. Name the intervention that did not help. Defend your routing rule between retrieval and long context using your own numbers.',
+         pass:'State your delta WITH the number of arms you compared, and re-measure the winner on a fresh split before reporting it — taking the maximum of five arms biases the margin upward and that number goes in your README. Then state recall@10 before and after with the hnsw.iterative_scan setting NAMED and the dev-test gap stated. Name the intervention that did not help. Defend your routing rule between retrieval and long context using your own numbers.',
          onFail:'The golden set is LLM-generated, or you tuned on the set you reported. Hand-write 25, re-split, re-run.' } },
 
 { id:'M17', layer:5, hours:49, dependsOn:['M3','M5','M9','M11'], kind:'EVIDENCE',
@@ -214,20 +221,13 @@ var AI_CURRICULUM = [
          onFail:'The exploit did not actually land. You have a description, not a demonstration.' } },
 
 // ─────────────── LAYER 6 · PRODUCT AND PLATFORM ───────────────
-{ id:'M20', layer:6, hours:40, dependsOn:['M3','M10','M17','M18'], kind:'EVIDENCE',
+{ id:'M20', layer:6, hours:25, dependsOn:['M3','M10','M17','M18'], kind:'EVIDENCE',
   title:'Frontend for AI Interfaces',
   artifact:'The flagship chat surface rebuilt on YOUR OWN M3 protocol via a custom transport (not the prebuilt default — implementing the transport interface is the part that teaches the protocol boundary). A stop button that provably stops upstream billing. Refresh-mid-generation that resumes. Tool calls with a working approval gate wired to M17. Citations linking to M10 span provenance. Honest failure states. The 402/upgrade path.',
   gate:{ referee:'A screen recording, the cost meter, and axe-core in CI.',
          pass:'Demonstrate refresh-mid-generation recovery live. Show the stop button effect in the cost meter. Report time-to-first-token. Axe-core passes on the chat surface, plus one recorded real-screen-reader pass showing the aria-live re-read behavior present and then fixed.',
          onFail:'The stop button stops the UI only.' },
   note:'Next.js caching INVERTED — nothing is cached by default, you opt in. State the direction, not the version.' },
-
-{ id:'M21', layer:6, hours:12, dependsOn:['M5','M7'], kind:'EVIDENCE',
-  title:'System Design and the Design Doc',
-  artifact:'A one-page design doc with two rejected options for a bounded AI system, REVIEWED AND PUSHED BACK ON by a real reader before any code exists. Keep both the proposed and the built version; the delta is the interview material.',
-  gate:{ referee:'The mock interviewer, who must ask questions you did not anticipate. This gate is unadministrable alone.',
-         pass:'45 minutes at a whiteboard on one bounded AI system end to end including observability and the failure path, surviving three unscripted follow-ups. Plus: here is where my design was wrong and how I found out.',
-         onFail:'Rehearse the weak branch and re-book.' } },
 
 { id:'M22', layer:6, hours:48, dependsOn:['M4','M6','M11'], kind:'EVIDENCE',
   title:'Deployment, CI/CD, and Operating It',
@@ -245,7 +245,7 @@ var AI_CURRICULUM = [
          pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes. The maintainer merges without idiom comments.',
          onFail:'You are writing TypeScript with Python syntax. A passing test cannot catch this.' } },
 
-{ id:'M24', layer:6, hours:28, dependsOn:['M3','M19'], kind:'EVIDENCE',
+{ id:'M24', layer:6, hours:23, dependsOn:['M3','M19'], kind:'EVIDENCE',
   title:'Third-Party Integration as a Consumer',
   artifact:'A real OAuth connection in the flagship INCLUDING THE CONSENT SURFACE: connect and callback routes with state and PKCE verified by a written attack attempt, a connections settings screen, a scope-upgrade re-consent path actually exercised, an in-chat degraded state. Envelope encryption with a per-row key reference, a stated master-key location per environment, and a written rotation procedure. Automatic refresh and a revocation-recovery path that re-prompts.',
   gate:{ referee:'The provider own API, where you revoke the grant MID-RUN.',
@@ -253,12 +253,12 @@ var AI_CURRICULUM = [
          onFail:'The 401 surfaces as a generic error, or the state parameter is decorative.' } },
 
 // ─────────────── LAYER 7 · THE MARKET (by trigger) ───────────────
-{ id:'M25', layer:7, hours:8, dependsOn:['M0'], kind:'EVIDENCE',
+{ id:'M25', layer:7, hours:11, dependsOn:['M0'], kind:'EVIDENCE',
   trigger:'One month BEFORE the application date. Non-droppable in every variant including the Compressed Spine.',
   title:'Comp, Terms, and the Negotiation',
   artifact:'A comp floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded. Plus a references plan: three real people secured by month 10 — the reviewer, an OSS maintainer, a freelance client.',
-  gate:{ referee:'A real recruiter screen.',
-         pass:'State your floor to an actual recruiter without hedging.',
+  gate:{ referee:'GATE A (controllable, month-4 trigger): the reviewer playing a recruiter briefed to push back on your number. GATE B (lagging): a real recruiter screen, logged in the funnel table when it happens.',
+         pass:'State your floor out loud without hedging, recorded. AND deliver a 30-second background answer with no apology, no hedge and no mention of coursework, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since?',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
 { id:'M26', layer:7, hours:8, dependsOn:['M11'], kind:'EVIDENCE',
@@ -270,7 +270,7 @@ var AI_CURRICULUM = [
          onFail:'Rewrite, then THREE FRESH strangers. The first three are now briefed and can never be used again.' },
   note:'Never name the curriculum. The correct sentence is "I spent the last year building and operating X."' },
 
-{ id:'M27', layer:7, hours:17, dependsOn:['M16','M18'], kind:'EVIDENCE',
+{ id:'M27', layer:7, hours:12, dependsOn:['M16','M18'], kind:'EVIDENCE',
   trigger:'After Layer 5, when there are numbers worth publishing.',
   title:'The Evidence Layer v2',
   artifact:'The flagship README carrying the eval numbers INCLUDING THE FAILING V1 — the improvement delta is the evidence of engineering; a single good number could have been luck. A decision log of the five choices that mattered. One public write-up of a measurement you made.',
@@ -278,7 +278,7 @@ var AI_CURRICULUM = [
          pass:'They can state the cost per user and the quality number from the README alone.',
          onFail:'The README is a feature list, not a product spec plus decision record.' } },
 
-{ id:'M28', layer:7, hours:53, dependsOn:['M12','M26'], kind:'EVIDENCE',
+{ id:'M28', layer:7, hours:38, dependsOn:['M12','M26'], kind:'EVIDENCE',
   trigger:'10h forward-loaded to the application date; the rest in the last eight weeks.',
   title:'Interview Performance',
   artifact:'A recorded ten-minute flagship walkthrough in DECISION-language. Three timed foreign-repo bug fixes from M0 blind queue with assistant transcripts annotated. Two recorded mock defenses with a real person who pushes back. Plus ~8h behavioral rehearsal against M0 incident log — twenty real stories accumulated at zero marginal cost since month one. The 40-problem narrated log lives in Track 4 weekly slot.',
@@ -288,44 +288,96 @@ var AI_CURRICULUM = [
 
 // ─────────────── LAYER 8 · EMPLOYED MODE ───────────────
 { id:'M29', layer:8, hours:10, dependsOn:[], kind:'LAB',
-  trigger:'WRITTEN pre-hire, EXECUTED post-hire. Hire-before-completion is the modal good outcome.',
+  trigger:'FIRST ONSITE \u2014 the same event as M30, and the last moment the pre-hire half can be written with a clear head. It reliably lands one to three weeks before an offer. Written pre-hire, executed post-hire; hire-before-completion is the modal good outcome.',
   title:'Employed Mode',
   artifact:'A second operating contract: a realistic employed weekly budget (5-8h, not 18) and a module order driven by what the job needs first. Track 4 retargeted from your own artifacts to a component of the employer codebase. The reviewer relationship re-contracted or deliberately replaced, decided BEFORE the start date. The monthly re-plan surviving with new inputs. The estimate log continuing against real tickets from week one. Plus two scheduled written manager checkpoints at week 6 and week 14, scripted before the start date.',
   gate:{ referee:'The week-6 and week-14 manager checkpoints, in writing.',
          pass:'You asked directly whether you are where they would expect, and you have the written answer.',
          onFail:'Week one is the wrong time to ask — that is when a manager answer is most generic.' } },
 
-{ id:'M30', layer:8, hours:8, dependsOn:[], kind:'LAB',
+{ id:'M30', layer:8, hours:6, dependsOn:[], kind:'LAB',
   trigger:'First onsite.',
   title:'The First 90 Days',
   artifact:'A 30/60/90 plan against a real posting with week-one manager questions. A reusable asking-for-help template practiced FOR REAL by posting three genuine questions in an OSS project Discord or Slack, responses kept. An org map inferred from git blame and log. A handoff note good enough for a stranger to continue. Plus inheriting an AI system you did not build: reading someone else prompts, evals and traces; prompt archaeology on a system with no decision log. Plus a WIP policy computed from your OWN Track 2 review-latency data.',
   gate:{ referee:'Real strangers in a real channel, and a recording.',
-         pass:'Three genuine questions posted and answered. Record yourself pairing with another person for 45 minutes on a real bug in an unfamiliar repo, narrating throughout, and watch it back. State your median review latency from your own data and your WIP policy from memory.',
+         pass:'State which prompt in the inherited system you would change LAST, and why. Three genuine questions posted and answered. Record yourself pairing with another person for 45 minutes on a real bug in an unfamiliar repo, narrating throughout, and watch it back. State your median review latency from your own data and your WIP policy from memory.',
          onFail:'You asked for the answer instead of stating what you tried, expected, saw, and currently believe.' } }
 ];
 
 // Parallel tracks. v1 called these mandatory and budgeted none of them — that was a 40% error.
 var AI_TRACKS = [
-  { id:'T1', title:'Job search',            hours:200, cadence:'3-4 h/week from the application date',
-    rule:'First two months, deliberately target companies you do NOT want. The modal response is silence; the success metric is "I learned what the funnel requires."' },
-  { id:'T2', title:'Open-source PRs',       hours:80,  cadence:'~8h/month from end of M13',
-    rule:'Substantive = touches behavior, 20-200 lines, includes a test, survived a round of review. Three merged into two repos with threads preserved. Gate on SUBMITTED, track merged as lagging.' },
-  { id:'T3', title:'The dependency spiral', hours:0,   cadence:'structural',
-    rule:'Every capstone imports an earlier capstone. Zero hours. The entire answer to knowledge decay.' },
-  { id:'T4', title:'Weekly cold re-build',  hours:60,  cadence:'45 min weekly',
-    rule:'Score 0-3. Three consecutive scores below 2 on the same artifact RE-OPENS that module. Also carries M28 narrated-problem log.' },
-  { id:'T5', title:'Reviewer relationship', hours:15,  cadence:'~1 h/month, batched into scheduled sessions',
-    rule:'Three roles, three deadlines: code reviewer (month 2), technical operator (month 4), mock interviewer (month 10). Agent fallback is one run per attempt, transcript kept, a failed agent review logged as a failed gate.' },
-  { id:'T6', title:'Agent discipline',      hours:0,   cadence:'habit',
+  { id:'T1', title:'Job search \u2014 three channels, not one', hours:200, cadence:'3-4 h/week from the application date',
+    rule:'Cold applications convert at 2-5% for a no-degree candidate; referrals convert at 28-40%. Same 200h, split: '
+       + '(A) WARM/REFERRED ~70h \u2014 the named-humans list, and asking. (B) DIRECT-TO-HUMAN ~50h \u2014 email the '
+       + 'engineer or founder who owns the problem, leading with one number from your own eval set, ~15/month. '
+       + '(C) COLD ~80h at 6-7/month, treated as the control arm. Weight toward A in months 5-12 (a human vouching '
+       + 'compensates for a half-built portfolio), toward B from month 13 when your measured numbers carry the email. '
+       + 'Cap total researched applications at 130. Cold volume goes DOWN, not up. First two months, deliberately '
+       + 'target companies you do not want. The modal response is silence; the success metric is "I learned what the '
+       + 'funnel requires."' },
+  { id:'T2', title:'Open-source PRs \u2014 and the ask', hours:80, cadence:'~8h/month, submission half starts after M7',
+    rule:'Substantive = touches behavior, 20-200 lines, includes a test, survived a round of maintainer review. Three '
+       + 'merged into two repos, threads preserved, plus a written note per PR on what the maintainer asked you to '
+       + 'change and why they were right. RE-PHASED: target ONE merged PR BEFORE the application date \u2014 the gap '
+       + 'between zero public contributions and one merged PR with a visible review thread is far larger than the gap '
+       + 'between one and three. THEN THE ASK: after the second merged PR in a repo, write to the maintainer. What '
+       + 'you are looking for, what you built, is anything open where they are, would they refer you, and "no is a '
+       + 'completely fine answer." Three asks by month 12. The same three people are your references AND your '
+       + 'referral channel, and the ask comes first, while the work is fresh. This is the highest-conversion asset '
+       + 'you build and it is worthless unconverted.' },
+  { id:'T3', title:'The dependency spiral', hours:0, cadence:'structural',
+    rule:'Every capstone imports an earlier capstone. Zero hours. But it is NOT the whole answer to decay: only 10 of '
+       + '31 modules export anything downstream, and M1 \u2014 the largest and first \u2014 exports only the estimate '
+       + 'log. After M1 closes around month 3 nothing touches it again. That is what the Sweep is for.' },
+  { id:'T4', title:'Weekly cold re-build', hours:60, cadence:'45 min weekly',
+    rule:'Pick an artifact from 3-8 weeks ago, rebuild its core from an empty file, original repo closed. Score 0-3. '
+       + 'Re-open trigger now runs off SWEEP scores, which accumulate ~14 per module instead of 1.29, so rotation is '
+       + 'error-driven rather than arbitrary. This slot is the bad-week minimum and is never double-booked \u2014 the '
+       + 'narrated problems moved to T9 precisely because they were silently eating it.' },
+  { id:'T5', title:'Reviewer relationships', hours:15, cadence:'~1 h/month, batched',
+    rule:'Three roles, three deadlines: code reviewer (month 2), technical operator who can break a system cold '
+       + '(month 4), mock interviewer (month 4 \u2014 NOT month 10; M25 needs a recruiter roleplay at month 4 and M28 '
+       + 'forward-loads a mock to month 5). Agent fallback is one run per attempt, transcript kept including '
+       + 'failures, and a failed agent review is logged as a failed gate.' },
+  { id:'T6', title:'Agent discipline', hours:0, cadence:'habit',
     rule:'Interrogate-never-author through M12. Delegation policy in force from M14.' },
-  { id:'T7', title:'Writing',               hours:30,  cadence:'one piece per layer',
-    rule:'Each about something you MEASURED, not something you read.' },
-  { id:'T8', title:'Monthly re-plan',       hours:40,  cadence:'2 h/month, survives into Employed Mode',
-    rule:'Inputs that actually arrive: skill counts across 20-40 postings screened this month, screening questions, which applications produced human contact, and your DELTA.md files. Six weeks behind for two consecutive months -> switch to the Compressed Spine.' }
+  { id:'T7', title:'Writing \u2014 and shipping it somewhere', hours:30, cadence:'one piece per layer',
+    rule:'Five pieces, each about something you MEASURED. Every piece is posted to at least one named place '
+       + 'practitioners actually read, and everyone who responds goes on the named-humans list. Writing nobody reads '
+       + 'is a diary; the distribution step is 15 minutes and it is the difference.' },
+  { id:'T8', title:'Monthly re-plan \u2014 with a funnel table', hours:34, cadence:'2 h/month, survives into Employed Mode',
+    rule:'Inputs that actually arrive: skill counts across the 20-40 postings screened this month (the real '
+       + 'Python-and-cloud trip-wire signal, needing no employer to reply), your DELTA.md files, and a FUNNEL TABLE '
+       + 'by channel \u2014 sent, replies, screens, loops, offers, contacts-per-hour. Two rules: a channel with zero '
+       + 'human contacts for three consecutive months loses half its hours to the best channel; under 6 total human '
+       + 'contacts by month 12 means the defect is the channel mix or the evidence, not the effort \u2014 and the '
+       + 'response is having three people who actually hire read your resume cold, not raising volume. Six weeks '
+       + 'behind for two consecutive months switches to the Compressed Spine.' },
+  { id:'T9', title:'Narrated problems \u2014 the coding-screen instrument', hours:25, cadence:'~30 min/week from the application date',
+    rule:'The one instrument in the document that was a bare count with no hours, no rubric and no pass criterion '
+       + '\u2014 and it was silently eating T4\u2019s slot. Now specified: ~45 problems indexed to the EIGHT patterns '
+       + 'that survive the cut list (arrays/hashing, two pointers, sliding window, binary search, stack/monotonic, '
+       + 'intervals, trees BFS/DFS, heap/top-k), 5-6 each. Every problem drawn from a shape that appears in YOUR OWN '
+       + 'system \u2014 hash/set for M3\u2019s dedupe, sort+binary search for M16\u2019s ranking, heap/top-k for the '
+       + 'reranker, sliding window for M3\u2019s rate limiting. One first pass ~30 min narrated with autocomplete '
+       + 'OFF, one spaced re-solve at 2-4 weeks. Scored 0-3; three consecutive sub-2 in a pattern re-opens that '
+       + 'pattern. Not 250 problems \u2014 you are not targeting loops that ask for them.' },
+  { id:'T10', title:'The Sweep \u2014 retrieval practice', hours:15, cadence:'15 min weekly from month 4',
+    rule:'Five cue-prompts, blank box, written, no notes, NO multiple choice. The item bank already exists and cost '
+       + 'nothing to author: 223 concept strings and 152 failure-mode strings in the module data, one cue each. '
+       + 'Score as a FRACTION \u2014 items produced over items in that module\u2019s array \u2014 so you cannot move '
+       + 'the goalposts after seeing your answer. Selection is error-driven: weighted toward the lowest last score '
+       + 'and toward the 21 modules that export nothing downstream and would otherwise never be touched again. This '
+       + 'is the answer to being interviewed at month 20 on month-1 material.' }
 ];
 
-var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M6','M7','M9','M11','M25']; // 364h, for runway under 9 months
-var AI_CUT_ORDER = ['M24','M23(second half)','M20(down to 25h)','M30'];      // ~80h back, in this order
+var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M6','M7','M9','M11','M25','M26'];
+// M25 AND M26 are non-droppable in every variant. The spine exists to get you to a job,
+// and M25's own gate needs a recruiter screen, which needs a resume, which is M26.
+// Spine track policy: T2 and T7 suspended, T4 biweekly, T5 and T8 unchanged (~40h). // 364h, for runway under 9 months
+var AI_CUT_ORDER = ['M24','M23 second half','M14','M20 is already cut to 25h'];
+// M30 removed from the cut order: it is the only module that owns seamlessness into
+// real work, which is half the stated goal.      // ~80h back, in this order
 
 var LAUNCHPAD_CONFIG = {
   brand: 'LAUNCHPAD',
@@ -575,17 +627,17 @@ M2:{concepts:['References vs values: aliasing, shallow vs deep copy','Stack vs h
  mistakes:['Believing {...obj} or JSON.parse(JSON.stringify(obj)) is a copy. The spread is one level. The JSON trick converts Dates to strings, drops undefined and functions, mangles Maps and Sets, and throws on cycles.','.toFixed(2) "solves" money by fixing the display and leaving the arithmetic wrong.','new TextDecoder() inside the loop — looks identical to correct code, discards the carried partial-character state that is the entire point.','"I’m using a pool" while N serverless instances each hold a pool of M.','Believing a transaction prevents the race. Atomicity is not isolation.']},
 M3:{concepts:['HTTP as a wire format: the ~15 status codes and ~12 headers that carry meaning','REST and where it stops being the right answer','SSE and chunked transfer, from scratch, no SDK','Production streaming failures: proxy buffering, aborts, mid-stream errors, resumption','Idempotency — why a retry corrupts data unless designed for','Timeouts, backoff with jitter, which failures are retry-safe','Rate limiting from both sides','Webhooks: at-least-once, signature verification on RAW bytes','CORS; cookies vs bearer vs JWT and where each breaks'],
  mistakes:['chunk.toString().split("\\n") — corrupts output the moment a frame splits across TCP chunks, and works perfectly on localhost, so it ships.','Assuming HTTP 200 means the whole response succeeded. The status commits before the body exists.','Writing the assistant message to the DB only in finally/onFinish, which on serverless may never run.','Everything returning 200 {ok:false}, which breaks every retry library, monitor and health check.','A client-generated idempotency key per render instead of per logical operation.','Doing webhook work before responding, so the provider times out and retries, multiplying the work.']},
-M4:{concepts:['Relational modelling — constraints as the thing that actually enforces invariants','SQL without an ORM: joins, aggregates, CTEs, window functions','Indexes and EXPLAIN (ANALYZE, BUFFERS) — the slow-to-fast loop','Transactions, isolation, the lost update','N+1 queries','Connection pooling and the Vercel+Supabase failure mode','RLS: correct first, then fast','Expand/contract as a concept','Asymptotic complexity, taught here because here it is measurable'],
+M4:{concepts:['Relational modelling — constraints as the thing that actually enforces invariants','SQL without an ORM: joins, aggregates, CTEs, window functions','Indexes and EXPLAIN (ANALYZE, BUFFERS) — the slow-to-fast loop','Transactions, isolation, the lost update','N+1 queries','Connection pooling and the Vercel+Supabase failure mode','RLS: correct first, then fast','Expand/contract as a concept','Asymptotic complexity, taught here because here it is measurable','The planner: force each join strategy with enable_hashjoin/enable_mergejoin/enable_nestloop off and time all three on the same query, so its choice becomes a decision you watched it make','Estimated vs actual rows — the first thing to say about any plan; one query where stale ANALYZE or a correlated predicate breaks the estimate','The four isolation levels: show that M2’s lost update survives READ COMMITTED (the default, which is why putting it in a transaction fails) and dies under REPEATABLE READ','MVCC and dead-tuple bloat: bulk update, watch the query slow with no code change, VACUUM, watch it recover'],
  mistakes:['Reading cost= as milliseconds. It is an arbitrary planner unit.','Benchmarking cold-then-warm so the cache gets the credit. Run each variant twice, report the second.','Assuming an index on (a,b) helps a query filtering only on b.','One single-column index per column instead of one correct composite — and forgetting each is a tax on every write.','Holding a transaction open across a model API call, turning a 200ms connection into a 30-second lock.','Schema changes in the dashboard table editor, which bypasses migration history.','USING (true), or a policy against a JWT claim the user can edit.']},
 M5:{concepts:['Moving slow work off the request path','SELECT ... FOR UPDATE SKIP LOCKED','At-least-once delivery and idempotent consumers','Backpressure and dead-letter paths','The read path — polling, SSE and resumable streams are three different products'],
  mistakes:['Starting with a hosted queue and never learning the mechanism, which makes every operational question unanswerable.','Designing the queue and forgetting the read path. Enqueueing is the easy half.','Assuming a cached step result makes a retry safe. book_flight() twice is two bookings.']},
 M6:{concepts:['The pyramid and what each level is genuinely for','A unit test that fails for the right reason','Test doubles, and when mocking makes a test worthless','Integration tests against real Postgres, including RLS','CI as a gate, not a place tests run','The flakiness budget','Mutation testing as the instrument coverage is not','The deterministic-shell / probabilistic-core seam'],
  mistakes:['Testing what the code does rather than what it should do. A test that has never failed has never been tested.','vi.mock() on your own modules until the test mirrors the implementation — failing on refactors, passing on bugs. Mock at the network or process boundary.','Mocking the Supabase client and asserting on .from().select() chains. That tests your mental model of Supabase.','Seeding AND asserting with the service key, bypassing RLS entirely, so the test proves nothing about what a real user sees.','retries: 2 or sleep(500), which hides the bug and triples the suite time.']},
-M7:{concepts:['Stack traces as primary evidence, including minified production traces','Hypothesis-driven debugging and bisection across code, data, time, config','A real debugger: breakpoints, conditional breakpoints, logpoints','Structured logging, log levels with real semantics, correlation IDs, redaction','OTel spans and context propagation','Metrics, SLOs, error tracking','Profiling and flame graphs','Detecting wrong model output when nothing throws','Incident response, runbooks, the blameless postmortem'],
+M7:{concepts:['Stack traces as primary evidence, including minified production traces','Hypothesis-driven debugging and bisection across code, data, time, config','A real debugger: breakpoints, conditional breakpoints, logpoints','Structured logging, log levels with real semantics, correlation IDs, redaction','OTel spans and context propagation','Metrics, SLOs, error tracking','Profiling and flame graphs','Detecting wrong model output when nothing throws','Incident response as a SOCIAL event, rehearsed on the game day the partner is already in the room for: acknowledge within 5 minutes; post a severity call plus what I know / what I am doing / when I will update next; update on that interval whether or not there is news; escalate at a trip-wire written down BEFORE the window opens. 24h detection is a SOLO baseline — a real rotation measures acknowledgement in minutes','Runbooks and the blameless postmortem'],
  mistakes:['Changing several things at once and redeploying. The single most expensive habit self-taught developers carry into a job, because it destroys the evidence.','Believing the debugger is for beginners and console.log is for professionals. The inversion is real.','Deploying without source maps, then concluding production errors are unknowable.','Assuming valid JSON means correct output. Constrained decoding guarantees shape, not truth — and removes the model’s ability to express uncertainty, so it fills a required field regardless.','Alerting on causes, producing noise that gets muted. The system is then unmonitored while looking monitored.','Postmortems that stop at the code fix without asking why it took 40 minutes to notice.']},
 M8:{concepts:['Environments and dependencies on current tooling (uv, ruff, one pinned type checker)','Python semantics where they differ from TypeScript: names vs values, LEGB, truthiness, generators','pytest','Type hints with a checker in CI','pydantic as the runtime validation boundary','One typed FastAPI route'],
  mistakes:['Writing TypeScript with Python syntax: classes everywhere, raw dicts, no type hints, camelCase. Reviewers read that instantly.','Reaching for conda/poetry/pyenv because a 2022 tutorial said to.','Assuming type hints behave like TypeScript’s compile-then-trust contract.']},
-M9:{concepts:['Tokens as the unit of everything','The messages array, roles, statelessness, what a system prompt mechanically is','Why text in a user or tool-result message can be forged — that is prompt injection','The context window: what fills it, what degrades before it fills','max_tokens and the full stop_reason enum','Pricing: input/output asymmetry, caching as a byte-exact prefix match','Adaptive thinking and effort — the first quality-trading lever after caching','Discovering capabilities from the Models API rather than a hard-coded table','The structural boundaries — what no prompt fixes'],
+M9:{concepts:['Tokens as the unit of everything','The messages array, roles, statelessness, what a system prompt mechanically is','Why text in a user or tool-result message can be forged — that is prompt injection','The context window: what fills it, what degrades before it fills','max_tokens and the full stop_reason enum','Pricing: input/output asymmetry, caching as a byte-exact prefix match','Adaptive thinking and effort — the first quality-trading lever after caching','Discovering capabilities from the Models API rather than a hard-coded table','The structural boundaries — what no prompt fixes','Prefill vs decode and the KV cache — the one mechanism explaining three facts this module asserts: why caching needs a byte-exact PREFIX, why conversation cost grows quadratically, and why time-to-first-token and inter-token latency are different numbers. No training, no backprop, no attention math. Then measure it: probe a long prompt and a short one and show TTFT scaling with input while inter-token latency does not'],
  mistakes:['Using another provider’s tokenizer or a chars/4 rule to budget tokens.','Treating max_tokens as a cost cap. It is a ceiling the model is unaware of, so it truncates mid-thought.','Checking for an empty content array to detect a refusal. The array is populated; stop_details is the discriminator, and that branch never fires.','Interpolating anything dynamic near the front of the system prompt. One changed byte invalidates the cache and the failure is completely silent.','Optimising input tokens while ignoring that output costs several times more.','Asking the model to rate its own confidence and routing on that number. It looks like a probability and behaves like a vibe.']},
 M10:{concepts:['Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes `vector` to 2,000 dimensions and `halfvec` to 4,000, several common models emit 3,072, and you choose the model HERE but hit the ceiling six modules later \u2014 so record it in the decision log before you embed anything'],
  mistakes:['Storing page-level provenance, then discovering in M16 that span citations are unverifiable and offsets are unrecoverable after the fact.','Making the bucket public under time pressure. A misconfigured bucket is none of injection, XSS, CSRF or SSRF, so the standard exploit set will not catch it.','Picking a 3072-dimension embedding model without checking the pgvector index ceiling.']},
@@ -593,11 +645,11 @@ M11:{concepts:['Trace capture: the exact input, usage, stop_reason and attempt c
  mistakes:['Reporting accuracy instead of TPR/TNR. When failures are rare, a judge that always says pass scores 92% and is worthless. This invalidates more eval work than anything else.','Generic categories — "hallucination", "unhelpful". Unactionable. "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.','Delegating the labelling to an LLM. It clusters notes you already wrote. People discover what they care about through labelling.','Building the eval set from cases you invented. An imagined set measures imagination.','A runner that re-implements the model call to keep the eval clean. It then measures a different system than the one that ships.','Using the same model as generator and judge.','Believing schema enforcement solved reliability. It solves shape, not content.']},
 M12:{concepts:['Tracing one user action end to end — architecture is the output of tracing, not the input','A predict-then-ask protocol for using AI on code you are learning','Three layers of code search: ripgrep, ast-grep, LSP','Reading tests as executable specification','Git history as documentation: blame, pickaxe, log -L, bisect','Inferring unwritten conventions','Chesterton’s fence','Characterization tests around code you do not understand','Strangler fig, the resumable backfill, the dual-run cutover'],
  mistakes:['Reading directories top-down, or asking for an architecture overview first.','Asking the assistant to produce the answer rather than pressure-test yours. Conceptual-question users scored 65%+; delegation users under 40%.','Grepping a function name and treating the hits as the complete blast radius.','git blame as the final answer — it gives the last commit to touch the line, usually a formatting sweep.','Pattern-matching ugliness to badness. Your confidence is highest exactly where your context is lowest.','Waiting to understand the whole system before opening anything. The most common ramp killer.']},
-M13:{concepts:['The git object model: commits are snapshots, refs are pointers, the index is a third thing','What merge, rebase and squash do to the graph','Resolving a conflict — including one that merges cleanly and is still wrong','reflog, revert vs reset, shared-branch etiquette','Atomic commits and a PR a reviewer can act on','Giving and receiving review, including of AI-written code','Naming, module boundaries, cohesion and coupling, dependency direction','The rule of three; deleting code; actionable error messages','The three async artifacts: status update, blocker escalation, decision record'],
+M13:{concepts:['The git object model: commits are snapshots, refs are pointers, the index is a third thing','What merge, rebase and squash do to the graph','Resolving a conflict — including one that merges cleanly and is still wrong','reflog, revert vs reset, shared-branch etiquette','Atomic commits and a PR a reviewer can act on','Giving and receiving review, including of AI-written code','Naming, module boundaries, cohesion and coupling, dependency direction','The rule of three; deleting code; actionable error messages','The three async artifacts — and you PRODUCE them: twenty daily-shaped written updates posted publicly in the issue thread across the four weeks around your first submitted PR (what I did, what I am doing next, where I am stuck, what I currently believe), one real blocker escalation, one decision record against real friction. You train a monthly rhythm for 20 months then join a team running a daily one; autonomy read through silence reads as stuck'],
  mistakes:['Treating rebase as a cleaner merge. It is history rewriting: new SHAs, and anyone who pulled is now diverged.','Resolving a conflict by picking a whole side without re-reading the function, and never looking at the merge base.','Commits that map to time spent rather than units of change; mixing a rename with a behavior change in one commit.','A PR description that says what the diff already says instead of why, and omits how to verify it.','Silent compliance under a senior’s disagreement. That is the exact behavior that reads as not-mid-level — and so is arguing every point.','Explaining in a call what should have been a comment on the line. If it is not written on the PR it did not happen.']},
 M14:{concepts:['Writing a repo’s agent config so generated code conforms to house conventions','Decomposing a ticket into agent-sized units with verifiable exit criteria','Reviewing a 400-line diff by reading test changes and boundaries first','What never to delegate: auth, money, migrations, anything unverifiable','Sandboxing and permission scope','Spec-driven development and the underspecified-spec log','What a run costs'],
  mistakes:['Accepting suggestions and moving on, producing a transcript of a person being driven by a model.','The purity play — refusing to touch the assistant in a round whose rubric line is AI fluency.','Measuring nothing, so the module’s own thesis (being slow is the failure mode) has no number attached to it.']},
-M15:{concepts:['Turning a vague request into clarifying questions','Decomposing into 1-2 day independently shippable slices','Estimating, and naming the riskiest assumption','Renegotiating when the estimate is wrong','The open-ended quality ticket — no known-achievable endpoint','A capability-question protocol: cheap, expensive-and-uncertain, structurally impossible','Explaining a limit to a non-engineer who wants a guarantee'],
+M15:{concepts:['Turning a vague request into clarifying questions','Decomposing into 1-2 day independently shippable slices','Estimating, and naming the riskiest assumption','Renegotiating when the estimate is wrong','The open-ended quality ticket, run against a real OSS AI application you did NOT write, with prompts in-repo and no decision log — on your own system it tests measurement; on a stranger’s it tests measurement plus archaeology, which is the actual job','A capability-question protocol: cheap, expensive-and-uncertain, structurally impossible','Explaining a limit to a non-engineer who wants a guarantee'],
  mistakes:['Disappearing for nine days on something that should have been scoped to two, and delivering more than was asked. This is what most "not mid-level yet" feedback means.','Having no stop-or-continue rule on an open-ended ticket, so it absorbs three days or three months identically.','Apologising for a missed target or asking for more time, instead of reporting the result and the evidence.']},
 M16:{concepts:['What an embedding is, and what it structurally cannot do','pgvector HNSW parameters, the dimension ceiling, the recall/latency curve','Chunking: why fixed-size is the right baseline; what contextual retrieval fixes','Two-stage retrieval: hybrid lexical+semantic fused with RRF, then a cross-encoder','Agentic and iterative retrieval','Grounding and span-level citation verification','The long-context baseline, and when to skip retrieval entirely','The embedding lifecycle: batched generation, cost per 1,000 chunks, re-embedding'],
  mistakes:['Evaluating end-to-end with a judge scoring answer quality. Answer quality hides retrieval failure — a strong model answers correctly from pretraining even when retrieval returned garbage.','Generating the golden set entirely with an LLM. Synthetic queries are written from the chunk, leak its vocabulary, and every retriever scores artificially high.','Treating HNSW as exact search, and never measuring recall at all.','Reranking too few candidates. If the right chunk is at rank 73 and you rerank the top 10, the reranker is pure added latency.','Skipping lexical search, which is why queries with an error code or a person’s name fail on pure vector.','Asking for citations like [1] and trusting them. Free-text markers are generated text.']},
@@ -627,7 +679,7 @@ M28:{concepts:['The un-assisted round: thinking out loud under a clock','Reading
  mistakes:['Practicing in your own IDE with autocomplete on and the assistant one tab away.','Barreling into typing without clarifying. Interviewers name this as a reject signal.','Editing the test to make it pass. Instant fail.','Framing projects around tool names. "Nothing, it’s solid" scores worse than naming a real limitation.','Gold-plating the take-home UI while shipping zero evaluation, which inverts the actual scoring.']},
 M29:{concepts:['A second operating contract at an employed weekly budget (5-8h, not 18)','Retargeting the cold re-build to the employer’s codebase','Re-contracting or replacing the reviewer before the start date','Manager checkpoints at week 6 and week 14, scripted in advance'],
  mistakes:['Treating hire-before-completion as failure. The arithmetic makes it the modal good outcome.','Letting every feedback instrument terminate on hire day.','Asking "am I where you expected" in week one, when a manager’s answer is most generic.']},
-M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The asking-for-help format: what you tried, expected, saw, and currently believe','Org mapping from git history','Inheriting an AI system you did not build: prompt archaeology with no decision log','A WIP policy computed from your own review-latency data'],
+M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The asking-for-help format: what you tried, expected, saw, and currently believe','Org mapping from git history','Inheriting an AI system you did not build, with a done-state: a one-page note saying where the prompts live, which are load-bearing, what the implied eval was, what the author was evidently afraid of (inferred from the defensive instructions in the prompt text), and the single measurement you would run first','A WIP policy computed from your own review-latency data'],
  mistakes:['Silent struggle. Self-taught plus remote is the highest-risk combination, and being stuck two days on a five-minute unblock is how new hires are let go at month three.','Working one thing at a time, so four months of six-day PRs reads on a cycle-time dashboard as slow to deliver.','Asking for the answer instead of stating your current best hypothesis.']}
 };
 

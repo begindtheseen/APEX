@@ -12,8 +12,8 @@ document was resting on and found a sixth it had never named. Both corrections a
 
 | | hours |
 |---|---|
-| **Module hours** (the 31 modules) | **1,057** |
-| **Parallel track hours** (8 tracks, all mandatory) | **~425** |
+| **Module hours** (the 31 modules) | **1,023** |
+| **Parallel track hours** (10 tracks, all mandatory) | **~459** |
 | **Real total** | **~1,480 focused hours** |
 
 Version 1 of this document said 963 hours. **That was wrong, and it was wrong in the most dangerous
@@ -46,10 +46,7 @@ itself names as the mechanism that turns a bad stretch into quitting.
 Compressed Spine.** That is the plan working, not the plan failing. It exists so a slow stretch resolves
 into a smaller finished program instead of an abandoned large one.
 
-**Numbered cut order**, if you need hours back before that: ① M24 (28h — OAuth is the most
-learn-on-demand module here) · ② M23's second half (~20h — if the trip-wire says your funnel accepts
-Node) · ③ M20 (down to 25h — the least differentiating module) · ④ M30 (8h — it triggers on your first
-onsite anyway). That is ~80 hours without touching anything the differentiator depends on.
+
 
 **Do not pick a weekly number because it sounds committed. Derive it.** M0 requires you to write down
 your employment status and monthly burn first, then publish two timeline variants — employed (~12 h/wk)
@@ -57,14 +54,24 @@ and full-time (~35 h/wk) — and take the one that matches your actual life.
 
 ### The Compressed Spine — if your runway is under nine months
 
-Do not attempt the full program. The real short path is **364 focused hours**: M0 (22), M1 (67), M2 (45),
-M3 (45), M6 (32), M7 (45), M9 (30), M11 (70), M25 (8). That is ~4.7 months at 18 h/week, and it gets you
-to a contract role with the
-fundamentals, the observability, the model layer, and one real eval harness. Everything else is learned
-on someone else's payroll.
+Do not attempt the full program. The honest short path is **~425 focused hours**: M0, M1, M2, M3, M6,
+M7, M9, M11, M25, M26 — **375 module hours plus ~40 track hours plus M28's 10-hour forward-load.** At
+18 h/week that is **~5.4 months**, not the 4.7 an earlier draft claimed by pricing it module-only.
 
-**M25 (comp and terms) is non-droppable in every variant, including this one.** It is 8 hours against a
-first-year cost that exceeds the value of this entire curriculum.
+**Spine track policy:** T2 (OSS PRs) and T7 (writing) suspended · T4 (cold re-build) biweekly · T5
+(reviewer) and T8 (re-plan) unchanged.
+
+**M25 and M26 are non-droppable in every variant, including this one.** M25 is 8 hours against a
+first-year cost that exceeds the value of this entire curriculum. M26 is in because the spine exists to
+get you to a job and M25's own gate needs a recruiter screen, which needs a resume — an earlier draft
+cut the resume from the variant designed to produce a hire.
+
+**Numbered cut order**, if you need hours back before switching: ① M24 (23h — OAuth is the most
+learn-on-demand module here) · ② M23's second half (~20h — if the trip-wire says your funnel accepts
+Node) · ③ M14 (28h) · ④ M20 is already cut to 25h, so take from M23 instead if the cloud trip-wire
+fires. **M30 is not on this list** — it is the only module that owns seamlessness into real work, which
+is half the stated goal.
+
 
 ---
 
@@ -202,27 +209,28 @@ Presented in execution order. Hours are focused hours.
 | **M8** | Python On-Ramp | 15 | M6 |
 | **M9** | The Model as a Function | 30 | M3 |
 | **M10** | Ingestion: Real Documents Into a Corpus | 30 | M4, M5 |
-| **M11** | Evals: The One Harness (+ Stats Lab) | 70 | M7, M9 |
+| **M11** | Evals: The One Harness, and the Stats Lab | 70 | M7, M9 |
+| **M21** | System Design and the Design Doc | 15 | M5, M7 |
 | | **▲ HARD GATE — flagship live, 2 real users, 100 failure traces** | | |
 | **M12** | Reading and Changing Code You Did Not Write | 52 | M5, M6, M7 |
-| **M13** | Git, Review, and Code Others Maintain | 44 | M12 |
+| **M13** | Git, Review, and Code Other People Maintain | 46 | M12 |
 | **M14** | Working With Coding Agents Professionally | 28 | M12, M13 |
-| **M15** | Scoping, Estimating, Someone Else's Priorities | 29 | M12 |
+| **M15** | Scoping, Estimating, and Someone Else’s Priorities | 29 | M12 |
 | **M16** | Retrieval You Actually Measured | 44 | M10, M11 |
 | **M17** | Agents and Tool Use | 49 | M3, M5, M9, M11 |
 | **M18** | Cost, Metering, and Unit Economics | 30 | M9, M11, M3 |
 | **M19** | Security and the Trust Boundary | 34 | M1, M4, M7, M17 |
-| **M20** | Frontend for AI Interfaces | 40 | M3, M10, M17, M18 |
-| **M21** | System Design and the Design Doc | 12 | M5, M7 |
+| **M20** | Frontend for AI Interfaces | 25 | M3, M10, M17, M18 |
 | **M22** | Deployment, CI/CD, and Operating It | 48 | M4, M6, M11 |
-| **M23** | Python as a Second Production Language | 35 | M8, M11 |
-| **M24** | Third-Party Integration as a Consumer | 28 | M3, M19 |
-| **M25** | Comp, Terms, and the Negotiation | 8 | M0 · *trigger: 1 month before applications* |
-| **M26** | The Evidence Layer v1 | 8 | M11 · *trigger: application date* |
-| **M27** | The Evidence Layer v2 | 17 | M16, M18 · *trigger: after Layer 5* |
-| **M28** | Interview Performance | 53 | M12, M26 · *10h forward-loaded to application date* |
-| **M29** | Employed Mode | 10 | — · *written pre-hire, executed post-hire* |
-| **M30** | The First 90 Days | 8 | — · *trigger: first onsite* |
+| **M23** | Python as a Second Production Language · *trigger* | 35 | M8, M11 |
+| **M24** | Third-Party Integration as a Consumer | 23 | M3, M19 |
+| **M25** | Comp, Terms, and the Negotiation · *trigger* | 11 | M0 |
+| **M26** | The Evidence Layer v1 · *trigger* | 8 | M11 |
+| **M27** | The Evidence Layer v2 · *trigger* | 12 | M16, M18 |
+| **M28** | Interview Performance · *trigger* | 38 | M12, M26 |
+| **M29** | Employed Mode · *trigger* | 10 | — |
+| **M30** | The First 90 Days · *trigger* | 6 | — |
+
 
 **The critical path is 453 hours**: `M0 → M1 → M2 → M4 → M6 → M7 → M11 → M17 → M19 → M24`.
 
@@ -253,8 +261,11 @@ four things that were previously assumed, unassigned, or discovered too late.
 variants (employed ~12 h/wk, full-time ~35 h/wk) with the weekly hours **derived** from them, not
 assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
-**2. The hour budget** — 999 module hours + ~425 track hours, with the line-item track table below, and
-your date arithmetic shown.
+**2. The hour budget** — **1,057** module hours + ~425 track hours = **~1,482**, with the line-item
+track table below and your date arithmetic shown. **Derive these from `curriculum-ai.js`, do not copy
+them from here** — the JS sums itself and the prose is what rots. An earlier draft of this very line
+said 999, which is the exact class of error this module exists to prevent, sitting in the module whose
+only authority is that the arithmetic is honest.
 
 **3. The application date** and the written defense of the before/after-application cut.
 
@@ -655,7 +666,7 @@ the idiom is wrong — a passing test cannot catch this, which is why the refere
 
 ---
 
-# LAYER 3 — The AI Production Core (130h)
+# LAYER 3 — The AI Production Core (145h)
 
 *Pulled forward from v1's Layer 3 position. v1 gated this behind 150 hours of Postgres, git, agents and
 scoping for no stated reason, and the differentiator finished five months after applications started.*
@@ -836,7 +847,7 @@ fallback and write down what it costs you. **Do not proceed by inventing traces.
 
 ---
 
-# LAYER 4 — The Craft II (153h)
+# LAYER 4 — The Craft II (155h)
 
 *Ramp-and-collaboration skills. These matter for surviving the job more than getting the screen, and are
 the modules most safely learned while interviewing.*
@@ -889,7 +900,7 @@ last commit to touch the line, usually a formatting sweep. `git log -S` and `git
 answer "why is this here." · Pattern-matching ugliness to badness. **Your confidence is highest exactly
 where your context is lowest.** · Waiting to understand the whole system before opening anything.
 
-## M13 — Git, Review, and Code Other People Maintain (44h) · `dependsOn: M12`
+## M13 — Git, Review, and Code Other People Maintain (46h) · `dependsOn: M12`
 
 "I need to understand code" has a reading half and a writing half. M12 owns reading. **This owns
 writing** — the judgment that produces a convention rather than conforms to one. Structure and naming
@@ -1207,9 +1218,9 @@ confirmation step whose summary the model itself generates — an injected model
 
 ---
 
-# LAYER 6 — Product and Platform (163h)
+# LAYER 6 — Product and Platform (131h)
 
-## M20 — Frontend for AI Interfaces (40h) · `dependsOn: M3, M10, M17, M18`
+## M20 — Frontend for AI Interfaces (25h) · `dependsOn: M3, M10, M17, M18`
 
 Cut from v1's 45h and retargeted: the generic React rendering-model material is below your level. What
 remains is the AI-specific surface, which is where you differentiate.
@@ -1243,7 +1254,7 @@ re-rendering the whole markdown tree, then blaming React. · Conflating client d
 cancellation. · `aria-live="polite"` on the streaming container, making screen readers re-read the entire
 growing message. · **An approval button that appears after the tool already ran.** That is theatre.
 
-## M21 — System Design and the Design Doc (12h) · `dependsOn: M5, M7`
+## M21 — System Design and the Design Doc (15h) · `dependsOn: M5, M7`
 
 The queue half moved to M5. What remains is the interview-shaped half, correctly late.
 
@@ -1324,7 +1335,7 @@ which is why the referee is a human who reads Python daily.
 items, OOM on 5,000. · Calling the real model API in unit tests. The LLM belongs in the eval suite.
 · Assuming pydantic is strict by default. It coerces unless told otherwise.
 
-## M24 — Third-Party Integration as a Consumer (28h) · `dependsOn: M3, M19`
+## M24 — Third-Party Integration as a Consumer (23h) · `dependsOn: M3, M19`
 
 **The consent surface is part of this module, not someone else's.** v1 made M24 entirely backend in 20
 hours while its own artifact required a revocation path that *re-prompts the user* — UI work in a module
@@ -1353,14 +1364,14 @@ a generic error, or the `state` parameter is decorative.
 
 ---
 
-# LAYER 7 — The Market (86h)
+# LAYER 7 — The Market (69h)
 
 **Scheduled by trigger, not by position.** v1's single worst sequencing error was here: M23's gate said in
 bold "this happens before the first application" while sitting at hour 873 — eight months *after*
 applications start. M24 produced the resume at month 15 for applications at month 5. Five lenses caught it
 independently.
 
-## M25 — Comp, Terms, and the Negotiation (8h) · *trigger: one month before the application date*
+## M25 — Comp, Terms, and the Negotiation (11h) · *trigger: one month before the application date*
 
 The funnel-filter half of this work already happened in M0, where it belongs, because it determines which
 modules matter. This is the transaction itself.
@@ -1394,6 +1405,19 @@ product-spec form.
 you things and they are **not portfolio.** The final pinned four: the flagship · the OSS contribution
 history · one design doc or public write-up · one genuinely separate small product.
 
+**Four sentences you will need, written here and rehearsed in M28.** Every cut in this document is a
+gap an interviewer may probe. A shrug loses the room; a specific answer with a number wins it.
+
+- **Distributed systems** — *"I haven't run Kafka. I built a Postgres-backed durable queue with
+  `SKIP LOCKED`, at-least-once delivery and idempotent consumers, and I can tell you exactly what would
+  make me outgrow it."*
+- **Frameworks** — *"I hand-rolled the agent loop at the wire level, then ran the same agent on an SDK
+  tool runner and wrote up what the hooks bought and what they hid."*
+- **Fine-tuning** (near-certain, given your portfolio is an eval harness) — *"Prompt, then retrieval,
+  then fine-tune, then distill. Here's what each rung costs, and here's the number from my own eval set
+  that says the earlier rungs hadn't run out."*
+- **Algorithms** — *"I state the complexity of what I write and measure it against a 5M-row set."*
+
 > **Never name the curriculum.** Not in a README, not in an interview, not on the resume. The correct
 > sentence is *"I spent the last year building and operating X."* Lab concepts surface only as specific
 > answers to specific questions. The same goes for the weekly cold-rebuild ritual — excellent practice,
@@ -1407,7 +1431,7 @@ writing before any back-and-forth.** **PASS:** 3/3 on all three questions — wh
 it cost per user, how good is it. **ON FAIL:** rewrite, then **three fresh strangers** — the first three
 are now briefed and can never be used again.
 
-## M27 — The Evidence Layer v2 (17h) · *trigger: after Layer 5*
+## M27 — The Evidence Layer v2 (12h) · *trigger: after Layer 5*
 
 **Artifact** `EVIDENCE` — the flagship README carrying **the eval numbers including the failing v1**; a
 decision log of the five choices that mattered; one public write-up of a measurement you made.
@@ -1420,7 +1444,7 @@ numbered account of something that went wrong in your own system. · 22 technolo
 grilled on reads as competence. Do not put "Prompt Engineering" on it. · Auto-apply tools and
 200-application blasts. Always find the human.
 
-## M28 — Interview Performance (53h) · *10h forward-loaded to the application date*
+## M28 — Interview Performance (38h) · *10h forward-loaded to the application date*
 
 **Forward-loaded (10h, at the application date):** clarify-before-typing; out-loud narration with
 autocomplete off; one recorded mock. The remaining 35h stays late.
@@ -1460,7 +1484,7 @@ scoring.
 
 ---
 
-# LAYER 8 — Employed Mode (18h)
+# LAYER 8 — Employed Mode (16h)
 
 *Every feedback instrument in v1 was designed for an unemployed person and terminated on hire day. But the
 document's own arithmetic makes **hire-before-completion the modal outcome.***
@@ -1478,7 +1502,7 @@ Plus **two scheduled written manager checkpoints at week 6 and week 14**, script
 asking directly whether you are where they would expect. Week one is the wrong time to ask — that is when a
 manager's answer is most generic.
 
-## M30 — The First 90 Days (8h) · *trigger: first onsite*
+## M30 — The First 90 Days (6h) · *trigger: first onsite*
 
 Self-taught plus remote is the highest-risk combination for silent struggle, and silent struggle is how new
 hires get let go at month three — not for incompetence, but for being stuck two days on something a
@@ -1509,15 +1533,16 @@ v1 listed these as mandatory and budgeted none of them. That was the 40% error.
 
 | # | Track | Hours | Cadence |
 |---|---|---|---|
-| 1 | **Job search** — 10 researched applications/month where you can name the product and a human | **~200** | 3–4 h/week from the application date |
-| 2 | **OSS PRs** — one substantive merged PR/month | **~80** | ~8h/month from M12 |
-| 3 | **The dependency spiral** — every capstone imports an earlier one | **0** | structural |
-| 4 | **Weekly cold re-build** — 45 min, original repo closed. *Also carries M28's narrated-problem log.* | **~60** | weekly |
-| 5 | **Reviewer relationship** — batched into scheduled monthly sessions, not escalating ad-hoc favors | **~15** | ~1 h/month |
-| 6 | **Agent discipline** — interrogate-never-author through M12; delegation policy after M14 | **0** | habit |
-| 7 | **Writing** — one short piece per layer, each about something you *measured* | **~30** | 5 × 6h |
-| 8 | **Monthly re-plan** — *and it survives into Employed Mode* | **~40** | 2 h/month |
-| | **Total** | **~425** | |
+| T1 | **Job search — three channels, not one** | **200** | 3-4 h/week from the application date |
+| T2 | **Open-source PRs — and the ask** | **80** | ~8h/month, submission half starts after M7 |
+| T3 | **The dependency spiral** | **0** | structural |
+| T4 | **Weekly cold re-build** | **60** | 45 min weekly |
+| T5 | **Reviewer relationships** | **15** | ~1 h/month, batched |
+| T6 | **Agent discipline** | **0** | habit |
+| T7 | **Writing — and shipping it somewhere** | **30** | one piece per layer |
+| T8 | **Monthly re-plan — with a funnel table** | **34** | 2 h/month, survives into Employed Mode |
+| T9 | **Narrated problems — the coding-screen instrument** | **25** | ~30 min/week from the application date |
+| T10 | **The Sweep — retrieval practice** | **15** | 15 min weekly from month 4 |
 
 **Track 1 sequencing rule:** for the first two months, deliberately target companies you do **not** want.
 The first ten interviews are instruments, not opportunities.
@@ -1573,8 +1598,9 @@ service meshes, microservices, gRPC, Terraform as a practice, self-hosted metric
 exotica** — type-level metaprogramming, decorators, namespaces, RxJS, Effect-TS/fp-ts. Read these;
 authoring them makes you the person whose PRs nobody can review. · **The Python data-science slice** —
 numpy, pandas mastery, scikit-learn, notebooks-as-primary-workflow, Django/Flask, conda/poetry/pyenv.
-· **Framework tourism** — deep LangChain, LlamaIndex, CrewAI, AutoGen, and *most tempting of all*,
-building your own agent framework, eval platform, or observability dashboard. Each is a way to build a
+· **Building your own agent framework, eval platform, or observability dashboard** — the genuinely
+dangerous half, and the most tempting. *(Reading a framework's docs is no longer cut: see Appendix C —
+read the docs for whichever framework a posting names, the week that posting appears.)* Each is a way to build a
 worse version of something that exists while avoiding the labeling and debugging that actually teach.
 · **The advanced-RAG genre** — GraphRAG, RAPTOR, self-RAG, CRAG, FLARE, standalone vector DBs, fine-tuned
 embeddings, implementing HNSW, chasing MTEB. · **Eval anti-patterns** — public benchmarks, BLEU/ROUGE/
@@ -1693,6 +1719,48 @@ Different shape. Do not retrofit the ASVAB one.
 The `dependsOn[]` field is not decoration — **derive the layers from the graph rather than asserting them**,
 and print two properties: every module except M0 has at least one inbound edge, and **the longest path, not
 the hour sum, sets your timeline.**
+
+---
+
+# The honest limit
+
+Every real program has one. Here is this one's, stated plainly so you meet it on purpose rather than in
+month nine.
+
+**No solo curriculum is job placement, and this one is not either.** Placement has a counterparty with
+money riding on your outcome — someone with employer relationships who schedules interviews on your
+behalf and gets paid when you land. You cannot self-generate that. Every number that makes the phrase
+sound achievable — the 70–93% bootcamp placement rates — is self-reported; only a handful of programs
+anywhere publish audited outcomes.
+
+**The second thing this cannot buy is a credential that survives an ATS filter**, and no hour count
+changes that. Which is why M0 filtering postings on degree requirements *before* you spend an hour is
+the correct move, not a consolation.
+
+So the honest ceiling: **this can make you a candidate who wins almost any interview he actually gets,
+and it can instrument your funnel well enough that you find out fast which part is failing. It cannot
+make the funnel large.**
+
+### What closes the remaining distance
+
+**Not more modules. The three relationships this program already manufactures and used to waste.** By
+month 13 you will have two or three working engineers at real companies who have read your code line by
+line, argued with you about it, and merged it. Referrals convert at roughly **28–40%** apply-to-hire
+against **2–5%** cold. That is a 10× difference and it is the only lever available to you that is that
+large. The document built the asset for 80 hours and never once named what it was for. **Ask them** —
+that is now Track 2, and it costs two hours.
+
+**Take contract or 1099 work as a bridge if a W2 title has not arrived by month 12.** M25 already models
+the tax and insurance delta, and the Compressed Spine is explicitly aimed at a contract role. Six months
+of paid real work converts you from *"self-taught with a portfolio"* to *"engineer with references,"*
+which is the transition no curriculum can perform for you. **Plan for it as a likely path, not a
+fallback.**
+
+**And the thing to actually be afraid of is not that this is too shallow.** Four independent auditors
+compared it against MIT, Berkeley and CMU required-subject lists and none could make that charge stick.
+The real risk is month nine, with silence in the funnel and M1 seventeen months cold, concluding that the
+gap is constitutional. **It is not.** Go and re-read the capability inventory M0 made you write in month
+one. That is precisely what it is there for.
 
 ---
 
