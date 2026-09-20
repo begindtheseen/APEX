@@ -54,14 +54,14 @@ and full-time (~35 h/wk) — and take the one that matches your actual life.
 
 ### The Compressed Spine — if your runway is under nine months
 
-Do not attempt the full program. The honest short path is **~425 focused hours**: M0, M1, M2, M3, M6,
+Do not attempt the full program. The honest short path is **519 module hours** (about 734 with the tracks it carries): M0, M0A, M0B, M1, M2, M3, M4, M6,
 M7, M9, M11, M25, M26 — **375 module hours plus ~40 track hours plus M28's 10-hour forward-load.** At
 18 h/week that is **~5.4 months**, not the 4.7 an earlier draft claimed by pricing it module-only.
 
 **Spine track policy:** T2 (OSS PRs) and T7 (writing) suspended · T4 (cold re-build) biweekly · T5
 (reviewer) and T8 (re-plan) unchanged.
 
-**M25 and M26 are non-droppable in every variant, including this one.** M25 is 8 hours against a
+**M25 and M26 are non-droppable in every variant, including this one.** M25 is 11 hours against a
 first-year cost that exceeds the value of this entire curriculum. M26 is in because the spine exists to
 get you to a job and M25's own gate needs a recruiter screen, which needs a resume — an earlier draft
 cut the resume from the variant designed to produce a hire.
@@ -174,8 +174,8 @@ module that teaches each. Three are used slightly early — *idempotency*, *SSRF
 three are in Appendix B, which exists precisely because you have no colleagues to ask.
 
 **3. Every module over 30 hours has named checkpoints.** This was the single largest flow defect: the
-document required them and only two of sixteen modules had them. All sixteen do now — **91 checkpoints,
-averaging 8.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
+document required them and only two of fifteen modules had them. All fifteen do now, plus M20 — **99 checkpoints,
+averaging 7.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
 legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
 people conclude they are lost rather than mid-module.
 
@@ -199,40 +199,42 @@ Presented in execution order. Hours are focused hours.
 | # | Module | h | dependsOn |
 |---|---|---|---|
 | **M0** | Scope, Runway, Reviewer, Flagship | 22 | — |
-| **M1** | The Runtime, Unframed | 67 | M0 |
+| **M0A** | First Code | 55 | M0 |
+| **M0B** | Flagship v1 | 28 | M0A |
+| **M1** | The Runtime, Unframed | 67 | M0A |
 | **M2** | The Machine Model: Ten Seams | 45 | M1 |
-| **M3** | HTTP, Streaming, and the Wire | 45 | M1, M2 |
 | **M4** | The Postgres Underneath Supabase | 61 | M2 |
+| **M9** | The Model as a Function | 30 | M1, M0B |
+| **M3** | HTTP, Streaming, and the Wire | 45 | M1, M2, M4, M9 |
 | **M5** | The Durable Queue | 18 | M3, M4 |
-| **M6** | Tests That Fail For The Right Reason | 32 | M1, M4 |
+| **M6** | Tests That Fail For The Right Reason | 32 | M1, M3, M4, M9 |
 | **M7** | Debugging and Production Observability | 45 | M3, M4, M6 |
-| **M8** | Python On-Ramp | 15 | M6 |
-| **M9** | The Model as a Function | 30 | M3 |
 | **M10** | Ingestion: Real Documents Into a Corpus | 30 | M4, M5 |
 | **M11** | Evals: The One Harness, and the Stats Lab | 70 | M7, M9 |
 | **M21** | System Design and the Design Doc | 15 | M5, M7 |
-| | **▲ HARD GATE — flagship live, 2 real users, 100 failure traces** | | |
+| | **▲ HARD GATE — flagship live, 2 real users, 100 failure traces, M11 green** | | |
 | **M12** | Reading and Changing Code You Did Not Write | 52 | M5, M6, M7 |
 | **M13** | Git, Review, and Code Other People Maintain | 46 | M12 |
 | **M14** | Working With Coding Agents Professionally | 28 | M12, M13 |
-| **M15** | Scoping, Estimating, and Someone Else’s Priorities | 29 | M12 |
+| **M15** | Scoping, Estimating, and Someone Else’s Priorities | 29 | M12, M11 |
 | **M16** | Retrieval You Actually Measured | 44 | M10, M11 |
 | **M17** | Agents and Tool Use | 49 | M3, M5, M9, M11 |
-| **M18** | Cost, Metering, and Unit Economics | 30 | M9, M11, M3 |
-| **M19** | Security and the Trust Boundary | 34 | M1, M4, M7, M17 |
-| **M20** | Frontend for AI Interfaces | 25 | M3, M10, M17, M18 |
+| **M18** | Cost, Metering, and Unit Economics | 30 | M3, M5, M9, M11 |
+| **M19** | Security and the Trust Boundary | 34 | M1, M4, M7, M16, M17 |
+| **M20** | Frontend for AI Interfaces | 32 | M3, M10, M17, M18 |
 | **M22** | Deployment, CI/CD, and Operating It | 48 | M4, M6, M11 |
+| **M8** | Python On-Ramp | 15 | M6 |
 | **M23** | Python as a Second Production Language · *trigger* | 35 | M8, M11 |
 | **M24** | Third-Party Integration as a Consumer | 23 | M3, M19 |
 | **M25** | Comp, Terms, and the Negotiation · *trigger* | 11 | M0 |
-| **M26** | The Evidence Layer v1 · *trigger* | 8 | M11 |
+| **M26** | The Evidence Layer v1 · *trigger* | 8 | M7 |
 | **M27** | The Evidence Layer v2 · *trigger* | 12 | M16, M18 |
 | **M28** | Interview Performance · *trigger* | 38 | M12, M26 |
-| **M29** | Employed Mode · *trigger* | 10 | — |
-| **M30** | The First 90 Days · *trigger* | 6 | — |
+| **M29** | Employed Mode · *trigger* | 10 | M0 |
+| **M30** | The First 90 Days · *trigger* | 6 | M0 |
 
 
-**The critical path is 453 hours**: `M0 → M1 → M2 → M4 → M6 → M7 → M11 → M17 → M19 → M24`.
+**The critical path is 548 hours**: `M0 → M0A → M1 → M2 → M4 → M3 → M6 → M7 → M11 → M17 → M19 → M24`.
 
 That is the longest chain of strict dependencies — the floor on calendar time even if everything else
 ran in parallel. **Total hours is the floor on effort; the critical path is the floor on time. They are
@@ -261,7 +263,7 @@ four things that were previously assumed, unassigned, or discovered too late.
 variants (employed ~12 h/wk, full-time ~35 h/wk) with the weekly hours **derived** from them, not
 assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
-**2. The hour budget** — **1,057** module hours + ~425 track hours = **~1,482**, with the line-item
+**2. The hour budget** — **1,113** module hours + **459** track hours = **1,572**, with the line-item
 track table below and your date arithmetic shown. **Derive these from `curriculum-ai.js`, do not copy
 them from here** — the JS sums itself and the prose is what rots. An earlier draft of this very line
 said 999, which is the exact class of error this module exists to prevent, sitting in the module whose
@@ -388,7 +390,64 @@ partial credit.
 *The literal answer to "I need to understand code." Where "it works" and "it is correct" stop being the
 same sentence.*
 
-## M1 — The Runtime, Unframed (67h) · `dependsOn: M0` · **owns: the trust boundary**
+## M0A — First Code (55h) · `dependsOn: M0`
+
+**Why this exists.** An earlier version of this document went from "write a plan" straight to "predict the
+output order of six mixed sync/setTimeout/promise lines." A reader who had never opened a terminal was
+walled at hour 23 of a 1,500-hour program, by a module the document itself called "the steepest part of the
+curve." The promise on the cover is first principles. The first principle offered was the event loop. That
+is not a steep curve; it is a missing first step, and every gate after it inherited the gap — M0 asks for a
+20-commit queue, M1's gate references a merged diff, M8's gate needs an open-source pull request, all before
+git appears anywhere.
+
+**What you need to understand.** What a program is. The terminal, and what a working directory means.
+Variables, functions, arguments, return values. Conditionals and loops. Arrays and objects. How to read an
+error message — the type, the message, the file, the line. What a test is. git as a save-point system.
+
+**The artifact.** Six small programs written from an empty file and run from a terminal you set up
+yourself: read a file and print a count; call a public JSON API and reshape the result; fail on purpose and
+fix it by reading the error; extract a function because it repeated; three tests written before the code;
+one deliberate break recovered with git. Plus the environment as an artifact — node pinned, an editor you
+can navigate, a repo pushed with a readable history, and a page naming every tool and what it is for.
+
+**The gate.** Anyone who writes code for a living, watching your screen for twenty minutes, on a task you
+have not seen. From an empty directory: create a file, write a function with a test, run it, make the test
+fail, read the error out loud and say what it means, fix it, commit, push. No tutorial open.
+
+**On fail.** Do it again from an empty directory. Re-running the tutorial does not count — the entire
+failure mode of this module is a working repo you cannot rebuild.
+
+---
+
+## M0B — Flagship v1 (28h) · `dependsOn: M0A` · **owns: the flagship**
+
+**Why this exists.** Twelve modules say they "bolt onto the flagship." M0 specs it, M7 instruments it, M11
+evaluates it, M19 attacks a copy, M20 rebuilds its chat surface, M22 deploys its pipeline. No module built
+it. Worse, the Layer 3 → 4 hard gate requires that flagship *deployed, reachable, and carrying two real
+users* — while deployment is taught in Layer 6 and the only UI module is Layer 6. The gate was asking for
+skills the ladder delivered three layers later. A v1 that does one thing and is actually on the internet
+resolves both: the twelve modules get something to extend, and the hard gate becomes reachable by doing the
+work rather than by waiting.
+
+**What you need to understand.** Client and server. An API key as a secret — why it cannot go in the
+browser and how to prove it did not. One request and one response, start to finish. Environment variables.
+Deployment as *reachable*, not as *finished*. Logging a call before you need the log.
+
+**The artifact.** A page with an input, a server route that calls a model with your own key, the reply
+rendered, deployed at a URL a stranger can open. No streaming, no accounts, no database — those arrive in
+M3, M4 and M24 and each has a module. Two non-negotiables: the key lives on the server and is provably not
+in the client bundle, and every model call is logged with inputs, outputs and cost from the first request,
+because M7 and M11 both read that log and neither can reconstruct it later.
+
+**The gate.** Two people who are not you, on their own devices, with no instructions from you. Both reach
+the URL, type something, get a reply, and can say what the app is for. Your log shows their two requests
+with costs.
+
+**On fail.** It runs on your laptop. That is a different artifact, and no later module can bolt onto it.
+
+---
+
+## M1 — The Runtime, Unframed (67h) · `dependsOn: M0A` · **owns: the trust boundary**
 
 **Core concepts:** The event loop — call stack, macrotask vs microtask queue, why one slow function
 stalls every user. What a Promise actually is: a notification channel for work that *already started*,
@@ -446,7 +505,7 @@ arithmetic wrong. · `new TextDecoder()` *inside* the loop — looks identical t
 discards the carried partial-character state that is the entire point. · "I'm using a pool" while N
 serverless instances each hold a pool of M. · Believing a transaction prevents the race.
 
-## M3 — HTTP, Streaming, and the Wire (45h) · `dependsOn: M1, M2` · **owns: streaming, idempotency**
+## M3 — HTTP, Streaming, and the Wire (45h) · `dependsOn: M1, M2, M4, M9` · **owns: streaming, idempotency**
 
 **Core concepts:** HTTP as a wire format — the ~15 status codes and ~12 headers that carry meaning.
 REST and where it stops being the right answer (real APIs have action endpoints; offset pagination is
@@ -575,7 +634,7 @@ idempotent consumers reusing M3's dedupe table, backpressure, and a dead-letter 
 mid-job; zero double-processing and zero lost jobs across 1,000 enqueued items. **ON FAIL:** the
 consumer is not idempotent — fix and re-run.
 
-## M6 — Tests That Fail For The Right Reason (32h) · `dependsOn: M1, M4`
+## M6 — Tests That Fail For The Right Reason (32h) · `dependsOn: M1, M3, M4, M9`
 
 **Core concepts:** The pyramid and what each level is for. A unit test that fails for the right reason.
 Test doubles and when mocking makes a test worthless. Integration tests against real Postgres including
@@ -645,7 +704,7 @@ input supports it. · Alerting on causes, producing noise that gets muted — af
 unmonitored while looking monitored. · Postmortems that stop at the code fix without asking why it took
 40 minutes to notice.
 
-## M8 — Python On-Ramp (15h) · `dependsOn: M6`
+## M8 — Python On-Ramp (15h) · `dependsOn: M6` · *Layer 6 — moved down, beside M23, its only consumer*
 
 Split forward from v1's single 50-hour Python module, which sat at hour 853 and was therefore the most
 likely thing to be cut under deadline pressure.
@@ -671,7 +730,7 @@ the idiom is wrong — a passing test cannot catch this, which is why the refere
 *Pulled forward from v1's Layer 3 position. v1 gated this behind 150 hours of Postgres, git, agents and
 scoping for no stated reason, and the differentiator finished five months after applications started.*
 
-## M9 — The Model as a Function (30h) · `dependsOn: M3`
+## M9 — The Model as a Function (30h) · `dependsOn: M1, M0B` · *Layer 1 — moved up: M3 builds a proxy to a model, so the model comes first*
 
 Also the morale spike for the months 3–6 abandonment window — which only works because it now sits
 inside that window rather than after it.
@@ -973,7 +1032,7 @@ on real work.** **ON FAIL:** you are pattern-matching, not reviewing — redo wi
 
 > v1's gate told you there was exactly one boundary violation, which is most of the answer.
 
-## M15 — Scoping, Estimating, and Someone Else's Priorities (29h) · `dependsOn: M12`
+## M15 — Scoping, Estimating, and Someone Else's Priorities (29h) · `dependsOn: M12, M11`
 
 The definitional mid-level skill, structurally invisible to a solo builder. When you build your own
 ideas you are your own product manager: scope is infinitely elastic, nothing is late, nothing is cut,
@@ -1135,7 +1194,7 @@ effect, which makes resume a duplicate-execution machine. `book_flight()` twice 
 iteration count only — an agent alternating between two tools never repeats at lag-1. · Denying by
 silently dropping a tool call, leaving a dangling `tool_use` with no result.
 
-## M18 — Cost, Metering, and Unit Economics (30h) · `dependsOn: M9, M11, M3` · **owns: cost**
+## M18 — Cost, Metering, and Unit Economics (30h) · `dependsOn: M3, M5, M9, M11` · **owns: cost**
 
 **Core concepts:** The usage object and the four-number cost of a request. Prompt caching mechanics and
 verifying from the meters. Percentiles from raw distributions. Streaming as a *perceived*-latency fix.
@@ -1165,7 +1224,7 @@ call that needs three retries is not cheap. · The alert without the breaker; an
 about money already spent. · Running the budget check *after* the API call. · Cost per feature but not per
 user, which hides the distribution entirely when AI cost per user is extremely skewed.
 
-## M19 — Security and the Trust Boundary (34h) · `dependsOn: M1, M4, M7, M17`
+## M19 — Security and the Trust Boundary (34h) · `dependsOn: M1, M4, M7, M16, M17`
 
 **Core concepts:** Trust boundaries and secrets. Authentication vs authorization; **broken access control
 as the bug that actually ships.** RLS as a design skill. Injection, XSS, CSRF, SSRF **at working depth, by
@@ -1220,7 +1279,7 @@ confirmation step whose summary the model itself generates — an injected model
 
 # LAYER 6 — Product and Platform (131h)
 
-## M20 — Frontend for AI Interfaces (25h) · `dependsOn: M3, M10, M17, M18`
+## M20 — Frontend for AI Interfaces (32h) · `dependsOn: M3, M10, M17, M18`
 
 Cut from v1's 45h and retargeted: the generic React rendering-model material is below your level. What
 remains is the AI-specific surface, which is where you differentiate.

@@ -14,18 +14,19 @@
 
 var AI_LAYERS = [
   { id: 0, name: 'The Contract',          purpose: 'Budget, runway, reviewer, flagship. Authority over everything else.' },
-  { id: 1, name: 'The Machine',           purpose: 'The literal answer to "I need to understand code."' },
-  { id: 2, name: 'The Craft I',           purpose: 'The substrate: queue, tests, observability, Python on-ramp.' },
-  { id: 3, name: 'The AI Production Core',purpose: 'The differentiator. Gated behind observability, not behind everything.' },
+  { id: 1, name: 'The Machine',           purpose: 'The literal answer to "I need to understand code." The runtime, the machine under it, the database, the model, and the wire between them.' },
+  { id: 2, name: 'The Craft I',           purpose: 'The substrate: queue, tests, observability.' },
+  { id: 3, name: 'The AI Production Core',purpose: 'The differentiator: a real corpus, one eval harness, a design you defended. Gated behind observability, not behind everything.' },
   { id: 4, name: 'The Craft II',          purpose: 'Ramp and collaboration. Learned while interviewing.' },
   { id: 5, name: 'The AI Layer, Completed', purpose: 'Retrieval, agents, cost, security.' },
-  { id: 6, name: 'Product and Platform',  purpose: 'The surfaces the AI work ships through.' },
+  { id: 6, name: 'Product and Platform',  purpose: 'The surfaces the AI work ships through — and Python as a second language.' },
   { id: 7, name: 'The Market',            purpose: 'Scheduled by TRIGGER, not by position.' },
   { id: 8, name: 'Employed Mode',         purpose: 'Hire-before-completion is the modal good outcome.' }
 ];
 
 // Concepts with exactly ONE owning module. Consumed everywhere after, never re-taught.
 var AI_OWNED_CONCEPTS = {
+  'flagship': 'M0B',
   'trust boundary':  'M1',
   'streaming':       'M3',
   'idempotency':     'M3',
@@ -49,12 +50,28 @@ var AI_CURRICULUM = [
 { id:'M0', layer:0, hours:22, dependsOn:[], kind:'LAB',
   title:'Scope, Runway, Reviewer, Flagship',
   artifact:'PLAN.md with 15 artifacts: runway + derived weekly hours, hour budget, application date, 20-posting funnel teardown (each tagged W2/1099), the Python trip-wire as a number, the flagship spec checklist, a dated traffic milestone, day-one model-call logging, three reviewer recruitments with an acceptance test, a cold baseline scored as a FRACTION, a capability inventory, a running incident log, a 20-commit blind-exercise queue, a hardware smoke test, and defined bad-week/plateau/re-entry rules.',
-  gate:{ referee:'Reviewer trial review returned in writing; flagship checklist signed line by line; hardware smoke test passes on all four stacks.',
+  gate:{ referee:'Three reviewer recruitments sent with the acceptance test attached — the first returned review is M0A’s gate, not this one; flagship checklist signed line by line; the hardware smoke test passing on all four stacks: a 5M-row local Postgres, a container runtime, a load generator, browser automation.',
          pass:'All 15 artifacts exist. Cold baseline is a fraction. State from memory: weekly hours, runway, application date, Python trip-wire number.',
          onFail:'M1 does not start. No partial credit on this one.' } },
 
 // ─────────────── LAYER 1 · THE MACHINE ───────────────
-{ id:'M1', layer:1, hours:67, dependsOn:['M0'], kind:'LAB', owns:['trust boundary'],
+{ id:'M0A', layer:0, hours:55, dependsOn:['M0'], kind:'LAB',
+  title:'First Code',
+  artifact:'Six small programs you wrote from an empty file, run from a terminal you set up yourself: a script that reads a file and prints a count, one that calls a public JSON API and reshapes the result, one that fails on purpose and is fixed by reading the error, one with a function you extracted because it was repeated, one with three passing tests you wrote first, and one you broke and recovered with git. Plus the environment itself as an artifact: node installed and its version pinned, an editor you can navigate without a mouse, a repo pushed to a remote with a readable commit history, and a written page naming every tool you touched and what it is for.',
+  gate:{ referee:'Anyone who writes code for a living, watching your screen for twenty minutes, on a task you have not seen.',
+         pass:'From an empty directory: create a file, write a function with a test, run it, make the test fail, read the error out loud and say what it means, fix it, commit, push. No tutorial open.',
+         onFail:'Do it again from an empty directory. Re-running the tutorial does not count \u2014 the whole failure mode of this module is a working repo you cannot rebuild.' } },
+
+{ id:'M0B', layer:0, hours:28, dependsOn:['M0A'], kind:'EVIDENCE',
+  title:'Flagship v1',
+  artifact:'The smallest honest version of the one app twelve later modules extend: a plain HTML page with an input (the React rebuild is M20’s), a server route that calls a model with your own key, the reply rendered, and the whole thing deployed at a URL a stranger can open. No streaming, no accounts, no database \u2014 those arrive in M3, M4 and M24 and each one has a module. Plus the two non-negotiables: the key lives on the server and is provably not in the client bundle, and every model call is logged with its inputs, outputs and cost from the first request, because M7 and M11 both read that log and neither can reconstruct it later.',
+  owns:['flagship'],
+  exports:['the app M3, M7, M10, M11, M16, M17, M18, M19, M20, M22 and M24 all extend'],
+  gate:{ referee:'Two people who are not you, on their own devices, with no instructions from you.',
+         pass:'Both reach the URL, type something, get a reply, and can say what the app is for. Your log shows their two requests with costs.',
+         onFail:'It runs on your laptop. That is a different artifact, and no later module can bolt onto it.' } },
+
+{ id:'M1', layer:1, hours:67, dependsOn:['M0A'], kind:'LAB', owns:['trust boundary'],
   title:'The Runtime, Unframed',
   artifact:'runtime-lab: 8 programs under plain node --test. MiniPromise from scratch. A harness reproducing all four concurrency failure modes then fixing each. A Zod boundary rejecting hostile LLM JSON that `as` accepted. A typed error taxonomy with cause chaining and a retry-safety rule per class.',
   exports:['the estimate log starts here and runs to month 12'],
@@ -69,19 +86,11 @@ var AI_CURRICULUM = [
 
 { id:'M2', layer:1, hours:45, dependsOn:['M1'], kind:'LAB',
   title:'The Machine Model: Ten Seams',
-  artifact:'seams: ten reproductions, each a failing script + fix + proving test. Leak proved with a heap snapshot; money wrong by a cent; UTF-8 grapheme split across streamed chunks; pool exhausted under load; lost update in Postgres; four-timezone digest scheduler with an injected fake clock pinned across spring-forward and fall-back.',
+  artifact:'seams: ten reproductions, each a failing script + fix + proving test. Leak proved with a heap snapshot; money wrong by a cent; UTF-8 grapheme split across streamed chunks; pool exhausted under load; lost update in a database (the Postgres version, with the plan that proves it, is M4’s); four-timezone digest scheduler with an injected fake clock pinned across spring-forward and fall-back.',
   exports:['fake clock -> M6'],
   gate:{ referee:'Reviewer picks which of the ten, without telling you.',
          pass:'Name the seam and the instrument within 60 seconds, 7 of 9. Then point at the wrong-typed columns in your own shipped schema.',
          onFail:'Rewrite the two you missed from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — two attempts on an UNSEEN data-seam bug (encoding, money, timezone, pooling) from M0’s blind queue, scored against the merged diff. Pass 1 of 2.' } },
-
-{ id:'M3', layer:1, hours:45, dependsOn:['M1','M2'], kind:'EVIDENCE', owns:['streaming','idempotency'],
-  title:'HTTP, Streaming, and the Wire',
-  artifact:'THE streaming LLM proxy. Raw fetch, raw ReadableStream, hand-parsed SSE frames, no SDK. AbortController end to end. Postgres idempotency-key dedupe table. Deliberately reproduces proxy buffering and a mid-stream error, and recovers from both. Budget the useChat wire-format join here — it is not free.',
-  exports:['SSE transport -> M17, M20','idempotency table -> M5, M18, M21'],
-  gate:{ referee:'Server logs and a database row count. Both are external facts.',
-         pass:'Kill the client mid-generation, show from logs that upstream billing stopped. Replay one idempotency key twice, show exactly one row. Narrate what arrives on the wire between first byte and first rendered token.',
-         onFail:'Rebuild the frame parser against a deliberately chunk-split fixture.' } },
 
 { id:'M4', layer:1, hours:61, dependsOn:['M2'], kind:'LAB',
   title:'The Postgres Underneath Supabase',
@@ -92,6 +101,23 @@ var AI_CURRICULUM = [
          pass:'State estimated vs actual rows FIRST, then name the fix before reading the query, 3 of 4. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
          onFail:'Re-run the slow->fast loop on three new queries.' } },
 
+{ id:'M9', layer:1, hours:30, dependsOn:['M1','M0B'], kind:'LAB',
+  exports:['stop_reason discriminator -> M3, M6, M17', 'usage and cache meters -> M18'],
+  title:'The Model as a Function',
+  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce EVERY stop_reason deliberately including a refusal, showing stop_details as the discriminator; demonstrate a structured-output schema rejecting a malformed generation; discover capabilities from the Models API rather than a hard-coded table. Plus a dead-patterns page with every 400 pasted in.',
+  gate:{ referee:'Arithmetic against a real usage object.',
+         pass:'Price a request to the cent from its usage object alone. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
+         onFail:'Re-derive the pricing by hand from three more requests.' },
+  currency:'HIGHEST decay rate in the curriculum. Verify against primary API docs the week you build it.' },
+
+{ id:'M3', layer:1, hours:45, dependsOn:['M1','M2','M4','M9'], kind:'EVIDENCE', owns:['streaming','idempotency'],
+  title:'HTTP, Streaming, and the Wire',
+  artifact:'THE streaming LLM proxy. Raw fetch, raw ReadableStream, hand-parsed SSE frames, no SDK. AbortController end to end. Postgres idempotency-key dedupe table. Deliberately reproduces proxy buffering and a mid-stream error, and recovers from both. The wire format you define here is the one M20’s client has to consume; budget that join now, it is not free.',
+  exports:['SSE transport -> M17, M20','idempotency table -> M5, M18, M21'],
+  gate:{ referee:'Server logs and a database row count. Both are external facts.',
+         pass:'Kill the client mid-generation, show from logs that upstream billing stopped. Replay one idempotency key twice, show exactly one row. Narrate what arrives on the wire between first byte and first rendered token.',
+         onFail:'Rebuild the frame parser against a deliberately chunk-split fixture.' } },
+
 // ─────────────── LAYER 2 · THE CRAFT I ───────────────
 { id:'M5', layer:2, hours:18, dependsOn:['M3','M4'], kind:'EVIDENCE', owns:['durable queue'],
   title:'The Durable Queue',
@@ -101,9 +127,9 @@ var AI_CURRICULUM = [
          pass:'Kill a worker mid-job. Zero double-processing and zero lost jobs across 1,000 enqueued items.',
          onFail:'The consumer is not idempotent. Fix and re-run.' } },
 
-{ id:'M6', layer:2, hours:32, dependsOn:['M1','M4'], kind:'LAB',
+{ id:'M6', layer:2, hours:32, dependsOn:['M1','M3','M4','M9'], kind:'LAB',
   title:'Tests That Fail For The Right Reason',
-  artifact:'One shipped repo from zero tests to a green required check: ~15 unit, 5 integration against real local Postgres including two RLS policies, CI as a merge gate, a written flakiness budget. PLUS the most reused fixture in the curriculum: a record-replay model client in TypeScript covering a stream with frames split mid-frame and mid-multibyte-character, a tool-use block, and a refusal with stop_details.',
+  artifact:'One shipped repo from zero tests to a green required check: ~15 unit, 5 integration against real local Postgres including two RLS policies, CI as a merge gate, a written flakiness budget. The runner moves from M1’s bare node --test to vitest here, because mocks and fixtures need one with those built in. PLUS the most reused fixture in the curriculum: a record-replay model client in TypeScript covering a stream with frames split mid-frame and mid-multibyte-character, a tool-use block, and a refusal with stop_details.',
   exports:['record-replay model client -> M11 (zero-cost CI tier), M17, M20'],
   gate:{ referee:'A mutation score — a number you cannot argue with — plus bug reports sourced from already-closed OSS issues.',
          pass:'Mutation score >= 70% with a written disposition for every surviving mutant. On a sourced bug: failing test first, then fix, explaining why the test would still fail if the fix were wrong in a different way.',
@@ -117,22 +143,7 @@ var AI_CURRICULUM = [
          pass:'Time-to-detection under 24h from instrumentation alone. Separately: given one trace ID, reconstruct the whole request out loud. Time-to-mitigate scored separately from time-to-root-cause — diagnosing before mitigating is a failing result.',
          onFail:'The detector does not cover that failure class. Add it, re-arm the window.' } },
 
-{ id:'M8', layer:2, hours:15, dependsOn:['M6'], kind:'LAB',
-  title:'Python On-Ramp',
-  artifact:'Current tooling (uv, ruff, one pinned type checker — stated shelf life). Python semantics where they differ from TS. pytest. Type hints with a checker in CI. pydantic as the validation boundary. One typed FastAPI route with a test.',
-  gate:{ referee:'A timer, and a Python-fluent maintainer via a routed Track 2 PR.',
-         pass:'Add a typed route + test to a Python service you did not write, in 90 minutes.',
-         onFail:'The idiom is wrong. A passing test cannot catch this — that is why the referee is human.' } },
-
 // ─────────────── LAYER 3 · THE AI PRODUCTION CORE ───────────────
-{ id:'M9', layer:3, hours:30, dependsOn:['M3'], kind:'LAB',
-  title:'The Model as a Function',
-  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce EVERY stop_reason deliberately including a refusal, showing stop_details as the discriminator; demonstrate a structured-output schema rejecting a malformed generation; discover capabilities from the Models API rather than a hard-coded table. Plus a dead-patterns page with every 400 pasted in.',
-  gate:{ referee:'Arithmetic against a real usage object.',
-         pass:'Price a request to the cent from its usage object alone. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
-         onFail:'Re-derive the pricing by hand from three more requests.' },
-  currency:'HIGHEST decay rate in the curriculum. Verify against primary API docs the week you build it.' },
-
 { id:'M10', layer:3, hours:30, dependsOn:['M4','M5'], kind:'EVIDENCE',
   title:'Ingestion: Real Documents Into a Corpus',
   artifact:'A pipeline accepting a real signed-URL upload, handling a digital PDF, a scanned PDF and a .docx. CHARACTER-OFFSET provenance, not page-level: a citation has to highlight the exact sentence that supports a claim, and offsets into extracted text are unrecoverable after the fact, especially through OCR. A private bucket with deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an orphan-cleanup job, a stated retention policy. Resumable on M5 queue. Scored against twenty hand-labeled documents, split dev/test at creation.',
@@ -173,7 +184,7 @@ var AI_CURRICULUM = [
   gate:{ referee:'A real maintainer review thread.',
          pass:'Three review rounds completed, every comment addressed or argued in writing, zero structural comments on the final round. PLUS twenty consecutive working-day updates posted in public, and the reviewer can reconstruct your month from the thread alone without asking you.',
          onFail:'The structural comments ARE the curriculum. Address and resubmit.' },
-  note:'Gate on what you control. v1 gated on "merged", which conditions progress on a stranger inbox.' },
+  note:'Gate on what you control. Gating on "merged" would condition your progress on a stranger\u2019s inbox.' },
 
 { id:'M14', layer:4, hours:28, dependsOn:['M12','M13'], kind:'EVIDENCE',
   title:'Working With Coding Agents Professionally',
@@ -182,7 +193,7 @@ var AI_CURRICULUM = [
          pass:'Find the planted defects across five diffs, false positives scored separately. Plus a pre-commit hook enforcing your delegation policy that has actually blocked agent-authored diffs twice on real work.',
          onFail:'You are pattern-matching, not reviewing. Redo with a new sealed brief.' } },
 
-{ id:'M15', layer:4, hours:29, dependsOn:['M12'], kind:'LAB',
+{ id:'M15', layer:4, hours:29, dependsOn:['M12','M11'], kind:'LAB',
   title:'Scoping, Estimating, and Someone Else’s Priorities',
   artifact:'Three scoping docs against real open issues. Build one, log actual-vs-estimate. PLUS an open-ended quality ticket ("the assistant is getting worse, find out why") delivered as a timeboxed plan with current number, target, ranked interventions by expected gain per hour, a hard 50% checkpoint with a stop-or-continue rule. PLUS a capability-question protocol practiced against the reviewer playing a PM instructed to push for a yes. PLUS one page: a written response to a product request that is NOT achievable as stated, with the achievable version and a measured number from your own eval set.',
   gate:{ referee:'A vague two-sentence ticket from the reviewer, cold, and the reviewer playing a PM who will not take no.',
@@ -205,7 +216,7 @@ var AI_CURRICULUM = [
          onFail:'The governor caps iterations but not spend. Fix and re-run.' },
   currency:'MCP shipped a breaking stateless rewrite in the 2026-07-28 revision. Pin your revision; every pre-August-2026 tutorial teaches the deprecated shape.' },
 
-{ id:'M18', layer:5, hours:30, dependsOn:['M9','M11','M3'], kind:'EVIDENCE', owns:['cost'],
+{ id:'M18', layer:5, hours:30, dependsOn:['M3','M5','M9','M11'], kind:'EVIDENCE', owns:['cost'],
   title:'Cost, Metering, and Unit Economics',
   artifact:'A per-user credit ledger with an atomic decrement proven by concurrent hammering. A Stripe test-mode subscription with an idempotent webhook consumer on M5 queue surviving replay. A server-rendered 402 path proven by curl. A circuit breaker on spend. One weekly SQL report joining usage, quality score and cost into ONE LINE PER ACTIVE USER, including a non-model cost column. Plus a two-dimensional (model x effort) routing experiment scored by M11, reported as cost per completed task.',
   gate:{ referee:'The queries themselves. Every number must be reproducible from SQL.',
@@ -213,15 +224,15 @@ var AI_CURRICULUM = [
          onFail:'You are reporting an average. Recompute from the raw distribution.' },
   note:'Effort is the first quality-trading lever after caching — measure the capable model at lower effort BEFORE building a cascade, because caches are model-scoped.' },
 
-{ id:'M19', layer:5, hours:34, dependsOn:['M1','M4','M7','M17'], kind:'EVIDENCE',
+{ id:'M19', layer:5, hours:34, dependsOn:['M1','M4','M7','M16','M17'], kind:'EVIDENCE',
   title:'Security and the Trust Boundary',
-  artifact:'An attack-then-fix log against a deliberately vulnerable copy of the flagship: FIVE exploits you ran yourself, each with fix and test. The fifth is cross-tenant file access via a guessed/replayed URL, or CSRF against an OAuth callback. One runs through M17 agent fetch tool. A tool-permission design with blast-radius analysis. A BIDIRECTIONAL data-flow document — every boundary, third party, retention setting and jurisdiction — plus an IMPLEMENTED delete path removing rows, objects, embeddings and traces, a written list of what cannot be deleted and why, and a test asserting nothing survives. Plus the constraints you do not control: subprocessor lists, DPAs, zero-data-retention config, residency.',
+  artifact:'An attack-then-fix log against a deliberately vulnerable copy of the flagship: FIVE exploits you ran yourself, each with fix and test. The fifth is cross-tenant file access via a guessed or replayed URL. (CSRF against the OAuth callback is M24’s own attack, once there is a callback to attack.) One runs through M17 agent fetch tool. A tool-permission design with blast-radius analysis. A BIDIRECTIONAL data-flow document — every boundary, third party, retention setting and jurisdiction — plus an IMPLEMENTED delete path removing rows, objects, embeddings and traces, a written list of what cannot be deleted and why, and a test asserting nothing survives. Plus the constraints you do not control: subprocessor lists, DPAs, zero-data-retention config, residency.',
   gate:{ referee:'Working exploits — they land or they do not — and a passing deletion test.',
          pass:'Five exploits demonstrated and fixed. Name every irreversible action in your agent and defend containment WITHOUT saying "I tell the model to ignore injected instructions." State what leaves your perimeter and where it lands. State what happens to every copy of a user data when they ask you to delete it.',
          onFail:'The exploit did not actually land. You have a description, not a demonstration.' } },
 
 // ─────────────── LAYER 6 · PRODUCT AND PLATFORM ───────────────
-{ id:'M20', layer:6, hours:25, dependsOn:['M3','M10','M17','M18'], kind:'EVIDENCE',
+{ id:'M20', layer:6, hours:32, dependsOn:['M3','M10','M17','M18'], kind:'EVIDENCE',
   title:'Frontend for AI Interfaces',
   artifact:'The flagship chat surface rebuilt on YOUR OWN M3 protocol via a custom transport (not the prebuilt default — implementing the transport interface is the part that teaches the protocol boundary). A stop button that provably stops upstream billing. Refresh-mid-generation that resumes. Tool calls with a working approval gate wired to M17. Citations linking to M10 span provenance. Honest failure states. The 402/upgrade path.',
   gate:{ referee:'A screen recording, the cost meter, and axe-core in CI.',
@@ -237,9 +248,16 @@ var AI_CURRICULUM = [
          onFail:'The migration dropped requests. Expand/contract was not actually expand/contract.' },
   note:'Rollback trigger is SUSPICION that your change caused it, not proof.' },
 
+{ id:'M8', layer:6, hours:15, dependsOn:['M6'], kind:'LAB',
+  title:'Python On-Ramp',
+  artifact:'Current tooling (uv, ruff, one pinned type checker — stated shelf life). Python semantics where they differ from TS. pytest. Type hints with a checker in CI. pydantic as the validation boundary. One typed FastAPI route with a test.',
+  gate:{ referee:'A timer, and a Python-fluent maintainer via a routed Track 2 PR.',
+         pass:'Add a typed route + test to a Python service you did not write, in 90 minutes.',
+         onFail:'The idiom is wrong. A passing test cannot catch this — that is why the referee is human.' } },
+
 { id:'M23', layer:6, hours:35, dependsOn:['M8','M11'], kind:'EVIDENCE',
   title:'Python as a Second Production Language',
-  artifact:'M11 eval runner ported to Python — this gives the module an inbound edge; v1 Python module was terminal and therefore the most cuttable thing in the document. Typed request/response models, streaming, a pytest suite faking the model client, type checker green in CI, plus a written runtime diff including a reproduction of a blocking call freezing the asyncio loop and its fix.',
+  artifact:'M11 eval runner ported to Python, so this module extends something you already built rather than standing alone. Typed request/response models, streaming, a pytest suite faking the model client, type checker green in CI, plus a written runtime diff including a reproduction of a blocking call freezing the asyncio loop and its fix.',
   trigger:'MOVES to immediately after M11 if fewer than 40% of M0 twenty postings accept a Node-primary backend.',
   gate:{ referee:'A timer, plus a Python-fluent OSS maintainer reviewing a real PR.',
          pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes. The maintainer merges without idiom comments.',
@@ -261,7 +279,7 @@ var AI_CURRICULUM = [
          pass:'State your floor out loud without hedging, recorded. AND deliver a 30-second background answer with no apology, no hedge and no mention of coursework, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since?',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
-{ id:'M26', layer:7, hours:8, dependsOn:['M11'], kind:'EVIDENCE',
+{ id:'M26', layer:7, hours:8, dependsOn:['M7'], kind:'EVIDENCE',
   trigger:'The application date (~month 5). Applications need a resume at month 5, not month 15.',
   title:'The Evidence Layer v1',
   artifact:'A resume mapping each claim to a repo. Two pinned repos. A README in product-spec form. ONLY EVIDENCE artifacts are pinned — the labs are private. Final pinned four: the flagship, the OSS contribution history, one design doc or public write-up, one genuinely separate small product.',
@@ -287,7 +305,7 @@ var AI_CURRICULUM = [
          onFail:'Watch the transcript back and name where you delegated something you should have verified. That is the rep.' } },
 
 // ─────────────── LAYER 8 · EMPLOYED MODE ───────────────
-{ id:'M29', layer:8, hours:10, dependsOn:[], kind:'LAB',
+{ id:'M29', layer:8, hours:10, dependsOn:['M0'], kind:'LAB',
   trigger:'FIRST ONSITE \u2014 the same event as M30, and the last moment the pre-hire half can be written with a clear head. It reliably lands one to three weeks before an offer. Written pre-hire, executed post-hire; hire-before-completion is the modal good outcome.',
   title:'Employed Mode',
   artifact:'A second operating contract: a realistic employed weekly budget (5-8h, not 18) and a module order driven by what the job needs first. Track 4 retargeted from your own artifacts to a component of the employer codebase. The reviewer relationship re-contracted or deliberately replaced, decided BEFORE the start date. The monthly re-plan surviving with new inputs. The estimate log continuing against real tickets from week one. Plus two scheduled written manager checkpoints at week 6 and week 14, scripted before the start date.',
@@ -295,16 +313,17 @@ var AI_CURRICULUM = [
          pass:'You asked directly whether you are where they would expect, and you have the written answer.',
          onFail:'Week one is the wrong time to ask — that is when a manager answer is most generic.' } },
 
-{ id:'M30', layer:8, hours:6, dependsOn:[], kind:'LAB',
+{ id:'M30', layer:8, hours:6, dependsOn:['M0'], kind:'LAB',
   trigger:'First onsite.',
   title:'The First 90 Days',
-  artifact:'A 30/60/90 plan against a real posting with week-one manager questions. A reusable asking-for-help template practiced FOR REAL by posting three genuine questions in an OSS project Discord or Slack, responses kept. An org map inferred from git blame and log. A handoff note good enough for a stranger to continue. Plus inheriting an AI system you did not build: reading someone else prompts, evals and traces; prompt archaeology on a system with no decision log. Plus a WIP policy computed from your OWN Track 2 review-latency data.',
+  artifact:'A 30/60/90 plan against a real posting with week-one manager questions. A reusable asking-for-help template practiced FOR REAL by posting three genuine questions in an OSS project Discord or Slack, responses kept. An org map inferred from the repo’s history — who touches what, from git log by author; nothing M0A did not teach. A handoff note good enough for a stranger to continue. Plus inheriting an AI system you did not build: reading someone else prompts, evals and traces; prompt archaeology on a system with no decision log. Plus a WIP policy computed from your OWN Track 2 review-latency data.',
   gate:{ referee:'Real strangers in a real channel, and a recording.',
          pass:'State which prompt in the inherited system you would change LAST, and why. Three genuine questions posted and answered. Record yourself pairing with another person for 45 minutes on a real bug in an unfamiliar repo, narrating throughout, and watch it back. State your median review latency from your own data and your WIP policy from memory.',
          onFail:'You asked for the answer instead of stating what you tried, expected, saw, and currently believe.' } }
 ];
 
-// Parallel tracks. v1 called these mandatory and budgeted none of them — that was a 40% error.
+// Parallel tracks: mandatory, continuous, and budgeted. Calling them mandatory
+// while budgeting none of them understates the real commitment by 40%.
 var AI_TRACKS = [
   { id:'T1', title:'Job search \u2014 three channels, not one', hours:200, cadence:'3-4 h/week from the application date',
     rule:'Cold applications convert at 2-5% for a no-degree candidate; referrals convert at 28-40%. Same 200h, split: '
@@ -318,7 +337,7 @@ var AI_TRACKS = [
   { id:'T2', title:'Open-source PRs \u2014 and the ask', hours:80, cadence:'~8h/month, submission half starts after M7',
     rule:'Substantive = touches behavior, 20-200 lines, includes a test, survived a round of maintainer review. Three '
        + 'merged into two repos, threads preserved, plus a written note per PR on what the maintainer asked you to '
-       + 'change and why they were right. RE-PHASED: target ONE merged PR BEFORE the application date \u2014 the gap '
+       + 'change and why they were right. Target ONE merged PR BEFORE the application date \u2014 the gap '
        + 'between zero public contributions and one merged PR with a visible review thread is far larger than the gap '
        + 'between one and three. THEN THE ASK: after the second merged PR in a repo, write to the maintainer. What '
        + 'you are looking for, what you built, is anything open where they are, would they refer you, and "no is a '
@@ -354,8 +373,7 @@ var AI_TRACKS = [
        + 'response is having three people who actually hire read your resume cold, not raising volume. Six weeks '
        + 'behind for two consecutive months switches to the Compressed Spine.' },
   { id:'T9', title:'Narrated problems \u2014 the coding-screen instrument', hours:25, cadence:'~30 min/week from the application date',
-    rule:'The one instrument in the document that was a bare count with no hours, no rubric and no pass criterion '
-       + '\u2014 and it was silently eating T4\u2019s slot. Now specified: ~45 problems indexed to the EIGHT patterns '
+    rule:'Budgeted and rubric-scored rather than counted: ~45 problems indexed to the EIGHT patterns '
        + 'that survive the cut list (arrays/hashing, two pointers, sliding window, binary search, stack/monotonic, '
        + 'intervals, trees BFS/DFS, heap/top-k), 5-6 each. Every problem drawn from a shape that appears in YOUR OWN '
        + 'system \u2014 hash/set for M3\u2019s dedupe, sort+binary search for M16\u2019s ranking, heap/top-k for the '
@@ -371,7 +389,7 @@ var AI_TRACKS = [
        + 'is the answer to being interviewed at month 20 on month-1 material.' }
 ];
 
-var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M6','M7','M9','M11','M25','M26'];
+var AI_COMPRESSED_SPINE = ['M0','M0A','M0B','M1','M2','M3','M4','M6','M7','M9','M11','M25','M26'];
 // M25 AND M26 are non-droppable in every variant. The spine exists to get you to a job,
 // and M25's own gate needs a recruiter screen, which needs a resume, which is M26.
 // Spine track policy: T2 and T7 suspended, T4 biweekly, T5 and T8 unchanged (~40h). // 364h, for runway under 9 months
@@ -384,7 +402,7 @@ var LAUNCHPAD_CONFIG = {
   name: 'AI Product Engineering',
   tag: 'HIREABLE · REMOTE · PRODUCTION',
   tagline: 'Every module ends in something you built and can explain out loud.',
-  accent: '#00e5a0',
+  accent: '#4db8ff',
   glyph: '⬢',
   key: 'apex_launchpad_v1',
   // The three rules a learner most often breaks, surfaced in the UI rather than buried.
@@ -408,6 +426,10 @@ var AI_CURRICULUM_API = {
   isUnlocked: function (id, progress) {
     var m = this.byId(id);
     if (!m) return false;
+    // Layers 4-6 are the twelve modules the hard gate exists to hold back.
+    // Rendering the checklist without consulting it here left the gate
+    // decorative, which Rule 1 of this curriculum specifically forbids.
+    if (m.layer >= 4 && m.layer <= 6 && !this.flagshipGate(progress).open) return false;
     if (m.trigger && m.dependsOn.length === 0) return true;
     return m.dependsOn.every(function (d) {
       return progress && progress[d] && progress[d].gate;
@@ -444,7 +466,7 @@ var AI_CURRICULUM_API = {
   plan: function (setup) {
     var WK = 4.345;                                  // weeks per month
     var tot = this.totalHours();
-    var full = tot.modules + tot.tracks;             // 1057 + 425
+    var full = tot.modules + tot.tracks;             // 1023 + 459
     var self = this;
     var spineMods = (typeof AI_COMPRESSED_SPINE !== 'undefined' ? AI_COMPRESSED_SPINE : [])
       .reduce(function (a, id) { var m = self.byId(id); return a + (m ? m.hours : 0) }, 0);
@@ -522,7 +544,7 @@ var AI_CURRICULUM_API = {
   totalHours: function () {
     var mod = AI_CURRICULUM.reduce(function (a, m) { return a + m.hours }, 0);
     var trk = AI_TRACKS.reduce(function (a, t) { return a + t.hours }, 0);
-    return { modules: mod, tracks: trk, total: mod + trk };
+    return { modules: mod, tracks: trk, total: mod + trk, count: AI_CURRICULUM.length };
   },
 
   // Longest dependency path in hours — the real floor on calendar time.
@@ -619,11 +641,15 @@ if (typeof module !== 'undefined' && module.exports) {
 // in the app rather than only in the prose.
 // ============================================================
 var AI_DETAIL = {
+M0A:{concepts:['What a program is: a file of instructions a runtime reads top to bottom','The terminal as a place you type commands, and what a working directory means','Variables, functions, arguments and return values \u2014 the four things every program is made of','Conditionals and loops, and why a loop that never ends is the first bug everyone writes','Arrays and objects: a list of things, and a thing with named parts','Reading an error message: the type, the message, the file and the line number','What a test is \u2014 code that runs your code and says yes or no without you looking','git as a save-point system: what a commit is, commit, branch, remote, and how to get back'],
+ mistakes:['Following a tutorial to a working app and mistaking that for being able to write one. The gate here is an empty directory for exactly this reason.','Reading the error message as noise instead of as the answer. It names the file and the line; nine times in ten it also names the mistake.','Copying code you cannot explain, which converts a five-minute bug into a two-hour one because you cannot form a hypothesis about your own program.','Setting up a perfect environment instead of writing programs. A slightly wrong editor that you use beats a perfect one you configure for a week.','Not committing until it works. The point of a save-point is to have one from before it broke.']},
+M0B:{concepts:['Client and server: what runs on someone else\u2019s machine and what runs on yours','An API key as a secret \u2014 why it cannot go in the browser, and how to prove it did not','Request and response: one round trip, start to finish','Environment variables and why the same code behaves differently in two places','Deployment as making the thing reachable, not as finishing it','Logging a call before you need the log, because usage you did not record is gone'],
+ mistakes:['Putting the key in the frontend because it works. It works, and it is now public; scrapers find committed keys in minutes.','Building the whole product instead of v1. Everything you are tempted to add here has a module later, and each one is easier on top of something already deployed.','Skipping the log because there is nothing to look at yet. M7 and M11 both read this log and neither can reconstruct a month of calls after the fact.','Calling it done when it runs locally. Two strangers on their own devices is the gate for a reason.']},
 M0:{concepts:['Runway as the input that sets the deadline — not the topic list','The split between "before first application" and "learn on the job"','The three mechanisms behind tutorial-competence illusion: processing-fluency misattribution, recognition-vs-recall substitution, illusion of explanatory depth','The bad-week minimum — a missed week must not read as a broken streak'],
  mistakes:['Building a progress dashboard and mistaking instrumentation for learning. You are literally building a tracking PWA; the dashboard is more pleasant than the hard module.','Setting modules at 4-6 weeks, which feels serious and breaks both the review cadence and the sense of completion.','Treating the job search as the reward for finishing. It is the instrument that tells you which hours mattered.']},
 M1:{concepts:['The event loop: call stack, macrotask vs microtask queue','What a Promise actually is — a notification channel for work that already started','The four concurrency failure modes','Closures, lexical scope, this, reference identity — including warm serverless instances sharing module scope','Structural typing and where the type system lies to you','Parse, don’t assert — the trust boundary','Discriminated unions and exhaustiveness','Error taxonomy, cause chaining, retry safety','Modules and the bundle graph — the import graph is what ships'],
  mistakes:['Believing async means "runs in the background." An async function runs synchronously until its first await, and CPU work inside one blocks the process exactly as hard.','await inside a for loop over independent work — 200 x 200ms becomes 40 seconds. And the inverse: Promise.all over an unbounded array, firing 200 requests into a retry storm.','Silencing strict-mode errors with `as` and `!` instead of narrowing — converting a compile error into a runtime crash.','Modelling state as {loading, error?, data?}, which permits four impossible combinations.','catch (e) { console.log(e) } and continuing — a loud failure becomes a silent wrong answer.']},
-M2:{concepts:['References vs values: aliasing, shallow vs deep copy','Stack vs heap, object lifetime, why a server leaks','Number representation: floats, integer precision, the right type for money and IDs','Text encoding: bytes vs code points vs grapheme clusters, decoding a stream','JSON as a lossy boundary','Blocking: event loop, async I/O, threads, processes','File descriptors, sockets, pools, timeouts','Concurrent mutation: races, atomicity, idempotency','Dates and timezones: DST’s doubled and missing hours, timestamptz vs timestamp'],
+M2:{concepts:['References vs values: aliasing, shallow vs deep copy','Stack vs heap, object lifetime, why a server leaks','Number representation: floats, integer precision, the right type for money and IDs','Text encoding: bytes vs code points vs grapheme clusters, decoding a stream','JSON as a lossy boundary','Blocking: event loop, async I/O, threads, processes','File descriptors, sockets, pools, timeouts','Concurrent mutation: races, atomicity, idempotency','Dates and timezones: DST’s doubled and missing hours, naive vs timezone-aware timestamps'],
  mistakes:['Believing {...obj} or JSON.parse(JSON.stringify(obj)) is a copy. The spread is one level. The JSON trick converts Dates to strings, drops undefined and functions, mangles Maps and Sets, and throws on cycles.','.toFixed(2) "solves" money by fixing the display and leaving the arithmetic wrong.','new TextDecoder() inside the loop — looks identical to correct code, discards the carried partial-character state that is the entire point.','"I’m using a pool" while N serverless instances each hold a pool of M.','Believing a transaction prevents the race. Atomicity is not isolation.']},
 M3:{concepts:['HTTP as a wire format: the ~15 status codes and ~12 headers that carry meaning','REST and where it stops being the right answer','SSE and chunked transfer, from scratch, no SDK','Production streaming failures: proxy buffering, aborts, mid-stream errors, resumption','Idempotency — why a retry corrupts data unless designed for','Timeouts, backoff with jitter, which failures are retry-safe','Rate limiting from both sides','Webhooks: at-least-once, signature verification on RAW bytes','CORS; cookies vs bearer vs JWT and where each breaks'],
  mistakes:['chunk.toString().split("\\n") — corrupts output the moment a frame splits across TCP chunks, and works perfectly on localhost, so it ships.','Assuming HTTP 200 means the whole response succeeded. The status commits before the body exists.','Writing the assistant message to the DB only in finally/onFinish, which on serverless may never run.','Everything returning 200 {ok:false}, which breaks every retry library, monitor and health check.','A client-generated idempotency key per render instead of per logical operation.','Doing webhook work before responding, so the provider times out and retries, multiplying the work.']},
@@ -639,7 +665,7 @@ M8:{concepts:['Environments and dependencies on current tooling (uv, ruff, one p
  mistakes:['Writing TypeScript with Python syntax: classes everywhere, raw dicts, no type hints, camelCase. Reviewers read that instantly.','Reaching for conda/poetry/pyenv because a 2022 tutorial said to.','Assuming type hints behave like TypeScript’s compile-then-trust contract.']},
 M9:{concepts:['Tokens as the unit of everything','The messages array, roles, statelessness, what a system prompt mechanically is','Why text in a user or tool-result message can be forged — that is prompt injection','The context window: what fills it, what degrades before it fills','max_tokens and the full stop_reason enum','Pricing: input/output asymmetry, caching as a byte-exact prefix match','Adaptive thinking and effort — the first quality-trading lever after caching','Discovering capabilities from the Models API rather than a hard-coded table','The structural boundaries — what no prompt fixes','Prefill vs decode and the KV cache — the one mechanism explaining three facts this module asserts: why caching needs a byte-exact PREFIX, why conversation cost grows quadratically, and why time-to-first-token and inter-token latency are different numbers. No training, no backprop, no attention math. Then measure it: probe a long prompt and a short one and show TTFT scaling with input while inter-token latency does not'],
  mistakes:['Using another provider’s tokenizer or a chars/4 rule to budget tokens.','Treating max_tokens as a cost cap. It is a ceiling the model is unaware of, so it truncates mid-thought.','Checking for an empty content array to detect a refusal. The array is populated; stop_details is the discriminator, and that branch never fires.','Interpolating anything dynamic near the front of the system prompt. One changed byte invalidates the cache and the failure is completely silent.','Optimising input tokens while ignoring that output costs several times more.','Asking the model to rate its own confidence and routing on that number. It looks like a probability and behaves like a vibe.']},
-M10:{concepts:['Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes `vector` to 2,000 dimensions and `halfvec` to 4,000, several common models emit 3,072, and you choose the model HERE but hit the ceiling six modules later \u2014 so record it in the decision log before you embed anything'],
+M10:{concepts:['What an embedding is — a fixed-length vector a model emits for a text, near for near meaning — and what it structurally cannot do','Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes `vector` to 2,000 dimensions and `halfvec` to 4,000, several common models emit 3,072, and you choose the model HERE but hit the ceiling six modules later \u2014 so record it in the decision log before you embed anything'],
  mistakes:['Storing page-level provenance, then discovering in M16 that span citations are unverifiable and offsets are unrecoverable after the fact.','Making the bucket public under time pressure. A misconfigured bucket is none of injection, XSS, CSRF or SSRF, so the standard exploit set will not catch it.','Picking a 3072-dimension embedding model without checking the pgvector index ceiling.']},
 M11:{concepts:['Trace capture: the exact input, usage, stop_reason and attempt count','Error analysis: open coding to axial coding, producing a named taxonomy with counts','What an eval is — a dataset plus a runner — and why it is not a test','Assertion graders before any model grades anything','LLM-as-judge calibrated against human labels, reported as TPR/TNR','Inter-annotator agreement and rubric revision','Train/test discipline: split at creation, open test once','Structured output as a reliability mechanism, and its limit','CI economics: tiered gates, recorded fixtures, a dollar ceiling','Prompt and model lifecycle: versioning, pinned IDs, the forced migration'],
  mistakes:['Reporting accuracy instead of TPR/TNR. When failures are rare, a judge that always says pass scores 92% and is worthless. This invalidates more eval work than anything else.','Generic categories — "hallucination", "unhelpful". Unactionable. "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.','Delegating the labelling to an LLM. It clusters notes you already wrote. People discover what they care about through labelling.','Building the eval set from cases you invented. An imagined set measures imagination.','A runner that re-implements the model call to keep the eval clean. It then measures a different system than the one that ships.','Using the same model as generator and judge.','Believing schema enforcement solved reliability. It solves shape, not content.']},
@@ -651,7 +677,7 @@ M14:{concepts:['Writing a repo’s agent config so generated code conforms to ho
  mistakes:['Accepting suggestions and moving on, producing a transcript of a person being driven by a model.','The purity play — refusing to touch the assistant in a round whose rubric line is AI fluency.','Measuring nothing, so the module’s own thesis (being slow is the failure mode) has no number attached to it.']},
 M15:{concepts:['Turning a vague request into clarifying questions','Decomposing into 1-2 day independently shippable slices','Estimating, and naming the riskiest assumption','Renegotiating when the estimate is wrong','The open-ended quality ticket, run against a real OSS AI application you did NOT write, with prompts in-repo and no decision log — on your own system it tests measurement; on a stranger’s it tests measurement plus archaeology, which is the actual job','A capability-question protocol: cheap, expensive-and-uncertain, structurally impossible','Explaining a limit to a non-engineer who wants a guarantee'],
  mistakes:['Disappearing for nine days on something that should have been scoped to two, and delivering more than was asked. This is what most "not mid-level yet" feedback means.','Having no stop-or-continue rule on an open-ended ticket, so it absorbs three days or three months identically.','Apologising for a missed target or asking for more time, instead of reporting the result and the evidence.']},
-M16:{concepts:['What an embedding is, and what it structurally cannot do','pgvector HNSW parameters, the dimension ceiling, the recall/latency curve','Chunking: why fixed-size is the right baseline; what contextual retrieval fixes','Two-stage retrieval: hybrid lexical+semantic fused with RRF, then a cross-encoder','Agentic and iterative retrieval','Grounding and span-level citation verification','The long-context baseline, and when to skip retrieval entirely','The embedding lifecycle: batched generation, cost per 1,000 chunks, re-embedding'],
+M16:{concepts:['pgvector HNSW parameters, the dimension ceiling, the recall/latency curve','Chunking: why fixed-size is the right baseline; what contextual retrieval fixes','Two-stage retrieval: hybrid lexical+semantic fused with RRF, then a cross-encoder','Agentic and iterative retrieval','Grounding and span-level citation verification','The long-context baseline, and when to skip retrieval entirely','The embedding lifecycle: batched generation, cost per 1,000 chunks, re-embedding'],
  mistakes:['Evaluating end-to-end with a judge scoring answer quality. Answer quality hides retrieval failure — a strong model answers correctly from pretraining even when retrieval returned garbage.','Generating the golden set entirely with an LLM. Synthetic queries are written from the chunk, leak its vocabulary, and every retriever scores artificially high.','Treating HNSW as exact search, and never measuring recall at all.','Reranking too few candidates. If the right chunk is at rank 73 and you rerank the top 10, the reranker is pure added latency.','Skipping lexical search, which is why queries with an error code or a person’s name fail on pure vector.','Asking for citations like [1] and trusting them. Free-text markers are generated text.']},
 M17:{concepts:['The agent loop at the wire-format level, no framework','Writing a tool definition a model can actually use','Reactive loop vs plan-then-execute; when a second agent is overkill','State, memory and durability across steps','Append-only thinking-block replay','Failure taxonomy and validation between steps','Loop detection and cost runaway prevention','Human-in-the-loop checkpoints for irreversible actions','Containment as an enforced execution boundary, not a permission table','MCP — pin the spec revision','Trajectory tracing and silent-failure detection'],
  mistakes:['Treating the message array as a chat log of strings — dropping tool_use blocks, producing an agent that re-calls the same tool forever.','Tool descriptions written as API documentation instead of decision-support for a model choosing among eight tools.','Error paths returning raw exception text, which teaches nothing and causes retry of the identical failing call.','Adding agents to solve what is actually a bad tool definition or a context problem.','Persisting after the step rather than bracketing the side effect, which makes resume a duplicate-execution machine.','Capping iteration count only. An agent alternating between two tools never repeats at lag-1.','Denying an action by silently dropping the tool call, leaving a dangling tool_use with no result.']},
@@ -659,7 +685,7 @@ M18:{concepts:['The usage object and the four-number cost of a request','Prompt 
  mistakes:['Reporting an average, and computing percentiles by averaging per-minute percentiles. Percentiles do not average.','Measuring time-to-first-byte instead of time-to-first-token. They can be seconds apart.','Routing on per-token price instead of cost per completed task. A cheap call that needs three retries is not cheap.','Building the alert without the breaker. An alert at 3am tells you about money already spent.','Running the budget check after the API call.','Attributing cost per feature but not per user, which hides the distribution entirely when it is extremely skewed.']},
 M19:{concepts:['Trust boundaries and secrets: what runs where','Authentication vs authorization; broken access control as the bug that actually ships','RLS as a design skill','Injection, XSS, CSRF, SSRF — by exploiting them yourself','Dependency and supply-chain risk','Prompt injection, direct and indirect: contained, not fixed','The lethal trifecta: private data + untrusted content + exfiltration','Tool permission design and excessive agency','Treating model output as untrusted input','PII, log leakage, deletion, and the constraints you do not control'],
  mistakes:['Believing code is server-side because of where the file lives. One import chain into a client component drags it into the browser.','Treating a leaked key as fixed by deleting the commit. It is compromised the moment it was pushed; rotation is the only fix.','Trusting an organizationId or userId sent in the request body.','Hiding the admin button in the UI and calling that access control.','USING (true), or the service key in an Edge Function because RLS was in the way.','Believing a classifier or delimiter scheme solves prompt injection.','Assuming indirect injection is exotic. It is the common case: a web page, a PDF, a calendar invite, a row another user can write to.','A confirmation step whose summary the model itself generates. An injected model lies in the confirmation.']},
-M20:{concepts:['The React rendering model: what actually causes a re-render','Effects and their four failure modes','The server/client boundary and the current caching direction (opt-in, not opt-out)','Forms, mutations, optimistic UI with shared Zod schemas','A custom transport over your own SSE frames','Cancellation, abort propagation, resumable streams','Latency choreography for 10-second-plus operations','Conversation scroll behavior and accessible streaming','Designing for output that is sometimes wrong'],
+M20:{concepts:['React from zero: components, props, state — enough to own one page, not a framework tour','The React rendering model: what actually causes a re-render','Effects and their four failure modes','The server/client boundary and the current caching direction (opt-in, not opt-out)','Forms, mutations, optimistic UI with shared Zod schemas','A custom transport over your own SSE frames','Cancellation, abort propagation, resumable streams','Latency choreography for 10-second-plus operations','Conversation scroll behavior and accessible streaming','Designing for output that is sometimes wrong'],
  mistakes:['useState as a variable store kept in sync with useEffect.','Adding and removing dependencies until the lint rule goes quiet.','"use client" at the root layout, converting the whole tree to client components.','Assuming one read() chunk equals one complete SSE event. Corrupts output only under load.','setState on every token at 60/sec, re-rendering the whole markdown tree, then blaming React.','Conflating client disconnect with user cancellation — or a stop button that stops the UI while the server keeps generating and charging.','aria-live="polite" on the streaming container, making screen readers re-read the entire growing message.','An approval button that appears after the tool already ran. That is theatre, not a gate.']},
 M21:{concepts:['The client-server trust boundary','Statelessness, and why a shared counter is the hard part','The serverless execution model, measured rather than quoted','Caching in three layers and the invalidation for each','Graceful degradation, backpressure, what happens when the model is down','The forward-looking design doc: problem, constraints, options, risks, rollout'],
  mistakes:['Treating server and client as a lint rule rather than two physically different computers.','"Serverless means stateless so I’m fine." Instances are reused, so module-level state persists sometimes, unpredictably — worse than never.','Caching the final response keyed on the raw question. Almost never hits, and leaks across users when it does.','Retrying into an outage. A 429 means send less traffic.','Reaching for Redis or Kafka in minute three, before anyone established the read/write ratio. The mid-level rubric rewards thoughtful simplification.']},
@@ -701,6 +727,38 @@ M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The askin
 // early and the module opens with a win rather than a wall.
 // ============================================================
 var AI_CHECKPOINTS = {
+  M0A:['A terminal you opened yourself, node --version answering, and an empty file you created from the command line',
+      'A program that prints something, run from the terminal rather than from an editor button',
+      'The file-reading program, and the first error you read to the end instead of pasting into a search box',
+      'The API program: something that came back from a real server and was reshaped by your code',
+      'The repeated block pulled into a function, because you noticed it, not because you were told to',
+      'Three tests you wrote before the code, watched fail, then made pass',
+      'A deliberate break recovered with git \u2014 the save-point used in anger once'],
+  M0B:['The key in a server-side environment variable and a search of the built client bundle proving it is not there',
+      'One model call made from a script and its reply printed',
+      'The same call behind a server route, with the reply rendered on a page',
+      'The call log written on every request: input, output, cost, timestamp',
+      'Deployed at a URL that works on a phone you did not configure',
+      'Two strangers through it, their requests visible in your log'],
+  M4:['The 3-hour win: 50k rows, one slow query, one EXPLAIN, one index, one measured speedup you can state as a number',
+      'Reading a plan out loud: seq scan vs index scan vs bitmap heap, and which line of EXPLAIN told you',
+      'The 5M-row rig loaded, with a load generator you wrote rather than a benchmark you downloaded',
+      'Six of the twelve queries with plans captured before and after',
+      'All twelve, plus the wall-clock table that shows the slow->fast loop closing',
+      'An RLS policy set benchmarked correct-but-slow against correct-and-fast, with the plan diff that explains it',
+      'Asymptotic complexity written against your own measurements, not against a textbook curve',
+      'The legacy-key rotation performed and documented as a procedure someone else could follow'],
+  M11:['The harness skeleton: Postgres tables plus a TypeScript runner that scores one case end to end',
+      'Session 1 of 4: twenty-five traces hand-read and labelled, no taxonomy yet',
+      'Sessions 2-4 done: 100 labelled traces and a failure taxonomy with counts, written after the reading rather than before',
+      'Dev/test split made at creation and recorded, so it cannot be quietly re-drawn later',
+      'Assertion graders covering the failures that do not need judgement',
+      'A judge with a measured confusion matrix against your own labels',
+      'Inter-annotator agreement: the reviewer labels 30 from your rubric alone, and the rubric is what gets revised',
+      'The tiered CI gate: a smoke set on every push, the full set nightly, recorded fixtures so graders cost nothing',
+      'The fail condition stated as a statistical threshold with its bootstrap interval, not as a single number',
+      'A deliberate model-family migration gated only by this eval set',
+      'stats-lab: the four tests you will actually use, each run once against your own data'],
   M1:['Hello, event loop: predict the output order of 6 mixed sync/setTimeout/promise lines, then run it and reconcile',
       'One failing async test you wrote, fixed for the right reason',
       'MiniPromise: then/catch/chaining passing your own tests',
