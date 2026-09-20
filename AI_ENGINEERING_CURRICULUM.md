@@ -150,6 +150,41 @@ build the artifact, read the **primary sources** for that module's fast-moving c
 
 ---
 
+## Flow — how this is meant to be read, and what was checked
+
+"Beginner to expert with no confusion points" is a property you can test rather than claim, so it was
+tested. Four checks, run against the module data:
+
+**1. Nothing is used before it is explained.** Every cross-module reference was extracted and sorted by
+position. 21 of 22 forward references live in `exports` — *"the streaming proxy you are building feeds
+M17, M18 and M20"* — which is motivation, not confusion: it tells you why the work matters while you do
+it. The one genuine forward dependency (M10 asking you to record an embedding model's dimensionality
+because of a ceiling you meet in M16) is now **self-explaining at the point of use**, so the decision is
+never blind.
+
+**2. Vocabulary is defined before it is used.** Twenty-four pieces of in-group jargon were traced to the
+module that teaches each. Three are used slightly early — *idempotency*, *SSRF*, *blast radius* — and all
+three are in Appendix B, which exists precisely because you have no colleagues to ask.
+
+**3. Every module over 30 hours has named checkpoints.** This was the single largest flow defect: the
+document required them and only two of sixteen modules had them. All sixteen do now — **91 checkpoints,
+averaging 8.4 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
+legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
+people conclude they are lost rather than mid-module.
+
+**4. Every module opens with a win, not a wall.** Checkpoints are ordered easiest-first. M4 opens with a
+3-hour 200× speedup before you build the 5M-row rig. M1 — the largest module in the program, and first —
+opens with a twenty-minute prediction exercise, and being wrong about the output order is the thing that
+motivates the other 66 hours.
+
+**On the shape of the curve.** M1 being both the biggest module and the first one is deliberate and it is
+the steepest part of the climb. It is not split, because the material genuinely belongs together and an
+artificial boundary would teach you that the runtime is two subjects. It is checkpointed instead. This is
+the one place where going slower is going faster, and if you are going to fall behind schedule anywhere,
+fall behind here.
+
+---
+
 ## Build order
 
 Presented in execution order. Hours are focused hours.
@@ -683,8 +718,9 @@ recovers a table flattened into word soup at ingestion.
 OCR. Tables and multi-column layout. **Character-offset-level provenance.** Ingestion as a resumable job
 on M5's queue, with progress and per-file failure. Re-ingestion when the parser improves.
 
-> **v1 required page-level provenance and M16 requires span-level citation verification. Those are
-> incompatible** — page-level provenance cannot verify a span, and character offsets into extracted text
+> **Page-level provenance cannot verify a span.** A citation has to highlight the exact sentence that
+> supports a claim, and character offsets into extracted text are unrecoverable after the fact,
+> especially through OCR. v1 required page-level here and span-level in M16; those are incompatible — page-level provenance cannot verify a span, and character offsets into extracted text
 > are unrecoverable after the fact, especially through OCR. Store **character offsets into the stored
 > extracted text**, with page and section carried alongside.
 

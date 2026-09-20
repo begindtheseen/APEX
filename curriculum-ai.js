@@ -58,6 +58,11 @@ var AI_CURRICULUM = [
   title:'The Runtime, Unframed',
   artifact:'runtime-lab: 8 programs under plain node --test. MiniPromise from scratch. A harness reproducing all four concurrency failure modes then fixing each. A Zod boundary rejecting hostile LLM JSON that `as` accepted. A typed error taxonomy with cause chaining and a retry-safety rule per class.',
   exports:['the estimate log starts here and runs to month 12'],
+  note:'This is the largest module in the program and it is first, which is the steepest part of the '
+     + 'curve. Do not read ahead \u2014 start with checkpoint 1, which is a twenty-minute prediction '
+     + 'exercise, and let being wrong about the output order be the thing that motivates the other 66 '
+     + 'hours. Everything after this module assumes you can reason about what the runtime is doing, so '
+     + 'this is the one place where going slower is going faster.',
   gate:{ referee:'Screen recording, watched back.',
          pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real `as`-cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
          onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.' } },
@@ -130,7 +135,7 @@ var AI_CURRICULUM = [
 
 { id:'M10', layer:3, hours:30, dependsOn:['M4','M5'], kind:'EVIDENCE',
   title:'Ingestion: Real Documents Into a Corpus',
-  artifact:'A pipeline accepting a real signed-URL upload, handling a digital PDF, a scanned PDF and a .docx. CHARACTER-OFFSET provenance (not page-level — M16 needs spans). A private bucket with deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an orphan-cleanup job, a stated retention policy. Resumable on M5 queue. Scored against twenty hand-labeled documents, split dev/test at creation.',
+  artifact:'A pipeline accepting a real signed-URL upload, handling a digital PDF, a scanned PDF and a .docx. CHARACTER-OFFSET provenance, not page-level: a citation has to highlight the exact sentence that supports a claim, and offsets into extracted text are unrecoverable after the fact, especially through OCR. A private bucket with deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an orphan-cleanup job, a stated retention policy. Resumable on M5 queue. Scored against twenty hand-labeled documents, split dev/test at creation.',
   exports:['corpus + offsets -> M16','embedding dimensionality decision -> M16 (pgvector caps: vector 2000, halfvec 4000)'],
   gate:{ referee:'Your twenty hand-labeled documents. A number you cannot fudge.',
          pass:'State what percentage of tables your parser destroys, with evidence. Show a citation that highlights the exact span in the correct page of the correct source.',
@@ -582,7 +587,7 @@ M8:{concepts:['Environments and dependencies on current tooling (uv, ruff, one p
  mistakes:['Writing TypeScript with Python syntax: classes everywhere, raw dicts, no type hints, camelCase. Reviewers read that instantly.','Reaching for conda/poetry/pyenv because a 2022 tutorial said to.','Assuming type hints behave like TypeScript’s compile-then-trust contract.']},
 M9:{concepts:['Tokens as the unit of everything','The messages array, roles, statelessness, what a system prompt mechanically is','Why text in a user or tool-result message can be forged — that is prompt injection','The context window: what fills it, what degrades before it fills','max_tokens and the full stop_reason enum','Pricing: input/output asymmetry, caching as a byte-exact prefix match','Adaptive thinking and effort — the first quality-trading lever after caching','Discovering capabilities from the Models API rather than a hard-coded table','The structural boundaries — what no prompt fixes'],
  mistakes:['Using another provider’s tokenizer or a chars/4 rule to budget tokens.','Treating max_tokens as a cost cap. It is a ceiling the model is unaware of, so it truncates mid-thought.','Checking for an empty content array to detect a refusal. The array is populated; stop_details is the discriminator, and that branch never fires.','Interpolating anything dynamic near the front of the system prompt. One changed byte invalidates the cache and the failure is completely silent.','Optimising input tokens while ignoring that output costs several times more.','Asking the model to rate its own confidence and routing on that number. It looks like a probability and behaves like a vibe.']},
-M10:{concepts:['Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision and its M16 consequence'],
+M10:{concepts:['Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes `vector` to 2,000 dimensions and `halfvec` to 4,000, several common models emit 3,072, and you choose the model HERE but hit the ceiling six modules later \u2014 so record it in the decision log before you embed anything'],
  mistakes:['Storing page-level provenance, then discovering in M16 that span citations are unverifiable and offsets are unrecoverable after the fact.','Making the bucket public under time pressure. A misconfigured bucket is none of injection, XSS, CSRF or SSRF, so the standard exploit set will not catch it.','Picking a 3072-dimension embedding model without checking the pgvector index ceiling.']},
 M11:{concepts:['Trace capture: the exact input, usage, stop_reason and attempt count','Error analysis: open coding to axial coding, producing a named taxonomy with counts','What an eval is — a dataset plus a runner — and why it is not a test','Assertion graders before any model grades anything','LLM-as-judge calibrated against human labels, reported as TPR/TNR','Inter-annotator agreement and rubric revision','Train/test discipline: split at creation, open test once','Structured output as a reliability mechanism, and its limit','CI economics: tiered gates, recorded fixtures, a dollar ceiling','Prompt and model lifecycle: versioning, pinned IDs, the forced migration'],
  mistakes:['Reporting accuracy instead of TPR/TNR. When failures are rare, a judge that always says pass scores 92% and is worthless. This invalidates more eval work than anything else.','Generic categories — "hallucination", "unhelpful". Unactionable. "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.','Delegating the labelling to an LLM. It clusters notes you already wrote. People discover what they care about through labelling.','Building the eval set from cases you invented. An imagined set measures imagination.','A runner that re-implements the model call to keep the eval clean. It then measures a different system than the one that ships.','Using the same model as generator and judge.','Believing schema enforcement solved reliability. It solves shape, not content.']},
@@ -631,5 +636,103 @@ M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The askin
   for (var i = 0; i < AI_CURRICULUM.length; i++) {
     var d = AI_DETAIL[AI_CURRICULUM[i].id];
     if (d) { AI_CURRICULUM[i].concepts = d.concepts; AI_CURRICULUM[i].mistakes = d.mistakes; }
+  }
+})();
+
+// ============================================================
+// Checkpoints. The document requires 2-5 named sub-goals on every module over
+// 30 hours, each with its own done-state and each a legitimate stopping point
+// in a bad week. Two modules had them and fourteen did not, which is the
+// single largest flow defect in the program: forty hours in with no defined
+// intermediate target is where people conclude they are lost rather than
+// mid-module. Ordered easiest-first inside each module so the first one lands
+// early and the module opens with a win rather than a wall.
+// ============================================================
+var AI_CHECKPOINTS = {
+  M1:['Hello, event loop: predict the output order of 6 mixed sync/setTimeout/promise lines, then run it and reconcile',
+      'One failing async test you wrote, fixed for the right reason',
+      'MiniPromise: then/catch/chaining passing your own tests',
+      'The four concurrency failure modes reproduced on demand',
+      'The Zod boundary rejecting model JSON that `as` accepted',
+      'The typed error taxonomy with a documented retry rule per class'],
+  M2:['Aliasing and the shallow-copy trap, reproduced and fixed',
+      'Money wrong by a cent, then correct',
+      'The leaking server, proved with a heap snapshot',
+      'The streamed grapheme split, and the pool exhausted under load',
+      'The four-timezone scheduler pinned across both DST boundaries'],
+  M3:['Read and write one HTTP request by hand, no client library',
+      'A working SSE frame parser against a deliberately chunk-split fixture',
+      'The streaming proxy end to end, no SDK',
+      'AbortController wired through: killing the client stops upstream billing',
+      'The idempotency table: same key twice, one row'],
+  M6:['One unit test that fails for the right reason, then passes',
+      'The four test doubles, each used once where it belongs',
+      'Integration tests against real Postgres, including two RLS policies',
+      'The record-replay model client, with a split-frame stream recorded',
+      'Green required check in CI, plus a mutation score above 70%'],
+  M7:['Read one real stack trace to its actual cause, source maps working',
+      'A bug found with a conditional breakpoint you could not have printed your way to',
+      'Structured logs with correlation IDs surviving one async hop',
+      'OTel spans around the model call, queryable',
+      'The silent-failure detector catching a wrong-but-200 output',
+      'The runbook executed by another person during the game day'],
+  M12:['Trace one user action end to end with file:line at every hop',
+      'Answer "why is this line here" using pickaxe and log -L, not blame alone',
+      'Characterization tests pinning an untested module, bugs included',
+      'A behavior change behind a flag, both paths green',
+      'The resumable backfill over 100k rows, killed and restarted clean',
+      'The dual-run cutover on a deterministic feature'],
+  M13:['The object model, out loud: what a commit, a ref and the index actually are',
+      'The recovery lab: eight disasters, each recovered and explained',
+      'One conflict resolved by reading the merge base, not by picking a side',
+      'A file you were confused by, restructured behind characterization tests',
+      'Failure paths rewritten to actionable messages',
+      'One PR through a full review round trip, 15+ comments'],
+  M16:['The measuring instrument first: a golden set, split dev/test at creation',
+      'A recall@k baseline number you trust',
+      'Hybrid + RRF measured against it',
+      'Reranker measured, with the candidate depth that actually matters',
+      'The long-context arm and the iterative arm, both priced',
+      'Span-level citation verification against M10 offsets'],
+  M17:['One tool call, round-tripped by hand at the wire level',
+      'The loop: multi-step, with tool_use and thinking blocks replayed append-only',
+      'The budget governor and loop detection, holding under a fuzzed input',
+      'Durable state: kill the process mid-run and resume correctly',
+      'Containment: a blocked host and the metadata endpoint both refused',
+      'Trajectory evals scored by M11 graders, step-level and outcome-level'],
+  M19:['Secrets audit: prove what actually ships to the browser via the import graph',
+      'Broken access control, exploited on your own app then fixed',
+      'Injection, XSS, CSRF or SSRF: one landed, one fixed, one test',
+      'Indirect prompt injection landed through retrieved content',
+      'Tool permissions with a written blast-radius analysis',
+      'The bidirectional data-flow doc, with the delete path implemented and tested'],
+  M20:['The rendering model: predict which components re-render, then measure',
+      'One effect bug from each of the four families, fixed',
+      'A custom transport over your own M3 SSE frames',
+      'Stop that provably stops billing; refresh that resumes',
+      'Tool-call approval gate wired to M17, citations wired to M10',
+      'Honest failure states, and axe-core green on the chat surface'],
+  M22:['Environments and config: a missing var fails the deploy, not a 2am route',
+      'CI green as a required check, with the eval tier wired in',
+      'A feature-flagged release you can turn off without a deploy',
+      'A rollback rehearsed under a timer, measured from the dashboard',
+      'Expand/contract run through the pipeline under live load, zero failed requests',
+      'One dockerized cloud deploy with an IAM role you wrote, torn down same day'],
+  M23:['uv, ruff and a type checker green on a hello-world service',
+      'The semantics that differ from TypeScript, each proved by a small script',
+      'The blocking-call trap reproduced: an async handler frozen, then fixed',
+      'M11 eval runner ported, pytest faking the model client',
+      'A typed route added to a Python service you did not write, under a timer'],
+  M28:['Clarify-before-typing, drilled until it is automatic',
+      'Narrated solving with autocomplete off, at volume, logged',
+      'Three timed foreign-repo fixes from the blind queue, transcripts annotated',
+      'The ten-minute flagship walkthrough, in decision language, recorded',
+      'Behavioral stories rehearsed against the incident log',
+      'Two mock defenses with a real person who pushes back']
+};
+(function () {
+  for (var i = 0; i < AI_CURRICULUM.length; i++) {
+    var cp = AI_CHECKPOINTS[AI_CURRICULUM[i].id];
+    if (cp && !AI_CURRICULUM[i].checkpoints) AI_CURRICULUM[i].checkpoints = cp;
   }
 })();
