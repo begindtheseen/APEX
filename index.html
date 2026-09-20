@@ -1250,6 +1250,13 @@ body{color:var(--text);font-family:var(--sans);}
 
 /* The vocabulary card. */
 #launchpadApp .lp-gloss{padding:10px 0;border-top:1px solid #0d2340;}
+/* Inline links inside prose are touch targets too: give them the height a
+   finger needs without disturbing the line they sit in. */
+#launchpadApp .lx-sub a,#launchpadApp .lp-gloss a,#launchpadApp .lp-crumb a{
+  display:inline-block;min-height:44px;line-height:44px;padding:0 4px;margin:-12px 0;
+  vertical-align:middle;}
+#launchpadApp .lp-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0;}
 #launchpadApp .lp-gloss b{display:block;font:500 0.75rem/1 var(--sans);color:#e6edf5;margin-bottom:5px;}
 #launchpadApp .lp-gloss span{display:block;font:400 0.7188rem/1.5 var(--sans);color:#93a2b3;}
 
@@ -1715,13 +1722,13 @@ body{color:var(--text);font-family:var(--sans);}
      lesson/flashcard/quiz shaped, because that is what this curriculum is. -->
 <div class="screen" id="launchpadApp">
   <div class="lp-shell">
-    <nav class="lp-side" id="lpSide"></nav>
+    <nav class="lp-side" id="lpSide" aria-label="Launch Pad sections"></nav>
     <div class="lp-main" id="lpMain">
       <div class="lp-topbar">
         <button class="lp-back lp-exit mo-btn" style="margin:0" onclick="exitLaunchpad()">← REALMS</button>
-        <div class="lp-crumb" id="lpCrumb"></div>
+        <nav class="lp-crumb" id="lpCrumb" aria-label="You are here"></nav>
       </div>
-      <div class="lp-body" id="launchpadContent"></div>
+      <main class="lp-body" id="launchpadContent" tabindex="-1"></main>
     </div>
   </div>
 </div>
@@ -5980,7 +5987,7 @@ function renderLaunchpad(keepScroll) {
 // glyphs rendered as mojibake on half the devices and never looked drawn.
 var LP_ICON = (function () {
   function w(d, extra) {
-    return '<svg class="lp-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    return '<svg class="lp-svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + d + (extra || '') + '</svg>';
   }
   return {
@@ -6057,7 +6064,7 @@ function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
 // work rather than as a picture of a screen.
 function lpLayerArt(n) {
   var D = 'stroke="#22456e"', A = 'stroke="#4db8ff"', C = 'stroke="#00d4ff"';
-  function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true">' + inner + '</svg>'; }
+  function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true" focusable="false">' + inner + '</svg>'; }
   var rows = [];
 
   // L0 The Contract — a runway bar and a marker landing on a decision
@@ -6324,7 +6331,8 @@ function lpHeroArt(quiet) {
 // and sat 18px lower than the reference's.
 function lpRing(pct) {
   var S = 73, r = (S - 6) / 2, c = 2 * Math.PI * r, m = S / 2;
-  return '<div class="lp-ring"><svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '">'
+  return '<div class="lp-ring" role="img" aria-label="Overall readiness ' + pct + ' percent">'
+    + '<svg aria-hidden="true" width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '">'
     + '<circle class="rbg" cx="' + m + '" cy="' + m + '" r="' + r + '"/>'
     + '<circle class="rfg" cx="' + m + '" cy="' + m + '" r="' + r + '" stroke-dasharray="' + c + '" '
     + 'stroke-dashoffset="' + (c * (1 - pct / 100)) + '" style="--dash:' + c + '"/></svg>'
@@ -6447,7 +6455,8 @@ function lpHomeHTML(API) {
      : esc((LP_ST.setup && LP_ST.setup.flagship) || 'Launch Pad')) + '</div>';
   h += '<div class="lp-sub">33 modules, from an empty file to hired. '
      + 'Each one ends in something you built and can explain out loud, and in a gate: someone else says yes. Lab modules stay private; Evidence modules are for strangers to see.</div>';
-  h += '<div class="lp-heroBar"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
+  h += '<div class="lp-heroBar" role="progressbar" aria-valuenow="' + sum.pct + '" aria-valuemin="0" '
+     + 'aria-valuemax="100" aria-label="Modules passed"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
   h += '</div></div>';
 
   h += '<div class="lp-cols"><div>';
@@ -6462,7 +6471,8 @@ function lpHomeHTML(API) {
     var pct = tot ? Math.round(got / tot * 100) : 0;
     h += '<div class="lp-brow"><div class="lp-bico">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div class="lp-bwrap"><div class="lp-blab">' + esc(Lr.name) + '</div>'
-       + '<div class="lp-btr"><span style="width:' + pct + '%"></span></div></div>'
+       + '<div class="lp-btr" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" '
+       + 'aria-label="' + esc(Lr.name) + '"><span style="width:' + pct + '%"></span></div></div>'
        + '<div class="lp-bpct">' + pct + '%</div></div>';
   });
   h += '</div>' + lpRing(sum.pct) + '</div></div>';
@@ -6488,17 +6498,19 @@ function lpHomeHTML(API) {
        + (Lr.id >= 4 && Lr.id <= 6 && !API.flagshipGate(P).open
           ? ' <b style="color:#ff8a8a">Behind the hard gate: ' + API.flagshipGate(P).done
             + ' of ' + API.flagshipGate(P).total + ' conditions done.</b>' : '') + '</div></div></div>';
-    h += '<div class="lp-mods">';
+    h += '<div class="lp-mods" role="list">';
     mods.forEach(function (m) {
       var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
-      h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '">'
-         + '<span class="lp-dot"></span>' + esc(m.title) + '</div>';
+      h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '" role="listitem">'
+         + '<span class="lp-dot" aria-hidden="true"></span>' + esc(m.title)
+         + '<span class="lp-sr">' + (pr.gate ? ' — passed' : (un ? ' — open' : ' — locked')) + '</span></div>';
     });
     h += '</div></div><div class="lp-artWrap"><div class="lp-artBox">'
        + lpLayerArt(Lr.id) + '</div></div></div>';
     h += '<div class="lp-layf">'
        + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="'
-       +   (nextIn ? 'lpOpen(\'' + nextIn + '\')' : 'lpTab(\'modules\')') + '">'
+       +   (nextIn ? 'lpOpen(\'' + nextIn + '\')' : 'lpTab(\'modules\')') + '"'
+       +   ' aria-label="' + (nextIn ? 'Continue ' + esc(Lr.name) + ' with ' + nextIn : 'View ' + esc(Lr.name)) + '">'
        +   (nextIn ? 'Continue' : 'View') + ' →</button>'
        + '<div class="lp-pctlab"><span class="k">' + pct + '% of these hours · ' + done + ' of ' + mods.length + ' passed</span>'
        + '<span class="t"><i style="width:' + pct + '%"></i></span></div>'
@@ -6649,7 +6661,7 @@ function lpModulesHTML(API) {
            + 'gate. The two users and the harness run are facts they can check.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
-        h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
+        h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
            + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
       });
       h += '</div>';
@@ -6811,12 +6823,12 @@ function lpPlanHTML(API) {
   h += '<div class="lp-cols"><div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
-  h += '<div class="lp-f"><label>Runway (months)</label><input type="number" inputmode="decimal" min="0" '
+  h += '<div class="lp-f"><label for="lpRunway">Runway (months)</label><input id="lpRunway" type="number" inputmode="decimal" min="0" '
      + 'value="' + esc(lpNum(st.runwayMonths)) + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f"><label>h/week</label><input type="number" inputmode="decimal" min="0" '
+  h += '<div class="lp-f"><label for="lpHours">Hours a week</label><input id="lpHours" type="number" inputmode="decimal" min="0" '
      + 'value="' + esc(lpNum(st.weeklyHours)) + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f wide"><label>Your flagship — the one app you keep building</label>'
-     + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
+  h += '<div class="lp-f wide"><label for="lpFlagship">Your flagship — the one app you keep building</label>'
+     + '<input id="lpFlagship" type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
   h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
 
@@ -7049,7 +7061,7 @@ function lpDetailHTML(API, id) {
    ['artifact', 'Artifact built', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
-    h += '<div class="lp-chk' + (on ? ' on' : '') + (lockedHere ? ' lock' : '') + '" role="button" tabindex="0"' + (lockedHere ? ' aria-disabled="true" style="opacity:.55"' : '') + ' onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
+    h += '<div class="lp-chk' + (on ? ' on' : '') + (lockedHere ? ' lock' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"' + (lockedHere ? ' aria-disabled="true" style="opacity:.55"' : '') + ' onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
        + '<span class="lp-box">' + (on ? '✓' : '') + '</span>'
        + '<span><span style="display:block">' + st[1] + '</span>'
        + '<span class="lx-ls">' + st[2] + '</span></span></div>';
