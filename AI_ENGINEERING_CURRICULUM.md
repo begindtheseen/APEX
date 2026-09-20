@@ -54,7 +54,7 @@ and full-time (~35 h/wk) — and take the one that matches your actual life.
 
 ### The Compressed Spine — if your runway is under nine months
 
-Do not attempt the full program. The honest short path is **519 module hours** (about 734 with the tracks it carries): M0, M0A, M0B, M1, M2, M3, M4, M6,
+Do not attempt the full program. The honest short path is **514 module hours** (about 727 with the tracks it carries): M0, M0A, M0B, M1, M2, M3, M4, M6,
 M7, M9, M11, M25, M26 — **375 module hours plus ~40 track hours plus M28's 10-hour forward-load.** At
 18 h/week that is **~5.4 months**, not the 4.7 an earlier draft claimed by pricing it module-only.
 
@@ -198,9 +198,9 @@ Presented in execution order. Hours are focused hours.
 
 | # | Module | h | dependsOn |
 |---|---|---|---|
-| **M0** | Scope, Runway, Reviewer, Flagship | 22 | — |
-| **M0A** | First Code | 55 | M0 |
-| **M0B** | Flagship v1 | 28 | M0A |
+| **M0** | The Plan | 12 | — |
+| **M0A** | First Code | 58 | M0 |
+| **M0B** | Flagship v1 | 30 | M0A |
 | **M1** | The Runtime, Unframed | 67 | M0A |
 | **M2** | The Machine Model: Ten Seams | 45 | M1 |
 | **M4** | The Postgres Underneath Supabase | 61 | M2 |
@@ -226,7 +226,7 @@ Presented in execution order. Hours are focused hours.
 | **M8** | Python On-Ramp | 15 | M6 |
 | **M23** | Python as a Second Production Language · *trigger* | 35 | M8, M11 |
 | **M24** | Third-Party Integration as a Consumer | 23 | M3, M19 |
-| **M25** | Comp, Terms, and the Negotiation · *trigger* | 11 | M0 |
+| **M25** | Pay, Terms, and the Negotiation · *trigger* | 11 | M0 |
 | **M26** | The Evidence Layer v1 · *trigger* | 8 | M7 |
 | **M27** | The Evidence Layer v2 · *trigger* | 12 | M16, M18 |
 | **M28** | Interview Performance · *trigger* | 38 | M12, M26 |
@@ -234,7 +234,7 @@ Presented in execution order. Hours are focused hours.
 | **M30** | The First 90 Days · *trigger* | 6 | M0 |
 
 
-**The critical path is 548 hours**: `M0 → M0A → M1 → M2 → M4 → M3 → M6 → M7 → M11 → M17 → M19 → M24`.
+**The critical path is 541 hours**: `M0 → M0A → M1 → M2 → M4 → M3 → M6 → M7 → M11 → M17 → M19 → M24`.
 
 That is the longest chain of strict dependencies — the floor on calendar time even if everything else
 ran in parallel. **Total hours is the floor on effort; the critical path is the floor on time. They are
@@ -252,10 +252,13 @@ instrument to terminate on hire day.
 
 # LAYER 0 — The Contract
 
-## M0 — Scope, Runway, Reviewer, Flagship (22h) · `dependsOn: —`
+## M0 — The Plan (12h) · `dependsOn: —`
 
-v1 gave this 8 hours and it was the module carrying the most weight in the document. It now carries
-four things that were previously assumed, unassigned, or discovered too late.
+This is day one, and the reader on day one has never written code. So every item below is something a
+person can do with a notebook and an internet connection, said in words they already have. Five items
+that used to live here need code the reader has not written yet — a commit queue, a model-call log, a
+smoke test for tools not yet installed — and each has moved to the module where that code exists
+(marked below). What remains is the contract: the money, the hours, the date, the people, the rules.
 
 **The artifact** `LAB` — one repo, one directory per module, plus `PLAN.md` containing:
 
@@ -263,7 +266,7 @@ four things that were previously assumed, unassigned, or discovered too late.
 variants (employed ~12 h/wk, full-time ~35 h/wk) with the weekly hours **derived** from them, not
 assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
-**2. The hour budget** — **1,113** module hours + **459** track hours = **1,572**, with the line-item
+**2. The hour budget** — **1,108** module hours + **459** track hours = **1,567**, with the line-item
 track table below and your date arithmetic shown. **Derive these from `curriculum-ai.js`, do not copy
 them from here** — the JS sums itself and the prose is what rots. An earlier draft of this very line
 said 999, which is the exact class of error this module exists to prevent, sitting in the module whose
@@ -280,20 +283,7 @@ which modules matter.**
 Node-primary backend, M23 moves immediately after M11.* Pre-write that alternate ordering in one
 paragraph now, so the month-5 decision is a lookup rather than a redesign.
 
-**6. THE FLAGSHIP SPECIFICATION.** Name the app, then verify it against this checklist. **Twelve
-modules consume it.** If your named app fails a line, either fix the app before M1 or take the labeled
-fallback.
-
-| The flagship must have | Required by |
-|---|---|
-| A streaming chat surface you can rebuild on your own M3 protocol | M20 |
-| Multiple real users with skewed usage, and a paid tier | M18 |
-| A user-uploaded document corpus | M10, M16 |
-| At least one irreversible side-effecting action | M17, M19 |
-| Two distinct roles (so broken-access-control exploits are real) | M19 |
-| A third-party account worth connecting | M24 |
-| A CI/deploy pipeline you own | M22 |
-| Model calls being logged from day one | M7, M11 |
+**6. THE FLAGSHIP SPECIFICATION** → *moved to M0B.* You name and specify the app in the module that builds it.
 
 **7. The traffic milestone (10–15h, dated, month 4).** Twelve to fifteen recruited people running a
 scripted task list. That is a weekend of asking, not a growth strategy. The target is **~100 traces
@@ -306,8 +296,7 @@ v1's "~200 requests."
 > imagined set measures imagination. Take it knowingly or not at all. **Do not invent traces.** A
 > hiring manager detects that in two questions.
 
-**8. Turn on append-only logging of every model call today, before M1 (1h).** So M7 *upgrades* a trace
-store rather than starting one at month 5.
+**8. Turn on append-only logging of every model call today, before M1 (1h)** → *moved to M0B.* You cannot log a model call before you have made one; M0B makes the first and logs it from that request on.
 
 **9. THE REVIEWER RECRUITMENT (4–6h).** v1 said "secured in M0, used from M8" and then put it in
 neither M0's artifact list nor its gate. Both claims were also wrong: the first hard human dependency
@@ -335,10 +324,7 @@ comments returned.**
 including failures, **a failed agent review is logged as a failed gate.** Re-rolling until you get a
 pass is how this instrument dies.
 
-**10. The cold baseline — as a fraction, not a feeling.** **Write the component checklist first and
-freeze it.** Then open an empty file and rebuild the core module of a feature you already shipped, in 45
-minutes, original repo closed. Score is *items produced ÷ items listed.* v1 produced no number, so
-nothing later could be compared to it. **Re-run the identical exercise at month 6 and month 12.**
+**10. The cold baseline — as a fraction, not a feeling** → *moved to M0A.* A first attempt at a coding task, scored as a fraction, needs an environment to attempt it in.
 
 **11. The capability inventory — and why this one is not optional.** A dated list of what you have
 already shipped, debugged unsupervised, and taught yourself.
@@ -359,13 +345,9 @@ happened · what you changed.
 > a candidate with no employment history the behavioral round is weighted *harder*, because there are no
 > references to call. M28 rehearses against this log.
 
-**13. The blind-exercise queue (2h).** Find 20 merged bug-fix commits in real repos. **Do not read the
-fix commits.** M12 and M28 consume these — `git revert` one, the suite goes red, work the clock, score
-against the maintainer's actual merged diff. Real ground truth, no human required, nobody who can leak.
+**13. The blind-exercise queue (2h)** → *moved to M0A.* Finding twenty bug-fix commits needs you to know what a commit is.
 
-**14. The hardware floor and a 30-minute smoke test.** The artifacts collectively assume a substantial
-machine — a 5M-row local Postgres, a container runtime, a load generator, a browser automation stack.
-Run all four in week one. **Fail loudly now rather than in month three.**
+**14. The hardware floor and a 30-minute smoke test** → *moved to M0A.* The smoke test checks the tools M0A installs.
 
 **15. Two terms this document keeps using, defined by you, with adoptable defaults.**
 - **Bad-week minimum:** the smallest thing that still counts as not stopping. Default: *one 45-minute
@@ -377,11 +359,11 @@ Run all four in week one. **Fail loudly now rather than in month three.**
 - **Re-entry ritual** — the actual failure point is not the bad week, it is the week after. Default:
   *re-read your own last `DELTA.md`, then do the bad-week minimum twice before resuming normal hours.*
 
-**GATE** — **REFEREE:** the reviewer's trial review is returned in writing; the flagship checklist is
-signed line by line; the hardware smoke test passes on all four stacks. **PASS:** all fifteen artifacts
-exist; the cold baseline is a **fraction**; you state from memory your weekly hours, runway, application
-date, and the Python trip-wire number. **ON FAIL:** M1 does not start. This is the one gate with no
-partial credit.
+**GATE** — **REFEREE:** anyone — a friend, a partner, a sibling — who reads your one page and hands it
+back. **PASS:** they can say your runway, your weekly hours and your application date without looking;
+the three messages are sent; the twenty postings are tallied; your bad-week rule is written and you can
+say it. **ON FAIL:** this one cannot be failed by lack of skill, only by not doing it, and the rest of
+the program is built on these numbers.
 
 ---
 
@@ -390,7 +372,7 @@ partial credit.
 *The literal answer to "I need to understand code." Where "it works" and "it is correct" stop being the
 same sentence.*
 
-## M0A — First Code (55h) · `dependsOn: M0`
+## M0A — First Code (58h) · `dependsOn: M0`
 
 **Why this exists.** An earlier version of this document went from "write a plan" straight to "predict the
 output order of six mixed sync/setTimeout/promise lines." A reader who had never opened a terminal was
@@ -403,6 +385,19 @@ git appears anywhere.
 **What you need to understand.** What a program is. The terminal, and what a working directory means.
 Variables, functions, arguments, return values. Conditionals and loops. Arrays and objects. How to read an
 error message — the type, the message, the file, the line. What a test is. git as a save-point system.
+
+**From M0, now here.** **The cold baseline — as a fraction, not a feeling.** **Write the component checklist first and
+freeze it.** Then open an empty file and rebuild the core module of a feature you already shipped, in 45
+minutes, original repo closed. Score is *items produced ÷ items listed.* v1 produced no number, so
+nothing later could be compared to it. **Re-run the identical exercise at month 6 and month 12.**
+
+**From M0, now here.** **The blind-exercise queue (2h).** Find 20 merged bug-fix commits in real repos. **Do not read the
+fix commits.** M12 and M28 consume these — `git revert` one, the suite goes red, work the clock, score
+against the maintainer's actual merged diff. Real ground truth, no human required, nobody who can leak.
+
+**From M0, now here.** **The hardware floor and a 30-minute smoke test.** The artifacts collectively assume a substantial
+machine — a 5M-row local Postgres, a container runtime, a load generator, a browser automation stack.
+Run all four in week one. **Fail loudly now rather than in month three.**
 
 **The artifact.** Six small programs written from an empty file and run from a terminal you set up
 yourself: read a file and print a count; call a public JSON API and reshape the result; fail on purpose and
@@ -419,7 +414,7 @@ failure mode of this module is a working repo you cannot rebuild.
 
 ---
 
-## M0B — Flagship v1 (28h) · `dependsOn: M0A` · **owns: the flagship**
+## M0B — Flagship v1 (30h) · `dependsOn: M0A` · **owns: the flagship**
 
 **Why this exists.** Twelve modules say they "bolt onto the flagship." M0 specs it, M7 instruments it, M11
 evaluates it, M19 attacks a copy, M20 rebuilds its chat surface, M22 deploys its pipeline. No module built
@@ -432,6 +427,24 @@ work rather than by waiting.
 **What you need to understand.** Client and server. An API key as a secret — why it cannot go in the
 browser and how to prove it did not. One request and one response, start to finish. Environment variables.
 Deployment as *reachable*, not as *finished*. Logging a call before you need the log.
+
+**From M0, now here.** **THE FLAGSHIP SPECIFICATION.** Name the app, then verify it against this checklist. **Twelve
+modules consume it.** If your named app fails a line, either fix the app before M1 or take the labeled
+fallback.
+
+| The flagship must have | Required by |
+|---|---|
+| A streaming chat surface you can rebuild on your own M3 protocol | M20 |
+| Multiple real users with skewed usage, and a paid tier | M18 |
+| A user-uploaded document corpus | M10, M16 |
+| At least one irreversible side-effecting action | M17, M19 |
+| Two distinct roles (so broken-access-control exploits are real) | M19 |
+| A third-party account worth connecting | M24 |
+| A CI/deploy pipeline you own | M22 |
+| Model calls being logged from day one | M7, M11 |
+
+**From M0, now here.** **Turn on append-only logging of every model call today, before M1 (1h).** So M7 *upgrades* a trace
+store rather than starting one at month 5.
 
 **The artifact.** A page with an input, a server route that calls a model with your own key, the reply
 rendered, deployed at a URL a stranger can open. No streaming, no accounts, no database — those arrive in
@@ -1430,7 +1443,7 @@ bold "this happens before the first application" while sitting at hour 873 — e
 applications start. M24 produced the resume at month 15 for applications at month 5. Five lenses caught it
 independently.
 
-## M25 — Comp, Terms, and the Negotiation (11h) · *trigger: one month before the application date*
+## M25 — Pay, Terms, and the Negotiation (11h) · *trigger: one month before the application date*
 
 The funnel-filter half of this work already happened in M0, where it belongs, because it determines which
 modules matter. This is the transaction itself.
