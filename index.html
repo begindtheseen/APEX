@@ -5639,16 +5639,49 @@ function exitLaunchpad() {
   document.getElementById('launchpadApp').classList.remove('active');
   goLauncher();
 }
-function lpOpen(id) { LP_VIEW = id; renderLaunchpad(); }
+function lpOpen(id) {
+  var API = lpApi();
+  // The ladder disables locked rows, but the id is reachable other ways.
+  // A locked module still opens — reading ahead is fine — it just cannot
+  // be claimed, which lpToggle enforces.
+  if (API && !API.byId(id)) return;
+  LP_VIEW = id; renderLaunchpad();
+}
 function lpBack()   { LP_VIEW = null; renderLaunchpad(); }
 
+// Rule 1 of this curriculum is that a gate with no referee is decorative.
+// The app was failing its own rule: a locked module's claims could be
+// ticked, and "Gate passed" could be ticked first, so every number on the
+// home page was self-reported in any order. Three things are enforced now.
+var LP_STEPS = ['delta', 'artifact', 'gate'];
 function lpToggle(id, step) {
+  var API = lpApi(); if (!API) return;
+  var P = lpProgress();
   var m = LP_ST.mods[id] || (LP_ST.mods[id] = {});
-  m[step] = !m[step];
-  // The gate is the thing that unlocks downstream modules, so it is the one
-  // claim worth making hard to make casually.
-  if (step === 'gate' && m.gate && !m.artifact) {
-    toast('Gate passed without the artifact built?', 'warn');
+  var i = LP_STEPS.indexOf(step);
+
+  // 1. A module you have not opened yet has nothing to claim.
+  if (!API.isUnlocked(id, P)) {
+    var mod = API.byId(id);
+    if (mod && mod.layer >= 4 && mod.layer <= 6 && !API.flagshipGate(P).open) {
+      toast('The hard gate is not open yet — all four conditions first', 'warn');
+    } else {
+      toast('Locked. Pass what this module depends on first.', 'warn');
+    }
+    return;
+  }
+  // 2. In order. The rail says "in order" and now means it.
+  if (!m[step] && i > 0 && !m[LP_STEPS[i - 1]]) {
+    toast(i === 1 ? 'Write the DELTA first — that is the reading'
+                  : 'Build the artifact before a referee can pass it', 'warn');
+    return;
+  }
+  // 3. Un-ticking a step un-ticks everything that followed from it, so the
+  //    record can never say "gate passed, artifact not built".
+  if (m[step]) {
+    for (var k = i; k < LP_STEPS.length; k++) m[LP_STEPS[k]] = false;
+  } else {
+    m[step] = true;
   }
   lpSave();
   renderLaunchpad(true);
@@ -6102,7 +6135,7 @@ function lpImport(ev) {
 // the product uses constantly and never defines.
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work. 31 of them, in dependency order.'],
+    ['Module', 'A unit of work. 33 of them, in dependency order.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
     ['DELTA.md', 'What you got wrong, written down after reading the primary source.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
@@ -6127,9 +6160,11 @@ function lpHomeHTML(API) {
   // competing with the one image the page has.
   var h = '<div class="lp-hero lp-hero-lg">' + lpHeroArt()
         + '<div class="lp-heroScrim"></div><div class="lp-heroIn">';
-  h += '<div class="lp-eyebrow">Welcome back,</div>';
-  h += '<div class="lp-name">Future Engineer</div>';
-  h += '<div class="lp-sub">31 modules, first principles to hired. '
+  h += '<div class="lp-eyebrow">' + (sum.modulesDone === sum.modulesTotal ? 'Every gate passed,'
+     : sum.modulesDone ? 'Welcome back,' : 'This is the whole path,') + '</div>';
+  h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'Engineer'
+     : 'Future Engineer') + '</div>';
+  h += '<div class="lp-sub">33 modules, from an empty file to hired. '
      + 'Each one ends in something you built and can explain out loud.</div>';
   h += '<div class="lp-heroBar"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
   h += '</div></div>';
@@ -6195,13 +6230,30 @@ function lpHomeHTML(API) {
   h += lpHowHTML();
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'TODAY’S FOCUS</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
-  if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
-  avail.slice(0, 4).forEach(function (m) {
+  var finished = sum.modulesDone === sum.modulesTotal;
+  if (finished) {
+    h += '<div class="lp-dp" style="margin-bottom:12px">You have a deployed app with real users, an eval '
+       + 'harness that gates its own CI, measured cost per completed task, three references who have seen '
+       + 'you work, and a resume where every claim points at a repo.</div>'
+       + '<div class="lp-dp" style="color:#8ab4dd">What is left is not a module. Keep the tracks running, '
+       + 'keep the estimate log going against real tickets, and re-read M29 and M30 on the day you start.</div>';
+  } else if (!avail.length) {
+    h += '<div class="lp-dp">Nothing open. Every module here depends on one you have not passed yet — '
+       + 'the ladder shows which.</div>';
+  }
+  var today = avail.filter(function (m) { return !m.trigger; });
+  var later = avail.filter(function (m) { return m.trigger; });
+  today.slice(0, 4).forEach(function (m) {
     h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lp-box"></span><div><div class="lp-tt">' + esc(m.title) + '</div>'
        + '<div class="lp-ts">' + m.id + ' · ' + m.hours + 'h · ' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</div></div></div>';
   });
-  h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all 31 modules →</button></div>';
+  if (later.length) {
+    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Waiting on a date, not a gate</b>'
+       + '<span>' + later.map(function (m) { return esc(m.title); }).join(', ')
+       + ' — open, but each one has a trigger inside that says when.</span></div>';
+  }
+  h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all ' + sum.modulesTotal + ' modules →</button></div>';
 
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.bolt
      + 'QUICK TOOLS</div></div>'
@@ -6248,9 +6300,10 @@ function lpModulesHTML(API) {
   var sum = API.progressSummary(P);
 
   var h = '<div class="lx-hero">'
-        + '<div class="lx-eyebrow"><span class="lx-mt">All 31 modules · build order</span></div>'
+        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · build order</span></div>'
         + '<div class="lx-title">The ladder</div>'
-        + '<div class="lx-sub">A module opens when every module it depends on has its gate passed. '
+        + '<div class="lx-sub">A module opens when every module it depends on has its gate passed, '
+        + 'and its three claims can only be made in order. '
         + 'The longest path through those edges is what sets your timeline — not the hour sum.</div>'
         + '</div>';
 
@@ -6369,6 +6422,7 @@ function lpTracksHTML(API) {
 
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
+  var pl2 = API.plan(st);
   var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">M0 · the only module with authority</span></div>'
         + '<div class="lx-title">The Plan</div>'
         + '<div class="lx-sub">Runway sets the deadline — not the topic list. The weekly number is '
@@ -6386,10 +6440,23 @@ function lpPlanHTML(API) {
   h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
 
   h += '</div><div>';
+  if (pl2.recommend === 'spine' || pl2.recommend === 'full-tight') {
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.layers
+       + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
+    AI_COMPRESSED_SPINE.forEach(function (id) {
+      var sm = API.byId(id); if (!sm) return;
+      h += '<button class="lx-link" onclick="lpOpen(\'' + id + '\')">'
+         + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
+         + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h</span></span>'
+         + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
+    });
+    h += '</div>';
+  }
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'WHAT THIS DECIDES</div></div>';
   [['Your deadline', 'Runway divided by the hours you can actually commit. Not a guess.'],
-   ['Which program', 'The full 31 modules, or the 11-module spine if the runway is short.'],
+   ['Which program', 'The full ' + API.totalHours().count + ' modules, or the '
+     + AI_COMPRESSED_SPINE.length + '-module spine if the runway is short.'],
    ['When you apply', 'After Layers 0-2, not when everything is finished.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
