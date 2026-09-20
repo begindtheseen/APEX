@@ -735,6 +735,108 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-panel.lsRed .ls-glyph{color:#ff4033;text-shadow:0 0 26px rgba(255,59,48,.6);}
 .ls-panel.lsRed .ls-name{color:#ffd9d5;}
 .ls-panel.lsRed .ls-trace{color:#ff5b52;}
+/* ═══ LAUNCHPAD — AI product engineering realm ═══════════════ */
+.lsLp{--rc:#00e5a0;}
+#launchpadApp{background:#02100c;color:#cfeee2;}
+#lpNav{background:linear-gradient(180deg,#02100c 0%,#04180f 100%);border-bottom:1px solid #0d3a2c;
+  display:flex;height:50px;flex-shrink:0;align-items:center;gap:10px;padding:0 12px;
+  box-shadow:0 1px 20px rgba(0,229,160,.07);}
+#lpNav .dk-brand{color:#00e5a0;text-shadow:0 0 18px rgba(0,229,160,.45);}
+#lpNav .dk-tag{color:#3d7f68;}
+.lp-hero{border:1px solid #0d3a2c;border-radius:14px;padding:16px;margin-bottom:14px;
+  background:linear-gradient(160deg,rgba(0,229,160,.07),rgba(2,16,12,0) 65%);}
+.lp-ey{font:600 10px/1 var(--mono);letter-spacing:.18em;color:#00e5a0;text-transform:uppercase;}
+.lp-t{font:700 21px/1.2 var(--sans);color:#e6fff5;margin:8px 0 6px;}
+.lp-s{font:400 13px/1.55 var(--sans);color:#6fae99;}
+/* Five stats. minmax must let all five sit on one row at 390px or the last
+   one orphans onto a line of its own and reads as a different kind of thing. */
+.lp-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:14px;}
+.lp-num{background:rgba(0,229,160,.05);border:1px solid #0d3a2c;border-radius:9px;padding:9px 3px;text-align:center;}
+.lp-nv{font:700 15px/1 var(--mono);color:#00e5a0;}
+.lp-nk{font:500 8px/1.3 var(--mono);letter-spacing:.11em;color:#4e8d77;text-transform:uppercase;margin-top:5px;}
+.lp-bar{height:5px;border-radius:3px;background:#07271d;overflow:hidden;margin-top:13px;}
+.lp-bar span{display:block;height:100%;background:linear-gradient(90deg,#00e5a0,#7dd3fc);border-radius:3px;
+  transition:width .45s cubic-bezier(.4,0,.2,1);}
+.lp-creed{margin-top:13px;padding-top:12px;border-top:1px dashed #0d3a2c;}
+.lp-creed div{font:400 11.5px/1.5 var(--sans);color:#5c9c85;padding-left:14px;position:relative;margin-bottom:5px;}
+.lp-creed div::before{content:'\2014';position:absolute;left:0;color:#00e5a0;}
+.lp-layer{margin:20px 0 9px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
+.lp-ln{font:700 12px/1 var(--mono);letter-spacing:.13em;color:#00e5a0;text-transform:uppercase;}
+.lp-lp{font:400 11px/1.4 var(--sans);color:#4e8d77;flex:1;min-width:150px;}
+.lp-lh{font:600 10px/1 var(--mono);color:#3d7f68;}
+.lp-mod{width:100%;text-align:left;background:#04180f;border:1px solid #0d3a2c;border-radius:11px;
+  padding:12px 13px;margin-bottom:8px;cursor:pointer;display:block;transition:border-color .16s,background .16s;}
+.lp-mod:hover:not(.lock){border-color:#1a6b52;background:#052014;}
+.lp-mod.lock{opacity:.4;cursor:not-allowed;}
+.lp-mod.done{border-color:#00e5a0;background:rgba(0,229,160,.07);}
+.lp-mh{display:flex;align-items:center;gap:9px;}
+.lp-mid{font:700 11px/1 var(--mono);color:#00e5a0;flex-shrink:0;}
+.lp-mt{font:600 13.5px/1.3 var(--sans);color:#d8f5ea;flex:1;}
+.lp-mhr{font:500 10px/1 var(--mono);color:#4e8d77;flex-shrink:0;}
+.lp-kind{font:600 8px/1 var(--mono);letter-spacing:.09em;padding:3px 5px;border-radius:3px;flex-shrink:0;}
+.lp-kind.ev{background:rgba(0,229,160,.15);color:#00e5a0;}
+.lp-kind.lab{background:rgba(125,211,252,.12);color:#7dd3fc;}
+.lp-meta{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.lp-dep{font:400 9.5px/1 var(--mono);color:#3d7f68;}
+.lp-owns{font:600 8px/1 var(--mono);letter-spacing:.07em;background:rgba(125,211,252,.1);color:#7dd3fc;
+  padding:3px 5px;border-radius:3px;}
+.lp-trig{font:600 8px/1 var(--mono);letter-spacing:.07em;background:rgba(56,189,248,.12);color:#38bdf8;
+  padding:3px 5px;border-radius:3px;}
+.lp-steps{display:flex;gap:5px;margin-top:9px;}
+.lp-step{flex:1;height:4px;border-radius:2px;background:#07271d;}
+.lp-step.on{background:#00e5a0;}
+.lp-gate{border:1px solid #1a6b52;border-radius:12px;padding:14px;margin:16px 0;
+  background:linear-gradient(160deg,rgba(0,229,160,.09),rgba(2,16,12,0));}
+.lp-gate.shut{border-color:#7a4a1a;background:linear-gradient(160deg,rgba(56,189,248,.07),rgba(2,16,12,0));}
+.lp-gt{font:700 12px/1 var(--mono);letter-spacing:.11em;color:#00e5a0;text-transform:uppercase;}
+.lp-gate.shut .lp-gt{color:#38bdf8;}
+.lp-gs{font:400 12px/1.5 var(--sans);color:#6fae99;margin:7px 0 11px;}
+.lp-chk{display:flex;align-items:center;gap:9px;padding:7px 0;cursor:pointer;
+  font:400 12.5px/1.4 var(--sans);color:#a9d9c8;border-top:1px solid rgba(13,58,44,.6);}
+.lp-box{width:16px;height:16px;border-radius:4px;border:1.5px solid #1a6b52;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font:700 10px/1 var(--mono);color:#02100c;}
+.lp-chk.on .lp-box{background:#00e5a0;border-color:#00e5a0;}
+.lp-chk.on{color:#00e5a0;}
+.lp-det{border:1px solid #0d3a2c;border-radius:12px;padding:15px;margin-bottom:14px;background:#04180f;}
+.lp-dl{font:600 9px/1 var(--mono);letter-spacing:.13em;color:#00e5a0;text-transform:uppercase;margin:15px 0 7px;}
+.lp-dl:first-child{margin-top:0;}
+.lp-dp{font:400 12.5px/1.6 var(--sans);color:#a9d9c8;}
+.lp-ref{border-left:2px solid #1a6b52;padding-left:11px;margin-top:8px;}
+.lp-ref b{color:#00e5a0;font:600 9.5px/1 var(--mono);letter-spacing:.08em;display:block;margin-bottom:4px;}
+.lp-ref p{font:400 12px/1.55 var(--sans);color:#8fc7b3;margin:0 0 9px;}
+.lp-warn{border:1px solid #7a4a1a;border-radius:9px;padding:10px 12px;margin-top:11px;
+  background:rgba(56,189,248,.06);font:400 11.5px/1.5 var(--sans);color:#8fc7b3;}
+.lp-warn b{color:#38bdf8;font:600 10px/1 var(--mono);letter-spacing:.08em;}
+.lp-set{border:1px solid #1a6b52;border-radius:13px;padding:15px;margin-bottom:14px;
+  background:linear-gradient(160deg,rgba(0,229,160,.08),rgba(2,16,12,0));}
+.lp-set.warn{border-color:#7a4a1a;background:linear-gradient(160deg,rgba(56,189,248,.07),rgba(2,16,12,0));}
+.lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;}
+.lp-f label{display:block;font:600 8.5px/1 var(--mono);letter-spacing:.11em;color:#4e8d77;
+  text-transform:uppercase;margin-bottom:5px;}
+.lp-f input{width:100%;background:#02100c;border:1px solid #0d3a2c;border-radius:7px;color:#00e5a0;
+  font:600 15px/1 var(--mono);padding:9px 10px;-webkit-appearance:none;}
+.lp-f input:focus{outline:none;border-color:#00e5a0;}
+.lp-f.wide{grid-column:1/-1;}
+.lp-f.wide input{font:500 13px/1.3 var(--sans);color:#d8f5ea;}
+.lp-verdict{border-top:1px dashed #0d3a2c;margin-top:12px;padding-top:12px;}
+.lp-vrec{font:700 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:#00e5a0;}
+.lp-set.warn .lp-vrec{color:#38bdf8;}
+.lp-vwhy{font:400 12.5px/1.6 var(--sans);color:#a9d9c8;margin-top:8px;}
+.lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;}
+.lp-path{border:1px solid #0d3a2c;border-radius:9px;padding:10px;background:rgba(0,229,160,.04);}
+.lp-path.on{border-color:#00e5a0;background:rgba(0,229,160,.1);}
+.lp-pn{font:600 9px/1 var(--mono);letter-spacing:.1em;color:#4e8d77;text-transform:uppercase;}
+.lp-path.on .lp-pn{color:#00e5a0;}
+.lp-pv{font:700 19px/1 var(--mono);color:#d8f5ea;margin:7px 0 3px;}
+.lp-ps{font:400 10.5px/1.4 var(--sans);color:#6fae99;}
+.lp-mist{border-left:2px solid #7a4a1a;padding-left:11px;margin-top:8px;}
+.lp-mist div{font:400 12px/1.55 var(--sans);color:#8fc7b3;margin-bottom:8px;position:relative;padding-left:13px;}
+.lp-mist div::before{content:'\00D7';position:absolute;left:0;color:#38bdf8;font-weight:700;}
+.lp-con div{font:400 12.5px/1.55 var(--sans);color:#a9d9c8;margin-bottom:6px;position:relative;padding-left:13px;}
+.lp-con div::before{content:'\2022';position:absolute;left:0;color:#00e5a0;}
+.lp-back{background:none;border:1px solid #0d3a2c;border-radius:8px;color:#4e8d77;
+  font:600 10px/1 var(--mono);letter-spacing:.1em;padding:9px 13px;cursor:pointer;margin-bottom:13px;}
+.lp-back:hover{border-color:#1a6b52;color:#00e5a0;}
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
   text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
 /* While the warp canvas runs, idle animations pause so they never compete
@@ -765,7 +867,7 @@ body{color:var(--text);font-family:var(--sans);}
 <div class="screen active" id="launcherScreen">
   <div class="ls-bg"><span class="bgA"></span><span class="bgO"></span><span class="bgR"></span></div>
   <div class="ls-head">
-    <div class="ls-kicker">ONE ENGINE · THREE CURRICULA</div>
+    <div class="ls-kicker">ONE ENGINE · FOUR CURRICULA</div>
     <div class="ls-title">SELECT REALM</div>
   </div>
   <div class="ls-row">
@@ -789,6 +891,13 @@ body{color:var(--text);font-family:var(--sans);}
       <div class="ls-name">REDLINE</div>
       <div class="ls-tag">Social media · virality · agency</div>
       <div class="ls-sub" id="lsSubRed"></div>
+    </button>
+    <button class="ls-panel lsLp" onclick="launchRealm('launchpad',this)">
+      <div class="ls-glyph">⬢</div>
+      <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,26 16,22 30,23 44,14 58,16 72,7 98,3"/></svg>
+      <div class="ls-name">LAUNCHPAD</div>
+      <div class="ls-tag">AI engineering · hireable · remote</div>
+      <div class="ls-sub" id="lsSubLp"></div>
     </button>
   </div>
   <div class="ls-foot">PROGRESS SAVED PER REALM · ON THIS DEVICE</div>
@@ -968,6 +1077,17 @@ body{color:var(--text);font-family:var(--sans);}
   <div class="scr"><div class="pad" id="obsidianContent"></div></div>
 </div>
 
+<!-- LAUNCHPAD — AI product engineering. Module/artifact/gate shaped, not
+     lesson/flashcard/quiz shaped, because that is what this curriculum is. -->
+<div class="screen" id="launchpadApp">
+  <div id="lpNav">
+    <button class="dk-back" onclick="exitLaunchpad()">← REALMS</button>
+    <div class="dk-brand">LAUNCHPAD</div>
+    <div class="dk-tag" id="lpTag">AI PRODUCT ENGINEERING</div>
+  </div>
+  <div class="scr"><div class="pad" id="launchpadContent"></div></div>
+</div>
+
 <!-- MODAL -->
 <div class="modal" id="modal">
   <div class="msheet">
@@ -1013,6 +1133,7 @@ body{color:var(--text);font-family:var(--sans);}
 <script src="obsviz.js"></script>
 <script src="redline.js"></script>
 <script src="redlineviz.js"></script>
+<script src="curriculum-ai.js"></script>
 </div>
 
 <script>
@@ -4847,6 +4968,361 @@ function goRedline() { enterRealm('redline'); }
 function exitObsidian() { goLauncher(); }
 
 // ═══════════════════════════════════════════════════════════
+// LAUNCHPAD — the AI product engineering realm.
+// Deliberately NOT built on the Obsidian lesson/flashcard/quiz engine.
+// That engine is multiple-choice shaped, and recognition memory survives
+// long after recall is gone — a 90% MCQ score is compatible with total
+// inability to produce the thing. This curriculum's unit is a module with
+// an artifact and a gate, so the view tracks exactly that: did you write
+// the DELTA, did you build the thing, did a referee say yes.
+// ═══════════════════════════════════════════════════════════
+var LP_ST = { mods:{}, flagship:{}, setup:{} };
+var LP_VIEW = null;   // null = module map, otherwise a module id
+
+function lpCfg() { return (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG) ? LAUNCHPAD_CONFIG : {}; }
+function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRICULUM_API : null; }
+
+function lpLoad() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
+    LP_ST = { mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {} };
+  } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{} }; }
+}
+function lpSave() {
+  try { localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST)); } catch (e) {}
+}
+// The API takes one progress map; __flagship rides along on it.
+function lpProgress() {
+  var p = {};
+  for (var k in LP_ST.mods) p[k] = LP_ST.mods[k];
+  p.__flagship = LP_ST.flagship;
+  return p;
+}
+
+function enterLaunchpad() {
+  lpLoad();
+  LP_VIEW = null;
+  document.getElementById('mainApp').classList.remove('active');
+  document.getElementById('obsidianApp').classList.remove('active');
+  document.getElementById('launchpadApp').classList.add('active');
+  renderLaunchpad();
+}
+function exitLaunchpad() {
+  document.getElementById('launchpadApp').classList.remove('active');
+  goLauncher();
+}
+function lpOpen(id) { LP_VIEW = id; renderLaunchpad(); window.scrollTo(0, 0); }
+function lpBack()   { LP_VIEW = null; renderLaunchpad(); }
+
+function lpToggle(id, step) {
+  var m = LP_ST.mods[id] || (LP_ST.mods[id] = {});
+  m[step] = !m[step];
+  // The gate is the thing that unlocks downstream modules, so it is the one
+  // claim worth making hard to make casually.
+  if (step === 'gate' && m.gate && !m.artifact) {
+    toast('Gate passed without the artifact built?', 'warn');
+  }
+  lpSave();
+  renderLaunchpad(true);
+}
+function lpSet(field, val) {
+  LP_ST.setup = LP_ST.setup || {};
+  var n = parseFloat(val);
+  LP_ST.setup[field] = (field === 'flagship') ? val : (isFinite(n) && n > 0 ? n : 0);
+  lpSave();
+  // Deliberately NOT a full re-render. These fields fire on blur, and rebuilding
+  // the panel would replace the input the user just tabbed into, swallowing the
+  // keystrokes. Only the derived half is redrawn.
+  var v = document.getElementById('lpVerdict');
+  var API = lpApi();
+  if (v && API) {
+    v.innerHTML = lpVerdictHTML(API);
+    var panel = document.getElementById('lpSetup');
+    if (panel) {
+      var rec = API.plan(LP_ST.setup).recommend;
+      panel.classList.toggle('warn', rec === 'spine' || rec === 'full-tight');
+    }
+  } else { renderLaunchpad(true); }
+}
+function lpFlag(key) {
+  LP_ST.flagship[key] = !LP_ST.flagship[key];
+  lpSave();
+  renderLaunchpad(true);
+}
+
+function renderLaunchpad(keepScroll) {
+  var host = document.getElementById('launchpadContent');
+  if (!host) return;
+  var API = lpApi();
+  if (!API || typeof AI_CURRICULUM === 'undefined') {
+    host.innerHTML = '<div class="lp-det">Curriculum data unavailable.</div>';
+    return;
+  }
+  // Ticking a checkbox rebuilds the view. Without this the page jumps to the
+  // top mid-checklist, which reads as the tap having done something else.
+  var sc = keepScroll ? (host.closest('.scr') || document.scrollingElement) : null;
+  var y = sc ? sc.scrollTop : 0;
+  host.innerHTML = LP_VIEW ? lpDetailHTML(API, LP_VIEW) : lpMapHTML(API);
+  if (sc) sc.scrollTop = y;
+}
+
+function lpMapHTML(API) {
+  var cfg = lpCfg(), P = lpProgress();
+  var sum = API.progressSummary(P);
+  var cp  = API.criticalPath();
+  var fg  = API.flagshipGate(P);
+  var avail = API.available(P).map(function (m) { return m.id; });
+
+  var h = lpSetupHTML(API);
+  h += '<div class="lp-hero">';
+  h += '<div class="lp-ey">' + esc(cfg.tag || '') + '</div>';
+  h += '<div class="lp-t">' + esc(cfg.name || 'Launchpad') + '</div>';
+  h += '<div class="lp-s">' + esc(cfg.tagline || '') + '</div>';
+  h += '<div class="lp-nums">';
+  h += '<div class="lp-num"><div class="lp-nv">' + sum.modulesDone + '/' + sum.modulesTotal + '</div><div class="lp-nk">Modules</div></div>';
+  h += '<div class="lp-num"><div class="lp-nv">' + sum.hoursDone + '</div><div class="lp-nk">of ' + sum.hoursTotal + 'h</div></div>';
+  h += '<div class="lp-num"><div class="lp-nv">' + sum.artifactsDone + '</div><div class="lp-nk">Artifacts</div></div>';
+  h += '<div class="lp-num"><div class="lp-nv">' + sum.deltasDone + '</div><div class="lp-nk">Deltas</div></div>';
+  h += '<div class="lp-num"><div class="lp-nv">' + cp.hours + 'h</div><div class="lp-nk">Crit path</div></div>';
+  h += '</div>';
+  h += '<div class="lp-bar"><span style="width:' + sum.pct + '%"></span></div>';
+  h += '<div class="lp-creed">';
+  (cfg.creed || []).forEach(function (c) { h += '<div>' + esc(c) + '</div>'; });
+  h += '</div></div>';
+
+  // Total hours is the floor on effort; the critical path is the floor on time.
+  h += '<div class="lp-warn"><b>CRITICAL PATH</b><br>' + esc(cp.path.join(' → ')) + '<br>'
+     + cp.hours + 'h of strict dependencies. Total hours is the floor on effort; this is the floor on '
+     + 'time, and only one of them moves when you work more hours a week.</div>';
+
+  var LAYERS = (typeof AI_LAYERS !== 'undefined') ? AI_LAYERS : [];
+  LAYERS.forEach(function (L) {
+    var mods = API.byLayer(L.id);
+    if (!mods.length) return;
+    var lh = mods.reduce(function (a, m) { return a + m.hours }, 0);
+
+    // The Layer 3 -> 4 hard gate sits between those layers, not inside a module.
+    if (L.id === 4) {
+      h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
+      h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
+      h += '<div class="lp-gs">Layer 4 does not start until all four are true. This was the most '
+         + 'corroborated finding in the review — it gates twelve modules and it is the only '
+         + 'prerequisite here that cannot be satisfied by working harder.</div>';
+      fg.items.forEach(function (it) {
+        var on = !!LP_ST.flagship[it.key];
+        h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpFlag(\'' + it.key + '\')">'
+           + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
+      });
+      h += '</div>';
+    }
+
+    h += '<div class="lp-layer"><span class="lp-ln">L' + L.id + ' · ' + esc(L.name) + '</span>'
+       + '<span class="lp-lp">' + esc(L.purpose) + '</span><span class="lp-lh">' + lh + 'h</span></div>';
+
+    mods.forEach(function (m) {
+      var pr = LP_ST.mods[m.id] || {};
+      var unlocked = API.isUnlocked(m.id, P);
+      var cls = pr.gate ? ' done' : (unlocked ? '' : ' lock');
+      h += '<button class="lp-mod' + cls + '"' + (unlocked ? ' onclick="lpOpen(\'' + m.id + '\')"' : ' disabled') + '>';
+      h += '<div class="lp-mh"><span class="lp-mid">' + m.id + '</span>'
+         + '<span class="lp-mt">' + esc(m.title) + '</span>'
+         + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">EVID' : 'lab">LAB') + '</span>'
+         + '<span class="lp-mhr">' + m.hours + 'h</span></div>';
+      h += '<div class="lp-meta">';
+      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-owns">OWNS ' + esc(o.toUpperCase()) + '</span>'; });
+      if (m.trigger) h += '<span class="lp-trig">BY TRIGGER</span>';
+      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites') + '</span>';
+      if (avail.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-owns">AVAILABLE NOW</span>';
+      h += '</div>';
+      h += '<div class="lp-steps">'
+         + '<span class="lp-step' + (pr.delta ? ' on' : '') + '"></span>'
+         + '<span class="lp-step' + (pr.artifact ? ' on' : '') + '"></span>'
+         + '<span class="lp-step' + (pr.gate ? ' on' : '') + '"></span></div>';
+      h += '</button>';
+    });
+  });
+
+  // Parallel tracks are mandatory and were the 40% hour error in v1. Show them.
+  var TRACKS = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
+  if (TRACKS.length) {
+    var th = TRACKS.reduce(function (a, t) { return a + t.hours }, 0);
+    h += '<div class="lp-layer"><span class="lp-ln">Parallel tracks</span>'
+       + '<span class="lp-lp">Mandatory, continuous, and counted — excluding these is what made v1 understate the commitment by 40%.</span>'
+       + '<span class="lp-lh">' + th + 'h</span></div>';
+    TRACKS.forEach(function (t) {
+      h += '<div class="lp-mod" style="cursor:default">';
+      h += '<div class="lp-mh"><span class="lp-mid">' + t.id + '</span>'
+         + '<span class="lp-mt">' + esc(t.title) + '</span>'
+         + '<span class="lp-mhr">' + (t.hours ? t.hours + 'h' : '0h') + '</span></div>';
+      h += '<div class="lp-meta"><span class="lp-dep">' + esc(t.cadence) + '</span></div>';
+      h += '<div class="lp-dp" style="margin-top:7px;font-size:11.5px;color:#6fae99">' + esc(t.rule) + '</div>';
+      h += '</div>';
+    });
+  }
+  h += '<div style="display:flex;gap:8px;margin:18px 0 6px">'
+     + '<button class="lp-back" style="flex:1;margin:0" onclick="lpExport()">\u2193 EXPORT PROGRESS</button>'
+     + '<button class="lp-back" style="flex:1;margin:0" onclick="lpTriggerImport()">\u2191 IMPORT</button></div>'
+     + '<input type="file" id="lpImportFile" accept="application/json" style="display:none" onchange="lpImport(event)">';
+  return h;
+}
+
+// M0's first and most load-bearing artifact, made executable. The review's
+// second-biggest finding was that the headline hour count excluded the
+// parallel tracks and was ~40% low — so this never assumes a weekly number,
+// it derives what you would need and says when the honest answer is the Spine.
+// Export/import parity with the other realms. Progress lives in localStorage,
+// which is one device and one browser profile — a cleared cache loses a year.
+function lpExport() {
+  try {
+    var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup,
+                 exportedAt:new Date().toISOString(), appVersion:(lpCfg().key || 'apex_launchpad_v1') };
+    var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'launchpad-backup-' + todayKey() + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('LAUNCHPAD backup downloaded', 'ok');
+  } catch (e) { toast('Export failed', 'warn'); }
+}
+function lpTriggerImport() { document.getElementById('lpImportFile').click(); }
+function lpImport(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function () {
+    try {
+      var d = JSON.parse(r.result);
+      // Restoring a year of gates is not an undoable tap.
+      if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
+      LP_ST = { mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {} };
+      lpSave();
+      renderLaunchpad();
+      toast('LAUNCHPAD progress restored', 'ok');
+    } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
+    ev.target.value = '';
+  };
+  r.readAsText(f);
+}
+
+function lpSetupHTML(API) {
+  var st = LP_ST.setup || {};
+  var pl = API.plan(st);
+  var unset = pl.recommend === 'unset';
+  var warn  = pl.recommend === 'spine' || pl.recommend === 'full-tight';
+
+  var h = '<div class="lp-set' + (warn ? ' warn' : '') + '" id="lpSetup">';
+  h += '<div class="lp-gt" style="color:' + (warn ? '#38bdf8' : '#00e5a0') + '">M0 \u00B7 THE CONTRACT</div>';
+  h += '<div class="lp-gs">Runway sets the deadline \u2014 not the topic list. Nothing else is scheduled '
+     + 'until these exist, and the weekly number is derived, never assumed.</div>';
+
+  h += '<div class="lp-fields">';
+  h += '<div class="lp-f"><label>Runway (months)</label><input type="number" inputmode="decimal" min="0" '
+     + 'value="' + (st.runwayMonths || '') + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
+  h += '<div class="lp-f"><label>Hours / week</label><input type="number" inputmode="decimal" min="0" '
+     + 'value="' + (st.weeklyHours || '') + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
+  h += '<div class="lp-f wide"><label>The flagship \u2014 twelve modules bolt onto it</label>'
+     + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
+     + 'placeholder="Name the app"></div>';
+  h += '</div>';
+
+  h += '<div id="lpVerdict">' + lpVerdictHTML(API) + '</div>';
+  h += '</div>';
+  return h;
+}
+
+function lpVerdictHTML(API) {
+  var pl = API.plan(LP_ST.setup || {});
+  var unset = pl.recommend === 'unset';
+  var h = '';
+  if (!unset) {
+    var fullOn  = (pl.recommend === 'full' || pl.recommend === 'full-tight');
+    h += '<div class="lp-paths">';
+    h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
+       + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '\u2014') + ' mo</div>'
+       + '<div class="lp-ps">' + pl.fullHours + 'h \u00B7 needs '
+       + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '\u2014') + ' h/wk to fit your runway</div></div>';
+    h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
+       + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '\u2014') + ' mo</div>'
+       + '<div class="lp-ps">' + pl.spineHours + 'h \u00B7 needs '
+       + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '\u2014') + ' h/wk</div></div>';
+    h += '</div>';
+  }
+
+  h += '<div class="lp-verdict">';
+  h += '<div class="lp-vrec">' + (unset ? '\u25A0 INCOMPLETE'
+        : pl.recommend === 'spine' ? '\u25B2 TAKE THE SPINE'
+        : pl.recommend === 'full-tight' ? '\u25B2 TIGHT \u2014 RAISE HOURS OR TAKE THE SPINE'
+        : '\u25B2 FULL PROGRAM FITS') + '</div>';
+  h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
+  if (!unset) {
+    h += '<div class="lp-vwhy" style="color:#6fae99;margin-top:9px">Applications start after Layers 0\u20132 \u2014 '
+       + pl.applyAfterHours + 'h in, roughly month '
+       + (pl.weeklyHours ? Math.max(1, Math.round(pl.applyAfterHours / pl.weeklyHours / 4.345)) : '?')
+       + '. Not when everything is finished. Ten real interviews re-rank this curriculum better than any plan does.</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function lpDetailHTML(API, id) {
+  var m = API.byId(id);
+  if (!m) return '<div class="lp-det">Unknown module.</div>';
+  var pr = LP_ST.mods[id] || {};
+
+  var h = '<button class="lp-back" onclick="lpBack()">← MODULE MAP</button>';
+  h += '<div class="lp-hero" style="margin-bottom:14px">';
+  h += '<div class="lp-ey">' + m.id + ' · ' + m.hours + ' focused hours · ' + m.kind + '</div>';
+  h += '<div class="lp-t">' + esc(m.title) + '</div>';
+  h += '<div class="lp-s">' + (m.dependsOn.length ? 'Depends on ' + m.dependsOn.join(', ') + '.' : 'No prerequisites.')
+     + (m.owns ? ' Owns ' + m.owns.join(', ') + ' for the whole curriculum.' : '') + '</div>';
+  if (m.trigger) h += '<div class="lp-warn" style="margin-top:12px"><b>TRIGGER</b><br>' + esc(m.trigger) + '</div>';
+  if (m.currency) h += '<div class="lp-warn" style="margin-top:12px"><b>CURRENCY</b><br>' + esc(m.currency) + '</div>';
+  h += '</div>';
+
+  h += '<div class="lp-det">';
+  if (m.concepts && m.concepts.length) {
+    h += '<div class="lp-dl">What you need to understand</div><div class="lp-con">';
+    m.concepts.forEach(function (c) { h += '<div>' + esc(c) + '</div>'; });
+    h += '</div>';
+  }
+  h += '<div class="lp-dl">The artifact you build</div><div class="lp-dp">' + esc(m.artifact) + '</div>';
+  if (m.checkpoints && m.checkpoints.length) {
+    h += '<div class="lp-dl">Checkpoints — each a legitimate stopping point in a bad week</div>';
+    h += '<div class="lp-dp">' + m.checkpoints.map(function (c, i) { return (i + 1) + '. ' + esc(c) }).join('<br>') + '</div>';
+  }
+  if (m.exports) {
+    h += '<div class="lp-dl">Exported to later modules</div><div class="lp-dp">' + esc(m.exports.join(' · ')) + '</div>';
+  }
+  h += '<div class="lp-dl">The gate</div>';
+  h += '<div class="lp-ref"><b>REFEREE</b><p>' + esc(m.gate.referee) + '</p>'
+     + '<b>PASS</b><p>' + esc(m.gate.pass) + '</p>'
+     + '<b>ON FAIL</b><p>' + esc(m.gate.onFail) + '</p></div>';
+  if (m.mistakes && m.mistakes.length) {
+    h += '<div class="lp-dl">What most people get wrong here</div><div class="lp-mist">';
+    m.mistakes.forEach(function (x) { h += '<div>' + esc(x) + '</div>'; });
+    h += '</div>';
+  }
+  if (m.note) h += '<div class="lp-warn"><b>NOTE</b><br>' + esc(m.note) + '</div>';
+  h += '</div>';
+
+  h += '<div class="lp-gate' + (pr.gate ? '' : ' shut') + '">';
+  h += '<div class="lp-gt">Progress</div>';
+  h += '<div class="lp-gs">Three steps, in order. The gate is what unlocks everything downstream, '
+     + 'so it is the one claim worth making carefully.</div>';
+  [['delta','DELTA.md written — primary sources read, changes recorded'],
+   ['artifact','Artifact built and running'],
+   ['gate','Gate passed — a referee said yes']].forEach(function (st) {
+    var on = !!pr[st[0]];
+    h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
+       + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + st[1] + '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════
 // REALM SELECT + WARP — the start page and its transition.
 // Every screen is reached from the launcher; the warp is a canvas
 // animation painted in the chosen realm's palette: dim → radial
@@ -4867,12 +5343,26 @@ function renderLauncher() {
   if (a) a.textContent = (typeof ST !== 'undefined' && ST && ST.onboardDone) ? ('PHASE ' + (ST.phase || 1)) : 'BEGIN DAY 1';
   var o = document.getElementById('lsSubObs'); if (o) o.textContent = realmDoneCount('obsidian');
   var r = document.getElementById('lsSubRed'); if (r) r.textContent = realmDoneCount('redline');
+  var l = document.getElementById('lsSubLp'); if (l) l.textContent = lpDoneCount();
+}
+// Launchpad tracks gates, not topics seen — a module counts when a referee said yes.
+function lpDoneCount() {
+  try {
+    var key = (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.key) || 'apex_launchpad_v1';
+    var s = JSON.parse(localStorage.getItem(key) || '{}');
+    var mods = s.mods || {}, n = 0;
+    for (var k in mods) if (mods[k] && mods[k].gate) n++;
+    var tot = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM.length : 0;
+    return n + '/' + tot + ' GATES';
+  } catch (e) { return ''; }
 }
 function goLauncher() {
   if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
   OBS_EXAM = null; OBS_VIEW = null;
   var app = document.getElementById('obsidianApp');
   app.classList.remove('active');
+  var lp = document.getElementById('launchpadApp');
+  if (lp) lp.classList.remove('active');
   if (realm().themeClass) app.classList.remove(realm().themeClass);
   ACTIVE_REALM = 'obsidian';
   document.getElementById('mainApp').classList.remove('active');
@@ -4892,12 +5382,14 @@ function routeRealm(name) {
       ACTIVE_TAB = 'today';
       renderActiveTab();
     }
-  } else { enterRealm(name); }
+  } else if (name === 'launchpad') { enterLaunchpad(); }
+  else { enterRealm(name); }
 }
 var WARP_PAL = {
   apex:     { bg:'#020509', cols:['#00d4ff','#4db8ff','#9ff1ff','#ffffff'], glyph:'■' },
   obsidian: { bg:'#000000', cols:['#ffffff','#d8d8d8','#a9a9a9','#7a7a7a'], glyph:'◆' },
-  redline:  { bg:'#080404', cols:['#ff3b30','#ff8a3c','#ffb020','#ffffff'], glyph:'▲' }
+  redline:  { bg:'#080404', cols:['#ff3b30','#ff8a3c','#ffb020','#ffffff'], glyph:'▲' },
+  launchpad:{ bg:'#02100c', cols:['#00e5a0','#34d8b4','#7dd3fc','#ffffff'], glyph:'\u2B22' }
 };
 var WARP_ON = false;
 function launchRealm(name, btn) {
