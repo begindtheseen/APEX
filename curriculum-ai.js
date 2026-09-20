@@ -353,7 +353,7 @@ var AI_COMPRESSED_SPINE = ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M9',
 var AI_SPINE_TRACK_HOURS = { T1:200, T2:0, T3:0, T4:30, T5:15, T6:0, T7:0, T8:34, T9:25, T10:15 };
 var AI_CUT_ORDER = ['M26','M25 second half','M16'];
 // M32 removed from the cut order: it is the only module that owns seamlessness into
-// real work, which is half the stated goal.      // ~70h back, in this order
+// real work, which is half the stated goal.      // ~68h back, in this order
 
 var LAUNCHPAD_CONFIG = {
   brand: 'LAUNCHPAD',
@@ -1473,7 +1473,6 @@ M30:[
  ['UI','User interface: the screens and buttons a person sees and uses. The visible part of an app, and the part most tempting to polish.']],
 M31:[
  ['Onsite (interview)','The final round of interviews, several in one day, with the team you would join. Once done in the office, now often on video and still called an onsite. It is the last step before an offer, which follows one to three weeks later.'],
- ['Modal','The most common outcome, from the statistical word mode. Being hired before finishing the program is not the exception; it is what usually happens, and this module is written for it.'],
  ['Operating contract','The one page from M0 that sets your hours, your reviewer and your rule for a bad week. The second one is the same page rewritten for a person with a job.'],
  ['Weekly budget','The hours per week you will honestly give the program. Employed, that is 5 to 8 hours, and every plan built on 18 has to be rebuilt.'],
  ['Component (of a codebase)','One self-contained part of a larger codebase, such as the billing code or the search code. Not the React sense from M22.'],
