@@ -6309,7 +6309,7 @@ function lpExport() {
     a.href = url; a.download = 'launchpad-backup-' + todayKey() + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    toast('LAUNCHPAD backup downloaded', 'ok');
+    toast('Saved launchpad-backup-' + todayKey() + '.json to your downloads', 'ok');
   } catch (e) { toast('Export failed', 'warn'); }
 }
 function lpTriggerImport() { var el = document.getElementById('lpImportFile'); if (el) el.click(); }
@@ -6373,7 +6373,7 @@ function lpFlagshipCount() {
 }
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work, up to four weeks long. 33 of them, each opening when the ones before it are passed.'],
+    ['Module', 'A unit of work. Most take under four weeks at 18 hours a week; a few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.'],
     ['Lab', 'A module whose result stays private. It is for learning, not for showing.'],
     ['Evidence', 'A module whose result a stranger can open and judge. These are what get you hired.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
@@ -6381,8 +6381,9 @@ function lpHowHTML() {
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
     ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it.'],
-    ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people have used it, you have a hundred recorded failures, and your eval harness runs against them. Working harder does not open it.'],
+    ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it, about a hundred logged traces contain real failures, and your eval harness runs against them on every push. Working harder does not open it.'],
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
+    ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in M0\'s first section. Open M0 and read Words before anything else.'],
     ['Rule 1', 'A gate with no referee is decorative.'],
     ['Rule 2', 'The longest chain of modules sets how long this takes, not the hour sum.'],
     ['Rule 3', 'Read the official documentation before you build, and write down where it proved you wrong. That is the delta.']
@@ -6497,7 +6498,11 @@ function lpHomeHTML(API) {
   if (l03done && !fgT.open && !finished) {
     h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpTab(\'modules\')">'
        + '<span class="lp-box"></span><div><div class="lp-tt">Next: the hard gate</div>'
-       + '<div class="lp-ts">' + fgT.done + '/' + fgT.total + ' conditions · tick them on the Modules tab</div></div></div>';
+       + '<div class="lp-ts">' + fgT.done + '/' + fgT.total + ' conditions · the work is off the ladder</div></div></div>'
+       + '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>What that means today</b>'
+       + '<span>Nothing new opens by finishing another module. Put the flagship in front of two real people, let M10\'s '
+       + 'logging collect about a hundred traces with real failures in them, and run M12\'s harness against those traces '
+       + 'in continuous integration. Tick each one on the Modules tab as it becomes true.</span></div>';
   }
   var shownT = today.slice(0, 4);
   shownT.forEach(function (m) {
@@ -6512,7 +6517,7 @@ function lpHomeHTML(API) {
   if (later.length) {
     h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Starts by date</b>'
        + '<span>' + later.map(function (m) { return esc(m.title); }).join(', ')
-       + ' — open, but each one has a trigger inside that says when.</span></div>';
+       + ' — open, but each one has a note inside saying when to start it.</span></div>';
   }
   h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all ' + sum.modulesTotal + ' modules →</button></div>';
 
@@ -6558,6 +6563,12 @@ function lpHomeHTML(API) {
   return h;
 }
 
+// Two kinds of timing note, one label each, used in the ladder and on the
+// module page so the two never disagree: a date from your plan decides, or a
+// condition can move the module earlier.
+function lpWhenTag(m) {
+  return /moves earlier|move earlier|follows m/i.test(m.trigger || '') ? 'May start earlier' : 'Starts by date';
+}
 function lpModulesHTML(API) {
   var P = lpProgress(), fg = API.flagshipGate(P);
   var avail = API.available(P), availIds = avail.map(function (m) { return m.id });
@@ -6588,11 +6599,19 @@ function lpModulesHTML(API) {
     if (Lr.id === 4) {
       h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
       h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
+      var srcDone = ['M2', 'M10', 'M12'].filter(function (id) { return P[id] && P[id].gate; });
       h += '<div class="lp-gs">' + (fg.open
          ? 'All four are true, so Layers 4 to 6 are open. This box stays as the record of what opened them.'
          : 'Layer 4 does not start until all four are true. It holds back thirteen modules, and it is the only '
-           + 'requirement here that cannot be met by working harder. Each line is built by a module you have not '
-           + 'reached yet; for now it is the reason the middle of the ladder is locked.') + '</div>';
+           + 'requirement here that cannot be met by working harder. '
+           + (srcDone.length === 3
+              ? 'All four lines come from work you have already done: M2 deployed the app and put it in front of two people, '
+                + 'M10 logs the traces, M12 runs the harness. What is left is off the ladder — go and make each one true '
+                + 'on the live app, then tick it here.'
+              : 'The four lines are built by M2, M10 and M12, further up the ladder; for now this is the reason the '
+                + 'middle of the ladder is locked.')) + '</div>'
+         + '<div class="lp-gs" style="margin-top:6px">Referee: your reviewer confirms all four, the same as any module '
+           + 'gate. The two users and the harness run are facts they can check.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
         h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
@@ -6618,7 +6637,7 @@ function lpModulesHTML(API) {
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
       if (inSpine) h += '<span class="lp-tag open">On the Spine</span>';
-      if (m.trigger) h += '<span class="lp-tag">' + (m.layer >= 4 ? 'May start earlier' : 'Starts by date') + '</span>';
+      if (m.trigger) h += '<span class="lp-tag">' + lpWhenTag(m) + '</span>';
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(m.dependsOn) : 'no prerequisites')
          + (m.layer >= 4 && m.layer <= 6 && !fg.open ? ', and the hard gate' : '')
          + '</span></span></span>';
@@ -6711,7 +6730,10 @@ function lpTracksHTML(API) {
   h += '</div>';
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Totals</div></div>'
      + '<div class="lx-rk"><span class="k">Tracks</span><span class="v">' + T.length + '</span></div>'
-     + '<div class="lx-rk"><span class="k">Track hours</span><span class="v">' + th + 'h</span></div>'
+     + '<div class="lx-rk"><span class="k">Track hours</span><span class="v">' + th + 'h'
+     + (typeof AI_SPINE_TRACK_HOURS !== 'undefined'
+        ? ' · ' + T.reduce(function (a, t) { return a + (AI_SPINE_TRACK_HOURS[t.id] !== undefined ? AI_SPINE_TRACK_HOURS[t.id] : t.hours); }, 0) + 'h on the Spine'
+        : '') + '</span></div>'
      + '<div class="lx-rk"><span class="k">Module hours</span><span class="v">'
      + API.totalHours().modules + 'h</span></div>'
      + '<div class="lx-rk"><span class="k">Everything</span><span class="v">'
@@ -6809,9 +6831,11 @@ function lpVerdictHTML(API) {
        + lpHrs(pl.neededForSpine) + ' h/week</div></div>';
     h += '</div>';
   }
-  var overrun = !unset && pl.spineMonths && pl.runwayMonths && pl.spineMonths > pl.runwayMonths;
+  var CEIL = 18;
+  var spineFits = pl.neededForSpine && Math.round(pl.neededForSpine * 10) / 10 <= CEIL;
+  var overrun = !unset && !spineFits;
   h += '<div class="lp-vrec">' + (unset ? '■ INCOMPLETE'
-        : overrun ? '■ NEITHER FITS YOUR RUNWAY'
+        : overrun ? '■ NEITHER FITS UNDER ' + CEIL + ' H/WEEK'
         : pl.recommend === 'spine' ? '▲ TAKE THE SPINE'
         : pl.recommend === 'full-tight' ? '▲ TIGHT — RAISE HOURS OR TAKE THE SPINE'
         : '▲ FULL PROGRAM FITS') + '</div>';
@@ -6824,9 +6848,12 @@ function lpVerdictHTML(API) {
        + (function () {
            if (!pl.weeklyHours || !pl.runwayMonths) return '';
            var am = pl.applyAfterHours / pl.weeklyHours / 4.345;
-           return am > pl.runwayMonths - 2
-             ? ' <b style="color:#ff8a8a">That is month ' + Math.max(1, Math.round(am)) + ' of a '
-               + pl.runwayMonths + '-month runway — tight. Raise the hours or take the Spine.</b>' : '';
+           if (am <= pl.runwayMonths - 2) return '';
+           var advice = pl.weeklyHours < CEIL
+             ? 'Raise the hours toward ' + CEIL + ', or take the Spine.'
+             : (spineFits ? 'Take the Spine.' : 'Neither program fits: plan on the Spine plus a contract role.');
+           return ' <b style="color:#ff8a8a">That is month ' + Math.max(1, Math.round(am)) + ' of a '
+                + pl.runwayMonths + '-month runway — tight. ' + advice + '</b>';
          })() + '</div>';
   }
   return h;
@@ -6881,7 +6908,9 @@ function lpDetailHTML(API, id) {
   var metDeps = m.dependsOn.filter(function (d) { return P[d] && P[d].gate; });
   var openNow = API.isUnlocked(m.id, P);
   var subLine;
-  if (!m.dependsOn.length) {
+  if (P[m.id] && P[m.id].gate) {
+    subLine = 'Passed. Delta written, artifact built, gate passed.';
+  } else if (!m.dependsOn.length) {
     subLine = 'No prerequisites — this is where the curriculum starts.';
   } else if (openNow) {
     subLine = 'Open now. It needed ' + lpAnd(m.dependsOn) + ', and ' + (m.dependsOn.length > 1 ? 'all are' : 'it is') + ' passed.';
@@ -6899,7 +6928,7 @@ function lpDetailHTML(API, id) {
   });
   h += '</div></div></div>';
 
-  if (m.trigger) h += '<div class="lp-warn"><b>STARTS BY DATE</b><br>' + esc(m.trigger) + '</div>';
+  if (m.trigger) h += '<div class="lp-warn"><b>' + lpWhenTag(m).toUpperCase() + '</b><br>' + esc(m.trigger) + '</div>';
   if (m.currency) h += '<div class="lp-warn"><b>CHECK THIS IS STILL TRUE</b><br>' + esc(m.currency) + '</div>';
 
   h += '<div class="lp-cols"><div>';
