@@ -1239,6 +1239,161 @@ body{color:var(--text);font-family:var(--sans);}
   .lp-ready{flex-direction:column-reverse;align-items:stretch;gap:14px;}
   .lp-ring{align-self:center;}
 }
+/* ═══ LAUNCHPAD — instrument pass ════════════════════════════════
+   The comp reads as flight hardware, not as a website: a lit readout
+   on a dark panel. Three things carry that and nothing else does —
+   a survey grid under everything, corner brackets that frame content
+   the way a viewfinder does, and numbers set in tabular mono so they
+   sit in columns instead of drifting. */
+
+/* Survey grid. 44px cells, barely visible, masked to a soft vertical
+   fade so it never reads as a table. Sits under the nebula. */
+#launchpadApp .lp-main{position:relative;}
+#launchpadApp .lp-main::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    repeating-linear-gradient(90deg,rgba(77,184,255,.055) 0 1px,transparent 1px 44px),
+    repeating-linear-gradient(0deg,rgba(77,184,255,.045) 0 1px,transparent 1px 44px);
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.2) 42%,transparent 78%);
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.2) 42%,transparent 78%);}
+#launchpadApp .lp-body{position:relative;z-index:1;}
+
+/* Corner brackets. Drawn with two gradient-filled pseudo-elements per
+   corner would need four nodes; instead one element carries all four as
+   a single repeating background, which costs nothing to paint. */
+.lp-br{position:relative;}
+.lp-br::before{content:'';position:absolute;inset:10px;pointer-events:none;z-index:3;
+  background:
+    linear-gradient(var(--rc),var(--rc)) 0 0/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 0/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 0/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 0/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 100%/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 100%/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 100%/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 100%/13px 1px no-repeat;
+  opacity:.28;transition:opacity var(--t-state) var(--e-out);}
+@media(hover:hover){.lp-br:hover::before{opacity:.72;}}
+
+/* Hero. The art is full-bleed behind the copy, so the copy needs its own
+   floor: a scrim keyed to the reading direction, not a flat overlay that
+   would kill the limb glow on the right. */
+/* Column, not row: the copy takes the free space and the readout sits on
+   the floor at full width, the way an instrument panel is laid out. */
+.lp-hero-lg{min-height:300px;flex-direction:column;align-items:stretch;justify-content:flex-end;}
+.lp-heroIn{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;}
+.lp-heroScrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(97deg,rgba(3,8,17,.94) 0%,rgba(3,8,17,.82) 34%,rgba(3,8,17,.28) 62%,transparent 84%),
+    linear-gradient(0deg,rgba(3,8,17,.88) 0%,transparent 46%);}
+.lp-heroIn{max-width:60%;padding:32px 34px 26px;}
+.lp-name{font-size:46px;}
+.lp-name b{background:linear-gradient(97deg,#eaf4ff 10%,var(--rc) 62%,var(--rc2) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.lp-sub{max-width:40ch;color:#9dc0de;}
+
+/* Eyebrow reads as a live status line: pulsing lamp, mono, tracked out. */
+.lp-eyebrow{display:flex;align-items:center;gap:9px;
+  font:600 10px/1 var(--mono);letter-spacing:.2em;color:var(--rdim);text-transform:uppercase;}
+.lp-lamp{width:6px;height:6px;border-radius:50%;background:var(--rc2);flex-shrink:0;
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--rc2) 60%,transparent);animation:lplamp 2.4s ease-out infinite;}
+@keyframes lplamp{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--rc2) 55%,transparent);opacity:1;}
+  70%{box-shadow:0 0 0 7px transparent;opacity:.55;}
+  100%{box-shadow:0 0 0 0 transparent;opacity:1;}}
+
+/* Hero readout. Four cells on a hairline rule, tabular so the digits
+   stay in their columns as progress changes. */
+.lp-heroStats{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:0;
+  border-top:1px solid color-mix(in srgb,var(--rc) 17%,transparent);
+  background:linear-gradient(180deg,transparent,rgba(3,8,17,.55));}
+.lp-hs{flex:1 1 0;min-width:88px;padding:13px 18px;
+  border-left:1px solid color-mix(in srgb,var(--rc) 11%,transparent);}
+.lp-hs:first-child{border-left:0;padding-left:34px;}
+.lp-hsv{font:600 19px/1 var(--mono);color:var(--rbright);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 18px color-mix(in srgb,var(--rc) 40%,transparent);}
+.lp-hsv small{font-size:11px;color:var(--rdim);font-weight:500;margin-left:2px;}
+.lp-hsk{font:600 8.5px/1 var(--mono);letter-spacing:.16em;color:var(--rdim);
+  text-transform:uppercase;margin-top:7px;}
+@media(max-width:620px){
+  .lp-hero-lg{min-height:0;display:block;}
+  .lp-heroIn{max-width:100%;padding:24px 20px 20px;}
+  .lp-name{font-size:31px;}
+  /* Stacked scrim, kept light enough at the top that the limb still shows
+     through behind the headline. */
+  .lp-heroScrim{background:linear-gradient(180deg,rgba(3,8,17,.5),rgba(3,8,17,.88) 62%);}
+  .lp-heroArt{opacity:.9;}
+  .lp-hs{flex:1 1 44%;min-width:0;padding:11px 14px;}
+  .lp-hs:first-child{padding-left:20px;}
+  /* Two per row: cell 3 starts a new row, so it takes the row rule and
+     drops the column rule. */
+  .lp-hs:nth-child(3){border-left:0;padding-left:20px;}
+  .lp-hs:nth-child(n+3){border-top:1px solid color-mix(in srgb,var(--rc) 11%,transparent);}
+  .lp-hsv{font-size:16px;}
+}
+
+/* Layer card. A ghost numeral anchors the eye to the ladder position —
+   the comp does the same thing with its section numbers. */
+/* The bracket pseudo-element takes ::before, which the layer card was
+   using for its lit top edge; an inset shadow gives the edge back. */
+.lp-lay{overflow:hidden;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--rc) 15%,transparent);}
+/* A ghost numeral was tried here and cut: wherever it landed it sat under
+   live text and read as a rendering fault rather than as depth. The rail,
+   the chip and the brackets already carry the ladder position. */
+/* A status rail on the leading edge, so the three states read at a glance
+   down the column even before the chips are legible. */
+.lp-lay::after{content:'';position:absolute;left:0;top:14px;bottom:14px;width:2px;border-radius:2px;
+  background:#173050;transition:background var(--t-state) var(--e-out);}
+.lp-lay.st-ac::after{background:linear-gradient(180deg,var(--rc2),var(--rc));
+  box-shadow:0 0 14px color-mix(in srgb,var(--rc) 65%,transparent);}
+.lp-lay.st-cl::after{background:#7ce8b4;box-shadow:0 0 14px rgba(124,232,180,.55);}
+.lp-layTop,.lp-layf{position:relative;z-index:1;}
+.lp-layc{display:flex;align-items:center;gap:9px;margin-top:2px;}
+.lp-chip{font:600 8.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  padding:5px 8px;border-radius:4px;border:1px solid;}
+.lp-chip.lk{color:#456787;border-color:#173050;background:rgba(23,48,80,.3);}
+.lp-chip.ac{color:var(--rc2);border-color:color-mix(in srgb,var(--rc2) 40%,transparent);
+  background:color-mix(in srgb,var(--rc2) 11%,transparent);}
+.lp-chip.cl{color:#7ce8b4;border-color:rgba(124,232,180,.35);background:rgba(124,232,180,.09);}
+.lp-hrs{font:600 9px/1 var(--mono);letter-spacing:.12em;color:var(--rdim);text-transform:uppercase;}
+
+/* Diagram plate. The comp frames every figure the same way: a hairline
+   box, a tracked-out caption bar along the top, and a sweep that crosses
+   it slowly so the plate reads as live instrumentation rather than as a
+   static image. */
+.lp-artWrap{position:relative;padding:0;align-items:stretch;flex-direction:column;
+  background:linear-gradient(158deg,#0b1930,#050b16 72%);}
+.lp-artCap{display:flex;align-items:center;gap:7px;padding:8px 10px;
+  border-bottom:1px solid color-mix(in srgb,var(--rc) 14%,transparent);
+  font:600 8px/1 var(--mono);letter-spacing:.15em;color:var(--rdim);text-transform:uppercase;}
+.lp-artCap b{color:var(--rc);font-weight:600;}
+.lp-artCap i{margin-left:auto;font-style:normal;color:#2d5070;letter-spacing:.1em;}
+.lp-artBox{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;
+  position:relative;overflow:hidden;}
+/* Scan sweep: one thin lit band, 7s, low contrast. Any faster or brighter
+   and it becomes the thing you look at instead of the diagram. */
+.lp-artBox::after{content:'';position:absolute;left:0;right:0;height:38%;pointer-events:none;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--rc) 9%,transparent),transparent);
+  animation:lpscan 7s linear infinite;}
+@keyframes lpscan{0%{transform:translateY(-120%);}100%{transform:translateY(320%);}}
+@media (prefers-reduced-motion: reduce){.lp-artBox::after{animation:none;opacity:0;}}
+
+/* A locked layer showing a full-strength primary button promises an action
+   that is not there yet. Ghost it and say what it does. */
+.lp-go.ghost{background:none;border:1px solid #1b3557;color:#7fa3c4;font-weight:500;}
+.lp-go.ghost:hover{background:rgba(77,184,255,.07);border-color:#2a5484;color:var(--rbright);}
+
+/* Readiness rows get a mono layer code in place of the bare icon box, so
+   the column scans as L0…L8 rather than as eight similar glyphs. */
+.lp-bcode{font:600 9.5px/1 var(--mono);letter-spacing:.06em;color:var(--rc);
+  width:20px;flex-shrink:0;opacity:.75;}
+.lp-bpct{font-variant-numeric:tabular-nums;color:#a8cdf0;}
+.lp-rv{text-shadow:0 0 22px color-mix(in srgb,var(--rc) 55%,transparent);}
+
+@media (prefers-reduced-motion: reduce){
+  .lp-lamp{animation:none;}
+  #launchpadApp .lp-main::before{opacity:.6;}
+}
+
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
   text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
 /* While the warp canvas runs, idle animations pause so they never compete
@@ -5861,13 +6016,29 @@ function lpHomeHTML(API) {
   var P = lpProgress(), sum = API.progressSummary(P), pl = API.plan(LP_ST.setup || {});
   var avail = API.available(P);
 
-  var h = '<div class="lp-hero lp-hero-lg mo-sheen">' + lpHeroArt() + '<div class="lp-heroIn">';
-  h += '<div class="lp-greet">Welcome back,</div>';
+  // Hero. Art full-bleed, a scrim between art and copy so the copy always
+  // reads, and a four-cell readout on the floor — the numbers a person
+  // actually checks when they open this, without a click.
+  var nextUp = avail.length ? avail[0] : null;
+  var h = '<div class="lp-hero lp-hero-lg lp-br mo-sheen">' + lpHeroArt()
+        + '<div class="lp-heroScrim"></div><div class="lp-heroIn">';
+  h += '<div class="lp-eyebrow"><span class="lp-lamp"></span>'
+     + (nextUp ? 'Cleared for ' + esc(nextUp.id) : 'Awaiting a passed gate') + '</div>';
   h += '<div class="lp-name">Future <b>Engineer</b></div>';
   h += '<div class="lp-sub">You do not advance by reading. You advance by shipping a working thing '
      + 'and being able to explain it out loud.</div>';
-  h += '<div class="lp-heroBar"><span style="width:' + sum.pct + '%"></span></div>';
-  h += '</div></div>';
+  h += '</div>';
+  h += '<div class="lp-heroStats">'
+     + '<div class="lp-hs"><div class="lp-hsv">' + sum.pct + '<small>%</small></div>'
+     +   '<div class="lp-hsk">Readiness</div></div>'
+     + '<div class="lp-hs"><div class="lp-hsv">' + sum.modulesDone
+     +   '<small>/' + sum.modulesTotal + '</small></div><div class="lp-hsk">Modules passed</div></div>'
+     + '<div class="lp-hs"><div class="lp-hsv">' + sum.hoursDone
+     +   '<small>/' + sum.hoursTotal + 'h</small></div><div class="lp-hsk">Hours logged</div></div>'
+     + '<div class="lp-hs"><div class="lp-hsv">' + avail.length + '</div>'
+     +   '<div class="lp-hsk">Open now</div></div>'
+     + '</div>';
+  h += '</div>';
 
   h += '<div class="lp-cols"><div>';
 
@@ -5879,7 +6050,8 @@ function lpHomeHTML(API) {
     var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
     var got = mods.reduce(function (a, m) { return a + ((P[m.id] && P[m.id].gate) ? m.hours : 0) }, 0);
     var pct = tot ? Math.round(got / tot * 100) : 0;
-    h += '<div class="lp-brow"><div class="lp-bico">' + lpLayerIcon(Lr.id) + '</div>'
+    h += '<div class="lp-brow"><div class="lp-bcode">L' + Lr.id + '</div>'
+       + '<div class="lp-bico">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div class="lp-bwrap"><div class="lp-blab">' + esc(Lr.name) + '</div>'
        + '<div class="lp-btr"><span style="width:' + pct + '%"></span></div></div>'
        + '<div class="lp-bpct">' + pct + '%</div></div>';
@@ -5892,9 +6064,17 @@ function lpHomeHTML(API) {
     var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
     var done = mods.filter(function (m) { return P[m.id] && P[m.id].gate }).length;
     var pct = mods.length ? Math.round(done / mods.length * 100) : 0;
-    h += '<div class="lp-lay mo-lift"><div class="lp-layTop"><div class="lp-layMain">'
+    // Status is derived, never stored: a layer is cleared when every module
+    // in it has passed, active when any one of them is unlocked, locked
+    // otherwise. Three states, one chip, no third source of truth.
+    var open = mods.some(function (m) { return API.isUnlocked(m.id, P); });
+    var st = done === mods.length ? ['cl', 'Cleared'] : (open ? ['ac', 'Active'] : ['lk', 'Locked']);
+    h += '<div class="lp-lay lp-br mo-lift st-' + st[0] + '">'
+       + '<div class="lp-layTop"><div class="lp-layMain">'
        + '<div class="lp-layh"><div class="lp-layi">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div style="flex:1;min-width:0"><div class="lp-layt">L' + Lr.id + ' \u00B7 ' + esc(Lr.name) + '</div>'
+       + '<div class="lp-layc"><span class="lp-chip ' + st[0] + '">' + st[1] + '</span>'
+       + '<span class="lp-hrs">' + mods.length + ' modules \u00B7 ' + tot + 'h</span></div>'
        + '<div class="lp-layd">' + esc(Lr.purpose) + '</div></div></div>';
     h += '<div class="lp-mods">';
     mods.forEach(function (m) {
@@ -5902,10 +6082,13 @@ function lpHomeHTML(API) {
       h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '">'
          + '<span class="lp-dot"></span>' + esc(m.title) + '</div>';
     });
-    h += '</div></div><div class="lp-artWrap">' + lpLayerArt(Lr.id) + '</div></div>';
+    h += '</div></div><div class="lp-artWrap">'
+       + '<div class="lp-artCap"><b>Fig. ' + Lr.id + '</b> \u00B7 mechanism<i>L' + Lr.id + '</i></div>'
+       + '<div class="lp-artBox">' + lpLayerArt(Lr.id) + '</div></div></div>';
     h += '<div class="lp-layf">'
-       + '<button class="lp-go mo-btn" onclick="lpTab(\'modules\')">Continue →</button>'
-       + '<div class="lp-pctlab">' + done + '/' + mods.length + ' · ' + tot + 'h · ' + pct + '% complete</div>'
+       + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="lpTab(\'modules\')">'
+       +   (open ? 'Continue' : 'Preview') + ' →</button>'
+       + '<div class="lp-pctlab">' + done + ' of ' + mods.length + ' passed · ' + pct + '%</div>'
        + '</div></div>';
   });
   h += '</div><div>';
