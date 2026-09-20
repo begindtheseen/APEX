@@ -82,7 +82,7 @@ var AI_CURRICULUM = [
      + 'this is the one place where going slower is going faster.',
   gate:{ referee:'Screen recording, watched back.',
          pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real `as`-cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
-         onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — three attempts, 45 minutes each, on an UNSEEN async bug from M0’s second blind queue, scored against the maintainer’s merged diff. Pass 2 of 3. Narrating your own harness cannot distinguish understanding the runtime from remembering what you built.' } },
+         onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — three attempts, 45 minutes each, on an UNSEEN async bug from the bug-fix commits you saved, unread, in M1, scored against the maintainer’s merged diff. Pass 2 of 3. Narrating your own harness cannot distinguish understanding the runtime from remembering what you built.' } },
 
 { id:'M4', layer:1, hours:45, dependsOn:['M3'], kind:'LAB',
   title:'The Machine Model: Ten Seams',
@@ -90,7 +90,7 @@ var AI_CURRICULUM = [
   exports:['fake clock -> M9'],
   gate:{ referee:'Reviewer picks which of the ten, without telling you.',
          pass:'Name the seam and the instrument within 60 seconds, 7 of 9. Then point at the wrong-typed columns in your own shipped schema.',
-         onFail:'Rewrite the two you missed from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — two attempts on an UNSEEN data-seam bug (encoding, money, timezone, pooling) from M0’s blind queue, scored against the merged diff. Pass 1 of 2.' } },
+         onFail:'Rewrite the two you missed from empty. Re-attempt in 7 days.', unseen:'THIRD PASS CONDITION — two attempts on an UNSEEN data-seam bug (encoding, money, timezone, pooling) from the bug-fix commits you saved, unread, in M1, scored against the merged diff. Pass 1 of 2.' } },
 
 { id:'M5', layer:1, hours:61, dependsOn:['M4'], kind:'LAB',
   title:'The Postgres Underneath Supabase',

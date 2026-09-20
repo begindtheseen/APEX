@@ -257,27 +257,25 @@ assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
 **2. The hour budget** — **1,108** module hours + **459** track hours = **1,567**, with the line-item
 track table below and your date arithmetic shown. **Derive these from `curriculum-ai.js`, do not copy
-them from here** — the JS sums itself and the prose is what rots. An earlier draft of this very line
-said 999, which is the exact class of error this module exists to prevent, sitting in the module whose
-only authority is that the arithmetic is honest.
+them from here** — the JS sums itself and the prose is what rots, and a wrong total here is the exact
+class of error this module exists to prevent.
 
 **3. The application date** and the written defense of the before/after-application cut.
 
 **4. The funnel teardown (4h).** Twenty real current postings with geography, overlap, citizenship,
-degree, and YOE filters already applied. Tag each **W2 or 1099** — that is your own data point, and it
-replaces an unsupported claim v1 made (see M27). This lands in M0, not late, because **it determines
-which modules matter.**
+degree, and YOE filters already applied. Tag each **W2 or 1099** — that is your own data point, and M27
+uses it. This lands in M0, not late, because **it determines which modules matter.**
 
 **5. The Python trip-wire, as a number.** From those twenty postings: *if fewer than 40% accept a
 Node-primary backend, M25 moves immediately after M12.* Pre-write that alternate ordering in one
 paragraph now, so the month-5 decision is a lookup rather than a redesign.
 
-**6. THE FLAGSHIP SPECIFICATION** → *moved to M2.* You name and specify the app in the module that builds it.
+**6. THE FLAGSHIP SPECIFICATION** → *in M2.* You name and specify the app in the module that builds it.
 
 **7. The traffic milestone (10–15h, dated, month 4).** Twelve to fifteen recruited people running a
 scripted task list. That is a weekend of asking, not a growth strategy. The target is **~100 traces
-containing real failures** — that is what M12 actually consumes, and it is a better threshold than
-v1's "~200 requests."
+containing real failures** — that is what M12 actually consumes; a raw request count is not the
+threshold.
 
 > **The labeled fallback, stated plainly:** if you cannot get real users, substitute a public corpus
 > with *real human labels you create yourself.* It costs you error-analysis realism — you will be
@@ -285,11 +283,10 @@ v1's "~200 requests."
 > imagined set measures imagination. Take it knowingly or not at all. **Do not invent traces.** A
 > hiring manager detects that in two questions.
 
-**8. Turn on append-only logging of every model call today, before M3 (1h)** → *moved to M2.* You cannot log a model call before you have made one; M2 makes the first and logs it from that request on.
+**8. Turn on append-only logging of every model call today, before M3 (1h)** → *in M2.* You cannot log a model call before you have made one; M2 makes the first and logs it from that request on.
 
-**9. THE REVIEWER RECRUITMENT (4–6h).** v1 said "secured in M0, used from M24" and then put it in
-neither M0's artifact list nor its gate. Both claims were also wrong: the first hard human dependency
-is M10's game day, and **nine modules depend on a human**, not four.
+**9. THE REVIEWER RECRUITMENT (4–6h).** The first hard human dependency is M10's game day, and **nine
+modules depend on a human** — so this is recruited here, and it is part of this module's gate.
 
 These are **three different recruitments**, not one person:
 
@@ -313,7 +310,7 @@ comments returned.**
 including failures, **a failed agent review is logged as a failed gate.** Re-rolling until you get a
 pass is how this instrument dies.
 
-**10. The cold baseline — as a fraction, not a feeling** → *moved to M1.* A first attempt at a coding task, scored as a fraction, needs an environment to attempt it in.
+**10. The cold baseline — as a fraction, not a feeling** → *in M1.* A first attempt at a coding task, scored as a fraction, needs an environment to attempt it in.
 
 **11. The capability inventory — and why this one is not optional.** A dated list of what you have
 already shipped, debugged unsupervised, and taught yourself.
@@ -334,9 +331,9 @@ happened · what you changed.
 > a candidate with no employment history the behavioral round is weighted *harder*, because there are no
 > references to call. M30 rehearses against this log.
 
-**13. The blind-exercise queue (2h)** → *moved to M1.* Finding twenty bug-fix commits needs you to know what a commit is.
+**13. The blind-exercise queue (2h)** → *in M1.* Finding twenty bug-fix commits needs you to know what a commit is.
 
-**14. The hardware floor and a 30-minute smoke test** → *moved to M1.* The smoke test checks the tools M1 installs.
+**14. The hardware floor and a 30-minute smoke test** → *in M1.* The smoke test checks the tools M1 installs.
 
 **15. Two terms this document keeps using, defined by you, with adoptable defaults.**
 - **Bad-week minimum:** the smallest thing that still counts as not stopping. Default: *one 45-minute
@@ -358,28 +355,28 @@ the program is built on these numbers.
 
 ## M1 — First Code (58h) · `dependsOn: M0`
 
-**Why this exists.** An earlier version of this document went from "write a plan" straight to "predict the
-output order of six mixed sync/setTimeout/promise lines." A reader who had never opened a terminal was
-walled at hour 23 of a 1,500-hour program, by a module the document itself called "the steepest part of the
-curve." The promise on the cover is first principles. The first principle offered was the event loop. That
-is not a steep curve; it is a missing first step, and every gate after it inherited the gap — M0 asks for a
-20-commit queue, M3's gate references a merged diff, M24's gate needs an open-source pull request, all before
-git appears anywhere.
+**Why this exists.** The promise on the cover is first principles, and the event loop is not a first
+principle for a reader who has never opened a terminal. Going from "write a plan" straight to "predict the
+output order of six mixed sync/setTimeout/promise lines" walls that reader at hour 23 of a 1,500-hour
+program, at the module this document itself calls "the steepest part of the curve." That is not a steep
+curve; it is a missing first step, and every gate after it would inherit the gap — the blind queue asks for
+20 commits, M3's gate references a merged diff, M24's gate needs an open-source pull request. So git and the
+terminal come first.
 
 **What you need to understand.** What a program is. The terminal, and what a working directory means.
 Variables, functions, arguments, return values. Conditionals and loops. Arrays and objects. How to read an
 error message — the type, the message, the file, the line. What a test is. git as a save-point system.
 
-**From M0, now here.** **The cold baseline — as a fraction, not a feeling.** **Write the component checklist first and
+**From M0's list.** **The cold baseline — as a fraction, not a feeling.** **Write the component checklist first and
 freeze it.** Then open an empty file and rebuild the core module of a feature you already shipped, in 45
-minutes, original repo closed. Score is *items produced ÷ items listed.* v1 produced no number, so
-nothing later could be compared to it. **Re-run the identical exercise at month 6 and month 12.**
+minutes, original repo closed. Score is *items produced ÷ items listed.* Without a number, nothing later
+can be compared to it. **Re-run the identical exercise at month 6 and month 12.**
 
-**From M0, now here.** **The blind-exercise queue (2h).** Find 20 merged bug-fix commits in real repos. **Do not read the
+**From M0's list.** **The blind-exercise queue (2h).** Find 20 merged bug-fix commits in real repos. **Do not read the
 fix commits.** M14 and M30 consume these — `git revert` one, the suite goes red, work the clock, score
 against the maintainer's actual merged diff. Real ground truth, no human required, nobody who can leak.
 
-**From M0, now here.** **The hardware floor and a 30-minute smoke test.** The artifacts collectively assume a substantial
+**From M0's list.** **The hardware floor and a 30-minute smoke test.** The artifacts collectively assume a substantial
 machine — a 5M-row local Postgres, a container runtime, a load generator, a browser automation stack.
 Run all four in week one. **Fail loudly now rather than in month three.**
 
@@ -400,19 +397,18 @@ failure mode of this module is a working repo you cannot rebuild.
 
 ## M2 — Flagship v1 (30h) · `dependsOn: M1` · **owns: the flagship**
 
-**Why this exists.** Twelve modules say they "bolt onto the flagship." M0 specs it, M10 instruments it, M12
-evaluates it, M21 attacks a copy, M22 rebuilds its chat surface, M23 deploys its pipeline. No module built
-it. Worse, the Layer 3 → 4 hard gate requires that flagship *deployed, reachable, and carrying two real
-users* — while deployment is taught in Layer 6 and the only UI module is Layer 6. The gate was asking for
-skills the ladder delivered three layers later. A v1 that does one thing and is actually on the internet
-resolves both: the twelve modules get something to extend, and the hard gate becomes reachable by doing the
+**Why this exists.** Twelve modules "bolt onto the flagship." This module specs it, M10 instruments it, M12
+evaluates it, M21 attacks a copy, M22 rebuilds its chat surface, M23 deploys its pipeline. Something has to
+build it first. And the Layer 3 → 4 hard gate requires that flagship *deployed, reachable, and carrying two
+real users* — while deployment is taught in Layer 6 and the only UI module is Layer 6, three layers later.
+A v1 that does one thing and is actually on the internet resolves both: the twelve modules get something to extend, and the hard gate becomes reachable by doing the
 work rather than by waiting.
 
 **What you need to understand.** Client and server. An API key as a secret — why it cannot go in the
 browser and how to prove it did not. One request and one response, start to finish. Environment variables.
 Deployment as *reachable*, not as *finished*. Logging a call before you need the log.
 
-**From M0, now here.** **THE FLAGSHIP SPECIFICATION.** Name the app, then verify it against this checklist. **Twelve
+**From M0's list.** **THE FLAGSHIP SPECIFICATION.** Name the app, then verify it against this checklist. **Twelve
 modules consume it.** If your named app fails a line, either fix the app before M3 or take the labeled
 fallback.
 
@@ -427,7 +423,7 @@ fallback.
 | A CI/deploy pipeline you own | M23 |
 | Model calls being logged from day one | M10, M12 |
 
-**From M0, now here.** **Turn on append-only logging of every model call today, before M3 (1h).** So M10 *upgrades* a trace
+**From M0's list.** **Turn on append-only logging of every model call today, before M3 (1h).** So M10 *upgrades* a trace
 store rather than starting one at month 5.
 
 **The artifact.** A page with an input, a server route that calls a model with your own key, the reply
@@ -512,8 +508,8 @@ Supabase fluency is not Postgres fluency. Every posting sampled lists SQL flat.
 
 > **Open with a 3-hour win, not a 15-hour rig.** One table of 50k rows, one slow query, one EXPLAIN,
 > one index, one measured 200× speedup. **See the loop work on day one**, then build the 5M-row rig with
-> the purpose already understood. v1 front-loaded environment setup with no visible result at the exact
-> start of the abandonment window.
+> the purpose already understood. Environment setup with no visible result, at the exact start of the
+> abandonment window, is how modules get abandoned.
 
 **Checkpoints** (every module over 30h gets them; each is a legitimate stopping point in a bad week):
 ① the 3-hour win · ② the rig built and seeded · ③ twelve queries with before/after plans ·
@@ -531,11 +527,10 @@ or query you just wrote, predict where it breaks, measure against the 5M-row dat
 to plan.
 
 > The cut list removes "algorithm theater" — implementations, puzzle practice, graphs and toposort. **It
-> does not remove the notation or the reasoning**, and v1 accidentally took Big-O down with it. Big-O is
-> the working vocabulary of code review and design discussion, and M14, M15, and M13 all put you on the
+> does not remove the notation or the reasoning.** Big-O is the working vocabulary of code review and design discussion, and M14, M15, and M13 all put you on the
 > *receiving* end of it.
 
-> **The connection surface, named — v1 left this as one bullet and a gate you could not complete.**
+> **The connection surface, named.**
 > There are four distinct endpoints with different IP-version and plan availability: direct, shared
 > pooler in session mode, shared pooler in transaction mode (the serverless one), and dedicated pooler.
 > Session mode's old port was removed in Feb 2025 and the IPv4 add-on is a *swap*, not a dual-stack
@@ -552,10 +547,10 @@ EXPLAIN plans before and after indexing on a 5M-row `generate_series` set; a doc
 with wall-clock numbers from **a load generator you wrote** (exported to M23); an RLS policy set
 benchmarked correct-but-slow vs fast; the key rotation above.
 
-> Two things v1 put here have moved. The **expand/contract-under-load build** goes to M23, where the
-> deploy pipeline exists to run it through. The **pgvector recall and filtered-search** bullets go to
-> M18 — at this position recall is *literally unmeasurable*, because no corpus, embeddings, queries, or
-> golden set exist yet.
+> Two things belong later. The **expand/contract-under-load build** is in M23, where the deploy
+> pipeline exists to run it through. **pgvector recall and filtered search** are in M18 — at this
+> position recall is *literally unmeasurable*, because no corpus, embeddings, queries, or golden set
+> exist yet.
 
 **GATE** — **REFEREE:** an EXPLAIN plan you have never seen, supplied by the reviewer or pulled from an
 OSS repo's slow-query log. **PASS:** name the fix before reading the query, 3 of 4. Explain why your own
@@ -573,7 +568,7 @@ bypasses migration history. · `USING (true)`, or a policy against a JWT claim t
 
 ## M6 — The Model as a Function (30h) · `dependsOn: M3, M2`
 
-Also the morale spike for the months 3–6 abandonment window — which only works because it now sits
+Also the morale spike for the months 3–6 abandonment window — which only works because it sits
 inside that window rather than after it.
 
 **Core concepts:** Tokens as the unit of everything, and why the tokenizer is not locally inspectable.
@@ -589,8 +584,8 @@ after caching. Discovering capabilities and context window **programmatically fr
 which is the version of this knowledge that cannot go stale. Streaming as production transport. The
 structural boundaries.
 
-> **v1 was wrong here in a way that produces a branch that never fires.** It said a refusal returns 200
-> "with an empty content array." **The content array is not empty.** A refusal returns 200 with a
+> **A common belief here produces a branch that never fires:** that a refusal returns 200 "with an
+> empty content array." **The content array is not empty.** A refusal returns 200 with a
 > *populated* content array and a non-null `stop_details` carrying a category; `stop_details` is null
 > for every other stop reason and is therefore the actual discriminator. Write
 > `if (!response.content.length)` and that branch never runs — so refusal prose flows downstream and
@@ -636,8 +631,8 @@ reproduces proxy buffering and a mid-stream error, and recovers from both.
 > **Exported, and named so the consumers are checkable:** the **SSE transport** → M19, M22. The
 > **idempotency table** → M8, M20, M13.
 
-> **One thing v1 got wrong here and it is load-bearing.** v1 said M22 would put `useChat` "on top of the
-> stream protocol you already wrote," as a free composition. **It is not free.** The hook is bound to a
+> **One load-bearing detail.** M22 puts `useChat` on top of the stream protocol you write here, and
+> **that composition is not free.** The hook is bound to a
 > versioned UI message stream wire format. You must either emit that format byte-for-byte from this
 > proxy or write a custom transport — both are multi-hour and neither was budgeted. **Budget it here**
 > (it is in the 45h) and check the current wire format the week you build it. The path of least
@@ -661,11 +656,10 @@ operation*. · Doing webhook work before responding.
 
 ## M8 — The Durable Queue (18h) · `dependsOn: M7, M5` · **owns: async job processing**
 
-**This module did not exist in v1 and its absence was a critical sequencing bug.** v1 taught the queue
-at position 20 — but a resumable backfill, a resumable ingestion job, durable agent state, and an
-idempotent webhook consumer are hard build requirements at four earlier modules. You would have
-invented a queue four times, badly, and each ad-hoc version would have become load-bearing in a shipped
-artifact before the correct one existed.
+**This module sits early on purpose.** A resumable backfill, a resumable ingestion job, durable agent
+state, and an idempotent webhook consumer are hard build requirements at four later modules. Taught
+late, you would invent a queue four times, badly, and each ad-hoc version would become load-bearing in
+a shipped artifact before the correct one existed.
 
 It needs only M7's idempotency key and M5's row locking, both of which precede it.
 
@@ -701,8 +695,7 @@ deliberately split mid-frame and mid-multibyte-character** (reusing M4's graphem
 parser), a tool-use block, and a refusal carrying its `stop_details`.
 
 > **Imported by:** M12 (the zero-cost CI tier), M19 (agent tests), M22 (stream UI tests, which need
-> deterministic chunk boundaries to test the split-frame bug M22 itself calls out). v1 built this once,
-> in Python, at hour 853, for a service that was a port — while four TypeScript modules needed it first.
+> deterministic chunk boundaries to test the split-frame bug M22 itself calls out).
 
 **GATE** — **REFEREE:** a **mutation score**, which is a number you cannot argue with, plus bug reports
 sourced from **already-closed OSS issues** so the exercise is not self-administered. **PASS:** mutation
@@ -711,8 +704,8 @@ first, then fix, explaining why the test would still fail if the fix were wrong 
 **ON FAIL:** surviving mutants in code you claimed was covered — the tests assert implementation, not
 behavior.
 
-> Mutation testing is the mechanism v1's title promised and did not deliver. "Tests that fail for the
-> right reason" needs an instrument that measures whether a test would actually catch a regression.
+> Mutation testing is the mechanism this module's title demands. "Tests that fail for the right
+> reason" needs an instrument that measures whether a test would actually catch a regression.
 > Coverage does not do that. Mutation score does.
 
 **Most-missed:** Testing what the code does rather than what it should do. **A test that has never
@@ -733,7 +726,7 @@ Structured logging, log levels with real semantics, request-scoped correlation I
 spans and context propagation. Metrics, SLOs, error tracking. Profiling and flame graphs. **Detecting
 wrong model output when nothing throws.** Incident response, runbooks, the blameless postmortem.
 
-**Artifact** `EVIDENCE` — the flagship instrumented end to end (upgrading M0's day-one log store):
+**Artifact** `EVIDENCE` — the flagship instrumented end to end (upgrading M2's day-one call log):
 structured logs with correlation IDs and redaction, OTel spans including the model call, error
 tracking, and a silent-failure detector for wrong-but-200 output. A runbook for three failure modes
 (provider down, connection exhaustion, cost runaway), **executed by an actual other person during a
@@ -760,8 +753,8 @@ unmonitored while looking monitored. · Postmortems that stop at the code fix wi
 
 ## M11 — Ingestion: Real Documents Into a Corpus (30h) · `dependsOn: M5, M8`
 
-The first mile of most real AI products, and a seam the original research left to nobody — retrieval
-research opens at the embedding step, assuming a corpus that already exists as text. **Extraction
+The first mile of most real AI products, and a seam that is easy to leave to nobody — most retrieval
+material opens at the embedding step, assuming a corpus that already exists as text. **Extraction
 quality dominates retrieval quality by a wide margin.** No amount of hybrid search and reranking
 recovers a table flattened into word soup at ingestion.
 
@@ -771,9 +764,9 @@ on M8's queue, with progress and per-file failure. Re-ingestion when the parser 
 
 > **Page-level provenance cannot verify a span.** A citation has to highlight the exact sentence that
 > supports a claim, and character offsets into extracted text are unrecoverable after the fact,
-> especially through OCR. v1 required page-level here and span-level in M18; those are incompatible — page-level provenance cannot verify a span, and character offsets into extracted text
-> are unrecoverable after the fact, especially through OCR. Store **character offsets into the stored
-> extracted text**, with page and section carried alongside.
+> especially through OCR. M18 needs span-level citations, so page-level provenance here is incompatible
+> with it. Store **character offsets into the stored extracted text**, with page and section carried
+> alongside.
 
 > **Record the embedding model's output dimensionality in the decision log before you embed anything.**
 > It is an M11 decision with an M18 consequence: pgvector indexes `vector` to 2,000 dimensions and
@@ -791,8 +784,8 @@ to offsets before M18.
 
 ## M12 — Evals: The One Harness, and the Stats Lab (70h) · `dependsOn: M10, M6` · **owns: evals**
 
-The differentiator — validated by the review, not assumed. Also the concept the original research
-taught **six times in four incompatible substrates.** Built once, here.
+The differentiator. Also the concept most often taught **several times, in incompatible substrates.**
+Built once, here.
 
 **Core concepts:** Trace capture. **Error analysis: open coding → axial coding**, producing a named
 failure taxonomy with frequencies. What an eval is — a dataset plus a runner — and why it is not a test.
@@ -801,27 +794,26 @@ reported as TPR/TNR. Inter-annotator agreement. Structured output as a reliabili
 limit. Retries and fallback chains. Regression evals in CI and the economics of how much eval is enough.
 **Prompt and model lifecycle** — versioning, pinned model IDs, rollback, the forced migration.
 
-**The Stats Lab (8–10h), folded in.** v1's gate demanded a bootstrap confidence interval, TPR/TNR, and a
-confusion matrix — and **taught none of them anywhere in the document.** Covering only what the
-curriculum consumes: base rates and why accuracy lies when failures are rare; the confusion matrix and
+**The Stats Lab (8–10h), folded in.** The gate demands a bootstrap confidence interval, TPR/TNR, and a
+confusion matrix, so they are taught here, covering only what the curriculum consumes: base rates and why accuracy lies when failures are rare; the confusion matrix and
 TPR/TNR computed by hand on your own 100 labeled traces; recall@k; percentiles from a raw latency array
 and why averaging them is wrong; **bootstrap resampling written from scratch in ~30 lines**; and how
 many labeled examples you need before a delta means anything.
 
-**Three things v1 left out, and each is the difference between a harness a team adopts and one they
-quietly stop citing:**
+**Three things that are each the difference between a harness a team adopts and one they quietly stop
+citing:**
 
-**Inter-annotator agreement (~4h).** v1 had you label 100 traces as the sole annotator — so the rubric
-encodes one person's discovered preferences and has never survived a second opinion. **Cash in the
+**Inter-annotator agreement (~4h).** If you label 100 traces as the sole annotator, the rubric encodes
+one person's discovered preferences and has never survived a second opinion. **Cash in the
 standing reviewer:** they independently label 30 of the 100 using *only your written rubric*, with no
 conversation first. Compute agreement. Where you disagree, **the rubric gets revised, not the labels**,
 and you repeat.
 
 **Train/test discipline, stated once and inherited by M18.** Split every golden set into **dev and test
 at creation, before any retriever or grader exists.** All tuning touches dev. Test is opened once, at
-gate time, and **the reported number is the test number with the dev–test gap stated alongside.** v1 had
-you tune against the same set you then reported — the classic leak, and the reason most self-reported
-eval numbers are worthless.
+gate time, and **the reported number is the test number with the dev–test gap stated alongside.** Tuning
+against the same set you then report is the classic leak, and the reason most self-reported eval
+numbers are worthless.
 
 **The CI economics — because this is the most hireable artifact here and the one most likely to be
 silently switched off.** Not because you failed to build it, but because it costs real dollars on every
@@ -842,12 +834,12 @@ table including what you could not recover. Plus a `stats-lab` `LAB` repo.
 
 **One harness, four datasets.** M11's document-extraction scores, M18's recall@k, and M19's agent
 trajectories are **datasets inside these same tables and this same runner** — not their own
-measurement substrates. v1 claimed one harness and then described four.
+measurement substrates.
 
-**Trajectory evaluation — added, because "how do you know your agent works" is the first question any
-team shipping agents asks.** A step-level grader (was the correct tool called with the correct
+**Trajectory evaluation — because "how do you know your agent works" is the first question any team
+shipping agents asks.** A step-level grader (was the correct tool called with the correct
 arguments) and an outcome-level grader (did the task complete), reported alongside cost and step count
-per run. M19 imports this; v1 ended M19 at *captured* traces that were never *scored*.
+per run. M19 imports this; traces that are *captured* but never *scored* are not an eval.
 
 > **Exported:** the dataset table, assertion graders, and trajectory graders → M18, M19, M23.
 > **PII redaction (from M10) is an acceptance criterion here**, not later — otherwise you run
@@ -875,7 +867,7 @@ schema enforcement solved reliability. It solves shape, not content.
 
 ## M13 — System Design and the Design Doc (15h) · `dependsOn: M8, M10`
 
-The queue half moved to M8. What remains is the interview-shaped half, correctly late.
+The queue half lives in M8. This is the interview-shaped half, correctly late.
 
 **Core concepts:** The client-server trust boundary. Statelessness and why a shared counter is the hard
 part. The serverless execution model, measured rather than blog-post-quoted. Caching in three layers and
@@ -924,11 +916,9 @@ fallback and write down what it costs you. **Do not proceed by inventing traces.
 What the first 90 days of any job actually is. **Greenfield is a rounding error in the first six months
 of any job** — that is the whole argument, and it needs no statistic.
 
-> v1 claimed "roughly 60% of 2026 onsite loops include a read-existing-code round." **Two critics
-> searched independently and could not verify it**; one traced the figure to a single analysis scoped to
-> FAANG-tier onsites, which this curriculum's cut list excludes on purpose. It was the only quantitative
-> justification for the second-largest module in the document. Removed. The named evidence that does
-> exist: Google's code-comprehension round replacing one of two coding rounds and scoring AI fluency
+> No reliable statistic says how many onsite loops include a read-existing-code round; the figures in
+> circulation trace to analyses scoped to FAANG-tier onsites, which this curriculum's cut list excludes
+> on purpose. The named evidence that does exist: Google's code-comprehension round replacing one of two coding rounds and scoring AI fluency
 > explicitly; reported pilots at Meta; Stripe's Bug Squash.
 
 **Core concepts:** Tracing one real user action end to end — architecture is the *output* of tracing, not
@@ -946,14 +936,13 @@ seam. Strangler-fig. **The resumable backfill** (on M8's queue). Dual-run cutove
 4. A dual-run cutover on **a deterministic feature** — a pure-function or query-path refactor where old
    and new outputs diff exactly.
 
-> **v1 made #4 an AI feature.** That required comparing two versions of a model-backed feature and
-> justifying a cutover — **which is an eval** — six modules before M12 teaches what an eval is. You would
-> have produced exactly the vibe comparison table M12 exists to prevent, then pinned it as portfolio
-> evidence and defended it in M30. M12 already contains the identical exercise done correctly. Retargeted
-> to a deterministic feature, where the comparison is unambiguous and the lesson is actually about
-> cutover.
+> **#4 is deliberately not an AI feature.** Comparing two versions of a model-backed feature and
+> justifying a cutover **is an eval**, and that belongs where M12 teaches what an eval is. Done here, you
+> would produce exactly the vibe comparison table M12 exists to prevent, then pin it as portfolio
+> evidence and defend it in M30. M12 contains the identical exercise done correctly. Here the target is
+> a deterministic feature, where the comparison is unambiguous and the lesson is actually about cutover.
 
-**GATE** — **REFEREE:** a `git revert` of a merged bug-fix commit from M0's blind queue, scored against
+**GATE** — **REFEREE:** a `git revert` of a merged bug-fix commit from the bug-fix commits saved unread in M1, scored against
 the maintainer's actual merged diff. **PASS:** 60 minutes, narrating, arrive at a fix that matches the
 maintainer's on the behavior (not necessarily line for line), 3 of 5 attempts. Then defend three things
 you thought were wrong and deliberately did not change. **ON FAIL:** pull the next commit from the queue
@@ -983,8 +972,8 @@ escalation, decision record.
 
 **Artifact** `EVIDENCE` — four pieces to a real reviewer: a recovery-lab log of eight deliberate
 disasters, each recovered and explained; **a file you have personally been confused by while editing,
-with at least three responsibilities, chosen and justified in writing before you touch it** (v1 said
-"a 500-line file," which is a length, not a criterion), restructured behind M14's characterization tests
+with at least three responsibilities, chosen and justified in writing before you touch it** (not "a
+500-line file" — a length is not a criterion), restructured behind M14's characterization tests
 with a line-item rationale for every boundary moved; every failure path in one feature rewritten to
 actionable messages (expected / received / what to do).
 
@@ -1000,14 +989,14 @@ one where you **changed your mind and said so.**
 every comment either addressed or argued in writing, zero structural comments on the final round.**
 **ON FAIL:** the structural comments *are* the curriculum — address and resubmit.
 
-> v1 gated on "merged with no structural comments," which conditions your progress on **a stranger's
-> inbox.** Gate on what you control; track merges as a lagging metric.
+> The gate is not "merged," because that conditions your progress on **a stranger's inbox.** Gate on
+> what you control; track merges as a lagging metric.
 
 ## M16 — Working With Coding Agents Professionally (28h) · `dependsOn: M14, M15`
 
-The original research treated agents exclusively as a threat — in three separate dimensions — and never
-once as the throughput standard of the team you are joining. That produces an engineer who is correctly
-suspicious and half as fast as everyone around him, measured from week three. Scheduled **after** M14 and
+Treating agents exclusively as a threat — and never as the throughput standard of the team you are
+joining — produces an engineer who is correctly suspicious and half as fast as everyone around him,
+measured from week three. Scheduled **after** M14 and
 M15 so the interrogate-never-author discipline holds during the period it protects.
 
 **Core concepts:** Writing a repo's agent config so generated code conforms to house conventions.
@@ -1022,8 +1011,8 @@ policy; **a spec-driven slice** — write a specification with explicit acceptan
 implement against it, and keep a log of every place the spec was underspecified and what the agent did
 in the gap.
 
-**And the one v1 was missing entirely: a throughput artifact (~8h).** The module's own thesis is that
-being slow is the failure mode — and all three of v1's artifacts were *defensive*. Ship **one
+**And a throughput artifact (~8h).** The module's own thesis is that being slow is the failure mode,
+and the three artifacts above are all *defensive*. Ship **one
 non-trivial flagship feature** — multi-file, with a migration and tests — inside a timebox using agents,
 full transcript preserved, **measured against a feature of similar size written by hand**: hours, review
 findings, defects reaching production.
@@ -1038,7 +1027,8 @@ defects across five diffs with false positives scored separately. Plus the behav
 pre-commit hook enforcing your delegation policy that has **actually blocked agent-authored diffs twice
 on real work.** **ON FAIL:** you are pattern-matching, not reviewing — redo with a new sealed brief.
 
-> v1's gate told you there was exactly one boundary violation, which is most of the answer.
+> Knowing in advance that each diff holds exactly one defect is most of the answer — hence the blinded
+> count.
 
 ## M17 — Scoping, Estimating, and Someone Else's Priorities (29h) · `dependsOn: M14, M12`
 
@@ -1102,7 +1092,7 @@ span-level citation verification** against M11's character offsets. When to skip
 **The embedding lifecycle** — batched generation with rate-limit handling, measured cost per 1,000
 chunks, and a re-embed executed as a resumable backfill on M8's queue behind a dual-index read switch.
 
-> **v1 described the filtered-search trap with a mechanism that is now wrong.** A `WHERE` clause does not
+> **The filtered-search trap, with the correct mechanism.** A `WHERE` clause does not
 > bypass the HNSW index; the filter is applied as the index returns candidates, so the symptom is
 > **returning fewer rows than your LIMIT**, not slower queries. Since pgvector 0.8.0 the fix is
 > `hnsw.iterative_scan`, **which ships OFF** — so your recall@10 gate number is measured under an unnamed
@@ -1112,8 +1102,7 @@ chunks, and a re-embed executed as a resumable backfill on M8's queue behind a d
 
 **Artifact** `EVIDENCE` — retrieval over M11's corpus, on M12's runner and tables, with a measured
 **recall@k baseline**, then **five** interventions measured independently. Three are the standard set:
-hybrid+RRF, reranker, contextual retrieval. **Two are the ones that actually contest the space now, and
-v1 measured neither:**
+hybrid+RRF, reranker, contextual retrieval. **Two are the ones that actually contest the space now:**
 
 - **A long-context baseline** — same queries, no retrieval, documents in context — with recall, latency,
   and dollar cost.
@@ -1148,14 +1137,12 @@ not machine-checkable against offsets, you have the appearance of grounding.
 model can actually use.** Reactive loop vs plan-then-execute, and when a second agent is overkill. State
 and memory across steps — **durable state on M8's queue.** Failure taxonomy and validation between steps.
 Loop detection and cost runaway prevention. Human-in-the-loop checkpoints for irreversible actions.
-**Agent containment** — what the agent can actually reach, and the sandbox it executes in (a seam neither
-this module nor M21 owned in v1). MCP. Trajectory tracing and silent-failure detection.
+**Agent containment** — what the agent can actually reach, and the sandbox it executes in. MCP. Trajectory tracing and silent-failure detection.
 
-> **Thinking-block replay — absent from v1 and it silently breaks the loop.** Thinking blocks must be
+> **Thinking-block replay — miss it and it silently breaks the loop.** Thinking blocks must be
 > echoed back unchanged when continuing on the same model, and on current models editing earlier turns
-> invalidates them, so **the loop must be append-only.** v1's best mistake bullet ("appending the
-> assistant's text and dropping the tool_use blocks") is the exact 2024 predecessor of this bug and the
-> 2026 sequel had no bullet.
+> invalidates them, so **the loop must be append-only.** The classic 2024 bug — appending the
+> assistant's text and dropping the `tool_use` blocks — is the exact predecessor of this one.
 
 > **MCP: pin the revision.** The specification shipped a breaking, stateless rewrite in the 2026-07-28
 > revision — the initialize handshake and session IDs removed, protocol-level sessions gone, several
@@ -1165,8 +1152,7 @@ this module nor M21 owned in v1). MCP. Trajectory tracing and silent-failure det
 > hand-rolled objectives — durable state and human-in-the-loop checkpoints — now have protocol-level
 > answers you would otherwise not know exist.
 
-> **The tool-flooding bullet needs a remedy, not a prohibition.** v1 told you not to do the thing the
-> module asks you to do. The first-class answer is **tool search plus deferred loading on the long tail**
+> **Tool flooding needs a remedy, not a prohibition.** The first-class answer is **tool search plus deferred loading on the long tail**
 > — with one condition that bites: the search tool itself must not be deferred, and at least one tool must
 > stay non-deferred, or you get a 400.
 
@@ -1176,8 +1162,8 @@ replayable trajectory traces, and a written containment/blast-radius analysis pe
 MCP server against a named spec revision. Then the same agent on the SDK's tool runner, with a written
 comparison of what the hooks bought and what they hid.
 
-**Containment is an execution boundary, not a permission table (~4h).** v1 bounded cost and
-reversibility and never bounded **blast radius.** Every tool executes behind one *enforced* boundary
+**Containment is an execution boundary, not a permission table (~4h).** Bounding cost and
+reversibility is not enough; you must also bound **blast radius.** Every tool executes behind one *enforced* boundary
 with a written threat model: a container or hosted sandbox for anything code-shaped, **a domain
 allowlist** for anything network-shaped, a path prefix for anything filesystem-shaped, plus per-tool
 timeout and memory caps. **Demonstrate it by pointing a tool at a blocked host and at
@@ -1185,7 +1171,7 @@ timeout and memory caps. **Demonstrate it by pointing a tool at a blocked host a
 
 > Your agent is the one place in the whole system where an attacker-controlled string reaches an
 > outbound fetch. M21 teaches SSRF by exploiting it — **one of those four exploits runs through this
-> agent's own fetch tool.** v1 taught both and never connected them.
+> agent's own fetch tool.**
 
 **GATE** — **REFEREE:** a kill signal at a random point, and **200 adversarial inputs generated by a
 second agent with a red-team brief and no knowledge of your governor**, with the spend assertion living
@@ -1212,7 +1198,7 @@ verifying from the meters. Percentiles from raw distributions. Streaming as a *p
 breakers**. Unit economics. The product-analytics question — is it used, does it improve the thing it was
 built to improve, is it worth its cost.
 
-> **v1 measured the wrong dial.** It made model routing the lever. The **first** quality-trading lever
+> **Model routing is the wrong first dial.** The **first** quality-trading lever
 > after caching is **effort** — measure the most capable model at lower effort *before* building a model
 > cascade, because **caches are model-scoped and a cascade forfeits cache reuse.** Make the routing
 > experiment two-dimensional: (model × effort) over the same task set, scored by M12's harness, reported
@@ -1243,7 +1229,7 @@ contained rather than fixed.** The lethal trifecta: private data + untrusted con
 ability. Tool permission design and excessive agency. **Treating model output as untrusted input.** PII,
 prompt and log leakage, and the data obligations your employer will hand you.
 
-**The constraints you do not control (~4h).** v1 taught only the constraints you author. On the job you
+**The constraints you do not control (~4h).** The constraints above are ones you author. On the job you
 are handed the others: **approved-subprocessor lists** (adding a vendor is a legal action, not a
 technical one), what a DPA does, **zero-data-retention configurations**, data residency, and security
 questionnaires — which land on the engineer who built the feature. **The week-one move is asking whether
@@ -1258,17 +1244,17 @@ One of the five runs through M19's agent fetch tool.
 
 A tool-permission design for M19's agent with blast-radius analysis.
 
-**A bidirectional data-flow document** — v1's version covered only what flows *in*. Every boundary
+**A bidirectional data-flow document** — not only what flows *in*. Every boundary
 customer data crosses, every third party that sees it, the retention setting and jurisdiction at each,
 **plus an implemented delete path** removing the user's rows, objects, embeddings, and trace records; a
 written list of what cannot be deleted and why; and a test asserting nothing survives in any store you
 control.
 
 > Once the flagship has real users their data lands in at least seven places built by different modules.
-> "Retention" appeared exactly once in v1 — as a thing to *name* in a document rather than implement.
+> Retention is something to *implement*, not merely a thing to name in a document.
 
-> This reconciles a tension v1 created and never resolved: M10 and M12 teach you to log everything about a
-> model call; this is where that meets not shipping customer PII to a third-party platform.
+> This reconciles a tension the curriculum creates on purpose: M10 and M12 teach you to log everything
+> about a model call; this is where that meets not shipping customer PII to a third-party platform.
 
 **GATE** — **REFEREE:** working exploits — either they land or they do not — and a passing deletion
 test. **PASS:** five exploits demonstrated and fixed with tests; name every irreversible action in your
@@ -1293,20 +1279,20 @@ confirmation step whose summary the model itself generates — an injected model
 
 ## M22 — Frontend for AI Interfaces (32h) · `dependsOn: M7, M11, M19, M20`
 
-Cut from v1's 45h and retargeted: the generic React rendering-model material is below your level. What
-remains is the AI-specific surface, which is where you differentiate.
+Deliberately narrow: the generic React rendering-model material is below your level. What is here is
+the AI-specific surface, which is where you differentiate.
 
 **Core concepts:** Effects and their four failure modes (infinite loops, stale closures, races, missing
 cleanup). **The server/client boundary and the current Next.js caching direction** — state the direction,
 which is durable, not the version, which is not: **caching is now opt-in.** Nothing is cached by default;
-you opt in explicitly. v1 hedged on this as if it were a version bump; it is an *inversion*, and generic
-hedging does not catch it because you will read current docs, recognize the words, and map them onto the
+you opt in explicitly. This is not a version bump; it is an *inversion*, and generic hedging does not
+catch it because you will read current docs, recognize the words, and map them onto the
 old default without noticing it flipped. Forms, mutations, optimistic UI with shared Zod schemas. Then:
 **`useChat` on M7's wire format** (budgeted in M7 — it is not free). Cancellation and abort propagation.
 Resumable streams. Latency choreography for 10-second-plus operations. Conversation scroll behavior.
 **Designing for output that is sometimes wrong** — tool-call UI, approval gates, citations, uncertainty,
-honest failure states. **The upgrade-path UI and the honest failure state** (moved here from M20 to break
-a circular dependency).
+honest failure states. **The upgrade-path UI and the honest failure state** (here rather than in M20, which
+would create a circular dependency).
 
 **Artifact** `EVIDENCE` — the flagship's chat surface rebuilt on **your own M7 protocol**: a stop button
 that provably stops upstream billing; refresh-mid-generation that resumes rather than losing the answer;
@@ -1330,7 +1316,7 @@ growing message. · **An approval button that appears after the tool already ran
 **Core concepts:** Environments and configuration as a first-class thing. Secrets across environments;
 short-lived credentials over stored keys. A CI pipeline you own — what gates a merge and what it costs.
 **Deploy ≠ release** — preview deploys, promote, instant rollback, feature flags. **Expand/contract
-migrations in the pipeline** (moved here from M5, where there was no pipeline to run them through).
+migrations in the pipeline** (here rather than in M5, because here there is a pipeline to run them through).
 Health checks, SLOs, alerting that pages a human only when it should. Registries, image builds in CI, one
 real cloud deploy.
 
@@ -1354,13 +1340,12 @@ any PR can exfiltrate them. · One `/health` for both liveness and readiness. ·
 
 ## M24 — Python On-Ramp (15h) · `dependsOn: M9`
 
-Split forward from v1's single 50-hour Python module, which sat at hour 853 and was therefore the most
-likely thing to be cut under deadline pressure.
+Deliberately small and early: a single large Python module sitting near the end of the program is the
+most likely thing to be cut under deadline pressure.
 
 **Core concepts:** Environments and dependencies on current tooling — **`uv`, `ruff`, one type checker
-pinned green in CI.** (v1's cut list rejected conda/poetry/pyenv and then named no replacement, leaving
-you at a 50-hour module with the three most-Googled answers pre-rejected. The names have a shelf life;
-the module is unchanged if they move.) Python semantics where they differ from TypeScript — names vs
+pinned green in CI.** (The cut list rejects conda/poetry/pyenv; these are the replacements. The names
+have a shelf life; the module is unchanged if they move.) Python semantics where they differ from TypeScript — names vs
 values, LEGB, truthiness, generators, dunders. pytest. Type hints with a checker in CI. pydantic as the
 runtime validation boundary. One typed FastAPI route with a test.
 
@@ -1376,15 +1361,14 @@ the idiom is wrong — a passing test cannot catch this, which is why the refere
 ## M25 — Python as a Second Production Language (35h) · `dependsOn: M24, M12`
 
 **Trip-wire from M0:** if fewer than 40% of your filtered funnel accepts a Node-primary backend, **this
-module moved to immediately after M12** and you are already running the alternate ordering.
+module runs immediately after M12** and you are already on the alternate ordering.
 
 **Core concepts:** Python semantics at depth. **asyncio and the blocking-call trap** — a concurrency model
 that is not JavaScript's. FastAPI with streaming responses and dependency injection. Reading and debugging
 idiomatic Python in a codebase you did not write.
 
 **Artifact** `EVIDENCE` — **M12's eval runner ported to Python** (this gives the module an inbound
-dependency edge; v1's Python module was terminal, which is why it was the most cuttable thing in the
-document). Typed request/response models, streaming, a pytest suite faking the model client, type checker
+dependency edge; a terminal Python module would be the most cuttable thing in the document). Typed request/response models, streaming, a pytest suite faking the model client, type checker
 green in CI, plus a written runtime diff **including a reproduction of a blocking call freezing the
 asyncio loop and its fix.**
 
@@ -1401,10 +1385,10 @@ items, OOM on 5,000. · Calling the real model API in unit tests. The LLM belong
 
 ## M26 — Third-Party Integration as a Consumer (23h) · `dependsOn: M7, M21`
 
-**The consent surface is part of this module, not someone else's.** v1 made M26 entirely backend in 20
-hours while its own artifact required a revocation path that *re-prompts the user* — UI work in a module
-with no UI budget, in a layer after the frontend module. So nobody owned the connect button, the callback
-route, the connections screen, the re-consent flow, or the in-chat degraded state.
+**The consent surface is part of this module, not someone else's.** A revocation path that *re-prompts
+the user* is UI work, and this module comes after the frontend module — so the connect button, the
+callback route, the connections screen, the re-consent flow, and the in-chat degraded state are owned
+here, with hours.
 
 **Also: the OAuth callback is the one place CSRF actually matters** — `state`, PKCE, open redirect — and
 M21 teaches CSRF two modules earlier, before any OAuth exists.
@@ -1415,8 +1399,8 @@ M21 teaches CSRF two modules earlier, before any OAuth exists.
   granted for v1 are insufficient for v2, so every existing user must re-consent).
 - An **in-chat degraded state** when the connection is broken.
 - **Envelope encryption with a per-row key reference**, a stated location for the master key per
-  environment, and a written key-rotation procedure. (v1 said "encrypted per-tenant storage" without
-  saying where the key lived or how it rotated.)
+  environment, and a written key-rotation procedure. ("Encrypted per-tenant storage" without saying
+  where the key lives or how it rotates is not a design.)
 - Automatic refresh, and a revocation-recovery path that re-prompts rather than failing silently.
 
 **GATE** — **REFEREE:** the provider's own API, where you revoke the grant **mid-run**. **PASS:** revoke
@@ -1424,7 +1408,7 @@ during a background job and assert the job **alerts** rather than failing silent
 scope-upgrade re-consent; the CSRF attempt against your callback fails. **ON FAIL:** the 401 surfaces as
 a generic error, or the `state` parameter is decorative.
 
-> v1's gate was *"draw the token lifecycle"* — a drawing, strictly weaker than the artifact above it.
+> The gate is not *"draw the token lifecycle"* — a drawing is strictly weaker than the artifact above it.
 
 ---
 
@@ -1440,12 +1424,12 @@ modules matter. This is the transaction itself.
 **Core concepts:** Reading an offer — base vs equity vs bonus, vesting, what a startup's equity is
 realistically worth. **W2 vs 1099 vs agency vs employer-of-record.**
 
-> **v1 asserted that remote entry-band roles are "disproportionately" 1099 and escalated to calling it "a
-> certainty." That is not supported.** A critic pulled live postings and found W2 full-time with benefits
-> explicitly listed; a contract-filtered search returned nothing. Thin sample, weak null result — but
-> "certainty" was not defensible from anything the document showed. **What is defensible: check the
+> **Do not assume remote entry-band roles are mostly 1099.** Live postings show W2 full-time with
+> benefits explicitly listed, and a contract-filtered search returns little — a thin sample and a weak
+> null result, but enough that "1099 is a certainty" is not defensible. **What is defensible: check the
 > classification on every posting before applying, and know your delta before you negotiate.** You already
-> tagged twenty postings W2 or 1099 in M0. That is your data, and it is a better artifact than my claim was.
+> tagged twenty postings W2 or 1099 in M0. That is your data, and it is a better artifact than any general
+> claim.
 
 **Artifact** `EVIDENCE` — a comp floor and target with the postings that justify them; a spreadsheet
 modeling the same headline number as W2 vs 1099 with self-employment tax, health insurance, and unpaid
@@ -1456,7 +1440,7 @@ hedging. **ON FAIL:** you hedged — that is the rep; do it again next screen.
 
 ## M28 — The Evidence Layer v1 (8h) · *trigger: the application date*
 
-Split from v1's single late module, because applications at month 5 need a resume at month 5.
+Deliberately early, because applications at month 5 need a resume at month 5.
 
 **Artifact** `EVIDENCE` — a resume mapping each claim to a repo; two pinned repos; a README in
 product-spec form.
@@ -1510,15 +1494,14 @@ grilled on reads as competence. Do not put "Prompt Engineering" on it. · Auto-a
 **Forward-loaded (10h, at the application date):** clarify-before-typing; out-loud narration with
 autocomplete off; one recorded mock. The remaining 35h stays late.
 
-> **v1 had the emphasis inverted.** It led with the un-assisted round and filed the assisted round as a
-> secondary bullet — while its own M16 already named the purity play as a *scored failure*. Major firms are
-> piloting candidate-uses-an-assistant rounds, standard policy does not ban AI, and take-homes are
-> contracting specifically because unverifiable AI use undermined them. **Invert it.** Keep the
-> autocomplete-disabled round as a floor. Stop budgeting hours against the shrinking take-home format.
-> (Direction is well-corroborated; no percentage is attached, deliberately.)
+> **The assisted round leads; the un-assisted round is the floor.** M16 already names the purity play
+> as a *scored failure*. Major firms are piloting candidate-uses-an-assistant rounds, standard policy does
+> not ban AI, and take-homes are contracting specifically because unverifiable AI use undermined them.
+> Keep the autocomplete-disabled round as a floor. Do not budget hours against the shrinking take-home
+> format. (Direction is well-corroborated; no percentage is attached, deliberately.)
 
 **Artifact** `EVIDENCE` — a recorded ten-minute flagship walkthrough in **decision-language, not
-feature-language**; three timed foreign-repo bug fixes from M0's blind queue with assistant transcripts
+feature-language**; three timed foreign-repo bug fixes from the bug-fix commits saved unread in M1 with assistant transcripts
 attached and annotated; two recorded mock defenses with a real person who pushes back. **The 40-problem
 narrated log lives in Track 4's existing weekly slot**, not as 15 extra hours here.
 
@@ -1589,7 +1572,7 @@ unfamiliar repo, narrating throughout, and watch it back.
 
 # The Parallel Tracks — priced
 
-v1 listed these as mandatory and budgeted none of them. That was the 40% error.
+All ten are mandatory, so all ten are budgeted. Leaving them unpriced is the 40% error named at the top.
 
 | # | Track | Hours | Cadence |
 |---|---|---|---|
@@ -1607,26 +1590,24 @@ v1 listed these as mandatory and budgeted none of them. That was the 40% error.
 **Track 1 sequencing rule:** for the first two months, deliberately target companies you do **not** want.
 The first ten interviews are instruments, not opportunities.
 
-> **And say the true thing about months 5–9: the modal response to an application is silence.** v1 called
-> rejection reasons "free," which will read as forty unanswered messages during the exact window this
+> **And say the true thing about months 5–9: the modal response to an application is silence.** Rejection
+> reasons are not "free" — what actually arrives is forty unanswered messages during the exact window this
 > document identifies as the abandonment window. Reframe the period as **funnel instrumentation**, with a
 > success metric of *"I learned what the funnel requires"* — which does not depend on anyone replying.
 
-**Track 2 artifact spec** (v1 had this as a bullet with no hours, no spec, and no gate — while it is the
-single highest-signal activity in the document: a public record graded by people with no incentive to be
-nice to you). **Substantive** means: touches behavior, not docs or dependency bumps · 20–200 lines ·
+**Track 2 artifact spec** (this is the single highest-signal activity in the document — a public record
+graded by people with no incentive to be nice to you — so it gets hours, a spec, and a gate). **Substantive** means: touches behavior, not docs or dependency bumps · 20–200 lines ·
 includes a test · survived at least one round of maintainer review. Deliver **three merged non-trivial
 PRs into two repos**, full review threads preserved, plus a written note per PR on *what the maintainer
 asked you to change and why they were right.*
 
-**Track 2 starts at the end of M15, not M14** — one module later than v1 said, because M15 is where you
-learn to write a PR a maintainer can act on. Use the M14 window for the reading half: **two
+**Track 2 starts at the end of M15, not M14**, because M15 is where you learn to write a PR a maintainer
+can act on. Use the M14 window for the reading half: **two
 well-researched issue reports** in the target repos. That is genuine contribution and it builds the
 relationship the PRs will need.
 
-**Track 8 needs inputs that actually arrive.** v1's three inputs were interview feedback, rejection
-reasons, and estimate data — but rejections mostly arrive as silence, and the estimate log sat at
-position 15, so the re-plan would have run for seven months with its primary input missing. Use instead:
+**Track 8 needs inputs that actually arrive.** Interview feedback and rejection reasons mostly arrive as
+silence, so a re-plan built on them runs for months with its primary input missing. Use:
 
 - **Counts of required skills across the 20–40 postings you screened this month.** *This is the real
   Python-bet signal and it needs no employer to reply.*
@@ -1638,7 +1619,7 @@ position 15, so the re-plan would have run for seven months with its primary inp
 - **Your `DELTA.md` files** (Rule 5) — this is how technical change enters the re-plan at all. Without
   them, every currency finding on this document's own list would enter undetected.
 
-**Track 4 rubric (v1 gave it none, so it could not fail):** score each cold re-build 0–3 — 0 could not
+**Track 4 rubric (without one, it cannot fail):** score each cold re-build 0–3 — 0 could not
 start, 1 needed the original, 2 rebuilt with gaps, 3 clean. **Three consecutive scores below 2 on the same
 artifact means that module is re-opened**, not noted.
 
@@ -1659,7 +1640,7 @@ exotica** — type-level metaprogramming, decorators, namespaces, RxJS, Effect-T
 authoring them makes you the person whose PRs nobody can review. · **The Python data-science slice** —
 numpy, pandas mastery, scikit-learn, notebooks-as-primary-workflow, Django/Flask, conda/poetry/pyenv.
 · **Building your own agent framework, eval platform, or observability dashboard** — the genuinely
-dangerous half, and the most tempting. *(Reading a framework's docs is no longer cut: see Appendix C —
+dangerous half, and the most tempting. *(Reading a framework's docs is not cut: see Appendix C —
 read the docs for whichever framework a posting names, the week that posting appears.)* Each is a way to build a
 worse version of something that exists while avoiding the labeling and debugging that actually teach.
 · **The advanced-RAG genre** — GraphRAG, RAPTOR, self-RAG, CRAG, FLARE, standalone vector DBs, fine-tuned
@@ -1671,7 +1652,7 @@ webhook signature verification as its own unit, rate limiting as its own unit, t
 gRPC, OAuth *provider* implementation, prompt compression, semantic caching, self-hosting open-weights
 models.
 
-**One cut the review flagged as a real risk, not a clean win:** the AWS/second-cloud unit stays cut, and
+**One cut that is a real risk, not a clean win:** the AWS/second-cloud unit stays cut, and
 the Vercel/Supabase focus is defensible for this segment — **but it narrows your funnel more than the
 Python bet does, and unlike the Python bet there is no trip-wire for it.** If M0's twenty postings show
 cloud-native infrastructure as a common requirement, add a 15-hour unit and take the hours from M22, the
@@ -1681,8 +1662,7 @@ least differentiating module in the plan.
 
 # Appendix A — What "enough" means
 
-Several requirements in this document were stated in terms **the person it describes cannot
-operationalize.** "Exactly enough Docker and Linux to not be helpless" is not a target; given an
+Some requirements are easy to state in terms **the person they describe cannot operationalize.** "Exactly enough Docker and Linux to not be helpless" is not a target; given an
 undefined floor you will either over-invest (M23's own Kubernetes warning is exactly this failure, and
 naming it does not prevent it when the floor is undefined) or under-invest and pass yourself. Enumerated:
 
@@ -1761,8 +1741,8 @@ feature availability differ).
 
 # A note on APEX itself
 
-The learning-science research read your `obsidian.js` and flagged this: **APEX's quiz engine is built
-almost entirely out of multiple choice.** Recognition memory survives long after recall is gone, so a 90%
+Your `obsidian.js` has a property worth flagging: **APEX's quiz engine is built almost entirely out of
+multiple choice.** Recognition memory survives long after recall is gone, so a 90%
 MCQ score is compatible with total inability to produce the thing. That is precisely the illusion this
 curriculum exists to escape, and M0 names it as one of the three distinct mechanisms behind
 tutorial-induced competence illusion.
@@ -1803,12 +1783,12 @@ make the funnel large.**
 
 ### What closes the remaining distance
 
-**Not more modules. The three relationships this program already manufactures and used to waste.** By
+**Not more modules. The three relationships this program already manufactures and must not waste.** By
 month 13 you will have two or three working engineers at real companies who have read your code line by
 line, argued with you about it, and merged it. Referrals convert at roughly **28–40%** apply-to-hire
 against **2–5%** cold. That is a 10× difference and it is the only lever available to you that is that
-large. The document built the asset for 80 hours and never once named what it was for. **Ask them** —
-that is now Track 2, and it costs two hours.
+large. Track 2 builds that asset over 80 hours, and the ask is what it is for. **Ask them** — it is part
+of Track 2, and it costs two hours.
 
 **Take contract or 1099 work as a bridge if a W2 title has not arrived by month 12.** M27 already models
 the tax and insurance delta, and the Compressed Spine is explicitly aimed at a contract role. Six months
@@ -1826,16 +1806,13 @@ one. That is precisely what it is there for.
 
 ## Provenance and currency
 
-**Built by:** 24 parallel research agents with web access (2.66M tokens, 432 tool calls) → a gap critic and
-a waste critic → an architecture pass that cut 2,605 research hours to 963. **Then reviewed by:** 10
-adversarial critics (1.5M tokens) across sequencing, month-six failure, currency, seams, hiring-manager,
-gates, learner-reality, emerging-reality, self-taught-specific, and red-team lenses → a synthesis that
-produced 15 must-fixes, 25 should-fixes, 18 stale-claim corrections, and **rejected 11 findings as wrong or
-not worth the hours.**
+**Built by:** parallel research agents with web access, a gap critic and a waste critic, and an
+architecture pass. **Then reviewed by:** adversarial critics across sequencing, month-six failure, currency,
+seams, hiring-manager, gates, learner-reality, emerging-reality, self-taught-specific, and red-team lenses.
 
-**Where the currency risk actually lives** — v1 put its only warning on the model module, which was the part
-it mostly got right. The real decay is concentrated in **four places**, and three of them are in layers this
-document calls "fundamentals":
+**Where the currency risk actually lives.** The model module is the obvious place, and it is the least of
+it. The real decay is concentrated in **four places**, and three of them are in layers this document calls
+"fundamentals":
 
 - **M6** (model IDs, parameters, pricing, `stop_reason` enum, caching TTLs) — monthly cadence
 - **M5** (Supabase connection endpoints, key naming migration) — **a platform claim wearing fundamentals
