@@ -6414,6 +6414,13 @@ function lpFlagshipCount() {
     return W[n - 1] ? W[n - 1].charAt(0).toUpperCase() + W[n - 1].slice(1) : String(n);
   } catch (e) { return 'Many'; }
 }
+// The rules are numbered once, in the data. The home page used to carry its
+// own numbering, which disagreed with the one validate() enforces.
+function lpRulesText() {
+  try {
+    return LAUNCHPAD_RULES.map(function (r) { return r.n + '. ' + r.rule; }).join(' ');
+  } catch (e) { return 'A gate with no referee is decorative.'; }
+}
 function lpHowHTML() {
   var rows = [
     ['Module', 'A unit of work. Most take under four weeks at 18 hours a week; a few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.'],
@@ -6427,9 +6434,7 @@ function lpHowHTML() {
     ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it, about a hundred logged traces contain real failures, and your eval harness runs against them on every push. Working harder does not open it.'],
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
     ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in M0\'s first section. Open M0 and read Words before anything else.'],
-    ['Rule 1', 'A gate with no referee is decorative.'],
-    ['Rule 2', 'The longest chain of modules sets how long this takes, not the hour sum.'],
-    ['Rule 3', 'Read the official documentation before you build, and write down where it proved you wrong. That is the delta.']
+    ['The rules', lpRulesText()]
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
@@ -6750,7 +6755,8 @@ function lpTracksHTML(API) {
         + '<div class="lx-title">Parallel tracks</div>'
         + '<div class="lx-sub">' + th + ' hours that run alongside the modules, from start to hired. '
         + 'They are in the headline total because they are real work, not extras. '
-        + 'Every month named on this page assumes 18 hours a week; The Plan shows the months your own hours give you.</div></div>';
+        + ((typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.tracksNote)
+           ? esc(LAUNCHPAD_CONFIG.tracksNote) : '') + '</div></div>';
   h += '<div class="lp-cols"><div>';
   var recT = API.plan(LP_ST.setup || {}).recommend;
   var spineT = (recT === 'spine' || recT === 'full-tight');
@@ -6889,12 +6895,12 @@ function lpVerdictHTML(API) {
   h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
   if (!unset) {
     h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0-2 — '
-       + pl.applyAfterHours + 'h in, roughly month '
-       + (pl.weeklyHours ? Math.max(1, Math.round(pl.applyAfterHours / pl.weeklyHours / 4.345)) : '?')
+       + pl.applyAfterHours + 'h of module work in, roughly month '
+       + (pl.applyAfterMonths ? Math.max(1, Math.round(pl.applyAfterMonths)) : '?')
        + '. Not when everything is finished.'
        + (function () {
            if (!pl.weeklyHours || !pl.runwayMonths) return '';
-           var am = pl.applyAfterHours / pl.weeklyHours / 4.345;
+           var am = pl.applyAfterMonths || (pl.applyAfterHours / pl.weeklyHours / 4.345);
            if (am <= pl.runwayMonths - 2) return '';
            var advice = pl.weeklyHours < CEIL
              ? 'Raise the hours toward ' + CEIL + ', or take the Spine.'
@@ -7050,7 +7056,9 @@ function lpDetailHTML(API, id) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Claim progress</div>'
      + '<div class="lp-cmeta">in order</div></div>'
      + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the official documentation proved you wrong. '
-     + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module. Un-ticking one clears the ones after it, here and in every module that depended on this one.</div>';
+     + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module. Un-ticking one clears the ones after it, here and in every module that depended on this one.</div>'
+     + ((typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.gateRecord)
+        ? '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">' + esc(LAUNCHPAD_CONFIG.gateRecord) + '</div>' : '');
   var lockedHere = !API.isUnlocked(id, P);
   if (lockedHere) {
     h += '<div class="lp-warn" style="margin-bottom:12px"><b>LOCKED</b><br>Reading ahead is fine, but nothing here can be ticked until '
