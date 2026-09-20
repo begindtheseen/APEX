@@ -909,7 +909,7 @@ body{color:var(--text);font-family:var(--sans);}
   border-left:2px solid transparent;transition:color .15s,background .15s;}
 .lp-navbtn:hover{color:var(--rtext);background:color-mix(in srgb,var(--rc) 7%,transparent);}
 .lp-navbtn.on{color:var(--rbright);background:color-mix(in srgb,var(--rc) 12%,transparent);}
-.lp-navi{width:17px;text-align:center;font-size:13px;opacity:.85;}
+.lp-navi{display:flex;align-items:center;justify-content:center;width:20px;height:20px;}
 .lp-side-foot{margin-top:auto;padding:18px;font:600 8.5px/1.9 var(--mono);letter-spacing:.2em;
   color:var(--rdim);opacity:.5;text-transform:uppercase;}
 .lp-main{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -930,6 +930,77 @@ body{color:var(--text);font-family:var(--sans);}
 .lp-sub{font:400 13.5px/1.55 var(--sans);color:#7fa3c4;max-width:60ch;}
 .lp-heroBar{height:3px;width:210px;border-radius:2px;background:#0d1c31;margin-top:16px;overflow:hidden;}
 .lp-heroBar span{display:block;height:100%;background:linear-gradient(90deg,#4db8ff,#00d4ff);}
+
+/* ── Craft pass. The gap against a designed comp is usually not colour,
+      it is type scale, breathing room, and real iconography. ── */
+.lp-svg{width:20px;height:20px;display:block;}
+.lp-navi{width:20px;height:20px;display:flex;align-items:center;justify-content:center;}
+.lp-navi .lp-svg{width:18px;height:18px;}
+.lp-layi .lp-svg{width:21px;height:21px;}
+.lp-bico .lp-svg{width:16px;height:16px;}
+.lp-lki .lp-svg{width:15px;height:15px;}
+.lp-arrow .lp-svg{width:14px;height:14px;}
+.lp-layi,.lp-bico,.lp-lki{color:var(--rc);}
+
+/* Hero: full-bleed art behind, content above, generous type. */
+.lp-hero-lg{padding:0;min-height:216px;display:flex;align-items:center;}
+.lp-heroArt{position:absolute;inset:0;width:100%;height:100%;opacity:.92;pointer-events:none;}
+.lp-heroIn{position:relative;z-index:2;padding:30px 32px;max-width:62%;}
+@media(max-width:620px){
+  .lp-hero-lg{min-height:186px;}
+  .lp-heroIn{padding:22px 20px;max-width:78%;}
+  .lp-heroArt{opacity:.7;}
+}
+.lp-greet{font:400 14px/1 var(--sans);color:var(--rdim);letter-spacing:.01em;}
+.lp-name{font:300 40px/1.06 var(--sans);color:var(--rbright);margin:9px 0 10px;letter-spacing:-.025em;}
+.lp-name b,.lp-name strong{font-weight:600;}
+@media(max-width:620px){.lp-name{font-size:29px;}}
+.lp-sub{font:400 14px/1.6 var(--sans);color:#8fb4d6;max-width:46ch;}
+.lp-heroBar{height:4px;width:230px;border-radius:3px;background:rgba(255,255,255,.07);margin-top:20px;}
+.lp-heroBar span{border-radius:3px;}
+
+/* Cards get more air and a lit top edge, which is most of what reads as depth. */
+.lp-card,.lp-lay,.lp-quote{position:relative;padding:20px;border-radius:15px;
+  background:linear-gradient(180deg,rgba(255,255,255,.022),transparent 46%),var(--rsurf);}
+.lp-card::before,.lp-lay::before{content:'';position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--rc) 26%,transparent),transparent);}
+.lp-ct{font-size:11.5px;letter-spacing:.16em;}
+.lp-layt{font-size:17.5px;letter-spacing:-.01em;}
+.lp-layd{font-size:13px;line-height:1.6;margin-top:6px;}
+.lp-layi{width:46px;height:46px;border-radius:12px;}
+.lp-mods{margin-top:16px;gap:8px 18px;}
+.lp-mrow{font-size:12.5px;}
+.lp-layf{margin-top:18px;}
+.lp-go{padding:11px 19px;border-radius:9px;font-size:12.5px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 92%,#fff),var(--rc));color:#041220;font-weight:600;}
+.lp-blab{font-size:12.5px;}
+.lp-btr{height:6px;border-radius:4px;}
+.lp-btr span{border-radius:4px;}
+.lp-bico{width:34px;height:34px;border-radius:10px;}
+.lp-ring{width:96px;height:96px;}
+.lp-rv{font-size:23px;}
+.lp-tt{font-size:13px;}
+.lp-lkt{font-size:13px;}
+.lp-qt{font-size:20px;line-height:1.36;letter-spacing:-.015em;}
+.lp-dp{font-size:13px;line-height:1.68;}
+.lp-con div{font-size:13px;line-height:1.62;}
+.lp-mt{font-size:14px;}
+.lp-body{padding:26px;}
+@media(max-width:820px){.lp-body{padding:16px;}}
+
+/* Layer card: copy on the left, a generated scene where the comp puts a
+   screenshot. Stacks under 760px so the art never squeezes the text. */
+.lp-layTop{display:flex;gap:20px;align-items:stretch;}
+.lp-layMain{flex:1;min-width:0;display:flex;flex-direction:column;}
+.lp-artWrap{width:200px;flex:0 0 200px;border-radius:11px;overflow:hidden;
+  border:1px solid var(--rline);background:linear-gradient(158deg,#0a1526,#050b16);
+  display:flex;align-items:center;justify-content:center;padding:8px;}
+.lp-art{width:100%;height:auto;display:block;}
+@media(max-width:760px){
+  .lp-layTop{flex-direction:column;gap:14px;}
+  .lp-artWrap{width:100%;flex:0 0 auto;}
+  .lp-art{max-height:128px;}
+}
 
 /* Two-column dashboard */
 .lp-cols{display:grid;grid-template-columns:1fr 316px;gap:16px;align-items:start;}
@@ -4971,14 +5042,14 @@ function obsRail() {
   var cfg = obsCfg(), order = obsSubOrder();
   var h = '<div class="lp-wordmark">' + esc(cfg.brand || 'REALM') + '</div>';
   h += '<button class="lp-navbtn' + (!OBS_SUB && !OBS_VIEW && !OBS_EXAM ? ' on' : '') + '" onclick="obsGoSub(null)">'
-     + '<span class="lp-navi">\u25C8</span>Overview</button>';
+     + '<span class="lp-navi">' + LP_ICON.home + '</span>Overview</button>';
   for (var i = 0; i < order.length; i++) {
     var k = order[i], pr = obsSubProgress(k);
     if (!pr.tot) continue;
     var full = pr.done >= pr.tot && pr.tot > 0;
     h += '<button class="lp-navbtn' + (OBS_SUB === k ? ' on' : '') + '" onclick="obsGoSub(\'' + k + '\')" '
        + 'title="' + esc(obsSubName(k)) + '">'
-       + '<span class="lp-navi">' + (full ? '\u25C9' : '\u25CB') + '</span>'
+       + '<span class="lp-navi">' + (full ? LP_ICON.badge : LP_ICON.doc) + '</span>'
        + '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
        + esc(k) + '</span>'
        + '<span style="font:600 9px/1 var(--mono);color:#2d5070">' + pr.done + '/' + pr.tot + '</span></button>';
@@ -5376,11 +5447,40 @@ function renderLaunchpad(keepScroll) {
   if (main) main.scrollTop = keepScroll ? y : 0;
 }
 
+// ── Icon set. Stroked SVG at 24x24, currentColor, 1.6 weight. Unicode
+// glyphs rendered as mojibake on half the devices and never looked drawn.
+var LP_ICON = (function () {
+  function w(d, extra) {
+    return '<svg class="lp-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+      + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + d + (extra || '') + '</svg>';
+  }
+  return {
+    home:    w('<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/>'),
+    layers:  w('<path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 17 12 21.5 21 17"/>'),
+    target:  w('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+    loop:    w('<path d="M4 8h12a4 4 0 0 1 0 8h-2"/><path d="m7 13-3 3 3 3"/><path d="M20 16H8a4 4 0 0 1 0-8h2"/><path d="m17 11 3-3-3-3"/>'),
+    doc:     w('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'),
+    cpu:     w('<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10.5 10.5h3v3h-3z"/><path d="M11 3v4M13 3v4M11 17v4M13 17v4M3 11h4M3 13h4M17 11h4M17 13h4"/>'),
+    wrench:  w('<path d="M15.5 4a5 5 0 0 0-6 6.5L4 16v4h4l5.5-5.5A5 5 0 0 0 20 8.5L17 11l-3-3 2.5-3Z"/>'),
+    spark:   w('<path d="M12 3v5M12 16v5M3 12h5M16 12h5"/><path d="M12 8.5 13.6 11 16 12l-2.4 1-1.6 2.5L10.4 13 8 12l2.4-1L12 8.5Z" fill="currentColor" stroke="none"/>'),
+    branch:  w('<circle cx="7" cy="5" r="2.2"/><circle cx="7" cy="19" r="2.2"/><circle cx="17" cy="12" r="2.2"/><path d="M7 7.2v9.6"/><path d="M9.2 12H14"/><path d="M7 12a5 5 0 0 1 5-5"/>'),
+    net:     w('<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="m10.6 6.8-4 9.2M13.4 6.8l4 9.2M7.2 18h9.6"/>'),
+    server:  w('<rect x="3" y="4" width="18" height="6" rx="1.6"/><rect x="3" y="14" width="18" height="6" rx="1.6"/><path d="M7 7h.01M7 17h.01"/>'),
+    case_:   w('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8.5 7V5.5a1.5 1.5 0 0 1 1.5-1.5h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12h18"/>'),
+    badge:   w('<circle cx="12" cy="9" r="5"/><path d="m8.5 13.5-1 7 4.5-2.5 4.5 2.5-1-7"/>'),
+    down:    w('<path d="M12 4v11"/><path d="m7.5 11 4.5 4.5L16.5 11"/><path d="M5 20h14"/>'),
+    up:      w('<path d="M12 20V9"/><path d="M7.5 13 12 8.5 16.5 13"/><path d="M5 4h14"/>'),
+    chev:    w('<path d="m9 5 7 7-7 7"/>'),
+    bolt:    w('<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>')
+  };
+})();
+var LP_LAYER_ICON_SVG = ['doc','cpu','wrench','spark','branch','net','server','case_','badge'];
+
 var LP_NAV = [
-  ['home',    '◈', 'Home'],
-  ['modules', '☷', 'Modules'],
-  ['plan',    '◴', 'The Plan'],
-  ['tracks',  '⇄', 'Tracks']
+  ['home',    'home',   'Home'],
+  ['modules', 'layers', 'Modules'],
+  ['plan',    'target', 'The Plan'],
+  ['tracks',  'loop',   'Tracks']
 ];
 function lpSideHTML() {
   var el = document.getElementById('lpSide');
@@ -5388,12 +5488,185 @@ function lpSideHTML() {
   var h = '<div class="lp-wordmark">LAUNCH<span>PAD</span></div>';
   LP_NAV.forEach(function (n) {
     h += '<button class="lp-navbtn' + (LP_TAB === n[0] && !LP_VIEW ? ' on' : '') + '" onclick="lpTab(\'' + n[0] + '\')">'
-       + '<span class="lp-navi">' + n[1] + '</span>' + n[2] + '</button>';
+       + '<span class="lp-navi">' + (LP_ICON[n[1]] || '') + '</span>' + n[2] + '</button>';
   });
   h += '<div class="lp-side-foot">Build it.<br>Explain it.<br>Ship it.</div>';
   el.innerHTML = h;
 }
 function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
+
+// ── Hero art. Procedural, not photographic: an offline PWA cannot ship a
+// 400KB render, and generated art stays crisp at any density where a raster
+// would not. Earth limb, atmosphere, starfield, and an ascending trajectory.
+// ── Layer art. One small animated scene per layer, sitting where the comp
+// puts a screenshot. Abstract on purpose: it should read as the shape of the
+// work rather than as a picture of a screen.
+function lpLayerArt(n) {
+  var D = 'stroke="#22456e"', A = 'stroke="#4db8ff"', C = 'stroke="#00d4ff"';
+  function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true">' + inner + '</svg>'; }
+  var rows = [];
+
+  // L0 The Contract — a runway bar and a marker landing on a decision
+  rows[0] = svg('<text x="14" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">RUNWAY</text>'
+    + '<rect x="14" y="52" width="152" height="8" rx="4" fill="#0d1c31"/>'
+    + '<rect x="14" y="52" height="8" rx="4" fill="#4db8ff" opacity=".8"><animate attributeName="width" values="30;100;30" dur="6s" repeatCount="indefinite"/></rect>'
+    + '<circle cy="56" r="4.5" fill="#00d4ff"><animate attributeName="cx" values="44;114;44" dur="6s" repeatCount="indefinite"/></circle>'
+    + '<text x="14" y="84" font-size="8" fill="#5b7fa6">the deadline is computed</text>');
+
+  // L1 The Machine — a call stack pushing and popping
+  var st = '';
+  for (var i = 0; i < 3; i++) {
+    st += '<rect x="30" y="' + (74 - i * 20) + '" width="120" height="16" rx="3" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
+        + '<rect x="30" y="' + (74 - i * 20) + '" width="120" height="16" rx="3" fill="#4db8ff" opacity="0">'
+        + '<animate attributeName="opacity" values="0;.34;.34;0" keyTimes="0;' + (0.12 + i * 0.1).toFixed(2)
+        + ';' + (0.6 - i * 0.1).toFixed(2) + ';1" dur="5s" repeatCount="indefinite"/></rect>';
+  }
+  rows[1] = svg('<text x="30" y="26" font-size="8" fill="#5b7fa6" letter-spacing="1">CALL STACK</text>' + st
+    + '<circle cx="160" r="3.5" fill="#00d4ff"><animate attributeName="cy" values="82;42;82" dur="5s" repeatCount="indefinite"/></circle>');
+
+  // L2 The Craft I — a test grid going green, one stubborn survivor
+  var g = '';
+  for (i = 0; i < 12; i++) {
+    var cx = 26 + (i % 6) * 26, cy = 46 + Math.floor(i / 6) * 24, red = (i === 7);
+    g += '<rect x="' + cx + '" y="' + cy + '" width="18" height="18" rx="4" fill="' + (red ? '#2a1116' : '#0d1c31')
+       + '" stroke="' + (red ? '#ff4455' : '#22456e') + '" stroke-width="1"/>';
+    if (!red) g += '<rect x="' + cx + '" y="' + cy + '" width="18" height="18" rx="4" fill="#4db8ff" opacity="0">'
+       + '<animate attributeName="opacity" values="0;0;.55;.55" keyTimes="0;' + (0.08 + i * 0.05).toFixed(2)
+       + ';' + (0.16 + i * 0.05).toFixed(2) + ';1" dur="6s" repeatCount="indefinite"/></rect>';
+  }
+  rows[2] = svg('<text x="26" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SUITE</text>'
+    + '<text x="118" y="30" font-size="8" fill="#ff4455">1 survives</text>' + g);
+
+  // L3 The AI Production Core — tokens streaming out of a prompt
+  var tk = '';
+  for (i = 0; i < 6; i++) {
+    tk += '<rect y="' + (52 + (i % 2) * 12) + '" width="14" height="7" rx="3" fill="#4db8ff">'
+        + '<animate attributeName="x" values="68;' + (150 - i * 4) + '" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/>'
+        + '<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.7;1" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/></rect>';
+  }
+  rows[3] = svg('<text x="14" y="32" font-size="8" fill="#5b7fa6" letter-spacing="1">TOKENS</text>'
+    + '<rect x="14" y="44" width="46" height="32" rx="5" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
+    + '<text x="37" y="64" font-size="7.5" fill="#7dd3fc" text-anchor="middle">PROMPT</text>' + tk
+    + '<text x="14" y="96" font-size="8" fill="#5b7fa6">measured, not guessed</text>');
+
+  // L4 The Craft II — a branch leaving main and merging back
+  var dots = '';
+  [24, 60, 96, 132, 156].forEach(function (x) {
+    dots += '<circle cx="' + x + '" cy="78" r="4" fill="#0d1c31" stroke="#4db8ff" stroke-width="1.4"/>';
+  });
+  rows[4] = svg('<text x="24" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">HISTORY</text>'
+    + '<path d="M24 78 H156" ' + D + ' stroke-width="1.4" fill="none"/>'
+    + '<path d="M60 78 C 78 78, 82 48, 100 48 H124 C 142 48, 146 78, 156 78" ' + A + ' stroke-width="1.4" fill="none" '
+    + 'stroke-dasharray="160" stroke-dashoffset="160"><animate attributeName="stroke-dashoffset" values="160;0" dur="4.5s" repeatCount="indefinite"/></path>'
+    + dots + '<circle cx="100" cy="48" r="4" fill="#0d1c31" stroke="#00d4ff" stroke-width="1.4"/>'
+    + '<circle cx="124" cy="48" r="4" fill="#0d1c31" stroke="#00d4ff" stroke-width="1.4"/>');
+
+  // L5 The AI Layer — a query reaching the nearest candidate
+  var pts = [[46,46],[70,74],[98,40],[120,68],[144,52],[60,94],[130,92]], cand = '';
+  pts.forEach(function (pt) { cand += '<circle cx="' + pt[0] + '" cy="' + pt[1] + '" r="3" fill="#22456e"/>'; });
+  rows[5] = svg('<text x="14" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">RETRIEVAL</text>' + cand
+    + '<circle cx="88" cy="60" r="4.5" fill="#00d4ff"><animate attributeName="r" values="4.5;6.5;4.5" dur="3s" repeatCount="indefinite"/></circle>'
+    + '<circle cx="24" cy="66" r="5" fill="none" ' + A + ' stroke-width="1.5"/>'
+    + '<line x1="29" y1="66" x2="83" y2="61" ' + C + ' stroke-width="1.2" stroke-dasharray="58" stroke-dashoffset="58">'
+    + '<animate attributeName="stroke-dashoffset" values="58;0;0;58" keyTimes="0;.35;.75;1" dur="4s" repeatCount="indefinite"/></line>'
+    + '<text x="14" y="108" font-size="8" fill="#5b7fa6">recall@k, measured</text>');
+
+  // L6 Product and Platform — a pipeline advancing stage by stage
+  var pipe = '';
+  for (i = 0; i < 4; i++) {
+    var px = 18 + i * 40;
+    pipe += '<rect x="' + px + '" y="50" width="28" height="22" rx="5" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
+          + '<rect x="' + px + '" y="50" width="28" height="22" rx="5" fill="#4db8ff" opacity="0">'
+          + '<animate attributeName="opacity" values="0;.5;.5;0" keyTimes="0;' + (0.1 + i * 0.18).toFixed(2)
+          + ';' + (0.34 + i * 0.18).toFixed(2) + ';1" dur="5.5s" repeatCount="indefinite"/></rect>';
+    if (i < 3) pipe += '<line x1="' + (px + 28) + '" y1="61" x2="' + (px + 40) + '" y2="61" ' + D + ' stroke-width="1.2"/>';
+  }
+  rows[6] = svg('<text x="18" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
+    + pipe + '<text x="18" y="92" font-size="8" fill="#5b7fa6">rollback rehearsed</text>');
+
+  // L7 The Market — the cold funnel beside the referred door
+  var drops = '';
+  for (i = 0; i < 5; i++) {
+    drops += '<circle cx="' + (32 + i * 11) + '" r="2.6" fill="#7dd3fc">'
+          + '<animate attributeName="cy" values="36;88" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/>'
+          + '<animate attributeName="opacity" values="1;1;0" keyTimes="0;.5;1" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/></circle>';
+  }
+  rows[7] = svg('<text x="20" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">COLD</text>'
+    + '<text x="110" y="30" font-size="8" fill="#4db8ff" letter-spacing="1">REFERRED</text>'
+    + '<path d="M20 40 H90 L72 68 V90 H38 V68 Z" fill="#4db8ff" fill-opacity=".08" ' + D + ' stroke-width="1.3"/>' + drops
+    + '<rect x="110" y="44" width="50" height="46" rx="7" fill="#0d1c31" ' + A + ' stroke-width="1.3"/>'
+    + '<circle cx="135" cy="60" r="5.5" fill="none" ' + C + ' stroke-width="1.3"/>'
+    + '<path d="M125 80 a10 10 0 0 1 20 0" fill="none" ' + C + ' stroke-width="1.3"/>'
+    + '<circle cx="135" cy="67" fill="none" stroke="#00d4ff" stroke-width="1">'
+    + '<animate attributeName="r" values="9;24" dur="3s" repeatCount="indefinite"/>'
+    + '<animate attributeName="opacity" values=".65;0" dur="3s" repeatCount="indefinite"/></circle>');
+
+  // L8 Employed Mode — the weekly budget changing shape on hire day
+  var bars = '';
+  for (i = 0; i < 8; i++) {
+    var bx = 20 + i * 19, pre = i < 4;
+    bars += '<rect x="' + bx + '" width="12" rx="3" fill="' + (pre ? '#22456e' : '#4db8ff') + '" opacity="' + (pre ? '.75' : '.9') + '">'
+         + '<animate attributeName="height" values="' + (pre ? '44;44' : '44;18') + '" dur="4s" repeatCount="indefinite"/>'
+         + '<animate attributeName="y" values="' + (pre ? '34;34' : '34;60') + '" dur="4s" repeatCount="indefinite"/></rect>';
+  }
+  rows[8] = svg('<text x="20" y="22" font-size="8" fill="#5b7fa6" letter-spacing="1">18 H / WK</text>'
+    + '<text x="99" y="22" font-size="8" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
+    + '<line x1="94" y1="28" x2="94" y2="86" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3 3"/>'
+    + '<text x="20" y="104" font-size="8" fill="#5b7fa6">the plan succeeding</text>');
+
+  return rows[n] || '';
+}
+
+function lpHeroArt() {
+  var stars = '', i, x, y, r, d;
+  // Deterministic scatter — a seeded LCG so the sky is identical every render
+  // and the layout never shifts between frames.
+  var seed = 20260920;
+  function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+  for (i = 0; i < 62; i++) {
+    x = (rnd() * 520).toFixed(1); y = (rnd() * 150).toFixed(1);
+    r = (rnd() * 1.05 + 0.35).toFixed(2); d = (rnd() * 6).toFixed(1);
+    stars += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#cfe6ff" opacity="' + (0.25 + rnd() * 0.5).toFixed(2) + '">'
+      + '<animate attributeName="opacity" values="' + (0.15 + rnd() * 0.3).toFixed(2) + ';0.9;' + (0.15 + rnd() * 0.3).toFixed(2)
+      + '" dur="' + (3.5 + rnd() * 4).toFixed(1) + 's" begin="' + d + 's" repeatCount="indefinite"/></circle>';
+  }
+  return '<svg class="lp-heroArt" viewBox="0 0 520 260" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">'
+    + '<defs>'
+    + '<radialGradient id="lpAtm" cx="50%" cy="100%" r="62%">'
+    +   '<stop offset="55%" stop-color="#4db8ff" stop-opacity="0"/>'
+    +   '<stop offset="86%" stop-color="#4db8ff" stop-opacity=".30"/>'
+    +   '<stop offset="100%" stop-color="#9fe4ff" stop-opacity=".55"/>'
+    + '</radialGradient>'
+    + '<linearGradient id="lpEarth" x1="0" y1="0" x2="0" y2="1">'
+    +   '<stop offset="0%" stop-color="#0d3a63"/><stop offset="100%" stop-color="#040a14"/>'
+    + '</linearGradient>'
+    + '<linearGradient id="lpTraj" x1="0" y1="1" x2="1" y2="0">'
+    +   '<stop offset="0%" stop-color="#4db8ff" stop-opacity="0"/>'
+    +   '<stop offset="100%" stop-color="#8fe0ff" stop-opacity=".95"/>'
+    + '</linearGradient>'
+    + '<filter id="lpGlow"><feGaussianBlur stdDeviation="3.4" result="b"/>'
+    +   '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '</defs>'
+    + stars
+    // Limb of the planet, with the atmosphere sitting on top of it
+    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="url(#lpEarth)"/>'
+    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="url(#lpAtm)"/>'
+    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="none" stroke="#9fe4ff" stroke-width="1.4" opacity=".8"/>'
+    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="none" stroke="#4db8ff" stroke-width="7" opacity=".16" filter="url(#lpGlow)"/>'
+    // Ascent path, drawn as a dash that travels
+    + '<path id="lpPath" d="M72 246 C 150 232, 236 196, 300 140 S 418 44, 470 18" fill="none" '
+    +   'stroke="url(#lpTraj)" stroke-width="1.5" stroke-dasharray="4 7" opacity=".85">'
+    +   '<animate attributeName="stroke-dashoffset" values="120;0" dur="7s" repeatCount="indefinite"/></path>'
+    // The vehicle
+    + '<g filter="url(#lpGlow)">'
+    +   '<circle r="3.1" fill="#d8f2ff">'
+    +     '<animateMotion dur="7s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear">'
+    +       '<mpath href="#lpPath"/></animateMotion>'
+    +     '<animate attributeName="opacity" values="0;1;1;.15" keyTimes="0;.12;.8;1" dur="7s" repeatCount="indefinite"/>'
+    +   '</circle>'
+    + '</g>'
+    + '</svg>';
+}
 
 function lpRing(pct) {
   var r = 38, c = 2 * Math.PI * r;
@@ -5403,7 +5676,7 @@ function lpRing(pct) {
     + 'stroke-dashoffset="' + (c * (1 - pct / 100)) + '" style="--dash:' + c + '"/></svg>'
     + '<div class="lp-rtx"><div class="lp-rv">' + pct + '%</div><div class="lp-rk">READY</div></div></div>';
 }
-var LP_LAYER_ICON = ['◉','⚙','⚒','▲','⊞','✦','▣','➤','✔'];
+function lpLayerIcon(n){ return LP_ICON[LP_LAYER_ICON_SVG[n]] || LP_ICON.doc; }
 
 // Export/import parity with the other realms. Progress lives in localStorage,
 // which is one device and one browser profile - a cleared cache loses a year.
@@ -5443,13 +5716,13 @@ function lpHomeHTML(API) {
   var P = lpProgress(), sum = API.progressSummary(P), pl = API.plan(LP_ST.setup || {});
   var avail = API.available(P);
 
-  var h = '<div class="lp-hero mo-sheen">';
+  var h = '<div class="lp-hero lp-hero-lg mo-sheen">' + lpHeroArt() + '<div class="lp-heroIn">';
   h += '<div class="lp-greet">Welcome back,</div>';
-  h += '<div class="lp-name">Future Engineer</div>';
+  h += '<div class="lp-name">Future <b>Engineer</b></div>';
   h += '<div class="lp-sub">You do not advance by reading. You advance by shipping a working thing '
      + 'and being able to explain it out loud.</div>';
   h += '<div class="lp-heroBar"><span style="width:' + sum.pct + '%"></span></div>';
-  h += '</div>';
+  h += '</div></div>';
 
   h += '<div class="lp-cols"><div>';
 
@@ -5461,7 +5734,7 @@ function lpHomeHTML(API) {
     var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
     var got = mods.reduce(function (a, m) { return a + ((P[m.id] && P[m.id].gate) ? m.hours : 0) }, 0);
     var pct = tot ? Math.round(got / tot * 100) : 0;
-    h += '<div class="lp-brow"><div class="lp-bico">' + (LP_LAYER_ICON[Lr.id] || '◆') + '</div>'
+    h += '<div class="lp-brow"><div class="lp-bico">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div class="lp-bwrap"><div class="lp-blab">' + esc(Lr.name) + '</div>'
        + '<div class="lp-btr"><span style="width:' + pct + '%"></span></div></div>'
        + '<div class="lp-bpct">' + pct + '%</div></div>';
@@ -5474,9 +5747,9 @@ function lpHomeHTML(API) {
     var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
     var done = mods.filter(function (m) { return P[m.id] && P[m.id].gate }).length;
     var pct = mods.length ? Math.round(done / mods.length * 100) : 0;
-    h += '<div class="lp-lay mo-lift"><div class="lp-layh"><div class="lp-layi">'
-       + (LP_LAYER_ICON[Lr.id] || '◆') + '</div><div style="flex:1;min-width:0">'
-       + '<div class="lp-layt">L' + Lr.id + ' · ' + esc(Lr.name) + '</div>'
+    h += '<div class="lp-lay mo-lift"><div class="lp-layTop"><div class="lp-layMain">'
+       + '<div class="lp-layh"><div class="lp-layi">' + lpLayerIcon(Lr.id) + '</div>'
+       + '<div style="flex:1;min-width:0"><div class="lp-layt">L' + Lr.id + ' \u00B7 ' + esc(Lr.name) + '</div>'
        + '<div class="lp-layd">' + esc(Lr.purpose) + '</div></div></div>';
     h += '<div class="lp-mods">';
     mods.forEach(function (m) {
@@ -5484,7 +5757,8 @@ function lpHomeHTML(API) {
       h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '">'
          + '<span class="lp-dot"></span>' + esc(m.title) + '</div>';
     });
-    h += '</div><div class="lp-layf">'
+    h += '</div></div><div class="lp-artWrap">' + lpLayerArt(Lr.id) + '</div></div>';
+    h += '<div class="lp-layf">'
        + '<button class="lp-go mo-btn" onclick="lpTab(\'modules\')">Continue →</button>'
        + '<div class="lp-pctlab">' + done + '/' + mods.length + ' · ' + tot + 'h · ' + pct + '% complete</div>'
        + '</div></div>';
@@ -5520,18 +5794,18 @@ function lpHomeHTML(API) {
   h += '</div>';
 
   h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Quick tools</div></div>'
-     + '<button class="lp-link mo-lift" onclick="lpTab(\'plan\')"><span class="lp-lki">◴</span>'
+     + '<button class="lp-link mo-lift" onclick="lpTab(\'plan\')"><span class="lp-lki">' + LP_ICON.target + '</span>'
      + '<div><div class="lp-lkt">The Plan</div><div class="lp-lks">Runway, hours, which program</div></div>'
-     + '<span class="lp-arrow">›</span></button>'
-     + '<button class="lp-link mo-lift" onclick="lpTab(\'tracks\')"><span class="lp-lki">⇄</span>'
+     + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
+     + '<button class="lp-link mo-lift" onclick="lpTab(\'tracks\')"><span class="lp-lki">' + LP_ICON.loop + '</span>'
      + '<div><div class="lp-lkt">Parallel tracks</div><div class="lp-lks">The 10 continuous habits</div></div>'
-     + '<span class="lp-arrow">›</span></button>'
-     + '<button class="lp-link mo-lift" onclick="lpExport()"><span class="lp-lki">↓</span>'
+     + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
+     + '<button class="lp-link mo-lift" onclick="lpExport()"><span class="lp-lki">' + LP_ICON.down + '</span>'
      + '<div><div class="lp-lkt">Export progress</div><div class="lp-lks">Back up to a file</div></div>'
-     + '<span class="lp-arrow">›</span></button>'
-     + '<button class="lp-link mo-lift" onclick="lpTriggerImport()"><span class="lp-lki">↑</span>'
+     + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
+     + '<button class="lp-link mo-lift" onclick="lpTriggerImport()"><span class="lp-lki">' + LP_ICON.up + '</span>'
      + '<div><div class="lp-lkt">Import</div><div class="lp-lks">Restore from a backup</div></div>'
-     + '<span class="lp-arrow">›</span></button>'
+     + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
      + '<input type="file" id="lpImportFile" accept="application/json" style="display:none" onchange="lpImport(event)">'
      + '</div>';
 
