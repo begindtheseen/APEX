@@ -1322,7 +1322,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-li:first-child{border-top:0;padding-top:0;}
 #launchpadApp .lx-li b{flex-shrink:0;width:14px;height:14px;margin-top:2px;border-radius:50%;
   border:1.3px solid #3a5a7a;display:block;}
-#launchpadApp .lx-li p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-li p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;overflow-wrap:anywhere;}
 #launchpadApp .lx-li.num b{border-color:#2b4a6b;color:var(--rc2);font:500 8.5px/12px var(--sans);
   text-align:center;}
 #launchpadApp .lx-li.bad b{border:0;width:11px;text-align:center;color:#e0675c;font:500 12px/1 var(--sans);}
@@ -1331,7 +1331,8 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-wd b{font:600 12px/1.5 var(--sans);color:var(--rc2);letter-spacing:.01em;word-break:break-word;}
 #launchpadApp .lx-wd p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
 @media (max-width:520px){#launchpadApp .lx-wd{grid-template-columns:1fr;gap:2px;}}
-#launchpadApp .lx-body{font:400 13px/1.7 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-body{font:400 13px/1.7 var(--sans);color:#b9c6d6;overflow-wrap:anywhere;}
+#launchpadApp .lx-gv,#launchpadApp .lx-wd p,#launchpadApp .lp-tkr,#launchpadApp .lp-dp{overflow-wrap:anywhere;}
 #launchpadApp .lx-gate{border:1px solid #1b304a;border-radius:8px;overflow:hidden;}
 #launchpadApp .lx-gr{display:flex;gap:16px;padding:13px 15px;border-top:1px solid #0d2340;}
 #launchpadApp .lx-gr:first-child{border-top:0;}
@@ -1374,13 +1375,14 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-viz{border:1px solid var(--rline);border-radius:8px;background:#04101d;
   padding:0;overflow:hidden;margin-top:10px;}
 #launchpadApp .lp-vizBox{padding:14px 12px;}
+@media (max-width:430px){#launchpadApp .lp-vizBox{padding:12px 0;} #launchpadApp .lp-vizBox svg{max-width:none !important;}}
 
 /* ═══ RESPONSIVE ═════════════════════════════════════════════════
    The rail became a 187px strip on phones because a scoped desktop width
    out-specified the unscoped mobile one. Four tabs, equal quarters, no
    horizontal scrolling, and touch targets that clear 44px. */
 @media(max-width:900px){
-  #launchpadApp .lp-cols{grid-template-columns:1fr;}
+  #launchpadApp .lp-cols{grid-template-columns:minmax(0,1fr);}
 }
 @media(max-width:820px){
   #launchpadApp .lp-shell{flex-direction:column;}
@@ -5618,15 +5620,20 @@ function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRIC
 function lpLoad() {
   try {
     var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
-    LP_ST = { mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {}, ids: raw.ids || 1 };
-    // Modules were renumbered once, into ladder order. Progress saved under the
-    // old ids is carried across on first load and the map version is stamped.
-    if (LP_ST.ids < 2) {
-      var OLD = {"M0A": "M1", "M0B": "M2", "M1": "M3", "M2": "M4", "M4": "M5", "M9": "M6", "M3": "M7", "M5": "M8", "M6": "M9", "M7": "M10", "M10": "M11", "M11": "M12", "M21": "M13", "M12": "M14", "M13": "M15", "M14": "M16", "M15": "M17", "M16": "M18", "M17": "M19", "M18": "M20", "M19": "M21", "M20": "M22", "M22": "M23", "M8": "M24", "M23": "M25", "M24": "M26", "M25": "M27", "M26": "M28", "M27": "M29", "M28": "M30", "M29": "M31", "M30": "M32"}, moved = {};
-      for (var k in LP_ST.mods) moved[OLD[k] || k] = LP_ST.mods[k];
-      LP_ST.mods = moved; LP_ST.ids = 2; lpSave();
-    }
-  } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{} }; }
+    LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {}, ids: raw.ids || 1 });
+    if (LP_ST.migrated) { delete LP_ST.migrated; lpSave(); }
+  } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{}, ids:2 }; }
+}
+// Modules were renumbered once, into ladder order. Progress saved under the
+// old ids is carried across on first load (or import) and the map version is
+// stamped, so the rename can never run twice over the new ids.
+function lpMigrate(st) {
+  if (!st.ids || st.ids < 2) {
+    var OLD = {"M0A": "M1", "M0B": "M2", "M1": "M3", "M2": "M4", "M4": "M5", "M9": "M6", "M3": "M7", "M5": "M8", "M6": "M9", "M7": "M10", "M10": "M11", "M11": "M12", "M21": "M13", "M12": "M14", "M13": "M15", "M14": "M16", "M15": "M17", "M16": "M18", "M17": "M19", "M18": "M20", "M19": "M21", "M20": "M22", "M22": "M23", "M8": "M24", "M23": "M25", "M24": "M26", "M25": "M27", "M26": "M28", "M27": "M29", "M28": "M30", "M29": "M31", "M30": "M32"}, moved = {};
+    for (var k in st.mods) moved[OLD[k] || k] = st.mods[k];
+    st.mods = moved; st.ids = 2; st.migrated = true;
+  }
+  return st;
 }
 function lpSave() {
   try { localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST)); } catch (e) {}
@@ -5669,7 +5676,7 @@ var LP_STEPS = ['delta', 'artifact', 'gate'];
 function lpToggle(id, step) {
   var API = lpApi(); if (!API) return;
   var P = lpProgress();
-  var m = LP_ST.mods[id] || (LP_ST.mods[id] = {});
+  var m = LP_ST.mods[id] || {};
   var i = LP_STEPS.indexOf(step);
 
   // 1. A module you have not opened yet has nothing to claim.
@@ -5683,11 +5690,13 @@ function lpToggle(id, step) {
     return;
   }
   // 2. In order. The rail says "in order" and now means it.
-  if (!m[step] && i > 0 && !m[LP_STEPS[i - 1]]) {
-    toast(i === 1 ? 'Write the DELTA first — that is the reading'
-                  : 'Build the artifact before a referee can pass it', 'warn');
-    return;
+  if (!m[step] && i > 0) {
+    var first = -1;
+    for (var q = 0; q < i; q++) { if (!m[LP_STEPS[q]]) { first = q; break; } }
+    if (first === 0) { toast('Write the delta first — that is the reading', 'warn'); return; }
+    if (first === 1) { toast('Build the artifact before a referee can pass it', 'warn'); return; }
   }
+  LP_ST.mods[id] = m;
   // 3. Un-ticking a step un-ticks everything that followed from it, so the
   //    record can never say "gate passed, artifact not built".
   if (m[step]) {
@@ -5696,7 +5705,18 @@ function lpToggle(id, step) {
     m[step] = true;
   }
   lpSave();
+  lpRerenderKeepingFocus();
+}
+// A tick rebuilds the view, which would drop keyboard focus on the body; put
+// it back on the same row so Tab continues where it was.
+function lpRerenderKeepingFocus() {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#launchpadApp .lp-chk'));
+  var at = rows.indexOf(document.activeElement);
   renderLaunchpad(true);
+  if (at >= 0) {
+    var again = document.querySelectorAll('#launchpadApp .lp-chk');
+    if (again[at]) again[at].focus();
+  }
 }
 function lpSet(field, val) {
   LP_ST.setup = LP_ST.setup || {};
@@ -5710,6 +5730,8 @@ function lpSet(field, val) {
   var API = lpApi();
   if (v && API) {
     v.innerHTML = lpVerdictHTML(API);
+    var sc = document.getElementById('lpSpineCard');
+    if (sc) sc.innerHTML = lpSpineCardHTML(API);
     var panel = document.getElementById('lpSetup');
     if (panel) {
       var rec = API.plan(LP_ST.setup).recommend;
@@ -5720,7 +5742,7 @@ function lpSet(field, val) {
 function lpFlag(key) {
   LP_ST.flagship[key] = !LP_ST.flagship[key];
   lpSave();
-  renderLaunchpad(true);
+  lpRerenderKeepingFocus();
 }
 
 function renderLaunchpad(keepScroll) {
@@ -5757,6 +5779,7 @@ function renderLaunchpad(keepScroll) {
   void host.offsetWidth;
   if (!keepScroll) host.classList.add('mo-in');
   if (main) main.scrollTop = keepScroll ? y : 0;
+  lpStillIfAsked();
 }
 
 // ── Icon set. Stroked SVG at 24x24, currentColor, 1.6 weight. Unicode
@@ -5844,7 +5867,8 @@ function lpLayerArt(n) {
   var rows = [];
 
   // L0 The Contract — a runway bar and a marker landing on a decision
-  rows[0] = svg('<text x="14" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">RUNWAY</text>'
+  var planSet = (function () { try { return lpApi().plan(LP_ST.setup || {}).recommend !== 'unset'; } catch (e) { return false; } })();
+  rows[0] = svg('<text x="14" y="34" font-size="10" fill="#5b7fa6" letter-spacing="1">' + (planSet ? 'FINISH' : 'RUNWAY') + '</text>'
     + '<rect x="14" y="52" width="152" height="8" rx="4" fill="#0d1c31"/>'
     + '<rect x="14" y="52" height="8" rx="4" fill="#4db8ff" opacity=".8"><animate attributeName="width" values="30;100;30" dur="6s" repeatCount="indefinite"/></rect>'
     + '<circle cy="56" r="4.5" fill="#00d4ff"><animate attributeName="cx" values="44;114;44" dur="6s" repeatCount="indefinite"/></circle>'
@@ -5860,7 +5884,7 @@ function lpLayerArt(n) {
         + '<animate attributeName="opacity" values="0;.34;.34;0" keyTimes="0;' + (0.12 + i * 0.1).toFixed(2)
         + ';' + (0.6 - i * 0.1).toFixed(2) + ';1" dur="5s" repeatCount="indefinite"/></rect>';
   }
-  rows[1] = svg('<text x="30" y="26" font-size="8" fill="#5b7fa6" letter-spacing="1">HOW CODE RUNS</text>' + st
+  rows[1] = svg('<text x="30" y="26" font-size="10" fill="#5b7fa6" letter-spacing="1">HOW CODE RUNS</text>' + st
     + '<circle cx="160" r="3.5" fill="#00d4ff"><animate attributeName="cy" values="82;42;82" dur="5s" repeatCount="indefinite"/></circle>');
 
   // L2 The Craft I — a test grid going green, one stubborn survivor
@@ -5873,27 +5897,27 @@ function lpLayerArt(n) {
        + '<animate attributeName="opacity" values="0;0;.55;.55" keyTimes="0;' + (0.08 + i * 0.05).toFixed(2)
        + ';' + (0.16 + i * 0.05).toFixed(2) + ';1" dur="6s" repeatCount="indefinite"/></rect>';
   }
-  rows[2] = svg('<text x="26" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">TESTS</text>'
-    + '<text x="118" y="30" font-size="8" fill="#ff4455">1 survives</text>' + g);
+  rows[2] = svg('<text x="26" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">TESTS</text>'
+    + '<text x="112" y="30" font-size="10" fill="#ff4455">1 bug left</text>' + g);
 
   // L3 The AI Production Core — tokens streaming out of a prompt
   var tk = '';
   for (i = 0; i < 6; i++) {
-    tk += '<rect y="' + (52 + (i % 2) * 12) + '" width="14" height="7" rx="3" fill="#4db8ff">'
+    tk += '<rect x="68" y="' + (52 + (i % 2) * 12) + '" width="14" height="7" rx="3" fill="#4db8ff" opacity="0">'
         + '<animate attributeName="x" values="68;' + (150 - i * 4) + '" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/>'
         + '<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.7;1" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/></rect>';
   }
-  rows[3] = svg('<text x="14" y="32" font-size="8" fill="#5b7fa6" letter-spacing="1">THE MODEL</text>'
+  rows[3] = svg('<text x="14" y="32" font-size="10" fill="#5b7fa6" letter-spacing="1">THE MODEL</text>'
     + '<rect x="14" y="44" width="46" height="32" rx="5" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
     + '<text x="37" y="64" font-size="7.5" fill="#7dd3fc" text-anchor="middle">PROMPT</text>' + tk
-    + '<text x="14" y="96" font-size="8" fill="#5b7fa6">measured, not guessed</text>');
+    + '<text x="14" y="96" font-size="9.5" fill="#5b7fa6">measured, not guessed</text>');
 
   // L4 The Craft II — a branch leaving main and merging back
   var dots = '';
   [24, 60, 96, 132, 156].forEach(function (x) {
     dots += '<circle cx="' + x + '" cy="78" r="4" fill="#0d1c31" stroke="#4db8ff" stroke-width="1.4"/>';
   });
-  rows[4] = svg('<text x="24" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SHARED CODE</text>'
+  rows[4] = svg('<text x="24" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">SHARED CODE</text>'
     + '<path d="M24 78 H156" ' + D + ' stroke-width="1.4" fill="none"/>'
     + '<path d="M60 78 C 78 78, 82 48, 100 48 H124 C 142 48, 146 78, 156 78" ' + A + ' stroke-width="1.4" fill="none" '
     + 'stroke-dasharray="160" stroke-dashoffset="160"><animate attributeName="stroke-dashoffset" values="160;0" dur="4.5s" repeatCount="indefinite"/></path>'
@@ -5903,12 +5927,12 @@ function lpLayerArt(n) {
   // L5 The AI Layer — a query reaching the nearest candidate
   var pts = [[46,46],[70,74],[98,40],[120,68],[144,52],[60,94],[130,92]], cand = '';
   pts.forEach(function (pt) { cand += '<circle cx="' + pt[0] + '" cy="' + pt[1] + '" r="3" fill="#22456e"/>'; });
-  rows[5] = svg('<text x="14" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SEARCH</text>' + cand
+  rows[5] = svg('<text x="14" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">SEARCH</text>' + cand
     + '<circle cx="88" cy="60" r="4.5" fill="#00d4ff"><animate attributeName="r" values="4.5;6.5;4.5" dur="3s" repeatCount="indefinite"/></circle>'
     + '<circle cx="24" cy="66" r="5" fill="none" ' + A + ' stroke-width="1.5"/>'
     + '<line x1="29" y1="66" x2="83" y2="61" ' + C + ' stroke-width="1.2" stroke-dasharray="58" stroke-dashoffset="58">'
     + '<animate attributeName="stroke-dashoffset" values="58;0;0;58" keyTimes="0;.35;.75;1" dur="4s" repeatCount="indefinite"/></line>'
-    + '<text x="14" y="108" font-size="8" fill="#5b7fa6">hits, measured</text>');
+    + '<text x="14" y="108" font-size="9.5" fill="#5b7fa6">hits, measured</text>');
 
   // L6 Product and Platform — a pipeline advancing stage by stage
   var pipe = '';
@@ -5920,18 +5944,18 @@ function lpLayerArt(n) {
           + ';' + (0.34 + i * 0.18).toFixed(2) + ';1" dur="5.5s" repeatCount="indefinite"/></rect>';
     if (i < 3) pipe += '<line x1="' + (px + 28) + '" y1="61" x2="' + (px + 40) + '" y2="61" ' + D + ' stroke-width="1.2"/>';
   }
-  rows[6] = svg('<text x="18" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
-    + pipe + '<text x="18" y="92" font-size="8" fill="#5b7fa6">undo rehearsed</text>');
+  rows[6] = svg('<text x="18" y="34" font-size="10" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
+    + pipe + '<text x="18" y="92" font-size="9.5" fill="#5b7fa6">undo rehearsed</text>');
 
   // L7 The Market — the cold funnel beside the referred door
   var drops = '';
   for (i = 0; i < 5; i++) {
-    drops += '<circle cx="' + (32 + i * 11) + '" r="2.6" fill="#7dd3fc">'
+    drops += '<circle cx="' + (32 + i * 11) + '" cy="36" r="2.6" fill="#7dd3fc" opacity="0">'
           + '<animate attributeName="cy" values="36;88" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/>'
           + '<animate attributeName="opacity" values="1;1;0" keyTimes="0;.5;1" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/></circle>';
   }
-  rows[7] = svg('<text x="20" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">COLD</text>'
-    + '<text x="110" y="30" font-size="8" fill="#4db8ff" letter-spacing="1">REFERRED</text>'
+  rows[7] = svg('<text x="20" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">COLD</text>'
+    + '<text x="106" y="30" font-size="10" fill="#4db8ff" letter-spacing="1">REFERRED</text>'
     + '<path d="M20 40 H90 L72 68 V90 H38 V68 Z" fill="#4db8ff" fill-opacity=".08" ' + D + ' stroke-width="1.3"/>' + drops
     + '<rect x="110" y="44" width="50" height="46" rx="7" fill="#0d1c31" ' + A + ' stroke-width="1.3"/>'
     + '<circle cx="135" cy="60" r="5.5" fill="none" ' + C + ' stroke-width="1.3"/>'
@@ -5948,10 +5972,10 @@ function lpLayerArt(n) {
          + '<animate attributeName="height" values="' + (pre ? '44;44' : '44;18') + '" dur="4s" repeatCount="indefinite"/>'
          + '<animate attributeName="y" values="' + (pre ? '34;34' : '34;60') + '" dur="4s" repeatCount="indefinite"/></rect>';
   }
-  rows[8] = svg('<text x="20" y="22" font-size="8" fill="#5b7fa6" letter-spacing="1">18 H / WK</text>'
-    + '<text x="99" y="22" font-size="8" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
+  rows[8] = svg('<text x="20" y="22" font-size="10" fill="#5b7fa6" letter-spacing="1">18 H / WK</text>'
+    + '<text x="99" y="22" font-size="10" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
     + '<line x1="94" y1="28" x2="94" y2="86" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3 3"/>'
-    + '<text x="20" y="104" font-size="8" fill="#5b7fa6">the plan succeeding</text>');
+    + '<text x="20" y="104" font-size="9.5" fill="#5b7fa6">the plan succeeding</text>');
 
   return rows[n] || '';
 }
@@ -6107,7 +6131,7 @@ function lpLayerIcon(n){ return LP_ICON[LP_LAYER_ICON_SVG[n]] || LP_ICON.doc; }
 // which is one device and one browser profile - a cleared cache loses a year.
 function lpExport() {
   try {
-    var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup,
+    var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup, ids:LP_ST.ids || 2,
                  exportedAt:new Date().toISOString(), appVersion:(lpCfg().key || 'apex_launchpad_v1') };
     var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
@@ -6135,7 +6159,8 @@ function lpImport(ev) {
         toast('That file is not a LAUNCHPAD backup', 'warn'); ev.target.value = ''; return;
       }
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
-      LP_ST = { mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {} };
+      LP_ST = lpMigrate({ mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {}, ids:d.ids || 1 });
+      delete LP_ST.migrated;
       lpSave(); renderLaunchpad();
       toast('LAUNCHPAD progress restored', 'ok');
     } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
@@ -6159,7 +6184,8 @@ function lpHowHTML() {
     ['Flagship', 'One real app you keep extending. Eleven later modules build on it.'],
     ['Primary source', 'The official documentation or specification for the thing — not a tutorial about it.'],
     ['Rule 1', 'A gate with no referee is decorative.'],
-    ['Rule 2', 'The longest chain of modules sets how long this takes, not the hour sum.']
+    ['Rule 2', 'The longest chain of modules sets how long this takes, not the hour sum.'],
+    ['Rule 3', 'Read the official documentation before you build, and write down where it proved you wrong. That is the delta.']
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
@@ -6262,6 +6288,13 @@ function lpHomeHTML(API) {
   }
   var today = avail.filter(function (m) { return !m.trigger; });
   var later = avail.filter(function (m) { return m.trigger; });
+  var fgT = API.flagshipGate(P);
+  var l03done = AI_CURRICULUM.filter(function (m) { return m.layer <= 3; }).every(function (m) { return P[m.id] && P[m.id].gate; });
+  if (l03done && !fgT.open && !finished) {
+    h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpTab(\'modules\')">'
+       + '<span class="lp-box"></span><div><div class="lp-tt">Next: the hard gate</div>'
+       + '<div class="lp-ts">' + fgT.done + '/' + fgT.total + ' conditions · tick them on the Modules tab</div></div></div>';
+  }
   today.slice(0, 4).forEach(function (m) {
     h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lp-box"></span><div><div class="lp-tt">' + esc(m.title) + '</div>'
@@ -6364,7 +6397,6 @@ function lpModulesHTML(API) {
       h += '<span class="lp-modI">' + (pr.gate ? '✓' : m.id) + '</span>';
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
-      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-tag">Teaches ' + esc(o) + '</span>'; });
       if (m.trigger) h += '<span class="lp-tag">Starts by date</span>';
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites')
          + '</span></span></span>';
@@ -6427,7 +6459,7 @@ function lpTracksHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.loop
      + 'WHY THESE ARE SEPARATE</div></div>';
   [['They never finish', 'A module ends at a gate. A track runs the whole way.'],
-   ['They are counted', 'Their hours are in the headline total. Left out, the total would read 40% too low.'],
+   ['They are counted', 'Their hours are in the headline total. Left out, the total would read 29% too low.'],
    ['They are not optional', 'The job search and the open-source contributions are the two that get you hired.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
@@ -6444,6 +6476,23 @@ function lpTracksHTML(API) {
   return h;
 }
 
+// The Spine list, in its own container so The Plan can redraw it as the
+// numbers change without rebuilding the inputs the user is typing into.
+function lpSpineCardHTML(API) {
+  var pl = API.plan(LP_ST.setup || {}), P = lpProgress(), h = '';
+  if (pl.recommend !== 'spine' && pl.recommend !== 'full-tight') return '';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.layers
+     + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
+  AI_COMPRESSED_SPINE.forEach(function (id) {
+    var sm = API.byId(id); if (!sm) return;
+    var un = API.isUnlocked(id, P);
+    h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+       + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
+       + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h' + (un ? '' : ' · locked') + '</span></span>'
+       + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
+  });
+  return h + '</div>';
+}
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
   var pl2 = API.plan(st);
@@ -6464,18 +6513,7 @@ function lpPlanHTML(API) {
   h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
 
   h += '</div><div>';
-  if (pl2.recommend === 'spine' || pl2.recommend === 'full-tight') {
-    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.layers
-       + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
-    AI_COMPRESSED_SPINE.forEach(function (id) {
-      var sm = API.byId(id); if (!sm) return;
-      h += '<button class="lx-link" onclick="lpOpen(\'' + id + '\')">'
-         + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
-         + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h</span></span>'
-         + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
-    });
-    h += '</div>';
-  }
+  h += '<div id="lpSpineCard">' + lpSpineCardHTML(API) + '</div>';
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'WHAT THIS DECIDES</div></div>';
   [['Your deadline', 'What your runway and your weekly hours allow. Worked out, not guessed.'],
@@ -6501,11 +6539,11 @@ function lpVerdictHTML(API) {
     h += '<div class="lp-paths">';
     h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
        + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.fullHours + 'h with tracks · needs '
+       + '<div class="lp-ps">' + pl.moduleHours + 'h of modules + ' + pl.trackHours + 'h of tracks · needs '
        + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '—') + ' h/wk to fit your runway</div></div>';
     h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
        + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.spineHours + 'h with tracks · needs '
+       + '<div class="lp-ps">' + pl.spineModuleHours + 'h of modules + ' + pl.spineTrackHours + 'h of tracks · needs '
        + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '—') + ' h/wk</div></div>';
     h += '</div>';
   }
@@ -6561,7 +6599,8 @@ function lpDetailHTML(API, id) {
      + '<span class="lx-mt">' + m.hours + 'h</span>'
      + '<span class="lx-mt">L' + m.layer + (layer ? ' ' + esc(layer.name) : '') + '</span></div>';
   h += '<div class="lx-title">' + esc(m.title) + '</div>';
-  h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed.' : 'No prerequisites — this is where the curriculum starts.')
+  var fgH = API.flagshipGate(P), gated = m.layer >= 4 && m.layer <= 6;
+  h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' + (gated ? (fgH.open ? ', and the hard gate is open.' : ', and the hard gate is open (Modules tab, ' + fgH.done + '/' + fgH.total + ' done).') : '.') : 'No prerequisites — this is where the curriculum starts.')
      + (m.owns ? ' Teaches ' + m.owns.join(', ') + ' for good; no later module re-teaches it.' : '') + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
@@ -6585,7 +6624,7 @@ function lpDetailHTML(API, id) {
       wh += '<div class="lx-wd"><b>' + esc(w[0]) + '</b><p>' + esc(w[1]) + '</p></div>';
     });
     h += lxSec(pad() + ' · WORDS', 'doc', 'Words used on this page',
-               'Plain definitions, in the order the words appear below. Nothing on this page assumes you already know them.',
+               'Plain definitions. Nothing on this page assumes you already know them; each one is defined before any other definition uses it.',
                wh);
   }
 
@@ -6631,7 +6670,7 @@ function lpDetailHTML(API, id) {
        + '<div class="lp-cmeta">how it actually works</div></div>'
        + '<div class="lp-viz">'
        + '<div class="lp-artCap"><b>Fig. ' + esc(m.id) + '</b> · mechanism<i>L' + m.layer + '</i></div>'
-       + '<div class="lp-vizBox">' + VZ[m.id] + '</div></div></div>';
+       + '<div class="lp-vizBox">' + VZ[m.id].replace('<svg ', '<svg role="img" aria-label="Figure ' + esc(m.id) + ': how ' + esc(m.title) + ' works" ') + '</div></div></div>';
   }
 
   h += '</div><div>';
@@ -6641,11 +6680,17 @@ function lpDetailHTML(API, id) {
      + '<div class="lp-cmeta">in order</div></div>'
      + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the documentation proved you wrong. '
      + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module.</div>';
+  var lockedHere = !API.isUnlocked(id, P);
+  if (lockedHere) {
+    h += '<div class="lp-warn" style="margin-bottom:12px"><b>LOCKED</b><br>Reading ahead is fine, but nothing here can be ticked until '
+       + (m.dependsOn.length ? m.dependsOn.join(', ') + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' : 'it opens')
+       + (gated && !fgH.open ? ' and the hard gate is open' : '') + '.</div>';
+  }
   [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
    ['artifact', 'Artifact built and running', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
-    h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
+    h += '<div class="lp-chk' + (on ? ' on' : '') + (lockedHere ? ' lock' : '') + '" role="button" tabindex="0"' + (lockedHere ? ' aria-disabled="true" style="opacity:.55"' : '') + ' onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
        + '<span class="lp-box">' + (on ? '✓' : '') + '</span>'
        + '<span><span style="display:block">' + st[1] + '</span>'
        + '<span class="lx-ls">' + st[2] + '</span></span></div>';
@@ -6675,7 +6720,7 @@ function lpDetailHTML(API, id) {
       var others = x.dependsOn.filter(function (d) { return d !== m.id; });
       h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + x.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
          + '<span class="lx-li2"><span class="lx-lt">' + esc(x.title) + '</span>'
-         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h · ' + (others.length ? 'also needs ' + others.join(', ') : 'opens when this passes') + '</span></span>'
+         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h · ' + (others.length ? 'also needs ' + others.join(', ') : 'opens when this passes') + (x.layer >= 4 && x.layer <= 6 && !fgH.open ? ' · and the hard gate' : '') + '</span></span>'
          + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
     });
     h += '</div>';
@@ -6689,8 +6734,11 @@ function lpDetailHTML(API, id) {
     h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Next on the ladder</div></div>'
        + '<button class="lx-link"' + (nun ? ' onclick="lpOpen(\'' + nx.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
        + '<span class="lx-li2"><span class="lx-lt">' + esc(nx.title) + '</span>'
-       + '<span class="lx-ls">' + nx.id + ' · ' + nx.hours + 'h' + (nun ? '' : ' · locked until ' + nx.dependsOn.join(', ') + (nx.dependsOn.length > 1 ? ' have' : ' has') + ' passed') + '</span></span>'
+       + '<span class="lx-ls">' + nx.id + ' · ' + nx.hours + 'h' + (nun ? '' : ' · locked until ' + nx.dependsOn.join(', ') + (nx.dependsOn.length > 1 ? ' have' : ' has') + ' passed' + (nx.layer >= 4 && nx.layer <= 6 && !fgH.open ? ' and the hard gate is open' : '')) + '</span></span>'
        + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button></div>';
+  } else {
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Last module</div></div>'
+       + '<div class="lp-dp">There is no next rung. From here the tracks continue (Tracks tab) until you are hired, and M31 and M32 are re-read on the day you start.</div></div>';
   }
 
   h += '</div></div>';
