@@ -24,7 +24,12 @@ var AI_LAYERS = [
   { id: 8, name: 'Employed Mode',         purpose: 'Getting hired before you finish is the normal good outcome. This layer is what changes on day one of the job.' }
 ];
 
-// Concepts with exactly ONE owning module. Consumed everywhere after, never re-taught.
+// Concepts with exactly ONE owning module. The registry says who owns each one.
+// Ownership is not the same claim as never-re-taught: five are owned and then
+// only consumed, and three are owned once and then deliberately deepened later.
+// Saying "eight concepts are never re-taught" was false for those three, because
+// they also sit in AI_SPIRAL_PAIRS below. validate() now checks the two lists
+// against each other so the contradiction cannot come back.
 var AI_OWNED_CONCEPTS = {
   'flagship': 'M2',
   'trust boundary':  'M3',
@@ -36,14 +41,32 @@ var AI_OWNED_CONCEPTS = {
   'cost':            'M20'
 };
 
+// Owned once, then consumed and never re-taught.
+var AI_OWNED_ONCE = ['flagship', 'streaming', 'idempotency', 'durable queue', 'evals'];
+// Owned once, then deliberately revisited at greater depth. These are the three
+// that legitimately appear in AI_SPIRAL_PAIRS.
+var AI_OWNED_THEN_DEEPENED = ['trust boundary', 'observability', 'cost'];
+
 // Deliberately taught twice at different depths. NOT violations — do not "fix" these.
+// Seven pairs covering six concepts (CI is taught three times, so it appears twice here).
 var AI_SPIRAL_PAIRS = [
   ['M10', 'M12', 'observability'],
   ['M4', 'M5',  'pooling and isolation'],
   ['M9', 'M12', 'CI'], ['M12', 'M23', 'CI'],
   ['M21', 'M26', 'OAuth'],
   ['M6', 'M20', 'cost'],
-  ['M3', 'M13', 'the trust boundary']
+  ['M3', 'M13', 'trust boundary']
+];
+
+// The canonical numbered rules. One list, here, so the document and the product
+// cannot number them differently. LAUNCHPAD_CONFIG.creed below is a three-line
+// restatement of rules 1, 2 and 5 for the header; it is not a second numbering.
+var LAUNCHPAD_RULES = [
+  { n:1, rule:'Every module ends in an artifact — something that runs, or something a stranger can read.' },
+  { n:2, rule:'Every module except M0 has an inbound edge, and the longest chain of modules — not the hour sum — sets how long this takes.' },
+  { n:3, rule:'Eight concepts have exactly one owning module. Five are consumed from there on; three are deliberately deepened later, and those three are named in AI_SPIRAL_PAIRS.' },
+  { n:4, rule:'Seven spiral pairs cover six concepts that are deliberately taught twice. Naming them is what stops someone "fixing" the repetition later.' },
+  { n:5, rule:'One verification pass an hour: read the official documentation before you build, and write down where it proved you wrong.' }
 ];
 
 var AI_CURRICULUM = [
@@ -51,21 +74,21 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 0 · THE CONTRACT ───────────────
 { id:'M0', layer:0, hours:12, dependsOn:[], kind:'LAB',
   title:'The Plan',
-  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. How many months you can go without a paycheck, which is your runway. How many hours a week you can truly give this, and the deadline those two numbers force. The date you will start applying for jobs, a target chosen now and either confirmed or moved when M10 passes. Twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. A count of how many of the twenty ask for Python (if eight or more do, the Python module moves earlier). Three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. A dated list of what you can do today, which on day one is honestly "nothing yet". A file called INCIDENTS.md with one line every time something goes wrong from here on. A date in month four by which a dozen people you found will have used your flagship, the one app you will build in month two and keep improving for the rest of the program. And a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
+  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. First, the money. How many months you can go without a paycheck, which is your runway \u2014 and then, on the line under it, what this program itself costs you every month, subtracted from that runway to give the runway you actually have. Write the running cost down as a number: model spend (M2, M6 and M12 are steady; M18 and M19 are the expensive ones, because they run a corpus and hundreds of adversarial inputs through a model), hosting for the flagship once it is live, a paid tier anywhere a module needs one (a payment processor in test mode is free, error tracking and a cloud account usually are not), and, if you are paying for review or mock interviews, that too. Guess it now, correct it at every monthly re-plan, and treat the corrected number as a claim on your runway, because it is one. A program whose founding argument is that runway sets the deadline cannot leave the outflow out of the arithmetic. Second, how many hours a week you can truly give this, and the deadline those two numbers force. Third, the date you will start applying for jobs: a target you pick now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date \u2014 if M10 has not passed when the target arrives, you apply anyway with what you have and write down in that month\u2019s re-plan what you are applying without. Twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. A count of how many of the twenty ask for Python (if eight or more do, the Python module moves earlier; expect this to fire). Three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. Be honest with yourself about this one on day one: the gates in this program need either a budget for paid review and paid mock interviews, or two working engineers who will give you real time for a year. If you have neither today, the first thing you build is that, and it can take a month; put that month in the plan rather than discovering it at M3. A dated list of what you can do today, which on day one is honestly "nothing yet". A file called INCIDENTS.md with one line every time something goes wrong from here on. A date in month four by which a dozen people you found will have used your flagship, the one app you will build in month two and keep improving for the rest of the program. And a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
   gate:{ referee:'Anyone \u2014 a friend, a partner, a sibling \u2014 who reads your one page and hands it back.',
-         pass:'They can say your runway, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
+         pass:'They can say your runway, your monthly running cost, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
          onFail:'This one cannot be failed by lack of skill, only by not finishing it. Name the line your referee could not repeat back, finish that line, and read the page to them again. Nothing else opens until they can.' } },
 
 { id:'M1', layer:0, hours:58, dependsOn:['M0'], kind:'LAB',
   title:'First Code',
-  artifact:'Six small programs, each written by you from an empty file and run from the terminal. One that reads a file and prints how many lines it has; one that asks a public API for data and rearranges what comes back; one that fails on purpose, which you fix by reading the error message. Then one where a block you had typed twice becomes a function; one with three tests you wrote before the code they test; and one you broke on purpose and got back with git. The setup around them counts as part of the work: Node installed with its version written down, an editor you can move around in without a mouse, a repo pushed to a remote with commit messages a stranger could follow, and a page naming every tool you installed and what each one is for. Then three short things you can only do now that you have tools. A 30-minute check that your machine can install what later modules need (a local database, a container runtime, a load generator, and a browser you can drive from code), done now so that if something will not install it fails today instead of in month three. A first attempt at a coding task you have never seen, scored honestly as a fraction; zero out of six is a real score, and writing it down is the point. And a list of twenty small bug-fix commits from other people\u2019s public repos, found but not read, saved for M14 and M30, where they become practice problems with a real answer.',
+  artifact:'Six small programs, each written by you from an empty file and run from the terminal. One that reads a file and prints how many lines it has; one that asks a public API for data and rearranges what comes back; one that fails on purpose, which you fix by reading the error message. Then one where a block you had typed twice becomes a function; one with three tests you wrote before the code they test; and one you broke on purpose and got back with git. The setup around them counts as part of the work: Node installed with its version written down, an editor you can move around in without a mouse, a repo pushed to a remote with commit messages a stranger could follow, and a page naming every tool you installed and what each one is for. Then three short things you can only do now that you have tools. A 30-minute check that your machine can install what later modules need (a local database, a container runtime, a load generator, and a browser you can drive from code), done now so that if something will not install it fails today instead of in month three. Name the floor while you are there, because "a substantial machine" is not a specification: M5 holds a five-million-row Postgres instance and a container runtime at the same time, M11 runs OCR over PDFs and M18 runs a reranker, so plan on at least 16 GB of memory and 50 GB of free disk. The check proves things install; it does not prove M5 will fit. If you are unsure, load five million rows into your local Postgres today and watch what happens \u2014 that is the real smoke test, and finding out now is worth the extra half hour. A first attempt at a coding task you have never seen, scored honestly as a fraction; zero out of six is a real score, and writing it down is the point. And a list of twenty small bug-fix commits from other people\u2019s public repos, found but not read, saved for M14 and M30, where they become practice problems with a real answer. Save a reproducible starting state, not a URL: record each commit\u2019s parent SHA and confirm today that the project builds and its suite is green at that parent. A repo moves on, and a commit you cannot check out and run in fifteen months is not an exercise, it is a merge conflict.',
   gate:{ referee:'Anyone who writes code for a living, watching your screen for 20 minutes, on a task you have not seen.',
          pass:'From an empty directory: create a file, write a function with a test, run it, make the test fail, read the error out loud and say what it means, fix it, commit, push. No tutorial open.',
          onFail:'Do it again from an empty directory. Re-running the tutorial does not count \u2014 the whole failure mode of this module is a working repo you cannot rebuild.' } },
 
 { id:'M2', layer:0, hours:30, dependsOn:['M1'], kind:'EVIDENCE',
   title:'Flagship v1',
-  artifact:'First, give the app a name and write its one-page specification: who it is for, the one thing it does, what a user types in and what they get back, and what it must never do. Sixteen later modules add to this page, so you sign it line by line before you build anything. Then build the smallest honest version of it. A plain HTML page with one text box. A server route that sends what the user typed to a model at Anthropic, using your own API key, and returns the reply. The reply shown on the page. The whole thing deployed on Vercel, so it has a URL a stranger can open on their phone. No streaming, no accounts, no database; each has its own module later (streaming in M7, accounts and the database in M5) and each is easier to add to something already running. Four rules that cannot be skipped. The key lives on the server in an environment variable, and you prove it is not in the client bundle by searching the files the browser downloads. A hard spend limit is set at the model service before the first request, low enough that the worst month you can imagine is an amount you would shrug at, because this URL is on the public internet and the bill is yours. The page is not open to the whole world: put it behind a shared word you hand out, or a list of addresses you invite, so the people using it are people you chose. And every model call is written to a log with its input, output, usage (the token counts the service reports) and time, from the very first request, because M10 and M12 both read that log and a month of calls you did not record is gone for good. That log holds other people’s words, so the page says in one line what is recorded and for how long, you keep it no longer than you said, and you delete a person’s entries when they ask. M11 and M21 make this rigorous; the one line and the delete-on-request are due now.',
+  artifact:'First, give the app a name and write its one-page specification: who it is for, the one thing it does, what a user types in and what they get back, and what it must never do. Sixteen later modules add to this page, so you sign it line by line before you build anything. Read that checklist as what the app must be able to grow into, not as what it has: you are checking the concept, not the code. Nothing on it is built in this module. If your named app could never carry one of the lines — could never plausibly have two kinds of user, or a document corpus, or something worth charging for — pick a different app now, while changing your mind is free. "Fix the app before M3" would be an unrunnable instruction, because the modules that build those lines are M5, M11, M20, M21 and M23. Then build the smallest honest version of it. A plain HTML page with one text box. A server route that sends what the user typed to a model at Anthropic, using your own API key, and returns the reply. The reply shown on the page. The whole thing deployed on Vercel, so it has a URL a stranger can open on their phone. No streaming, no accounts, no database; each has its own module later (streaming in M7, accounts and the database in M5) and each is easier to add to something already running. Four rules that cannot be skipped. The key lives on the server in an environment variable, and you prove it is not in the client bundle by searching the files the browser downloads. A hard spend limit is set at the model service before the first request, low enough that the worst month you can imagine is an amount you would shrug at, because this URL is on the public internet and the bill is yours. The page is not open to the whole world: put it behind a shared word you hand out, or a list of addresses you invite, so the people using it are people you chose. And every model call is written to a log with its input, output, usage (the token counts the service reports) and time, from the very first request, because M10 and M12 both read that log and a month of calls you did not record is gone for good. That log holds other people’s words, so the page says in one line what is recorded and for how long, you keep it no longer than you said, and you delete a person’s entries when they ask. M11 and M21 make this rigorous; the one line and the delete-on-request are due now.',
   owns:['flagship'],
   exports:['the app M5, M6, M7, M9, M10, M11, M12, M16, M18, M19, M20, M21, M22, M23, M26 and M29 all extend'],
   gate:{ referee:'Two people who are not you, on their own devices, with no instructions from you.',
@@ -95,18 +118,18 @@ var AI_CURRICULUM = [
 
 { id:'M5', layer:1, hours:61, dependsOn:['M4'], kind:'LAB',
   title:'The Postgres Underneath Supabase',
-  artifact:'pg-lab against a local Supabase stack. Open with a 3-hour win: 50k rows, one slow query, one EXPLAIN, one index, one measured 200x speedup. Then the 5,000,000-row rig: twelve hand-written queries with plans before and after, a slow-to-fast loop with wall-clock numbers from a load generator you wrote, an RLS policy set benchmarked correct-but-slow vs fast, and the legacy-key rotation as an artifact. Plus asymptotic complexity, taught here because here it is measurable. Then the flagship moves onto hosted Supabase: sign-in, one table scoped to the signed-in user, one row-level security policy, and a pooled connection, so the app now has accounts and keeps data between visits. The lab itself stays private; this last piece is the exception, because it changes what a stranger sees.',
+  artifact:'pg-lab against a local Supabase stack. Open with a 3-hour win: 50k rows, one slow query, one EXPLAIN (ANALYZE, BUFFERS), one index, and the speedup you actually measured, stated as a number with both wall-clock times. Do not work backwards from a headline factor — the factor depends on the query, the selectivity and the cache state, and a target set in advance is the habit M12 exists to break. It will probably land somewhere between one and three orders of magnitude. If it comes out at 1.2x, that is the interesting result and finding out why is the exercise. Then the 5,000,000-row rig: twelve hand-written queries with plans before and after, a slow-to-fast loop with wall-clock numbers from a load generator you wrote, an RLS policy set benchmarked correct-but-slow vs fast, and the legacy-key rotation as an artifact. Plus asymptotic complexity, taught here because here it is measurable. Then the flagship moves onto hosted Supabase: sign-in, one table scoped to the signed-in user, one row-level security policy, and a pooled connection, so the app now has accounts and keeps data between visits. The lab itself stays private; this last piece is the exception, because it changes what a stranger sees.',
   exports:['load generator -> M23'],
-  gate:{ referee:'Your reviewer, holding an EXPLAIN plan you have never seen, taken from their own work or from a public slow-query log.',
-         pass:'State estimated vs actual rows before anything else, then name the fix before reading the query, 3 of 4. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
+  gate:{ referee:'Your reviewer, holding an EXPLAIN (ANALYZE, BUFFERS) output you have never seen, taken from their own work. A slow-query log only carries a plan if auto_explain was configured to log one, and only carries actual rows if it was configured with log_analyze — so ask for the plan, not the log line.',
+         pass:'State estimated vs actual rows before anything else, then name the fix before reading the query, 3 of 4. If the plan you are handed has no actual rows in it, say so first: plain EXPLAIN reports the planner’s estimates and nothing else, and noticing that is itself the first thing to notice. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
          onFail:'Re-run the slow-to-fast loop on three new queries.' } },
 
 { id:'M6', layer:1, hours:30, dependsOn:['M3','M2'], kind:'LAB',
   exports:['stop_reason discriminator -> M9, M19', 'usage and cache meters -> M20'],
   title:'The Model as a Function',
-  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce every stop_reason without exception, including a refusal, showing stop_details as the discriminator; demonstrate a structured-output schema rejecting a malformed generation; discover capabilities from the Models API rather than a hard-coded table. Plus a dead-patterns page with every 400 pasted in. And the cost column added to the M2 call log, priced from the usage object, so every call from here on has a price.',
+  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce every stop_reason without exception, including a refusal, showing stop_details as the discriminator; demonstrate the limit of constrained decoding rather than a rejection that cannot happen — a generation that is schema-valid and factually wrong, and, separately, what the API does when the schema you sent is itself invalid, which is a 400 on the request rather than a rejected generation; discover capabilities, context window (max_input_tokens) and output cap (max_tokens) from the Models API rather than a hard-coded table, and note that prices are not on that endpoint, so the price table is the one thing in your client that must carry a check date. Plus a dead-patterns page with every 400 pasted in. And the cost column added to the M2 call log, priced from the usage object, so every call from here on has a price.',
   gate:{ referee:'Your reviewer, checking your arithmetic against a real usage object from the service.',
-         pass:'Price a request to the cent from its usage object alone. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
+         pass:'Price a request to the cent from its usage object alone, saying where each rate came from and when you last checked it — the Models API does not serve prices, so this one number is hand-carried and dated. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
          onFail:'Re-derive the pricing by hand from three more requests.' },
   currency:'This is the fastest-changing material in the program. The week you build it, check every detail against the official documentation of the model service you use.' },
 
@@ -129,10 +152,10 @@ var AI_CURRICULUM = [
 
 { id:'M9', layer:2, hours:32, dependsOn:['M3','M7','M5','M6'], kind:'LAB',
   title:'Tests That Fail for the Right Reason',
-  artifact:'One shipped repo from zero tests to a green required check: about fifteen unit, five integration against real local Postgres including two RLS policies, CI as a merge gate, a written flakiness budget, and a mutation-testing run with a disposition written for every surviving mutant. The runner moves from M3’s bare node --test to vitest here, because mocks and fixtures need one with those built in. And the most reused fixture in the curriculum: a record-replay model client in TypeScript covering a stream with frames split mid-frame and mid-multibyte-character, a tool-use block, and a refusal with stop_details.',
+  artifact:'One shipped repo from zero tests to a green required check: about fifteen unit, five integration against real local Postgres including two RLS policies, CI as a merge gate, a written flakiness budget, and a mutation-testing run with a disposition written for every surviving mutant. The runner moves from M3’s bare node --test to vitest here for watch mode, TypeScript and ESM handling without a build step, and the fixture ergonomics — not because node:test lacks mocking, which it has had for years in mock.fn, mock.method, mock.timers and mock.module. Say which of those reasons is actually yours; a reviewer who runs Node’s test runner daily will ask. And the most reused fixture in the curriculum: a record-replay model client in TypeScript covering a stream with frames split mid-frame and mid-multibyte-character, a tool-use block, and a refusal with stop_details.',
   exports:['record-replay model client -> M12 (zero-cost CI tier)'],
   gate:{ referee:'Your reviewer, reading the mutation score (a number you cannot argue with) and bug reports taken from already-closed public issues.',
-         pass:'Mutation score >= 70% with a written disposition for every surviving mutant. On a sourced bug: failing test first, then fix, explaining why the test would still fail if the fix were wrong in a different way.',
+         pass:'A mutation score around 70% on the module you care about, with a written disposition for every surviving mutant. The number is a target, not a law — it is chosen because it is high enough to catch assert-nothing tests and low enough to reach, and a full-repo run against a suite with real Postgres integration tests is slow enough that scoping it to one module is the right call. Say which module you scored and why. On a sourced bug: failing test first, then fix, explaining why the test would still fail if the fix were wrong in a different way.',
          onFail:'Surviving mutants in code you claimed was covered. The tests assert implementation, not behavior.' } },
 
 { id:'M10', layer:2, hours:45, dependsOn:['M7','M5'], kind:'EVIDENCE', owns:['observability'],
@@ -157,7 +180,7 @@ var AI_CURRICULUM = [
   artifact:'One harness, and only one: Postgres + a TypeScript runner, no platform. 100 hand-read labeled traces in four sessions of 25. Named failure taxonomy with counts. Assertion graders. A judge with a measured confusion matrix. Inter-annotator agreement — the reviewer labels 30 using nothing but your written rubric; where you disagree the rubric gets revised, not the labels. Dev/test split at creation. Tiered CI gate: a smoke set of about fifteen cases on every push, full set nightly, recorded-fixture mode so graders cost $0, a per-run dollar ceiling in the job summary, fail condition as a statistical threshold with its bootstrap CI. Then a deliberate model-family migration gated only by your own eval set. Plus stats-lab.',
   exports:['dataset table, assertion graders, calibrated judge -> M18, M19, M23, M25'],
   gate:{ referee:'Your reviewer, handing you a prompt change that is scored against the test set you have not opened.',
-         pass:'Ship/no-ship with a bootstrap CI. State judge TPR/TNR together with human-to-human agreement. Name the criterion that produced the most disagreement and how you rewrote it. Show a red check where this gate blocked a PR you actually wanted to merge.',
+         pass:'Ship/no-ship with a bootstrap CI. State judge TPR/TNR together with human-to-human agreement. Name the criterion that produced the most disagreement and how you rewrote it. Break the gate on purpose on a branch and keep the red check — a rehearsal, and labeled as one, because waiting for a real regression to arrive before gate day is not something you can schedule. If a real regression fires it later, replace the screenshot with that one.',
          onFail:'Your judge is uncalibrated. Re-label 30 traces and recompute.' },
   note:'Break your own eval gate once on purpose, on a branch, and watch it block the merge. A gate that has never fired looks exactly like one that is wired up wrong.' },
 
@@ -187,7 +210,7 @@ var AI_CURRICULUM = [
 
 { id:'M16', layer:4, hours:28, dependsOn:['M14','M15'], kind:'EVIDENCE',
   title:'Working with Coding Agents Professionally',
-  artifact:'A defect log from handing an agent three real tickets in a repo you did not write, naming, for each defect, the earlier module that let you catch it. A one-page delegation policy, enforced by a pre-commit hook that has actually blocked an agent-authored change twice on real work. A spec-driven slice with a log of every place the spec was underspecified and what the agent did in the gap. And a throughput artifact: one non-trivial flagship feature shipped in a timebox using agents, transcript preserved, measured against a similar feature written by hand (hours, review findings, defects reaching production).',
+  artifact:'A defect log from handing an agent three real tickets in a repo you did not write, naming, for each defect, the earlier module that let you catch it. A one-page delegation policy, enforced by a pre-commit hook that has actually blocked an agent-authored change twice on real work. A spec-driven slice with a log of every place the spec was underspecified and what the agent did in the gap. And a throughput artifact: three small flagship features shipped with agents and three by hand, alternating so the ordering and the learning do not all favor one side, with hours, review findings and defects reaching production reported as a spread and not only as two medians. If you only have the time for one pair, that is fine — report it as an anecdote with n=1 and say so out loud. Both are usable. What is not usable is a single pair of features presented as a measurement, which is the vibe comparison table M12 exists to prevent.',
   gate:{ referee:'A second agent instance with a sealed brief your reviewer wrote weeks earlier. 0-3 defects per diff, count blinded, at least one clean diff.',
          pass:'Find the planted defects across five diffs, false positives scored separately. Plus a pre-commit hook enforcing your delegation policy that has actually blocked agent-authored diffs twice on real work.',
          onFail:'You are pattern-matching, not reviewing. Redo with a new sealed brief.' } },
@@ -202,24 +225,24 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 5 · THE AI LAYER, COMPLETED ───────────────
 { id:'M18', layer:5, hours:44, dependsOn:['M11','M12'], kind:'EVIDENCE',
   title:'Retrieval You Actually Measured',
-  artifact:'Retrieval over the M11 corpus, on the M12 runner and tables. A measured recall@k baseline, then five interventions measured independently: hybrid+RRF, reranker, contextual retrieval, a long-context baseline (same queries, no retrieval), and a fixed two-round query-rewrite arm (M19 adds the agentic version). Then span-level citation verification against M11 offsets. Embedding lifecycle: batched generation with rate-limit handling, measured cost per 1,000 chunks, a re-embed as a restartable backfill behind a dual-index read switch (M14\u2019s resumable pattern, if you have passed it). Built with M12\u2019s split discipline.',
+  artifact:'Retrieval over the M11 corpus, on the M12 runner and tables. A measured recall@k baseline, then two interventions measured independently: hybrid+RRF and a reranker. Two, not five, and the reason is the corpus. M11 gives you twenty hand-labeled documents and about twenty-five hand-written queries split dev/test, which leaves roughly ten queries in the test half; recall@10 over ten queries moves in steps of 0.1 and its bootstrap interval is about plus or minus 0.3. You cannot rank five arms on that, there is no third split left to re-measure a winner on, and taking the maximum of five would bias the margin upward in a way no re-measurement here can undo. So: two arms, each reported with its interval, and contextual retrieval named in writing as the arm you cut and why. Run the long-context comparison (same queries, no retrieval) once as a priced anecdote rather than as a ranked arm, and label it that way. Then span-level citation verification against M11 offsets. Embedding lifecycle: batched generation with rate-limit handling, measured cost per 1,000 chunks, a re-embed as a restartable backfill behind a dual-index read switch (M14\u2019s resumable pattern, if you have passed it). Built with M12\u2019s split discipline.',
   gate:{ referee:'Your reviewer, scoring against your held-out test set, half of it hand-written.',
-         pass:'State your delta together with the number of arms you compared, and re-measure the winner on a fresh split before reporting it — taking the maximum of five arms biases the margin upward, and it is the re-measured number that goes in your README. Then state recall@10 before and after with the hnsw.iterative_scan setting named out loud and the dev-test gap stated. Name the intervention that did not help. Defend your routing rule between retrieval and long context using your own numbers.',
-         onFail:'The golden set is LLM-generated, or you tuned on the set you reported. Hand-write 25, re-split, re-run.' } },
+         pass:'State your delta together with its bootstrap interval and the number of queries behind it, and say out loud whether the interval crosses zero. With a set this small it very probably does, and then the finding is "I cannot distinguish these two with the data I have" — saying that plainly is the pass condition, not a failure of the module. Then state recall@10 before and after with the hnsw.iterative_scan setting named out loud and the dev-test gap stated. Name the arm you cut and the size of corpus that would have justified running it. Defend your routing rule between retrieval and long context using your own numbers.',
+         onFail:'The golden set is LLM-generated, or you tuned on the set you reported, or you reported a winner with no interval. Hand-write 25, re-split, re-run.' } },
 
 { id:'M19', layer:5, hours:49, dependsOn:['M7','M8','M6','M12'], kind:'EVIDENCE',
   title:'Agents and Tool Use',
-  artifact:'A hand-rolled agent loop with a hard-stopping budget governor, loop detection, an approval gate on irreversible actions, durable state on the M8 queue, append-only thinking-block replay, replayable trajectory traces scored by M12 graders. Containment as an enforced execution boundary: container/sandbox for code-shaped tools, domain allowlist for network-shaped, path prefix for filesystem-shaped, per-tool timeout and memory caps — demonstrated against a blocked host and 169.254.169.254. Then one MCP server against a named spec revision. Then the same agent on the SDK tool runner with a written comparison.',
+  artifact:'A hand-rolled agent loop with a hard-stopping budget governor, loop detection, an approval gate on irreversible actions, durable state on the M8 queue, append-only thinking-block replay, replayable trajectory traces scored by M12 graders. You write the governor yourself because that is how you learn what it has to do; then compare it against the server-side task budget the provider offers, and write up what each one catches and what each one misses. Yours stops the run; theirs is a ceiling the model can see, so it paces itself and finishes rather than being cut off. Containment as an enforced execution boundary: container/sandbox for code-shaped tools, domain allowlist for network-shaped, path prefix for filesystem-shaped, per-tool timeout and memory caps. Assert on the policy, not on the response: show the allowlist refusing the request before a socket opens, with the denial in your own logs. Then, separately, point a tool at 169.254.169.254 and at an RFC1918 address on your own network as regression cases, and note in writing that a refusal there may be the platform rather than you — a cloud metadata service usually refuses a bare request on its own account, and a serverless host may have nothing at that address at all, so a green result there proves nothing about your egress policy by itself. Plus context management across a long run: compaction and context editing, what each is for, and when each is the wrong answer. The conversation does not have to go back unchanged, and resend-everything is a choice rather than the only shape. Then one MCP server against a named spec revision. Then the same agent on the SDK tool runner with a written comparison.',
   gate:{ referee:'Your reviewer, sending a kill signal at a random point, plus 200 adversarial inputs from a second agent with a red-team brief and no knowledge of your governor. The spend assertion lives in the test suite.',
-         pass:'Resume correctly after a mid-run kill. Replay a failed trajectory and name the causing step. Cost ceiling holds across all 200. Blocked host and metadata endpoint both refused. Report step-level and outcome-level agent eval scores.',
+         pass:'Resume correctly after a mid-run kill. Replay a failed trajectory and name the causing step. Cost ceiling holds across all 200. The allowlist denial is in your logs for the blocked host, and the metadata and RFC1918 regression cases both refused. Report step-level and outcome-level agent eval scores.',
          onFail:'The governor caps iterations but not spend. Fix and re-run.' },
-  currency:'MCP (defined in the words below) changed in a way that breaks older code in its 2026-07-28 revision. Write down which revision you build against, and treat any tutorial from before August 2026 as showing the old shape.' },
+  currency:'MCP (defined in the words below) is a versioned specification with dated revisions and breaking changes between them. Look the current revision up the week you build, write it down, and be able to name one thing that changed in it. Do not take a revision date from this page; the point of the exercise is that you checked.' },
 
 { id:'M20', layer:5, hours:30, dependsOn:['M7','M8','M6','M12'], kind:'EVIDENCE', owns:['cost'],
   title:'Cost, Metering, and Unit Economics',
   artifact:'A per-user credit ledger with an atomic decrement proven by concurrent hammering. A Stripe test-mode subscription with an idempotent webhook consumer on the M8 queue surviving replay. A server-rendered 402 path proven by curl. A circuit breaker on spend. One weekly SQL report joining usage, quality score and cost into one line per active user, including a non-model cost column. Plus a two-dimensional (model x effort) routing experiment scored by M12, reported as cost per completed task.',
   gate:{ referee:'Your reviewer, re-running the queries. Every number must be reproducible from SQL.',
-         pass:'State cost per active user per month and end-to-end p50/p95/p99, each backed by the query. Say whether you would keep the feature.',
+         pass:'State cost per active user per month, and end-to-end p50 and p95 with the request count behind them, each backed by the query. If your n does not support a p99, say so and do not quote one: on a few hundred requests from a dozen users, p99 is the second-slowest request you ever served, which is one sample. "p99 on 300 requests is one request" is the better answer, and it is the one this module is actually teaching. Say whether you would keep the feature.',
          onFail:'You are reporting an average. Recompute from the raw distribution.' },
   note:'Before you build a cascade of models, measure the capable model at a lower effort setting. It is usually cheaper than the cascade, and a cascade throws away your cache, which only ever applies to one model.' },
 
@@ -237,7 +260,7 @@ var AI_CURRICULUM = [
   gate:{ referee:'Your reviewer, with a screen recording, the cost meter, and axe-core in CI.',
          pass:'Demonstrate refresh-mid-generation recovery live. Show the stop button effect in the cost meter. Report time-to-first-token. Axe-core passes on the chat surface, plus one recorded real-screen-reader pass showing the aria-live re-read behavior present and then fixed.',
          onFail:'The stop button stops the UI only.' },
-  note:'Next.js caches nothing by default any more; you opt each thing in. Check that direction against the current documentation before you trust any tutorial on it.' },
+  note:'The direction in Next.js is explicit opt-in: fetch, GET route handlers and the client router cache no longer cache by default, and the use cache directive is how you opt back in. Statically rendered routes are still cached. "It caches nothing by default" is the overstatement that gets you a follow-up you cannot survive — check the current documentation the week you build this and write down what you found.' },
 
 { id:'M23', layer:6, hours:48, dependsOn:['M5','M9','M12'], kind:'EVIDENCE',
   title:'Deployment, CI/CD, and Operating It',
@@ -260,13 +283,13 @@ var AI_CURRICULUM = [
   artifact:'M12 eval runner ported to Python, so this module extends something you already built rather than standing alone. Typed request/response models, streaming, a pytest suite faking the model client, type checker green in CI, plus a written runtime diff including a reproduction of a blocking call freezing the asyncio loop and its fix.',
   trigger:'Follows M24. Both move earlier, right after M12 and the hard gate, if eight or more of the twenty postings you read in M0 ask for Python. Otherwise they wait until here.',
   gate:{ referee:'A timer, plus a Python-fluent OSS maintainer reviewing a real PR.',
-         pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes. The maintainer merges without idiom comments.',
+         pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes, and have a Python-fluent reviewer confirm there are no idiom comments to make. Gate on that, not on the merge: M15 says not to condition your progress on a stranger’s inbox, and maintainer merge latency runs to months and sometimes to never. Track the merge as a lagging metric in your funnel, the way M27 treats Gate B.',
          onFail:'You are writing TypeScript with Python syntax. A passing test cannot catch this.' } },
 
 { id:'M26', layer:6, hours:23, dependsOn:['M7','M21','M22'], kind:'EVIDENCE',
   title:'Third-Party Integration as a Consumer',
   artifact:'A real OAuth connection in the flagship including the consent surface: connect and callback routes with state and PKCE verified by a written attack attempt, a connections settings screen, a scope-upgrade re-consent path actually exercised, an in-chat degraded state. Envelope encryption with a per-row key reference, a stated master-key location per environment, and a written rotation procedure. Automatic refresh and a revocation-recovery path that re-prompts.',
-  gate:{ referee:'The provider’s own API, where your reviewer revokes the grant while a job is running.',
+  gate:{ referee:'The provider’s own API. You revoke the grant yourself, from the provider’s settings screen, while a background job is running; your reviewer watches the alert fire and reads the log. Nobody but you touches that account — a reviewer cannot revoke a grant on an account they do not own, and handing them your provider credentials to arrange it is a worse idea than the gate is worth.',
          pass:'Revoke during a background job and assert the job alerts rather than failing silently. Demonstrate scope-upgrade re-consent. The CSRF attempt against your callback fails.',
          onFail:'The 401 surfaces as a generic error, or the state parameter is decorative.' } },
 
@@ -274,9 +297,9 @@ var AI_CURRICULUM = [
 { id:'M27', layer:7, hours:11, dependsOn:['M0'], kind:'EVIDENCE',
   trigger:'One month before your application date, whatever else is unfinished. It stays in every version of the program, including the Spine.',
   title:'Pay, Terms, and the Negotiation',
-  artifact:'The tax structures here are the United States ones (W-2 and 1099). If you are somewhere else, substitute your own two employment structures; the exercise is identical. A pay floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W-2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded, together with a 30-second background answer and a one-line reply to each of the six predictable follow-ups. Plus a references plan: three real people secured before your first offer — your reviewer, one person from your warm list, and a maintainer from Track 2 if that track is running.',
+  artifact:'The tax structures here are the United States ones (W-2 and 1099). If you are somewhere else, substitute your own two employment structures; the exercise is identical. A pay floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W-2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded, together with a 30-second background answer and a one-line reply to each of the six predictable follow-ups. Plus a references plan: three real people secured before your first offer — your reviewer, one person from your warm list, and a maintainer from Track 2 if that track is running. If you paid your reviewer, say so when you offer them as a reference. It is still a strong reference, a checker will ask what your working relationship was, and the disclosure costs you nothing while being caught out costs you the loop. And know the difference between a reference and employment verification: references speak to your work; employment verification checks employment records, which you do not have, so a background check will ask for 1099s or client invoices instead. Say up front that the last year was self-employed rather than letting it surface at the offer.',
   gate:{ referee:'GATE A (controllable, one month before your application date): your reviewer playing a recruiter briefed to push back on your number. GATE B (lagging): a real recruiter screen, logged in the funnel table when it happens. Tick this module on Gate A; Gate B depends on a stranger replying and never holds up the ladder.',
-         pass:'State your floor out loud without hedging, recorded. And deliver a 30-second background answer with no apology, no hedge and no mention of coursework, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since?',
+         pass:'State your floor out loud without hedging, recorded. And deliver a 30-second background answer with no apology and no hedge, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since? Two of those six have no answer inside a framing that hides how you spent the year, so do not use one. Say what is true: full-time self-directed work on an app you built and operate, with a working engineer reviewing your code and an eval harness gating its CI, no client and no team. If they ask how you learned, name the program and offer to show it, including where it was wrong and what you changed. That answer survives all six follow-ups; a framing engineered to be indistinguishable from employment survives two, and the moment a hiring manager works out which one you chose, the loop is over.',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
 { id:'M28', layer:7, hours:8, dependsOn:['M10'], kind:'EVIDENCE',
@@ -349,11 +372,25 @@ var AI_TRACKS = [
 var AI_COMPRESSED_SPINE = ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M9', 'M10', 'M12', 'M27', 'M28', 'M30'];
 // M27 AND M28 are non-droppable in every variant. The spine exists to get you to a job,
 // and M27's own gate needs a recruiter screen, which needs a resume, which is M28.
-// Spine track policy (priced in plan()): T2 and T7 suspended, T4 every other week, the rest unchanged.
-var AI_SPINE_TRACK_HOURS = { T1:200, T2:0, T3:0, T4:30, T5:26, T6:0, T7:0, T8:34, T9:25, T10:15 };
+// Spine track policy (priced in plan()): T7 suspended, T4 every other week, T2 cut to
+// 40 hours rather than suspended, the rest unchanged.
+//
+// T2 used to be suspended too, and that was the wrong cut. The Spine is prescribed to
+// the reader with the shortest runway — the one who most needs a fast hire — and T2 is
+// the track that manufactures the people who can refer you, which is the largest lever
+// this program has. Suspending it removed the lever from the person who needed it most,
+// and it also removed the Track 2 maintainer from M27's references plan. Forty hours is
+// one accepted contribution and then the ask, which is the part that matters; the second
+// and third contributions are what the Spine drops.
+var AI_SPINE_TRACK_HOURS = { T1:200, T2:40, T3:0, T4:30, T5:26, T6:0, T7:0, T8:34, T9:25, T10:15 };
+// The Spine also drops M14 and M17, and a contract role — the thing the Spine aims at —
+// is the most likely of all to drop you into an unfamiliar codebase with a scoped
+// deliverable and no ramp, which is exactly what those two modules are. That is a real
+// cost of the Spine, not an oversight: budget the first month on the job for them.
 var AI_CUT_ORDER = ['M26','M25 second half','M16'];
 // M32 removed from the cut order: it is the only module that owns seamlessness into
-// real work, which is half the stated goal.      // ~68h back, in this order
+// real work, which is half the stated goal.
+// 23h + ~18h + 28h = 69 hours back, in this order.
 
 var LAUNCHPAD_CONFIG = {
   brand: 'LAUNCHPAD',
@@ -363,12 +400,24 @@ var LAUNCHPAD_CONFIG = {
   accent: '#4db8ff',
   glyph: '⬢',
   key: 'apex_launchpad_v1',
-  // The three rules a learner most often breaks, surfaced in the UI rather than buried.
+  // A three-line restatement of rules 1, 2 and 5 for the header. The numbered
+  // rules live in LAUNCHPAD_RULES above; this is not a second numbering of them.
   creed: [
     'You do not advance by reading. You advance by shipping a working thing.',
     'A gate with no referee is decorative. Every gate here names who says yes.',
     'Read the official documentation before you build. Write the delta. The field moves.'
-  ]
+  ],
+  // The honest description of what a tick in this app is. The creed says a gate with
+  // no referee is decorative, and every tick here is a box you press yourself — so the
+  // tick is not the gate. It is your record of what a referee told you. Write their
+  // name, the date and one line of what they said in your own notes beside it. The
+  // record is worth exactly what your honesty is worth, and nobody else can audit it.
+  gateRecord: 'Ticking a gate here does not pass it. It records that a named referee '
+    + 'passed you: write who, the date, and one line of what they said. An unnamed tick '
+    + 'is the decorative gate this program exists to refuse, and you are the only person '
+    + 'who can tell the difference.',
+  // Belongs to the tracks page as a whole, not to any one track.
+  tracksNote: 'Month numbers anywhere in this program assume 18 hours a week; The Plan shows your own.'
 };
 
 // ── Graph validation. Rule 2 says every module except M0 has an inbound edge,
@@ -406,14 +455,21 @@ var AI_CURRICULUM_API = {
   // The Layer 3 -> Layer 4 hard gate. Not a module — a precondition with teeth,
   flagshipGate: function (progress) {
     var f = (progress && progress.__flagship) || {};
+    // M0 documents a labeled fallback for a reader who cannot get real users: a public
+    // corpus with real human labels you create yourself. The gate used to have no branch
+    // for it, so a reader who took the documented fallback was locked out of Layers 4-6
+    // or had to tick a box that was false. Both lines now name the substitution, and the
+    // cost of taking it has to be written down, because it is a real cost.
     var items = [
       { key:'deployed', label:'Flagship deployed and reachable' },
-      { key:'users',    label:'Two real users who are not you' },
-      { key:'traces',   label:'about 100 logged traces containing real failures' },
+      { key:'users',    label:'Two real users who are not you — or the labeled fallback taken in their place, with what it costs you written down' },
+      { key:'traces',   label:'about 100 logged traces containing real failures — on the fallback, 100 cases you labeled yourself over a public corpus' },
       { key:'ci',       label:'M12 harness green in CI against those traces' }
     ];
     var done = items.filter(function (i) { return f[i.key] }).length;
-    return { items: items, done: done, total: items.length, open: done === items.length };
+    return { items: items, done: done, total: items.length, open: done === items.length,
+             note: 'What no version of this gate accepts is a tick with nothing behind it. '
+                 + 'Whichever line you took, write down who used it or what corpus you labeled, and when.' };
   },
 
   // The plan arithmetic. The headline includes the parallel tracks, because
@@ -442,6 +498,17 @@ var AI_CURRICULUM_API = {
     function months(hours, perWeek) { return perWeek > 0 ? hours / perWeek / WK : null; }
     // What you'd need per week to land inside the runway.
     function needed(hours) { return runway > 0 ? hours / (runway * WK) : null; }
+
+    // Hours a week the parallel tracks actually consume BEFORE the application date,
+    // read off their own cadence lines: T4 45 minutes a week, T10 15 minutes, T8 two
+    // hours a month, T5 about an hour most months, T7 one piece per layer, T2 about
+    // eight hours a month once it starts after M9. T1 and T9 do not begin until the
+    // application date, so they are zero here.
+    var PRE_APPLY_TRACK_RATE = { T1:0, T2:1.8, T3:0, T4:0.75, T5:0.25, T6:0, T7:0.4, T8:0.46, T9:0, T10:0.25 };
+    var preTrack = Object.keys(PRE_APPLY_TRACK_RATE).reduce(function (a, k) { return a + PRE_APPLY_TRACK_RATE[k] }, 0);
+    var applyMods = this.byLayer(0).concat(this.byLayer(1), this.byLayer(2))
+      .reduce(function (a, m) { return a + m.hours }, 0);
+    var modWeekly = wk > preTrack ? wk - preTrack : 0;
 
     var fullMonths  = months(full, wk);
     var spineMonths = months(spine, wk);
@@ -482,8 +549,18 @@ var AI_CURRICULUM_API = {
       neededForFull: needFull, neededForSpine: needSpine,
       recommend: rec, why: why,
       // Applications start once Layers 0-2 are behind you, not when everything is.
-      applyAfterHours: this.byLayer(0).concat(this.byLayer(1), this.byLayer(2))
-        .reduce(function (a, m) { return a + m.hours }, 0)
+      applyAfterHours: applyMods,
+      // And the month that lands in is NOT applyAfterHours / weeklyHours. The weekly
+      // ceiling is the whole commitment, tracks included, so the tracks already running
+      // before the application date take their hours out of it first and the modules get
+      // what is left. Dividing module hours by the full weekly budget is the module-only
+      // headline this program opens by condemning, and it errs in the dangerous direction.
+      applyTrackHoursPerWeek: preTrack,
+      applyModuleHoursPerWeek: modWeekly,
+      applyAfterMonths: (modWeekly > 0 ? applyMods / modWeekly / WK : null),
+      applyNote: 'Applications start ' + applyMods + ' module hours in, but the tracks running '
+        + 'alongside take about ' + preTrack.toFixed(1) + ' h/week out of your weekly budget first. '
+        + 'Use applyAfterMonths, not applyAfterHours divided by your weekly hours.'
     };
   },
 
@@ -578,6 +655,29 @@ var AI_CURRICULUM_API = {
       }
     });
 
+    // Rules 3 and 4 against each other: a concept listed as owned-once must never
+    // appear in a spiral pair, and every owned concept must be in exactly one of the
+    // two lists. Without this check, "never re-taught" and "deliberately taught twice"
+    // could both claim the same concept — and for three of them, they did.
+    var spiralConcepts = AI_SPIRAL_PAIRS.map(function (p) { return p[2] });
+    AI_OWNED_ONCE.forEach(function (c) {
+      if (spiralConcepts.indexOf(c) !== -1) {
+        errors.push('Spiral check: "' + c + '" is listed as owned-once and also as a spiral pair');
+      }
+    });
+    AI_OWNED_THEN_DEEPENED.forEach(function (c) {
+      if (spiralConcepts.indexOf(c) === -1) {
+        errors.push('Spiral check: "' + c + '" is listed as deepened later but names no spiral pair');
+      }
+    });
+    Object.keys(AI_OWNED_CONCEPTS).forEach(function (c) {
+      var inOnce = AI_OWNED_ONCE.indexOf(c) !== -1;
+      var inDeep = AI_OWNED_THEN_DEEPENED.indexOf(c) !== -1;
+      if (inOnce === inDeep) {
+        errors.push('Spiral check: owned concept "' + c + '" must be in exactly one of AI_OWNED_ONCE / AI_OWNED_THEN_DEEPENED');
+      }
+    });
+
     var cp = this.criticalPath(), h = this.totalHours();
     return {
       ok: errors.length === 0,
@@ -596,6 +696,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AI_CURRICULUM: AI_CURRICULUM, AI_LAYERS: AI_LAYERS, AI_TRACKS: AI_TRACKS,
                      LAUNCHPAD_CONFIG: LAUNCHPAD_CONFIG,
                      AI_OWNED_CONCEPTS: AI_OWNED_CONCEPTS, AI_SPIRAL_PAIRS: AI_SPIRAL_PAIRS,
+                     AI_OWNED_ONCE: AI_OWNED_ONCE, AI_OWNED_THEN_DEEPENED: AI_OWNED_THEN_DEEPENED,
+                     LAUNCHPAD_RULES: LAUNCHPAD_RULES,
                      AI_COMPRESSED_SPINE: AI_COMPRESSED_SPINE, AI_CUT_ORDER: AI_CUT_ORDER,
                      AI_CURRICULUM_API: AI_CURRICULUM_API };
 }
