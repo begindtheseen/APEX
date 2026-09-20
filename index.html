@@ -1382,6 +1382,15 @@ body{color:var(--text);font-family:var(--sans);}
 .lp-go.ghost{background:none;border:1px solid #1b3557;color:#7fa3c4;font-weight:500;}
 .lp-go.ghost:hover{background:rgba(77,184,255,.07);border-color:#2a5484;color:var(--rbright);}
 
+/* The detail-view figure is the same kind of object as a layer scene, so
+   it gets the same plate: caption bar, hairline frame, slow scan. */
+.lp-viz{padding:0;overflow:hidden;background:linear-gradient(158deg,#0b1930,#050b16 72%);}
+.lp-vizBox{padding:16px 12px;position:relative;overflow:hidden;}
+.lp-vizBox::after{content:'';position:absolute;left:0;right:0;height:30%;pointer-events:none;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--rc) 8%,transparent),transparent);
+  animation:lpscan 9s linear infinite;}
+@media (prefers-reduced-motion: reduce){.lp-vizBox::after{animation:none;opacity:0;}}
+
 /* Readiness rows get a mono layer code in place of the bare icon box, so
    the column scans as L0…L8 rather than as eight similar glyphs. */
 .lp-bcode{font:600 9.5px/1 var(--mono);letter-spacing:.06em;color:var(--rc);
@@ -1699,6 +1708,7 @@ body{color:var(--text);font-family:var(--sans);}
 <script src="redline.js"></script>
 <script src="redlineviz.js"></script>
 <script src="curriculum-ai.js"></script>
+<script src="launchpadviz.js"></script>
 </div>
 
 <script>
@@ -6299,7 +6309,9 @@ function lpDetailHTML(API, id) {
   if (VZ && VZ[m.id]) {
     h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Mechanism</div>'
        + '<div class="lp-cmeta">how it actually works</div></div>'
-       + '<div class="lp-viz">' + VZ[m.id] + '</div></div>';
+       + '<div class="lp-viz lp-br">'
+       + '<div class="lp-artCap"><b>Fig. ' + esc(m.id) + '</b> \u00B7 mechanism<i>L' + m.layer + '</i></div>'
+       + '<div class="lp-vizBox">' + VZ[m.id] + '</div></div></div>';
   }
   h += '</div><div>';
 

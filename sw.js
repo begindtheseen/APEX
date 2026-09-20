@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v23';
+var CACHE = 'apex-shell-v24';
 var SHELL = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ var SHELL = [
   './redline.js',
   './redlineviz.js',
   './curriculum-ai.js',
+  './launchpadviz.js',
   './manifest.json',
   './icon.svg'
 ];
