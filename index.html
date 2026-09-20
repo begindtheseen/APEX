@@ -1326,6 +1326,11 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-li.num b{border-color:#2b4a6b;color:var(--rc2);font:500 8.5px/12px var(--sans);
   text-align:center;}
 #launchpadApp .lx-li.bad b{border:0;width:11px;text-align:center;color:#e0675c;font:500 12px/1 var(--sans);}
+#launchpadApp .lx-wd{display:grid;grid-template-columns:118px 1fr;gap:6px 14px;padding:9px 0;border-top:1px solid #0d2340;}
+#launchpadApp .lx-wd:first-child{border-top:0;padding-top:0;}
+#launchpadApp .lx-wd b{font:600 12px/1.5 var(--sans);color:var(--rc2);letter-spacing:.01em;word-break:break-word;}
+#launchpadApp .lx-wd p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
+@media (max-width:520px){#launchpadApp .lx-wd{grid-template-columns:1fr;gap:2px;}}
 #launchpadApp .lx-body{font:400 13px/1.7 var(--sans);color:#b9c6d6;}
 #launchpadApp .lx-gate{border:1px solid #1b304a;border-radius:8px;overflow:hidden;}
 #launchpadApp .lx-gr{display:flex;gap:16px;padding:13px 15px;border-top:1px solid #0d2340;}
@@ -6135,9 +6140,9 @@ function lpImport(ev) {
 // the product uses constantly and never defines.
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work. 33 of them, in dependency order.'],
+    ['Module', 'A unit of work, two to four weeks long. 33 of them, each opening when the ones before it are passed.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
-    ['DELTA.md', 'What you got wrong, written down after reading the primary source.'],
+    ['Delta', 'A page of notes: what the official documentation proved you wrong about, written before you build.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
     ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.'],
@@ -6280,7 +6285,7 @@ function lpHomeHTML(API) {
    ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
    ['Artifacts built', String(sum.artifactsDone)],
    ['DELTAs written', String(sum.deltasDone)],
-   ['Critical path', API.criticalPath().hours + 'h'],
+   ['Longest chain', API.criticalPath().hours + 'h'],
    ['Your plan', pl.recommend === 'unset' ? 'not set' :
       (pl.recommend === 'spine' ? 'Compressed Spine' : 'Full program')]
   ].forEach(function (r) {
@@ -6301,11 +6306,11 @@ function lpModulesHTML(API) {
   var sum = API.progressSummary(P);
 
   var h = '<div class="lx-hero">'
-        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · dependency order</span></div>'
+        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in the order they open</span></div>'
         + '<div class="lx-title">The ladder</div>'
-        + '<div class="lx-sub">A module opens when every module it depends on has its gate passed, '
-        + 'and its three claims can only be made in order. '
-        + 'The longest path through those edges is what sets your timeline — not the hour sum.</div>'
+        + '<div class="lx-sub">A module opens when every module it needs has been passed, '
+        + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
+        + 'The longest chain of modules, not the total hours, is what sets how long this takes.</div>'
         + '</div>';
 
   h += '<div class="lp-cols"><div>';
@@ -6318,8 +6323,9 @@ function lpModulesHTML(API) {
     if (Lr.id === 4) {
       h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
       h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
-      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It gates twelve modules and '
-         + 'it is the only prerequisite here that cannot be satisfied by working harder.</div>';
+      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It holds back twelve modules and '
+         + 'it is the only requirement here that cannot be met by working harder. '
+         + 'Each line will make sense by M11; for now it is the reason the middle of the ladder is locked.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
         h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
@@ -6342,8 +6348,8 @@ function lpModulesHTML(API) {
       h += '<span class="lp-modI">' + (pr.gate ? '✓' : m.id) + '</span>';
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
-      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-tag">Owns ' + esc(o) + '</span>'; });
-      if (m.trigger) h += '<span class="lp-tag">By trigger</span>';
+      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-tag">Teaches ' + esc(o) + '</span>'; });
+      if (m.trigger) h += '<span class="lp-tag">Starts by date</span>';
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites')
          + '</span></span></span>';
       h += '<span class="lp-modR"><span class="lp-modHr">' + m.hours + 'h</span>'
@@ -6373,7 +6379,7 @@ function lpModulesHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">By the numbers</div></div>';
   [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
    ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
-   ['Critical path', API.criticalPath().hours + 'h'],
+   ['Longest chain', API.criticalPath().hours + 'h'],
    ['Layers', '9']].forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
   });
@@ -6539,7 +6545,7 @@ function lpDetailHTML(API, id) {
      + '<span class="lx-mt">L' + m.layer + (layer ? ' ' + esc(layer.name) : '') + '</span></div>';
   h += '<div class="lx-title">' + esc(m.title) + '</div>';
   h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + ' have passed.' : 'No prerequisites — this is where the curriculum starts.')
-     + (m.owns ? ' Owns ' + m.owns.join(', ') + ' for the whole curriculum, so no later module re-teaches it.' : '') + '</div>';
+     + (m.owns ? ' Teaches ' + m.owns.join(', ') + ' for good; no later module re-teaches it.' : '') + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
     if (i) h += '<span class="lx-tkr"></span>';
@@ -6554,9 +6560,23 @@ function lpDetailHTML(API, id) {
 
   var n = 0, pad = function () { return ('0' + (++n)).slice(-2); };
 
+  // Words first. A reader with no background must never meet a term on this
+  // page before its plain definition, so the glossary opens the lesson.
+  if (m.words && m.words.length) {
+    var wh = '';
+    m.words.forEach(function (w) {
+      wh += '<div class="lx-wd"><b>' + esc(w[0]) + '</b><p>' + esc(w[1]) + '</p></div>';
+    });
+    h += lxSec(pad() + ' · WORDS', 'doc', 'Words used on this page',
+               'Plain definitions, in the order the words appear below. Nothing on this page assumes you already know them.',
+               wh);
+  }
+
   if (m.concepts && m.concepts.length) {
     h += lxSec(pad() + ' · UNDERSTAND', 'book', 'What you have to hold in your head',
-               'Read the primary source — the official docs or spec, not a tutorial — and write down where you were wrong. That DELTA.md is the proof you read.',
+               m.id === 'M0'
+                 ? 'There is nothing to read yet. Your delta for this module is one paragraph, written before anything else: what you believe this program will take. You will read it again in month four.'
+                 : 'Read the official documentation for the tools in this module, not a tutorial, and write down every place it proved you wrong. That page of notes is your delta, and it is the proof you read.',
                lxList(m.concepts));
   }
 
@@ -6602,9 +6622,9 @@ function lpDetailHTML(API, id) {
   // Rail. Claim the three steps, then the facts, then where this leads.
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Claim progress</div>'
      + '<div class="lp-cmeta">in order</div></div>'
-     + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">The gate unlocks everything downstream, '
-     + 'so it is the one claim worth making carefully.</div>';
-  [['delta', 'DELTA.md written', 'primary sources read'],
+     + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the documentation proved you wrong. '
+     + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module.</div>';
+  [['delta', 'Delta written', 'the documentation read, your notes made'],
    ['artifact', 'Artifact built and running', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
@@ -6618,8 +6638,8 @@ function lpDetailHTML(API, id) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">This module</div></div>';
   var facts = [['Hours', m.hours + 'h'], ['Kind', m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab'], ['Layer', 'L' + m.layer],
                ['Depends on', m.dependsOn.length ? m.dependsOn.join(', ') : '—']];
-  if (m.owns) facts.push(['Owns', m.owns.join(', ')]);
-  if (m.exports) facts.push(['Exports', m.exports.join(', ')]);
+  if (m.owns) facts.push(['Teaches for good', m.owns.join(', ')]);
+  if (m.exports) facts.push(['Hands on', m.exports.join(', ')]);
   facts.forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });

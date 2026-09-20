@@ -198,7 +198,7 @@ Presented in execution order. Hours are focused hours.
 
 | # | Module | h | dependsOn |
 |---|---|---|---|
-| **M0** | Scope, Runway, Reviewer, Flagship | 12 | — |
+| **M0** | The Plan | 12 | — |
 | **M0A** | First Code | 58 | M0 |
 | **M0B** | Flagship v1 | 30 | M0A |
 | **M1** | The Runtime, Unframed | 67 | M0A |
@@ -226,7 +226,7 @@ Presented in execution order. Hours are focused hours.
 | **M8** | Python On-Ramp | 15 | M6 |
 | **M23** | Python as a Second Production Language · *trigger* | 35 | M8, M11 |
 | **M24** | Third-Party Integration as a Consumer | 23 | M3, M19 |
-| **M25** | Comp, Terms, and the Negotiation · *trigger* | 11 | M0 |
+| **M25** | Pay, Terms, and the Negotiation · *trigger* | 11 | M0 |
 | **M26** | The Evidence Layer v1 · *trigger* | 8 | M7 |
 | **M27** | The Evidence Layer v2 · *trigger* | 12 | M16, M18 |
 | **M28** | Interview Performance · *trigger* | 38 | M12, M26 |
@@ -252,7 +252,7 @@ instrument to terminate on hire day.
 
 # LAYER 0 — The Contract
 
-## M0 — Scope, Runway, Reviewer, Flagship (12h) · `dependsOn: —`
+## M0 — The Plan (12h) · `dependsOn: —`
 
 This is day one, and the reader on day one has never written code. So every item below is something a
 person can do with a notebook and an internet connection, said in words they already have. Five items
@@ -1443,7 +1443,7 @@ bold "this happens before the first application" while sitting at hour 873 — e
 applications start. M24 produced the resume at month 15 for applications at month 5. Five lenses caught it
 independently.
 
-## M25 — Comp, Terms, and the Negotiation (11h) · *trigger: one month before the application date*
+## M25 — Pay, Terms, and the Negotiation (11h) · *trigger: one month before the application date*
 
 The funnel-filter half of this work already happened in M0, where it belongs, because it determines which
 modules matter. This is the transaction itself.

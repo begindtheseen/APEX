@@ -13,15 +13,15 @@
 // ============================================================
 
 var AI_LAYERS = [
-  { id: 0, name: 'The Contract',          purpose: 'Budget, runway, reviewer, flagship. Authority over everything else.' },
-  { id: 1, name: 'The Machine',           purpose: 'The literal answer to "I need to understand code." The runtime, the machine under it, the database, the model, and the wire between them.' },
-  { id: 2, name: 'The Craft I',           purpose: 'The substrate: queue, tests, observability.' },
-  { id: 3, name: 'The AI Production Core',purpose: 'The differentiator: a real corpus, one eval harness, a design you defended. Gated behind observability, not behind everything.' },
-  { id: 4, name: 'The Craft II',          purpose: 'Ramp and collaboration. Learned while interviewing.' },
-  { id: 5, name: 'The AI Layer, Completed', purpose: 'Retrieval, agents, cost, security.' },
-  { id: 6, name: 'Product and Platform',  purpose: 'The surfaces the AI work ships through — and Python as a second language.' },
-  { id: 7, name: 'The Market',            purpose: 'Scheduled by TRIGGER, not by position.' },
-  { id: 8, name: 'Employed Mode',         purpose: 'Hire-before-completion is the modal good outcome.' }
+  { id: 0, name: 'The Contract',          purpose: 'Your numbers, your reviewer, your flagship. Decided first, because everything after this obeys them.' },
+  { id: 1, name: 'The Machine',           purpose: 'How code actually runs. The language, the computer under it, the database, the AI model, and the connection between them. The literal answer to: I need to understand code.' },
+  { id: 2, name: 'The Craft I',           purpose: 'The habits that keep a running app running: work that survives a crash, tests that catch real mistakes, and seeing inside your app when it misbehaves.' },
+  { id: 3, name: 'The AI Production Core',purpose: 'What makes you an AI engineer rather than a web developer: real documents in, a way to measure whether the AI is right, and a design you defended in writing. Opens once you can see inside your app.' },
+  { id: 4, name: 'The Craft II',          purpose: 'Working in other people’s code and with other people. Learned while you start interviewing.' },
+  { id: 5, name: 'The AI Layer, Completed', purpose: 'Search you measured, AI that takes actions on its own, what each request costs, and keeping the whole thing safe.' },
+  { id: 6, name: 'Product and Platform',  purpose: 'The screens people use, getting the app live and keeping it live, and Python as a second language.' },
+  { id: 7, name: 'The Market',            purpose: 'Pay, proof a stranger can judge, and interviews. Started by a date on your plan, not by finishing everything.' },
+  { id: 8, name: 'Employed Mode',         purpose: 'Getting hired before you finish is the normal good outcome. What changes on day one of the job.' }
 ];
 
 // Concepts with exactly ONE owning module. Consumed everywhere after, never re-taught.
@@ -48,8 +48,8 @@ var AI_CURRICULUM = [
 
 // ─────────────── LAYER 0 · THE CONTRACT ───────────────
 { id:'M0', layer:0, hours:12, dependsOn:[], kind:'LAB',
-  title:'Scope, Runway, Reviewer, Flagship',
-  artifact:'One page, called PLAN.md, that you can read out loud. It holds: how many months you can go without a paycheck (your runway); how many hours a week you can truly give this, and the deadline those two numbers force; the date you will start applying for jobs, chosen now; twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job; a count of how many of the twenty ask for Python (eight or more, and the Python module moves earlier); three messages sent to people who write code for a living, asking each for twenty minutes a month; a dated list of what you can do today, which on day one is honestly "nothing yet"; a file called INCIDENTS.md with one line every time something goes wrong from here on; a date in month four by which a dozen people you found will have used your app; and a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
+  title:'The Plan',
+  artifact:'One page, called PLAN.md, that you can read out loud. It holds: how many months you can go without a paycheck (your runway); how many hours a week you can truly give this, and the deadline those two numbers force; the date you will start applying for jobs, chosen now; twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job; a count of how many of the twenty ask for Python (eight or more, and the Python module moves earlier); three messages sent to people who write code for a living, asking each for twenty minutes a month, and whoever says yes is your reviewer, the person who checks your work from here on; a dated list of what you can do today, which on day one is honestly "nothing yet"; a file called INCIDENTS.md with one line every time something goes wrong from here on; a date in month four by which a dozen people you found will have used your flagship, the one app you will build in month two and keep improving for the rest of the program; and a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
   gate:{ referee:'Anyone \u2014 a friend, a partner, a sibling \u2014 who reads your one page and hands it back.',
          pass:'They can say your runway, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
          onFail:'This one cannot be failed by lack of skill. It is failed by not doing it, and the rest of the program is built on these numbers.' } },
@@ -57,14 +57,14 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 1 · THE MACHINE ───────────────
 { id:'M0A', layer:0, hours:58, dependsOn:['M0'], kind:'LAB',
   title:'First Code',
-  artifact:'Six small programs you wrote from an empty file, run from a terminal you set up yourself: a script that reads a file and prints a count, one that calls a public JSON API and reshapes the result, one that fails on purpose and is fixed by reading the error, one with a function you extracted because it was repeated, one with three passing tests you wrote first, and one you broke and recovered with git. Plus the environment itself as an artifact: node installed and its version pinned, an editor you can navigate without a mouse, a repo pushed to a remote with a readable commit history, and a written page naming every tool you touched and what it is for. Three more things, now that you have tools: a thirty-minute check that your machine can run what later modules need \u2014 a local database, a container runtime, a load generator, a browser you can drive from code \u2014 done now so it fails loudly now rather than in month three; a first attempt at a coding task you have not seen, scored honestly as a fraction (0 of 6 is a real number and the point of writing it down); and a list of twenty small bug-fix commits from real public repos, found but NOT read, saved for M12 and M28 to use as practice with a real answer key.',
+  artifact:'Six small programs, each written by you from an empty file and run from the terminal: one that reads a file and prints how many lines it has; one that asks a public API for data and rearranges what comes back; one that fails on purpose, which you fix by reading the error message; one where a block you had typed twice becomes a function; one with three tests you wrote before the code they test; and one you broke on purpose and got back with git. The setup around them counts as part of the work: node installed with its version written down, an editor you can move around in without a mouse, a repo pushed to a remote with commit messages a stranger could follow, and a page naming every tool you installed and what each one is for. Then three short things you can only do now that you have tools. A thirty-minute check that your machine can install what later modules need (a local database, a container runtime, a load generator, and a browser you can drive from code), done now so that if something will not install it fails today instead of in month three. A first attempt at a coding task you have never seen, scored honestly as a fraction; zero out of six is a real score, and writing it down is the point. And a list of twenty small bug-fix commits from other people\u2019s public repos, found but not read, saved for M12 and M28, where they become practice problems with a real answer.',
   gate:{ referee:'Anyone who writes code for a living, watching your screen for twenty minutes, on a task you have not seen.',
          pass:'From an empty directory: create a file, write a function with a test, run it, make the test fail, read the error out loud and say what it means, fix it, commit, push. No tutorial open.',
          onFail:'Do it again from an empty directory. Re-running the tutorial does not count \u2014 the whole failure mode of this module is a working repo you cannot rebuild.' } },
 
 { id:'M0B', layer:0, hours:30, dependsOn:['M0A'], kind:'EVIDENCE',
   title:'Flagship v1',
-  artifact:'First, name the app and write its one-page specification against the checklist: who it is for, the one thing it does, what a user types and what they get back, and what it must never do \u2014 twelve later modules bolt onto this page, so it is signed line by line before anything is built. Then the smallest honest version of it: a plain HTML page with an input (the React rebuild is M20’s), a server route that calls a model with your own key, the reply rendered, and the whole thing deployed at a URL a stranger can open. No streaming, no accounts, no database \u2014 those arrive in M3, M4 and M24 and each one has a module. Plus the two non-negotiables: the key lives on the server and is provably not in the client bundle, and every model call is logged with its inputs, outputs and cost from the first request, because M7 and M11 both read that log and neither can reconstruct it later.',
+  artifact:'First, give the app a name and write its one-page specification: who it is for, the one thing it does, what a user types in and what they get back, and what it must never do. Twelve later modules add to this page, so you sign it line by line before you build anything. Then build the smallest honest version of it. A plain HTML page with one text box. A server route that sends what the user typed to a model, using your own API key, and returns the reply. The reply shown on the page. The whole thing deployed, so it has a URL a stranger can open on their phone. No streaming, no accounts, no database; each has its own module later (M3, M24 and M4) and each is easier to add to something already running. Two rules that cannot be skipped. The key lives on the server in an environment variable, and you prove it is not in the client bundle by searching the files the browser downloads. And every model call is written to a log with its input, output, cost and time, from the very first request, because M7 and M11 both read that log and a month of calls you did not record is gone for good.',
   owns:['flagship'],
   exports:['the app M3, M7, M10, M11, M16, M17, M18, M19, M20, M22 and M24 all extend'],
   gate:{ referee:'Two people who are not you, on their own devices, with no instructions from you.',
@@ -273,7 +273,7 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 7 · THE MARKET (by trigger) ───────────────
 { id:'M25', layer:7, hours:11, dependsOn:['M0'], kind:'EVIDENCE',
   trigger:'One month BEFORE the application date. Non-droppable in every variant including the Compressed Spine.',
-  title:'Comp, Terms, and the Negotiation',
+  title:'Pay, Terms, and the Negotiation',
   artifact:'A comp floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded. Plus a references plan: three real people secured by month 10 — the reviewer, an OSS maintainer, a freelance client.',
   gate:{ referee:'GATE A (controllable, month-4 trigger): the reviewer playing a recruiter briefed to push back on your number. GATE B (lagging): a real recruiter screen, logged in the funnel table when it happens.',
          pass:'State your floor out loud without hedging, recorded. AND deliver a 30-second background answer with no apology, no hedge and no mention of coursework, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since?',
@@ -709,11 +709,65 @@ M30:{concepts:['The 30/60/90 plan and the week-one manager questions','The askin
  mistakes:['Silent struggle. Self-taught plus remote is the highest-risk combination, and being stuck two days on a five-minute unblock is how new hires are let go at month three.','Working one thing at a time, so four months of six-day PRs reads on a cycle-time dashboard as slow to deliver.','Asking for the answer instead of stating your current best hypothesis.']}
 };
 
+// ============================================================
+// Words. Every technical term a module uses, defined in plain language on
+// the page where it first appears, in the order it appears. The reader
+// with no background should never meet a word before its definition.
+// ============================================================
+var AI_WORDS = {
+M0:[
+ ['Runway','How many months you can pay your bills with no paycheck. It is the only number that sets your deadline.'],
+ ['Reviewer','A person who writes code for a living and has agreed to look at your work for twenty minutes a month. You find them in this module.'],
+ ['Flagship','The one app you will build in month two and keep improving for the rest of the program. Every later module adds something to it.'],
+ ['Python','A programming language. Some job postings ask for it by name. This program teaches JavaScript first and Python later, unless your postings say otherwise.'],
+ ['PLAN.md, INCIDENTS.md','Plain text files. The .md ending only means ordinary text with light formatting. Any notes app can make one.'],
+ ['Module','One unit of this program, usually two to four weeks. Each ends with a thing you made and a check by someone else.'],
+ ['Lab','A module whose result stays private. It exists so you learn, not so anyone sees it. The other kind, Evidence, is something a stranger can look at.'],
+ ['Artifact','The thing a module produces. Here it is a page of text. Later it is a program.'],
+ ['Delta','A page of notes you write before building, listing where the official documentation proved you wrong. On this module there is nothing to read yet, so it is one paragraph: what you believe this program will take.'],
+ ['Gate, referee','The gate is the check at the end of a module: someone other than you looks at what you did and says yes or no. That person is the referee. Nothing after the gate opens until it is a yes.'],
+ ['Spine','The thirteen modules you do if your runway is short. The figure at the bottom of this page compares it with the full program.']],
+M0A:[
+ ['Program','A text file of instructions a computer reads top to bottom and carries out.'],
+ ['Terminal','A window where you type commands as text instead of clicking. Everything in this module is run from it.'],
+ ['Script','A small program, usually one file, that does one job when you run it.'],
+ ['Public API','A web address a program can ask for data. It answers in text a program can read, not a page a person reads.'],
+ ['JSON','The text format an API answers in: named values inside curly braces. Once you have seen one you have seen them all.'],
+ ['Error message','What the computer prints when it stops. It names the file, the line and, most of the time, the mistake.'],
+ ['Function','A named block of code you run by name. Values go in (arguments) and one value comes back (the return value).'],
+ ['Test','A second, tiny program that runs your program and reports pass or fail, so you do not have to check by eye.'],
+ ['git','A save-point system for files. Each save is a commit with a message. The history of commits is what lets you get back to before something broke.'],
+ ['Node','The program that runs JavaScript on your computer outside a browser. Typing node --version prints which one you have.'],
+ ['JavaScript','The programming language this program teaches first, because it runs in browsers and on servers alike.'],
+ ['Editor','The app you write code in. A text editor with helpers, not a word processor.'],
+ ['Repo','Short for repository: one project folder under git’s control, with its whole history.'],
+ ['Remote, push','A remote is a copy of your repo on another computer, usually GitHub. A push copies your commits there.'],
+ ['Local database','A program on your own machine that stores data in tables and answers questions about it. Used from M4. Here you only check it installs.'],
+ ['Container runtime','A tool (Docker is the common one) that runs a program in a sealed box with everything it needs. Checked here, used from M4.'],
+ ['Load generator','A tool that sends your app many requests at once to see when it slows down. Checked here, used from M11.'],
+ ['Browser driven from code','A tool that opens a real browser and clicks through your app on its own, for testing. Checked here, used later.'],
+ ['Bug-fix commit','A save-point in someone else’s public repo whose message says it fixed a bug. The change it made is the answer you practice against later.']],
+M0B:[
+ ['Specification','One page saying what the app is for, what it does, and what it must never do, written before any code.'],
+ ['Client, server','The client is the part that runs on the user’s device, in their browser. The server is the part that runs on a computer you control. The user never sees the server’s code.'],
+ ['HTML','The text format a browser turns into a page. A plain HTML page is the simplest possible screen.'],
+ ['Server route','One web address your server answers. The client sends a request to it and gets a reply back.'],
+ ['Model','The AI program you send text to and get text back from, through a paid service. Calling a model means sending it one request.'],
+ ['API key','A long secret string the service gives you. Anyone who has it can spend your money, which is why it must never reach the client.'],
+ ['Deploy, URL','Deploying puts the app on a computer on the internet so it has a web address, a URL, that a stranger can open on their phone.'],
+ ['Streaming, accounts, database','Three things this version deliberately lacks. Streaming shows the reply word by word as it arrives (M3). Accounts let a user log in (M24). A database keeps data between visits (M4).'],
+ ['Environment variable','A named value the server reads from its surroundings when it starts, not from your code. Secrets live there so they are never written into the code itself.'],
+ ['Client bundle','The files the browser downloads to show your app. Anything in them is public, which is why the key must not be there.'],
+ ['Log','A file your server adds one line to on every request: what came in, what went out, when, and what it cost.'],
+ ['Evidence','A module whose result a stranger can see and judge. Labs are private; evidence is public. This is the first one.']]
+};
+
 // Merge detail onto the graph so consumers see one object per module.
 (function () {
   for (var i = 0; i < AI_CURRICULUM.length; i++) {
     var d = AI_DETAIL[AI_CURRICULUM[i].id];
     if (d) { AI_CURRICULUM[i].concepts = d.concepts; AI_CURRICULUM[i].mistakes = d.mistakes; }
+    if (AI_WORDS[AI_CURRICULUM[i].id]) AI_CURRICULUM[i].words = AI_WORDS[AI_CURRICULUM[i].id];
   }
 })();
 
