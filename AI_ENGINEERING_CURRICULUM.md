@@ -2,1128 +2,1287 @@
 
 ## A curriculum for becoming a hireable remote AI product engineer
 
-Built from 24 parallel research sweeps, three adversarial critics, and an architecture pass.
-Raw research corpus: 2,605 hours across 24 dimensions. Cut to **963 focused hours** — because a
-perfect curriculum abandoned in month seven is worth less than a leaner one finished.
+**Version 2** — rebuilt after adversarial review. Built from 24 parallel research agents, then attacked
+by 10 critics from 10 lenses, then re-cut. The review broke one of the five structural bets this
+document was resting on and found a sixth it had never named. Both corrections are on this page.
 
 ---
 
-## Read this part first. It is the most important page in the document.
+## The honest numbers
 
-**963 focused hours is roughly 1,300–1,400 wall-clock hours** once you count environment setup,
-yak-shaving, and re-reading what decayed. At a sustainable 18 hours/week that is **about 13 months
-of focused time and 15–18 months of calendar.**
+| | hours |
+|---|---|
+| **Module hours** (the 31 modules) | **999** |
+| **Parallel track hours** (8 tracks, all mandatory) | **~425** |
+| **Real total** | **~1,425 focused hours** |
 
-That number has not been shrunk to look achievable. It is already the product of cutting 1,640 hours
-out of the research corpus — deleting an entire dimension, collapsing five duplicate builds, and
-removing 604 hours of job-search activity that wasn't writing code.
+Version 1 of this document said 963 hours. **That was wrong, and it was wrong in the most dangerous
+direction.** It excluded the eight parallel tracks — which it simultaneously described as mandatory.
+Three critics priced those tracks independently and converged on 350–480 hours. The headline
+understated the commitment by roughly 40%.
 
-**If your runway is under nine months, this curriculum is the wrong plan.** The right plan is Layers
-0–2 plus M11 and M13, then a contract role at month six, and the remaining ~500 hours learned on
-someone else's payroll. That is a financial decision, not a technical one, and M0 is where you make it.
+That matters more than any other correction here, because M0's entire claim to authority is *runway
+sets the deadline*. A deadline computed from a number 40% low is not authority. It is a miscalculation
+you experience as a felt sense of perpetual lateness somewhere in month nine — which this document
+itself names as the mechanism that turns a bad stretch into quitting.
 
-### The three rules that govern everything
+### What ~1,425 hours actually means
 
-**1. Every module ends in an artifact you built and can explain out loud.** Non-negotiable. If a
-module has no buildable artifact, it has been restructured until it does or cut.
+- At **18 h/week** → ~20–24 months.
+- To finish in **13 months** you need **~24 h/week**, every week, for a year.
+- Wall-clock runs 1.3–1.5× focused hours once you count setup, yak-shaving, and re-reading what decayed.
 
-**2. Every module's capstone imports an earlier module's capstone.** This is the dependency spiral.
-M3's streaming proxy is a hard dependency of M15, M18, and M19. M13's eval runner is reused by M14
-and gated by M20. You re-read old code because the build requires it, not because a review schedule
-says so. **This costs zero hours and is the entire answer to "how do month-two modules not decay by
-month ten."**
+**Do not pick a weekly number because it sounds committed. Derive it.** M0 requires you to write down
+your employment status and monthly burn first, then publish two timeline variants — employed (~12 h/wk)
+and full-time (~35 h/wk) — and take the one that matches your actual life.
 
-**3. Six concepts are taught exactly once, by one owning module, and consumed by every module after.**
-Streaming, evals, idempotency, observability, the trust boundary, and cost. The research corpus taught
-an eval harness six times in four incompatible substrates, SSE-from-scratch four times, and
-observability five times. Following it as written produces four abandoned half-harnesses instead of
-one that works.
+### The Compressed Spine — if your runway is under nine months
 
-### The honest risk list
+Do not attempt the full program. The real short path is **350 focused hours**: M0 (20), M1 (67), M2 (45),
+M3 (45), M6 (28), M7 (45), M9 (30), M11 (62), M25 (8). That is ~4.5 months at 18 h/week, and it gets you
+to a contract role with the
+fundamentals, the observability, the model layer, and one real eval harness. Everything else is learned
+on someone else's payroll.
 
-- **Months 3–6 are the abandonment window.** M4, M5, M7, and M8 are 200 hours of the least glamorous
-  material here and the furthest from the AI work you actually want. No amount of design makes this fun.
-- **The application start date will slip.** You will hit month five, feel unready, and push it. That
-  single slip is the most likely way this becomes an 18-month unpaid project.
-- **The gates are self-administered by the one person who has already demonstrated he can mistake
-  working for understanding.** Roughly a third of them are decorative unless witnessed. Mitigations
-  are structural: a real reviewer, a passing test, a stranger reading a README, a recording you watch back.
-- **Six modules bolt onto the same flagship app.** If it's a toy with no traffic, M13's error analysis
-  has nothing to read and M16's cost attribution measures nothing. You need a flagship with ~200 real
-  requests before M13 starts. M0 names which app it is.
-- **Python at position 25 is a genuine bet.** If your funnel turns out to be Python-mandatory backend
-  roles, you are both short on hours and late on timing. The monthly re-plan is the only thing that
-  catches this, and only if you're actually applying by month five.
+**M25 (comp and terms) is non-droppable in every variant, including this one.** It is 8 hours against a
+first-year cost that exceeds the value of this entire curriculum.
+
+---
+
+## The six bets this curriculum is making
+
+A red team was asked to break all of these. Here is what survived.
+
+**BET 1 — TypeScript first, Python late. → HOLDS.** The attack was that Python appears in the large
+majority of AI-engineer postings and that resolving for TS costs most of your funnel. It fails: your
+entire body of shipped evidence is TypeScript, your gap is a *reasoning* gap rather than a
+language-count gap, and learning correctness twice is strictly worse than learning it once and porting
+it. The postings read "Python **or** TypeScript," and the live AI-*product* roles are TS-native.
+**What was wrong was the hedge, not the bet** — v1 named this "the biggest open bet" and then gave it
+no trigger, no threshold, and no pre-written alternative. Fixed in M25 and M8/M23.
+
+**BET 2 — the hour budget. → WAS WRONG.** Corrected above. This is the single most important change in v2.
+
+**BET 3 — an artifact per module. → HOLDS, with one addition.** The attack (27 artifacts produce a
+portfolio of toys) fails on the document's own facts — it already collapses many modules onto one
+flagship and selects down to four pinned repos. The real defect was never distinguishing **artifacts
+built to learn** from **artifacts built to show.** Every artifact is now tagged `LAB` or `EVIDENCE`.
+Costs nothing.
+
+**BET 4 — gating the AI layer behind the fundamentals. → WAS PARTLY WRONG.** The justification ("an
+eval harness built by someone who cannot write a concurrent data pipeline is a dashboard, not a skill")
+supports putting evals after the runtime and observability modules. It does **not** support putting
+them after 150 hours of Postgres, git, agents, and scoping. Worse, it collided with the month-5
+application date: the differentiator finished around month 10 while you were already interviewing.
+**Fixed: the model layer, ingestion, and evals now run immediately after observability**, and the
+ramp-and-collaboration modules move after them.
+
+**BET 5 — that a curriculum is the right instrument at all. → HOLDS.** You named a real reasoning gap
+and the 2026 market for unproven remote juniors is genuinely hostile; competence work is necessary. But
+the honest residue of the attack stands: **the three activities most directly responsible for whether
+you get hired — applications that reach a human, merged OSS PRs, public writing about measurements —
+were the only parts of v1 with no hours, no artifact, and no gate,** while every technical module had
+all four. Under time pressure, unbudgeted ungated work goes first. That is how this becomes eighteen
+months of excellent code and four interviews. All three now carry hours and gates.
+
+**BET 6 — THE ONE V1 NEVER NAMED: that the flagship exists, qualifies, and has real traffic.**
+Five of ten lenses found this independently — the most corroborated finding in the entire review. It
+gates twelve modules. It had no specification, no acquisition plan, no hours, and no fallback. **It is
+the only prerequisite in this document that cannot be satisfied by working harder** — it needs other
+humans using your app, months in advance. It is now a hard gate with a spec, hours, and a written
+fallback. See M0 and the Layer 3 gate.
+
+> The review verified the concrete version of this risk: the one app currently in this repo is a static
+> `index.html` with `localStorage` — no backend, no accounts, no users, no model calls. That is not
+> proof your flagship will fail. It is proof that an app can pass M0 as v1 wrote it and satisfy **zero**
+> of the twelve requirements.
+
+---
+
+## The four rules
+
+**1. Every module ends in an artifact you built and can explain out loud.** Every artifact is tagged
+`LAB` (built to learn, never pinned) or `EVIDENCE` (built to show, goes in the portfolio).
+
+**2. Every module except M0 has at least one inbound dependency edge.** Each module header states
+`dependsOn:` explicitly. **The longest path, not the hour sum, sets the timeline.**
+
+**3. Five concepts have exactly one owning module** and are consumed, never re-taught: **streaming**
+(M3), **the durable queue** (M5), **observability** (M7), **evals** (M11), **the trust boundary** (M1).
+v1 claimed this rule and then violated it twice — idempotency and cost had no declared owner. Now:
+**idempotency** is owned by M3, **cost** by M18.
+
+**4. Four concepts are deliberately taught twice, at different depths.** This is not a violation; it is
+a spiral, and naming the pairs prevents someone "fixing" it later: observability (M7 → M11), pooling and
+isolation (M2 → M4), CI (M6 → M11 → M22), OAuth (M3 → M24).
+
+---
+
+## Build order
+
+Presented in execution order. Hours are focused hours.
+
+| # | Module | h | dependsOn |
+|---|---|---|---|
+| **M0** | Scope, Runway, Reviewer, Flagship | 20 | — |
+| **M1** | The Runtime, Unframed | 67 | M0 |
+| **M2** | The Machine Model: Ten Seams | 45 | M1 |
+| **M3** | HTTP, Streaming, and the Wire | 45 | M1, M2 |
+| **M4** | The Postgres Underneath Supabase | 57 | M2 |
+| **M5** | The Durable Queue | 18 | M3, M4 |
+| **M6** | Tests That Fail For The Right Reason | 28 | M1, M4 |
+| **M7** | Debugging and Production Observability | 45 | M3, M4, M6 |
+| **M8** | Python On-Ramp | 15 | M6 |
+| **M9** | The Model as a Function | 30 | M3 |
+| **M10** | Ingestion: Real Documents Into a Corpus | 30 | M4, M5 |
+| **M11** | Evals: The One Harness (+ Stats Lab) | 62 | M7, M9 |
+| | **▲ HARD GATE — flagship live, 2 real users, 100 failure traces** | | |
+| **M12** | Reading and Changing Code You Did Not Write | 52 | M5, M6, M7 |
+| **M13** | Git, Review, and Code Others Maintain | 40 | M12 |
+| **M14** | Working With Coding Agents Professionally | 20 | M12, M13 |
+| **M15** | Scoping, Estimating, Someone Else's Priorities | 25 | M12 |
+| **M16** | Retrieval You Actually Measured | 40 | M10, M11 |
+| **M17** | Agents and Tool Use | 49 | M3, M5, M9, M11 |
+| **M18** | Cost, Metering, and Unit Economics | 30 | M9, M11, M3 |
+| **M19** | Security and the Trust Boundary | 30 | M1, M4, M7, M17 |
+| **M20** | Frontend for AI Interfaces | 40 | M3, M10, M17, M18 |
+| **M21** | System Design and the Design Doc | 12 | M5, M7 |
+| **M22** | Deployment, CI/CD, and Operating It | 48 | M4, M6, M11 |
+| **M23** | Python as a Second Production Language | 35 | M8, M11 |
+| **M24** | Third-Party Integration as a Consumer | 20 | M3, M19 |
+| **M25** | Comp, Terms, and the Negotiation | 8 | M0 · *trigger: 1 month before applications* |
+| **M26** | The Evidence Layer v1 | 8 | M11 · *trigger: application date* |
+| **M27** | The Evidence Layer v2 | 17 | M16, M18 · *trigger: after Layer 5* |
+| **M28** | Interview Performance | 45 | M12, M26 · *10h forward-loaded to application date* |
+| **M29** | Employed Mode | 10 | — · *written pre-hire, executed post-hire* |
+| **M30** | The First 90 Days | 8 | — · *trigger: first onsite* |
+
+**Hire before completion is the modal good outcome, not a failure.** Applications start ~month 5;
+Layers 0–3 finish around month 9. A hire at month 7–10 arrives with much of Layers 5–6 undone. That is
+the plan *succeeding*. M29 exists because v1 treated it as a footnote and designed every feedback
+instrument to terminate on hire day.
 
 ---
 
 # LAYER 0 — The Contract
 
-*8 hours. The only module with authority over the others. Nothing else gets scheduled until its
-artifacts exist.*
+## M0 — Scope, Runway, Reviewer, Flagship (20h) · `dependsOn: —`
 
-## M0 — Scope, Runway, and the Cold Baseline
+v1 gave this 8 hours and it was the module carrying the most weight in the document. It now carries
+four things that were previously assumed, unassigned, or discovered too late.
 
-**What you're establishing and why it matters:** The research corpus had no owner for the plan itself.
-Twenty-four researchers each answered "what does mastery of my slice require" and nobody asked "what
-is the 900-hour version of all of this." A superset handed to a motivated person becomes a
-two-and-a-half-year project that ends in burnout with no income and no interviews taken.
+**The artifact** `LAB` — one repo, one directory per module, plus `PLAN.md` containing:
 
-The specific structural error to avoid: **treating the job search as the reward for finishing.**
-Applying is not a terminal phase — it is the instrument that tells you which 900 hours mattered. Ten
-real interviews at month five will re-rank this curriculum more accurately than any researcher can,
-and rejection reasons are the highest-quality curriculum feedback available. They're free.
+**1. The money, first.** Employment status, monthly burn, runway in months. Two published timeline
+variants (employed ~12 h/wk, full-time ~35 h/wk) with the weekly hours **derived** from them, not
+assumed. If runway < 9 months, take the Compressed Spine and say so in writing.
 
-**Core concepts:**
-- Runway as the input that sets the deadline — not the topic list
-- The difference between "before first application" and "learn on the job"
-- Why the tutorial-competence illusion is three distinct mechanisms, not one feeling:
-  processing-fluency misattribution, recognition-vs-recall substitution, and the illusion of
-  explanatory depth. Each has a different fix; applying the wrong one feels like effort and changes nothing.
-- The bad-week minimum: a missed week must not read as a broken streak, because that converts one bad
-  week into quitting
+**2. The hour budget** — 999 module hours + ~425 track hours, with the line-item track table below, and
+your date arithmetic shown.
 
-**The artifact:**
-One git repo, one directory per module, plus `PLAN.md` containing:
-1. A written weekly hour budget with **named days**
-2. Your runway in months — the number of months of expenses you can cover
-3. The calendar date applications begin (target: ~month 5, after Layer 1 and most of Layer 2)
-4. The before/after-application cut, with a written defense of the split
-5. A one-page operating contract: module shape, weekly cadence, bad-week minimum, plateau protocol
-6. **Which existing app is the flagship** — the one M6, M13, M16, M17, M18, M22 all bolt onto
+**3. The application date** and the written defense of the before/after-application cut.
 
-Plus a **recorded cold baseline**: open an empty file and rebuild the core module of a feature you
-already shipped, in 45 minutes, with the original repo closed. Record exactly what you could not produce.
+**4. The funnel teardown (4h).** Twenty real current postings with geography, overlap, citizenship,
+degree, and YOE filters already applied. Tag each **W2 or 1099** — that is your own data point, and it
+replaces an unsupported claim v1 made (see M25). This lands in M0, not late, because **it determines
+which modules matter.**
 
-**Mastery gate:** State without looking: your weekly hours, your runway in months, the date
-applications start, and three specific things from your own shipped code you could not rebuild cold.
-The baseline recording exists and is what every later claim of progress is measured against.
+**5. The Python trip-wire, as a number.** From those twenty postings: *if fewer than 40% accept a
+Node-primary backend, M23 moves immediately after M11.* Pre-write that alternate ordering in one
+paragraph now, so the month-5 decision is a lookup rather than a redesign.
 
-**What most people get wrong:** Building an elaborate progress dashboard and mistaking instrumentation
-for learning — a real risk given you are literally building a tracking PWA. The dashboard is infinitely
-more pleasant to work on than the hard module. Cap the meta-work at one page. Also: setting modules at
-4–6 weeks, which feels serious and breaks both the review cadence and the sense of completion.
+**6. THE FLAGSHIP SPECIFICATION.** Name the app, then verify it against this checklist. **Twelve
+modules consume it.** If your named app fails a line, either fix the app before M1 or take the labeled
+fallback.
 
----
+| The flagship must have | Required by |
+|---|---|
+| A streaming chat surface you can rebuild on your own M3 protocol | M20 |
+| Multiple real users with skewed usage, and a paid tier | M18 |
+| A user-uploaded document corpus | M10, M16 |
+| At least one irreversible side-effecting action | M17, M19 |
+| Two distinct roles (so broken-access-control exploits are real) | M19 |
+| A third-party account worth connecting | M24 |
+| A CI/deploy pipeline you own | M22 |
+| Model calls being logged from day one | M7, M11 |
 
-# LAYER 1 — The Machine
+**7. The traffic milestone (10–15h, dated, month 4).** Twelve to fifteen recruited people running a
+scripted task list. That is a weekend of asking, not a growth strategy. The target is **~100 traces
+containing real failures** — that is what M11 actually consumes, and it is a better threshold than
+v1's "~200 requests."
 
-*215 hours. The literal answer to "I need to understand code." This layer is where "it works" and
-"it is correct" stop being the same sentence.*
+> **The labeled fallback, stated plainly:** if you cannot get real users, substitute a public corpus
+> with *real human labels you create yourself.* It costs you error-analysis realism — you will be
+> labeling failures you imagined rather than failures users found — and M11's own mistakes list says an
+> imagined set measures imagination. Take it knowingly or not at all. **Do not invent traces.** A
+> hiring manager detects that in two questions.
 
-## M1 — The Runtime, Unframed (60h)
+**8. Turn on append-only logging of every model call today, before M1 (1h).** So M7 *upgrades* a trace
+store rather than starting one at month 5.
 
-**What you're understanding and why it matters:** You can build Next.js apps. You likely cannot
-explain the event loop, why your async code races, what a Promise actually is, or why your types pass
-and your runtime breaks. Every one of those is a production bug you will be asked to debug on the job,
-and the last one is the single most common self-taught tell in a code review.
+**9. THE REVIEWER RECRUITMENT (4–6h).** v1 said "secured in M0, used from M8" and then put it in
+neither M0's artifact list nor its gate. Both claims were also wrong: the first hard human dependency
+is M7's game day, and **nine modules depend on a human**, not four.
 
-**Core concepts:**
-- **The event loop**: call stack, macrotask vs microtask queue, and why one slow function stalls every user
-- **What a Promise actually is**: a notification channel for work that already started — not a thing
-  that "does" work, and not lazy
-- **The four concurrency failure modes**: sequential-when-you-meant-parallel, fire-and-forget,
-  unhandled rejection, and cancellation
-- **Closures, lexical scope, `this`, reference identity** — including the serverless trap: warm
-  instances reuse module scope, so any mutable module-level variable is shared state across users
-- **Structural typing and where the type system lies to you**: `as User` is a note to the compiler that
-  emits zero runtime code
-- **Parse, don't assert** — Zod at every edge, especially model output
-- **Discriminated unions and exhaustiveness** — making illegal states unrepresentable
-- **Error handling as design**: taxonomy, `cause` chaining, which failures are safe to retry
-- **Modules and the bundle graph**: placement means nothing, the import graph is what ships
+These are **three different recruitments**, not one person:
 
-**The artifact:** A `runtime-lab` repo — eight small programs run with plain `node --test`. No Next.js,
-no bundler. Contains: MiniPromise built from scratch; a concurrency harness that reproduces all four
-failure modes on demand and then fixes each; a Zod boundary that rejects hostile LLM JSON that
-`as MyType` accepted; a typed error taxonomy with cause chaining and a documented retry-safety rule per
-error class. `tsconfig` has `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
-`verbatimModuleSyntax`, and `erasableSyntaxOnly` on from day one.
+| Role | Needed by | Deadline |
+|---|---|---|
+| **Code reviewer** | M13, M14 | end of month 2 |
+| **Technical operator** (can break a system cold) | M7 game day, M14 defect planting | month 4 |
+| **Mock interviewer** (credible at mid-level) | M21 design follow-ups, M28, M30 | month 10 |
 
-**Mastery gate:** Screen-share and narrate, unprompted, why `setTimeout(fn, 0)` runs after a resolved
-`.then()`. Then take a function from your own shipped code that `as`-casts model JSON, convert it to a
-parsed boundary, and explain out loud exactly which production bug that prevents.
+Produce: a one-page reviewer brief (what you send, how often, **capped at ~90 min/month**, what they
+get back); a ranked list of eight real candidate sources — *paid senior-engineer mentorship with a
+stated dollar budget, a maintainer of a repo you have already merged into, a reciprocal peer swap, a
+paid mock-interview service*; and **an acceptance test: one trial review completed with written
+comments returned.**
 
-**What most people get wrong:**
-- Believing `async` means "runs in the background." An async function runs synchronously until its
-  first `await`, and CPU-bound work inside one blocks the whole process exactly as hard as sync code.
-- `await` inside a `for` loop over independent work — turning 200 × 200ms into 40 seconds. And the
-  opposite: `Promise.all` over an unbounded array, firing 200 simultaneous requests into a retry storm.
-- Silencing strict-mode errors with `as` casts and `!` instead of narrowing — which converts a compile
-  error into a runtime crash and makes the whole exercise net-negative.
-- Modeling state as `{ loading: boolean, error?: string, data?: T }`, which permits four impossible
-  combinations, instead of a union that permits exactly the real ones.
-- `catch (e) { console.log(e); }` and continuing — converting a loud failure into a silent wrong answer.
+> **The cheapest reviewer is free and requires no network: an OSS maintainer reviewing a real PR.**
+> They did not write your code, they cannot be re-rolled, and Track 2 already puts you in front of them.
+> M13's gate consumes that directly.
 
-## M2 — The Machine Model: Nine Seams (45h)
+**Agent fallback, with the anti-re-roll rule in writing:** one run per attempt, transcript kept
+including failures, **a failed agent review is logged as a failed gate.** Re-rolling until you get a
+pass is how this instrument dies.
 
-**What you're understanding and why it matters:** Nine specific places where a naive mental model of
-the machine breaks, each framed around a bug it explains. You are not writing an operating system —
-you are eliminating the class of bug where you are mystified by your own code.
+**10. The cold baseline.** Open an empty file and rebuild the core module of a feature you already
+shipped, in 45 minutes, original repo closed. Record what you could not produce.
 
-**Core concepts:**
-- **References vs values**: aliasing, mutation, shallow vs deep copy
-- **Stack vs heap, object lifetime, and why a server leaks memory** — GC frees unreachable objects; a
-  leak is unintended reachability
-- **Number representation**: floating point, integer precision, the right type for money, IDs, timestamps
-- **Text encoding**: bytes vs code points vs grapheme clusters, and decoding a *stream*
-- **Serialization**: JSON as a lossy boundary
-- **Blocking**: event loop, async I/O, threads, processes
-- **File descriptors, sockets, connection pools, timeouts**
-- **Concurrent mutation**: races, atomicity, idempotency
-- **Dates, times, and timezones** — UTC storage vs local display, DST transitions (the hour that
-  happens twice and the hour that never happens), `timestamptz` vs `timestamp` as a Supabase footgun
-  that silently produces correct-looking wrong data
+**11. The blind-exercise queue (2h).** Find 20 merged bug-fix commits in real repos. **Do not read the
+fix commits.** M12 and M28 consume these — `git revert` one, the suite goes red, work the clock, score
+against the maintainer's actual merged diff. Real ground truth, no human required, nobody who can leak.
 
-**The artifact:** A `seams` repo of ten reproductions. Each is a failing script, the fix, and a test
-that proves it: a leaking server proved with a heap snapshot; a money total wrong by a cent; a UTF-8
-grapheme split across streamed chunks; a pool exhausted under load; a lost update in Postgres; and a
-daily-digest scheduler for users in four timezones with an injected fake clock, pinned across a
-spring-forward and a fall-back.
-
-**Mastery gate:** Shown any of the ten bugs cold, name the seam and the instrument you'd reach for
-within 60 seconds. Separately: open your own shipped schema, point at the columns that are the wrong
-type, and say what will silently go wrong.
-
-**What most people get wrong:**
-- Believing `{...obj}` or `JSON.parse(JSON.stringify(obj))` is "a copy." The spread is one level deep.
-  The JSON trick converts Dates to strings, drops `undefined` and functions, mangles Maps and Sets into
-  `{}`, and throws on cycles — and self-taught devs use it for years without knowing that.
-- Reaching for `.toFixed(2)` and calling money solved — that fixes the display and leaves the
-  arithmetic wrong, so error accumulates invisibly until a reconciliation report months later.
-- Constructing a `new TextDecoder()` inside the loop — looks identical to correct code, and is wrong,
-  because the whole point is the carried-over partial-character state.
-- Thinking "I'm using a connection pool" solves it, without noticing each of N serverless instances has
-  its own pool of size M, so the real number is N×M against the database's hard limit.
-- Believing a transaction prevents the race. At the default isolation level both transactions read the
-  same balance; `BEGIN/COMMIT` guarantees both statements land together, not that nobody moved the row.
-
-## M3 — HTTP, Streaming, and the Wire (45h)
-
-**What you're understanding and why it matters:** This is the layer under every AI feature, and the
-streaming and idempotency pieces are disproportionately load-bearing. **This module owns streaming for
-the entire curriculum** — M15, M18, and M19 import what you build here rather than rebuilding it.
-
-**Core concepts:**
-- **HTTP as a wire format** — the ~15 status codes and ~12 headers that carry meaning
-- **REST design and where REST stops being the right answer** (real APIs at Stripe and GitHub have
-  action endpoints; offset pagination is the most common correctness bug in list endpoints)
-- **SSE and chunked transfer, implemented from scratch with no SDK**
-- **Production streaming failure modes**: proxy buffering, client aborts, mid-stream errors, dropped
-  connections, resumption
-- **Idempotency** — why a retry is a data-corruption bug unless you design for it
-- **Timeouts, exponential backoff with jitter**, and which failures are safe to retry
-- **Rate limiting from both sides**
-- **Webhooks**: at-least-once delivery, signature verification on raw bytes, the async job pattern
-- **The browser boundary**: CORS and preflight, cookies vs bearer tokens vs JWTs, and exactly where
-  each breaks
-- **OAuth as a consumer** (deepened in M22)
-
-**The artifact:** **THE streaming LLM proxy** — raw `fetch`, raw `ReadableStream`, hand-parsed SSE
-frames, no SDK anywhere — with `AbortController` wired end to end and a Postgres idempotency-key dedupe
-table. It deliberately reproduces proxy buffering and a mid-stream error, and recovers from both. It is
-published as a module that later modules import.
-
-**Mastery gate:** Kill the client mid-generation and show, from logs, that upstream billing stopped.
-Replay the same idempotency key twice and show one row. Narrate what arrives on the wire between the
-first byte and the first rendered token.
-
-**What most people get wrong:**
-- Naive frame splitting: `chunk.toString().split('\n')`, which corrupts output the moment a frame is
-  split across TCP chunks — and works perfectly on localhost, so it ships.
-- Assuming HTTP 200 means the whole response succeeded. The status is committed before the body exists,
-  so mid-stream failures are invisible to any `res.ok` check.
-- Writing the assistant message to the database only in the stream's `finally`/`onFinish` — which on
-  serverless may never run once the response closes, silently losing the turn.
-- Everything returning `200 { ok: false }`, which breaks every retry library, monitoring tool, and
-  load-balancer health check.
-- Letting the client generate the idempotency key per-render instead of per-logical-operation — a React
-  re-render producing a fresh UUID defeats the entire mechanism.
-- Doing webhook work before responding, so a slow handler causes the provider to time out and retry,
-  multiplying the work.
-
-## M4 — The Postgres Underneath Supabase (65h)
-
-**What you're understanding and why it matters:** You use Supabase. Supabase fluency (RLS policies,
-auto-generated REST) is not Postgres fluency, and every job posting sampled lists SQL as a flat
-requirement. This is also where the abandonment window starts — it is unglamorous and it is load-bearing.
-
-**Core concepts:**
-- **Relational modeling**: keys, foreign keys, constraints as the thing that actually enforces invariants
-- **SQL without an ORM**: joins, aggregates, subqueries, CTEs, window functions
-- **Indexes and `EXPLAIN (ANALYZE, BUFFERS)`** — the deliberate slow-to-fast measurement loop
-- **Transactions, isolation levels, the lost-update problem**
-- **N+1 queries**: recognizing, measuring, killing
-- **Connection pooling** and the Vercel-plus-Supabase serverless failure mode
-- **Row Level Security** as a design skill — correct first, then fast
-- **Migrations and expand/contract** — schema evolution without downtime
-- **pgvector**: index types, recall measurement, the filtered-search trap
-
-**The artifact:** A `pg-lab` repo against a local Supabase stack: twelve hand-written queries with
-EXPLAIN plans before and after indexing, on a `generate_series` dataset of 5M rows; a documented
-slow→fast loop with wall-clock numbers from a load generator you wrote; an RLS policy set with a
-benchmark showing the correct-but-slow version and the fast fix; and an expand/contract migration
-executed against the app *while the load generator is running*, with zero failed requests.
-
-**Mastery gate:** Read an unfamiliar EXPLAIN plan out loud and name the fix before looking at the
-query. Explain why your own deployed app exhausted connections, and show the pooled fix working under
-the same load.
-
-**What most people get wrong:**
-- Reading `cost=` as milliseconds (it is an arbitrary planner unit), and benchmarking cold-then-warm so
-  the cache does the work the index gets credit for. Run each variant twice; report the second.
-- Assuming an index on `(a, b)` helps a query filtering only on `b`. It does not.
-- Creating a single-column index per column instead of one correctly ordered composite — and forgetting
-  every index is a tax on every INSERT and UPDATE.
-- Holding a transaction open across a network call to a model API, turning a 200ms DB connection into a
-  30-second lock.
-- Making schema changes in the Supabase dashboard's table editor, which bypasses migration history and
-  makes `db push` start failing with sync errors.
-- `USING (true)` in an RLS policy — identical to having no RLS while looking like security. And writing
-  a policy against a JWT claim the user can edit.
-- Treating approximate nearest neighbor as exact and never measuring recall. This is the default state
-  of almost every RAG app in the wild.
+**GATE** — **REFEREE:** the reviewer's trial review is returned in writing; the flagship checklist is
+signed line by line. **PASS:** all eleven artifacts exist; you state from memory your weekly hours,
+runway, application date, and three things you could not rebuild cold. **ON FAIL:** M1 does not start.
+This is the one gate with no partial credit.
 
 ---
 
-# LAYER 2 — The Craft
+# LAYER 1 — The Machine (214h)
 
-*225 hours. Turn a solo builder into someone who can be dropped into a running system he did not write
-and be useful in week two. This layer is where the hiring gap actually lives.*
+*The literal answer to "I need to understand code." Where "it works" and "it is correct" stop being the
+same sentence.*
 
-## M5 — Tests That Fail For The Right Reason (35h)
+## M1 — The Runtime, Unframed (67h) · `dependsOn: M0` · **owns: the trust boundary**
 
-**Core concepts:** The test pyramid and what each level is genuinely for; writing a unit test that
-fails for the right reason; test doubles (stub, fake, mock, spy) and when mocking makes a test
-worthless; integration tests against real Postgres including RLS; CI as a gate, not a place tests run;
-the flakiness budget; **the seam between deterministic shell and probabilistic core** in an AI feature.
+**Core concepts:** The event loop — call stack, macrotask vs microtask queue, why one slow function
+stalls every user. What a Promise actually is: a notification channel for work that *already started*,
+not a thing that does work and not lazy. The four concurrency failure modes —
+sequential-when-you-meant-parallel, fire-and-forget, unhandled rejection, cancellation. Closures,
+lexical scope, `this`, reference identity — including the serverless trap where warm instances reuse
+module scope, making any mutable module-level variable shared state across users. Structural typing and
+where the type system lies to you. **Parse, don't assert** — the trust boundary, owned here, consumed
+everywhere. Discriminated unions and exhaustiveness. Error handling as design: taxonomy, `cause`
+chaining, which failures are safe to retry. Modules and the bundle graph — placement means nothing, the
+import graph is what ships.
 
-**The artifact:** One of your already-shipped repos goes from zero tests to a green required check:
-~15 unit tests, 5 integration tests against real local Postgres including two RLS policies, running in
-GitHub Actions as a merge gate, with a written flakiness budget and the record of one test you deleted
-for asserting implementation.
+**Artifact** `LAB` — a `runtime-lab` repo, eight programs under plain `node --test`. MiniPromise from
+scratch. A concurrency harness reproducing all four failure modes on demand, then fixing each. A Zod
+boundary that rejects hostile LLM JSON which `as MyType` accepted. A typed error taxonomy with cause
+chaining and a documented retry-safety rule per class. Strict flags on from day one.
 
-**Mastery gate:** Handed a bug report on that repo, write the failing test first, then the fix, and
-explain why the test would still fail if the fix were wrong in a different way.
+**GATE** — **REFEREE:** screen recording, watched back. **PASS:** narrate unprompted why
+`setTimeout(fn,0)` runs after a resolved `.then()`; convert a real `as`-cast of model JSON from your own
+shipped code into a parsed boundary and name the production bug it prevents. **ON FAIL:** rebuild the
+concurrency harness from empty; re-attempt in 7 days.
 
-**What most people get wrong:**
-- Testing that the code does what it does rather than what it should do. A test that has never failed
-  has never been tested.
-- Mocking your own modules with `vi.mock()` until the test mirrors the implementation — failing on
-  refactors, passing on bugs. Mock at the network or process boundary, never at your own internal seams.
-- Mocking the Supabase client and asserting on `.from().select()` chains — that tests your mental model
-  of Supabase, not Supabase.
-- Seeding with the service-role key and asserting reads that also use service role — bypassing RLS
-  entirely, so the test proves nothing about what a real user sees.
-- Reaching for `retries: 2` or `sleep(500)`, which hides the bug and triples the suite time.
+**Most-missed:** Believing `async` means "runs in the background." An async function runs synchronously
+until its first `await`, and CPU-bound work inside one blocks the whole process exactly as hard.
+· `await` in a `for` loop over independent work — 200 × 200ms becomes 40 seconds. And the inverse,
+`Promise.all` over an unbounded array, firing 200 requests into a retry storm. · Silencing strict-mode
+errors with `as` and `!` instead of narrowing — converting a compile error into a runtime crash.
+· `{loading, error?, data?}` permitting four impossible states. · `catch (e) { console.log(e) }` and
+continuing — a loud failure becomes a silent wrong answer.
 
-## M6 — Debugging and Production Observability (45h)
+## M2 — The Machine Model: Ten Seams (45h) · `dependsOn: M1`
 
-**What you're understanding and why it matters:** This is the highest-leverage module in the
-curriculum. It is the skill of finding a bug you did not write, in a system you cannot reproduce
-locally. **This module owns observability** for everything after it.
+**Core concepts:** References vs values — aliasing, mutation, shallow vs deep copy. Stack vs heap,
+object lifetime, why a server leaks (GC frees *unreachable* objects; a leak is unintended
+reachability). Number representation — floating point, integer precision, the right type for money,
+IDs, timestamps. Text encoding — bytes vs code points vs grapheme clusters, decoding a *stream*.
+Serialization as a lossy boundary. Blocking. File descriptors, sockets, pools, timeouts. Concurrent
+mutation — races, atomicity, idempotency. **Dates and timezones** — UTC storage vs local display, DST's
+doubled and missing hours, `timestamptz` vs `timestamp` as a Supabase footgun that silently produces
+correct-looking wrong data.
 
-**Core concepts:** Stack traces as primary evidence (including minified production traces and why you
-ship source maps); hypothesis-driven debugging and bisection across code, data, time, and config; a
-real debugger — breakpoints, conditional breakpoints, logpoints — and when logging genuinely beats one;
-structured logging with pino, log levels with real semantics, request-scoped correlation IDs,
-redaction; OpenTelemetry spans and context propagation; metrics, SLOs, error tracking; profiling and
-flame graphs; **AI feature observability — detecting wrong model output when nothing throws**;
-production incident response; runbooks and the blameless postmortem.
+**Artifact** `LAB` — a `seams` repo of ten reproductions, each a failing script + fix + proving test:
+a leak proved with a heap snapshot; money wrong by a cent; a UTF-8 grapheme split across streamed
+chunks; a pool exhausted under load; a lost update in Postgres; a four-timezone digest scheduler with an
+injected fake clock pinned across spring-forward and fall-back. **The fake clock is imported by M6.**
 
-**The artifact:** Your deployed flagship instrumented end to end: pino with correlation IDs and
-redaction, OTel spans including the model call, Sentry, and a silent-failure detector for
-wrong-but-200 model output. Plus a runbook covering three failure modes (provider down, connection
-exhaustion, cost runaway), **validated by an actual other person executing it during a scripted game
-day**, and a blameless postmortem of an outage you caused during that game day.
+**GATE** — **REFEREE:** the reviewer picks which bug, from the ten, without telling you. **PASS:** name
+the seam and the instrument within 60 seconds, 8 of 10. Then open your own shipped schema and point at
+the wrong-typed columns. **ON FAIL:** rewrite the three you missed from empty; re-attempt in 7 days.
 
-**Mastery gate:** Given one production trace ID, reconstruct the entire request out loud — which
-queries ran, what the model was sent, where the time went. Then detect a wrong-output-no-exception
-failure from instrumentation alone, without being told it happened.
+**Most-missed:** Believing `{...obj}` or `JSON.parse(JSON.stringify(obj))` is a copy. The spread is one
+level. The JSON trick converts Dates to strings, drops `undefined` and functions, mangles Maps and Sets
+to `{}`, and throws on cycles. · `.toFixed(2)` "solves" money by fixing the display and leaving the
+arithmetic wrong. · `new TextDecoder()` *inside* the loop — looks identical to correct code, and
+discards the carried partial-character state that is the entire point. · "I'm using a pool" while N
+serverless instances each hold a pool of M. · Believing a transaction prevents the race.
 
-**What most people get wrong:**
-- Changing several things at once and redeploying to see what happens. The single most expensive habit
-  self-taught developers carry into a job, because it destroys the evidence.
-- Believing the debugger is for beginners and `console.log` is for professionals. The inversion is real
-  and widespread.
-- Deploying without source maps, so every production trace is `a.b is not a function at
-  chunk-4f2.js:1:88421`, then concluding production errors are unknowable.
-- Assuming valid JSON means correct output. Constrained decoding guarantees the shape, not the truth —
-  and it removes the model's ability to express uncertainty, so it populates a required field whether
-  or not the input supports it.
-- Alerting on causes instead of symptoms, producing alerts that fire constantly and get muted — after
-  which the system is unmonitored while looking monitored.
-- Postmortems that stop at the code fix without asking why it took 40 minutes to notice.
+## M3 — HTTP, Streaming, and the Wire (45h) · `dependsOn: M1, M2` · **owns: streaming, idempotency**
 
-## M7 — Reading and Changing Code You Did Not Write (60h)
+**Core concepts:** HTTP as a wire format — the ~15 status codes and ~12 headers that carry meaning.
+REST and where it stops being the right answer (real APIs have action endpoints; offset pagination is
+the most common correctness bug in list endpoints). **SSE and chunked transfer from scratch, no SDK.**
+Production streaming failure modes: proxy buffering, client aborts, mid-stream errors, dropped
+connections, resumption. **Idempotency** — why a retry is a data-corruption bug unless designed for.
+Timeouts, backoff with jitter, which failures are retry-safe. Rate limiting from both sides. Webhooks —
+at-least-once, signature verification on **raw bytes**. CORS; cookies vs bearer vs JWT and where each
+breaks. OAuth basics (deepened in M24).
 
-**What you're understanding and why it matters:** This is what the first 90 days of any job actually
-is, and almost no self-taught curriculum teaches it. Roughly 60% of 2026 onsite loops include a
-read-existing-code round. Greenfield is approximately none of the job — the overwhelming majority of
-your first six months is modifying a system that already runs, already has users, has no tests around
-the part you must change, and cannot stop while you work.
+**Artifact** `EVIDENCE` — **the streaming LLM proxy.** Raw `fetch`, raw `ReadableStream`, hand-parsed
+SSE frames, no SDK. `AbortController` end to end. A Postgres idempotency-key dedupe table. Deliberately
+reproduces proxy buffering and a mid-stream error, and recovers from both.
 
-**Core concepts:** Tracing one real user action end to end (architecture is the *output* of tracing,
-not the input); a predict-then-ask protocol for using AI on code you're learning; the three layers of
-code search — ripgrep (lexical), ast-grep (structural), LSP (semantic); reading tests as executable
-specification; git history as documentation of record (blame, pickaxe, `log -L`, bisect); inferring
-unwritten conventions and conforming; Chesterton's fence in practice; **characterization tests around
-code you don't understand**; finding a seam; strangler-fig migration; feature-flagged dual-write;
-**the resumable backfill**; the dual-run cutover.
+> **Exported, and named so the consumers are checkable:** the **SSE transport** → M17, M20. The
+> **idempotency table** → M5, M18, M21.
 
-**The artifact:** Four pieces.
-1. A written end-to-end trace of one user action in **cal.com** with `file:line` citations at every hop.
-2. In a real OSS repo: characterization tests locking in an untested module's current behavior
-   *including its bugs*, then a behavior change behind a flag with both paths green.
-3. A resumable backfill over 100k synthetic rows that can be killed halfway and restarted with zero
-   double-processing.
-4. A dual-run v2 of one of your own AI features — old and new both execute, outputs logged and
-   compared, cutover justified by a comparison table.
+> **One thing v1 got wrong here and it is load-bearing.** v1 said M20 would put `useChat` "on top of the
+> stream protocol you already wrote," as a free composition. **It is not free.** The hook is bound to a
+> versioned UI message stream wire format. You must either emit that format byte-for-byte from this
+> proxy or write a custom transport — both are multi-hour and neither was budgeted. **Budget it here**
+> (it is in the 45h) and check the current wire format the week you build it. The path of least
+> resistance when stuck deletes this module's reason to exist.
 
-**Mastery gate:** Sixty minutes, an unfamiliar repo, a failing test and nothing else: arrive at the
-correct fix while narrating. Then defend three things you thought were wrong and deliberately did not change.
+**GATE** — **REFEREE:** server logs and a database row count; both are external facts. **PASS:** kill
+the client mid-generation and show from logs that upstream billing stopped; replay one idempotency key
+twice and show exactly one row; narrate what arrives on the wire between first byte and first rendered
+token. **ON FAIL:** the frame parser is rebuilt against a deliberately chunk-split fixture.
 
-**What most people get wrong:**
-- Starting at the repo root and reading directories top-down, or asking for an architecture overview first.
-- Asking the assistant to produce the answer rather than pressure-test your own. The measured split is
-  the whole lesson: conceptual-question users scored 65%+, delegation users under 40%.
-- Grepping a function name and treating the hit list as the complete blast radius.
-- Using `git blame` as the final answer instead of the starting point — blame gives the last commit
-  that touched the line, usually a formatting sweep. `git log -S` and `git log -L :funcname:file` are
-  the tools that answer "why is this here."
-- Pattern-matching ugliness to badness. Defensive null checks, redundant-looking guards, and inlined
-  duplication in hot paths are the three self-taught devs most reliably misdiagnose. Your confidence is
-  highest exactly where your context is lowest.
-- Waiting to understand the whole system before opening anything. Comprehensive understanding before
-  first contribution is the single most common ramp killer.
+**Most-missed:** `chunk.toString().split('\n')` — corrupts output the moment a frame splits across TCP
+chunks, and works perfectly on localhost, so it ships. · Assuming HTTP 200 means the whole response
+succeeded; the status commits before the body exists. · Writing the assistant message to the DB only in
+`finally`/`onFinish`, which on serverless may never run. · `200 { ok: false }`, which breaks every retry
+library and health check. · A client-generated idempotency key per *render* instead of per *logical
+operation*. · Doing webhook work before responding.
 
-## M8 — Git, Review, and Code Other People Maintain (40h)
+## M4 — The Postgres Underneath Supabase (57h) · `dependsOn: M2`
 
-**What you're understanding and why it matters:** "I need to understand code" has a reading half and a
-writing half. M7 owns reading. This owns writing — the judgment that produces a convention rather than
-conforms to one. Structure and naming are what the overwhelming majority of code-review comments are
-about, and "works but I wouldn't want to maintain it" is the exact shape of the gap you described.
+Supabase fluency is not Postgres fluency. Every posting sampled lists SQL flat.
 
-**Core concepts:** The git object model (commits are snapshots, refs are pointers, the index is a third
-thing); what merge/rebase/squash actually do to the graph; resolving a conflict — including the kind
-that merges cleanly and is still wrong; reflog, revert vs reset, shared-branch etiquette; atomic
-commits and a PR a reviewer can act on; giving and receiving review, including reviewing code an AI
-wrote; **naming, function and module boundaries, cohesion and coupling, dependency direction, the rule
-of three, deleting code, making an error message actionable**; the three async artifacts a remote team
-runs on — status update, blocker escalation, decision record.
+**Core concepts:** Relational modeling — constraints as the thing that actually enforces invariants.
+SQL without an ORM: joins, aggregates, subqueries, CTEs, window functions. Indexes and
+`EXPLAIN (ANALYZE, BUFFERS)` — the deliberate slow→fast loop. Transactions, isolation, lost update.
+N+1. **Connection pooling and the Vercel+Supabase failure mode.** RLS — correct first, then fast.
+Migrations and expand/contract *as a concept*. Plus **2–3h of Docker minimum**, because the local
+Supabase stack already requires it.
 
-**The artifact:** Three pieces, all submitted to a real reviewer.
-1. A recovery-lab log: eight deliberate disasters (bad merge, lost commit, force-pushed shared branch,
-   botched rebase), each recovered and each explained in writing.
-2. A 500-line file from your own project restructured behind characterization tests, with a **line-item
-   rationale for every boundary you moved** and proof behavior is unchanged.
-3. Every failure path in one feature rewritten to actionable error messages — what was expected, what
-   was received, what to do about it.
+> **The connection surface, named — v1 left this as one bullet and a gate you could not complete.**
+> There are four distinct endpoints with different IP-version and plan availability: direct, shared
+> pooler in session mode, shared pooler in transaction mode (the serverless one), and dedicated pooler.
+> Session mode's old port was removed in Feb 2025 and the IPv4 add-on is a *swap*, not a dual-stack
+> addition. **Verify the current endpoint table before you start** — this is a platform claim wearing
+> fundamentals clothing and it moves at platform speed.
 
-The reviewer's comments are kept verbatim as the scorecard.
+> **Key naming is mid-migration.** Supabase is replacing the legacy `anon`/`service_role` JWT keys with
+> publishable/secret keys, deprecating the old pair inside this curriculum's own calendar. Learn both
+> names once, then use the new ones. **Make the migration an artifact:** rotate the flagship onto the new
+> keys, disable the legacy pair, prove with a test that nothing broke.
 
-**Mastery gate:** A reviewer who did not write the code accepts the PR series with no structural
-comments. Separately: catch a deliberately planted defect in an AI-authored PR that passes CI, and say
-which fundamentals module let you catch it.
+**Artifact** `LAB` — a `pg-lab` repo against a local Supabase stack: twelve hand-written queries with
+EXPLAIN plans before and after indexing on a 5M-row `generate_series` set; a documented slow→fast loop
+with wall-clock numbers from **a load generator you wrote** (exported to M22); an RLS policy set
+benchmarked correct-but-slow vs fast; the key rotation above.
 
-**What most people get wrong:**
-- Treating rebase as "a cleaner merge." It is history rewriting: new commits, new SHAs, and anyone who
-  pulled the old ones is now diverged.
-- Resolving a conflict by picking a whole side, or keeping both halves so it compiles, without
-  re-reading the function as a whole — and never looking at the merge base.
-- Commits that map to time spent rather than units of change; mixing a rename with a behavior change in
-  the same commit, which makes the diff unreviewable and poisons future blame.
-- A PR description that says what the diff already says instead of *why*, and omits how to verify it.
-- On a remote team: explaining verbally in a call what should have been a comment on the line. If it is
-  not written on the PR, it did not happen.
+> Two things v1 put here have moved. The **expand/contract-under-load build** goes to M22, where the
+> deploy pipeline exists to run it through. The **pgvector recall and filtered-search** bullets go to
+> M16 — at this position recall is *literally unmeasurable*, because no corpus, embeddings, queries, or
+> golden set exist yet.
 
-## M9 — Working With Coding Agents Professionally (25h)
+**GATE** — **REFEREE:** an EXPLAIN plan you have never seen, supplied by the reviewer or pulled from an
+OSS repo's slow-query log. **PASS:** name the fix before reading the query, 3 of 4. Explain why your own
+deployed app exhausted connections and show the pooled fix under the same load. **ON FAIL:** re-run the
+slow→fast loop on three new queries.
 
-**What you're understanding and why it matters:** The research corpus treated AI coding agents
-exclusively as a threat to be resisted or inspected — in three separate dimensions — and never once as
-the throughput standard of the team you're about to join. That blind spot produces an engineer who is
-correctly suspicious and half as fast as everyone around him. You will be measured against teammates'
-throughput from week three.
-
-**Scheduled deliberately after M7 and M8** so the interrogate-never-author discipline holds during the
-period it's meant to protect.
-
-**Core concepts:** Writing a repo's agent config so generated code conforms to house conventions;
-decomposing a ticket into agent-sized units with verifiable exit criteria; reviewing a 400-line agent
-diff in ten minutes by reading the test changes and the boundaries first; the categories never to
-delegate (anything touching auth, money, migrations, or a boundary you can't verify); sandboxing and
-permission scope; what an agent run costs.
-
-**The artifact:**
-1. An agent config file for one of your own repos, proved to work by an agent-produced PR that passes
-   review against your own conventions doc.
-2. A defect log from handing an agent three real tickets in a repo you did not write: every wrong thing
-   it did, how you caught it, and **which earlier module made the catch possible**.
-3. A one-page written delegation policy naming what you will never hand to an agent and why.
-
-**Mastery gate:** Triage a 400-line agent diff correctly in ten minutes, finding the one boundary
-violation. State the delegation policy from memory and defend the hardest line in it.
-
-**What most people get wrong:** Two opposite failures, both scored badly in interviews. Accepting
-suggestions and moving on, producing a transcript of a person being driven by a model. And the purity
-play — refusing to touch the assistant in a round whose rubric line is AI fluency.
-
-## M10 — Scoping, Estimating, and Someone Else's Priorities (20h)
-
-**What you're understanding and why it matters:** This is the definitional mid-level skill and it is
-structurally invisible to a solo builder. When you build your own ideas you are your own product
-manager: scope is infinitely elastic, nothing is ever late, nothing is ever cut, and no one is ever
-waiting on you. The failure mode is precise and common — a technically fine hire who disappears for
-nine days on something that should have been scoped to two, delivers more than was asked, and gets read
-as "not ramping." It is also what most "he's great but not mid-level yet" feedback actually means.
-
-**Core concepts:** Turning a vague request into clarifying questions; decomposing a feature into 1–2
-day independently shippable slices; giving an estimate and naming its riskiest assumption;
-renegotiating when the estimate is wrong; proposing the cheap version of an expensive ask.
-
-**The artifact:** Three scoping docs written against real open issues in **cal.com** and **Hono** —
-clarifying questions, slice decomposition, estimate with named risk, and an explicit "here is the 20%
-version if you need it Thursday." Then build one of the three and log actual-vs-estimate with a written
-post-mortem on where the estimate broke. **The estimate log is the artifact; three data points of being
-wrong is what starts calibration.**
-
-**Mastery gate:** Handed a vague two-sentence ticket cold, produce the clarifying questions and a
-sliced plan in fifteen minutes, and defend what you would cut if the deadline halved.
+**Most-missed:** Reading `cost=` as milliseconds. · Benchmarking cold-then-warm so the cache gets the
+credit — run each variant twice, report the second. · Assuming an index on `(a,b)` helps a query
+filtering only `b`. · One single-column index per column instead of one correct composite — and
+forgetting each is a tax on every write. · **Holding a transaction open across a model API call**,
+turning a 200ms connection into a 30-second lock. · Schema changes in the dashboard table editor, which
+bypasses migration history. · `USING (true)`, or a policy against a JWT claim the user can edit.
 
 ---
 
-# LAYER 3 — The AI Production Layer
+# LAYER 2 — The Craft I (106h)
 
-*240 hours. The hiring differentiator, deliberately gated behind Layers 1–2 — because an eval harness
-built by someone who cannot write a concurrent data pipeline is a dashboard, not a skill.*
+## M5 — The Durable Queue (18h) · `dependsOn: M3, M4` · **owns: async job processing**
 
-## M11 — The Model as a Function (30h)
+**This module did not exist in v1 and its absence was a critical sequencing bug.** v1 taught the queue
+at position 20 — but a resumable backfill, a resumable ingestion job, durable agent state, and an
+idempotent webhook consumer are hard build requirements at four earlier modules. You would have
+invented a queue four times, badly, and each ad-hoc version would have become load-bearing in a shipped
+artifact before the correct one existed.
 
-**What you're understanding and why it matters:** How language models actually work, so you engineer
-with them rather than superstitiously. Also available as a morale spike during the months 3–6
-abandonment window — it is 30 cheap, satisfying hours and depends only on M3.
+It needs only M3's idempotency key and M4's row locking, both of which precede it.
 
-**Core concepts:**
-- **Tokens as the unit of everything**, and why Claude's tokenizer is not inspectable locally
-- **The messages array, roles, statelessness**, and what a system prompt mechanically is — text
-  rendered in a specific position of the same token stream. The weighting is a training artifact, not
-  an enforcement mechanism. The corollary you must internalize: text inside a user-role or tool-result
-  message can be forged by anything that writes to user-visible input. **That is exactly what prompt
-  injection is.**
-- **Sampling, and why identical prompts give different output**
-- **The context window**: what fills it, what degrades before it fills. The API is stateless — you are
-  resending the entire history every turn, so conversation cost grows quadratically in length.
-- **Output control**: `max_tokens`, the full `stop_reason` taxonomy
-- **Pricing mechanics**: input/output asymmetry, and prompt caching as a byte-exact prefix match
-- **Model selection** across the current lineup; streaming as a production transport
-- **The structural boundaries** — what these models cannot do no matter the prompt
+**Core concepts:** Moving slow work off the request path. `SELECT ... FOR UPDATE SKIP LOCKED`.
+At-least-once delivery and idempotent consumers. Backpressure. Dead-letter paths. **The read path** —
+how the client learns the job finished (polling, SSE, and resumable streams are three different
+products, and enqueueing is the easy half).
 
-**The artifact:** A `model-probe` CLI that: compares `count_tokens` against your own assumptions across
-five text types; proves a cache hit from the usage meters and prints the cost delta; produces every
-`stop_reason` deliberately; and demonstrates a structured-output schema rejecting a malformed
-generation. Plus a one-page written list of every 2023–2025 pattern your probe proved dead, with the
-400 response pasted in.
+**Artifact** `EVIDENCE` — a Postgres-backed durable job queue with row locking, at-least-once delivery,
+idempotent consumers reusing M3's dedupe table, backpressure, and a dead-letter path.
 
-**Mastery gate:** Price a single request to the cent from its usage object alone. Point at the exact
-byte that broke a cache prefix. Explain why a "confidence score" the model emits is generated text, not
-a probability, and what feature designs that kills.
+> **Imported by:** M10 (ingestion job), M12 (the backfill), M16 (re-embedding), M17 (durable agent
+> state), M18 (webhook consumer).
 
-**What most people get wrong:**
-- Using tiktoken or the chars/4 rule to budget Claude tokens. tiktoken is OpenAI's tokenizer.
-- Treating `max_tokens` as a cost cap. It is an enforced ceiling the model is not aware of, so it
-  truncates mid-thought rather than finishing early.
-- Assuming HTTP 200 means usable content — a safety refusal returns 200 with `stop_reason: "refusal"`
-  and an empty content array.
-- Interpolating anything dynamic near the front of the system prompt. Caching is a byte-exact prefix
-  match; one changed byte at position N invalidates everything after it, and **the failure is
-  completely silent** — requests still succeed, the bill is just higher.
-- Optimizing input tokens while ignoring that output tokens cost several times more.
-- **Asking the model to rate its own confidence and routing on that number.** It looks like a
-  probability, behaves like a vibe, and is the single most common way self-taught engineers ship an
-  unreliable AI feature.
+**GATE** — **REFEREE:** a kill signal at a random time, and a row count. **PASS:** kill a worker
+mid-job; zero double-processing and zero lost jobs across 1,000 enqueued items. **ON FAIL:** the
+consumer is not idempotent — fix and re-run.
 
-> **Currency warning.** This module's specifics — model IDs, parameter availability, prices, caching
-> TTLs — move on a monthly cadence and several 2023–2025 patterns now return HTTP 400. Verify against
-> primary API documentation at the moment you build it. Do not trust this document, a blog post, or a
-> model's memory for any of it.
+## M6 — Tests That Fail For The Right Reason (28h) · `dependsOn: M1, M4`
 
-## M12 — Ingestion: Real Documents Into a Corpus (25h)
+**Core concepts:** The pyramid and what each level is for. A unit test that fails for the right reason.
+Test doubles and when mocking makes a test worthless. Integration tests against real Postgres including
+RLS. CI as a gate. The flakiness budget. **The seam between deterministic shell and probabilistic core.**
+Imports M2's fake clock.
 
-**What you're understanding and why it matters:** The first mile of most real AI products, and a seam
-the research corpus left to nobody — retrieval research opens at the embedding step, assuming a corpus
-that already exists as text. **Extraction quality dominates retrieval quality by a wide margin.** No
-amount of hybrid search and reranking recovers a table that was flattened into word soup at ingestion.
+**Artifact** `LAB` — one shipped repo from zero tests to a green required check: ~15 unit, 5 integration
+against real local Postgres including two RLS policies, in CI as a merge gate, a written flakiness
+budget, and the record of one test you deleted for asserting implementation.
 
-**Core concepts:** Signed upload URLs to object storage; size and type limits; text-layer extraction vs
-OCR for scans; tables and multi-column layout; **per-page provenance so a citation can point somewhere
-real**; ingestion as an async job with progress and partial failure; re-ingestion when the parser improves.
+**GATE** — **REFEREE:** a bug report written by the reviewer against your repo. **PASS:** failing test
+first, then fix; explain why the test would still fail if the fix were wrong in a *different* way.
+**ON FAIL:** the test asserted implementation — rewrite against behavior.
 
-**The artifact:** An ingestion pipeline that accepts a real signed-URL upload and handles a digital PDF,
-a scanned PDF, and a `.docx`; preserves page and section provenance on every chunk; runs as a resumable
-job with visible progress and per-file failure; and is scored against **twenty hand-labeled documents**.
+**Most-missed:** Testing what the code does rather than what it should do. **A test that has never
+failed has never been tested.** · `vi.mock()` on your own modules until the test mirrors the
+implementation — failing on refactors, passing on bugs. Mock at the network or process boundary, never
+your own seams. · Mocking the Supabase client and asserting on `.from().select()` chains — that tests
+your mental model of Supabase. · Seeding *and* asserting with the service key, bypassing RLS entirely.
+· `retries: 2` or `sleep(500)`.
 
-**Mastery gate:** State what percentage of tables your parser destroys, with the evidence. Open the app
-and show a citation that resolves to the correct page of the correct source document.
+## M7 — Debugging and Production Observability (45h) · `dependsOn: M3, M4, M6` · **owns: observability**
 
-## M13 — Evals: The One Harness (50h)
+The highest-leverage module here. Finding a bug you did not write, in a system you cannot reproduce.
 
-**What you're understanding and why it matters:** This is the differentiator — validated, not assumed.
-It is also the concept the research corpus taught six separate times in four incompatible substrates.
-**You build it once, here, and every later module consumes it.**
+**Core concepts:** Stack traces as primary evidence, including minified production traces and why you
+ship source maps. Hypothesis-driven debugging and bisection across code, data, time, config. A real
+debugger — breakpoints, conditional breakpoints, logpoints — and when logging genuinely wins.
+Structured logging, log levels with real semantics, request-scoped correlation IDs, redaction. OTel
+spans and context propagation. Metrics, SLOs, error tracking. Profiling and flame graphs. **Detecting
+wrong model output when nothing throws.** Incident response, runbooks, the blameless postmortem.
 
-**Core concepts:**
-- **Trace capture**: instrumenting every LLM call so the failure is reconstructable later
-- **Error analysis**: open coding → axial coding, producing a named failure taxonomy with frequencies
-- **What an eval actually is** — a dataset plus a runner — and why it is not a test
-- **Assertion-based graders** before any model grades anything
-- **LLM-as-judge calibrated against human labels**, reported as TPR/TNR
-- **Structured output and schema validation** as a reliability mechanism — and its limit
-- **Retries and fallback chains**: when a retry helps vs masks a defect
-- **Regression evals in CI**, online sampling, and the economics of how much eval is enough
-- **Prompt and model lifecycle**: versioning, pinned model IDs, rollback, and the forced migration
+**Artifact** `EVIDENCE` — the flagship instrumented end to end (upgrading M0's day-one log store):
+structured logs with correlation IDs and redaction, OTel spans including the model call, error
+tracking, and a silent-failure detector for wrong-but-200 output. A runbook for three failure modes
+(provider down, connection exhaustion, cost runaway), **executed by an actual other person during a
+scripted game day**, plus a blameless postmortem of an outage you caused during it.
 
-**The artifact:** ONE harness on your own stack — Postgres plus a TypeScript runner, no platform:
+**GATE** — **REFEREE:** a fault-injection script that fires at a **random time in a seven-day window**
+and logs the timestamp to a file you do not read. **PASS:** time-to-detection under 24h from
+instrumentation alone, without being told. Separately: given one trace ID, reconstruct the whole
+request out loud. **ON FAIL:** the detector does not cover that failure class — add it, re-arm the
+window.
+
+**Most-missed:** Changing several things at once and redeploying. **The single most expensive habit
+self-taught developers carry into a job**, because it destroys the evidence. · Believing the debugger is
+for beginners. · Deploying without source maps, then concluding production errors are unknowable.
+· **Assuming valid JSON means correct output.** Constrained decoding guarantees shape, not truth — and
+it removes the model's ability to express uncertainty, so it fills a required field whether or not the
+input supports it. · Alerting on causes, producing noise that gets muted — after which the system is
+unmonitored while looking monitored. · Postmortems that stop at the code fix without asking why it took
+40 minutes to notice.
+
+## M8 — Python On-Ramp (15h) · `dependsOn: M6`
+
+Split forward from v1's single 50-hour Python module, which sat at hour 853 and was therefore the most
+likely thing to be cut under deadline pressure.
+
+**Core concepts:** Environments and dependencies on current tooling — **`uv`, `ruff`, one type checker
+pinned green in CI.** (v1's cut list rejected conda/poetry/pyenv and then named no replacement, leaving
+you at a 50-hour module with the three most-Googled answers pre-rejected. The names have a shelf life;
+the module is unchanged if they move.) Python semantics where they differ from TypeScript — names vs
+values, LEGB, truthiness, generators, dunders. pytest. Type hints with a checker in CI. pydantic as the
+runtime validation boundary. One typed FastAPI route with a test.
+
+**Artifact** `LAB` — one typed FastAPI route with a pydantic request/response model, a pytest test that
+fakes the model client, and a type checker green in CI.
+
+**GATE** — **REFEREE:** a timer, and a Python-fluent reviewer (route one Track 2 PR to a Python repo).
+**PASS:** add a typed route + test to a Python service you did not write, in 90 minutes. **ON FAIL:**
+the idiom is wrong — a passing test cannot catch this, which is why the referee is human.
+
+---
+
+# LAYER 3 — The AI Production Core (122h)
+
+*Pulled forward from v1's Layer 3 position. v1 gated this behind 150 hours of Postgres, git, agents and
+scoping for no stated reason, and the differentiator finished five months after applications started.*
+
+## M9 — The Model as a Function (30h) · `dependsOn: M3`
+
+Also the morale spike for the months 3–6 abandonment window — which only works because it now sits
+inside that window rather than after it.
+
+**Core concepts:** Tokens as the unit of everything, and why the tokenizer is not locally inspectable.
+The messages array, roles, statelessness, and what a system prompt mechanically is — text rendered at a
+specific position in the same token stream. The weighting is a training artifact, not an enforcement
+mechanism. **The corollary you must internalize: text inside a user-role or tool-result message can be
+forged by anything that writes to user-visible input. That is exactly what prompt injection is.**
+The context window — what fills it, what degrades before it fills; the API is stateless, so you resend
+the whole history every turn and conversation cost grows quadratically. Output control: `max_tokens`
+and **the full `stop_reason` enum**. Pricing: input/output asymmetry, prompt caching as a byte-exact
+prefix match. **Adaptive/extended thinking and the effort levels** — the first quality-trading lever
+after caching. Discovering capabilities and context window **programmatically from the Models API**,
+which is the version of this knowledge that cannot go stale. Streaming as production transport. The
+structural boundaries.
+
+> **v1 was wrong here in a way that produces a branch that never fires.** It said a refusal returns 200
+> "with an empty content array." **The content array is not empty.** A refusal returns 200 with a
+> *populated* content array and a non-null `stop_details` carrying a category; `stop_details` is null
+> for every other stop reason and is therefore the actual discriminator. Write
+> `if (!response.content.length)` and that branch never runs — so refusal prose flows downstream and
+> gets rendered as the answer, which is precisely the wrong-but-200 failure M7 and M11 exist to catch.
+> **Branch on `stop_reason` before you read content.** Add server-side fallbacks as the production handling.
+
+> **Sampling is no longer a live concept.** `temperature`, `top_p`, `top_k` and assistant prefill are
+> removed on the current model line and return 400. They belong in the dead-patterns artifact, not the
+> concepts list. Keep the underlying idea — **non-determinism is structural, not a knob you forgot to
+> set** — which is more true now, not less.
+
+**Artifact** `LAB` — a `model-probe` CLI: compare token counts against your assumptions across five
+text types; prove a cache hit from the usage meters and print the cost delta; produce **every**
+`stop_reason` deliberately, including a refusal, and show `stop_details` as the discriminator;
+demonstrate a structured-output schema rejecting a malformed generation; discover model capabilities
+from the API rather than a hard-coded table. Plus a **dead-patterns page**: every 2023–2025 pattern your
+probe killed, with the 400 pasted in.
+
+**GATE** — **REFEREE:** an arithmetic check against a real usage object. **PASS:** price a request to
+the cent from its usage object alone; point at the exact byte that broke a cache prefix; explain why a
+model-emitted "confidence score" is generated text rather than a probability, and what feature designs
+that kills. **ON FAIL:** re-derive the pricing by hand from three more requests.
+
+> **Currency: highest decay rate in the document.** Model IDs, parameter availability, pricing, caching
+> TTLs, and the `stop_reason` enum move on a monthly cadence. Verify against primary API documentation
+> the week you build this. Do not trust this document, a blog post, or a model's memory.
+
+## M10 — Ingestion: Real Documents Into a Corpus (30h) · `dependsOn: M4, M5`
+
+The first mile of most real AI products, and a seam the original research left to nobody — retrieval
+research opens at the embedding step, assuming a corpus that already exists as text. **Extraction
+quality dominates retrieval quality by a wide margin.** No amount of hybrid search and reranking
+recovers a table flattened into word soup at ingestion.
+
+**Core concepts:** Object storage and signed upload URLs. Size and type limits. Text-layer extraction vs
+OCR. Tables and multi-column layout. **Character-offset-level provenance.** Ingestion as a resumable job
+on M5's queue, with progress and per-file failure. Re-ingestion when the parser improves.
+
+> **v1 required page-level provenance and M16 requires span-level citation verification. Those are
+> incompatible** — page-level provenance cannot verify a span, and character offsets into extracted text
+> are unrecoverable after the fact, especially through OCR. Store **character offsets into the stored
+> extracted text**, with page and section carried alongside.
+
+> **Record the embedding model's output dimensionality in the decision log before you embed anything.**
+> It is an M10 decision with an M16 consequence: pgvector indexes `vector` to 2,000 dimensions and
+> `halfvec` to 4,000, and several widely-used embedding models emit 3,072. Get this wrong and you hit a
+> flat error in M16 and diagnose it as having written the index wrong.
+
+**Artifact** `EVIDENCE` — a pipeline accepting a real signed-URL upload, handling a digital PDF, a
+scanned PDF, and a `.docx`; character-offset provenance on every chunk; resumable on M5's queue; scored
+against **twenty hand-labeled documents.**
+
+**GATE** — **REFEREE:** your twenty hand-labeled documents — a number you cannot fudge. **PASS:** state
+what percentage of tables your parser destroys, with evidence; show a citation that **highlights the
+exact span** in the correct page of the correct source. **ON FAIL:** provenance is page-level — rebuild
+to offsets before M16.
+
+## M11 — Evals: The One Harness, and the Stats Lab (62h) · `dependsOn: M7, M9` · **owns: evals**
+
+The differentiator — validated by the review, not assumed. Also the concept the original research
+taught **six times in four incompatible substrates.** Built once, here.
+
+**Core concepts:** Trace capture. **Error analysis: open coding → axial coding**, producing a named
+failure taxonomy with frequencies. What an eval is — a dataset plus a runner — and why it is not a test.
+Assertion graders before any model grades anything. **LLM-as-judge calibrated against human labels**,
+reported as TPR/TNR. Inter-annotator agreement. Structured output as a reliability mechanism and its
+limit. Retries and fallback chains. Regression evals in CI and the economics of how much eval is enough.
+**Prompt and model lifecycle** — versioning, pinned model IDs, rollback, the forced migration.
+
+**The Stats Lab (8–10h), folded in.** v1's gate demanded a bootstrap confidence interval, TPR/TNR, and a
+confusion matrix — and **taught none of them anywhere in the document.** Covering only what the
+curriculum consumes: base rates and why accuracy lies when failures are rare; the confusion matrix and
+TPR/TNR computed by hand on your own 100 labeled traces; recall@k; percentiles from a raw latency array
+and why averaging them is wrong; **bootstrap resampling written from scratch in ~30 lines**; and how
+many labeled examples you need before a delta means anything.
+
+**Artifact** `EVIDENCE` — ONE harness on your stack, Postgres + a TypeScript runner, no platform:
 100 hand-read and labeled traces, a named failure taxonomy with counts, assertion graders, a judge with
-a **measured confusion matrix** against your labels, and a GitHub Actions job that blocks a PR on
-regression. Then: prompts versioned with pinned model IDs, and **a deliberate migration of the feature
-to a different model family gated only by your own eval set**, written up as a regression table
-including what you could not recover.
+a **measured confusion matrix** against your labels, and CI blocking a PR on regression. Then prompts
+versioned with pinned model IDs, and **a deliberate migration to a different model family gated only by
+your own eval set**, written up as a regression table including what you could not recover. Plus a
+`stats-lab` `LAB` repo in the same shape as `runtime-lab`.
 
-**Mastery gate:** Handed a prompt change and your golden set, return ship/no-ship with a number and a
-bootstrap confidence interval. State your judge's true-positive and true-negative rate from memory, and
-name the failure mode that off-the-shelf metrics would have hidden.
+> **Exported:** the dataset table and assertion graders → M16, M22.
 
-**What most people get wrong:**
-- **Reporting accuracy instead of TPR/TNR.** When the failure mode is rare, a judge that always says
-  "pass" scores 92% accurate and is worthless. This single mistake invalidates more eval work than
-  anything else.
-- Reaching for generic categories — "hallucination," "unhelpful," "incoherent." These are unactionable.
-  "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.
-- Delegating the labeling to an LLM from the start. The LLM is for clustering notes you already wrote.
-  People discover what they actually care about *through* the act of labeling.
-- Building the eval set from cases you invented rather than cases that actually failed. An imagined set
-  measures imagination.
-- Having the runner re-implement the model call "to keep the eval clean" — then the eval measures a
-  different system than the one that ships.
-- Using the same model as both generator and judge, which invites self-preference.
-- Believing schema enforcement solved reliability. It solves the shape, not the content.
+**GATE** — **REFEREE:** a prompt change supplied by the reviewer, scored against your own golden set —
+a number you cannot argue with. **PASS:** return ship/no-ship with a bootstrap CI; state your judge's
+TPR and TNR; name the failure mode off-the-shelf metrics would have hidden. **ON FAIL:** your judge is
+uncalibrated — re-label 30 traces and recompute.
 
-## M14 — Retrieval You Actually Measured (30h)
-
-**What you're understanding and why it matters:** Grounding a model in your own data — and knowing
-which of the widely-taught RAG techniques actually buy you anything on *your* corpus. **Build the
-measuring instrument before the retriever.**
-
-**Core concepts:** What an embedding actually is and the things it structurally cannot do; pgvector
-HNSW parameters, the filtering trap, and the recall/latency curve; chunking — why fixed-size is the
-right baseline and what contextual retrieval actually fixes; two-stage retrieval (hybrid lexical +
-semantic, fused with RRF, then a cross-encoder reranker); agentic retrieval; **grounding and citation
-verification — proving the answer came from the retrieved text**; when to skip retrieval entirely.
-
-**The artifact:** A retrieval system over M12's corpus with a measured **recall@k baseline**, then
-three interventions each measured independently (hybrid+RRF, reranker, contextual retrieval), then
-span-level citation verification. A written table of what each intervention bought, what it cost in
-latency and dollars, **and which one did nothing.**
-
-**Mastery gate:** State your recall@10 before and after, name the intervention that did not help, and
-defend staying on pgvector instead of a dedicated vector store using your own numbers.
-
-**What most people get wrong:**
-- Evaluating end-to-end with an LLM judge scoring answer quality. **Answer quality hides retrieval
-  failure** — a strong model answers correctly from pretraining even when retrieval returned garbage.
-- Generating the golden set entirely with an LLM. Synthetic queries are written *from* the chunk, so
-  they leak its vocabulary and every retriever scores artificially high. Hand-write at least half.
-- Treating HNSW as exact search, and running a filtered vector query without realizing the WHERE clause
-  is applied after the index has already stopped searching.
-- Reranking too few candidates. A reranker can only reorder what stage one handed it — if the right
-  chunk is at rank 73 and you rerank the top 10, the reranker is pure added latency.
-- Skipping lexical search entirely, which is exactly why queries containing an error code, a function
-  name, or a person's name fail on a pure-vector system.
-- Asking the model to "include citations like [1]" and trusting the output. Free-text citation markers
-  are generated text. If citations aren't machine-checkable against exact offsets, you have the
-  appearance of grounding, not grounding.
-
-## M15 — Agents and Tool Use (45h)
-
-**Core concepts:** The agent loop at the wire-format level, no framework; **writing a tool definition
-the model can actually use**; orchestration shape — reactive loop vs plan-then-execute, and when a
-second agent is overkill; state, memory, and durability across steps; failure taxonomy and validation
-between steps; loop detection and cost runaway prevention; human-in-the-loop checkpoints for
-irreversible actions; MCP — build one server, consume several; trajectory tracing and silent-failure detection.
-
-**The artifact:** A hand-rolled agent loop with a budget governor that hard-stops, loop detection, an
-approval gate on irreversible actions, durable state that survives a process restart, and replayable
-trajectory traces. Then one small MCP server. Then the same agent re-expressed on the SDK's tool runner
-with per-turn hooks, plus a written comparison of what the hooks bought and what they hid.
-
-**Mastery gate:** Kill the process mid-run and resume it correctly. Replay a failed trajectory and name
-the step that caused the failure. State your hard cost ceiling and demonstrate it holding under an
-adversarial input designed to loop.
-
-**What most people get wrong:**
-- Treating the message array as a chat log of strings — appending the assistant's text and dropping the
-  `tool_use` blocks, which either 400s or silently produces an agent that re-calls the same tool forever.
-- Writing the tool description as API documentation instead of decision-support for a model choosing
-  among eight tools. Error paths that return raw exception text teach the model nothing and cause it to
-  retry the identical failing call.
-- Adding agents to solve what is actually a bad tool definition or a context-management problem.
-- Persisting after the step completes rather than bracketing the side effect, which makes "resume" a
-  duplicate-execution machine. `book_flight()` twice is two bookings.
-- Only capping iteration count. A single iteration can be expensive, and an agent alternating between
-  two tools forever never repeats a call at lag-1.
-- Denying an action by silently dropping the tool call, leaving a dangling `tool_use` with no
-  `tool_result` — a malformed conversation.
-- Bolting on five public MCP servers, flooding context with dozens of mediocre tool schemas and
-  measurably degrading tool selection.
-
-## M16 — Cost, Metering, and Unit Economics (30h)
-
-**What you're understanding and why it matters:** AI features run at materially lower gross margin than
-classic SaaS, which is exactly why metering and quota work is one of the most common backend tickets at
-any company shipping AI — and the ticket most likely to land on the new engineer because it's
-considered plumbing. It's also the perfect demonstration of everything already taught: an atomic
-decrement under concurrency (M2), an idempotent webhook consumer (M3), a circuit breaker, an honest
-failure UI (M18).
-
-**Core concepts:** The `usage` object and the four-number cost of a single request; prompt caching
-mechanics, breakpoint placement, and verifying from the meters; measuring latency properly —
-percentiles, and where time actually goes; streaming as a perceived-latency fix, not a real one; model
-routing and why the obvious cascade often loses; the async tier; cost attribution per feature *and per
-user*; budget alerts and circuit breakers; **unit economics — telling early whether a feature can ever
-be profitable**; and the product-analytics question: is it used, does it improve the thing it was built
-to improve, is it worth its cost.
-
-**The artifact:** A per-user credit ledger in your existing Postgres with an atomic decrement **proven
-correct by concurrent hammering** (balance never goes negative), a Stripe test-mode subscription with
-an idempotent webhook consumer that survives replay, a working 402/upgrade path in the UI, a circuit
-breaker on spend, and one weekly SQL report joining usage, quality score, and cost into **one line per
-active user**.
-
-**Mastery gate:** State your flagship's cost per active user per month, its p50/p95/p99 latency
-decomposed into network, time-to-first-token, and generation, and whether you would keep the feature —
-each backed by the query that produced it.
-
-**What most people get wrong:**
-- Reporting an average, and computing percentiles by averaging per-minute percentiles. Percentiles do
-  not average.
-- Measuring time-to-first-*byte* instead of time-to-first-*token*. They can be seconds apart, and the
-  entire gap is where prefill lives.
-- Routing on per-token price instead of cost per completed task. A cheap call that needs three retries
-  is not cheap.
-- Building the alert without the breaker — an alert at 3am tells you about money already spent.
-- Running the budget check *after* the API call.
-- Attributing cost per feature but not per user, which hides the distribution entirely when AI cost per
-  user is extremely skewed and the mean is meaningless.
-
-## M17 — Security and the Trust Boundary (30h)
-
-**Core concepts:** Trust boundaries and secrets — what runs where, and why an API key in the frontend
-is the classic AI-app disaster; authentication vs authorization, and broken access control as the bug
-that actually ships; RLS as a design skill; injection, XSS, CSRF, SSRF **at working depth, by
-exploiting them**; dependency and supply-chain risk; **prompt injection — direct and indirect — and why
-it is contained rather than fixed**; the lethal trifecta of private data + untrusted content +
-exfiltration ability; tool-use permission design and excessive agency; **treating model output as
-untrusted input**; PII, prompt and log leakage, and the data obligations your employer will hand you.
-
-**The artifact:** An attack-then-fix log against a deliberately vulnerable copy of your own app: four
-exploits you ran yourself, each with the fix and a test. A tool-permission design for M15's agent with a
-written blast-radius analysis per tool. A one-page **data-flow document** naming every boundary customer
-data crosses, every third party that sees it, and the retention setting at each — plus a PII redaction
-step actually implemented in the M6 trace pipeline and proven by a test that feeds it synthetic PII.
-
-> Note the tension this resolves: M6 and M13 teach you to log everything about an LLM call. This module
-> is where that gets reconciled with not shipping customer PII to a third-party observability platform.
-
-**Mastery gate:** Given your own agent, name every irreversible action and defend the containment
-architecture **without ever saying "I tell the model to ignore injected instructions."** State exactly
-what customer data leaves your perimeter and where it lands.
-
-**What most people get wrong:**
-- Believing code is server-side because of where the file lives. A single import chain reaching a
-  `'use client'` component drags a module into the browser.
-- Treating a leaked key as fixed by deleting the commit. The key is compromised the moment it was
-  pushed; rotation is the only fix.
-- Trusting an `organizationId` or `userId` sent in the request body. Hiding the admin button in the UI
-  and calling that access control.
-- `USING (true)`, or using the service-role key in an Edge Function "because RLS was in the way."
-- Believing a classifier, guardrail product, or delimiter scheme solves prompt injection. Assuming
-  indirect injection is exotic — it is the common case: a web page, a PDF, a calendar invite, a GitHub
-  issue, a row another user can write to.
-- Giving the agent an admin token "temporarily," which converts every injection into total compromise.
-- A confirmation step whose summary text the model itself generates. An injected model lies in the
-  confirmation.
+**Most-missed:** **Reporting accuracy instead of TPR/TNR.** When failures are rare, a judge that always
+says "pass" scores 92% and is worthless. This single mistake invalidates more eval work than anything
+else. · Generic categories — "hallucination," "unhelpful." Unactionable. "Calendar Scheduling Failure"
+is a fix; "poor coherence" is a shrug. · **Delegating the labeling to an LLM.** The LLM clusters notes
+you already wrote. People discover what they actually care about *through* labeling. · Building the set
+from cases you invented. · A runner that re-implements the model call "to keep the eval clean" — then it
+measures a different system than the one that ships. · Same model as generator and judge. · Believing
+schema enforcement solved reliability. It solves shape, not content.
 
 ---
 
-# LAYER 4 — Product and Platform
+## ▲ HARD GATE — Layer 3 → Layer 4
 
-*185 hours. The surfaces the AI work sits on and ships through. Python sits here deliberately — late,
-so you port rigor you already have rather than acquiring two languages you write working-but-incorrect
-code in.*
+**Layer 4 does not start until all four are true:**
 
-## M18 — Frontend for AI Interfaces (45h)
+1. The flagship is deployed and reachable.
+2. At least **two real users** who are not you.
+3. **~100 logged traces containing real failures.**
+4. M11's harness runs green in CI against those traces.
 
-**Cut from 140h to 45h** — you already ship Next.js, and by the market evidence the missing 60% is
-backend and production operations, not React. What remains is narrow and load-bearing.
-
-**Core concepts:** The React rendering model — what actually causes a re-render; effects and their four
-failure modes (infinite loops, stale closures, races, missing cleanup); server vs client components and
-the current Next.js caching model; forms, mutations, optimistic UI with shared Zod schemas; **then the
-AI-specific layer**: `useChat` on top of the stream protocol you already wrote in M3; cancellation and
-abort propagation; resumable streams; latency choreography for 10-second-plus operations; conversation
-scroll behavior; and **designing for output that is sometimes wrong** — tool-call UI, approval gates,
-citations, uncertainty, honest failure states.
-
-**The artifact:** The flagship's chat surface rebuilt on **your own M3 stream protocol**: a stop button
-that provably stops upstream billing, a refresh mid-generation that resumes rather than losing the
-answer, tool calls surfaced with a working approval gate wired to M15, citations that link to M12's page
-provenance, and failure states that tell the truth about what went wrong.
-
-**Mastery gate:** Explain the byte path from model token to painted DOM node with no notes. Demonstrate
-refresh-mid-generation recovery live. Show the stop button's effect in the cost meter.
-
-**What most people get wrong:**
-- Treating `useState` as a variable store and keeping it in sync with `useEffect` — `filteredItems`,
-  `fullName`, `isValid`, `totalPrice` all held in state instead of computed during render.
-- Adding and removing dependencies until the lint rule goes quiet.
-- Putting `'use client'` at the top of the root layout, converting the entire tree to client components.
-- Assuming one `read()` chunk equals one complete SSE event — the bug that silently corrupts output
-  only under load.
-- `setState(s => s + delta)` on every token at 60/sec, re-rendering the whole markdown tree per token,
-  then blaming React.
-- Conflating client disconnect with user cancellation, so a refresh silently kills work the user wanted
-  kept — or the inverse, a stop button that only stops the UI while the server keeps generating and charging.
-- `aria-live="polite"` on the streaming container, which makes screen readers re-read the entire
-  growing message over and over.
-- An approval button that appears *after* the tool has already run. That is theatre, not a gate.
-
-## M19 — System Design and the Design Doc (30h)
-
-**What you're understanding and why it matters:** At most companies the forward-looking design doc is
-*the* mid-level artifact, and it is the single highest-leverage move available to an engineer with no
-credential — it is public, durable, and evaluated purely on the quality of thinking. Writing down why
-you did something *after* you did it never surfaces the option you failed to consider, which is exactly
-what review-before-implementation is for.
-
-**Core concepts:** The request lifecycle end to end; the client-server trust boundary; statelessness and
-why a shared counter is the hard part; the serverless execution model measured rather than
-blog-post-quoted; **moving slow work off the request path — building a real queue**; caching in three
-layers and the invalidation for each; graceful degradation, backpressure, and what happens when the
-model is down.
-
-**The artifact:** A Postgres-backed durable job queue: row locking with `SELECT ... FOR UPDATE SKIP
-LOCKED`, at-least-once delivery, idempotent consumers reusing M3's dedupe pattern, backpressure, and a
-dead-letter path. **It is preceded by a one-page design doc with two rejected options, reviewed and
-pushed back on by a real reader before any code exists.** Keep both the proposed and the built version;
-the delta is the interview material.
-
-**Mastery gate:** Forty-five minutes at a whiteboard: one bounded AI system end to end including the
-observability and the failure path, surviving three follow-ups past the script. Plus: "here is where my
-design was wrong and how I found out."
-
-**What most people get wrong:**
-- Treating "server" and "client" as a lint rule rather than two physically different computers.
-- Assuming "serverless means stateless so I'm fine." Instances are reused and handle concurrent
-  invocations in the same process, so module-level state persists — sometimes, unpredictably, which is
-  worse than never persisting.
-- Starting with a hosted queue and never learning the mechanism, which makes every operational question
-  unanswerable.
-- Designing the queue and forgetting the read path. Enqueueing is easy; how the client learns the job
-  finished is three different products.
-- Caching the final LLM response keyed on the user's raw question — almost never hits, and leaks across
-  users when it does. The high-value caching is upstream.
-- Retrying into an outage. A 429 is telling you to send less traffic.
-- Reaching for Redis or Kafka in minute three of a design interview, before anyone established the
-  read/write ratio. The mid-level rubric rewards thoughtful simplification.
-
-## M20 — Deployment, CI/CD, and Operating It (40h)
-
-**Core concepts:** Environments and configuration as a first-class thing; secrets across environments
-and short-lived credentials instead of stored keys; a CI pipeline you own — what gates a merge and what
-it costs; **deploy ≠ release** — preview deploys, promote, instant rollback, feature flags; **database
-migrations inside a deploy pipeline (expand/contract), where real outages come from**; health checks,
-SLOs, and alerting that pages a human only when it should; exactly enough Docker and Linux to not be
-helpless, and not one hour more.
-
-**The artifact:** Your flagship's full pipeline: OIDC secrets with no stored keys, required checks
-including **the M13 eval gate**, a feature-flagged release, a rollback rehearsed under a timer, an
-expand/contract migration run through the pipeline while the load generator is firing, and one burn-rate
-alert that fired for a real reason. Plus one dockerized deploy to a real cloud, torn down the same day,
-with notes.
-
-**Mastery gate:** Roll back a bad deploy in under five minutes while narrating each step. Explain, with
-a specific lock type, why a naive migration takes a site down and why yours does not.
-
-**What most people get wrong:**
-- Treating `git revert` as the rollback strategy — it requires a full rebuild while the site is broken,
-  and does nothing about the schema change or the corrupted rows the bad version already wrote.
-- Running migrations as part of application boot, so every instance races to apply them.
-- Assuming `NEXT_PUBLIC_` means "for the frontend" rather than "baked into the public bundle, forever,
-  at build time."
-- Putting production secrets into preview environments, so any PR — including from a fork — can
-  exfiltrate them.
-- A single `/health` endpoint used for both liveness and readiness.
-- Going down the Kubernetes rabbit hole after Docker clicks.
-- Leaving the practice cloud stack running. An idle managed database and a NAT gateway are the classic
-  surprise bill.
-
-## M21 — Python as a Second Production Language (50h)
-
-**The strategic call, stated plainly:** Go deep in TypeScript first, then port the rigor. Your gap is a
-*reasoning* gap, not a language-count gap — learning Python first yields two languages you write
-working-but-incorrect code in. Fix correctness in the language you already think in; the second
-language then takes weeks instead of months.
-
-**This is the curriculum's biggest open bet.** One researcher found Python in the large majority of
-AI-engineer postings and argued for it as a co-primary. Another found that TS-first is strictly correct
-because your shipped work only counts as evidence in the TS-friendly job family. It is resolved in
-favor of TS-first — **and the monthly re-plan exists to catch it if your actual funnel proves otherwise.**
-
-**Core concepts:** Environments and dependencies on current tooling; Python's actual semantics where
-they differ from TypeScript — names vs values, mutability, LEGB scoping, truthiness, iterators and
-generators, dunder methods; pytest as the testing substrate, including faking the LLM client; type hints
-and a real type checker in CI; **pydantic as the runtime validation boundary for AI output**; the
-Anthropic Python SDK; **asyncio and the blocking-call trap — a concurrency model that is not
-JavaScript's**; FastAPI with typed request/response models and streaming responses.
-
-**The artifact:** One of your TypeScript services ported to FastAPI + pydantic with typed
-request/response models, streaming responses, a pytest suite that fakes the model client, and a type
-checker green in CI — plus a written diff of what the two runtimes actually do differently, with **a
-reproduction of a blocking call freezing the asyncio loop and its fix**.
-
-**Mastery gate:** Open an unfamiliar file in a real Python OSS project cold and explain what it does out
-loud. Then add a typed FastAPI route with a pydantic model to a Python service you did not write, and
-its test.
-
-**What most people get wrong:**
-- Writing TypeScript with Python syntax: classes everywhere, raw `dict` passed around instead of models,
-  no type hints, camelCase. Reviewers read that instantly.
-- Assuming Python's `async` is JavaScript's. Using a sync HTTP client instead of an async one, a sync DB
-  session in an async handler, `time.sleep` instead of `asyncio.sleep`. All compile, all pass local
-  testing with one user.
-- Firing unbounded concurrency with `gather(*[...])` — works on 10 items in dev, rate-limited or OOM on
-  5,000 in prod.
-- Calling the real model API inside unit tests. The LLM belongs in the eval suite, not the unit suite.
-  Conflating the two is the tell.
-- Assuming pydantic is strict by default. It coerces unless told otherwise, so a validator passing does
-  not mean the model got it right.
-
-## M22 — Third-Party Integration as a Consumer (20h)
-
-**Why it matters:** A large share of AI-product work is "connect to the customer's data source and do
-something with it," and the failure modes are specific and unintuitive.
-
-**Core concepts:** OAuth flows as a consumer; vendor sandboxes; encrypted per-tenant credential storage;
-token refresh on the provider's schedule; scopes granted for v1 being insufficient for v2 (so every
-existing user must re-consent); revoked grants surfacing as a 401 in a background job at 3am rather than
-in a browser; vendor outages.
-
-**The artifact:** A real Slack or Google OAuth connection in the flagship: encrypted per-user token
-storage, automatic refresh, a revocation-recovery path that re-prompts the user instead of failing
-silently, and a deliberate test where you revoke access in the provider's own UI and show the app
-degrading honestly.
-
-**Mastery gate:** Draw the token lifecycle from consent to revocation and name exactly what happens when
-a refresh token expires inside a background job at 3am.
+If you are here without them, stop and execute M0's traffic milestone. If it fails, take the labeled
+fallback and write down what it costs you. **Do not proceed by inventing traces.**
 
 ---
 
-# LAYER 5 — The Market
+# LAYER 4 — The Craft II (137h)
 
-*90 hours, down from the corpus's 650 — because a quarter of a curriculum spent not writing code is the
-largest single waste in it. These are the structured pieces; continuous contact with the market is a
-parallel track that starts on M0's date.*
+*Ramp-and-collaboration skills. These matter for surviving the job more than getting the screen, and are
+the modules most safely learned while interviewing.*
 
-## M23 — Target Teardown, Comp, and the Terms (12h)
+## M12 — Reading and Changing Code You Did Not Write (52h) · `dependsOn: M5, M6, M7`
 
-**Why this is 12 hours and not 260:** The "job market research" dimension's nine topics were a duplicate
-index of the technical curriculum with a price tag attached. What actually belongs here is an afternoon
-of reading postings — plus one thing nobody else covered at all.
+What the first 90 days of any job actually is. **Greenfield is a rounding error in the first six months
+of any job** — that is the whole argument, and it needs no statistic.
 
-**The thing nobody covered:** compensation, offer structure, and employment classification. Remote roles
-at the entry band are disproportionately offered as **1099 contract**: no benefits, no payroll tax
-withholding, quarterly estimated taxes, no unemployment insurance, and a headline number that looks ~20%
-higher than an equivalent W2 salary while being materially worse. A self-taught candidate with no
-credential and no peer network is the single most likely person to accept the first number and the first
-structure offered. **One under-negotiated or misclassified offer costs more in year one than every hour
-of this curriculum is worth, and it is a certainty rather than a risk.**
+> v1 claimed "roughly 60% of 2026 onsite loops include a read-existing-code round." **Two critics
+> searched independently and could not verify it**; one traced the figure to a single analysis scoped to
+> FAANG-tier onsites, which this curriculum's cut list excludes on purpose. It was the only quantitative
+> justification for the second-largest module in the document. Removed. The named evidence that does
+> exist: Google's code-comprehension round replacing one of two coding rounds and scoring AI fluency
+> explicitly; reported pilots at Meta; Stripe's Bug Squash.
 
-**The artifact:** A one-page requirement-to-evidence map built from twenty real current postings **with
-the geography, overlap, and citizenship filters already applied**; a comp floor and target with the
-postings that justify them; a spreadsheet modeling the same headline number as W2 vs 1099 with
-self-employment tax, health insurance, and unpaid time off; and a negotiation script rehearsed out loud
-and recorded.
+**Core concepts:** Tracing one real user action end to end — architecture is the *output* of tracing, not
+the input. A predict-then-ask protocol for using AI on code you are learning. The three layers of code
+search: ripgrep (lexical), ast-grep (structural), LSP (semantic). Reading tests as executable
+specification. Git history as documentation — blame, pickaxe, `log -L`, bisect. Inferring unwritten
+conventions. Chesterton's fence. **Characterization tests around code you don't understand.** Finding a
+seam. Strangler-fig. **The resumable backfill** (on M5's queue). Dual-run cutover.
 
-**Mastery gate:** State your floor, your target, and your walk-away without hedging, and explain the
-W2-versus-1099 delta as a number you computed yourself. **This happens before the first application, not
-after the first offer.**
+**Artifact** `EVIDENCE` — four pieces:
+1. A written end-to-end trace of one user action in a real repo (cal.com, Hono) with `file:line` at every hop.
+2. In a real OSS repo: characterization tests locking in an untested module's behavior *including its
+   bugs*, then a behavior change behind a flag with both paths green.
+3. A resumable backfill over 100k rows on M5's queue — killed halfway, restarted, zero double-processing.
+4. A dual-run cutover on **a deterministic feature** — a pure-function or query-path refactor where old
+   and new outputs diff exactly.
 
-**What most people get wrong:** Treating "remote" as one category. "Remote (US only)," "remote in 4
-timezones," and "remote-first, quarterly onsite" are different jobs. Many postings require 4+ hours of
-overlap with a specific timezone, and some are region-locked for payroll reasons — a silent funnel
-filter you must check *before* applying.
+> **v1 made #4 an AI feature.** That required comparing two versions of a model-backed feature and
+> justifying a cutover — **which is an eval** — six modules before M11 teaches what an eval is. You would
+> have produced exactly the vibe comparison table M11 exists to prevent, then pinned it as portfolio
+> evidence and defended it in M28. M11 already contains the identical exercise done correctly. Retargeted
+> to a deterministic feature, where the comparison is unambiguous and the lesson is actually about
+> cutover.
 
-## M24 — The Flagship's Evidence Layer (25h)
+**GATE** — **REFEREE:** a `git revert` of a merged bug-fix commit from M0's blind queue, scored against
+the maintainer's actual merged diff. **PASS:** 60 minutes, narrating, arrive at a fix that matches the
+maintainer's on the behavior (not necessarily line for line), 3 of 5 attempts. Then defend three things
+you thought were wrong and deliberately did not change. **ON FAIL:** pull the next commit from the queue
+in 7 days. Never read the fix commits.
 
-**The artifact:** Four pinned repos; one flagship README carrying **the eval numbers including the
-failing v1**; a decision log of the five choices that mattered and why; a resume that maps each claim to
-a repo; and one public write-up of a measurement you made.
+**Most-missed:** Reading directories top-down, or asking for an architecture overview first. · Asking
+the assistant to produce the answer rather than pressure-test yours. **The measured split is the whole
+lesson: conceptual-question users scored 65%+, delegation users under 40%.** · Grepping a function name
+and treating the hits as the complete blast radius. · `git blame` as the final answer — it gives the
+last commit to touch the line, usually a formatting sweep. `git log -S` and `git log -L :funcname:file`
+answer "why is this here." · Pattern-matching ugliness to badness. **Your confidence is highest exactly
+where your context is lowest.** · Waiting to understand the whole system before opening anything.
 
-**Mastery gate:** A stranger reads the README and can state what the system does, what it costs per
-user, and how good it is — **without asking you a single question.**
+## M13 — Git, Review, and Code Other People Maintain (40h) · `dependsOn: M12`
 
-**What most people get wrong:**
-- Writing the README as a feature list ("Built with Next.js, Supabase, Tailwind") instead of a product
-  spec plus decision record. The stack list is the least interesting thing in the repo and it is what
-  90% of portfolios lead with.
-- **Hiding the v1 numbers because they were bad.** The improvement delta *is* the evidence of
-  engineering — a single good number could have been luck.
-- Writing tutorials that duplicate a thousand existing posts. The convincing genre is a specific,
-  numbered account of something that went wrong in your own system.
-- A skills list of 22 technologies. Six you can be grilled on reads as competence; 22 reads as tourism.
-  And do not put "Prompt Engineering" on it.
-- AI auto-apply tools and 200-application blasts — increasingly detected and auto-rejected. Always find
-  the human.
+"I need to understand code" has a reading half and a writing half. M12 owns reading. **This owns
+writing** — the judgment that produces a convention rather than conforms to one. Structure and naming
+are what the overwhelming majority of code-review comments are about.
 
-## M25 — Interview Performance (45h)
+**Core concepts:** The git object model — commits are snapshots, refs are pointers, the index is a third
+thing. What merge/rebase/squash do to the graph. Resolving a conflict, including the kind that merges
+cleanly and is still wrong. reflog, revert vs reset, shared-branch etiquette. Atomic commits and a PR a
+reviewer can act on. Giving and receiving review, including of AI-written code. **Naming, module
+boundaries, cohesion and coupling, dependency direction, the rule of three, deleting code, making an
+error message actionable.** The three async artifacts a remote team runs on: status update, blocker
+escalation, decision record.
 
-**Scheduled as the last eight weeks, not as a parallel hum.**
+**Artifact** `EVIDENCE` — three pieces to a real reviewer: a recovery-lab log of eight deliberate
+disasters, each recovered and explained; a 500-line file from your own project restructured behind M12's
+characterization tests with **a line-item rationale for every boundary moved**; every failure path in one
+feature rewritten to actionable messages (expected / received / what to do).
 
-**Core concepts:** The surviving un-assisted coding round — thinking out loud under a clock with no
-tooling; reading and debugging an unfamiliar multi-file codebase from a failing test; **being scored on
-how you drive an AI assistant, because the transcript gets read**; shipping a scoped PR into a foreign
-repo and defending the ship/no-ship call; mid-level system design in 45 minutes; the AI-feature take-home
-and the cold defense that follows.
+**GATE** — **REFEREE:** an OSS maintainer merging a real PR — someone who did not write the code, cannot
+be re-rolled, and requires no network. **PASS:** a substantive PR merged with no structural review
+comments. **ON FAIL:** the structural comments *are* the curriculum — address and resubmit.
 
-**The artifact:** A defense pack — a recorded ten-minute narrated walkthrough of the flagship in
-**decision-language, not feature-language**; a log of 40 narrated problems solved cold; three timed
-foreign-repo bug fixes with the assistant transcript attached and annotated; and two recorded mock
-defenses with a real person who pushes back.
+## M14 — Working With Coding Agents Professionally (20h) · `dependsOn: M12, M13`
 
-**Mastery gate:** Survive three follow-ups past the script on any artifact you built. Solve an unseen
-medium out loud in 25 minutes with autocomplete disabled. Watch back one assistant transcript and name
-where you delegated something you should have verified.
+The original research treated agents exclusively as a threat — in three separate dimensions — and never
+once as the throughput standard of the team you are joining. That produces an engineer who is correctly
+suspicious and half as fast as everyone around him, measured from week three. Scheduled **after** M12 and
+M13 so the interrogate-never-author discipline holds during the period it protects.
 
-**What most people get wrong:**
-- Practicing in your own IDE with autocomplete on and the assistant one tab away — training a motion you
-  will not have in the room.
-- Barreling into typing without clarifying the problem. Interviewers call this out by name as a reject
-  signal, and it reads as exactly the pattern of someone used to a model filling in the gaps.
-- Editing the test to make it pass, or "fixing" by adding a guard clause that suppresses the symptom.
-  Instant fail.
-- Framing your project around tool names. "What would you do differently" is a test of honest depth — a
-  candidate who says "nothing, it's solid" scores worse than one who names a real limitation.
-- Blowing the take-home timebox to gold-plate the UI while shipping zero evaluation, which inverts the
-  actual scoring. The strong README says what you deliberately did **not** build and why.
+**Core concepts:** Writing a repo's agent config so generated code conforms to house conventions.
+Decomposing a ticket into agent-sized units with verifiable exit criteria. Reviewing a 400-line diff in
+ten minutes by reading test changes and boundaries first. The categories never to delegate — auth,
+money, migrations, anything whose boundary you cannot verify. Sandboxing and permission scope. What a run
+costs.
 
-## M26 — The First 90 Days (8h)
+**Artifact** `EVIDENCE` — an agent config proved by an agent-produced PR that passes review against your
+own conventions doc; a **defect log** from handing an agent three real tickets in a repo you did not
+write, naming for each defect *which earlier module let you catch it*; a one-page written delegation
+policy.
 
-**Why it exists:** Self-taught plus remote is the highest-risk combination for silent struggle, and
-silent struggle is how new hires get let go at month three — not for incompetence, but for being stuck
-for two days on something a teammate would have unblocked in five minutes.
+**GATE** — **REFEREE:** a second agent instance with a **sealed brief written weeks earlier**, planting
+**0–3 defects per diff, count blinded, with at least one clean diff.** **PASS:** find the planted
+defects across five diffs with false positives scored separately. Plus the behavioral version: a
+pre-commit hook enforcing your delegation policy that has **actually blocked agent-authored diffs twice
+on real work.** **ON FAIL:** you are pattern-matching, not reviewing — redo with a new sealed brief.
 
-**The unwritten norm nobody writes down:** struggle alone for roughly 30 minutes, then ask publicly in a
-channel with what you tried, what you expected, what happened, and your current best hypothesis. That
-format is how you demonstrate competence *while* asking for help rather than in spite of it.
+> v1's gate told you there was exactly one boundary violation, which is most of the answer.
 
-**The artifact:** A 30/60/90 plan filled against a real posting with week-one manager questions written
-out; a reusable asking-for-help template **practiced for real by posting three genuine questions in the
-Discord or Slack of an OSS project you're contributing to**, with the responses kept; an org map of that
-project inferred from `git blame` and `log`; and a handoff note on real in-progress work good enough for
-a stranger to continue.
+## M15 — Scoping, Estimating, and Someone Else's Priorities (25h) · `dependsOn: M12`
 
-**Mastery gate:** State your own struggle threshold and reproduce the ask format from memory. Record
-yourself pairing with another person for 45 minutes on a real bug in an unfamiliar repo, narrating
-throughout, and watch it back.
+The definitional mid-level skill, structurally invisible to a solo builder. When you build your own
+ideas you are your own product manager: scope is infinitely elastic, nothing is late, nothing is cut,
+nobody is waiting. The failure mode is precise — a technically fine hire who disappears for nine days on
+something that should have been two, delivers more than was asked, and reads as "not ramping." It is
+what most "great, but not mid-level yet" feedback actually means.
+
+**Artifact** `LAB` — three scoping docs against real open issues (clarifying questions, slice
+decomposition, estimate with named riskiest assumption, and an explicit "here is the 20% version if you
+need it Thursday"). Then build one and log **actual vs estimate** with a post-mortem on where the
+estimate broke. Plus one **open-ended quality ticket** — "users say the summaries feel off, look into
+it" — which is the shape most real AI tickets arrive in and which has no specification to work from.
+
+**GATE** — **REFEREE:** a vague two-sentence ticket written by the reviewer, cold. **PASS:** clarifying
+questions and a sliced plan in 15 minutes; defend what you would cut if the deadline halved. **ON FAIL:**
+three more data points of being wrong. **The estimate log is the artifact** — calibration starts at three.
 
 ---
 
-# The Parallel Tracks
+# LAYER 5 — The AI Layer, Completed (149h)
 
-These run continuously alongside modules. They are not modules and have no completion date.
+## M16 — Retrieval You Actually Measured (40h) · `dependsOn: M10, M11`
 
-**1. Job search — a permanent 20% track from M0's date (target ~month 5).** Ten researched applications
-a month where you can name the product and a human, not two hundred generated ones. The purpose is not
-to get hired in month five; it is that ten real interviews re-rank the remaining curriculum more
-accurately than any researcher can.
+**Build the measuring instrument before the retriever.** Imports M11's dataset table and graders —
+swapping in retrieval graders is hours, not a rebuild.
 
-**2. Open-source PRs — one substantive merged PR per month from the end of M7.** Same repos, same skill,
-same afternoons. Three substantive merged PRs beat thirty cosmetic ones. No docs typos, no dependency
-bumps, no Hacktoberfest. Pick something you actually use, where your bug report is genuinely useful —
-not a famous repo with a 400-deep PR queue.
+**Core concepts:** What an embedding is and what it structurally cannot do. **pgvector: HNSW
+parameters, the dimension ceiling (`vector` 2,000 / `halfvec` 4,000 / `bit` 64,000, with the
+cast-expression index as the escape for 3,072-dim models), and the recall/latency curve.** Chunking —
+why fixed-size is the right baseline and what contextual retrieval actually fixes. Two-stage retrieval:
+hybrid lexical+semantic fused with RRF, then a cross-encoder reranker. Agentic retrieval. **Grounding and
+span-level citation verification** against M10's character offsets. When to skip retrieval entirely.
+**The embedding lifecycle** — batched generation with rate-limit handling, measured cost per 1,000
+chunks, and a re-embed executed as a resumable backfill on M5's queue behind a dual-index read switch.
 
-**3. The dependency spiral.** Every module's capstone imports an earlier one's. Zero hours. The entire
-answer to knowledge decay.
+> **v1 described the filtered-search trap with a mechanism that is now wrong.** A `WHERE` clause does not
+> bypass the HNSW index; the filter is applied as the index returns candidates, so the symptom is
+> **returning fewer rows than your LIMIT**, not slower queries. Since pgvector 0.8.0 the fix is
+> `hnsw.iterative_scan`, **which ships OFF** — so your recall@10 gate number is measured under an unnamed
+> GUC that changes it. Name it. The Supabase-specific version: chaining `.eq()` after `.rpc()` applies the
+> filter in PostgREST *after* the SQL function already ranked and limited, returning plausible rows that
+> are the wrong ones.
 
-**4. Weekly cold re-build — one per week, 45 minutes, original repo closed.** Pick an artifact from
-three-to-eight weeks ago and rebuild its core from an empty file. Score what you could not produce.
-**This is the only instrument that distinguishes "I can make this work" from "I understand this."**
-Tracked in a markdown checklist, not a CLI tool you build.
+**Artifact** `EVIDENCE` — retrieval over M10's corpus with a measured **recall@k baseline**, then three
+interventions measured independently (hybrid+RRF, reranker, contextual retrieval), then span-level
+citation verification. A written table of what each bought, what it cost in latency and dollars, **and
+which one did nothing.**
 
-**5. A standing reviewer relationship — secured in M0, used from M8.** A real human (second-best: a
-dedicated agent instance with a written reviewer brief) who pushes back on every capstone. **M8, M10,
-M19, and M26 all silently assume this person exists.** If not recruited in month one, four modules
-degrade into self-assessment by the one person least able to grade it.
+**GATE** — **REFEREE:** your golden set, half of it hand-written. **PASS:** state recall@10 before and
+after with the `iterative_scan` setting named; name the intervention that did not help; defend staying on
+pgvector using your own numbers. **ON FAIL:** the golden set is LLM-generated — hand-write 25 and re-run.
 
-**6. Agent-assisted workflow discipline.** During M1–M7: **interrogate, never author.** AI answers
-conceptual questions with `file:line` citations you verify, and writes none of the code you're trying to
-learn from. From M9 onward the delegation policy is in force and the defect log keeps running.
+**Most-missed:** Evaluating end-to-end with a judge scoring answer quality. **Answer quality hides
+retrieval failure** — a strong model answers correctly from pretraining even when retrieval returned
+garbage. · Generating the golden set entirely with an LLM: synthetic queries are written *from* the
+chunk, leak its vocabulary, and every retriever scores artificially high. · Treating HNSW as exact.
+· Reranking too few candidates — if the right chunk is at rank 73 and you rerank the top 10, the
+reranker is pure added latency. · Skipping lexical search, which is why queries with an error code or a
+person's name fail on pure vector. · Asking for "citations like [1]" and trusting them. If citations are
+not machine-checkable against offsets, you have the appearance of grounding.
 
-**7. Writing — one short public piece per completed layer.** Five pieces total, each about something you
-*measured*, not something you read. Feeds M24 at nearly zero marginal cost and is the cheapest credential
-available to someone with no degree.
+## M17 — Agents and Tool Use (49h) · `dependsOn: M3, M5, M9, M11`
 
-**8. Monthly re-plan ritual — two hours, under M0's authority.** Interview feedback, rejection reasons,
-and actual-vs-estimate data from M10 re-order the remaining modules. This is the mechanism that catches
-a wrong bet.
+**Core concepts:** The agent loop at the wire-format level, no framework. **Writing a tool definition a
+model can actually use.** Reactive loop vs plan-then-execute, and when a second agent is overkill. State
+and memory across steps — **durable state on M5's queue.** Failure taxonomy and validation between steps.
+Loop detection and cost runaway prevention. Human-in-the-loop checkpoints for irreversible actions.
+**Agent containment** — what the agent can actually reach, and the sandbox it executes in (a seam neither
+this module nor M19 owned in v1). MCP. Trajectory tracing and silent-failure detection.
+
+> **Thinking-block replay — absent from v1 and it silently breaks the loop.** Thinking blocks must be
+> echoed back unchanged when continuing on the same model, and on current models editing earlier turns
+> invalidates them, so **the loop must be append-only.** v1's best mistake bullet ("appending the
+> assistant's text and dropping the tool_use blocks") is the exact 2024 predecessor of this bug and the
+> 2026 sequel had no bullet.
+
+> **MCP: pin the revision.** The specification shipped a breaking, stateless rewrite in the 2026-07-28
+> revision — the initialize handshake and session IDs removed, protocol-level sessions gone, several
+> features deprecated on a support window that expires inside this curriculum's own calendar. Every
+> pre-August-2026 tutorial teaches the deprecated shape and you reach this module around month 9–12.
+> **Name the revision your server implements and one thing that changed in it.** Two of this module's
+> hand-rolled objectives — durable state and human-in-the-loop checkpoints — now have protocol-level
+> answers you would otherwise not know exist.
+
+> **The tool-flooding bullet needs a remedy, not a prohibition.** v1 told you not to do the thing the
+> module asks you to do. The first-class answer is **tool search plus deferred loading on the long tail**
+> — with one condition that bites: the search tool itself must not be deferred, and at least one tool must
+> stay non-deferred, or you get a 400.
+
+**Artifact** `EVIDENCE` — a hand-rolled agent loop with a hard-stopping budget governor, loop detection,
+an approval gate on irreversible actions, durable state on M5's queue, append-only thinking-block replay,
+replayable trajectory traces, and a written containment/blast-radius analysis per tool. Then one small
+MCP server against a named spec revision. Then the same agent on the SDK's tool runner, with a written
+comparison of what the hooks bought and what they hid.
+
+**GATE** — **REFEREE:** a kill signal at a random point, and an adversarial input written by the
+reviewer. **PASS:** resume correctly after a mid-run kill; replay a failed trajectory and name the
+causing step; demonstrate the cost ceiling holding under an input designed to loop. **ON FAIL:** the
+governor caps iterations but not spend — fix and re-run.
+
+**Most-missed:** Treating the message array as a chat log of strings. · Tool descriptions written as API
+documentation instead of decision-support for a model choosing among eight tools; error paths returning
+raw exception text, which teaches nothing and causes retry of the identical failing call. · Adding agents
+to solve what is a bad tool definition. · Persisting *after* the step rather than bracketing the side
+effect, which makes resume a duplicate-execution machine. `book_flight()` twice is two bookings. · Capping
+iteration count only — an agent alternating between two tools never repeats at lag-1. · Denying by
+silently dropping a tool call, leaving a dangling `tool_use` with no result.
+
+## M18 — Cost, Metering, and Unit Economics (30h) · `dependsOn: M9, M11, M3` · **owns: cost**
+
+**Core concepts:** The usage object and the four-number cost of a request. Prompt caching mechanics and
+verifying from the meters. Percentiles from raw distributions. Streaming as a *perceived*-latency fix.
+**Model × effort routing.** Cost attribution per feature *and per user*. Budget alerts **and circuit
+breakers**. Unit economics. The product-analytics question — is it used, does it improve the thing it was
+built to improve, is it worth its cost.
+
+> **v1 measured the wrong dial.** It made model routing the lever. The **first** quality-trading lever
+> after caching is **effort** — measure the most capable model at lower effort *before* building a model
+> cascade, because **caches are model-scoped and a cascade forfeits cache reuse.** Make the routing
+> experiment two-dimensional: (model × effort) over the same task set, scored by M11's harness, reported
+> as **cost per completed task.**
+
+**Artifact** `EVIDENCE` — a per-user credit ledger with an atomic decrement **proven by concurrent
+hammering** (balance never goes negative); a Stripe test-mode subscription with an idempotent webhook
+consumer on M5's queue that survives replay; a server-rendered 402 path with a correct body, proven by
+curl; a circuit breaker on spend; one weekly SQL report joining usage, quality score, and cost into **one
+line per active user**; and the (model × effort) experiment table.
+
+**GATE** — **REFEREE:** the queries themselves; each number must be reproducible from SQL. **PASS:** state
+cost per active user per month and end-to-end p50/p95/p99, each backed by the query. Say whether you would
+keep the feature. **ON FAIL:** you are reporting an average — recompute from the raw distribution.
+
+**Most-missed:** Reporting an average; computing percentiles by averaging per-minute percentiles.
+**Percentiles do not average.** · Routing on per-token price instead of cost per completed task — a cheap
+call that needs three retries is not cheap. · The alert without the breaker; an alert at 3am tells you
+about money already spent. · Running the budget check *after* the API call. · Cost per feature but not per
+user, which hides the distribution entirely when AI cost per user is extremely skewed.
+
+## M19 — Security and the Trust Boundary (30h) · `dependsOn: M1, M4, M7, M17`
+
+**Core concepts:** Trust boundaries and secrets. Authentication vs authorization; **broken access control
+as the bug that actually ships.** RLS as a design skill. Injection, XSS, CSRF, SSRF **at working depth, by
+exploiting them yourself.** Dependency and supply-chain risk. **Prompt injection — direct and indirect —
+contained rather than fixed.** The lethal trifecta: private data + untrusted content + exfiltration
+ability. Tool permission design and excessive agency. **Treating model output as untrusted input.** PII,
+prompt and log leakage, and the data obligations your employer will hand you.
+
+**Artifact** `EVIDENCE` — an attack-then-fix log against a deliberately vulnerable copy of the flagship:
+four exploits you ran yourself, each with fix and test. A tool-permission design for M17's agent with
+blast-radius analysis. A one-page **data-flow document** naming every boundary customer data crosses,
+every third party that sees it, and the retention setting at each — **plus a PII redaction step
+implemented in M7's trace pipeline** and proven by a test that feeds it synthetic PII.
+
+> This reconciles a tension v1 created and never resolved: M7 and M11 teach you to log everything about a
+> model call; this is where that meets not shipping customer PII to a third-party platform.
+
+**GATE** — **REFEREE:** working exploits — either they land or they do not. **PASS:** four exploits
+demonstrated and fixed with tests; name every irreversible action in your agent and defend the containment
+architecture **without ever saying "I tell the model to ignore injected instructions."** **ON FAIL:** the
+exploit did not actually land — you have a description, not a demonstration.
+
+**Most-missed:** Believing code is server-side because of where the file lives. · Treating a leaked key as
+fixed by deleting the commit — it is compromised the moment it was pushed; rotation is the only fix.
+· Trusting a `userId` in the request body. · `USING (true)`, or the secret key in an Edge Function
+"because RLS was in the way." · Believing a classifier or delimiter scheme solves prompt injection.
+Assuming indirect injection is exotic — **it is the common case**: a web page, a PDF, a calendar invite, a
+GitHub issue, a row another user can write to. · Giving the agent an admin token "temporarily." · A
+confirmation step whose summary the model itself generates — an injected model lies in the confirmation.
+
+---
+
+# LAYER 6 — Product and Platform (155h)
+
+## M20 — Frontend for AI Interfaces (40h) · `dependsOn: M3, M10, M17, M18`
+
+Cut from v1's 45h and retargeted: the generic React rendering-model material is below your level. What
+remains is the AI-specific surface, which is where you differentiate.
+
+**Core concepts:** Effects and their four failure modes (infinite loops, stale closures, races, missing
+cleanup). **The server/client boundary and the current Next.js caching direction** — state the direction,
+which is durable, not the version, which is not: **caching is now opt-in.** Nothing is cached by default;
+you opt in explicitly. v1 hedged on this as if it were a version bump; it is an *inversion*, and generic
+hedging does not catch it because you will read current docs, recognize the words, and map them onto the
+old default without noticing it flipped. Forms, mutations, optimistic UI with shared Zod schemas. Then:
+**`useChat` on M3's wire format** (budgeted in M3 — it is not free). Cancellation and abort propagation.
+Resumable streams. Latency choreography for 10-second-plus operations. Conversation scroll behavior.
+**Designing for output that is sometimes wrong** — tool-call UI, approval gates, citations, uncertainty,
+honest failure states. **The upgrade-path UI and the honest failure state** (moved here from M18 to break
+a circular dependency).
+
+**Artifact** `EVIDENCE` — the flagship's chat surface rebuilt on **your own M3 protocol**: a stop button
+that provably stops upstream billing; refresh-mid-generation that resumes rather than losing the answer;
+tool calls surfaced with a working approval gate wired to M17; citations linking to M10's span provenance;
+failure states that tell the truth; the 402/upgrade path.
+
+**GATE** — **REFEREE:** a screen recording plus the cost meter. **PASS:** explain the byte path from model
+token to painted DOM node with no notes; demonstrate refresh-mid-generation recovery live; show the stop
+button's effect in the cost meter; report time-to-first-token (measured here, where the client
+instrumentation lives). **ON FAIL:** the stop button stops the UI only.
+
+**Most-missed:** `useState` as a variable store kept in sync with `useEffect`. · Adding and removing deps
+until the lint rule goes quiet. · `'use client'` at the root layout. · **Assuming one `read()` chunk equals
+one complete SSE event** — corrupts output only under load. · `setState` on every token at 60/sec,
+re-rendering the whole markdown tree, then blaming React. · Conflating client disconnect with user
+cancellation. · `aria-live="polite"` on the streaming container, making screen readers re-read the entire
+growing message. · **An approval button that appears after the tool already ran.** That is theatre.
+
+## M21 — System Design and the Design Doc (12h) · `dependsOn: M5, M7`
+
+The queue half moved to M5. What remains is the interview-shaped half, correctly late.
+
+**Core concepts:** The client-server trust boundary. Statelessness and why a shared counter is the hard
+part. The serverless execution model, measured rather than blog-post-quoted. Caching in three layers and
+the invalidation for each. Graceful degradation, backpressure, what happens when the model is down.
+**The forward-looking design doc** — the mid-level artifact at most companies, and the highest-leverage
+move available to an engineer with no credential, because it is public, durable, and evaluated purely on
+the quality of thinking.
+
+**Artifact** `EVIDENCE` — a one-page design doc with two rejected options for a bounded AI system,
+**reviewed and pushed back on by a real reader before any code exists.** Keep both the proposed and the
+built version; the delta is the interview material.
+
+**GATE** — **REFEREE:** the mock interviewer, who must ask questions you did not anticipate — this gate is
+unadministrable alone. **PASS:** 45 minutes at a whiteboard on one bounded AI system end to end including
+observability and the failure path, surviving three unscripted follow-ups. Plus: "here is where my design
+was wrong and how I found out." **ON FAIL:** rehearse the weak branch and re-book.
+
+**Most-missed:** Treating server and client as a lint rule rather than two physically different computers.
+· "Serverless means stateless so I'm fine" — instances are reused and handle concurrent invocations in the
+same process, so module-level state persists *sometimes, unpredictably*, which is worse than never.
+· Caching the final response keyed on the raw question — almost never hits, leaks across users when it
+does. The high-value caching is upstream. · Retrying into an outage; a 429 means send less. · Reaching for
+Redis or Kafka in minute three, before anyone established the read/write ratio. **The mid-level rubric
+rewards thoughtful simplification.**
+
+## M22 — Deployment, CI/CD, and Operating It (48h) · `dependsOn: M4, M6, M11`
+
+**Core concepts:** Environments and configuration as a first-class thing. Secrets across environments;
+short-lived credentials over stored keys. A CI pipeline you own — what gates a merge and what it costs.
+**Deploy ≠ release** — preview deploys, promote, instant rollback, feature flags. **Expand/contract
+migrations in the pipeline** (moved here from M4, where there was no pipeline to run them through).
+Health checks, SLOs, alerting that pages a human only when it should. Registries, image builds in CI, one
+real cloud deploy.
+
+**Artifact** `EVIDENCE` — the flagship's full pipeline: OIDC secrets with no stored keys; required checks
+**including M11's eval gate**; a feature-flagged release; a rollback rehearsed under a timer; an
+expand/contract migration run through the pipeline **while M4's load generator is firing**, with zero
+failed requests; one burn-rate alert that fired for a real reason. Plus one dockerized cloud deploy, torn
+down the same day.
+
+**GATE** — **REFEREE:** a timer and the load generator's error count. **PASS:** roll back a bad deploy in
+under five minutes while narrating; run the migration under load with zero failed requests; explain with a
+**specific lock type** why a naive migration takes a site down and why yours does not. **ON FAIL:** the
+migration dropped requests — expand/contract was not actually expand/contract.
+
+**Most-missed:** `git revert` as the rollback strategy — a full rebuild while the site is broken, and it
+does nothing about the schema change or the rows the bad version already wrote. · Migrations at application
+boot, so every instance races. · Assuming the public-bundle env prefix means "for the frontend" rather than
+"baked into the public bundle, forever, at build time." · Production secrets in preview environments, where
+any PR can exfiltrate them. · One `/health` for both liveness and readiness. · The Kubernetes rabbit hole.
+· Leaving the practice cloud stack running.
+
+## M23 — Python as a Second Production Language (35h) · `dependsOn: M8, M11`
+
+**Trip-wire from M0:** if fewer than 40% of your filtered funnel accepts a Node-primary backend, **this
+module moved to immediately after M11** and you are already running the alternate ordering.
+
+**Core concepts:** Python semantics at depth. **asyncio and the blocking-call trap** — a concurrency model
+that is not JavaScript's. FastAPI with streaming responses and dependency injection. Reading and debugging
+idiomatic Python in a codebase you did not write.
+
+**Artifact** `EVIDENCE` — **M11's eval runner ported to Python** (this gives the module an inbound
+dependency edge; v1's Python module was terminal, which is why it was the most cuttable thing in the
+document). Typed request/response models, streaming, a pytest suite faking the model client, type checker
+green in CI, plus a written runtime diff **including a reproduction of a blocking call freezing the
+asyncio loop and its fix.**
+
+**GATE** — **REFEREE:** a timer, plus a Python-fluent OSS maintainer reviewing a real PR. **PASS:** add a
+typed route and test to an unfamiliar Python service in 90 minutes; the maintainer merges without idiom
+comments. **ON FAIL:** you are writing TypeScript with Python syntax — **a passing test cannot catch this**,
+which is why the referee is a human who reads Python daily.
+
+**Most-missed:** Classes everywhere, raw `dict` passed around, camelCase. Reviewers read that instantly.
+· Assuming `async` is JavaScript's: a sync HTTP client, a sync DB session in an async handler,
+`time.sleep`. All compile; all pass local testing with one user. · Unbounded `gather(*[...])` — fine on 10
+items, OOM on 5,000. · Calling the real model API in unit tests. The LLM belongs in the eval suite.
+· Assuming pydantic is strict by default. It coerces unless told otherwise.
+
+## M24 — Third-Party Integration as a Consumer (20h) · `dependsOn: M3, M19`
+
+**Artifact** `EVIDENCE` — a real OAuth connection in the flagship: encrypted per-user token storage,
+automatic refresh, a revocation-recovery path that re-prompts rather than failing silently, and a
+deliberate test where you revoke access in the provider's own UI and show the app degrading honestly.
+
+**GATE** — **REFEREE:** the provider's own UI, where you actually revoke. **PASS:** draw the token
+lifecycle from consent to revocation and name exactly what happens when a refresh token expires inside a
+background job at 3am; demonstrate the recovery. **ON FAIL:** the 401 surfaces as a generic error.
+
+---
+
+# LAYER 7 — The Market (78h)
+
+**Scheduled by trigger, not by position.** v1's single worst sequencing error was here: M23's gate said in
+bold "this happens before the first application" while sitting at hour 873 — eight months *after*
+applications start. M24 produced the resume at month 15 for applications at month 5. Five lenses caught it
+independently.
+
+## M25 — Comp, Terms, and the Negotiation (8h) · *trigger: one month before the application date*
+
+The funnel-filter half of this work already happened in M0, where it belongs, because it determines which
+modules matter. This is the transaction itself.
+
+**Core concepts:** Reading an offer — base vs equity vs bonus, vesting, what a startup's equity is
+realistically worth. **W2 vs 1099 vs agency vs employer-of-record.**
+
+> **v1 asserted that remote entry-band roles are "disproportionately" 1099 and escalated to calling it "a
+> certainty." That is not supported.** A critic pulled live postings and found W2 full-time with benefits
+> explicitly listed; a contract-filtered search returned nothing. Thin sample, weak null result — but
+> "certainty" was not defensible from anything the document showed. **What is defensible: check the
+> classification on every posting before applying, and know your delta before you negotiate.** You already
+> tagged twenty postings W2 or 1099 in M0. That is your data, and it is a better artifact than my claim was.
+
+**Artifact** `EVIDENCE` — a comp floor and target with the postings that justify them; a spreadsheet
+modeling the same headline number as W2 vs 1099 with self-employment tax, health insurance, and unpaid
+time off; a negotiation script rehearsed out loud and recorded.
+
+**GATE** — **REFEREE:** a real recruiter screen. **PASS:** state your floor to an actual recruiter without
+hedging. **ON FAIL:** you hedged — that is the rep; do it again next screen.
+
+## M26 — The Evidence Layer v1 (8h) · *trigger: the application date*
+
+Split from v1's single late module, because applications at month 5 need a resume at month 5.
+
+**Artifact** `EVIDENCE` — a resume mapping each claim to a repo; two pinned repos; a README in
+product-spec form. **Only `EVIDENCE`-tagged artifacts are pinned.** `runtime-lab`, `seams`, `pg-lab`, and
+`stats-lab` are labs — they taught you things and they are not portfolio.
+
+**GATE** — **REFEREE:** a stranger. **PASS:** they state what the system does without asking a question.
+
+## M27 — The Evidence Layer v2 (17h) · *trigger: after Layer 5*
+
+**Artifact** `EVIDENCE` — the flagship README carrying **the eval numbers including the failing v1**; a
+decision log of the five choices that mattered; one public write-up of a measurement you made.
+
+**Most-missed:** The README as a feature list instead of a product spec plus decision record. The stack
+list is the least interesting thing in the repo and it is what 90% of portfolios lead with. · **Hiding the
+v1 numbers because they were bad. The improvement delta *is* the evidence** — a single good number could
+have been luck. · Tutorials that duplicate a thousand existing posts; the convincing genre is a specific,
+numbered account of something that went wrong in your own system. · 22 technologies listed. Six you can be
+grilled on reads as competence. Do not put "Prompt Engineering" on it. · Auto-apply tools and
+200-application blasts. Always find the human.
+
+## M28 — Interview Performance (45h) · *10h forward-loaded to the application date*
+
+**Forward-loaded (10h, at the application date):** clarify-before-typing; out-loud narration with
+autocomplete off; one recorded mock. The remaining 35h stays late.
+
+> **v1 had the emphasis inverted.** It led with the un-assisted round and filed the assisted round as a
+> secondary bullet — while its own M14 already named the purity play as a *scored failure*. Major firms are
+> piloting candidate-uses-an-assistant rounds, standard policy does not ban AI, and take-homes are
+> contracting specifically because unverifiable AI use undermined them. **Invert it.** Keep the
+> autocomplete-disabled round as a floor. Stop budgeting hours against the shrinking take-home format.
+> (Direction is well-corroborated; no percentage is attached, deliberately.)
+
+**Artifact** `EVIDENCE` — a recorded ten-minute flagship walkthrough in **decision-language, not
+feature-language**; three timed foreign-repo bug fixes from M0's blind queue with assistant transcripts
+attached and annotated; two recorded mock defenses with a real person who pushes back. **The 40-problem
+narrated log lives in Track 4's existing weekly slot**, not as 15 extra hours here.
+
+**GATE** — two referees. **PASS (1):** solve an unseen problem out loud in 25 minutes with autocomplete
+disabled. **PASS (2):** drive an assistant through an unfamiliar bug **under observation**, narrating every
+point where you *verified* rather than accepted. **ON FAIL:** watch the transcript back and name where you
+delegated something you should have verified — that is the rep.
+
+**Most-missed:** Practicing in your own IDE with autocomplete on. · Barreling into typing without
+clarifying — interviewers name this as a reject signal, and it reads as someone used to a model filling the
+gaps. · **Editing the test to make it pass.** Instant fail. · Framing projects around tool names. "What
+would you do differently" is a test of honest depth; "nothing, it's solid" scores worse than naming a real
+limitation. · Gold-plating the take-home UI while shipping zero evaluation, which inverts the actual
+scoring.
+
+---
+
+# LAYER 8 — Employed Mode (18h)
+
+*Every feedback instrument in v1 was designed for an unemployed person and terminated on hire day. But the
+document's own arithmetic makes **hire-before-completion the modal outcome.***
+
+## M29 — Employed Mode (10h) · *written pre-hire, executed post-hire*
+
+**Artifact** — a second operating contract: a realistic employed weekly budget (**5–8 hours, not 18**) and
+a module order driven by what the job needs first. Track 4 retargeted from your own artifacts to a
+component of the employer's codebase — which doubles as onboarding. The reviewer relationship re-contracted
+or deliberately replaced, **decided before the start date.** The monthly re-plan surviving with new inputs:
+PR review comments, tickets that took longer than estimated, things you could not answer that month. The
+estimate log continuing against real tickets from week one.
+
+Plus **two scheduled written manager checkpoints at week 6 and week 14**, scripted before the start date,
+asking directly whether you are where they would expect. Week one is the wrong time to ask — that is when a
+manager's answer is most generic.
+
+## M30 — The First 90 Days (8h) · *trigger: first onsite*
+
+Self-taught plus remote is the highest-risk combination for silent struggle, and silent struggle is how new
+hires get let go at month three — not for incompetence, but for being stuck two days on something a
+teammate would have unblocked in five minutes.
+
+**The unwritten norm nobody writes down:** struggle alone ~30 minutes, then ask publicly in a channel with
+what you tried, what you expected, what happened, and your current best hypothesis. That format demonstrates
+competence *while* asking for help rather than in spite of it.
+
+Also here: **inheriting an AI system you did not build** — reading someone else's prompts, evals, and
+traces; prompt archaeology on a system with no decision log; and the fact that your first AI ticket is more
+likely "the summaries feel off, look into it" than a greenfield feature.
+
+**Artifact** — a 30/60/90 plan against a real posting with week-one manager questions; a reusable
+asking-for-help template **practiced for real by posting three genuine questions in an OSS project's
+Discord or Slack**, responses kept; an org map inferred from `git blame` and `log`; a handoff note good
+enough for a stranger to continue.
+
+**GATE** — **REFEREE:** real strangers in a real channel, and a recording. **PASS:** three genuine questions
+posted and answered; record yourself pairing with another person for 45 minutes on a real bug in an
+unfamiliar repo, narrating throughout, and watch it back.
+
+---
+
+# The Parallel Tracks — priced
+
+v1 listed these as mandatory and budgeted none of them. That was the 40% error.
+
+| # | Track | Hours | Cadence |
+|---|---|---|---|
+| 1 | **Job search** — 10 researched applications/month where you can name the product and a human | **~200** | 3–4 h/week from the application date |
+| 2 | **OSS PRs** — one substantive merged PR/month | **~80** | ~8h/month from M12 |
+| 3 | **The dependency spiral** — every capstone imports an earlier one | **0** | structural |
+| 4 | **Weekly cold re-build** — 45 min, original repo closed. *Also carries M28's narrated-problem log.* | **~60** | weekly |
+| 5 | **Reviewer relationship** — batched into scheduled monthly sessions, not escalating ad-hoc favors | **~15** | ~1 h/month |
+| 6 | **Agent discipline** — interrogate-never-author through M12; delegation policy after M14 | **0** | habit |
+| 7 | **Writing** — one short piece per layer, each about something you *measured* | **~30** | 5 × 6h |
+| 8 | **Monthly re-plan** — *and it survives into Employed Mode* | **~40** | 2 h/month |
+| | **Total** | **~425** | |
+
+**Track 1 sequencing rule:** for the first two months, deliberately target companies you do **not** want.
+The first ten interviews are instruments, not opportunities.
+
+**Track 4 rubric (v1 gave it none, so it could not fail):** score each cold re-build 0–3 — 0 could not
+start, 1 needed the original, 2 rebuilt with gaps, 3 clean. **Three consecutive scores below 2 on the same
+artifact means that module is re-opened**, not noted.
 
 ---
 
 # The Cut List
 
-What was deliberately removed, and why. **This list is itself a hiring signal** — "I know that exists,
-here is when I'd reach for it, I haven't needed it yet" is a better interview answer than a shallow artifact.
+Deliberately removed. **This list is itself a hiring signal** — "I know that exists, here is when I would
+reach for it, I have not needed it yet" beats a shallow artifact.
 
-| Cut | Why |
-|---|---|
-| **Model training in every form** — fine-tuning, LoRA, PyTorch, backprop, transformer internals, nanoGPT | The single biggest time sink available, and it produces zero hireable signal for this job family. |
-| **Algorithm theater** — linked lists, tree rotations, DP past recognizing memoization, implementing sorts, bit manipulation, tries, graphs/BFS/toposort, competitive programming | The interview subset survives, timeboxed, inside M25. |
-| **Distributed systems theory & platform engineering** — CAP, Raft/Paxos, sharding, Kafka, Kubernetes, service meshes, microservices, gRPC, Terraform as a practice, self-hosted Prometheus/Grafana | Nobody hires a mid-level AI product engineer to do any of this, and each is an 80-hour displacement of something you will own. |
-| **TypeScript exotica** — type-level metaprogramming, decorators, namespaces, RxJS, Effect-TS/fp-ts, bundler internals | Read these; authoring them is a library-author skill that makes you the person whose PRs nobody can review. |
-| **The Python data-science slice** — numpy, pandas mastery, scikit-learn, notebooks-as-primary-workflow, Django/Flask, conda/poetry/pyenv | Different job family. |
-| **Framework tourism** — deep LangChain, LlamaIndex, CrewAI, AutoGen, AutoGPT-style autonomy, and *most tempting of all*, building your own agent framework / eval platform / observability dashboard | Each is a way to produce a worse version of something that exists while avoiding the labeling and debugging that actually teach. |
-| **The advanced-RAG genre** — GraphRAG, RAPTOR, self-RAG, CRAG, FLARE, standalone vector DBs, fine-tuned embeddings, implementing HNSW, chasing MTEB | Hybrid + rerank + a measuring instrument covers the ground. |
-| **Eval anti-patterns** — public benchmarks (MMLU, HumanEval, GPQA), BLEU/ROUGE/BERTScore, off-the-shelf RAG metric bundles, 1–5 Likert judge rubrics, adopting a platform before you have 50 real cases | Each produces a number that moves without telling you what to fix. |
-| **Frontend: Redux, CSS-in-JS, memoization drills, building a component library, a second framework, React Native, Canvas/WebGL, micro-frontends** | Cut 140h → 45h. |
-| **Certifications of every kind** | Across 14 full postings sampled, not one named an AI certification. |
-| **Learn-on-demand appendix (~55h)** — Playwright as a unit, feature flags as study, webhook signature verification as its own unit, rate limiting as its own unit, the batch tier, model routing before you have cost data, GraphQL, gRPC, OAuth *provider* implementation, prompt compression, semantic caching, self-hosting open-weights models, vLLM | Each gets one line saying what it is and where to read about it when it comes up. |
+**Model training in every form** (fine-tuning, LoRA, PyTorch, backprop, transformer internals) — the
+biggest time sink available, zero hireable signal for this job family. · **Algorithm theater** — linked
+lists, tree rotations, DP past recognizing memoization, implementing sorts, bit manipulation, tries,
+graphs/BFS/toposort, competitive programming. The interview subset survives, timeboxed, in M28.
+· **Distributed systems theory and platform engineering** — CAP, Raft/Paxos, sharding, Kafka, Kubernetes,
+service meshes, microservices, gRPC, Terraform as a practice, self-hosted metrics stacks. · **TypeScript
+exotica** — type-level metaprogramming, decorators, namespaces, RxJS, Effect-TS/fp-ts. Read these;
+authoring them makes you the person whose PRs nobody can review. · **The Python data-science slice** —
+numpy, pandas mastery, scikit-learn, notebooks-as-primary-workflow, Django/Flask, conda/poetry/pyenv.
+· **Framework tourism** — deep LangChain, LlamaIndex, CrewAI, AutoGen, and *most tempting of all*,
+building your own agent framework, eval platform, or observability dashboard. Each is a way to build a
+worse version of something that exists while avoiding the labeling and debugging that actually teach.
+· **The advanced-RAG genre** — GraphRAG, RAPTOR, self-RAG, CRAG, FLARE, standalone vector DBs, fine-tuned
+embeddings, implementing HNSW, chasing MTEB. · **Eval anti-patterns** — public benchmarks, BLEU/ROUGE/
+BERTScore, off-the-shelf RAG metric bundles, 1–5 Likert judge rubrics, adopting a platform before you
+have 50 real cases. · **Certifications of every kind** — across 14 full postings sampled, not one named an
+AI certification. · **Learn-on-demand appendix** (~55h) — Playwright as a unit, feature flags as study,
+webhook signature verification as its own unit, rate limiting as its own unit, the batch tier, GraphQL,
+gRPC, OAuth *provider* implementation, prompt compression, semantic caching, self-hosting open-weights
+models.
+
+**One cut the review flagged as a real risk, not a clean win:** the AWS/second-cloud unit stays cut, and
+the Vercel/Supabase focus is defensible for this segment — **but it narrows your funnel more than the
+Python bet does, and unlike the Python bet there is no trip-wire for it.** If M0's twenty postings show
+cloud-native infrastructure as a common requirement, add a 15-hour unit and take the hours from M20, the
+least differentiating module in the plan.
 
 ---
 
 # A note on APEX itself
 
-The learning-science research read your existing `obsidian.js` and flagged something worth acting on:
-**APEX's quiz engine is built almost entirely out of multiple choice.** Recognition memory survives long
-after recall is gone, so a 90% MCQ score is compatible with total inability to produce the thing. That
-is precisely the illusion this curriculum exists to escape.
+The learning-science research read your `obsidian.js` and flagged this: **APEX's quiz engine is built
+almost entirely out of multiple choice.** Recognition memory survives long after recall is gone, so a 90%
+MCQ score is compatible with total inability to produce the thing. That is precisely the illusion this
+curriculum exists to escape, and M0 names it as one of the three distinct mechanisms behind
+tutorial-induced competence illusion.
 
-The `predict:` fields already in that file are the good part — pre-questions before instruction improve
-later learning even when the pre-answer is wrong. The recommendation: **expand `predict:`, demote the
-MCQ banks to warm-up only, and make free generation into a blank box the primary interaction.**
+The `predict:` fields already in that file are the good part — **pre-questions before instruction improve
+later learning even when the pre-answer is wrong.** Expand those; demote the MCQ banks to warm-up only;
+make free generation into a blank box the primary interaction.
 
-Also worth knowing before you wire this in: APEX's current schema
-(`{id, sub, phase, title, concept, example, cards, quiz}`) is built for exam prep. This curriculum's
-unit is a module with an artifact, a gate, a dependency edge, and an hour budget. It needs a different
-shape — `{id, layer, title, hours, dependsOn[], concepts[], artifact, gate, mistakes[]}` — not a
-retrofit of the ASVAB one.
+**On schema:** APEX's current unit is `{id, sub, phase, title, concept, example, cards, quiz}` — built for
+exam prep. This curriculum's unit is
+`{id, layer, title, hours, dependsOn[], concepts[], artifact, artifactKind, gate:{referee, pass, onFail}, mistakes[], trigger?}`.
+Different shape. Do not retrofit the ASVAB one.
+
+The `dependsOn[]` field is not decoration — **derive the layers from the graph rather than asserting them**,
+and print two properties: every module except M0 has at least one inbound edge, and **the longest path, not
+the hour sum, sets your timeline.**
 
 ---
 
-## Sources and currency
+## Provenance and currency
 
-Built from 24 parallel research agents (2.66M tokens, 432 tool calls) with web access, plus empirical
-job-posting data, then cut by an adversarial waste critic and a gap critic.
+**Built by:** 24 parallel research agents with web access (2.66M tokens, 432 tool calls) → a gap critic and
+a waste critic → an architecture pass that cut 2,605 research hours to 963. **Then reviewed by:** 10
+adversarial critics (1.5M tokens) across sequencing, month-six failure, currency, seams, hiring-manager,
+gates, learner-reality, emerging-reality, self-taught-specific, and red-team lenses → a synthesis that
+produced 15 must-fixes, 25 should-fixes, 18 stale-claim corrections, and **rejected 11 findings as wrong or
+not worth the hours.**
 
-**Fast-moving claims in this document — model IDs, pricing, API parameters, framework version behavior,
-tooling defaults — carry a shelf life measured in months.** Verify against primary sources at the moment
-you build each module. The fundamentals in Layers 1 and 2 do not move; treat the rest as perishable.
+**Where the currency risk actually lives** — v1 put its only warning on the model module, which was the part
+it mostly got right. The real decay is concentrated in **four places**, and three of them are in layers this
+document calls "fundamentals":
+
+- **M9** (model IDs, parameters, pricing, `stop_reason` enum, caching TTLs) — monthly cadence
+- **M4** (Supabase connection endpoints, key naming migration) — **a platform claim wearing fundamentals
+  clothing; it moves at platform speed**
+- **M16 / M10** (pgvector index behavior, dimension ceilings, `iterative_scan` defaults) — version-pinned
+- **M17 / M20** (MCP spec revision, AI SDK wire format, Next.js caching direction) — breaking changes
+  inside this curriculum's own calendar
+
+Everything in M1, M2, M12, M13, M15 is durable. Verify the four above against **primary sources** the week
+you build each one — not this document, not a blog post, not a model's memory.
+
+**And the honest limit:** this document is a static artifact about a field that moves. Track 8's monthly
+re-plan is the only mechanism it has for noticing it has gone stale. That is thin. The real defense is the
+habit the curriculum is actually teaching — **measure it yourself, and trust the number over the claim.**
