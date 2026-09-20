@@ -322,10 +322,80 @@ var AI_TRACKS = [
 var AI_COMPRESSED_SPINE = ['M0','M1','M2','M3','M6','M7','M9','M11','M25']; // 364h, for runway under 9 months
 var AI_CUT_ORDER = ['M24','M23(second half)','M20(down to 25h)','M30'];      // ~80h back, in this order
 
+var LAUNCHPAD_CONFIG = {
+  brand: 'LAUNCHPAD',
+  name: 'AI Product Engineering',
+  tag: 'HIREABLE · REMOTE · PRODUCTION',
+  tagline: 'Every module ends in something you built and can explain out loud.',
+  accent: '#00e5a0',
+  glyph: '⬢',
+  key: 'apex_launchpad_v1',
+  // The three rules a learner most often breaks, surfaced in the UI rather than buried.
+  creed: [
+    'You do not advance by reading. You advance by shipping a working thing.',
+    'A gate with no referee is decorative. Every gate here names who says yes.',
+    'Read the primary sources before you build. Write the DELTA. The field moves.'
+  ]
+};
+
 // ── Graph validation. Rule 2 says every module except M0 has an inbound edge,
 // ── and the LONGEST PATH — not the hour sum — sets the timeline.
 var AI_CURRICULUM_API = {
   byId: function (id) { return AI_CURRICULUM.filter(function (m) { return m.id === id })[0] },
+
+  byLayer: function (n) { return AI_CURRICULUM.filter(function (m) { return m.layer === n }) },
+
+  // A module is available when every module it depends on has its GATE passed.
+  // Trigger-scheduled modules (Layer 7-8) are never dependency-locked — they are
+  // scheduled by event, which is the whole point of the Layer 7 rewrite.
+  isUnlocked: function (id, progress) {
+    var m = this.byId(id);
+    if (!m) return false;
+    if (m.trigger && m.dependsOn.length === 0) return true;
+    return m.dependsOn.every(function (d) {
+      return progress && progress[d] && progress[d].gate;
+    });
+  },
+
+  // What he could legitimately start right now.
+  available: function (progress) {
+    var self = this;
+    return AI_CURRICULUM.filter(function (m) {
+      var p = progress && progress[m.id];
+      return !(p && p.gate) && self.isUnlocked(m.id, progress);
+    });
+  },
+
+  // The Layer 3 -> Layer 4 hard gate. Not a module — a precondition with teeth,
+  // and the most corroborated finding in the adversarial review.
+  flagshipGate: function (progress) {
+    var f = (progress && progress.__flagship) || {};
+    var items = [
+      { key:'deployed', label:'Flagship deployed and reachable' },
+      { key:'users',    label:'Two real users who are not you' },
+      { key:'traces',   label:'~100 logged traces containing real failures' },
+      { key:'ci',       label:'M11 harness green in CI against those traces' }
+    ];
+    var done = items.filter(function (i) { return f[i.key] }).length;
+    return { items: items, done: done, total: items.length, open: done === items.length };
+  },
+
+  progressSummary: function (progress) {
+    var doneH = 0, gated = 0, arts = 0, deltas = 0;
+    AI_CURRICULUM.forEach(function (m) {
+      var p = (progress && progress[m.id]) || {};
+      if (p.gate) { gated++; doneH += m.hours; }
+      if (p.artifact) arts++;
+      if (p.delta) deltas++;
+    });
+    var tot = this.totalHours();
+    return {
+      modulesDone: gated, modulesTotal: AI_CURRICULUM.length,
+      artifactsDone: arts, deltasDone: deltas,
+      hoursDone: doneH, hoursTotal: tot.modules,
+      pct: tot.modules ? Math.round(doneH / tot.modules * 100) : 0
+    };
+  },
 
   totalHours: function () {
     var mod = AI_CURRICULUM.reduce(function (a, m) { return a + m.hours }, 0);
@@ -413,6 +483,7 @@ var AI_CURRICULUM_API = {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AI_CURRICULUM: AI_CURRICULUM, AI_LAYERS: AI_LAYERS, AI_TRACKS: AI_TRACKS,
+                     LAUNCHPAD_CONFIG: LAUNCHPAD_CONFIG,
                      AI_OWNED_CONCEPTS: AI_OWNED_CONCEPTS, AI_SPIRAL_PAIRS: AI_SPIRAL_PAIRS,
                      AI_COMPRESSED_SPINE: AI_COMPRESSED_SPINE, AI_CUT_ORDER: AI_CUT_ORDER,
                      AI_CURRICULUM_API: AI_CURRICULUM_API };
