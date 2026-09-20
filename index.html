@@ -1299,8 +1299,8 @@ body{color:var(--text);font-family:var(--sans);}
   padding:5px 8px;border-radius:5px;}
 #launchpadApp .lx-title{font:300 34px/1.14 var(--sans);color:#fff;letter-spacing:-.02em;margin-bottom:12px;}
 #launchpadApp .lx-sub{font:400 13.5px/1.6 var(--sans);color:#a8b8cc;max-width:64ch;}
-#launchpadApp .lx-track{display:flex;flex-wrap:wrap;align-items:center;margin-top:20px;}
-#launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;}
+#launchpadApp .lx-track{display:flex;flex-wrap:wrap;align-items:center;margin-top:20px;row-gap:9px;}
+#launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;white-space:nowrap;}
 #launchpadApp .lx-tk .d{width:12px;height:12px;border-radius:50%;border:1.4px solid #27394c;flex-shrink:0;}
 #launchpadApp .lx-tk.on .d{background:var(--rc);border-color:var(--rc);}
 #launchpadApp .lx-tk span{font:500 10.5px/1 var(--sans);letter-spacing:.11em;color:#6c7b8d;
@@ -6601,7 +6601,7 @@ function lpDetailHTML(API, id) {
   h += '<div class="lx-title">' + esc(m.title) + '</div>';
   var fgH = API.flagshipGate(P), gated = m.layer >= 4 && m.layer <= 6;
   h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' + (gated ? (fgH.open ? ', and the hard gate is open.' : ', and the hard gate is open (Modules tab, ' + fgH.done + '/' + fgH.total + ' done).') : '.') : 'No prerequisites — this is where the curriculum starts.')
-     + (m.owns ? ' Teaches ' + m.owns.join(', ') + ' for good; no later module re-teaches it.' : '') + '</div>';
+     + (m.owns ? ' ' + m.owns.map(function (o) { return o.charAt(0).toUpperCase() + o.slice(1); }).join(' and ') + ' is taught here and nowhere else.' : '') + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
     if (i) h += '<span class="lx-tkr"></span>';
