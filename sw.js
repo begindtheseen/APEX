@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v34';
+var CACHE = 'apex-shell-v35';
 var SHELL = [
   './',
   './index.html',
@@ -25,9 +25,12 @@ self.addEventListener('install', function(e) {
   // the browser HTTP cache) so a new version never installs with stale files.
   e.waitUntil(
     caches.open(CACHE).then(function(c) {
+      // A file that will not fetch must fail the install: a half-filled cache
+      // looks installed and then breaks the app the first time it is offline.
       return Promise.all(SHELL.map(function(u) {
         return fetch(new Request(u, { cache: 'reload' })).then(function(res) {
-          if (res && res.ok) return c.put(u, res);
+          if (!res || !res.ok) throw new Error('shell fetch failed: ' + u);
+          return c.put(u, res);
         });
       }));
     })

@@ -4535,7 +4535,12 @@ var EXAM = null;
 function qbank(sub) { return (typeof QBANK !== 'undefined' && QBANK[sub]) ? QBANK[sub] : []; }
 function shuffleArr(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 function pickQs(sub, n) { var b = qbank(sub); return shuffleArr(b).slice(0, Math.min(n, b.length)); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Escapes for both text and attribute contexts. Quotes matter: a name typed
+// into an input is written back into a value="" attribute.
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function fmtClock(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); }
 
 // Adaptive (CAT-style) picker: choose an UNUSED question at the target difficulty
@@ -4759,8 +4764,6 @@ function init() {
 // composite you need, the subtests that deserve the most attention, what
 // carries over from your current path, and the civilian outlook.
 var CAREER_CAT = null;
-
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function selectCareerCat(id){ CAREER_CAT = id; renderCareer(); }
 
@@ -5627,10 +5630,36 @@ function lpLoad() {
 // Modules were renumbered once, into ladder order. Progress saved under the
 // old ids is carried across on first load (or import) and the map version is
 // stamped, so the rename can never run twice over the new ids.
+// Everything that comes from a file is rebuilt field by field: only known
+// module ids, only booleans, only finite non-negative numbers.
+function lpClean(st) {
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  var mods = {}, src = st.mods || {};
+  for (var i = 0; i < all.length; i++) {
+    var id = all[i].id, v = src[id];
+    if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
+    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
+  }
+  var flag = {}, fs = st.flagship || {};
+  try {
+    (lpApi() ? lpApi().flagshipGate({}).items : []).forEach(function (it) {
+      if (fs[it.key]) flag[it.key] = true;
+    });
+  } catch (e) {}
+  var ss = st.setup || {}, setup = {};
+  var rn = Number(ss.runwayMonths), wh = Number(ss.weeklyHours);
+  if (isFinite(rn) && rn > 0) setup.runwayMonths = rn;
+  if (isFinite(wh) && wh > 0) setup.weeklyHours = wh;
+  if (typeof ss.flagship === 'string') setup.flagship = ss.flagship.slice(0, 200);
+  return { mods: mods, flagship: flag, setup: setup, ids: 2 };
+}
 function lpMigrate(st) {
   if (!st.ids || st.ids < 2) {
     var OLD = {"M0A": "M1", "M0B": "M2", "M1": "M3", "M2": "M4", "M4": "M5", "M9": "M6", "M3": "M7", "M5": "M8", "M6": "M9", "M7": "M10", "M10": "M11", "M11": "M12", "M21": "M13", "M12": "M14", "M13": "M15", "M14": "M16", "M15": "M17", "M16": "M18", "M17": "M19", "M18": "M20", "M19": "M21", "M20": "M22", "M22": "M23", "M8": "M24", "M23": "M25", "M24": "M26", "M25": "M27", "M26": "M28", "M27": "M29", "M28": "M30", "M29": "M31", "M30": "M32"}, moved = {};
-    for (var k in st.mods) moved[OLD[k] || k] = st.mods[k];
+    for (var k in st.mods) {
+      if (!Object.prototype.hasOwnProperty.call(st.mods, k)) continue;
+      moved[Object.prototype.hasOwnProperty.call(OLD, k) ? OLD[k] : k] = st.mods[k];
+    }
     st.mods = moved; st.ids = 2; st.migrated = true;
   }
   return st;
@@ -5641,9 +5670,23 @@ function lpSave() {
 // The API takes one progress map; __flagship rides along on it.
 function lpProgress() {
   var p = {};
-  for (var k in LP_ST.mods) p[k] = LP_ST.mods[k];
-  p.__flagship = LP_ST.flagship;
+  // Built from the curriculum's own ids, never from the stored keys: a backup
+  // carrying __proto__ or an unknown id must not reach the progress map.
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  for (var i = 0; i < all.length; i++) {
+    var e = lpEntry(all[i].id);
+    if (e) p[all[i].id] = e;
+  }
+  p.__flagship = LP_ST.flagship || {};
   return p;
+}
+// One module's claims, or null. A stored value that is not a plain object is
+// treated as no progress rather than silently swallowing every later tick.
+function lpEntry(id) {
+  if (!Object.prototype.hasOwnProperty.call(LP_ST.mods, id)) return null;
+  var v = LP_ST.mods[id];
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
 }
 
 function enterLaunchpad() {
@@ -5676,7 +5719,9 @@ var LP_STEPS = ['delta', 'artifact', 'gate'];
 function lpToggle(id, step) {
   var API = lpApi(); if (!API) return;
   var P = lpProgress();
-  var m = LP_ST.mods[id] || {};
+  // lpEntry normalises: a stored value that is not a plain object (a corrupted
+  // or hand-edited backup) would otherwise swallow every tick in silence.
+  var m = lpEntry(id) || { delta:false, artifact:false, gate:false };
   var i = LP_STEPS.indexOf(step);
 
   // 1. A module you have not opened yet has nothing to claim.
@@ -5701,6 +5746,7 @@ function lpToggle(id, step) {
   //    record can never say "gate passed, artifact not built".
   if (m[step]) {
     for (var k = i; k < LP_STEPS.length; k++) m[LP_STEPS[k]] = false;
+    if (step === 'gate' || i < LP_STEPS.indexOf('gate')) lpClearDownstream(id);
   } else {
     m[step] = true;
   }
@@ -5718,12 +5764,29 @@ function lpRerenderKeepingFocus() {
     if (again[at]) again[at].focus();
   }
 }
+// Un-passing a gate un-passes everything that depended on it, transitively.
+// Without this the record can say "M5 passed" while M4, which it needs, is not.
+function lpClearDownstream(id) {
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  var queue = [id], seen = {};
+  while (queue.length) {
+    var cur = queue.shift();
+    for (var i = 0; i < all.length; i++) {
+      var m = all[i];
+      if (seen[m.id] || m.dependsOn.indexOf(cur) === -1) continue;
+      seen[m.id] = true;
+      var e = LP_ST.mods[m.id];
+      if (e && typeof e === 'object') { e.delta = false; e.artifact = false; e.gate = false; }
+      queue.push(m.id);
+    }
+  }
+}
 function lpSet(field, val) {
   LP_ST.setup = LP_ST.setup || {};
   var n = parseFloat(val);
   LP_ST.setup[field] = (field === 'flagship') ? val : (isFinite(n) && n > 0 ? n : 0);
   lpSave();
-  // Deliberately NOT a full re-render. These fields fire on blur, and rebuilding
+  // Deliberately NOT a full re-render. These fields fire on every keystroke, and rebuilding
   // the panel would replace the input the user just tabbed into, swallowing the
   // keystrokes. Only the derived half is redrawn.
   var v = document.getElementById('lpVerdict');
@@ -5750,7 +5813,12 @@ function renderLaunchpad(keepScroll) {
   if (!host) return;
   var API = lpApi();
   if (!API || typeof AI_CURRICULUM === 'undefined') {
-    host.innerHTML = '<div class="lp-card">Curriculum data unavailable.</div>'; return;
+    lpSideHTML();
+    var cb = document.getElementById('lpCrumb');
+    if (cb) cb.innerHTML = '<b>Home</b>';
+    host.innerHTML = '<div class="lp-card">Curriculum data unavailable. '
+                   + 'Reload the page; if it persists the app needs reinstalling.</div>';
+    return;
   }
   var main = document.getElementById('lpMain');
   var y = keepScroll && main ? main.scrollTop : 0;
@@ -6154,13 +6222,15 @@ function lpImport(ev) {
       // Any JSON used to pass this: an OBSIDIAN backup, an array, {"a":1}.
       // It then wiped every gate and reported success. Check the shape
       // before destroying a year of progress.
-      if (!d || typeof d !== 'object' || Array.isArray(d) ||
-          (typeof d.mods !== 'object' && typeof d.flagship !== 'object' && typeof d.setup !== 'object')) {
+      function plain(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+      if (!plain(d) || (!plain(d.mods) && !plain(d.flagship) && !plain(d.setup))) {
         toast('That file is not a LAUNCHPAD backup', 'warn'); ev.target.value = ''; return;
       }
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
-      LP_ST = lpMigrate({ mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {}, ids:d.ids || 1 });
+      LP_ST = lpMigrate({ mods:plain(d.mods) ? d.mods : {}, flagship:plain(d.flagship) ? d.flagship : {},
+                          setup:plain(d.setup) ? d.setup : {}, ids:d.ids || 1 });
       delete LP_ST.migrated;
+      LP_ST = lpClean(LP_ST);
       lpSave(); renderLaunchpad();
       toast('LAUNCHPAD progress restored', 'ok');
     } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
@@ -6355,8 +6425,9 @@ function lpModulesHTML(API) {
   var h = '<div class="lx-hero">'
         + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in ladder order</span></div>'
         + '<div class="lx-title">The ladder</div>'
-        + '<div class="lx-sub">A module opens when every module it needs has been passed, '
+        + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed, '
         + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
+        + 'You can open a locked one and read it; you cannot tick it. '
         + 'The longest chain of modules, not the total hours, is what sets how long this takes. '
         + 'A few modules near the end are tagged "Starts by date": they unlock early, but you do them on a date from your plan, not when they unlock. '
         + 'Lab means the result stays private; Evidence means a stranger can see it.</div>'
@@ -6392,8 +6463,9 @@ function lpModulesHTML(API) {
     mods.forEach(function (m) {
       var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
       var cls = pr.gate ? ' done' : (un ? '' : ' lock');
-      h += '<button class="lp-mod mo-lift' + cls + '"'
-         + (un ? ' onclick="lpOpen(\'' + m.id + '\')"' : ' disabled') + '>';
+      // Reading ahead is allowed; claiming is not. lpToggle enforces the gate.
+      h += '<button class="lp-mod mo-lift' + cls + '" onclick="lpOpen(\'' + m.id + '\')"'
+         + (un ? '' : ' aria-describedby="lpLockNote"') + '>';
       h += '<span class="lp-modI">' + (pr.gate ? '✓' : m.id) + '</span>';
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
@@ -6430,7 +6502,7 @@ function lpModulesHTML(API) {
    ['With the tracks', API.totalHours().total + 'h'],
    ['Longest chain', API.criticalPath().hours + 'h'],
    ['Layers', '9']].forEach(function (r) {
-    h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
+    h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
   h += '</div>';
 
@@ -6486,12 +6558,18 @@ function lpSpineCardHTML(API) {
   AI_COMPRESSED_SPINE.forEach(function (id) {
     var sm = API.byId(id); if (!sm) return;
     var un = API.isUnlocked(id, P);
-    h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+    h += '<button class="lx-link" onclick="lpOpen(\'' + id + '\')"' + (un ? '' : ' style="opacity:.7"') + '>'
        + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
        + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h' + (un ? '' : ' · locked') + '</span></span>'
        + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
   });
   return h + '</div>';
+}
+// A stored number is only ever a finite, non-negative number here; anything
+// else (a string from an edited backup, Infinity, NaN) shows as empty.
+function lpNum(v) {
+  var n = Number(v);
+  return (isFinite(n) && n > 0) ? n : '';
 }
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
@@ -6504,9 +6582,9 @@ function lpPlanHTML(API) {
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
   h += '<div class="lp-f"><label>Runway (months)</label><input type="number" inputmode="decimal" min="0" '
-     + 'value="' + (st.runwayMonths || '') + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
+     + 'value="' + esc(lpNum(st.runwayMonths)) + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
   h += '<div class="lp-f"><label>Hours / week</label><input type="number" inputmode="decimal" min="0" '
-     + 'value="' + (st.weeklyHours || '') + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
+     + 'value="' + esc(lpNum(st.weeklyHours)) + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
   h += '<div class="lp-f wide"><label>Your flagship — the one app you keep building</label>'
      + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
@@ -6530,6 +6608,10 @@ function lpPlanHTML(API) {
   return h;
 }
 
+function lpHrs(n) {
+  if (!n && n !== 0) return '—';
+  return n < 0.1 ? 'under 0.1' : n.toFixed(1);
+}
 function lpVerdictHTML(API) {
   var pl = API.plan(LP_ST.setup || {});
   var unset = pl.recommend === 'unset';
@@ -6540,11 +6622,11 @@ function lpVerdictHTML(API) {
     h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
        + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo</div>'
        + '<div class="lp-ps">' + pl.moduleHours + 'h of modules + ' + pl.trackHours + 'h of tracks · needs '
-       + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '—') + ' h/wk to fit your runway</div></div>';
+       + lpHrs(pl.neededForFull) + ' h/wk to fit your runway</div></div>';
     h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
        + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo</div>'
        + '<div class="lp-ps">' + pl.spineModuleHours + 'h of modules + ' + pl.spineTrackHours + 'h of tracks · needs '
-       + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '—') + ' h/wk</div></div>';
+       + lpHrs(pl.neededForSpine) + ' h/wk</div></div>';
     h += '</div>';
   }
   h += '<div class="lp-vrec">' + (unset ? '■ INCOMPLETE'
@@ -6718,7 +6800,7 @@ function lpDetailHTML(API, id) {
     opens.forEach(function (x) {
       var un = API.isUnlocked(x.id, P);
       var others = x.dependsOn.filter(function (d) { return d !== m.id; });
-      h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + x.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+      h += '<button class="lx-link" onclick="lpOpen(\'' + x.id + '\')"' + (un ? '' : ' style="opacity:.7"') + '>'
          + '<span class="lx-li2"><span class="lx-lt">' + esc(x.title) + '</span>'
          + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h · ' + (others.length ? 'also needs ' + others.join(', ') : 'opens when this passes') + (x.layer >= 4 && x.layer <= 6 && !fgH.open ? ' · and the hard gate' : '') + '</span></span>'
          + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
@@ -6732,7 +6814,7 @@ function lpDetailHTML(API, id) {
   if (nx) {
     var nun = API.isUnlocked(nx.id, P);
     h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Next on the ladder</div></div>'
-       + '<button class="lx-link"' + (nun ? ' onclick="lpOpen(\'' + nx.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+       + '<button class="lx-link" onclick="lpOpen(\'' + nx.id + '\')"' + (nun ? '' : ' style="opacity:.7"') + '>'
        + '<span class="lx-li2"><span class="lx-lt">' + esc(nx.title) + '</span>'
        + '<span class="lx-ls">' + nx.id + ' · ' + nx.hours + 'h' + (nun ? '' : ' · locked until ' + nx.dependsOn.join(', ') + (nx.dependsOn.length > 1 ? ' have' : ' has') + ' passed' + (nx.layer >= 4 && nx.layer <= 6 && !fgH.open ? ' and the hard gate is open' : '')) + '</span></span>'
        + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button></div>';
@@ -6774,8 +6856,12 @@ function lpDoneCount() {
     var key = (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.key) || 'apex_launchpad_v1';
     var s = JSON.parse(localStorage.getItem(key) || '{}');
     var mods = s.mods || {}, n = 0;
-    for (var k in mods) if (mods[k] && mods[k].gate) n++;
-    var tot = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM.length : 0;
+    var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+    for (var i = 0; i < all.length; i++) {
+      var e = mods[all[i].id];
+      if (e && typeof e === 'object' && e.gate) n++;
+    }
+    var tot = all.length;
     return n + '/' + tot + ' PASSED';
   } catch (e) { return ''; }
 }

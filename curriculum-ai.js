@@ -511,16 +511,20 @@ var AI_CURRICULUM_API = {
 
   // Longest dependency path in hours — the real floor on calendar time.
   criticalPath: function () {
-    var memo = {}, self = this;
+    var memo = {}, onStack = {}, self = this;
     function walk(id) {
       if (memo[id]) return memo[id];
+      // A cycle would recurse forever; validate() reports it, this survives it.
+      if (onStack[id]) return { hours: 0, path: [] };
+      onStack[id] = true;
       var m = self.byId(id);
-      if (!m) return { hours: 0, path: [] };
+      if (!m) { onStack[id] = false; return { hours: 0, path: [] }; }
       var best = { hours: 0, path: [] };
       m.dependsOn.forEach(function (d) {
         var r = walk(d);
         if (r.hours > best.hours) best = r;
       });
+      onStack[id] = false;
       return (memo[id] = { hours: best.hours + m.hours, path: best.path.concat([id]) });
     }
     var winner = { hours: 0, path: [] };
