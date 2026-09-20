@@ -5848,7 +5848,9 @@ function lpLayerArt(n) {
     + '<rect x="14" y="52" width="152" height="8" rx="4" fill="#0d1c31"/>'
     + '<rect x="14" y="52" height="8" rx="4" fill="#4db8ff" opacity=".8"><animate attributeName="width" values="30;100;30" dur="6s" repeatCount="indefinite"/></rect>'
     + '<circle cy="56" r="4.5" fill="#00d4ff"><animate attributeName="cx" values="44;114;44" dur="6s" repeatCount="indefinite"/></circle>'
-    + '<text x="14" y="84" font-size="8" fill="#5b7fa6">the deadline is computed</text>');
+    + '<text x="14" y="84" font-size="8" fill="#5b7fa6">' + (function () {
+        try { var pl = lpApi().plan(LP_ST.setup || {}); if (pl.recommend !== 'unset' && pl.fullMonths) return (pl.recommend === 'spine' ? pl.spineMonths : pl.fullMonths).toFixed(1) + ' months at your hours'; } catch (e) {}
+        return 'set your two numbers on The Plan'; })() + '</text>');
 
   // L1 The Machine — a call stack pushing and popping
   var st = '';
@@ -5858,7 +5860,7 @@ function lpLayerArt(n) {
         + '<animate attributeName="opacity" values="0;.34;.34;0" keyTimes="0;' + (0.12 + i * 0.1).toFixed(2)
         + ';' + (0.6 - i * 0.1).toFixed(2) + ';1" dur="5s" repeatCount="indefinite"/></rect>';
   }
-  rows[1] = svg('<text x="30" y="26" font-size="8" fill="#5b7fa6" letter-spacing="1">CALL STACK</text>' + st
+  rows[1] = svg('<text x="30" y="26" font-size="8" fill="#5b7fa6" letter-spacing="1">HOW CODE RUNS</text>' + st
     + '<circle cx="160" r="3.5" fill="#00d4ff"><animate attributeName="cy" values="82;42;82" dur="5s" repeatCount="indefinite"/></circle>');
 
   // L2 The Craft I — a test grid going green, one stubborn survivor
@@ -5871,7 +5873,7 @@ function lpLayerArt(n) {
        + '<animate attributeName="opacity" values="0;0;.55;.55" keyTimes="0;' + (0.08 + i * 0.05).toFixed(2)
        + ';' + (0.16 + i * 0.05).toFixed(2) + ';1" dur="6s" repeatCount="indefinite"/></rect>';
   }
-  rows[2] = svg('<text x="26" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SUITE</text>'
+  rows[2] = svg('<text x="26" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">TESTS</text>'
     + '<text x="118" y="30" font-size="8" fill="#ff4455">1 survives</text>' + g);
 
   // L3 The AI Production Core — tokens streaming out of a prompt
@@ -5881,7 +5883,7 @@ function lpLayerArt(n) {
         + '<animate attributeName="x" values="68;' + (150 - i * 4) + '" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/>'
         + '<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.7;1" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/></rect>';
   }
-  rows[3] = svg('<text x="14" y="32" font-size="8" fill="#5b7fa6" letter-spacing="1">TOKENS</text>'
+  rows[3] = svg('<text x="14" y="32" font-size="8" fill="#5b7fa6" letter-spacing="1">THE MODEL</text>'
     + '<rect x="14" y="44" width="46" height="32" rx="5" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
     + '<text x="37" y="64" font-size="7.5" fill="#7dd3fc" text-anchor="middle">PROMPT</text>' + tk
     + '<text x="14" y="96" font-size="8" fill="#5b7fa6">measured, not guessed</text>');
@@ -5891,7 +5893,7 @@ function lpLayerArt(n) {
   [24, 60, 96, 132, 156].forEach(function (x) {
     dots += '<circle cx="' + x + '" cy="78" r="4" fill="#0d1c31" stroke="#4db8ff" stroke-width="1.4"/>';
   });
-  rows[4] = svg('<text x="24" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">HISTORY</text>'
+  rows[4] = svg('<text x="24" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SHARED CODE</text>'
     + '<path d="M24 78 H156" ' + D + ' stroke-width="1.4" fill="none"/>'
     + '<path d="M60 78 C 78 78, 82 48, 100 48 H124 C 142 48, 146 78, 156 78" ' + A + ' stroke-width="1.4" fill="none" '
     + 'stroke-dasharray="160" stroke-dashoffset="160"><animate attributeName="stroke-dashoffset" values="160;0" dur="4.5s" repeatCount="indefinite"/></path>'
@@ -5901,12 +5903,12 @@ function lpLayerArt(n) {
   // L5 The AI Layer — a query reaching the nearest candidate
   var pts = [[46,46],[70,74],[98,40],[120,68],[144,52],[60,94],[130,92]], cand = '';
   pts.forEach(function (pt) { cand += '<circle cx="' + pt[0] + '" cy="' + pt[1] + '" r="3" fill="#22456e"/>'; });
-  rows[5] = svg('<text x="14" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">RETRIEVAL</text>' + cand
+  rows[5] = svg('<text x="14" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SEARCH</text>' + cand
     + '<circle cx="88" cy="60" r="4.5" fill="#00d4ff"><animate attributeName="r" values="4.5;6.5;4.5" dur="3s" repeatCount="indefinite"/></circle>'
     + '<circle cx="24" cy="66" r="5" fill="none" ' + A + ' stroke-width="1.5"/>'
     + '<line x1="29" y1="66" x2="83" y2="61" ' + C + ' stroke-width="1.2" stroke-dasharray="58" stroke-dashoffset="58">'
     + '<animate attributeName="stroke-dashoffset" values="58;0;0;58" keyTimes="0;.35;.75;1" dur="4s" repeatCount="indefinite"/></line>'
-    + '<text x="14" y="108" font-size="8" fill="#5b7fa6">recall@k, measured</text>');
+    + '<text x="14" y="108" font-size="8" fill="#5b7fa6">hits, measured</text>');
 
   // L6 Product and Platform — a pipeline advancing stage by stage
   var pipe = '';
@@ -5919,7 +5921,7 @@ function lpLayerArt(n) {
     if (i < 3) pipe += '<line x1="' + (px + 28) + '" y1="61" x2="' + (px + 40) + '" y2="61" ' + D + ' stroke-width="1.2"/>';
   }
   rows[6] = svg('<text x="18" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
-    + pipe + '<text x="18" y="92" font-size="8" fill="#5b7fa6">rollback rehearsed</text>');
+    + pipe + '<text x="18" y="92" font-size="8" fill="#5b7fa6">undo rehearsed</text>');
 
   // L7 The Market — the cold funnel beside the referred door
   var drops = '';
@@ -6147,13 +6149,17 @@ function lpImport(ev) {
 // the product uses constantly and never defines.
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work, two to four weeks long. 33 of them, each opening when the ones before it are passed.'],
+    ['Module', 'A unit of work, up to four weeks long. 33 of them, each opening when the ones before it are passed.'],
+    ['Lab', 'A module whose result stays private. It is for learning, not for showing.'],
+    ['Evidence', 'A module whose result a stranger can open and judge. These are what get you hired.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
     ['Delta', 'A page of notes: what the official documentation proved you wrong about, written before you build.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
-    ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.'],
-    ['Primary source', 'The official documentation or specification for the thing — not a tutorial about it.']
+    ['Flagship', 'One real app you keep extending. Eleven later modules build on it.'],
+    ['Primary source', 'The official documentation or specification for the thing — not a tutorial about it.'],
+    ['Rule 1', 'A gate with no referee is decorative.'],
+    ['Rule 2', 'The longest chain of modules sets how long this takes, not the hour sum.']
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
@@ -6178,7 +6184,7 @@ function lpHomeHTML(API) {
   h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'Engineer'
      : 'Future Engineer') + '</div>';
   h += '<div class="lp-sub">33 modules, from an empty file to hired. '
-     + 'Each one ends in something you built and can explain out loud.</div>';
+     + 'Each one ends in something you built and can explain out loud, and a gate: someone else says yes. Lab modules stay private; Evidence modules are for strangers to see.</div>';
   h += '<div class="lp-heroBar"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
   h += '</div></div>';
 
@@ -6289,7 +6295,8 @@ function lpHomeHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.doc
      + 'BY THE NUMBERS</div></div>';
   [['Modules passed', sum.modulesDone + ' / ' + sum.modulesTotal],
-   ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['With the tracks', API.totalHours().total + 'h'],
    ['Artifacts built', String(sum.artifactsDone)],
    ['DELTAs written', String(sum.deltasDone)],
    ['Longest chain', API.criticalPath().hours + 'h'],
@@ -6313,11 +6320,13 @@ function lpModulesHTML(API) {
   var sum = API.progressSummary(P);
 
   var h = '<div class="lx-hero">'
-        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in the order they open</span></div>'
+        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in ladder order</span></div>'
         + '<div class="lx-title">The ladder</div>'
         + '<div class="lx-sub">A module opens when every module it needs has been passed, '
         + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
-        + 'The longest chain of modules, not the total hours, is what sets how long this takes.</div>'
+        + 'The longest chain of modules, not the total hours, is what sets how long this takes. '
+        + 'A few modules near the end are tagged "Starts by date": they unlock early, but you do them on a date from your plan, not when they unlock. '
+        + 'Lab means the result stays private; Evidence means a stranger can see it.</div>'
         + '</div>';
 
   h += '<div class="lp-cols"><div>';
@@ -6330,7 +6339,7 @@ function lpModulesHTML(API) {
     if (Lr.id === 4) {
       h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
       h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
-      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It holds back twelve modules and '
+      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It holds back thirteen modules and '
          + 'it is the only requirement here that cannot be met by working harder. '
          + 'Each line will make sense by M12; for now it is the reason the middle of the ladder is locked.</div>';
       fg.items.forEach(function (it) {
@@ -6385,7 +6394,8 @@ function lpModulesHTML(API) {
 
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">By the numbers</div></div>';
   [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
-   ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['With the tracks', API.totalHours().total + 'h'],
    ['Longest chain', API.criticalPath().hours + 'h'],
    ['Layers', '9']].forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
@@ -6491,11 +6501,11 @@ function lpVerdictHTML(API) {
     h += '<div class="lp-paths">';
     h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
        + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.fullHours + 'h · needs '
+       + '<div class="lp-ps">' + pl.fullHours + 'h with tracks · needs '
        + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '—') + ' h/wk to fit your runway</div></div>';
     h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
        + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.spineHours + 'h · needs '
+       + '<div class="lp-ps">' + pl.spineHours + 'h with tracks · needs '
        + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '—') + ' h/wk</div></div>';
     h += '</div>';
   }
@@ -6551,7 +6561,7 @@ function lpDetailHTML(API, id) {
      + '<span class="lx-mt">' + m.hours + 'h</span>'
      + '<span class="lx-mt">L' + m.layer + (layer ? ' ' + esc(layer.name) : '') + '</span></div>';
   h += '<div class="lx-title">' + esc(m.title) + '</div>';
-  h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + ' have passed.' : 'No prerequisites — this is where the curriculum starts.')
+  h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed.' : 'No prerequisites — this is where the curriculum starts.')
      + (m.owns ? ' Teaches ' + m.owns.join(', ') + ' for good; no later module re-teaches it.' : '') + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
@@ -6631,7 +6641,7 @@ function lpDetailHTML(API, id) {
      + '<div class="lp-cmeta">in order</div></div>'
      + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the documentation proved you wrong. '
      + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module.</div>';
-  [['delta', 'Delta written', 'the documentation read, your notes made'],
+  [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
    ['artifact', 'Artifact built and running', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
@@ -6658,16 +6668,29 @@ function lpDetailHTML(API, id) {
     return x.dependsOn && x.dependsOn.indexOf(m.id) !== -1;
   });
   if (opens.length) {
-    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Passing this opens</div>'
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Modules that need this</div>'
        + '<div class="lp-cmeta">' + opens.length + '</div></div>';
     opens.forEach(function (x) {
       var un = API.isUnlocked(x.id, P);
+      var others = x.dependsOn.filter(function (d) { return d !== m.id; });
       h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + x.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
          + '<span class="lx-li2"><span class="lx-lt">' + esc(x.title) + '</span>'
-         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h</span></span>'
+         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h · ' + (others.length ? 'also needs ' + others.join(', ') : 'opens when this passes') + '</span></span>'
          + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
     });
     h += '</div>';
+  }
+
+  // The next rung, so no lesson ends without saying where to go.
+  var all = (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []);
+  var at = all.indexOf(m), nx = at >= 0 ? all[at + 1] : null;
+  if (nx) {
+    var nun = API.isUnlocked(nx.id, P);
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Next on the ladder</div></div>'
+       + '<button class="lx-link"' + (nun ? ' onclick="lpOpen(\'' + nx.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+       + '<span class="lx-li2"><span class="lx-lt">' + esc(nx.title) + '</span>'
+       + '<span class="lx-ls">' + nx.id + ' · ' + nx.hours + 'h' + (nun ? '' : ' · locked until ' + nx.dependsOn.join(', ') + (nx.dependsOn.length > 1 ? ' have' : ' has') + ' passed') + '</span></span>'
+       + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button></div>';
   }
 
   h += '</div></div>';
@@ -6705,7 +6728,7 @@ function lpDoneCount() {
     var mods = s.mods || {}, n = 0;
     for (var k in mods) if (mods[k] && mods[k].gate) n++;
     var tot = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM.length : 0;
-    return n + '/' + tot + ' GATES';
+    return n + '/' + tot + ' PASSED';
   } catch (e) { return ''; }
 }
 function goLauncher() {

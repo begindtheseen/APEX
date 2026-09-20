@@ -217,7 +217,7 @@ Presented in execution order. Hours are focused hours.
 | **M27** | Pay, Terms, and the Negotiation · *trigger* | 11 | M0 |
 | **M28** | The Evidence Layer v1 · *trigger* | 8 | M10 |
 | **M29** | The Evidence Layer v2 · *trigger* | 12 | M18, M20 |
-| **M30** | Interview Performance · *trigger* | 38 | M14, M28 |
+| **M30** | Interview Performance · *trigger* | 38 | M28 |
 | **M31** | Employed Mode · *trigger* | 10 | M0 |
 | **M32** | The First 90 Days · *trigger* | 6 | M0 |
 
