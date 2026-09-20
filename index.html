@@ -1657,7 +1657,7 @@ body{color:var(--text);font-family:var(--sans);}
 }
 
 /* ── Grid ────────────────────────────────────────────────────── */
-#launchpadApp .lp-cols{grid-template-columns:minmax(0,1fr) 272px;gap:16px;}
+#launchpadApp .lp-cols{grid-template-columns:minmax(0,1fr) 269px;gap:16px;}
 @media(max-width:1000px){#launchpadApp .lp-cols{grid-template-columns:1fr;}}
 #launchpadApp .lp-card{border-radius:10px;padding:20px;margin-bottom:16px;}
 #launchpadApp .lp-ch{margin-bottom:18px;}
@@ -1842,19 +1842,180 @@ body{color:var(--text);font-family:var(--sans);}
 /* Quote cards carry an image in the reference, so they carry one here —
    the hero's own sky, dimmed, rather than a flat panel. */
 #launchpadApp .lp-quote{position:relative;overflow:hidden;padding:26px 24px;border-radius:10px;
-  min-height:154px;display:flex;flex-direction:column;justify-content:center;}
+  min-height:200px;display:flex;flex-direction:column;justify-content:center;}
 /* The sky is scaled up and pushed down so the bright limb sits below the
    text rather than through it, then held under a heavy scrim: the image
    is depth behind a quote, not a picture with words on it. */
-#launchpadApp .lp-quoteArt{position:absolute;left:-20%;right:-20%;top:-10%;bottom:-40%;z-index:0;}
-#launchpadApp .lp-quoteArt .lp-heroArt{opacity:.9;}
+#launchpadApp .lp-quoteArt{position:absolute;inset:0;z-index:0;overflow:hidden;}
+#launchpadApp .lp-quoteArt .lp-heroArt{width:215%;height:100%;left:-115%;top:0;}
+#launchpadApp .lp-quoteArt .lp-heroArt{opacity:1;}
 #launchpadApp .lp-quote::after{content:'';position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(5,7,12,.62),rgba(5,7,12,.9) 72%),
-    linear-gradient(90deg,rgba(5,7,12,.7),rgba(5,7,12,.2) 70%);}
+  background:linear-gradient(180deg,rgba(2,9,18,.3),rgba(2,9,18,.72) 78%),
+    linear-gradient(90deg,rgba(2,9,18,.62),rgba(2,9,18,.06) 62%);}
 #launchpadApp .lp-qt, #launchpadApp .lp-qa{position:relative;z-index:2;}
 #launchpadApp .lp-qt{font:300 19px/1.42 var(--sans);color:#fff;letter-spacing:-.01em;}
 #launchpadApp .lp-qt b{font-weight:600;}
 #launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#93a0b0;margin-top:12px;}
+
+/* ═══ MEASURED AGAINST THE REFERENCE ═════════════════════════════
+   Not estimated this time. Every number below came off the reference
+   raster: sidebar edge at x=187, card column at x=201, rail at x=738,
+   content ending at x=1007 — so the page gutter is 14px, not 32. Card
+   fill #020c18 on #00060e, hairline #13253d. Type measured from ink
+   extents rather than guessed from the thumbnail, which is how a 15.5px
+   tracked card title had ended up at 12px and a 17px card heading at 19.
+   Two structural things were simply wrong: the row tiles are circles,
+   and the card's action is an outlined pill while the rail's is the
+   filled one — I had them the other way round. */
+
+#launchpadApp{--rbg:#00060e;--rrail:#00060e;--rsurf:#020c18;--rline:#13253d;
+  --rc:#4a90e2;--rc2:#6d9af5;--rbright:#ffffff;--rtext:#c5d2e0;--rdim:#7f8ea0;}
+
+/* ── Frame ───────────────────────────────────────────────────── */
+#launchpadApp .lp-side{width:187px;border-right:1px solid #0a1520;
+  background:linear-gradient(180deg,#00070f,#00040a);}
+#launchpadApp .lp-body{padding:0 17px 40px 14px;max-width:1180px;}
+#launchpadApp .lp-topbar{padding:14px 17px 14px 14px;}
+#launchpadApp .lp-crumb{font:600 10.5px/1 var(--sans);letter-spacing:.15em;color:#5d6b7c;}
+#launchpadApp .lp-crumb b{color:#fff;}
+
+/* Nav: 52px pitch, a 3px lit edge, and the active row's icon filled
+   rather than outlined — that swap is most of what reads as "selected". */
+#launchpadApp .lp-wordmark{font:700 15.5px/1 var(--sans);letter-spacing:.3em;padding:24px 20px 22px;}
+#launchpadApp .lp-navbtn{gap:15px;padding:0 20px;height:52px;font:400 14.5px/52px var(--sans);
+  color:#b4bfcb;}
+#launchpadApp .lp-navbtn .lp-navi{color:#93a0ad;}
+#launchpadApp .lp-navbtn .lp-svg{width:19px;height:19px;}
+#launchpadApp .lp-navbtn:hover{background:rgba(74,144,226,.06);color:#dbe6f2;}
+#launchpadApp .lp-navbtn.on{color:#8fb8e8;
+  background:linear-gradient(90deg,rgba(13,43,79,.95),rgba(8,26,50,.35) 62%,transparent);}
+#launchpadApp .lp-navbtn.on .lp-navi{color:#4a90e2;}
+#launchpadApp .lp-navbtn.on .lp-svg{fill:rgba(74,144,226,.22);}
+#launchpadApp .lp-navbtn::after{width:3px;background:#4a90e2;}
+#launchpadApp .lp-side-foot{font:600 9px/2.2 var(--sans);letter-spacing:.3em;color:#38434f;padding:20px;}
+
+/* ── Hero: bleeds to the sidebar edge, copy inset 43px ───────── */
+#launchpadApp .lp-hero-lg{margin:-58px -17px 0 -14px;min-height:0;}
+#launchpadApp .lp-heroIn{padding:98px 43px 26px;max-width:58%;}
+#launchpadApp .lp-eyebrow{font:400 15.5px/1 var(--sans);color:#c8d4e2;margin-bottom:9px;}
+#launchpadApp .lp-name{font:300 40px/1.1 var(--sans);color:#fff;letter-spacing:-.018em;margin:0 0 11px;}
+#launchpadApp .lp-name b{font-weight:600;}
+#launchpadApp .lp-sub{font:400 14px/1.5 var(--sans);color:#b0bdcc;}
+#launchpadApp .lp-heroBar{width:143px;height:3px;margin-top:20px;background:#2a3a4e;}
+#launchpadApp .lp-heroBar span{background:#7aa8e8;}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+#launchpadApp .lp-card, #launchpadApp .lp-lay{border:1px solid var(--rline);border-radius:12px;
+  background:linear-gradient(180deg,#03101d,#010a15 62%);margin-bottom:14px;padding:20px;}
+#launchpadApp .lp-ch{margin-bottom:20px;}
+#launchpadApp .lp-ct{font:600 14.5px/1 var(--sans);letter-spacing:.045em;color:#fff;gap:11px;}
+#launchpadApp .lp-rc .lp-ct{font-size:12px;letter-spacing:.085em;}
+#launchpadApp .lp-ct .lp-svg{width:17px;height:17px;color:#c8d4e2;}
+#launchpadApp .lp-cmeta{font:500 11px/1 var(--sans);letter-spacing:.075em;color:#7f8ea0;}
+#launchpadApp .lp-mc .lp-cmeta{color:#8ab4dd;}
+/* Rail cards carry a rule under the header; the progress card does not. */
+#launchpadApp .lp-rc .lp-ch{padding-bottom:15px;margin-bottom:4px;border-bottom:1px solid #16283d;}
+
+/* ── Mission progress: circular tiles, 55px pitch, 6px bars ──── */
+#launchpadApp .lp-ready{gap:24px;}
+#launchpadApp .lp-brow{gap:18px;margin-bottom:0;height:55px;}
+#launchpadApp .lp-bico{width:41px;height:41px;border-radius:50%;border:1px solid #2a3a4c;
+  background:none;color:#cfdbe8;}
+#launchpadApp .lp-bico .lp-svg{width:19px;height:19px;}
+#launchpadApp .lp-blab{font:400 13.5px/1 var(--sans);color:#dfe7f0;margin-bottom:10px;}
+#launchpadApp .lp-btr{height:6px;border-radius:3px;background:#142438;}
+#launchpadApp .lp-btr span{background:linear-gradient(90deg,#6d9af5,#93b6fa);border-radius:3px;}
+#launchpadApp .lp-bpct{font:400 14px/1 var(--sans);color:#9fb0c4;width:40px;}
+#launchpadApp .lp-ring{width:71px;height:71px;margin-top:2px;}
+#launchpadApp .lp-ring .rbg{stroke:#1c2f47;stroke-width:6;}
+#launchpadApp .lp-ring .rfg{stroke:#6d9af5;stroke-width:6;}
+#launchpadApp .lp-rv{font:600 20px/1 var(--sans);color:#fff;}
+
+/* ── Subject card ────────────────────────────────────────────── */
+#launchpadApp .lp-lay{padding:20px;}
+#launchpadApp .lp-layh{gap:18px;}
+#launchpadApp .lp-layi{width:50px;height:50px;border-radius:14px;border:1px solid #1e3148;
+  background:rgba(120,170,230,.045);color:#dbe6f2;}
+#launchpadApp .lp-layi .lp-svg{width:23px;height:23px;}
+#launchpadApp .lp-layt{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
+#launchpadApp .lp-layd{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;margin-top:8px;max-width:44ch;}
+#launchpadApp .lp-mods{padding-left:68px;margin-top:14px;}
+#launchpadApp .lp-mrow{gap:12px;font:400 12px/1.35 var(--sans);color:#c5d2e0;padding:3px 0;height:18px;}
+#launchpadApp .lp-dot{width:15px;height:15px;border:1.5px solid #3a5a7a;}
+#launchpadApp .lp-mrow.lock{color:#7b8a9c;}
+#launchpadApp .lp-mrow.lock .lp-dot{border-color:#27394c;}
+#launchpadApp .lp-mrow.done .lp-dot{background:#6d9af5;border-color:#6d9af5;}
+#launchpadApp .lp-artWrap{width:155px;flex:0 0 155px;height:148px;border-radius:10px;
+  border:1px solid #1a2d44;background:#02080f;}
+#launchpadApp .lp-layf{align-items:flex-end;margin-top:18px;}
+/* The card's action is an outlined pill. The filled one belongs to the
+   rail; I had the two swapped, which is why the grid read as loud. */
+#launchpadApp .lp-go{height:24px;padding:0 17px;border-radius:12px;
+  font:500 13px/22px var(--sans);background:none;border:1px solid #2f5a8f;color:#9ec8f5;}
+#launchpadApp .lp-go:hover{background:rgba(74,144,226,.12);border-color:#4a8ad0;color:#dbeaff;}
+#launchpadApp .lp-go.ghost{border-color:#22354b;color:#7f8ea0;}
+#launchpadApp .lp-go.ghost:hover{border-color:#2f4f7a;color:#b4bfcb;background:rgba(74,144,226,.06);}
+#launchpadApp .lp-pctlab{width:188px;max-width:54%;}
+#launchpadApp .lp-pctlab .k{font:600 10px/1 var(--sans);letter-spacing:.14em;color:#8fa0b5;
+  margin-bottom:9px;}
+#launchpadApp .lp-pctlab .t{height:6px;border-radius:3px;background:#0d1a2a;}
+#launchpadApp .lp-pctlab .t i{background:linear-gradient(90deg,#7aa8f0,#a8c8f8);border-radius:3px;}
+
+/* ── Rail rows ───────────────────────────────────────────────── */
+#launchpadApp .lp-task{gap:14px;padding:15px 0;border-top:1px solid #16283d;align-items:flex-start;}
+#launchpadApp .lp-box{width:16px;height:16px;border:1.6px solid #8494a8;margin-top:1px;}
+#launchpadApp .lp-tt{font:400 13px/1.35 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-ts{font:400 11.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lp-link{gap:14px;padding:14px 0;border-top:1px solid #16283d;}
+#launchpadApp .lp-lki{width:36px;height:36px;border-radius:10px;border:1px solid #1e3148;
+  background:rgba(120,170,230,.045);color:#cfdbe8;}
+#launchpadApp .lp-lki .lp-svg{width:17px;height:17px;}
+#launchpadApp .lp-lkt{font:400 13px/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-lks{font:400 11.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lp-arrow{color:#55657a;}
+/* The rail's action is the filled one. */
+#launchpadApp .lp-wide{height:36px;padding:0;border-radius:8px;margin-top:16px;
+  background:linear-gradient(180deg,#0d2137,#14304f);border:1px solid #20395a;
+  font:500 13px/34px var(--sans);color:#fff;}
+#launchpadApp .lp-wide:hover{background:linear-gradient(180deg,#123052,#1b4472);border-color:#2d5182;}
+#launchpadApp .lx-rk{border-top-color:#16283d;padding:13px 0;}
+#launchpadApp .lx-rk .k{font:400 12.5px/1 var(--sans);color:#a8b8cc;}
+#launchpadApp .lx-rk .v{font:500 12.5px/1 var(--sans);color:#fff;}
+#launchpadApp .lp-qt{font:300 19px/1.4 var(--sans);color:#fff;}
+#launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#8ab4dd;margin-top:13px;}
+
+/* Plan + Tracks, brought onto the same system. Field labels are tracked
+   sans like every other label; the verdict is a status line, not a banner. */
+#launchpadApp .lp-f label{font:600 10px/1 var(--sans);letter-spacing:.14em;color:#8fa0b5;
+  text-transform:uppercase;margin-bottom:9px;display:block;}
+#launchpadApp .lp-f input{font:400 14px/1 var(--sans);background:#02090f;border:1px solid #1b2c40;
+  border-radius:8px;color:#fff;padding:12px 14px;width:100%;}
+#launchpadApp .lp-f input:focus{border-color:#2f5a8f;outline:none;}
+#launchpadApp .lp-f input::placeholder{color:#4d5867;}
+#launchpadApp .lp-vrec{font:600 12px/1 var(--sans);letter-spacing:.11em;color:#8ab4dd;margin:20px 0 10px;}
+#launchpadApp .lp-vwhy{font:400 13px/1.62 var(--sans);color:#a8b8cc;}
+#launchpadApp .lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:620px){#launchpadApp .lp-paths{grid-template-columns:1fr;}}
+#launchpadApp .lp-path{border:1px solid #1b2c40;border-radius:10px;padding:16px;background:#02090f;}
+#launchpadApp .lp-path.on{border-color:#2f5a8f;background:rgba(74,144,226,.06);}
+#launchpadApp .lp-pn{font:600 10px/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;text-transform:uppercase;}
+#launchpadApp .lp-pv{font:300 26px/1 var(--sans);color:#fff;margin:12px 0 8px;font-variant-numeric:tabular-nums;}
+#launchpadApp .lp-path.on .lp-pv{color:#9ec8f5;}
+#launchpadApp .lp-ps{font:400 12px/1.5 var(--sans);color:#7f8ea0;}
+#launchpadApp .lp-tk .lp-ch{margin-bottom:14px;}
+#launchpadApp .lp-tkc{font:500 12px/1 var(--sans);color:#8ab4dd;margin-bottom:10px;letter-spacing:.02em;}
+#launchpadApp .lp-tkr{font:400 13px/1.62 var(--sans);color:#a8b8cc;}
+
+@media(max-width:820px){
+  #launchpadApp .lp-body{padding:0 14px 32px;}
+  #launchpadApp .lp-topbar{padding:12px 14px;}
+  #launchpadApp .lp-hero-lg{margin:-54px -14px 0;}
+  #launchpadApp .lp-heroIn{padding:80px 14px 24px;max-width:100%;}
+  #launchpadApp .lp-name{font-size:31px;}
+  /* A 30px pill is a fine mouse target and a poor thumb target. */
+  #launchpadApp .lp-go{height:42px;border-radius:21px;line-height:40px;padding:0 22px;}
+  #launchpadApp .lp-wide{height:44px;line-height:42px;}
+}
 
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
   text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
@@ -6322,122 +6483,132 @@ function lpLayerArt(n) {
   return rows[n] || '';
 }
 
-// ── Hero. Generated rather than photographic: an offline PWA cannot carry a
-// 400KB render, and a raster softens on a retina display where vector does
-// not. Built in depth order — deep space, far stars, near stars, the limb,
-// volumetric atmosphere, city lights on the night side, ascent trail,
-// vehicle with plume, bloom. The seed is fixed so the sky never reshuffles.
-function lpHeroArt() {
+// ── Hero. Drawn to the band's real aspect (about 3.4:1) rather than to a
+// square-ish viewBox that `slice` then crops — the previous version put the
+// limb and the vehicle in the 77px that get cut off at each edge, which is
+// why the art read as an empty corner. Geometry matches the reference: the
+// limb enters around x=240 low on the left and climbs to the right edge,
+// the body stays near-black so the copy over it holds, the atmosphere is
+// one thin lit arc, and the only bright object is the vehicle.
+// `quiet` drops the vehicle: the quote cards reuse this sky, and a second
+// copy of the same rocket sitting in the rail reads as a tiling artefact.
+function lpHeroArt(quiet) {
   var seed = 20260920;
   function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
   function f(n, d) { return n.toFixed(d === undefined ? 1 : d); }
 
-  var i, far = '', near = '', lights = '', streak = '';
-
-  // Far field — small, dim, slow. Reads as depth behind everything.
-  for (i = 0; i < 90; i++) {
-    var fx = f(rnd() * 560), fy = f(rnd() * 200), fr = f(rnd() * 0.5 + 0.18, 2);
-    far += '<circle cx="' + fx + '" cy="' + fy + '" r="' + fr + '" fill="#8fb8e8" opacity="' + f(0.14 + rnd() * 0.26, 2) + '"/>';
-  }
-  // Near field — larger, brighter, twinkling on their own clocks.
-  for (i = 0; i < 46; i++) {
-    var nx = f(rnd() * 560), ny = f(rnd() * 190), nr = f(rnd() * 0.85 + 0.45, 2);
-    var lo = f(0.18 + rnd() * 0.22, 2), dur = f(3 + rnd() * 5), bg = f(rnd() * 7);
-    near += '<circle cx="' + nx + '" cy="' + ny + '" r="' + nr + '" fill="#e8f4ff" opacity="' + lo + '">'
-      + '<animate attributeName="opacity" values="' + lo + ';' + f(0.75 + rnd() * 0.25, 2) + ';' + lo
-      + '" dur="' + dur + 's" begin="' + bg + 's" repeatCount="indefinite"/></circle>';
-  }
-  // City lights, scattered along the night side of the limb and clustered
-  // the way coastlines actually cluster.
-  for (i = 0; i < 34; i++) {
-    var t = rnd(), ang = Math.PI * (0.06 + t * 0.52);
-    var jitter = 1 + rnd() * 5;
-    var cx = 260 - Math.cos(ang) * (426 - jitter), cy = 412 - Math.sin(ang) * (244 - jitter);
-    if (cy > 258 || cy < 120) continue;
-    var op = f(0.25 + rnd() * 0.55, 2);
-    lights += '<circle cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(0.5 + rnd() * 0.75, 2) + '" fill="#ffd9a0" opacity="' + op + '">'
-      + '<animate attributeName="opacity" values="' + op + ';' + f(Number(op) * 0.35, 2) + ';' + op
-      + '" dur="' + f(4 + rnd() * 5) + 's" begin="' + f(rnd() * 6) + 's" repeatCount="indefinite"/></circle>';
-  }
-  // Two drifting meteors, long apart, so the scene is never quite static.
-  for (i = 0; i < 2; i++) {
-    var sx = 120 + i * 210, sy = 26 + i * 44;
-    streak += '<line x1="' + sx + '" y1="' + sy + '" x2="' + (sx + 30) + '" y2="' + (sy + 13) + '" '
-      + 'stroke="url(#lpMet)" stroke-width="1.1" stroke-linecap="round" opacity="0">'
-      + '<animate attributeName="opacity" values="0;0;.85;0" keyTimes="0;.62;.72;.82" dur="' + (17 + i * 9) + 's" begin="' + (i * 7) + 's" repeatCount="indefinite"/>'
-      + '<animateTransform attributeName="transform" type="translate" values="-70,-30;110,48" keyTimes="0;1" dur="' + (17 + i * 9) + 's" begin="' + (i * 7) + 's" repeatCount="indefinite"/></line>';
+  var W = 560, H = 165;
+  var CX = 700, CY = 1332, R = 1284;        // solved from two points on the reference limb
+  function limbY(x) {
+    var dx = x - CX, s = R * R - dx * dx;
+    return s <= 0 ? H + 40 : CY - Math.sqrt(s);
   }
 
-  return '<svg class="lp-heroArt" viewBox="0 0 560 270" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
-  + '<defs>'
-  // Planet body: lit crescent on the right falling to black on the left
-  + '<linearGradient id="lpGlobe" x1="0.12" y1="0.1" x2="0.86" y2="0.85">'
-  +   '<stop offset="0%" stop-color="#020610"/><stop offset="42%" stop-color="#062038"/>'
-  +   '<stop offset="74%" stop-color="#0d4f86"/><stop offset="100%" stop-color="#1d7ec0"/>'
-  + '</linearGradient>'
-  // Volumetric shell: three bands stacked, densest right at the surface
-  + '<radialGradient id="lpAtm1" cx="50%" cy="100%" r="58%">'
-  +   '<stop offset="72%" stop-color="#4db8ff" stop-opacity="0"/>'
-  +   '<stop offset="93%" stop-color="#6fd0ff" stop-opacity=".42"/>'
-  +   '<stop offset="100%" stop-color="#d6f3ff" stop-opacity=".85"/></radialGradient>'
-  + '<radialGradient id="lpAtm2" cx="50%" cy="100%" r="70%">'
-  +   '<stop offset="62%" stop-color="#2b7fd4" stop-opacity="0"/>'
-  +   '<stop offset="100%" stop-color="#4db8ff" stop-opacity=".3"/></radialGradient>'
-  + '<linearGradient id="lpTerm" x1="0" y1="0" x2="1" y2="0.3">'
-  +   '<stop offset="0%" stop-color="#000" stop-opacity=".92"/>'
-  +   '<stop offset="46%" stop-color="#000" stop-opacity=".55"/>'
-  +   '<stop offset="72%" stop-color="#000" stop-opacity="0"/></linearGradient>'
-  + '<linearGradient id="lpTrail" x1="0" y1="1" x2="1" y2="0">'
-  +   '<stop offset="0%" stop-color="#4db8ff" stop-opacity="0"/>'
-  +   '<stop offset="62%" stop-color="#8fe0ff" stop-opacity=".55"/>'
-  +   '<stop offset="100%" stop-color="#ffffff" stop-opacity=".95"/></linearGradient>'
-  + '<linearGradient id="lpMet" x1="0" y1="0" x2="1" y2="1">'
-  +   '<stop offset="0%" stop-color="#fff" stop-opacity="0"/><stop offset="100%" stop-color="#cfe8ff"/></linearGradient>'
-  + '<radialGradient id="lpPlume" cx="50%" cy="8%" r="90%">'
-  +   '<stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/>'
-  +   '<stop offset="34%" stop-color="#9fd8ff" stop-opacity=".5"/>'
-  +   '<stop offset="100%" stop-color="#4db8ff" stop-opacity="0"/></radialGradient>'
-  + '<filter id="lpSoft" x="-60%" y="-60%" width="220%" height="220%">'
-  +   '<feGaussianBlur stdDeviation="7"/></filter>'
-  + '<filter id="lpBloom" x="-80%" y="-80%" width="260%" height="260%">'
-  +   '<feGaussianBlur stdDeviation="4.5" result="b"/>'
-  +   '<feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
-  + '<clipPath id="lpGlobeClip"><ellipse cx="260" cy="412" rx="426" ry="244"/></clipPath>'
-  + '</defs>'
+  var i, far = '', near = '', lights = '';
+  for (i = 0; i < 130; i++) {
+    var fx = rnd() * W, fy = rnd() * H;
+    if (fy > limbY(fx) - 4) continue;
+    far += '<circle cx="' + f(fx) + '" cy="' + f(fy) + '" r="' + f(rnd() * 0.42 + 0.14, 2)
+         + '" fill="#9fc4ea" opacity="' + f(0.12 + rnd() * 0.26, 2) + '"/>';
+  }
+  for (i = 0; i < 40; i++) {
+    var nx = rnd() * W, ny = rnd() * H;
+    if (ny > limbY(nx) - 8) continue;
+    var lo = f(0.16 + rnd() * 0.2, 2);
+    near += '<circle cx="' + f(nx) + '" cy="' + f(ny) + '" r="' + f(rnd() * 0.65 + 0.38, 2)
+          + '" fill="#eaf4ff" opacity="' + lo + '">'
+          + '<animate attributeName="opacity" values="' + lo + ';' + f(parseFloat(lo) + 0.55, 2) + ';' + lo
+          + '" dur="' + f(3.5 + rnd() * 5) + 's" begin="-' + f(rnd() * 8) + 's" repeatCount="indefinite"/></circle>';
+  }
+  // City lights sit well inside the night side; on the limb itself they
+  // would read as noise on the one edge that has to stay clean.
+  for (i = 0; i < 120; i++) {
+    var gx = 180 + rnd() * 380, ly = limbY(gx), gy = ly + 5 + rnd() * 34;
+    if (gy > H - 2 || ly > H) continue;
+    lights += '<circle cx="' + f(gx) + '" cy="' + f(gy) + '" r="' + f(0.45 + rnd() * 0.6, 2)
+           + '" fill="#ffc88a" opacity="' + f(0.18 + rnd() * 0.45, 2) + '"/>';
+  }
 
-  + far + near + streak
+  // Cloud banding: arcs parallel to the limb, so the body reads as a
+  // sphere rather than as a flat wedge.
+  var clouds = '';
+  for (i = 0; i < 7; i++) {
+    var off = 7 + i * 9 + rnd() * 5, x0 = 180 + rnd() * 190, x1 = x0 + 90 + rnd() * 180;
+    var seg = 'M' + f(x0) + ' ' + f(limbY(x0) + off);
+    for (var xx = x0 + 18; xx <= x1; xx += 18) seg += ' L' + f(xx) + ' ' + f(limbY(xx) + off);
+    clouds += '<path d="' + seg + '" fill="none" stroke="#7fb6e8" stroke-opacity="'
+           + f(0.05 + rnd() * 0.07, 2) + '" stroke-width="' + f(2 + rnd() * 4, 1) + '"/>';
+  }
 
-  // Outer glow sitting behind the limb, so the horizon reads as lit air
-  + '<ellipse cx="260" cy="412" rx="470" ry="286" fill="url(#lpAtm2)" filter="url(#lpSoft)" opacity=".85"/>'
-  // The body
-  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpGlobe)"/>'
-  // Cloud banding, clipped to the body
-  + '<g clip-path="url(#lpGlobeClip)" opacity=".18">'
-  +   '<ellipse cx="300" cy="196" rx="150" ry="13" fill="#bfe4ff"/>'
-  +   '<ellipse cx="180" cy="224" rx="118" ry="9" fill="#bfe4ff"/>'
-  +   '<ellipse cx="380" cy="238" rx="96" ry="8" fill="#bfe4ff"/>'
-  + '</g>'
-  // Night side falling away to the left
-  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpTerm)"/>'
-  + '<g clip-path="url(#lpGlobeClip)">' + lights + '</g>'
-  // Atmospheric shell and the hard rim highlight
-  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpAtm1)"/>'
-  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="none" stroke="#e6f8ff" stroke-width="1.5" opacity=".9"/>'
-  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="none" stroke="#4db8ff" stroke-width="9" opacity=".2" filter="url(#lpSoft)"/>'
+  var d = 'M160 ' + f(H + 6);
+  for (i = 164; i <= W; i += 10) d += ' L' + i + ' ' + f(limbY(i));
+  var body = d + ' L' + W + ' ' + (H + 6) + ' Z';
 
-  // Ascent
-  + '<path id="lpPath" d="M84 252 C 168 240, 250 206, 318 150 S 452 46, 516 14" fill="none" stroke="none"/>'
-  + '<path d="M84 252 C 168 240, 250 206, 318 150 S 452 46, 516 14" fill="none" stroke="url(#lpTrail)" '
-  +   'stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 9" opacity=".8">'
-  +   '<animate attributeName="stroke-dashoffset" values="144;0" dur="9s" repeatCount="indefinite"/></path>'
-  + '<g filter="url(#lpBloom)">'
-  +   '<g><ellipse rx="3" ry="9" fill="url(#lpPlume)" opacity=".85" transform="rotate(34)"/>'
-  +     '<circle r="2.6" fill="#ffffff"/>'
-  +     '<animateMotion dur="9s" repeatCount="indefinite" rotate="auto"><mpath href="#lpPath"/></animateMotion>'
-  +     '<animate attributeName="opacity" values="0;1;1;.1" keyTimes="0;.1;.82;1" dur="9s" repeatCount="indefinite"/>'
-  +   '</g>'
-  + '</g>'
-  + '</svg>';
+  return '<svg class="lp-heroArt" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
+    + '<defs>'
+    +   '<linearGradient id="lpSky" x1="0" y1="0" x2="0.5" y2="1">'
+    +     '<stop offset="0" stop-color="#01060f"/><stop offset="0.6" stop-color="#03131f"/>'
+    +     '<stop offset="1" stop-color="#07263c"/></linearGradient>'
+    +   '<radialGradient id="lpDawn" cx="0.88" cy="0.9" r="0.72">'
+    +     '<stop offset="0" stop-color="#2a8ad8" stop-opacity=".55"/>'
+    +     '<stop offset="0.45" stop-color="#0e4a7a" stop-opacity=".2"/>'
+    +     '<stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient>'
+    +   '<linearGradient id="lpBody" x1="0.1" y1="0" x2="0.6" y2="1">'
+    +     '<stop offset="0" stop-color="#0c2439"/><stop offset="0.4" stop-color="#04121e"/>'
+    +     '<stop offset="1" stop-color="#01070d"/></linearGradient>'
+    +   '<linearGradient id="lpRim" x1="0" y1="0" x2="1" y2="0">'
+    +     '<stop offset="0" stop-color="#5fa8e8" stop-opacity=".12"/>'
+    +     '<stop offset="0.35" stop-color="#a9d6ff" stop-opacity=".6"/>'
+    +     '<stop offset="0.72" stop-color="#ffffff" stop-opacity=".95"/>'
+    +     '<stop offset="1" stop-color="#d6ecff" stop-opacity=".85"/></linearGradient>'
+    +   '<radialGradient id="lpPlume" cx="0.5" cy="0.1" r="0.9">'
+    +     '<stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>'
+    +     '<stop offset="0.28" stop-color="#ffcf9a" stop-opacity=".6"/>'
+    +     '<stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>'
+    +   '<filter id="lpSoft" x="-50%" y="-50%" width="200%" height="200%">'
+    +     '<feGaussianBlur stdDeviation="4"/></filter>'
+    +   '<filter id="lpTight" x="-60%" y="-60%" width="220%" height="220%">'
+    +     '<feGaussianBlur stdDeviation="1.3"/></filter>'
+    +   '<clipPath id="lpBelow"><path d="' + body + '"/></clipPath>'
+    + '</defs>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#lpSky)"/>'
+    + '<rect width="' + W + '" height="' + H + '" fill="url(#lpDawn)"/>'
+    + far + near
+    + '<path d="' + d + '" fill="none" stroke="#3f9ee0" stroke-opacity=".3" stroke-width="22" filter="url(#lpSoft)"/>'
+    + '<path d="' + d + '" fill="none" stroke="#8fd0ff" stroke-opacity=".34" stroke-width="7" filter="url(#lpSoft)"/>'
+    + '<path d="' + body + '" fill="url(#lpBody)"/>'
+    + '<g clip-path="url(#lpBelow)">' + lights + clouds + '</g>'
+    + '<path d="' + d + '" fill="none" stroke="url(#lpRim)" stroke-width="2.4" filter="url(#lpTight)"/>'
+    + '<path d="' + d + '" fill="none" stroke="url(#lpRim)" stroke-width="0.7"/>'
+    // Sits low enough that its bloom never reaches the breadcrumb, which
+    // shares this band with it.
+    // The vehicle, at the reference's proportions: about 28x106 in these
+    // units, not the 16x58 sliver it was. Silhouetted against the limb
+    // with the engine the brightest thing in the frame.
+    // The reference's vehicle is a dark silhouette about 42x160 against the
+    // lit limb, not a bright toy: narrow body, small flaps, and the engine
+    // as the only bright thing on it. Sun is to the right, so the lit edge
+    // is on the right.
+    + (quiet ? '' :
+        '<g>'
+    +     '<ellipse cx="470" cy="132" rx="19" ry="24" fill="#ffb066" opacity=".2" filter="url(#lpSoft)"/>'
+    +     '<path d="M470 20 C466 32 463 43 462 50 L478 50 C477 43 474 32 470 20 Z" fill="#232c37"/>'
+    +     '<path d="M470 20 C472 32 476 43 477 50 L478 50 C477 43 474 32 470 20 Z" fill="#9fb6cc"/>'
+    +     '<rect x="462" y="50" width="16" height="72" fill="#1c242e"/>'
+    +     '<rect x="474" y="50" width="4" height="72" fill="#48596c"/>'
+    +     '<rect x="477.2" y="50" width="1" height="72" fill="#cfe2f5"/>'
+    +     '<path d="M462 56 L457 64 L457 73 L462 69 Z" fill="#161c24"/>'
+    +     '<path d="M478 56 L483 64 L483 73 L478 69 Z" fill="#3f4f61"/>'
+    +     '<path d="M462 98 L456 116 L456 124 L462 118 Z" fill="#141a21"/>'
+    +     '<path d="M478 98 L484 116 L484 124 L478 118 Z" fill="#3a4859"/>'
+    +     '<rect x="463" y="122" width="14" height="3.6" rx="1.2" fill="#2b3642"/>'
+    +     '<ellipse cx="470" cy="141" rx="6" ry="16" fill="url(#lpPlume)">'
+    +       '<animate attributeName="ry" values="16;22;16" dur="1.7s" repeatCount="indefinite"/>'
+    +       '<animate attributeName="opacity" values=".85;1;.85" dur="1.7s" repeatCount="indefinite"/></ellipse>'
+    +     '<ellipse cx="470" cy="128" rx="3" ry="4.2" fill="#ffffff" opacity=".92">'
+    +       '<animate attributeName="opacity" values=".72;1;.72" dur="1.7s" repeatCount="indefinite"/></ellipse>'
+    +   '</g>')
+    '</svg>';
 }
 
 function lpRing(pct) {
@@ -6503,7 +6674,7 @@ function lpHomeHTML(API) {
   h += '<div class="lp-cols"><div>';
 
   // Mission progress: one row per layer, one ring for the whole thing.
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">YOUR MISSION PROGRESS</div>'
+  h += '<div class="lp-card lp-mc"><div class="lp-ch"><div class="lp-ct">YOUR MISSION PROGRESS</div>'
      + '<div class="lp-cmeta">OVERALL READINESS</div></div><div class="lp-ready"><div class="lp-bars">';
   LAY.forEach(function (Lr) {
     var mods = API.byLayer(Lr.id); if (!mods.length) return;
@@ -6541,7 +6712,7 @@ function lpHomeHTML(API) {
     h += '<div class="lp-layf">'
        + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="lpTab(\'modules\')">'
        +   (open ? 'Continue' : 'Preview') + ' →</button>'
-       + '<div class="lp-pctlab"><span class="k">' + pct + '% complete · ' + tot + 'h</span>'
+       + '<div class="lp-pctlab"><span class="k">' + pct + '% complete</span>'
        + '<span class="t"><i style="width:' + pct + '%"></i></span></div>'
        + '</div></div>';
   });
@@ -6549,11 +6720,11 @@ function lpHomeHTML(API) {
   h += '</div><div>';
 
   // ── Rail ──────────────────────────────────────────────────────
-  h += '<div class="lp-quote"><div class="lp-quoteArt">' + lpHeroArt() + '</div>'
+  h += '<div class="lp-quote"><div class="lp-quoteArt">' + lpHeroArt(true) + '</div>'
      + '<div class="lp-qt">"A gate with no referee is decorative."</div>'
      + '<div class="lp-qa">— Rule 1</div></div>';
 
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'TODAY’S FOCUS</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
   if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
   avail.slice(0, 4).forEach(function (m) {
@@ -6563,7 +6734,7 @@ function lpHomeHTML(API) {
   });
   h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all 31 modules →</button></div>';
 
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.bolt
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.bolt
      + 'QUICK TOOLS</div></div>'
      + '<button class="lp-link mo-lift" onclick="lpTab(\'plan\')"><span class="lp-lki">' + LP_ICON.target + '</span>'
      + '<div><div class="lp-lkt">The Plan</div><div class="lp-lks">Runway, hours, which program</div></div>'
@@ -6581,7 +6752,7 @@ function lpHomeHTML(API) {
      + '</div>';
 
   // Counts, as one-line rows rather than another set of tiles.
-  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.doc
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.doc
      + 'BY THE NUMBERS</div></div>';
   [['Modules passed', sum.modulesDone + ' / ' + sum.modulesTotal],
    ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
@@ -6595,7 +6766,7 @@ function lpHomeHTML(API) {
   });
   h += '</div>';
 
-  h += '<div class="lp-quote"><div class="lp-quoteArt">' + lpHeroArt() + '</div>'
+  h += '<div class="lp-quote"><div class="lp-quoteArt">' + lpHeroArt(true) + '</div>'
      + '<div class="lp-qt">You are not preparing<br>for a job. <b>You are<br>preparing to be hired.</b></div></div>';
 
   h += '</div></div>';
@@ -6695,24 +6866,24 @@ function lpModulesHTML(API) {
 function lpTracksHTML(API) {
   var T = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
   var th = T.reduce(function (a, t) { return a + t.hours }, 0);
-  var h = '<div class="lp-hero mo-sheen" style="padding:20px"><div class="lp-greet">Continuous, mandatory, and counted</div>'
-        + '<div class="lp-name" style="font-size:24px">Parallel tracks</div>'
-        + '<div class="lp-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Continuous, mandatory, and counted</span></div>'
+        + '<div class="lx-title">Parallel tracks</div>'
+        + '<div class="lx-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
         + 'version understate the commitment by 40%.</div></div>';
   T.forEach(function (t) {
-    h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">' + t.id + ' · ' + esc(t.title) + '</div>'
-       + '<div class="lp-cmeta">' + (t.hours ? t.hours + 'h' : 'free') + '</div></div>'
-       + '<div class="lp-dp" style="margin-bottom:8px;color:#5b7fa6">' + esc(t.cadence) + '</div>'
-       + '<div class="lp-dp">' + esc(t.rule) + '</div></div>';
+    h += '<div class="lp-card lp-tk"><div class="lp-ch"><div class="lp-ct">' + esc(t.title) + '</div>'
+       + '<div class="lp-cmeta">' + t.id + ' · ' + (t.hours ? t.hours + 'h' : 'continuous') + '</div></div>'
+       + '<div class="lp-tkc">' + esc(t.cadence) + '</div>'
+       + '<div class="lp-tkr">' + esc(t.rule) + '</div></div>';
   });
   return h;
 }
 
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
-  var h = '<div class="lp-hero mo-sheen" style="padding:20px"><div class="lp-greet">M0 · the only module with authority</div>'
-        + '<div class="lp-name" style="font-size:24px">The Plan</div>'
-        + '<div class="lp-sub">Runway sets the deadline — not the topic list. The weekly number is '
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">M0 · the only module with authority</span></div>'
+        + '<div class="lx-title">The Plan</div>'
+        + '<div class="lx-sub">Runway sets the deadline — not the topic list. The weekly number is '
         + 'derived here, never assumed.</div></div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
