@@ -5630,9 +5630,26 @@ function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRIC
 function lpLoad() {
   try {
     var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
+    var wasMigrated = false;
     LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {}, ids: raw.ids || 1 });
-    if (LP_ST.migrated) { delete LP_ST.migrated; lpSave(); }
-  } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{}, ids:2 }; }
+    wasMigrated = !!LP_ST.migrated; delete LP_ST.migrated;
+    // Clean on load, not only on import: a value edited by hand, truncated by a
+    // crash, or written by a newer version must not be able to swallow ticks.
+    var before = JSON.stringify(LP_ST.mods);
+    LP_ST = lpClean(LP_ST);
+    if (wasMigrated || JSON.stringify(LP_ST.mods) !== before) lpSave();
+  } catch (e) {
+    // The stored value is unreadable. Keep it under a dated key so it can be
+    // repaired by hand, and say so, rather than quietly starting from zero.
+    try {
+      var k = lpCfg().key || 'apex_launchpad_v1', bad = localStorage.getItem(k);
+      if (bad) localStorage.setItem(k + '_unreadable_' + Date.now(), bad);
+      setTimeout(function () {
+        try { toast('Saved progress could not be read. A copy was kept; import a backup to restore.', 'warn'); } catch (e2) {}
+      }, 1200);
+    } catch (e3) {}
+    LP_ST = { mods:{}, flagship:{}, setup:{}, ids:2 };
+  }
 }
 // Modules were renumbered once, into ladder order. Progress saved under the
 // old ids is carried across on first load (or import) and the map version is
@@ -5671,9 +5688,36 @@ function lpMigrate(st) {
   }
   return st;
 }
+// A save that fails silently is worse than one that fails loudly: the tick
+// appears, the reader trusts it, and a year is gone at the next reload.
+var LP_SAVE_WARNED = false;
 function lpSave() {
-  try { localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST)); } catch (e) {}
+  try {
+    localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST));
+    LP_SAVE_WARNED = false;
+    return true;
+  } catch (e) {
+    if (!LP_SAVE_WARNED) {
+      LP_SAVE_WARNED = true;
+      try { toast('Could not save — this browser is full or storage is blocked. Export a backup now.', 'warn'); } catch (e2) {}
+    }
+    return false;
+  }
 }
+// DUR-3: another tab writing the same key would otherwise overwrite this tab's
+// stale copy over the newer one. Adopt whatever the other tab wrote.
+window.addEventListener('storage', function (ev) {
+  try {
+    if (ev.key !== (lpCfg().key || 'apex_launchpad_v1') || !ev.newValue) return;
+    var raw = JSON.parse(ev.newValue);
+    LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {},
+                        setup: raw.setup || {}, ids: raw.ids || 1 });
+    delete LP_ST.migrated;
+    var app = document.getElementById('launchpadApp');
+    if (app && app.classList.contains('active')) renderLaunchpad(true);
+    lpSideHTML();
+  } catch (e) {}
+});
 // The API takes one progress map; __flagship rides along on it.
 function lpProgress() {
   var p = {};
@@ -6285,10 +6329,27 @@ function lpImport(ev) {
         toast('That file is not a LAUNCHPAD backup', 'warn'); ev.target.value = ''; return;
       }
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
+      // A file with no ids stamp predates the stamp only if its module ids look
+      // like the old scheme. Guessing wrong renumbers a good backup onto the
+      // wrong modules, so look before migrating.
+      var keys = Object.keys(plain(d.mods) ? d.mods : {});
+      var looksOld = keys.some(function (k) { return k === 'M0A' || k === 'M0B'; });
+      var stamp = (typeof d.ids === 'number' && d.ids >= 1) ? d.ids : (looksOld ? 1 : 2);
+      if (stamp > 2 && !confirm('This backup was written by a newer version of the app. '
+          + 'Importing it here may drop progress that this version does not understand. Continue?')) {
+        ev.target.value = ''; return;
+      }
       LP_ST = lpMigrate({ mods:plain(d.mods) ? d.mods : {}, flagship:plain(d.flagship) ? d.flagship : {},
-                          setup:plain(d.setup) ? d.setup : {}, ids:d.ids || 1 });
+                          setup:plain(d.setup) ? d.setup : {}, ids:stamp });
       delete LP_ST.migrated;
-      LP_ST = lpClean(LP_ST);
+      var known = lpClean(LP_ST);
+      // EXP-3: a file whose ids match nothing in this curriculum is not a
+      // backup of this realm; refuse rather than reporting a successful wipe.
+      if (keys.length && !Object.keys(known.mods).length) {
+        toast('That backup does not match this curriculum — nothing was changed.', 'warn');
+        ev.target.value = ''; return;
+      }
+      LP_ST = known;
       lpSave(); renderLaunchpad();
       toast('LAUNCHPAD progress restored', 'ok');
     } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
