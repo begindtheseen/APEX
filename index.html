@@ -735,6 +735,87 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-panel.lsRed .ls-glyph{color:#ff4033;text-shadow:0 0 26px rgba(255,59,48,.6);}
 .ls-panel.lsRed .ls-name{color:#ffd9d5;}
 .ls-panel.lsRed .ls-trace{color:#ff5b52;}
+/* ═══ ATMOSPHERE ════════════════════════════════════════════
+   Depth before decoration. A flat #050b16 reads as a wireframe no matter
+   what sits on it, so the realm gets an environment: a slow drifting
+   nebula wash, a fixed starfield, a vignette, and a fine noise grain that
+   kills the banding you otherwise get across large dark gradients.     */
+#launchpadApp{position:relative;isolation:isolate;}
+#launchpadApp::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(1100px 620px at 78% -10%, rgba(0,140,255,.17), transparent 62%),
+    radial-gradient(820px 520px at 8% 8%, rgba(60,90,220,.11), transparent 66%),
+    radial-gradient(900px 700px at 52% 112%, rgba(0,190,255,.10), transparent 64%);
+  animation:drift 34s var(--e-io) infinite alternate;}
+#launchpadApp::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(130% 120% at 50% 40%, transparent 44%, rgba(0,0,0,.55) 100%),
+    url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+  background-size:auto,150px 150px;mix-blend-mode:overlay;opacity:.5;}
+@keyframes drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(-2.2%,1.4%,0) scale(1.05)}
+  100%{transform:translate3d(1.8%,-1.2%,0) scale(1.02)}}
+.lp-shell{position:relative;z-index:1;}
+
+/* Glass. Surfaces float above the atmosphere instead of sitting on a flat
+   fill: translucent, blurred, with a lit top edge and a coloured shadow
+   that belongs to the realm rather than to black. */
+.lp-card,.lp-lay,.lp-quote,.lp-artWrap{
+  background:linear-gradient(168deg,rgba(28,54,92,.46),rgba(7,15,29,.74) 58%);
+  backdrop-filter:blur(16px) saturate(125%);-webkit-backdrop-filter:blur(16px) saturate(125%);
+  border:1px solid rgba(120,180,255,.13);
+  box-shadow:0 1px 0 rgba(180,225,255,.09) inset,
+             0 18px 44px -26px rgba(0,0,0,.92),
+             0 0 0 1px rgba(0,0,0,.28);}
+.lp-card::before,.lp-lay::before{left:18px;right:18px;
+  background:linear-gradient(90deg,transparent,rgba(150,215,255,.42),transparent);}
+@media(hover:hover){
+  .mo-lift:hover{border-color:rgba(120,190,255,.34);
+    box-shadow:0 1px 0 rgba(190,230,255,.16) inset,
+               0 22px 52px -24px rgba(0,110,220,.5),
+               0 0 30px -12px color-mix(in srgb,var(--rc) 45%,transparent);}
+}
+
+/* HUD brackets. Four corner ticks on the cards that carry the most weight —
+   cheap, and it is most of what reads as an instrument rather than a div. */
+.lp-hud{position:relative;}
+.lp-hud::after{content:'';position:absolute;inset:9px;pointer-events:none;border-radius:6px;
+  background:
+    linear-gradient(var(--rc),var(--rc)) 0 0/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 0/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 0/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 0/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 100%/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 0 100%/13px 1px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 100%/1px 13px no-repeat,
+    linear-gradient(var(--rc),var(--rc)) 100% 100%/13px 1px no-repeat;
+  opacity:.28;transition:opacity var(--t-state) linear;}
+@media(hover:hover){.lp-hud:hover::after{opacity:.6;}}
+
+/* A light that travels the border of the hero. */
+@keyframes trace{to{background-position:200% 0,0 -200%,-200% 0,0 200%;}}
+.lp-trace{position:relative;}
+.lp-trace::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  padding:1px;
+  background:
+    linear-gradient(90deg,transparent,var(--rc),transparent) 0 0/200% 1px no-repeat,
+    linear-gradient(180deg,transparent,var(--rc),transparent) 100% 0/1px 200% no-repeat,
+    linear-gradient(270deg,transparent,var(--rc),transparent) 100% 100%/200% 1px no-repeat,
+    linear-gradient(0deg,transparent,var(--rc),transparent) 0 100%/1px 200% no-repeat;
+  animation:trace 9s linear infinite;opacity:.55;}
+
+/* Numeric readouts: tabular, tracked, faintly lit. */
+.lp-rv,.lp-pv,.lp-bpct,.lp-mhr,.lp-cmeta{font-variant-numeric:tabular-nums;}
+.lp-rv{text-shadow:0 0 22px color-mix(in srgb,var(--rc) 55%,transparent);}
+.lp-btr span,.lp-heroBar span{box-shadow:0 0 14px -2px color-mix(in srgb,var(--rc) 85%,transparent);}
+.lp-step.on{box-shadow:0 0 12px -1px color-mix(in srgb,var(--rc) 90%,transparent);}
+
+@media(prefers-reduced-motion:reduce){
+  #launchpadApp::before{animation:none!important;}
+  .lp-trace::after{animation:none!important;}
+}
+
 /* ═══ MOTION SYSTEM ═════════════════════════════════════════
    One vocabulary of movement for every realm. Three rules:
    transform and opacity only (GPU, never triggers layout), a single
@@ -5495,9 +5576,6 @@ function lpSideHTML() {
 }
 function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
 
-// ── Hero art. Procedural, not photographic: an offline PWA cannot ship a
-// 400KB render, and generated art stays crisp at any density where a raster
-// would not. Earth limb, atmosphere, starfield, and an ascending trajectory.
 // ── Layer art. One small animated scene per layer, sitting where the comp
 // puts a screenshot. Abstract on purpose: it should read as the shape of the
 // work rather than as a picture of a screen.
@@ -5617,55 +5695,122 @@ function lpLayerArt(n) {
   return rows[n] || '';
 }
 
+// ── Hero. Generated rather than photographic: an offline PWA cannot carry a
+// 400KB render, and a raster softens on a retina display where vector does
+// not. Built in depth order — deep space, far stars, near stars, the limb,
+// volumetric atmosphere, city lights on the night side, ascent trail,
+// vehicle with plume, bloom. The seed is fixed so the sky never reshuffles.
 function lpHeroArt() {
-  var stars = '', i, x, y, r, d;
-  // Deterministic scatter — a seeded LCG so the sky is identical every render
-  // and the layout never shifts between frames.
   var seed = 20260920;
   function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
-  for (i = 0; i < 62; i++) {
-    x = (rnd() * 520).toFixed(1); y = (rnd() * 150).toFixed(1);
-    r = (rnd() * 1.05 + 0.35).toFixed(2); d = (rnd() * 6).toFixed(1);
-    stars += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#cfe6ff" opacity="' + (0.25 + rnd() * 0.5).toFixed(2) + '">'
-      + '<animate attributeName="opacity" values="' + (0.15 + rnd() * 0.3).toFixed(2) + ';0.9;' + (0.15 + rnd() * 0.3).toFixed(2)
-      + '" dur="' + (3.5 + rnd() * 4).toFixed(1) + 's" begin="' + d + 's" repeatCount="indefinite"/></circle>';
+  function f(n, d) { return n.toFixed(d === undefined ? 1 : d); }
+
+  var i, far = '', near = '', lights = '', streak = '';
+
+  // Far field — small, dim, slow. Reads as depth behind everything.
+  for (i = 0; i < 90; i++) {
+    var fx = f(rnd() * 560), fy = f(rnd() * 200), fr = f(rnd() * 0.5 + 0.18, 2);
+    far += '<circle cx="' + fx + '" cy="' + fy + '" r="' + fr + '" fill="#8fb8e8" opacity="' + f(0.14 + rnd() * 0.26, 2) + '"/>';
   }
-  return '<svg class="lp-heroArt" viewBox="0 0 520 260" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">'
-    + '<defs>'
-    + '<radialGradient id="lpAtm" cx="50%" cy="100%" r="62%">'
-    +   '<stop offset="55%" stop-color="#4db8ff" stop-opacity="0"/>'
-    +   '<stop offset="86%" stop-color="#4db8ff" stop-opacity=".30"/>'
-    +   '<stop offset="100%" stop-color="#9fe4ff" stop-opacity=".55"/>'
-    + '</radialGradient>'
-    + '<linearGradient id="lpEarth" x1="0" y1="0" x2="0" y2="1">'
-    +   '<stop offset="0%" stop-color="#0d3a63"/><stop offset="100%" stop-color="#040a14"/>'
-    + '</linearGradient>'
-    + '<linearGradient id="lpTraj" x1="0" y1="1" x2="1" y2="0">'
-    +   '<stop offset="0%" stop-color="#4db8ff" stop-opacity="0"/>'
-    +   '<stop offset="100%" stop-color="#8fe0ff" stop-opacity=".95"/>'
-    + '</linearGradient>'
-    + '<filter id="lpGlow"><feGaussianBlur stdDeviation="3.4" result="b"/>'
-    +   '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
-    + '</defs>'
-    + stars
-    // Limb of the planet, with the atmosphere sitting on top of it
-    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="url(#lpEarth)"/>'
-    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="url(#lpAtm)"/>'
-    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="none" stroke="#9fe4ff" stroke-width="1.4" opacity=".8"/>'
-    + '<ellipse cx="260" cy="408" rx="430" ry="248" fill="none" stroke="#4db8ff" stroke-width="7" opacity=".16" filter="url(#lpGlow)"/>'
-    // Ascent path, drawn as a dash that travels
-    + '<path id="lpPath" d="M72 246 C 150 232, 236 196, 300 140 S 418 44, 470 18" fill="none" '
-    +   'stroke="url(#lpTraj)" stroke-width="1.5" stroke-dasharray="4 7" opacity=".85">'
-    +   '<animate attributeName="stroke-dashoffset" values="120;0" dur="7s" repeatCount="indefinite"/></path>'
-    // The vehicle
-    + '<g filter="url(#lpGlow)">'
-    +   '<circle r="3.1" fill="#d8f2ff">'
-    +     '<animateMotion dur="7s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear">'
-    +       '<mpath href="#lpPath"/></animateMotion>'
-    +     '<animate attributeName="opacity" values="0;1;1;.15" keyTimes="0;.12;.8;1" dur="7s" repeatCount="indefinite"/>'
-    +   '</circle>'
-    + '</g>'
-    + '</svg>';
+  // Near field — larger, brighter, twinkling on their own clocks.
+  for (i = 0; i < 46; i++) {
+    var nx = f(rnd() * 560), ny = f(rnd() * 190), nr = f(rnd() * 0.85 + 0.45, 2);
+    var lo = f(0.18 + rnd() * 0.22, 2), dur = f(3 + rnd() * 5), bg = f(rnd() * 7);
+    near += '<circle cx="' + nx + '" cy="' + ny + '" r="' + nr + '" fill="#e8f4ff" opacity="' + lo + '">'
+      + '<animate attributeName="opacity" values="' + lo + ';' + f(0.75 + rnd() * 0.25, 2) + ';' + lo
+      + '" dur="' + dur + 's" begin="' + bg + 's" repeatCount="indefinite"/></circle>';
+  }
+  // City lights, scattered along the night side of the limb and clustered
+  // the way coastlines actually cluster.
+  for (i = 0; i < 34; i++) {
+    var t = rnd(), ang = Math.PI * (0.06 + t * 0.52);
+    var jitter = 1 + rnd() * 5;
+    var cx = 260 - Math.cos(ang) * (426 - jitter), cy = 412 - Math.sin(ang) * (244 - jitter);
+    if (cy > 258 || cy < 120) continue;
+    var op = f(0.25 + rnd() * 0.55, 2);
+    lights += '<circle cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(0.5 + rnd() * 0.75, 2) + '" fill="#ffd9a0" opacity="' + op + '">'
+      + '<animate attributeName="opacity" values="' + op + ';' + f(Number(op) * 0.35, 2) + ';' + op
+      + '" dur="' + f(4 + rnd() * 5) + 's" begin="' + f(rnd() * 6) + 's" repeatCount="indefinite"/></circle>';
+  }
+  // Two drifting meteors, long apart, so the scene is never quite static.
+  for (i = 0; i < 2; i++) {
+    var sx = 120 + i * 210, sy = 26 + i * 44;
+    streak += '<line x1="' + sx + '" y1="' + sy + '" x2="' + (sx + 30) + '" y2="' + (sy + 13) + '" '
+      + 'stroke="url(#lpMet)" stroke-width="1.1" stroke-linecap="round" opacity="0">'
+      + '<animate attributeName="opacity" values="0;0;.85;0" keyTimes="0;.62;.72;.82" dur="' + (17 + i * 9) + 's" begin="' + (i * 7) + 's" repeatCount="indefinite"/>'
+      + '<animateTransform attributeName="transform" type="translate" values="-70,-30;110,48" keyTimes="0;1" dur="' + (17 + i * 9) + 's" begin="' + (i * 7) + 's" repeatCount="indefinite"/></line>';
+  }
+
+  return '<svg class="lp-heroArt" viewBox="0 0 560 270" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
+  + '<defs>'
+  // Planet body: lit crescent on the right falling to black on the left
+  + '<linearGradient id="lpGlobe" x1="0.12" y1="0.1" x2="0.86" y2="0.85">'
+  +   '<stop offset="0%" stop-color="#020610"/><stop offset="42%" stop-color="#062038"/>'
+  +   '<stop offset="74%" stop-color="#0d4f86"/><stop offset="100%" stop-color="#1d7ec0"/>'
+  + '</linearGradient>'
+  // Volumetric shell: three bands stacked, densest right at the surface
+  + '<radialGradient id="lpAtm1" cx="50%" cy="100%" r="58%">'
+  +   '<stop offset="72%" stop-color="#4db8ff" stop-opacity="0"/>'
+  +   '<stop offset="93%" stop-color="#6fd0ff" stop-opacity=".42"/>'
+  +   '<stop offset="100%" stop-color="#d6f3ff" stop-opacity=".85"/></radialGradient>'
+  + '<radialGradient id="lpAtm2" cx="50%" cy="100%" r="70%">'
+  +   '<stop offset="62%" stop-color="#2b7fd4" stop-opacity="0"/>'
+  +   '<stop offset="100%" stop-color="#4db8ff" stop-opacity=".3"/></radialGradient>'
+  + '<linearGradient id="lpTerm" x1="0" y1="0" x2="1" y2="0.3">'
+  +   '<stop offset="0%" stop-color="#000" stop-opacity=".92"/>'
+  +   '<stop offset="46%" stop-color="#000" stop-opacity=".55"/>'
+  +   '<stop offset="72%" stop-color="#000" stop-opacity="0"/></linearGradient>'
+  + '<linearGradient id="lpTrail" x1="0" y1="1" x2="1" y2="0">'
+  +   '<stop offset="0%" stop-color="#4db8ff" stop-opacity="0"/>'
+  +   '<stop offset="62%" stop-color="#8fe0ff" stop-opacity=".55"/>'
+  +   '<stop offset="100%" stop-color="#ffffff" stop-opacity=".95"/></linearGradient>'
+  + '<linearGradient id="lpMet" x1="0" y1="0" x2="1" y2="1">'
+  +   '<stop offset="0%" stop-color="#fff" stop-opacity="0"/><stop offset="100%" stop-color="#cfe8ff"/></linearGradient>'
+  + '<radialGradient id="lpPlume" cx="50%" cy="8%" r="90%">'
+  +   '<stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/>'
+  +   '<stop offset="34%" stop-color="#9fd8ff" stop-opacity=".5"/>'
+  +   '<stop offset="100%" stop-color="#4db8ff" stop-opacity="0"/></radialGradient>'
+  + '<filter id="lpSoft" x="-60%" y="-60%" width="220%" height="220%">'
+  +   '<feGaussianBlur stdDeviation="7"/></filter>'
+  + '<filter id="lpBloom" x="-80%" y="-80%" width="260%" height="260%">'
+  +   '<feGaussianBlur stdDeviation="4.5" result="b"/>'
+  +   '<feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+  + '<clipPath id="lpGlobeClip"><ellipse cx="260" cy="412" rx="426" ry="244"/></clipPath>'
+  + '</defs>'
+
+  + far + near + streak
+
+  // Outer glow sitting behind the limb, so the horizon reads as lit air
+  + '<ellipse cx="260" cy="412" rx="470" ry="286" fill="url(#lpAtm2)" filter="url(#lpSoft)" opacity=".85"/>'
+  // The body
+  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpGlobe)"/>'
+  // Cloud banding, clipped to the body
+  + '<g clip-path="url(#lpGlobeClip)" opacity=".18">'
+  +   '<ellipse cx="300" cy="196" rx="150" ry="13" fill="#bfe4ff"/>'
+  +   '<ellipse cx="180" cy="224" rx="118" ry="9" fill="#bfe4ff"/>'
+  +   '<ellipse cx="380" cy="238" rx="96" ry="8" fill="#bfe4ff"/>'
+  + '</g>'
+  // Night side falling away to the left
+  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpTerm)"/>'
+  + '<g clip-path="url(#lpGlobeClip)">' + lights + '</g>'
+  // Atmospheric shell and the hard rim highlight
+  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="url(#lpAtm1)"/>'
+  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="none" stroke="#e6f8ff" stroke-width="1.5" opacity=".9"/>'
+  + '<ellipse cx="260" cy="412" rx="426" ry="244" fill="none" stroke="#4db8ff" stroke-width="9" opacity=".2" filter="url(#lpSoft)"/>'
+
+  // Ascent
+  + '<path id="lpPath" d="M84 252 C 168 240, 250 206, 318 150 S 452 46, 516 14" fill="none" stroke="none"/>'
+  + '<path d="M84 252 C 168 240, 250 206, 318 150 S 452 46, 516 14" fill="none" stroke="url(#lpTrail)" '
+  +   'stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 9" opacity=".8">'
+  +   '<animate attributeName="stroke-dashoffset" values="144;0" dur="9s" repeatCount="indefinite"/></path>'
+  + '<g filter="url(#lpBloom)">'
+  +   '<g><ellipse rx="3" ry="9" fill="url(#lpPlume)" opacity=".85" transform="rotate(34)"/>'
+  +     '<circle r="2.6" fill="#ffffff"/>'
+  +     '<animateMotion dur="9s" repeatCount="indefinite" rotate="auto"><mpath href="#lpPath"/></animateMotion>'
+  +     '<animate attributeName="opacity" values="0;1;1;.1" keyTimes="0;.1;.82;1" dur="9s" repeatCount="indefinite"/>'
+  +   '</g>'
+  + '</g>'
+  + '</svg>';
 }
 
 function lpRing(pct) {
