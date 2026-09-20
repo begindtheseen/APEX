@@ -108,7 +108,7 @@ var AI_CURRICULUM = [
   gate:{ referee:'Arithmetic against a real usage object.',
          pass:'Price a request to the cent from its usage object alone. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
          onFail:'Re-derive the pricing by hand from three more requests.' },
-  currency:'HIGHEST decay rate in the curriculum. Verify against primary API docs the week you build it.' },
+  currency:'This is the fastest-changing material in the program. The week you build it, check every detail against the official documentation of the model service you use.' },
 
 { id:'M7', layer:1, hours:45, dependsOn:['M3','M4','M5','M6'], kind:'EVIDENCE', owns:['streaming','idempotency'],
   title:'HTTP, Streaming, and the Wire',
@@ -214,7 +214,7 @@ var AI_CURRICULUM = [
   gate:{ referee:'A kill signal at a random point, plus 200 adversarial inputs from a second agent with a red-team brief and no knowledge of your governor. Spend assertion lives in the test suite.',
          pass:'Resume correctly after a mid-run kill. Replay a failed trajectory and name the causing step. Cost ceiling holds across all 200. Blocked host and metadata endpoint both refused. Report step-level and outcome-level agent eval scores.',
          onFail:'The governor caps iterations but not spend. Fix and re-run.' },
-  currency:'MCP shipped a breaking stateless rewrite in the 2026-07-28 revision. Pin your revision; every pre-August-2026 tutorial teaches the deprecated shape.' },
+  currency:'MCP changed in a way that breaks older code in its 2026-07-28 revision. Write down which revision you build against, and treat any tutorial from before August 2026 as showing the old shape.' },
 
 { id:'M20', layer:5, hours:30, dependsOn:['M7','M8','M6','M12'], kind:'EVIDENCE', owns:['cost'],
   title:'Cost, Metering, and Unit Economics',
@@ -258,7 +258,7 @@ var AI_CURRICULUM = [
 { id:'M25', layer:6, hours:35, dependsOn:['M24','M12'], kind:'EVIDENCE',
   title:'Python as a Second Production Language',
   artifact:'M12 eval runner ported to Python, so this module extends something you already built rather than standing alone. Typed request/response models, streaming, a pytest suite faking the model client, type checker green in CI, plus a written runtime diff including a reproduction of a blocking call freezing the asyncio loop and its fix.',
-  trigger:'MOVES to immediately after M12 if fewer than 40% of M0 twenty postings accept a Node-primary backend.',
+  trigger:'Starts right after M12 if fewer than eight of the twenty postings you read in M0 accept a JavaScript backend. Otherwise it waits until here.',
   gate:{ referee:'A timer, plus a Python-fluent OSS maintainer reviewing a real PR.',
          pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes. The maintainer merges without idiom comments.',
          onFail:'You are writing TypeScript with Python syntax. A passing test cannot catch this.' } },
@@ -272,7 +272,7 @@ var AI_CURRICULUM = [
 
 // ─────────────── LAYER 7 · THE MARKET (by trigger) ───────────────
 { id:'M27', layer:7, hours:11, dependsOn:['M0'], kind:'EVIDENCE',
-  trigger:'One month BEFORE the application date. Non-droppable in every variant including the Compressed Spine.',
+  trigger:'One month before your application date, whatever else is unfinished. It stays in every version of the program, including the Spine.',
   title:'Pay, Terms, and the Negotiation',
   artifact:'A comp floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded. Plus a references plan: three real people secured by month 10 — the reviewer, an OSS maintainer, a freelance client.',
   gate:{ referee:'GATE A (controllable, month-4 trigger): the reviewer playing a recruiter briefed to push back on your number. GATE B (lagging): a real recruiter screen, logged in the funnel table when it happens.',
@@ -280,7 +280,7 @@ var AI_CURRICULUM = [
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
 { id:'M28', layer:7, hours:8, dependsOn:['M10'], kind:'EVIDENCE',
-  trigger:'The application date (~month 5). Applications need a resume at month 5, not month 15.',
+  trigger:'Your application date, around month five. Applications need a resume then, not at month fifteen.',
   title:'The Evidence Layer v1',
   artifact:'A resume mapping each claim to a repo. Two pinned repos. A README in product-spec form. ONLY EVIDENCE artifacts are pinned — the labs are private. Final pinned four: the flagship, the OSS contribution history, one design doc or public write-up, one genuinely separate small product.',
   gate:{ referee:'THREE strangers from named channels, five-minute timebox each, answers in writing before any back-and-forth.',
@@ -289,7 +289,7 @@ var AI_CURRICULUM = [
   note:'Never name the curriculum. The correct sentence is "I spent the last year building and operating X."' },
 
 { id:'M29', layer:7, hours:12, dependsOn:['M18','M20'], kind:'EVIDENCE',
-  trigger:'After Layer 5, when there are numbers worth publishing.',
+  trigger:'After Layer 5, once you have measured numbers worth publishing.',
   title:'The Evidence Layer v2',
   artifact:'The flagship README carrying the eval numbers INCLUDING THE FAILING V1 — the improvement delta is the evidence of engineering; a single good number could have been luck. A decision log of the five choices that mattered. One public write-up of a measurement you made.',
   gate:{ referee:'The same three-stranger protocol as M28, with fresh strangers.',
@@ -297,7 +297,7 @@ var AI_CURRICULUM = [
          onFail:'The README is a feature list, not a product spec plus decision record.' } },
 
 { id:'M30', layer:7, hours:38, dependsOn:['M14','M28'], kind:'EVIDENCE',
-  trigger:'10h forward-loaded to the application date; the rest in the last eight weeks.',
+  trigger:'Ten hours at your application date, for a first practice interview. The remaining hours in the eight weeks before your first real one.',
   title:'Interview Performance',
   artifact:'A recorded ten-minute flagship walkthrough in DECISION-language. Three timed foreign-repo bug fixes from M0 blind queue with assistant transcripts annotated. Two recorded mock defenses with a real person who pushes back. Plus ~8h behavioral rehearsal against M0 incident log — twenty real stories accumulated at zero marginal cost since month one. The 40-problem narrated log lives in Track 4 weekly slot.',
   gate:{ referee:'Three referees.',
@@ -306,7 +306,7 @@ var AI_CURRICULUM = [
 
 // ─────────────── LAYER 8 · EMPLOYED MODE ───────────────
 { id:'M31', layer:8, hours:10, dependsOn:['M0'], kind:'LAB',
-  trigger:'FIRST ONSITE \u2014 the same event as M32, and the last moment the pre-hire half can be written with a clear head. It reliably lands one to three weeks before an offer. Written pre-hire, executed post-hire; hire-before-completion is the modal good outcome.',
+  trigger:'Your first final-round interview, the same moment as M32. It is the last point at which you can write this with a clear head, and it usually lands one to three weeks before an offer. Written before the hire, used after it. Being hired before you finish the program is the normal good outcome.',
   title:'Employed Mode',
   artifact:'A second operating contract: a realistic employed weekly budget (5-8h, not 18) and a module order driven by what the job needs first. Track 4 retargeted from your own artifacts to a component of the employer codebase. The reviewer relationship re-contracted or deliberately replaced, decided BEFORE the start date. The monthly re-plan surviving with new inputs. The estimate log continuing against real tickets from week one. Plus two scheduled written manager checkpoints at week 6 and week 14, scripted before the start date.',
   gate:{ referee:'The week-6 and week-14 manager checkpoints, in writing.',
@@ -314,7 +314,7 @@ var AI_CURRICULUM = [
          onFail:'Week one is the wrong time to ask — that is when a manager answer is most generic.' } },
 
 { id:'M32', layer:8, hours:6, dependsOn:['M0'], kind:'LAB',
-  trigger:'First onsite.',
+  trigger:'Your first final-round interview.',
   title:'The First 90 Days',
   artifact:'A 30/60/90 plan against a real posting with week-one manager questions. A reusable asking-for-help template practiced FOR REAL by posting three genuine questions in an OSS project Discord or Slack, responses kept. An org map inferred from the repo’s history — who touches what, from git log by author; nothing M1 did not teach. A handoff note good enough for a stranger to continue. Plus inheriting an AI system you did not build: reading someone else prompts, evals and traces; prompt archaeology on a system with no decision log. Plus a WIP policy computed from your OWN Track 2 review-latency data.',
   gate:{ referee:'Real strangers in a real channel, and a recording.',
