@@ -735,108 +735,204 @@ body{color:var(--text);font-family:var(--sans);}
 .ls-panel.lsRed .ls-glyph{color:#ff4033;text-shadow:0 0 26px rgba(255,59,48,.6);}
 .ls-panel.lsRed .ls-name{color:#ffd9d5;}
 .ls-panel.lsRed .ls-trace{color:#ff5b52;}
-/* ═══ LAUNCHPAD — AI product engineering realm ═══════════════ */
-.lsLp{--rc:#00e5a0;}
-#launchpadApp{background:#02100c;color:#cfeee2;}
-#lpNav{background:linear-gradient(180deg,#02100c 0%,#04180f 100%);border-bottom:1px solid #0d3a2c;
-  display:flex;height:50px;flex-shrink:0;align-items:center;gap:10px;padding:0 12px;
-  box-shadow:0 1px 20px rgba(0,229,160,.07);}
-#lpNav .dk-brand{color:#00e5a0;text-shadow:0 0 18px rgba(0,229,160,.45);}
-#lpNav .dk-tag{color:#3d7f68;}
-.lp-hero{border:1px solid #0d3a2c;border-radius:14px;padding:16px;margin-bottom:14px;
-  background:linear-gradient(160deg,rgba(0,229,160,.07),rgba(2,16,12,0) 65%);}
-.lp-ey{font:600 10px/1 var(--mono);letter-spacing:.18em;color:#00e5a0;text-transform:uppercase;}
-.lp-t{font:700 21px/1.2 var(--sans);color:#e6fff5;margin:8px 0 6px;}
-.lp-s{font:400 13px/1.55 var(--sans);color:#6fae99;}
-/* Five stats. minmax must let all five sit on one row at 390px or the last
-   one orphans onto a line of its own and reads as a different kind of thing. */
-.lp-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:14px;}
-.lp-num{background:rgba(0,229,160,.05);border:1px solid #0d3a2c;border-radius:9px;padding:9px 3px;text-align:center;}
-.lp-nv{font:700 15px/1 var(--mono);color:#00e5a0;}
-.lp-nk{font:500 8px/1.3 var(--mono);letter-spacing:.11em;color:#4e8d77;text-transform:uppercase;margin-top:5px;}
-.lp-bar{height:5px;border-radius:3px;background:#07271d;overflow:hidden;margin-top:13px;}
-.lp-bar span{display:block;height:100%;background:linear-gradient(90deg,#00e5a0,#7dd3fc);border-radius:3px;
-  transition:width .45s cubic-bezier(.4,0,.2,1);}
-.lp-creed{margin-top:13px;padding-top:12px;border-top:1px dashed #0d3a2c;}
-.lp-creed div{font:400 11.5px/1.5 var(--sans);color:#5c9c85;padding-left:14px;position:relative;margin-bottom:5px;}
-.lp-creed div::before{content:'\2014';position:absolute;left:0;color:#00e5a0;}
-.lp-layer{margin:20px 0 9px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
-.lp-ln{font:700 12px/1 var(--mono);letter-spacing:.13em;color:#00e5a0;text-transform:uppercase;}
-.lp-lp{font:400 11px/1.4 var(--sans);color:#4e8d77;flex:1;min-width:150px;}
-.lp-lh{font:600 10px/1 var(--mono);color:#3d7f68;}
-.lp-mod{width:100%;text-align:left;background:#04180f;border:1px solid #0d3a2c;border-radius:11px;
-  padding:12px 13px;margin-bottom:8px;cursor:pointer;display:block;transition:border-color .16s,background .16s;}
-.lp-mod:hover:not(.lock){border-color:#1a6b52;background:#052014;}
+/* ═══ LAUNCHPAD — AI product engineering realm ═══════════════
+   Palette is APEX's own blue. A realm that changes colour on entry reads as
+   a different product; the launcher is blue, so this is blue.              */
+.lsLp{--rc:#4db8ff;}
+#launchpadApp{background:#050b16;color:#c8dff5;flex-direction:column;}
+#launchpadApp.active{display:flex;}
+.lp-shell{display:flex;flex:1;min-height:0;}
+
+/* Rail — a left sidebar on wide screens, a scrolling strip on phones.
+   The old single-column scroll was the navigation complaint: everything
+   was reachable only by scrolling past everything else. */
+.lp-side{width:194px;flex-shrink:0;background:#03070f;border-right:1px solid #12233d;
+  display:flex;flex-direction:column;padding:16px 0;}
+.lp-wordmark{font:700 15px/1 var(--mono);letter-spacing:.22em;color:#e8f2ff;padding:4px 18px 22px;}
+.lp-wordmark span{color:#4db8ff;}
+.lp-navbtn{display:flex;align-items:center;gap:11px;background:none;border:0;width:100%;
+  padding:11px 18px;cursor:pointer;color:#5b7fa6;font:500 13px/1 var(--sans);text-align:left;
+  border-left:2px solid transparent;transition:color .15s,background .15s;}
+.lp-navbtn:hover{color:#a8cdf0;background:rgba(77,184,255,.05);}
+.lp-navbtn.on{color:#e8f2ff;background:rgba(77,184,255,.1);border-left-color:#4db8ff;}
+.lp-navi{width:17px;text-align:center;font-size:13px;opacity:.85;}
+.lp-side-foot{margin-top:auto;padding:18px;font:600 8.5px/1.9 var(--mono);letter-spacing:.2em;
+  color:#1e3a5f;text-transform:uppercase;}
+.lp-main{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.lp-topbar{display:flex;align-items:center;gap:12px;padding:13px 22px;border-bottom:1px solid #0d1c31;
+  position:sticky;top:0;background:rgba(5,11,22,.94);backdrop-filter:blur(8px);z-index:5;}
+.lp-crumb{font:600 9.5px/1 var(--mono);letter-spacing:.17em;color:#2d5070;text-transform:uppercase;
+  margin-left:auto;}
+.lp-crumb b{color:#4db8ff;font-weight:600;}
+.lp-body{padding:22px;max-width:1180px;}
+
+/* Hero */
+.lp-hero{position:relative;border:1px solid #12233d;border-radius:14px;padding:24px;margin-bottom:18px;
+  background:radial-gradient(120% 140% at 88% 8%,rgba(77,184,255,.16),rgba(5,11,22,0) 58%),#070f1d;overflow:hidden;}
+.lp-hero::after{content:'';position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.13),transparent 68%);pointer-events:none;}
+.lp-greet{font:400 13px/1 var(--sans);color:#5b7fa6;}
+.lp-name{font:700 30px/1.15 var(--sans);color:#eaf4ff;margin:5px 0 7px;letter-spacing:-.01em;}
+.lp-sub{font:400 13.5px/1.55 var(--sans);color:#7fa3c4;max-width:60ch;}
+.lp-heroBar{height:3px;width:210px;border-radius:2px;background:#0d1c31;margin-top:16px;overflow:hidden;}
+.lp-heroBar span{display:block;height:100%;background:linear-gradient(90deg,#4db8ff,#00d4ff);}
+
+/* Two-column dashboard */
+.lp-cols{display:grid;grid-template-columns:1fr 316px;gap:16px;align-items:start;}
+@media(max-width:1000px){.lp-cols{grid-template-columns:1fr;}}
+
+.lp-card{border:1px solid #12233d;border-radius:13px;background:#070f1d;padding:17px;margin-bottom:16px;}
+.lp-ch{display:flex;align-items:center;gap:10px;margin-bottom:15px;}
+.lp-ct{font:600 11px/1 var(--mono);letter-spacing:.15em;color:#a8cdf0;text-transform:uppercase;}
+.lp-cmeta{margin-left:auto;font:600 9.5px/1 var(--mono);letter-spacing:.11em;color:#2d5070;text-transform:uppercase;}
+
+/* Readiness ring + per-layer bars */
+.lp-ready{display:flex;align-items:center;gap:20px;}
+.lp-bars{flex:1;min-width:0;}
+.lp-brow{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
+.lp-bico{width:31px;height:31px;border-radius:8px;background:rgba(77,184,255,.1);border:1px solid #17304f;
+  display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.lp-bwrap{flex:1;min-width:0;}
+.lp-blab{font:500 12px/1 var(--sans);color:#c8dff5;margin-bottom:6px;}
+.lp-btr{height:5px;border-radius:3px;background:#0d1c31;overflow:hidden;}
+.lp-btr span{display:block;height:100%;background:linear-gradient(90deg,#4db8ff,#7dd3fc);
+  transition:width .5s cubic-bezier(.4,0,.2,1);}
+.lp-bpct{font:600 11px/1 var(--mono);color:#5b7fa6;width:32px;text-align:right;flex-shrink:0;}
+.lp-ring{position:relative;width:88px;height:88px;flex-shrink:0;}
+.lp-ring svg{transform:rotate(-90deg);}
+.lp-ring .bg{fill:none;stroke:#0d1c31;stroke-width:7;}
+.lp-ring .fg{fill:none;stroke:#4db8ff;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .6s;}
+.lp-rtx{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.lp-rv{font:700 21px/1 var(--mono);color:#eaf4ff;}
+.lp-rk{font:600 7.5px/1 var(--mono);letter-spacing:.13em;color:#2d5070;margin-top:3px;}
+
+/* Layer cards on the home view */
+.lp-lay{border:1px solid #12233d;border-radius:13px;background:#070f1d;padding:17px;margin-bottom:13px;
+  display:block;width:100%;text-align:left;cursor:pointer;transition:border-color .16s,background .16s;}
+.lp-lay:hover{border-color:#1e3a5f;background:#091426;}
+.lp-layh{display:flex;align-items:flex-start;gap:13px;}
+.lp-layi{width:42px;height:42px;border-radius:10px;background:rgba(77,184,255,.1);border:1px solid #17304f;
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.lp-layt{font:600 16px/1.25 var(--sans);color:#eaf4ff;}
+.lp-layd{font:400 12.5px/1.55 var(--sans);color:#7fa3c4;margin-top:5px;}
+.lp-mods{margin:13px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;}
+@media(max-width:560px){.lp-mods{grid-template-columns:1fr;}}
+.lp-mrow{display:flex;align-items:center;gap:8px;font:400 12px/1.4 var(--sans);color:#7fa3c4;}
+.lp-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid #1e3a5f;flex-shrink:0;}
+.lp-mrow.done .lp-dot{background:#4db8ff;border-color:#4db8ff;}
+.lp-mrow.done{color:#a8cdf0;}
+.lp-mrow.lock{opacity:.42;}
+.lp-layf{display:flex;align-items:center;gap:12px;margin-top:15px;}
+.lp-go{background:#1e6fd0;border:0;border-radius:7px;color:#fff;font:600 12px/1 var(--sans);
+  padding:10px 17px;cursor:pointer;transition:background .15s;}
+.lp-go:hover{background:#2a82e8;}
+.lp-pctlab{margin-left:auto;font:600 9px/1 var(--mono);letter-spacing:.11em;color:#2d5070;text-transform:uppercase;}
+
+/* Right column lists */
+.lp-task{display:flex;align-items:flex-start;gap:11px;padding:11px 0;cursor:pointer;
+  border-top:1px solid #0d1c31;}
+.lp-task:first-of-type{border-top:0;}
+.lp-box{width:16px;height:16px;border-radius:50%;border:1.5px solid #1e3a5f;flex-shrink:0;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;font:700 9px/1 var(--mono);color:#050b16;}
+.lp-task.on .lp-box,.lp-chk.on .lp-box{background:#4db8ff;border-color:#4db8ff;}
+.lp-tt{font:500 12.5px/1.4 var(--sans);color:#c8dff5;}
+.lp-task.on .lp-tt{color:#4db8ff;}
+.lp-ts{font:400 10.5px/1.3 var(--sans);color:#3d6183;margin-top:4px;}
+.lp-link{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid #0d1c31;
+  cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;}
+.lp-link:first-of-type{border-top:0;}
+.lp-lki{width:30px;height:30px;border-radius:8px;background:rgba(77,184,255,.09);border:1px solid #17304f;
+  display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.lp-lkt{font:500 12.5px/1.3 var(--sans);color:#c8dff5;}
+.lp-lks{font:400 10.5px/1.3 var(--sans);color:#3d6183;margin-top:3px;}
+.lp-arrow{margin-left:auto;color:#1e3a5f;font-size:13px;}
+.lp-quote{border:1px solid #12233d;border-radius:13px;padding:20px;margin-bottom:16px;
+  background:radial-gradient(130% 120% at 20% 0%,rgba(77,184,255,.13),rgba(5,11,22,0) 62%),#070f1d;}
+.lp-qt{font:600 19px/1.35 var(--sans);color:#eaf4ff;}
+.lp-qa{font:400 12px/1 var(--sans);color:#4db8ff;margin-top:11px;}
+
+/* Module list + detail */
+.lp-mod{width:100%;text-align:left;background:#070f1d;border:1px solid #12233d;border-radius:11px;
+  padding:13px;margin-bottom:8px;cursor:pointer;display:block;transition:border-color .16s,background .16s;}
+.lp-mod:hover:not(.lock){border-color:#1e3a5f;background:#091426;}
 .lp-mod.lock{opacity:.4;cursor:not-allowed;}
-.lp-mod.done{border-color:#00e5a0;background:rgba(0,229,160,.07);}
+.lp-mod.done{border-color:#1e6fd0;background:rgba(77,184,255,.07);}
 .lp-mh{display:flex;align-items:center;gap:9px;}
-.lp-mid{font:700 11px/1 var(--mono);color:#00e5a0;flex-shrink:0;}
-.lp-mt{font:600 13.5px/1.3 var(--sans);color:#d8f5ea;flex:1;}
-.lp-mhr{font:500 10px/1 var(--mono);color:#4e8d77;flex-shrink:0;}
+.lp-mid{font:700 11px/1 var(--mono);color:#4db8ff;flex-shrink:0;}
+.lp-mt{font:600 13.5px/1.3 var(--sans);color:#dcecff;flex:1;}
+.lp-mhr{font:500 10px/1 var(--mono);color:#3d6183;flex-shrink:0;}
 .lp-kind{font:600 8px/1 var(--mono);letter-spacing:.09em;padding:3px 5px;border-radius:3px;flex-shrink:0;}
-.lp-kind.ev{background:rgba(0,229,160,.15);color:#00e5a0;}
-.lp-kind.lab{background:rgba(125,211,252,.12);color:#7dd3fc;}
+.lp-kind.ev{background:rgba(77,184,255,.16);color:#7dd3fc;}
+.lp-kind.lab{background:rgba(45,80,112,.3);color:#5b7fa6;}
 .lp-meta{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;align-items:center;}
-.lp-dep{font:400 9.5px/1 var(--mono);color:#3d7f68;}
-.lp-owns{font:600 8px/1 var(--mono);letter-spacing:.07em;background:rgba(125,211,252,.1);color:#7dd3fc;
-  padding:3px 5px;border-radius:3px;}
-.lp-trig{font:600 8px/1 var(--mono);letter-spacing:.07em;background:rgba(56,189,248,.12);color:#38bdf8;
+.lp-dep{font:400 9.5px/1 var(--mono);color:#2d5070;}
+.lp-tag{font:600 8px/1 var(--mono);letter-spacing:.07em;background:rgba(0,212,255,.1);color:#00d4ff;
   padding:3px 5px;border-radius:3px;}
 .lp-steps{display:flex;gap:5px;margin-top:9px;}
-.lp-step{flex:1;height:4px;border-radius:2px;background:#07271d;}
-.lp-step.on{background:#00e5a0;}
-.lp-gate{border:1px solid #1a6b52;border-radius:12px;padding:14px;margin:16px 0;
-  background:linear-gradient(160deg,rgba(0,229,160,.09),rgba(2,16,12,0));}
-.lp-gate.shut{border-color:#7a4a1a;background:linear-gradient(160deg,rgba(56,189,248,.07),rgba(2,16,12,0));}
-.lp-gt{font:700 12px/1 var(--mono);letter-spacing:.11em;color:#00e5a0;text-transform:uppercase;}
-.lp-gate.shut .lp-gt{color:#38bdf8;}
-.lp-gs{font:400 12px/1.5 var(--sans);color:#6fae99;margin:7px 0 11px;}
-.lp-chk{display:flex;align-items:center;gap:9px;padding:7px 0;cursor:pointer;
-  font:400 12.5px/1.4 var(--sans);color:#a9d9c8;border-top:1px solid rgba(13,58,44,.6);}
-.lp-box{width:16px;height:16px;border-radius:4px;border:1.5px solid #1a6b52;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font:700 10px/1 var(--mono);color:#02100c;}
-.lp-chk.on .lp-box{background:#00e5a0;border-color:#00e5a0;}
-.lp-chk.on{color:#00e5a0;}
-.lp-det{border:1px solid #0d3a2c;border-radius:12px;padding:15px;margin-bottom:14px;background:#04180f;}
-.lp-dl{font:600 9px/1 var(--mono);letter-spacing:.13em;color:#00e5a0;text-transform:uppercase;margin:15px 0 7px;}
+.lp-step{flex:1;height:4px;border-radius:2px;background:#0d1c31;}
+.lp-step.on{background:#4db8ff;}
+.lp-dl{font:600 9px/1 var(--mono);letter-spacing:.14em;color:#4db8ff;text-transform:uppercase;margin:17px 0 8px;}
 .lp-dl:first-child{margin-top:0;}
-.lp-dp{font:400 12.5px/1.6 var(--sans);color:#a9d9c8;}
-.lp-ref{border-left:2px solid #1a6b52;padding-left:11px;margin-top:8px;}
-.lp-ref b{color:#00e5a0;font:600 9.5px/1 var(--mono);letter-spacing:.08em;display:block;margin-bottom:4px;}
-.lp-ref p{font:400 12px/1.55 var(--sans);color:#8fc7b3;margin:0 0 9px;}
-.lp-warn{border:1px solid #7a4a1a;border-radius:9px;padding:10px 12px;margin-top:11px;
-  background:rgba(56,189,248,.06);font:400 11.5px/1.5 var(--sans);color:#8fc7b3;}
-.lp-warn b{color:#38bdf8;font:600 10px/1 var(--mono);letter-spacing:.08em;}
-.lp-set{border:1px solid #1a6b52;border-radius:13px;padding:15px;margin-bottom:14px;
-  background:linear-gradient(160deg,rgba(0,229,160,.08),rgba(2,16,12,0));}
-.lp-set.warn{border-color:#7a4a1a;background:linear-gradient(160deg,rgba(56,189,248,.07),rgba(2,16,12,0));}
-.lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;}
-.lp-f label{display:block;font:600 8.5px/1 var(--mono);letter-spacing:.11em;color:#4e8d77;
-  text-transform:uppercase;margin-bottom:5px;}
-.lp-f input{width:100%;background:#02100c;border:1px solid #0d3a2c;border-radius:7px;color:#00e5a0;
-  font:600 15px/1 var(--mono);padding:9px 10px;-webkit-appearance:none;}
-.lp-f input:focus{outline:none;border-color:#00e5a0;}
+.lp-dp{font:400 12.5px/1.6 var(--sans);color:#a8cdf0;}
+.lp-ref{border-left:2px solid #17304f;padding-left:12px;margin-top:8px;}
+.lp-ref b{color:#4db8ff;font:600 9.5px/1 var(--mono);letter-spacing:.08em;display:block;margin-bottom:4px;}
+.lp-ref p{font:400 12px/1.55 var(--sans);color:#7fa3c4;margin:0 0 10px;}
+.lp-con div{font:400 12.5px/1.55 var(--sans);color:#a8cdf0;margin-bottom:7px;padding-left:14px;position:relative;}
+.lp-con div::before{content:'\2022';position:absolute;left:0;color:#4db8ff;}
+.lp-mist{border-left:2px solid #2d5070;padding-left:12px;margin-top:8px;}
+.lp-mist div{font:400 12px/1.55 var(--sans);color:#7fa3c4;margin-bottom:9px;padding-left:14px;position:relative;}
+.lp-mist div::before{content:'\00D7';position:absolute;left:0;color:#5b7fa6;font-weight:700;}
+.lp-warn{border:1px solid #17304f;border-radius:9px;padding:11px 13px;margin-top:12px;
+  background:rgba(77,184,255,.05);font:400 11.5px/1.55 var(--sans);color:#7fa3c4;}
+.lp-warn b{color:#00d4ff;font:600 10px/1 var(--mono);letter-spacing:.08em;}
+.lp-chk{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;
+  font:400 12.5px/1.4 var(--sans);color:#a8cdf0;border-top:1px solid #0d1c31;}
+.lp-chk .lp-box{border-radius:4px;}
+.lp-chk.on{color:#4db8ff;}
+.lp-gate{border:1px solid #17304f;border-radius:12px;padding:15px;margin:16px 0;
+  background:linear-gradient(160deg,rgba(77,184,255,.08),rgba(5,11,22,0));}
+.lp-gate.shut{border-color:#2d5070;}
+.lp-gt{font:700 11px/1 var(--mono);letter-spacing:.13em;color:#4db8ff;text-transform:uppercase;}
+.lp-gs{font:400 12px/1.55 var(--sans);color:#7fa3c4;margin:8px 0 11px;}
+.lp-back{background:none;border:1px solid #12233d;border-radius:8px;color:#5b7fa6;
+  font:600 10px/1 var(--mono);letter-spacing:.1em;padding:9px 14px;cursor:pointer;margin-bottom:15px;}
+.lp-back:hover{border-color:#1e3a5f;color:#4db8ff;}
+
+/* M0 plan panel */
+.lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0;}
+.lp-f label{display:block;font:600 8.5px/1 var(--mono);letter-spacing:.11em;color:#3d6183;
+  text-transform:uppercase;margin-bottom:6px;}
+.lp-f input{width:100%;background:#050b16;border:1px solid #12233d;border-radius:7px;color:#4db8ff;
+  font:600 15px/1 var(--mono);padding:10px;-webkit-appearance:none;}
+.lp-f input:focus{outline:none;border-color:#4db8ff;}
 .lp-f.wide{grid-column:1/-1;}
-.lp-f.wide input{font:500 13px/1.3 var(--sans);color:#d8f5ea;}
-.lp-verdict{border-top:1px dashed #0d3a2c;margin-top:12px;padding-top:12px;}
-.lp-vrec{font:700 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:#00e5a0;}
-.lp-set.warn .lp-vrec{color:#38bdf8;}
-.lp-vwhy{font:400 12.5px/1.6 var(--sans);color:#a9d9c8;margin-top:8px;}
-.lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;}
-.lp-path{border:1px solid #0d3a2c;border-radius:9px;padding:10px;background:rgba(0,229,160,.04);}
-.lp-path.on{border-color:#00e5a0;background:rgba(0,229,160,.1);}
-.lp-pn{font:600 9px/1 var(--mono);letter-spacing:.1em;color:#4e8d77;text-transform:uppercase;}
-.lp-path.on .lp-pn{color:#00e5a0;}
-.lp-pv{font:700 19px/1 var(--mono);color:#d8f5ea;margin:7px 0 3px;}
-.lp-ps{font:400 10.5px/1.4 var(--sans);color:#6fae99;}
-.lp-mist{border-left:2px solid #7a4a1a;padding-left:11px;margin-top:8px;}
-.lp-mist div{font:400 12px/1.55 var(--sans);color:#8fc7b3;margin-bottom:8px;position:relative;padding-left:13px;}
-.lp-mist div::before{content:'\00D7';position:absolute;left:0;color:#38bdf8;font-weight:700;}
-.lp-con div{font:400 12.5px/1.55 var(--sans);color:#a9d9c8;margin-bottom:6px;position:relative;padding-left:13px;}
-.lp-con div::before{content:'\2022';position:absolute;left:0;color:#00e5a0;}
-.lp-back{background:none;border:1px solid #0d3a2c;border-radius:8px;color:#4e8d77;
-  font:600 10px/1 var(--mono);letter-spacing:.1em;padding:9px 13px;cursor:pointer;margin-bottom:13px;}
-.lp-back:hover{border-color:#1a6b52;color:#00e5a0;}
+.lp-f.wide input{font:500 13px/1.3 var(--sans);color:#dcecff;}
+.lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px;}
+.lp-path{border:1px solid #12233d;border-radius:9px;padding:11px;background:rgba(77,184,255,.03);}
+.lp-path.on{border-color:#4db8ff;background:rgba(77,184,255,.1);}
+.lp-pn{font:600 9px/1 var(--mono);letter-spacing:.1em;color:#3d6183;text-transform:uppercase;}
+.lp-path.on .lp-pn{color:#4db8ff;}
+.lp-pv{font:700 19px/1 var(--mono);color:#eaf4ff;margin:8px 0 4px;}
+.lp-ps{font:400 10.5px/1.4 var(--sans);color:#5b7fa6;}
+.lp-vrec{font:700 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:#4db8ff;margin-top:14px;}
+.lp-vwhy{font:400 12.5px/1.6 var(--sans);color:#a8cdf0;margin-top:9px;}
+
+@media(max-width:820px){
+  .lp-shell{flex-direction:column;}
+  .lp-side{width:100%;flex-direction:row;overflow-x:auto;padding:0;border-right:0;
+    border-bottom:1px solid #12233d;scrollbar-width:none;}
+  .lp-side::-webkit-scrollbar{display:none;}
+  .lp-wordmark,.lp-side-foot{display:none;}
+  .lp-navbtn{width:auto;flex-shrink:0;padding:14px 15px;border-left:0;border-bottom:2px solid transparent;
+    gap:8px;font-size:12.5px;}
+  .lp-navbtn.on{border-left:0;border-bottom-color:#4db8ff;background:none;}
+  .lp-body{padding:16px;}
+  .lp-topbar{padding:12px 16px;}
+  .lp-name{font-size:24px;}
+  /* Ring beside the bars leaves a dead column at phone width; put it on top. */
+  .lp-ready{flex-direction:column-reverse;align-items:stretch;gap:14px;}
+  .lp-ring{align-self:center;}
+}
 .ls-foot{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));
   text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:#3c4a56;padding:0 16px;}
 /* While the warp canvas runs, idle animations pause so they never compete
@@ -1080,12 +1176,16 @@ body{color:var(--text);font-family:var(--sans);}
 <!-- LAUNCHPAD — AI product engineering. Module/artifact/gate shaped, not
      lesson/flashcard/quiz shaped, because that is what this curriculum is. -->
 <div class="screen" id="launchpadApp">
-  <div id="lpNav">
-    <button class="dk-back" onclick="exitLaunchpad()">← REALMS</button>
-    <div class="dk-brand">LAUNCHPAD</div>
-    <div class="dk-tag" id="lpTag">AI PRODUCT ENGINEERING</div>
+  <div class="lp-shell">
+    <nav class="lp-side" id="lpSide"></nav>
+    <div class="lp-main" id="lpMain">
+      <div class="lp-topbar">
+        <button class="lp-back lp-exit" style="margin:0" onclick="exitLaunchpad()">← REALMS</button>
+        <div class="lp-crumb" id="lpCrumb"></div>
+      </div>
+      <div class="lp-body" id="launchpadContent"></div>
+    </div>
   </div>
-  <div class="scr"><div class="pad" id="launchpadContent"></div></div>
 </div>
 
 <!-- MODAL -->
@@ -4977,7 +5077,8 @@ function exitObsidian() { goLauncher(); }
 // the DELTA, did you build the thing, did a referee say yes.
 // ═══════════════════════════════════════════════════════════
 var LP_ST = { mods:{}, flagship:{}, setup:{} };
-var LP_VIEW = null;   // null = module map, otherwise a module id
+var LP_VIEW = null;   // null = a tab view, otherwise a module id
+var LP_TAB = 'home';
 
 function lpCfg() { return (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG) ? LAUNCHPAD_CONFIG : {}; }
 function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRICULUM_API : null; }
@@ -5001,7 +5102,7 @@ function lpProgress() {
 
 function enterLaunchpad() {
   lpLoad();
-  LP_VIEW = null;
+  LP_VIEW = null; LP_TAB = 'home';
   document.getElementById('mainApp').classList.remove('active');
   document.getElementById('obsidianApp').classList.remove('active');
   document.getElementById('launchpadApp').classList.add('active');
@@ -5011,7 +5112,7 @@ function exitLaunchpad() {
   document.getElementById('launchpadApp').classList.remove('active');
   goLauncher();
 }
-function lpOpen(id) { LP_VIEW = id; renderLaunchpad(); window.scrollTo(0, 0); }
+function lpOpen(id) { LP_VIEW = id; renderLaunchpad(); }
 function lpBack()   { LP_VIEW = null; renderLaunchpad(); }
 
 function lpToggle(id, step) {
@@ -5055,123 +5156,56 @@ function renderLaunchpad(keepScroll) {
   if (!host) return;
   var API = lpApi();
   if (!API || typeof AI_CURRICULUM === 'undefined') {
-    host.innerHTML = '<div class="lp-det">Curriculum data unavailable.</div>';
-    return;
+    host.innerHTML = '<div class="lp-card">Curriculum data unavailable.</div>'; return;
   }
-  // Ticking a checkbox rebuilds the view. Without this the page jumps to the
-  // top mid-checklist, which reads as the tap having done something else.
-  var sc = keepScroll ? (host.closest('.scr') || document.scrollingElement) : null;
-  var y = sc ? sc.scrollTop : 0;
-  host.innerHTML = LP_VIEW ? lpDetailHTML(API, LP_VIEW) : lpMapHTML(API);
-  if (sc) sc.scrollTop = y;
+  var main = document.getElementById('lpMain');
+  var y = keepScroll && main ? main.scrollTop : 0;
+  lpSideHTML();
+  var crumb = document.getElementById('lpCrumb');
+  if (crumb) {
+    crumb.innerHTML = LP_VIEW
+      ? 'LAUNCHPAD / <b>' + LP_VIEW + '</b>'
+      : 'PREPARE / BUILD / <b>' + (LP_TAB || 'home').toUpperCase() + '</b>';
+  }
+  if (LP_VIEW)            host.innerHTML = lpDetailHTML(API, LP_VIEW);
+  else if (LP_TAB === 'modules')  host.innerHTML = lpModulesHTML(API);
+  else if (LP_TAB === 'plan')     host.innerHTML = lpPlanHTML(API);
+  else if (LP_TAB === 'tracks')   host.innerHTML = lpTracksHTML(API);
+  else                            host.innerHTML = lpHomeHTML(API);
+  if (main) main.scrollTop = keepScroll ? y : 0;
 }
 
-function lpMapHTML(API) {
-  var cfg = lpCfg(), P = lpProgress();
-  var sum = API.progressSummary(P);
-  var cp  = API.criticalPath();
-  var fg  = API.flagshipGate(P);
-  var avail = API.available(P).map(function (m) { return m.id; });
-
-  var h = lpSetupHTML(API);
-  h += '<div class="lp-hero">';
-  h += '<div class="lp-ey">' + esc(cfg.tag || '') + '</div>';
-  h += '<div class="lp-t">' + esc(cfg.name || 'Launchpad') + '</div>';
-  h += '<div class="lp-s">' + esc(cfg.tagline || '') + '</div>';
-  h += '<div class="lp-nums">';
-  h += '<div class="lp-num"><div class="lp-nv">' + sum.modulesDone + '/' + sum.modulesTotal + '</div><div class="lp-nk">Modules</div></div>';
-  h += '<div class="lp-num"><div class="lp-nv">' + sum.hoursDone + '</div><div class="lp-nk">of ' + sum.hoursTotal + 'h</div></div>';
-  h += '<div class="lp-num"><div class="lp-nv">' + sum.artifactsDone + '</div><div class="lp-nk">Artifacts</div></div>';
-  h += '<div class="lp-num"><div class="lp-nv">' + sum.deltasDone + '</div><div class="lp-nk">Deltas</div></div>';
-  h += '<div class="lp-num"><div class="lp-nv">' + cp.hours + 'h</div><div class="lp-nk">Crit path</div></div>';
-  h += '</div>';
-  h += '<div class="lp-bar"><span style="width:' + sum.pct + '%"></span></div>';
-  h += '<div class="lp-creed">';
-  (cfg.creed || []).forEach(function (c) { h += '<div>' + esc(c) + '</div>'; });
-  h += '</div></div>';
-
-  // Total hours is the floor on effort; the critical path is the floor on time.
-  h += '<div class="lp-warn"><b>CRITICAL PATH</b><br>' + esc(cp.path.join(' → ')) + '<br>'
-     + cp.hours + 'h of strict dependencies. Total hours is the floor on effort; this is the floor on '
-     + 'time, and only one of them moves when you work more hours a week.</div>';
-
-  var LAYERS = (typeof AI_LAYERS !== 'undefined') ? AI_LAYERS : [];
-  LAYERS.forEach(function (L) {
-    var mods = API.byLayer(L.id);
-    if (!mods.length) return;
-    var lh = mods.reduce(function (a, m) { return a + m.hours }, 0);
-
-    // The Layer 3 -> 4 hard gate sits between those layers, not inside a module.
-    if (L.id === 4) {
-      h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
-      h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
-      h += '<div class="lp-gs">Layer 4 does not start until all four are true. This was the most '
-         + 'corroborated finding in the review — it gates twelve modules and it is the only '
-         + 'prerequisite here that cannot be satisfied by working harder.</div>';
-      fg.items.forEach(function (it) {
-        var on = !!LP_ST.flagship[it.key];
-        h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpFlag(\'' + it.key + '\')">'
-           + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
-      });
-      h += '</div>';
-    }
-
-    h += '<div class="lp-layer"><span class="lp-ln">L' + L.id + ' · ' + esc(L.name) + '</span>'
-       + '<span class="lp-lp">' + esc(L.purpose) + '</span><span class="lp-lh">' + lh + 'h</span></div>';
-
-    mods.forEach(function (m) {
-      var pr = LP_ST.mods[m.id] || {};
-      var unlocked = API.isUnlocked(m.id, P);
-      var cls = pr.gate ? ' done' : (unlocked ? '' : ' lock');
-      h += '<button class="lp-mod' + cls + '"' + (unlocked ? ' onclick="lpOpen(\'' + m.id + '\')"' : ' disabled') + '>';
-      h += '<div class="lp-mh"><span class="lp-mid">' + m.id + '</span>'
-         + '<span class="lp-mt">' + esc(m.title) + '</span>'
-         + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">EVID' : 'lab">LAB') + '</span>'
-         + '<span class="lp-mhr">' + m.hours + 'h</span></div>';
-      h += '<div class="lp-meta">';
-      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-owns">OWNS ' + esc(o.toUpperCase()) + '</span>'; });
-      if (m.trigger) h += '<span class="lp-trig">BY TRIGGER</span>';
-      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites') + '</span>';
-      if (avail.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-owns">AVAILABLE NOW</span>';
-      h += '</div>';
-      h += '<div class="lp-steps">'
-         + '<span class="lp-step' + (pr.delta ? ' on' : '') + '"></span>'
-         + '<span class="lp-step' + (pr.artifact ? ' on' : '') + '"></span>'
-         + '<span class="lp-step' + (pr.gate ? ' on' : '') + '"></span></div>';
-      h += '</button>';
-    });
+var LP_NAV = [
+  ['home',    '◈', 'Home'],
+  ['modules', '☷', 'Modules'],
+  ['plan',    '◴', 'The Plan'],
+  ['tracks',  '⇄', 'Tracks']
+];
+function lpSideHTML() {
+  var el = document.getElementById('lpSide');
+  if (!el) return;
+  var h = '<div class="lp-wordmark">LAUNCH<span>PAD</span></div>';
+  LP_NAV.forEach(function (n) {
+    h += '<button class="lp-navbtn' + (LP_TAB === n[0] && !LP_VIEW ? ' on' : '') + '" onclick="lpTab(\'' + n[0] + '\')">'
+       + '<span class="lp-navi">' + n[1] + '</span>' + n[2] + '</button>';
   });
-
-  // Parallel tracks are mandatory and were the 40% hour error in v1. Show them.
-  var TRACKS = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
-  if (TRACKS.length) {
-    var th = TRACKS.reduce(function (a, t) { return a + t.hours }, 0);
-    h += '<div class="lp-layer"><span class="lp-ln">Parallel tracks</span>'
-       + '<span class="lp-lp">Mandatory, continuous, and counted — excluding these is what made v1 understate the commitment by 40%.</span>'
-       + '<span class="lp-lh">' + th + 'h</span></div>';
-    TRACKS.forEach(function (t) {
-      h += '<div class="lp-mod" style="cursor:default">';
-      h += '<div class="lp-mh"><span class="lp-mid">' + t.id + '</span>'
-         + '<span class="lp-mt">' + esc(t.title) + '</span>'
-         + '<span class="lp-mhr">' + (t.hours ? t.hours + 'h' : '0h') + '</span></div>';
-      h += '<div class="lp-meta"><span class="lp-dep">' + esc(t.cadence) + '</span></div>';
-      h += '<div class="lp-dp" style="margin-top:7px;font-size:11.5px;color:#6fae99">' + esc(t.rule) + '</div>';
-      h += '</div>';
-    });
-  }
-  h += '<div style="display:flex;gap:8px;margin:18px 0 6px">'
-     + '<button class="lp-back" style="flex:1;margin:0" onclick="lpExport()">\u2193 EXPORT PROGRESS</button>'
-     + '<button class="lp-back" style="flex:1;margin:0" onclick="lpTriggerImport()">\u2191 IMPORT</button></div>'
-     + '<input type="file" id="lpImportFile" accept="application/json" style="display:none" onchange="lpImport(event)">';
-  return h;
+  h += '<div class="lp-side-foot">Build it.<br>Explain it.<br>Ship it.</div>';
+  el.innerHTML = h;
 }
+function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
 
-// M0's first and most load-bearing artifact, made executable. The review's
-// second-biggest finding was that the headline hour count excluded the
-// parallel tracks and was ~40% low — so this never assumes a weekly number,
-// it derives what you would need and says when the honest answer is the Spine.
+function lpRing(pct) {
+  var r = 38, c = 2 * Math.PI * r;
+  return '<div class="lp-ring"><svg width="88" height="88" viewBox="0 0 88 88">'
+    + '<circle class="bg" cx="44" cy="44" r="' + r + '"/>'
+    + '<circle class="fg" cx="44" cy="44" r="' + r + '" stroke-dasharray="' + c + '" '
+    + 'stroke-dashoffset="' + (c * (1 - pct / 100)) + '"/></svg>'
+    + '<div class="lp-rtx"><div class="lp-rv">' + pct + '%</div><div class="lp-rk">READY</div></div></div>';
+}
+var LP_LAYER_ICON = ['◉','⚙','⚒','▲','⊞','✦','▣','➤','✔'];
+
 // Export/import parity with the other realms. Progress lives in localStorage,
-// which is one device and one browser profile — a cleared cache loses a year.
+// which is one device and one browser profile - a cleared cache loses a year.
 function lpExport() {
   try {
     var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup,
@@ -5179,14 +5213,13 @@ function lpExport() {
     var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url;
-    a.download = 'launchpad-backup-' + todayKey() + '.json';
+    a.href = url; a.download = 'launchpad-backup-' + todayKey() + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
     toast('LAUNCHPAD backup downloaded', 'ok');
   } catch (e) { toast('Export failed', 'warn'); }
 }
-function lpTriggerImport() { document.getElementById('lpImportFile').click(); }
+function lpTriggerImport() { var el = document.getElementById('lpImportFile'); if (el) el.click(); }
 function lpImport(ev) {
   var f = ev.target.files && ev.target.files[0];
   if (!f) return;
@@ -5197,8 +5230,7 @@ function lpImport(ev) {
       // Restoring a year of gates is not an undoable tap.
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
       LP_ST = { mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {} };
-      lpSave();
-      renderLaunchpad();
+      lpSave(); renderLaunchpad();
       toast('LAUNCHPAD progress restored', 'ok');
     } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
     ev.target.value = '';
@@ -5206,29 +5238,185 @@ function lpImport(ev) {
   r.readAsText(f);
 }
 
-function lpSetupHTML(API) {
+function lpHomeHTML(API) {
+  var P = lpProgress(), sum = API.progressSummary(P), pl = API.plan(LP_ST.setup || {});
+  var avail = API.available(P);
+
+  var h = '<div class="lp-hero">';
+  h += '<div class="lp-greet">Welcome back,</div>';
+  h += '<div class="lp-name">Future Engineer</div>';
+  h += '<div class="lp-sub">You do not advance by reading. You advance by shipping a working thing '
+     + 'and being able to explain it out loud.</div>';
+  h += '<div class="lp-heroBar"><span style="width:' + sum.pct + '%"></span></div>';
+  h += '</div>';
+
+  h += '<div class="lp-cols"><div>';
+
+  // Readiness: one bar per layer, plus the overall ring.
+  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Mission progress</div>'
+     + '<div class="lp-cmeta">Overall readiness</div></div><div class="lp-ready"><div class="lp-bars">';
+  (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).forEach(function (Lr) {
+    var mods = API.byLayer(Lr.id); if (!mods.length) return;
+    var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
+    var got = mods.reduce(function (a, m) { return a + ((P[m.id] && P[m.id].gate) ? m.hours : 0) }, 0);
+    var pct = tot ? Math.round(got / tot * 100) : 0;
+    h += '<div class="lp-brow"><div class="lp-bico">' + (LP_LAYER_ICON[Lr.id] || '◆') + '</div>'
+       + '<div class="lp-bwrap"><div class="lp-blab">' + esc(Lr.name) + '</div>'
+       + '<div class="lp-btr"><span style="width:' + pct + '%"></span></div></div>'
+       + '<div class="lp-bpct">' + pct + '%</div></div>';
+  });
+  h += '</div>' + lpRing(sum.pct) + '</div></div>';
+
+  // Layer cards - the navigation complaint was that everything lived in one scroll.
+  (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).forEach(function (Lr) {
+    var mods = API.byLayer(Lr.id); if (!mods.length) return;
+    var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
+    var done = mods.filter(function (m) { return P[m.id] && P[m.id].gate }).length;
+    var pct = mods.length ? Math.round(done / mods.length * 100) : 0;
+    h += '<div class="lp-lay"><div class="lp-layh"><div class="lp-layi">'
+       + (LP_LAYER_ICON[Lr.id] || '◆') + '</div><div style="flex:1;min-width:0">'
+       + '<div class="lp-layt">L' + Lr.id + ' · ' + esc(Lr.name) + '</div>'
+       + '<div class="lp-layd">' + esc(Lr.purpose) + '</div></div></div>';
+    h += '<div class="lp-mods">';
+    mods.forEach(function (m) {
+      var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
+      h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '">'
+         + '<span class="lp-dot"></span>' + esc(m.title) + '</div>';
+    });
+    h += '</div><div class="lp-layf">'
+       + '<button class="lp-go" onclick="lpTab(\'modules\')">Continue →</button>'
+       + '<div class="lp-pctlab">' + done + '/' + mods.length + ' · ' + tot + 'h · ' + pct + '% complete</div>'
+       + '</div></div>';
+  });
+  h += '</div><div>';
+
+  // Right rail
+  h += '<div class="lp-quote"><div class="lp-qt">"A gate with no referee is decorative."</div>'
+     + '<div class="lp-qa">— Rule 1</div></div>';
+
+  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Available now</div>'
+     + '<div class="lp-cmeta">' + avail.length + ' open</div></div>';
+  if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
+  avail.slice(0, 5).forEach(function (m) {
+    h += '<div class="lp-task" onclick="lpOpen(\'' + m.id + '\')">'
+       + '<span class="lp-box"></span><div><div class="lp-tt">' + esc(m.title) + '</div>'
+       + '<div class="lp-ts">' + m.id + ' · ' + m.hours + 'h · ' + m.kind + '</div></div></div>';
+  });
+  h += '</div>';
+
+  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">The numbers</div></div>';
+  [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
+   ['Hours logged', sum.hoursDone + ' of ' + sum.hoursTotal],
+   ['Artifacts built', String(sum.artifactsDone)],
+   ['DELTAs written', String(sum.deltasDone)],
+   ['Critical path', API.criticalPath().hours + 'h'],
+   ['Your plan', pl.recommend === 'unset' ? 'not set' :
+      (pl.recommend === 'spine' ? 'Compressed Spine' : 'Full program')]
+  ].forEach(function (r) {
+    h += '<div class="lp-link" style="cursor:default"><div class="lp-lkt" style="flex:1">' + r[0] + '</div>'
+       + '<div class="lp-mhr">' + esc(r[1]) + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Quick tools</div></div>'
+     + '<button class="lp-link" onclick="lpTab(\'plan\')"><span class="lp-lki">◴</span>'
+     + '<div><div class="lp-lkt">The Plan</div><div class="lp-lks">Runway, hours, which program</div></div>'
+     + '<span class="lp-arrow">›</span></button>'
+     + '<button class="lp-link" onclick="lpTab(\'tracks\')"><span class="lp-lki">⇄</span>'
+     + '<div><div class="lp-lkt">Parallel tracks</div><div class="lp-lks">The 10 continuous habits</div></div>'
+     + '<span class="lp-arrow">›</span></button>'
+     + '<button class="lp-link" onclick="lpExport()"><span class="lp-lki">↓</span>'
+     + '<div><div class="lp-lkt">Export progress</div><div class="lp-lks">Back up to a file</div></div>'
+     + '<span class="lp-arrow">›</span></button>'
+     + '<button class="lp-link" onclick="lpTriggerImport()"><span class="lp-lki">↑</span>'
+     + '<div><div class="lp-lkt">Import</div><div class="lp-lks">Restore from a backup</div></div>'
+     + '<span class="lp-arrow">›</span></button>'
+     + '<input type="file" id="lpImportFile" accept="application/json" style="display:none" onchange="lpImport(event)">'
+     + '</div>';
+
+  h += '</div></div>';
+  return h;
+}
+
+function lpModulesHTML(API) {
+  var P = lpProgress(), fg = API.flagshipGate(P);
+  var avail = API.available(P).map(function (m) { return m.id });
+  var h = '<div class="lp-hero" style="padding:20px"><div class="lp-greet">All 31 modules, in build order</div>'
+        + '<div class="lp-name" style="font-size:24px">Modules</div>'
+        + '<div class="lp-sub">Locked until every module it depends on has its gate passed. '
+        + 'The longest path, not the hour sum, sets your timeline.</div></div>';
+
+  (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).forEach(function (Lr) {
+    var mods = API.byLayer(Lr.id); if (!mods.length) return;
+    if (Lr.id === 4) {
+      h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
+      h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
+      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It gates twelve modules and '
+         + 'it is the only prerequisite here that cannot be satisfied by working harder.</div>';
+      fg.items.forEach(function (it) {
+        var on = !!LP_ST.flagship[it.key];
+        h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpFlag(\'' + it.key + '\')">'
+           + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
+      });
+      h += '</div>';
+    }
+    var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
+    h += '<div class="lp-ch" style="margin:22px 0 10px"><div class="lp-ct">L' + Lr.id + ' · ' + esc(Lr.name)
+       + '</div><div class="lp-cmeta">' + tot + 'h</div></div>';
+    mods.forEach(function (m) {
+      var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
+      h += '<button class="lp-mod' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '"'
+         + (un ? ' onclick="lpOpen(\'' + m.id + '\')"' : ' disabled') + '>';
+      h += '<div class="lp-mh"><span class="lp-mid">' + m.id + '</span>'
+         + '<span class="lp-mt">' + esc(m.title) + '</span>'
+         + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">EVID' : 'lab">LAB') + '</span>'
+         + '<span class="lp-mhr">' + m.hours + 'h</span></div>';
+      h += '<div class="lp-meta">';
+      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-tag">OWNS ' + esc(o.toUpperCase()) + '</span>'; });
+      if (m.trigger) h += '<span class="lp-tag">BY TRIGGER</span>';
+      if (avail.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag">OPEN NOW</span>';
+      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites') + '</span>';
+      h += '</div><div class="lp-steps">'
+         + '<span class="lp-step' + (pr.delta ? ' on' : '') + '"></span>'
+         + '<span class="lp-step' + (pr.artifact ? ' on' : '') + '"></span>'
+         + '<span class="lp-step' + (pr.gate ? ' on' : '') + '"></span></div></button>';
+    });
+  });
+  return h;
+}
+
+function lpTracksHTML(API) {
+  var T = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
+  var th = T.reduce(function (a, t) { return a + t.hours }, 0);
+  var h = '<div class="lp-hero" style="padding:20px"><div class="lp-greet">Continuous, mandatory, and counted</div>'
+        + '<div class="lp-name" style="font-size:24px">Parallel tracks</div>'
+        + '<div class="lp-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
+        + 'version understate the commitment by 40%.</div></div>';
+  T.forEach(function (t) {
+    h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">' + t.id + ' · ' + esc(t.title) + '</div>'
+       + '<div class="lp-cmeta">' + (t.hours ? t.hours + 'h' : 'free') + '</div></div>'
+       + '<div class="lp-dp" style="margin-bottom:8px;color:#5b7fa6">' + esc(t.cadence) + '</div>'
+       + '<div class="lp-dp">' + esc(t.rule) + '</div></div>';
+  });
+  return h;
+}
+
+function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
-  var pl = API.plan(st);
-  var unset = pl.recommend === 'unset';
-  var warn  = pl.recommend === 'spine' || pl.recommend === 'full-tight';
-
-  var h = '<div class="lp-set' + (warn ? ' warn' : '') + '" id="lpSetup">';
-  h += '<div class="lp-gt" style="color:' + (warn ? '#38bdf8' : '#00e5a0') + '">M0 \u00B7 THE CONTRACT</div>';
-  h += '<div class="lp-gs">Runway sets the deadline \u2014 not the topic list. Nothing else is scheduled '
-     + 'until these exist, and the weekly number is derived, never assumed.</div>';
-
+  var h = '<div class="lp-hero" style="padding:20px"><div class="lp-greet">M0 · the only module with authority</div>'
+        + '<div class="lp-name" style="font-size:24px">The Plan</div>'
+        + '<div class="lp-sub">Runway sets the deadline — not the topic list. The weekly number is '
+        + 'derived here, never assumed.</div></div>';
+  h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
   h += '<div class="lp-f"><label>Runway (months)</label><input type="number" inputmode="decimal" min="0" '
      + 'value="' + (st.runwayMonths || '') + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
   h += '<div class="lp-f"><label>Hours / week</label><input type="number" inputmode="decimal" min="0" '
      + 'value="' + (st.weeklyHours || '') + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f wide"><label>The flagship \u2014 twelve modules bolt onto it</label>'
+  h += '<div class="lp-f wide"><label>The flagship — twelve modules bolt onto it</label>'
      + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
-  h += '</div>';
-
-  h += '<div id="lpVerdict">' + lpVerdictHTML(API) + '</div>';
-  h += '</div>';
+  h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
   return h;
 }
 
@@ -5237,51 +5425,48 @@ function lpVerdictHTML(API) {
   var unset = pl.recommend === 'unset';
   var h = '';
   if (!unset) {
-    var fullOn  = (pl.recommend === 'full' || pl.recommend === 'full-tight');
+    var fullOn = (pl.recommend === 'full' || pl.recommend === 'full-tight');
     h += '<div class="lp-paths">';
     h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
-       + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '\u2014') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.fullHours + 'h \u00B7 needs '
-       + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '\u2014') + ' h/wk to fit your runway</div></div>';
+       + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo</div>'
+       + '<div class="lp-ps">' + pl.fullHours + 'h · needs '
+       + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '—') + ' h/wk to fit your runway</div></div>';
     h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
-       + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '\u2014') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.spineHours + 'h \u00B7 needs '
-       + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '\u2014') + ' h/wk</div></div>';
+       + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo</div>'
+       + '<div class="lp-ps">' + pl.spineHours + 'h · needs '
+       + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '—') + ' h/wk</div></div>';
     h += '</div>';
   }
-
-  h += '<div class="lp-verdict">';
-  h += '<div class="lp-vrec">' + (unset ? '\u25A0 INCOMPLETE'
-        : pl.recommend === 'spine' ? '\u25B2 TAKE THE SPINE'
-        : pl.recommend === 'full-tight' ? '\u25B2 TIGHT \u2014 RAISE HOURS OR TAKE THE SPINE'
-        : '\u25B2 FULL PROGRAM FITS') + '</div>';
+  h += '<div class="lp-vrec">' + (unset ? '■ INCOMPLETE'
+        : pl.recommend === 'spine' ? '▲ TAKE THE SPINE'
+        : pl.recommend === 'full-tight' ? '▲ TIGHT — RAISE HOURS OR TAKE THE SPINE'
+        : '▲ FULL PROGRAM FITS') + '</div>';
   h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
   if (!unset) {
-    h += '<div class="lp-vwhy" style="color:#6fae99;margin-top:9px">Applications start after Layers 0\u20132 \u2014 '
+    h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0–2 — '
        + pl.applyAfterHours + 'h in, roughly month '
        + (pl.weeklyHours ? Math.max(1, Math.round(pl.applyAfterHours / pl.weeklyHours / 4.345)) : '?')
-       + '. Not when everything is finished. Ten real interviews re-rank this curriculum better than any plan does.</div>';
+       + '. Not when everything is finished.</div>';
   }
-  h += '</div>';
   return h;
 }
 
 function lpDetailHTML(API, id) {
   var m = API.byId(id);
-  if (!m) return '<div class="lp-det">Unknown module.</div>';
-  var pr = LP_ST.mods[id] || {};
+  if (!m) return '<div class="lp-card">Unknown module.</div>';
+  var pr = (LP_ST.mods && LP_ST.mods[id]) || {};
 
-  var h = '<button class="lp-back" onclick="lpBack()">← MODULE MAP</button>';
-  h += '<div class="lp-hero" style="margin-bottom:14px">';
-  h += '<div class="lp-ey">' + m.id + ' · ' + m.hours + ' focused hours · ' + m.kind + '</div>';
-  h += '<div class="lp-t">' + esc(m.title) + '</div>';
-  h += '<div class="lp-s">' + (m.dependsOn.length ? 'Depends on ' + m.dependsOn.join(', ') + '.' : 'No prerequisites.')
+  var h = '<button class="lp-back" onclick="lpTab(\'modules\')">← ALL MODULES</button>';
+  h += '<div class="lp-hero" style="padding:20px;margin-bottom:16px">';
+  h += '<div class="lp-greet">' + m.id + ' · ' + m.hours + ' focused hours · ' + m.kind + '</div>';
+  h += '<div class="lp-name" style="font-size:25px">' + esc(m.title) + '</div>';
+  h += '<div class="lp-sub">' + (m.dependsOn.length ? 'Depends on ' + m.dependsOn.join(', ') + '.' : 'No prerequisites.')
      + (m.owns ? ' Owns ' + m.owns.join(', ') + ' for the whole curriculum.' : '') + '</div>';
-  if (m.trigger) h += '<div class="lp-warn" style="margin-top:12px"><b>TRIGGER</b><br>' + esc(m.trigger) + '</div>';
-  if (m.currency) h += '<div class="lp-warn" style="margin-top:12px"><b>CURRENCY</b><br>' + esc(m.currency) + '</div>';
+  if (m.trigger) h += '<div class="lp-warn"><b>TRIGGER</b><br>' + esc(m.trigger) + '</div>';
+  if (m.currency) h += '<div class="lp-warn"><b>CURRENCY</b><br>' + esc(m.currency) + '</div>';
   h += '</div>';
 
-  h += '<div class="lp-det">';
+  h += '<div class="lp-cols"><div><div class="lp-card">';
   if (m.concepts && m.concepts.length) {
     h += '<div class="lp-dl">What you need to understand</div><div class="lp-con">';
     m.concepts.forEach(function (c) { h += '<div>' + esc(c) + '</div>'; });
@@ -5289,15 +5474,15 @@ function lpDetailHTML(API, id) {
   }
   h += '<div class="lp-dl">The artifact you build</div><div class="lp-dp">' + esc(m.artifact) + '</div>';
   if (m.checkpoints && m.checkpoints.length) {
-    h += '<div class="lp-dl">Checkpoints — each a legitimate stopping point in a bad week</div>';
-    h += '<div class="lp-dp">' + m.checkpoints.map(function (c, i) { return (i + 1) + '. ' + esc(c) }).join('<br>') + '</div>';
+    h += '<div class="lp-dl">Checkpoints — each a legitimate stopping point in a bad week</div><div class="lp-con">';
+    m.checkpoints.forEach(function (c, i) { h += '<div>' + (i + 1) + '. ' + esc(c) + '</div>'; });
+    h += '</div>';
   }
-  if (m.exports) {
-    h += '<div class="lp-dl">Exported to later modules</div><div class="lp-dp">' + esc(m.exports.join(' · ')) + '</div>';
-  }
-  h += '<div class="lp-dl">The gate</div>';
-  h += '<div class="lp-ref"><b>REFEREE</b><p>' + esc(m.gate.referee) + '</p>'
+  if (m.exports) h += '<div class="lp-dl">Exported to later modules</div><div class="lp-dp">' + esc(m.exports.join(' · ')) + '</div>';
+  h += '<div class="lp-dl">The gate</div><div class="lp-ref">'
+     + '<b>REFEREE</b><p>' + esc(m.gate.referee) + '</p>'
      + '<b>PASS</b><p>' + esc(m.gate.pass) + '</p>'
+     + (m.gate.unseen ? '<b>UNSEEN-INSTANCE CONDITION</b><p>' + esc(m.gate.unseen) + '</p>' : '')
      + '<b>ON FAIL</b><p>' + esc(m.gate.onFail) + '</p></div>';
   if (m.mistakes && m.mistakes.length) {
     h += '<div class="lp-dl">What most people get wrong here</div><div class="lp-mist">';
@@ -5305,20 +5490,19 @@ function lpDetailHTML(API, id) {
     h += '</div>';
   }
   if (m.note) h += '<div class="lp-warn"><b>NOTE</b><br>' + esc(m.note) + '</div>';
-  h += '</div>';
+  h += '</div></div><div>';
 
-  h += '<div class="lp-gate' + (pr.gate ? '' : ' shut') + '">';
-  h += '<div class="lp-gt">Progress</div>';
-  h += '<div class="lp-gs">Three steps, in order. The gate is what unlocks everything downstream, '
-     + 'so it is the one claim worth making carefully.</div>';
-  [['delta','DELTA.md written — primary sources read, changes recorded'],
+  h += '<div class="lp-card"><div class="lp-ch"><div class="lp-ct">Progress</div></div>'
+     + '<div class="lp-dp" style="margin-bottom:10px;color:#5b7fa6">Three steps, in order. The gate unlocks '
+     + 'everything downstream, so it is the one claim worth making carefully.</div>';
+  [['delta','DELTA.md written — primary sources read'],
    ['artifact','Artifact built and running'],
    ['gate','Gate passed — a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
     h += '<div class="lp-chk' + (on ? ' on' : '') + '" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
        + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + st[1] + '</div>';
   });
-  h += '</div>';
+  h += '</div></div></div>';
   return h;
 }
 
@@ -5389,7 +5573,7 @@ var WARP_PAL = {
   apex:     { bg:'#020509', cols:['#00d4ff','#4db8ff','#9ff1ff','#ffffff'], glyph:'■' },
   obsidian: { bg:'#000000', cols:['#ffffff','#d8d8d8','#a9a9a9','#7a7a7a'], glyph:'◆' },
   redline:  { bg:'#080404', cols:['#ff3b30','#ff8a3c','#ffb020','#ffffff'], glyph:'▲' },
-  launchpad:{ bg:'#02100c', cols:['#00e5a0','#34d8b4','#7dd3fc','#ffffff'], glyph:'\u2B22' }
+  launchpad:{ bg:'#050b16', cols:['#4db8ff','#00d4ff','#7dd3fc','#ffffff'], glyph:'\u2B22' }
 };
 var WARP_ON = false;
 function launchRealm(name, btn) {

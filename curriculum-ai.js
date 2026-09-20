@@ -384,7 +384,7 @@ var LAUNCHPAD_CONFIG = {
   name: 'AI Product Engineering',
   tag: 'HIREABLE · REMOTE · PRODUCTION',
   tagline: 'Every module ends in something you built and can explain out loud.',
-  accent: '#00e5a0',
+  accent: '#4db8ff',
   glyph: '⬢',
   key: 'apex_launchpad_v1',
   // The three rules a learner most often breaks, surfaced in the UI rather than buried.
