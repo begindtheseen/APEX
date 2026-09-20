@@ -5618,7 +5618,14 @@ function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRIC
 function lpLoad() {
   try {
     var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
-    LP_ST = { mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {} };
+    LP_ST = { mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {}, ids: raw.ids || 1 };
+    // Modules were renumbered once, into ladder order. Progress saved under the
+    // old ids is carried across on first load and the map version is stamped.
+    if (LP_ST.ids < 2) {
+      var OLD = {"M0A": "M1", "M0B": "M2", "M1": "M3", "M2": "M4", "M4": "M5", "M9": "M6", "M3": "M7", "M5": "M8", "M6": "M9", "M7": "M10", "M10": "M11", "M11": "M12", "M21": "M13", "M12": "M14", "M13": "M15", "M14": "M16", "M15": "M17", "M16": "M18", "M17": "M19", "M18": "M20", "M19": "M21", "M20": "M22", "M22": "M23", "M8": "M24", "M23": "M25", "M24": "M26", "M25": "M27", "M26": "M28", "M27": "M29", "M28": "M30", "M29": "M31", "M30": "M32"}, moved = {};
+      for (var k in LP_ST.mods) moved[OLD[k] || k] = LP_ST.mods[k];
+      LP_ST.mods = moved; LP_ST.ids = 2; lpSave();
+    }
   } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{} }; }
 }
 function lpSave() {
@@ -6242,7 +6249,7 @@ function lpHomeHTML(API) {
        + 'harness that gates its own CI, measured cost per completed task, three references who have seen '
        + 'you work, and a resume where every claim points at a repo.</div>'
        + '<div class="lp-dp" style="color:#8ab4dd">What is left is not a module. Keep the tracks running, '
-       + 'keep the estimate log going against real tickets, and re-read M29 and M30 on the day you start.</div>';
+       + 'keep the estimate log going against real tickets, and re-read M31 and M32 on the day you start.</div>';
   } else if (!avail.length) {
     h += '<div class="lp-dp">Nothing open. Every module here depends on one you have not passed yet — '
        + 'the ladder shows which.</div>';
@@ -6325,7 +6332,7 @@ function lpModulesHTML(API) {
       h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
       h += '<div class="lp-gs">Layer 4 does not start until all four are true. It holds back twelve modules and '
          + 'it is the only requirement here that cannot be met by working harder. '
-         + 'Each line will make sense by M11; for now it is the reason the middle of the ladder is locked.</div>';
+         + 'Each line will make sense by M12; for now it is the reason the middle of the ladder is locked.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
         h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
@@ -6395,10 +6402,10 @@ function lpModulesHTML(API) {
 function lpTracksHTML(API) {
   var T = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
   var th = T.reduce(function (a, t) { return a + t.hours }, 0);
-  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Continuous, mandatory, and counted</span></div>'
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Run the whole way, counted in the total</span></div>'
         + '<div class="lx-title">Parallel tracks</div>'
-        + '<div class="lx-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
-        + 'version understate the commitment by 40%.</div></div>';
+        + '<div class="lx-sub">' + th + ' hours that run alongside the modules, from start to hired. '
+        + 'They are in the headline total because they are real work, not extras.</div></div>';
   h += '<div class="lp-cols"><div>';
   T.forEach(function (t) {
     h += '<div class="lp-card lp-rc lp-tk"><div class="lp-ch"><div class="lp-ct">' + esc(t.title) + '</div>'
@@ -6410,8 +6417,8 @@ function lpTracksHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.loop
      + 'WHY THESE ARE SEPARATE</div></div>';
   [['They never finish', 'A module ends at a gate. A track runs the whole way.'],
-   ['They are counted', 'Their hours are in the headline total, because leaving them out understated it by 40%.'],
-   ['They are not optional', 'The job search and the OSS contributions are the two that get you hired.']
+   ['They are counted', 'Their hours are in the headline total. Left out, the total would read 40% too low.'],
+   ['They are not optional', 'The job search and the open-source contributions are the two that get you hired.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
   });
@@ -6430,10 +6437,10 @@ function lpTracksHTML(API) {
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
   var pl2 = API.plan(st);
-  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">M0 · the only module with authority</span></div>'
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Two numbers that decide everything else</span></div>'
         + '<div class="lx-title">The Plan</div>'
-        + '<div class="lx-sub">Runway sets the deadline — not the topic list. The weekly number is '
-        + 'derived here, never assumed.</div></div>';
+        + '<div class="lx-sub">How many months you can go without a paycheck, and how many hours a week you can truly give. '
+        + 'Those two numbers set your deadline and which program you follow. Nothing else does.</div></div>';
   h += '<div class="lp-cols"><div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
@@ -6441,7 +6448,7 @@ function lpPlanHTML(API) {
      + 'value="' + (st.runwayMonths || '') + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
   h += '<div class="lp-f"><label>Hours / week</label><input type="number" inputmode="decimal" min="0" '
      + 'value="' + (st.weeklyHours || '') + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f wide"><label>The flagship — twelve modules bolt onto it</label>'
+  h += '<div class="lp-f wide"><label>Your flagship — the one app you keep building</label>'
      + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
   h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
@@ -6461,10 +6468,10 @@ function lpPlanHTML(API) {
   }
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
      + 'WHAT THIS DECIDES</div></div>';
-  [['Your deadline', 'Runway divided by the hours you can actually commit. Not a guess.'],
+  [['Your deadline', 'What your runway and your weekly hours allow. Worked out, not guessed.'],
    ['Which program', 'The full ' + API.totalHours().count + ' modules, or the '
      + AI_COMPRESSED_SPINE.length + '-module spine if the runway is short.'],
-   ['When you apply', 'After Layers 0-2, not when everything is finished.']
+   ['When you apply', 'After Layer 2, not when everything is finished. The date goes in your plan now.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
   });
