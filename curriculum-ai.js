@@ -61,6 +61,11 @@ var AI_SPIRAL_PAIRS = [
   ['M3', 'M13', 'trust boundary']
 ];
 
+// Where the owning module sits in its own pair. Not uniform, which is the whole
+// reason this has to be written down: 0 for the trust boundary and observability,
+// 1 for cost. validate() checks it, so flipping a pair fails loudly.
+var AI_SPIRAL_OWNER_POS = { 'trust boundary': 0, 'observability': 0, 'cost': 1 };
+
 // The canonical numbered rules. One list, here, so the document and the product
 // cannot number them differently. LAUNCHPAD_CONFIG.creed below is a three-line
 // restatement of rules 1, 2 and 5 for the header; it is not a second numbering.
@@ -78,9 +83,9 @@ var AI_CURRICULUM = [
 { id:'M0', layer:0, hours:12, dependsOn:[], kind:'LAB',
   title:'The Contract Page',
   note:'There is no code in this module, and you are not expected to know any. It is twelve hours of writing one page about money, time and people. Code starts in the very next module, M1, which is fifty-eight hours of terminal, variables, loops, errors and git — the actual basics, from an empty file. This one comes first for a single reason: how many months you can pay your bills decides what you can finish, and everything else on this page is worked out from that number. Deciding it after you have built something is how people run out of money in month nine with a half-finished portfolio. Nothing here needs a project, an idea, or a line of code. If a line asks for something you cannot judge yet — what an app should do, whether a posting is a good one — write your honest guess and mark it to revisit; the monthly re-plan exists to correct it.',
-  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. First, the money. How many months you can go without a paycheck, which is your runway \u2014 and then, on the line under it, what this program itself costs you every month, subtracted from that runway to give the runway you actually have. Write the running cost down as a number: model spend (M2, M6 and M12 are steady; M18 and M19 are the expensive ones, because they run a corpus and hundreds of adversarial inputs through a model), hosting for the flagship once it is live, a paid tier anywhere a module needs one (a payment processor in test mode is free, error tracking and a cloud account usually are not), and, if you are paying for review or mock interviews, that too. Guess it now, correct it at every monthly re-plan, and treat the corrected number as a claim on your runway, because it is one. A program whose founding argument is that runway sets the deadline cannot leave the outflow out of the arithmetic. Second, how many hours a week you can truly give this, and the deadline those two numbers force. Third, the date you will start applying for jobs: a target you pick now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date \u2014 if M10 has not passed when the target arrives, you apply anyway with what you have and write down in that month\u2019s re-plan what you are applying without. Fourth, twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. Fifth, a count of how many of the twenty ask for Python (if eight or more do, the Python modules M24 and M25 move earlier in the order you plan; expect this to fire). The ladder in this app does not rearrange itself — it opens on prerequisites, and M24 still waits on M9 and the hard gate. What moves is your plan: write the alternate ordering down on this page, and do Python first among whatever is open once you get there. Sixth, three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. Be honest with yourself about this one on day one: the gates in this program need either a budget for paid review and paid mock interviews, or two working engineers who will give you real time for a year. If you have neither today, the first thing you build is that, and it can take a month; put that month in the plan rather than discovering it at M3. Seventh, a dated list of what you can do today, which on day one is honestly "nothing yet". Eighth, a file called INCIDENTS.md with one line every time something goes wrong from here on. Ninth, a date in month four by which a dozen people you found will have used your flagship. Two of those is what the hard gate requires, and M2’s own gate gets you those; the dozen is the target that makes the traces M10 and M12 read worth anything. The flagship is the one app you will build in month two and keep improving for the rest of the program. And tenth, a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
+  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. First, the money. How many months you can go without a paycheck, which is your runway \u2014 and then, on the line under it, what this program itself costs you every month, subtracted from that runway to give the runway you actually have. Write the running cost down as a number: model spend (M2, M6 and M12 are steady; M18 and M19 are the expensive ones, because they run a corpus and hundreds of adversarial inputs through a model), hosting for the flagship once it is live, a paid tier anywhere a module needs one (a payment processor in test mode is free, error tracking and a cloud account usually are not), and, if you are paying for review or mock interviews, that too. Guess it now, correct it at every monthly re-plan, and treat the corrected number as a claim on your runway, because it is one. A program whose founding argument is that runway sets the deadline cannot leave the outflow out of the arithmetic. Second, the hour budget — 1,108 module hours plus 470 track hours, 1,578 in all — added up yourself rather than copied across, because a budget you have not computed is one you cannot defend and a wrong total here is the exact class of error this module exists to prevent. Then how many hours a week you can truly give this, and the deadline those two numbers force. Third, the date you will start applying for jobs: a target you pick now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date \u2014 if M10 has not passed when the target arrives, you apply anyway with what you have and write down in that month\u2019s re-plan what you are applying without. Fourth, twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. Fifth, a count of how many of the twenty ask for Python (if eight or more do, the Python modules M24 and M25 move earlier in the order you plan; expect this to fire). The ladder in this app does not rearrange itself — it opens on prerequisites, and M24 still waits on M9 and the hard gate. What moves is your plan: write the alternate ordering down on this page, and do Python first among whatever is open once you get there. Sixth, three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. Be honest with yourself about this one on day one: the gates in this program need either a budget for paid review and paid mock interviews, or two working engineers who will give you real time for a year. If you have neither today, the first thing you build is that, and it can take a month; put that month in the plan rather than discovering it at M3. Seventh, a dated list of what you can do today, which on day one is honestly "nothing yet". Eighth, a file called INCIDENTS.md with one line every time something goes wrong from here on. Ninth, a date in month four by which a dozen people you found will have used your flagship. Two of those is what the hard gate requires, and M2’s own gate gets you those; the dozen is the target that makes the traces M10 and M12 read worth anything. The flagship is the one app you will build in month two and keep improving for the rest of the program. And tenth, a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
   gate:{ referee:'Anyone \u2014 a friend, a partner, a sibling \u2014 who reads your one page and hands it back.',
-         pass:'They can say your runway, your monthly running cost, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
+         pass:'They can say your runway, your monthly running cost, your hour budget, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
          onFail:'This one cannot be failed by lack of skill, only by not finishing it. Name the line your referee could not repeat back, finish that line, and read the page to them again. Nothing else opens until they can.' } },
 
 { id:'M1', layer:0, hours:58, dependsOn:['M0'], kind:'LAB',
@@ -187,7 +192,7 @@ var AI_CURRICULUM = [
   artifact:'One harness, and only one: Postgres + a TypeScript runner, no platform. 100 hand-read labeled traces in four sessions of 25. Named failure taxonomy with counts. Assertion graders. A judge with a measured confusion matrix. Inter-annotator agreement — the reviewer labels 30 using nothing but your written rubric; where you disagree the rubric gets revised, not the labels. Dev/test split at creation. Tiered CI gate: a smoke set of about fifteen cases on every push, full set nightly, recorded-fixture mode so graders cost $0, a per-run dollar ceiling in the job summary, fail condition as a statistical threshold with its bootstrap CI. Then a deliberate model-family migration gated only by your own eval set. Plus stats-lab: the four statistical tests this program actually consumes, each run once against your own data. Base rates, and why accuracy lies when failures are rare. The confusion matrix, with TPR and TNR computed by hand on your own 100 labeled traces. Percentiles from a raw latency array, and why averaging percentiles is wrong. And bootstrap resampling written from scratch, which is what tells you how many labeled examples you need before a delta means anything.',
   exports:['dataset table, assertion graders, calibrated judge -> M18, M19, M23, M25'],
   gate:{ referee:'Your reviewer, handing you a prompt change that is scored against the test set you have not opened.',
-         pass:'Ship/no-ship with a bootstrap CI. State judge TPR/TNR together with human-to-human agreement. Name the criterion that produced the most disagreement and how you rewrote it. Break the gate on purpose on a branch and keep the red check — a rehearsal, and labeled as one, because waiting for a real regression to arrive before gate day is not something you can schedule. If a real regression fires it later, replace the screenshot with that one.',
+         pass:'Ship/no-ship with a bootstrap CI. State judge TPR/TNR together with human-to-human agreement — corrected for chance, not as a raw percentage, because on a skewed label set two annotators who pass everything agree ninety per cent of the time and have agreed about nothing (Cohen’s κ is the usual measure; say which you used). Name the criterion that produced the most disagreement and how you rewrote it. Break the gate on purpose on a branch and keep the red check — a rehearsal, and labeled as one, because waiting for a real regression to arrive before gate day is not something you can schedule. If a real regression fires it later, replace the screenshot with that one.',
          onFail:'Your judge is uncalibrated. Re-label 30 traces and recompute.' },
   note:'Break your own eval gate once on purpose, on a branch, and watch it block the merge. A gate that has never fired looks exactly like one that is wired up wrong.' },
 
@@ -438,8 +443,12 @@ var AI_CURRICULUM_API = {
   byLayer: function (n) { return AI_CURRICULUM.filter(function (m) { return m.layer === n }) },
 
   // A module is available when every module it depends on has its GATE passed.
-  // A trigger-scheduled module with no dependencies opens from day one; the ones
-  // with dependencies wait for them like any other module.
+  // Trigger-scheduled modules are no exception: every one of them carries a
+  // dependsOn today, and it is enforced here like any other module's. There is
+  // deliberately no "trigger modules float free" branch — one used to sit here,
+  // it was unreachable, and it would have opened a module before M0 the moment
+  // anyone set a trigger module's dependsOn to []. validate() asserts the
+  // invariant instead, so the trap cannot be re-armed silently.
   isUnlocked: function (id, progress) {
     var m = this.byId(id);
     if (!m) return false;
@@ -447,7 +456,6 @@ var AI_CURRICULUM_API = {
     // Rendering the checklist without consulting it here left the gate
     // decorative, which is the one thing the creed says a gate must not be.
     if (m.layer >= 4 && m.layer <= 6 && !this.flagshipGate(progress).open) return false;
-    if (m.trigger && m.dependsOn.length === 0) return true;
     return m.dependsOn.every(function (d) {
       return progress && progress[d] && progress[d].gate;
     });
@@ -698,9 +706,12 @@ var AI_CURRICULUM_API = {
       m.dependsOn.forEach(function (d) {
         if (ids.indexOf(d) === -1) errors.push(m.id + ' depends on unknown module ' + d);
       });
-      // Rule 2: every module except M0 and the trigger-scheduled ones needs an inbound edge.
-      if (m.dependsOn.length === 0 && m.id !== 'M0' && !m.trigger) {
-        errors.push('Graph check: ' + m.id + ' has no inbound dependency and no trigger');
+      // Rule 2: every module except M0 needs an inbound edge — trigger modules
+      // included. They are scheduled by a date rather than by the row above them,
+      // but they still wait on their dependsOn, and isUnlocked() has no branch
+      // that would let an empty one open early.
+      if (m.dependsOn.length === 0 && m.id !== 'M0') {
+        errors.push('Graph check: ' + m.id + ' has no inbound dependency');
       }
       if (!m.gate || !m.gate.referee || !m.gate.pass || !m.gate.onFail) {
         errors.push(m.id + ' gate is missing referee / pass / onFail');
@@ -745,6 +756,21 @@ var AI_CURRICULUM_API = {
     AI_OWNED_THEN_DEEPENED.forEach(function (c) {
       if (spiralConcepts.indexOf(c) === -1) {
         errors.push('Spiral check: "' + c + '" is listed as deepened later but names no spiral pair');
+      }
+    });
+    // Membership alone cannot catch a flipped pair, and direction is not uniform:
+    // the owner teaches first for the trust boundary and observability, second for
+    // cost. Name the expected position so a reversal fails instead of reading fine.
+    AI_OWNED_THEN_DEEPENED.forEach(function (c) {
+      var pair = null;
+      AI_SPIRAL_PAIRS.forEach(function (p) { if (p[2] === c) pair = p });
+      if (!pair) return;
+      var want = AI_SPIRAL_OWNER_POS[c];
+      if (want === undefined) {
+        errors.push('Spiral check: "' + c + '" names no expected owner position');
+      } else if (pair[want] !== AI_OWNED_CONCEPTS[c]) {
+        errors.push('Spiral check: "' + c + '" is ' + pair[0] + ' → ' + pair[1] + ', but ' +
+          AI_OWNED_CONCEPTS[c] + ' owns it and belongs at position ' + want);
       }
     });
     Object.keys(AI_OWNED_CONCEPTS).forEach(function (c) {
@@ -1614,7 +1640,7 @@ M28:[
  ['Resume','A one- or two-page summary of your work and skills, sent to every job you apply for. Here every line on it points at a repo where a reader can check it.'],
  ['Application','One attempt at one job: your resume plus whatever the posting asks for, sent through the company’s form or handed to a person there.'],
  ['Claim (on a resume)','A sentence on your resume saying you did something, such as built document search with measured recall. Mapping it to a repo means naming the repository where a reader can see the code and the numbers.'],
- ['Curriculum','This program: the ordered list of modules you followed. Never named to an employer, because a course completed is a weaker claim than an app built and run for a year.'],
+ ['Curriculum','This program: the ordered list of modules you followed. Not volunteering how you learned is fine — a course completed is a weaker claim than an app built and run for a year. Constructing a framing designed to be mistaken for employment is not, and if you are asked directly, name the program and offer to show it, including where it was wrong and what you changed. M27 works out why that is the answer that survives.'],
  ['Skills list, technologies','The section of a resume listing the languages, tools and services you know; each one is a technology. Six you can answer detailed questions on beat 22 you have touched, because an interviewer will pick one and dig.'],
  ['Grilled on','Questioned closely and in detail until it is clear whether you know the thing. Anything on the skills list can be.'],
  ['Prompt Engineering','Writing prompts for a model, listed as a skill. It appears on so many resumes with nothing behind it that it reads as a warning sign; your eval numbers say the same thing with evidence.']],

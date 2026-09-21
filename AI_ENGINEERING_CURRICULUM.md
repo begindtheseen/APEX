@@ -104,8 +104,9 @@ artifact is tagged `LAB` or `EVIDENCE`. Costs nothing.
 **BET 4 — gating the AI layer behind the fundamentals.** An eval harness built by someone who cannot
 write a concurrent data pipeline is a dashboard, not a skill, so evals come after the runtime and
 observability modules. They come no later than that, because the differentiator has to exist before
-your application date — otherwise you interview without it. **So the model layer, ingestion, and evals
-run immediately after observability**, and the ramp-and-collaboration modules come after them.
+your application date — otherwise you interview without it. **So ingestion and evals run immediately
+after observability**, and the ramp-and-collaboration modules come after them. The model layer is not
+among them: M6 sits back in Layer 1, because M12 cannot be built without it.
 
 **BET 5 — that a curriculum is the right instrument at all.** You named a real reasoning gap and the
 2026 market for unproven remote juniors is genuinely hostile; competence work is necessary. But the
@@ -135,9 +136,10 @@ portfolio).
 
 **3. Eight concepts have exactly one owning module.** Five are consumed from there on and never
 re-taught: **the flagship** (M2), **streaming** and **idempotency** (M7), **the durable queue** (M8),
-**evals** (M12). The other three are owned once and then deliberately deepened later, and those three
-are the spiral pairs named in Rule 4: **the trust boundary** (M3), **observability** (M10), **cost**
-(M20).
+**evals** (M12). The other three are taught once and then deliberately taken further later, and those
+three are the spiral pairs named in Rule 4: **the trust boundary** (M3, again in M13), **observability**
+(M10, again in M12), and **cost** — introduced in M6 and owned at depth in M20, the one pair of the three
+where the owning module teaches it second.
 
 **4. Seven spiral pairs cover six concepts that are deliberately taught twice, at different depths.**
 This is not a violation; it is a spiral, and the pairs are named here so that when you meet the second
@@ -430,9 +432,9 @@ defaults.
   *re-read your own last `DELTA.md`, then do the bad-week minimum twice before resuming normal hours.*
 
 **GATE** — **REFEREE:** anyone — a friend, a partner, a sibling — who reads your one page and hands it
-back. **PASS:** they can say your runway, your **monthly running cost**, your weekly hours and your
-application date without looking at the page; the three messages are sent; the twenty postings are tallied; your rule for a bad week is
-written and you can say it. **ON FAIL:** this one cannot be failed by lack of skill, only by not
+back. **PASS:** they can say your runway, your **monthly running cost**, your **hour budget**, your
+weekly hours and your application date without looking at the page; the three messages are sent; the
+twenty postings are tallied; your rule for a bad week is written and you can say it. **ON FAIL:** this one cannot be failed by lack of skill, only by not
 finishing it. Name the line your referee could not repeat back, finish that line, and read the page to
 them again. Nothing else opens until they can.
 
@@ -514,12 +516,11 @@ installed and what each one is for.
   builds and its suite is green at that parent. A repo moves on, and a commit you cannot check out and
   run in fifteen months is not an exercise, it is a merge conflict.
 
-**The gate.** Anyone who writes code for a living, watching your screen for 20 minutes, on a task you
-have not seen. From an empty directory: create a file, write a function with a test, run it, make the test
-fail, read the error out loud and say what it means, fix it, commit, push. No tutorial open.
-
-**On fail.** Do it again from an empty directory. Re-running the tutorial does not count — the whole
-failure mode of this module is a working repo you cannot rebuild.
+**GATE** — **REFEREE:** anyone who writes code for a living, watching your screen for 20 minutes, on a
+task you have not seen. **PASS:** from an empty directory: create a file, write a function with a test,
+run it, make the test fail, read the error out loud and say what it means, fix it, commit, push. No
+tutorial open. **ON FAIL:** do it again from an empty directory. Re-running the tutorial does not count —
+the whole failure mode of this module is a working repo you cannot rebuild.
 
 **Most-missed:** Following a tutorial to a working app and mistaking that for being able to write one. The
 gate here is an empty directory for exactly this reason. · Reading the error message as noise instead of as
@@ -592,12 +593,11 @@ other people’s words**, so the page says in one line what is recorded and for 
 longer than you said, and you delete a person’s entries when they ask. M11 and M21 make this rigorous; the
 one line and the delete-on-request are due now.
 
-**The gate.** Two people who are not you, on their own devices, with no instructions from you. Both reach
-the URL, type something, get a reply, and can say what the app is for. Your log shows their two requests.
-The spend limit is set and you can say the number. The page states what it records, and you can show a
-request deleted on demand.
-
-**On fail.** It runs on your laptop. That is a different artifact, and no later module can bolt onto it.
+**GATE** — **REFEREE:** two people who are not you, on their own devices, with no instructions from you.
+**PASS:** both reach the URL, type something, get a reply, and can say what the app is for. Your log shows
+their two requests. The spend limit is set and you can say the number. The page states what it records,
+and you can show a request deleted on demand. **ON FAIL:** it runs on your laptop. That is a different
+artifact, and no later module can bolt onto it.
 
 **Most-missed:** Putting the key in the client (the browser side) because it works. It works, and it is
 now public; scrapers (programs that automatically scan public repos for secrets) find committed keys in
@@ -2452,10 +2452,12 @@ worse version of something that exists while avoiding the labeling and debugging
 · **The advanced-RAG genre** — GraphRAG, RAPTOR, self-RAG, CRAG, FLARE, standalone vector DBs, fine-tuned
 embeddings, implementing HNSW, chasing MTEB. · **Eval anti-patterns** — public benchmarks, BLEU/ROUGE/
 BERTScore, off-the-shelf RAG metric bundles, 1–5 Likert judge rubrics, adopting a platform before you
-have 50 real cases. · **Certifications of every kind.** · **Learn-on-demand appendix** (~55h) — Playwright
+have 50 real cases. · **Certifications of every kind.** · **Learn-on-demand appendix** — Playwright
 as a unit, feature flags as study, webhook signature verification as its own unit, rate limiting as its
 own unit, the batch tier, GraphQL, gRPC, OAuth *provider* implementation, prompt compression, semantic
-caching, self-hosting open-weights models.
+caching, self-hosting open-weights models. **Those eleven are the ~55h half of Appendix C**; the four
+that follow them there — Jujutsu, GitFlow ceremony, git submodules and history surgery, Bedrock/Vertex —
+carry no hours at all, because knowing the term exists is the whole of what they ask for.
 
 **One cut that is a real risk, not a clean win:** the AWS/second-cloud unit stays cut beyond M23’s one
 dockerized cloud deploy, and the Vercel/Supabase focus is defensible for this segment — **but it narrows
