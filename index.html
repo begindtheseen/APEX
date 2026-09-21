@@ -17,8 +17,8 @@
      means injected script cannot send this device's year of progress anywhere.
      base-uri and form-action shut the two redirect tricks, frame-ancestors
      and object-src kills plugin embedding. frame-ancestors is deliberately
-     absent: a meta CSP cannot carry it, and declaring it here only produces a
-     console warning. It belongs in a response header if the host ever adds one. -->
+     absent — a meta CSP cannot carry it and declaring it here only produces a
+     console warning; it belongs in a response header if the host adds one. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <!-- Google sees only that a request happened, not which page asked. -->
 <meta name="referrer" content="no-referrer">
@@ -2186,6 +2186,15 @@ var ST = {
 // dropped, wrong types are dropped rather than coerced into nonsense, and one
 // rejected field never stops the rest from loading.
 function apexStr(v, max) { return typeof v === 'string' ? v.slice(0, max || 200) : null; }
+// A date, a key, a score label, a reason chosen from a list: none of these can
+// legitimately contain markup, and several of them reach innerHTML through a
+// renderer that does not escape. Dropping the angle brackets at the door means
+// a hostile value cannot become an element even if a sink is ever missed. This
+// is belt as well as braces — the sinks escape too.
+function apexPlain(v, max) {
+  var t = apexStr(v, max);
+  return t === null ? null : t.replace(/[<>]/g, '');
+}
 // Three names that mean something to the language rather than to this app. A
 // map key called __proto__ resolves to Object.prototype on a plain object, and
 // a value called that reaches a lookup somewhere else. Drop them at the door.
@@ -2209,41 +2218,33 @@ function apexMapOfNum(v, lo, hi) {
   });
   return out;
 }
-function apexMapOfStr(v, max) {
-  var out = Object.create(null);
-  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
-  Object.keys(v).forEach(function (k) {
-    if (!apexKeyOk(k)) return;
-    var t = apexStr(v[k], max || 200);
-    if (t !== null) out[apexStr(k, 64)] = t;
-  });
-  return out;
-}
 function apexClean(s) {
   if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
-  var start = apexStr(s.startDate, 32);
+  var start = apexPlain(s.startDate, 32);
   if (!start) return null;
   var out = {
-    phase: apexNum(s.phase, 1, 99) || 1,
+    phase: apexNum(s.phase, 1, (typeof PHASES !== 'undefined' ? PHASES.length : 4)) || 1,
     streak: apexNum(s.streak, 0, 1e6) || 0,
     total: apexNum(s.total, 0, 1e9) || 0,
-    lastDate: apexStr(s.lastDate, 32),
-    lastGoodDate: apexStr(s.lastGoodDate, 32),
+    lastDate: apexPlain(s.lastDate, 32),
+    lastGoodDate: apexPlain(s.lastGoodDate, 32),
     startDate: start,
-    shipDate: apexStr(s.shipDate, 32) || '2027-01-23',
-    targetJob: apexStr(s.targetJob, 120),
-    prevJob: apexStr(s.prevJob, 120),
-    lastBackup: apexStr(s.lastBackup, 64),
-    studyHours: apexNum(s.studyHours, 0, 24) || 2,
+    shipDate: apexPlain(s.shipDate, 32) || '2027-01-23',
+    targetJob: apexPlain(s.targetJob, 120),
+    prevJob: apexPlain(s.prevJob, 120),
+    lastBackup: apexPlain(s.lastBackup, 64),
+    studyHours: apexNum(s.studyHours, 0.25, 24) || 2,
     consecutiveGoodDays: apexNum(s.consecutiveGoodDays, 0, 1e6) || 0,
     onboardDone: !!s.onboardDone
   };
   var prt = {}; ['run','pu','cu','pl'].forEach(function (k) {
     var src = (s.prt && typeof s.prt === 'object') ? s.prt[k] : null;
-    prt[k] = (src === null || src === undefined) ? null : (apexStr(src, 16) !== null ? apexStr(src, 16) : apexNum(src, 0, 1e6));
+    prt[k] = (src === null || src === undefined) ? null : (apexStr(src, 16) !== null ? apexPlain(src, 16) : apexNum(src, 0, 1e6));
   });
   out.prt = prt;
-  out.asvab = { afqt: apexNum(s.asvab && s.asvab.afqt, 0, 99), nf: apexNum(s.asvab && s.asvab.nf, 0, 1000) };
+  // null, not 0: the app shows a dash for "not logged yet", and a zero here
+  // would be rendered as a real score of nought.
+  out.asvab = { afqt: apexNum(s.asvab && s.asvab.afqt, 1, 99), nf: apexNum(s.asvab && s.asvab.nf, 1, 1000) };
   var rd = {};
   Object.keys(ST.readiness).forEach(function (k) {
     rd[k] = apexNum(s.readiness && s.readiness[k], 0, 100) || 0;
@@ -2251,19 +2252,24 @@ function apexClean(s) {
   out.readiness = rd;
   out.logs = [];
   if (Array.isArray(s.logs)) {
-    s.logs.slice(0, 5000).forEach(function (lg) {
+    s.logs.slice(-5000).forEach(function (lg) {
       if (!lg || typeof lg !== 'object' || Array.isArray(lg)) return;
       var type = apexStr(lg.type, 40);
       if (!type || !apexKeyOk(type)) return;
-      var e = { date: apexStr(lg.date, 32) || '', type: type };
-      e.val = (typeof lg.val === 'number' && isFinite(lg.val)) ? lg.val : (apexStr(lg.val, 40) || '');
+      var e = { date: apexPlain(lg.date, 32) || '', type: apexPlain(type, 40) };
+      e.val = (typeof lg.val === 'number' && isFinite(lg.val)) ? lg.val : (apexPlain(lg.val, 40) || '');
       if (typeof lg.raw === 'number' && isFinite(lg.raw)) e.raw = lg.raw;
       out.logs.push(e);
     });
   }
-  out.asvabLogs = Array.isArray(s.asvabLogs) ? s.asvabLogs.slice(0, 5000).filter(function (x) {
-    return x && typeof x === 'object' && !Array.isArray(x);
-  }) : [];
+  out.asvabLogs = [];
+  if (Array.isArray(s.asvabLogs)) {
+    s.asvabLogs.slice(-5000).forEach(function (x) {
+      if (!x || typeof x !== 'object' || Array.isArray(x)) return;
+      out.asvabLogs.push({ date: apexPlain(x.date, 32) || '', type: apexPlain(x.type, 24) || '',
+                           val: apexNum(x.val, 0, 1000) });
+    });
+  }
   // enlist is a set of ticked checklist ids: { id: true }.
   out.enlist = Object.create(null);
   if (s.enlist && typeof s.enlist === 'object' && !Array.isArray(s.enlist)) {
@@ -2282,8 +2288,8 @@ function apexClean(s) {
       if (!apexKeyOk(k)) return;
       var t = sy.topics[k];
       if (!t || typeof t !== 'object' || Array.isArray(t)) return;
-      out.study.topics[apexStr(k, 80)] = {
-        box: apexNum(t.box, 0, 9) || 0, due: apexStr(t.due, 32),
+      out.study.topics[apexPlain(k, 80)] = {
+        box: apexNum(t.box, 0, 9) || 0, due: apexPlain(t.due, 32),
         seen: apexNum(t.seen, 0, 1e6) || 0, correct: apexNum(t.correct, 0, 1e6) || 0 };
     });
   }
@@ -2297,9 +2303,30 @@ function apexClean(s) {
         seen: apexNum(v.seen, 0, 1e6) || 0, correct: apexNum(v.correct, 0, 1e6) || 0 };
     });
   }
-  out.study.exams = Array.isArray(sy.exams) ? sy.exams.slice(0, 2000).filter(function (e) {
-    return e && typeof e === 'object' && !Array.isArray(e);
-  }) : [];
+  // { date, mode, perSub:{ sub:{correct,total,score} } } — rebuilt, because
+  // the summary renderer prints date and mode straight into the page and
+  // examComposites() throws on a perSub that is not the shape it expects.
+  out.study.exams = [];
+  if (Array.isArray(sy.exams)) {
+    sy.exams.slice(-2000).forEach(function (e) {
+      if (!e || typeof e !== 'object' || Array.isArray(e)) return;
+      var ps = Object.create(null);
+      if (e.perSub && typeof e.perSub === 'object' && !Array.isArray(e.perSub)) {
+        Object.keys(e.perSub).forEach(function (k) {
+          if (!apexKeyOk(k)) return;
+          var v = e.perSub[k];
+          if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+          // score stays null when it is missing rather than becoming 0: the
+          // composite reader treats null as "cannot compute" and shows a dash,
+          // where a zero would be printed as a real and very bad score.
+          ps[apexPlain(k, 24)] = { correct: apexNum(v.correct, 0, 1e5) || 0,
+                                   total: apexNum(v.total, 0, 1e5) || 0,
+                                   score: apexNum(v.score, 0, 1e4) };
+        });
+      }
+      out.study.exams.push({ date: apexPlain(e.date, 32) || '', mode: apexPlain(e.mode, 24) || '', perSub: ps });
+    });
+  }
   // studyDays is { dateKey: { mins, q } }, not a number per day.
   out.studyDays = Object.create(null);
   if (s.studyDays && typeof s.studyDays === 'object' && !Array.isArray(s.studyDays)) {
@@ -2317,9 +2344,9 @@ function apexClean(s) {
   if (s.skipReasons && typeof s.skipReasons === 'object' && !Array.isArray(s.skipReasons)) {
     Object.keys(s.skipReasons).forEach(function (k) {
       if (!apexKeyOk(k) || !Array.isArray(s.skipReasons[k])) return;
-      out.skipReasons[apexStr(k, 80)] = s.skipReasons[k].slice(0, 2000).map(function (r) {
+      out.skipReasons[apexPlain(k, 80)] = s.skipReasons[k].slice(-2000).map(function (r) {
         if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
-        return { date: apexStr(r.date, 32) || '', reason: apexStr(r.reason, 200) || '' };
+        return { date: apexPlain(r.date, 32) || '', reason: apexPlain(r.reason, 200) || '' };
       }).filter(Boolean);
     });
   }
@@ -2638,7 +2665,7 @@ function getAdaptiveNote(habitId) {
   if (!note) return null;
   var topReason = getMostCommonReason(habitId);
   if (topReason && topReason.count >= 2) {
-    note += ' Most common reason logged: <em style="color:var(--red)">' + topReason.reason + '</em> (' + topReason.count + 'x).';
+    note += ' Most common reason logged: <em style="color:var(--red)">' + esc(topReason.reason) + '</em> (' + topReason.count + 'x).';
   }
   return note;
 }
@@ -3255,9 +3282,9 @@ function renderInsights() {
   if (rt) {
     html += insightCardOpen();
     var msg, mc;
-    if (rt.dir === 'down') { mc = 'var(--green)'; msg = 'Good sign &#8212; &#34;' + rt.reason + '&#34; is fading: ' + rt.early + ' times earlier vs ' + rt.late + ' recently. The behavior change is taking. Keep the pressure on.'; }
-    else if (rt.dir === 'up') { mc = 'var(--red)'; msg = 'Heads up &#8212; &#34;' + rt.reason + '&#34; is climbing: ' + rt.early + ' earlier vs ' + rt.late + ' recently. Make this the one thing you engineer out this week.'; }
-    else { mc = 'var(--orange)'; msg = '&#34;' + rt.reason + '&#34; is holding steady (' + rt.total + ' times). It has not budged on willpower &#8212; it needs a structural fix, not more trying.'; }
+    if (rt.dir === 'down') { mc = 'var(--green)'; msg = 'Good sign &#8212; &#34;' + esc(rt.reason) + '&#34; is fading: ' + rt.early + ' times earlier vs ' + rt.late + ' recently. The behavior change is taking. Keep the pressure on.'; }
+    else if (rt.dir === 'up') { mc = 'var(--red)'; msg = 'Heads up &#8212; &#34;' + esc(rt.reason) + '&#34; is climbing: ' + rt.early + ' earlier vs ' + rt.late + ' recently. Make this the one thing you engineer out this week.'; }
+    else { mc = 'var(--orange)'; msg = '&#34;' + esc(rt.reason) + '&#34; is holding steady (' + rt.total + ' times). It has not budged on willpower &#8212; it needs a structural fix, not more trying.'; }
     html += '<div style="font-size:12px;color:var(--text);line-height:1.65;border-left:2px solid ' + mc + ';padding-left:10px">' + msg + '</div>';
     html += '</div>';
   } else {
@@ -4106,7 +4133,7 @@ function renderReady() {
     for (var rl4 in allCatReasons) { if (allCatReasons[rl4] > topCount2) { topCount2 = allCatReasons[rl4]; topReason2 = rl4; } }
     if (skipCt > 0) {
       html += '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + skipCt + ' skip' + (skipCt!==1?'s':'') + ' logged';
-      if (topReason2) html += ' — top reason: <span style="color:var(--red)">' + topReason2 + '</span>';
+      if (topReason2) html += ' — top reason: <span style="color:var(--red)">' + esc(topReason2) + '</span>';
       html += '</div>';
     }
     if (s2.score < 60 && fixActions[s2.cat]) {
@@ -4654,7 +4681,7 @@ function renderStudy() {
   for (var i = exams.length - 1; i >= 0; i--) { if (exams[i].mode === 'mock') { lastMock = exams[i]; break; } }
   if (lastMock) {
     var lc = examComposites(lastMock.perSub);
-    html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last full mock (' + lastMock.date + '): Comp1 <strong style="color:' + gateCol(lc.c1) + '">' + (lc.c1 || '—') + '</strong> · Comp2 <strong style="color:' + gateCol(lc.c2) + '">' + (lc.c2 || '—') + '</strong> · ' + lc.status.label + '</div>';
+    html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last full mock (' + esc(lastMock.date) + '): Comp1 <strong style="color:' + gateCol(lc.c1) + '">' + (lc.c1 || '—') + '</strong> · Comp2 <strong style="color:' + gateCol(lc.c2) + '">' + (lc.c2 || '—') + '</strong> · ' + lc.status.label + '</div>';
   }
   html += '<div style="margin-top:10px"><button class="sbtn pri" style="width:100%;padding:12px" onclick="startMock()">▶ Full NF Mock Exam — all 7 sections</button></div>';
   html += '<div style="margin-top:10px;font-size:11px;color:var(--muted);margin-bottom:6px">Or drill one subtest (timed):</div>';
@@ -5209,13 +5236,21 @@ function obsClean(s) {
   if (!s || typeof s !== 'object' || Array.isArray(s)) return out;
   function num(v, lo, hi) { var n = Number(v); return (isFinite(n) && n >= lo && n <= hi) ? n : 0; }
   function str(v, max) { return typeof v === 'string' ? v.slice(0, max) : ''; }
+  // Same two classes as the blue realm: text the user wrote, which keeps every
+  // character, and keys and dates, which cannot contain markup and are rendered
+  // by code that does not escape.
+  function plain(v, max) { return str(v, max).replace(/[<>]/g, ''); }
   if (s.topics && typeof s.topics === 'object' && !Array.isArray(s.topics)) {
     Object.keys(s.topics).forEach(function (k) {
       if (!apexKeyOk(k)) return;
       var t = s.topics[k];
       if (!t || typeof t !== 'object' || Array.isArray(t)) return;
-      out.topics[str(k, 80)] = { box: num(t.box, 0, 9), due: str(t.due, 32) || null,
-                                 seen: num(t.seen, 0, 1e6), correct: num(t.correct, 0, 1e6) };
+      var topic = { box: num(t.box, 0, 9), due: plain(t.due, 32) || null,
+                    seen: num(t.seen, 0, 1e6), correct: num(t.correct, 0, 1e6) };
+      // The post draft the user typed into this topic. Dropping it silently
+      // destroyed work the app had just told them was saved.
+      if (typeof t.post === 'string') topic.post = t.post.slice(0, 20000);
+      out.topics[plain(k, 80)] = topic;
     });
   }
   if (s.subs && typeof s.subs === 'object' && !Array.isArray(s.subs)) {
@@ -5223,15 +5258,22 @@ function obsClean(s) {
       if (!apexKeyOk(k)) return;
       var v = s.subs[k];
       if (!v || typeof v !== 'object' || Array.isArray(v)) return;
-      out.subs[str(k, 80)] = { seen: num(v.seen, 0, 1e6), correct: num(v.correct, 0, 1e6) };
+      out.subs[plain(k, 80)] = { seen: num(v.seen, 0, 1e6), correct: num(v.correct, 0, 1e6) };
     });
   }
-  if (Array.isArray(s.exams)) out.exams = s.exams.slice(0, 2000).filter(function (e) {
-    return e && typeof e === 'object' && !Array.isArray(e);
-  });
-  if (Array.isArray(s.reps)) s.reps.slice(0, 5000).forEach(function (e) {
+  // { date, sub, correct, total, wacc } — every one of those reaches innerHTML
+  // through a renderer that does not escape.
+  if (Array.isArray(s.exams)) s.exams.slice(-2000).forEach(function (e) {
     if (!e || typeof e !== 'object' || Array.isArray(e)) return;
-    out.reps.push({ k: str(e.k, 40), d: str(e.d, 32), n: str(e.n, 2000), s: str(e.s, 8) });
+    out.exams.push({ date: plain(e.date, 32), sub: plain(e.sub, 40),
+                     correct: num(e.correct, 0, 1e5), total: num(e.total, 0, 1e5),
+                     wacc: num(e.wacc, 0, 1e4) });
+  });
+  if (Array.isArray(s.reps)) s.reps.slice(-5000).forEach(function (e) {
+    if (!e || typeof e !== 'object' || Array.isArray(e)) return;
+    // n is the note the user wrote; it keeps its characters and is escaped at
+    // the sink. k, d and s are a key, a date and a one-letter status.
+    out.reps.push({ k: plain(e.k, 40), d: plain(e.d, 32), n: str(e.n, 20000), s: plain(e.s, 8) });
   });
   return out;
 }
@@ -5468,7 +5510,7 @@ function obsImport(ev) {
       // meant a file with the field deleted was accepted by whichever realm
       // happened to be open, and one realm's backup overwrote the other's.
       if (s.appVersion !== realm().key) {
-        toast('That backup is not a ' + realm().dataName + ' backup — nothing was changed.', 'warn'); return;
+        toast('That backup is not from ' + realm().dataName + ' — nothing was changed.', 'warn'); return;
       }
       if (!confirm('Restore this ' + realm().dataName + ' backup? It replaces the ' + realm().dataName + ' progress on this device.')) return;
       OBS_ST = obsClean(s);
@@ -5581,7 +5623,7 @@ function obsRenderReps() {
     html += '<div class="sl" style="margin-top:14px">AWAITING GRADES — ' + pend.length + '</div>';
     for (var i = 0; i < pend.length; i++) {
       var e = OBS_ST.reps[pend[i]], tt = obsRepType(e.k);
-      html += '<div class="box by" style="margin:0 0 7px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px">' + (tt ? tt.name : e.k) + ' · ' + e.d + '</div>'
+      html += '<div class="box by" style="margin:0 0 7px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px">' + esc(tt ? tt.name : e.k) + ' · ' + esc(e.d) + '</div>'
         + '<div style="font-size:12px;line-height:1.5;margin-bottom:8px">' + esc(e.n) + '</div>'
         + '<div style="display:flex;gap:8px;justify-content:flex-end">'
         + '<button class="sbtn" style="color:var(--green);border-color:var(--green)" onclick="obsRepGrade(' + pend[i] + ',true)">✓ Hit</button>'
@@ -5596,8 +5638,8 @@ function obsRenderReps() {
       var e2 = recent[i], t2 = obsRepType(e2.k);
       var badge = e2.s === 'h' ? '<span class="chip cg">HIT</span>' : (e2.s === 'm' ? '<span class="chip cr">MISS</span>' : (e2.s === 'p' ? '<span class="chip cy">PENDING</span>' : ''));
       html += '<div style="display:flex;gap:8px;align-items:baseline;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px">'
-        + '<span style="font-family:var(--mono);color:var(--muted);flex-shrink:0">' + e2.d + '</span>'
-        + '<span style="color:var(--text);flex:1">' + (t2 ? t2.name : e2.k) + ' — ' + esc(e2.n.length > 70 ? e2.n.slice(0, 70) + '…' : e2.n) + '</span>' + badge + '</div>';
+        + '<span style="font-family:var(--mono);color:var(--muted);flex-shrink:0">' + esc(e2.d) + '</span>'
+        + '<span style="color:var(--text);flex:1">' + esc(t2 ? t2.name : e2.k) + ' — ' + esc(e2.n.length > 70 ? e2.n.slice(0, 70) + '…' : e2.n) + '</span>' + badge + '</div>';
     }
   }
   return html;
@@ -5690,7 +5732,7 @@ function obsRenderDash() {
     for (var i = 0; i < due.length; i++) {
       var t = due[i], ts2 = OBS_ST.topics[t.id];
       html += '<div class="stopic" onclick="obsOpenTopic(\'' + t.id + '\',\'quiz\')"><div class="st-n">' + esc(t.title)
-           + '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">' + esc(obsSubName(t.sub)) + ' · box ' + (ts2.box || 0) + '/5 · due ' + ts2.due + '</div></div>'
+           + '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">' + esc(obsSubName(t.sub)) + ' · box ' + (ts2.box || 0) + '/5 · due ' + esc(ts2.due) + '</div></div>'
            + '<span class="st-m cy">REVIEW</span><span class="ac-chev">▸</span></div>';
     }
   }
@@ -5718,7 +5760,7 @@ function obsRenderDash() {
     html += '<div class="sl" style="margin-top:18px">ADAPTIVE TIMED DRILLS</div>';
     html += '<div class="box bb" style="margin-top:0"><strong>Answer right and it gets harder; miss and it eases off.</strong> Timed at ' + (spec.min || 15) + ' min, no feedback until the end, fresh questions each run, harder questions weigh more.';
     var last = OBS_ST.exams.length ? OBS_ST.exams[OBS_ST.exams.length - 1] : null;
-    if (last) html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last drill (' + last.date + '): ' + esc(obsSubName(last.sub)) + ' — ' + last.correct + '/' + last.total + ' · weighted ' + last.wacc + '%</div>';
+    if (last) html += '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Last drill (' + esc(last.date) + '): ' + esc(obsSubName(last.sub)) + ' — ' + esc(last.correct) + '/' + esc(last.total) + ' · weighted ' + esc(last.wacc) + '%</div>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">';
     for (var i = 0; i < drillSubs.length; i++) {
       var bn = obsQbank(drillSubs[i]).length;
@@ -5920,6 +5962,10 @@ var LP_TAB = 'home';
 
 function lpCfg() { return (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG) ? LAUNCHPAD_CONFIG : {}; }
 function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRICULUM_API : null; }
+// Set when a load ran without the curriculum available. Nothing may be written
+// back to storage in that state, because every write would be computed against
+// an empty module list.
+var LP_SKIPPED_CLEAN = false;
 
 // Owning an idea and never teaching it again are two different claims, and the
 // data already separates them. Five concepts are owned and then only consumed;
@@ -5935,13 +5981,16 @@ function lpOwnsLine(m) {
   m.owns.forEach(function (o) {
     if (once.indexOf(o) >= 0) { out += ' ' + cap(o) + ' is taught here and nowhere else.'; return; }
     // Find the other module in the pair and name it, so "again later" is a place.
-    var later = null;
+    var later = null, earlier = null;
     pairs.forEach(function (pr) {
       if (pr[2] !== o) return;
-      if (pr[0] === m.id) later = pr[1];
-      else if (pr[1] === m.id && !later) later = pr[0];
+      if (pr[0] === m.id && !later) later = pr[1];
+      else if (pr[1] === m.id && !earlier) earlier = pr[0];
     });
-    out += ' ' + cap(o) + (later ? ' is taught here and taken further in ' + later + '.' : ' is owned here.');
+    out += ' ' + cap(o)
+        + (later ? ' is taught here and taken further in ' + later + '.'
+           : earlier ? ' is introduced in ' + earlier + ' and owned here, at depth.'
+           : ' is owned here.');
   });
   return out;
 }
@@ -5954,9 +6003,20 @@ function lpLoad() {
     wasMigrated = !!LP_ST.migrated; delete LP_ST.migrated;
     // Clean on load, not only on import: a value edited by hand, truncated by a
     // crash, or written by a newer version must not be able to swallow ticks.
-    var before = JSON.stringify(LP_ST.mods);
-    LP_ST = lpClean(LP_ST);
-    if (wasMigrated || JSON.stringify(LP_ST.mods) !== before) lpSave();
+    // lpClean rebuilds the tick map against the curriculum's own module ids, so
+    // it can only run when the curriculum is actually loaded. Without this guard
+    // a failed script request turns every id into an unknown one, empties the
+    // map, and writes that back — a year of progress erased by a 5xx.
+    if (typeof AI_CURRICULUM !== 'undefined' && AI_CURRICULUM && AI_CURRICULUM.length) {
+      var before = JSON.stringify(LP_ST.mods);
+      LP_ST = lpClean(LP_ST);
+      if (wasMigrated || JSON.stringify(LP_ST.mods) !== before) lpSave();
+    } else {
+      LP_SKIPPED_CLEAN = true;
+      setTimeout(function () {
+        try { toast('The curriculum did not load. Your progress is safe and untouched — reload once you are back online.', 'warn'); } catch (e2) {}
+      }, 1200);
+    }
   } catch (e) {
     // The stored value is unreadable. Keep it under a dated key so it can be
     // repaired by hand, and say so, rather than quietly starting from zero.
@@ -5981,7 +6041,7 @@ function lpClean(st) {
   for (var i = 0; i < all.length; i++) {
     var id = all[i].id, v = src[id];
     if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
-    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp) };
+    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp, v) };
   }
   var flag = {}, fs = st.flagship || {};
   try {
@@ -6011,6 +6071,9 @@ function lpMigrate(st) {
 // appears, the reader trusts it, and a year is gone at the next reload.
 var LP_SAVE_WARNED = false;
 function lpSave() {
+  // Never write back a state that was loaded without the curriculum: the module
+  // map would be empty and the write would make the loss permanent.
+  if (LP_SKIPPED_CLEAN) return false;
   try {
     localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST));
     LP_SAVE_WARNED = false;
@@ -6059,28 +6122,53 @@ function lpEntry(id) {
   if (!Object.prototype.hasOwnProperty.call(LP_ST.mods, id)) return null;
   var v = LP_ST.mods[id];
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp) };
+  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp, v) };
 }
 
 // The checkpoints a module has ticked, rebuilt against the curriculum's own
 // list so a stale or hand-edited value can never claim a checkpoint that does
 // not exist. Keyed by index, prototype-less.
-function lpCpMap(id, src) {
-  var out = Object.create(null);
+// A checkpoint's key is a hash of its own text, not its position. Keying by
+// index meant that editing the curriculum silently re-pointed a tick at a
+// different checkpoint, and shortening a list deleted the ticks past the end
+// on the next save. With a content key, changing a checkpoint's wording
+// correctly loses that one tick — it is a different checkpoint now — and
+// nothing else moves.
+function lpCpKey(text) {
+  var h = 5381, str = String(text);
+  for (var i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return 'c' + h.toString(36);
+}
+function lpCpKeys(id) {
   var m = lpApi() ? lpApi().byId(id) : null;
-  var n = (m && m.checkpoints) ? m.checkpoints.length : 0;
+  return (m && m.checkpoints) ? m.checkpoints.map(lpCpKey) : [];
+}
+function lpCpMap(id, src, entry) {
+  var out = Object.create(null);
+  var keys = lpCpKeys(id);
   if (src && typeof src === 'object' && !Array.isArray(src)) {
-    for (var i = 0; i < n; i++) if (src[i]) out[i] = true;
+    keys.forEach(function (k, i) {
+      // Accept the old index form as well, so a record written before
+      // checkpoints were content-keyed is carried over rather than lost.
+      if (src[k] || src[i]) out[k] = true;
+    });
+  }
+  // A record made before checkpoints existed, or before they were enforced,
+  // can say "artifact built" with nothing ticked. That claim was made under
+  // the old rules and stands; the page must not then tell its owner that
+  // nothing is done and the artifact cannot be claimed.
+  if (entry && (entry.artifact || entry.gate) && keys.length) {
+    var any = keys.some(function (k) { return out[k]; });
+    if (!any) keys.forEach(function (k) { out[k] = true; });
   }
   return out;
 }
 function lpCpCount(id) {
   var e = lpEntry(id);
-  var m = lpApi() ? lpApi().byId(id) : null;
-  var total = (m && m.checkpoints) ? m.checkpoints.length : 0;
+  var keys = lpCpKeys(id);
   var done = 0;
-  if (e) for (var i = 0; i < total; i++) if (e.cp[i]) done++;
-  return { done: done, total: total };
+  if (e) keys.forEach(function (k) { if (e.cp[k]) done++; });
+  return { done: done, total: keys.length };
 }
 
 function enterLaunchpad() {
@@ -6156,7 +6244,7 @@ function lpToggle(id, step) {
   // 2b. The checkpoints are the module. "Artifact built" on a module with nine
   //     named sub-goals and none of them ticked is a claim with nothing behind
   //     it, which is the decorative gate this program exists to refuse.
-  if (!m.artifact && step === 'artifact') {
+  if (!m[step] && (step === 'artifact' || step === 'gate')) {
     var cc = lpCpCount(id);
     if (cc.total && cc.done < cc.total) {
       toast('Tick the checkpoints first — ' + cc.done + ' of ' + cc.total + ' done', 'warn');
@@ -6172,6 +6260,10 @@ function lpToggle(id, step) {
     if (alsoHere.length || alsoAfter.length) {
       var lines = ['Un-ticking "' + step + '" on ' + id + ' also clears:'];
       if (alsoHere.length) lines.push('  · ' + alsoHere.join(' and ') + ' on ' + id);
+      var cpHere = (step === 'delta') ? lpCpCount(id).done : 0;
+      var cpAfter = lpDownstreamCheckpoints(id);
+      if (cpHere) lines.push('  · ' + cpHere + ' ticked checkpoint' + (cpHere > 1 ? 's' : '') + ' on ' + id);
+      if (cpAfter) lines.push('  · ' + cpAfter + ' ticked checkpoint' + (cpAfter > 1 ? 's' : '') + ' on the modules after it');
       // A list of thirty-two unsorted ids in a system dialog is not read. Give
       // the count, and the names only while they are still countable by eye.
       if (alsoAfter.length) {
@@ -6183,6 +6275,7 @@ function lpToggle(id, step) {
       if (!confirm(lines.join('\n'))) return;
     }
     for (var k = i; k < LP_STEPS.length; k++) m[LP_STEPS[k]] = false;
+    if (step === 'delta') m.cp = Object.create(null);
     if (step === 'gate' || i < LP_STEPS.indexOf('gate')) lpClearDownstream(id);
   } else {
     m[step] = true;
@@ -6215,7 +6308,7 @@ function lpDownstreamPassed(id) {
       if (seen[m.id] || m.dependsOn.indexOf(cur) === -1) continue;
       seen[m.id] = true;
       var e = lpEntry(m.id);
-      if (e && (e.delta || e.artifact || e.gate)) hit.push(m.id);
+      if (e && (e.delta || e.artifact || e.gate || lpCpCount(m.id).done)) hit.push(m.id);
       queue.push(m.id);
     }
   }
@@ -6233,28 +6326,39 @@ function lpCp(id, idx) {
   if (!API.isUnlocked(id, P)) { toast(lpLockWhy(id, P), 'warn'); return; }
   var m = lpEntry(id) || { delta:false, artifact:false, gate:false, cp:Object.create(null) };
   if (!m.delta) { toast(LX_DELTA[id] ? 'Write the delta first' : 'Write the delta first — that is the reading', 'warn'); return; }
-  if (m.cp[idx]) {
+  var key = lpCpKey(mod.checkpoints[idx]);
+  if (m.cp[key]) {
     if (m.artifact || m.gate) {
       var also = [m.artifact ? 'Artifact built' : null, m.gate ? 'Gate passed' : null].filter(Boolean);
       var after = m.gate ? lpDownstreamPassed(id) : [];
       var lines = ['Un-ticking checkpoint ' + (idx + 1) + ' on ' + id + ' also clears:',
                    '  · ' + also.join(' and ') + ' on ' + id];
-      if (after.length) lines.push('  · every claim on the ' + after.length + ' module' + (after.length > 1 ? 's' : '') + ' after it');
-      lines.push('', 'This cannot be undone. Continue?');
+      if (after.length) {
+        var cpn = lpDownstreamCheckpoints(id);
+        lines.push('  · every claim on the ' + after.length + ' module' + (after.length > 1 ? 's' : '') + ' after it'
+          + (cpn ? ', including ' + cpn + ' ticked checkpoint' + (cpn > 1 ? 's' : '') : ''));
+      }
+      lines.push('', 'Export your progress first if you want to keep it.', 'This cannot be undone. Continue?');
       if (!confirm(lines.join('\n'))) return;
       var hadGate = m.gate;
       m.artifact = false; m.gate = false;
       if (hadGate) lpClearDownstream(id);
     }
-    delete m.cp[idx];
+    delete m.cp[key];
   } else {
-    m.cp[idx] = true;
+    m.cp[key] = true;
   }
   LP_ST.mods[id] = m;
   lpSave();
   lpRerenderKeepingFocus();
 }
 
+// How many ticked checkpoints a downstream reset would destroy. The old
+// dialogs said "every claim" and never used the word, so the one number that
+// says how much work is about to vanish was missing.
+function lpDownstreamCheckpoints(id) {
+  return lpDownstreamPassed(id).reduce(function (a, x) { return a + lpCpCount(x).done; }, 0);
+}
 function lpClearDownstream(id) {
   var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
   var queue = [id], seen = {};
@@ -6868,6 +6972,7 @@ function lpHowHTML() {
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
     ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it.'],
+    ['Checkpoint', 'A named piece of a module — one of up to eleven — with its own finished state. You tick each one as you finish it, and they are what "Artifact built" waits for. They are also the legitimate places to stop: a bad week should cost you a checkpoint, not the whole module.'],
     ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it (or the written fallback in its place), about a hundred logged traces contain real failures (or, on the fallback, a hundred cases you labeled yourself), and your eval harness runs against them on every push. Working harder does not open it — but there is a fallback, and it is on the Modules tab.'],
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
     ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in the first module\'s Words section, and every module defines its own on its own page. '
@@ -7075,11 +7180,13 @@ function lpModulesHTML(API) {
         + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in ladder order</span></div>'
         + '<div class="lx-title">The ladder</div>'
         + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed, '
-        + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
+        + 'and its claims can only be made in order: write the delta, tick each checkpoint as you finish it, '
+        + 'claim the artifact once they are all ticked, then the gate once a referee has said yes. '
         + 'You can open a locked one and read it; you cannot tick it. '
-        + 'The longest chain of modules, not the total hours, is what sets how long this takes: the chain below is '
-        + API.criticalPath().path.length + ' modules and ' + API.criticalPath().hours + 'h, so even at unlimited hours a '
-        + 'week nothing finishes before those are done in order. Total hours is the floor on effort; the chain is the floor on time. '
+        + 'The longest chain of modules, not the total hours, is what sets how long this takes: '
+        + API.criticalPath().path.join(' → ') + ' is ' + API.criticalPath().hours + 'h, and no amount of hours a week '
+        + 'finishes it faster, because each one needs the one before it. Total hours is the floor on effort; that chain '
+        + 'is the floor on time. '
         + 'Some modules carry a note about when to start them rather than waiting their turn: "Starts by date" means a date on your plan decides, "Starts after another module" means a particular module has to finish first, "Starts at an event" means something outside the program triggers it (your first final-round interview), and "May start earlier" means a condition can move it forward. Each one says which, inside. '
         + 'Lab means the result stays private; Evidence means a stranger can see it.'
         + (onSpine ? ' Your plan points at the Spine, so the ' + AI_COMPRESSED_SPINE.length
@@ -7386,10 +7493,12 @@ function lpVerdictHTML(API) {
         : pl.recommend === 'full-tight' ? '▲ TIGHT — RAISE HOURS OR TAKE THE SPINE'
         : '▲ FULL PROGRAM FITS') + '</div>';
   h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
-  if (!unset && pl.weeklyHours && pl.weeklyHours > CEIL) {
-    h += '<div class="lp-vwhy" style="color:#a4b2c2">' + CEIL + ' hours a week is the most this program assumes '
-       + 'anyone can sustain for a year, so the arithmetic above uses ' + CEIL + ' as the ceiling even though you '
-       + 'entered ' + pl.weeklyHours + '. Entering more does not make the plan shorter; it makes the plan optimistic.</div>';
+  if (!unset && pl.cappedByCeiling) {
+    h += '<div class="lp-vwhy" style="color:#a4b2c2">You entered ' + pl.weeklyHoursEntered + ' hours a week. '
+       + 'Every figure above is worked out at ' + pl.ceiling + ', which is the most this program assumes anyone '
+       + 'sustains for a year — so typing a bigger number here does not give you a shorter program. If you can '
+       + 'genuinely hold more than ' + pl.ceiling + ', the honest place to spend it is the parallel tracks and '
+       + 'the job search, not a faster ladder.</div>';
   }
   if (!unset && spineShort && !overrun) {
     h += '<div class="lp-vwhy" style="color:#ff8a8a"><b>What to do:</b> raise your weekly hours toward '
@@ -7398,11 +7507,13 @@ function lpVerdictHTML(API) {
   }
   if (!unset) {
     h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0-2 — '
-       + pl.applyAfterHours + 'h of module work in. That is not '
-       + pl.applyAfterHours + ' divided by your weekly hours: the parallel tracks take about '
-       + lpHrs(pl.applyTrackHoursPerWeek) + ' h/week out of the budget before any module gets one, so it lands roughly month '
-       + (pl.applyAfterMonths ? Math.max(1, Math.round(pl.applyAfterMonths)) : '?')
-       + '. Not when everything is finished.'
+       + pl.applyAfterHours + 'h of module work in. '
+       + (pl.applyAfterBlocked
+          ? esc(pl.applyAfterBlocked)
+          : 'That is not ' + pl.applyAfterHours + ' divided by your weekly hours: the parallel tracks take about '
+            + lpHrs(pl.applyTrackHoursPerWeek) + ' h/week out of the budget before any module gets one, so it lands roughly month '
+            + (pl.applyAfterMonths ? Math.max(1, Math.round(pl.applyAfterMonths)) : '?')
+            + '. Not when everything is finished.')
        + (function () {
            if (!pl.weeklyHours || !pl.runwayMonths) return '';
            var am = pl.applyAfterMonths || (pl.applyAfterHours / pl.weeklyHours / 4.345);
@@ -7549,7 +7660,7 @@ function lpDetailHTML(API, id) {
     var cpBody = '<div class="lx-cpbar"><span>' + cc.done + ' of ' + cc.total + ' done</span>'
                + '<span class="lx-cpt"><i style="width:' + (cc.total ? Math.round(cc.done / cc.total * 100) : 0) + '%"></i></span></div>';
     m.checkpoints.forEach(function (t, ci) {
-      var on = !!(pr.cp && pr.cp[ci]);
+      var on = !!(pr.cp && pr.cp[lpCpKey(t)]);
       cpBody += '<div class="lp-chk lx-cp' + (on ? ' on' : '') + (cpLocked ? ' lock' : '') + '" role="checkbox"'
              + ' aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"'
              + (cpLocked ? ' aria-disabled="true" style="opacity:.55"' : '')
@@ -7558,12 +7669,18 @@ function lpDetailHTML(API, id) {
              + '<span><span style="display:block">' + esc(t) + '</span></span></div>';
     });
     cpBody += '<div class="lx-ls" style="margin-top:10px">'
-            + (cc.done >= cc.total
-               ? 'All ' + cc.total + ' done. The artifact can be claimed in the rail.'
-               : 'Tick each one as you finish it. "Artifact built" does not open until all ' + cc.total + ' are ticked.')
+            + (cpLocked
+               ? 'This module is locked, so nothing here can be ticked yet. Reading ahead is fine.'
+               : !pr.delta
+                 ? 'Write the delta first — that is what opens these.'
+                 : cc.done >= cc.total
+                   ? 'All ' + cc.total + ' done. The artifact can be claimed in the rail.'
+                   : 'Tick each one as you finish it. "Artifact built" does not open until all ' + cc.total + ' are ticked.')
             + '</div>';
     h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Your progress through this module',
-               'A bad week should cost you a checkpoint, not the module. Tick each one as you finish it — the module cannot be claimed until they are all ticked.',
+               cpLocked
+                 ? 'A bad week should cost you a checkpoint, not the module. These open when this module does.'
+                 : 'A bad week should cost you a checkpoint, not the module. Tick each one as you finish it — the module cannot be claimed until they are all ticked.',
                cpBody);
   }
 
@@ -7621,7 +7738,9 @@ function lpDetailHTML(API, id) {
   var railCC = lpCpCount(id);
   [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
    ['artifact', 'Artifact built', railCC.total
-      ? (railCC.done >= railCC.total ? 'all ' + railCC.total + ' checkpoints ticked' : 'checkpoints first — ' + railCC.done + ' of ' + railCC.total + ' done')
+      ? (!pr.delta ? 'delta first, then the ' + railCC.total + ' checkpoints'
+         : railCC.done >= railCC.total ? 'all ' + railCC.total + ' checkpoints ticked'
+         : 'checkpoints first — ' + railCC.done + ' of ' + railCC.total + ' done')
       : 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
@@ -7913,11 +8032,15 @@ function launchRealm(name, btn) {
   requestAnimationFrame(frame);
 }
 
-obsLoad();
-init();
-// The app is now actually able to answer a tap. Everything above this line ran
-// with the launcher already painted.
-document.body.classList.remove('booting');
+// The launcher is painted but inert until this has run. Whatever happens, take
+// the class off: leaving it on means a dimmed, unclickable page saying
+// "Loading…" forever, which is a worse failure than whatever threw.
+try {
+  obsLoad();
+  init();
+} finally {
+  document.body.classList.remove('booting');
+}
 // Promote the font sheet from print to all once it has arrived. Done here
 // rather than with an inline onload attribute, so no element in this page
 // carries an event-handler attribute for an injected string to hide among.

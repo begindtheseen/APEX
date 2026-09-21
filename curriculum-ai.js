@@ -9,7 +9,7 @@
 //
 // `kind` is LAB or EVIDENCE. Only EVIDENCE artifacts are ever pinned to a portfolio.
 // `dependsOn` is load-bearing: the LONGEST PATH, not the hour sum, sets the timeline.
-// Run AI_CURRICULUM.validate() to check Rule 2 and compute the critical path.
+// Run AI_CURRICULUM_API.validate() to check Rule 2 and compute the critical path.
 // ============================================================
 
 var AI_LAYERS = [
@@ -109,7 +109,7 @@ var AI_CURRICULUM = [
      + 'hours. Everything after this module assumes you can reason about what the runtime is doing, so '
      + 'this is the one place where going slower is going faster.',
   gate:{ referee:'Your reviewer, watching the screen recording back with you.',
-         pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real `as`-cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
+         pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real bare-as cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
          onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.', unseen:'The unseen condition: three attempts, 45 minutes each, on an async bug your reviewer plants in a single file you have not seen. Pass 2 of 3. Narrating your own harness cannot distinguish understanding the runtime from remembering what you built.' } },
 
 { id:'M4', layer:1, hours:45, dependsOn:['M3'], kind:'LAB',
@@ -234,7 +234,7 @@ var AI_CURRICULUM = [
   gate:{ referee:'Your reviewer, scoring against your held-out test set, half of it hand-written.',
          pass:'State your delta together with its bootstrap interval and the number of queries behind it, and say out loud whether the interval crosses zero. With a set this small it very probably does, and then the finding is "I cannot distinguish these two with the data I have" — saying that plainly is the pass condition, not a failure of the module. Then state recall@10 before and after with the hnsw.iterative_scan setting named out loud and the dev-test gap stated. Name the arm you cut and the size of corpus that would have justified running it. Defend your routing rule between retrieval and long context using your own numbers.',
          onFail:'The golden set is LLM-generated, or you tuned on the set you reported, or you reported a winner with no interval. Hand-write 25, re-split, re-run.' },
-  currency:'pgvector index behaviour is version-pinned: the dimension ceilings, and whether iterative scanning is on or off by default, both changed inside this program’s own calendar. Check the version you are running and name the setting your recall number was measured under.' },
+  currency:'pgvector index behavior is version-pinned: the dimension ceilings, and whether iterative scanning is on or off by default, both changed inside this program’s own calendar. Check the version you are running and name the setting your recall number was measured under.' },
 
 { id:'M19', layer:5, hours:49, dependsOn:['M7','M8','M6','M12'], kind:'EVIDENCE',
   title:'Agents and Tool Use',
@@ -308,8 +308,8 @@ var AI_CURRICULUM = [
          pass:'State your floor out loud without hedging, recorded. And deliver a 30-second background answer with no apology and no hedge, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since? Two of those six have no answer inside a framing that hides how you spent the year, so do not use one. Say what is true: full-time self-directed work on an app you built and operate, with a working engineer reviewing your code and an eval harness gating its CI, no client and no team. If they ask how you learned, name the program and offer to show it, including where it was wrong and what you changed. That answer survives all six follow-ups; a framing engineered to be indistinguishable from employment survives two, and the moment a hiring manager works out which one you chose, the loop is over.',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
-{ id:'M28', layer:7, hours:8, dependsOn:['M10'], kind:'EVIDENCE',
-  trigger:'Your application date: the target you set in M0. It does not move because a module is late. If M10 has not passed by then, you apply with what you have and say in the re-plan what you are applying without. Applications need a resume on that date, not a year later.',
+{ id:'M28', layer:7, hours:8, dependsOn:['M2'], kind:'EVIDENCE',
+  trigger:'Your application date: the target you set in M0. It does not move because a module is late. If M10 has not passed by then, you apply with what you have and say in the re-plan what you are applying without — which is why this module waits only on M2, the flagship its claims point at, rather than on M10. M10 is the readiness condition for applying; it is not what opens this page. Applications need a resume on that date, not a year later.',
   title:'The Evidence Layer v1',
   artifact:'A resume mapping each claim to a repo. Two pinned repos: the flagship and one other Evidence artifact. A README in product-spec form. Only Evidence artifacts are pinned — the labs are private. Plus the sentences you will be asked for in a first screen, rehearsed — but only the ones that are true on the day this module fires. Distributed systems: the M8 durable queue, at-least-once delivery and what your idempotent consumer actually guarantees. Algorithms: the complexity work in M5, against your own measurements. The fine-tuning answer and the framework answer are not yours yet: the first needs your own eval numbers (M12) and the second needs the hand-rolled agent loop (M19), and rehearsing either before those exist is rehearsing something you cannot back. They are in M29, where the artifacts behind them exist.',
   gate:{ referee:'Two strangers, each from a place you name in advance where this ask is on topic and welcome — a chat server for a language or framework with a feedback or show-and-tell channel, a project’s own discussions tab, or a local meetup’s chat. Post the README link with one line: "Five minutes, three questions, no back-and-forth: what does this do, who is it for, what does it refuse to do?" Five-minute timebox each, answers in writing. Then a third pass you run yourself against the written answers: for each question, mark the exact sentence in the README they got it from, and if there is no such sentence, that is the finding.',
@@ -443,7 +443,7 @@ var AI_CURRICULUM_API = {
     if (!m) return false;
     // Layers 4-6 are the thirteen modules the hard gate exists to hold back.
     // Rendering the checklist without consulting it here left the gate
-    // decorative, which Rule 1 of this curriculum specifically forbids.
+    // decorative, which is the one thing the creed says a gate must not be.
     if (m.layer >= 4 && m.layer <= 6 && !this.flagshipGate(progress).open) return false;
     if (m.trigger && m.dependsOn.length === 0) return true;
     return m.dependsOn.every(function (d) {
@@ -500,7 +500,12 @@ var AI_CURRICULUM_API = {
     var CEIL = 18;                                   // hours a week the program assumes anyone can sustain
 
     var s = setup || {};
-    var wk = Number(s.weeklyHours) || 0;
+    var wkEntered = Number(s.weeklyHours) || 0;
+    // Every duration below is computed at the ceiling, never above it. The
+    // program's own argument is that 18 is the most anyone sustains for a year,
+    // so honouring a larger number here would hand back a shorter plan for
+    // typing a bigger figure — which is the one thing this screen must not do.
+    var wk = Math.min(wkEntered, CEIL);
     var runway = Number(s.runwayMonths) || 0;
 
     function months(hours, perWeek) { return perWeek > 0 ? hours / perWeek / WK : null; }
@@ -509,14 +514,24 @@ var AI_CURRICULUM_API = {
 
     // Hours a week the parallel tracks actually consume BEFORE the application date,
     // read off their own cadence lines: T4 45 minutes a week, T10 15 minutes, T8 two
-    // hours a month, T5 about an hour most months, T7 one piece per layer, T2 about
-    // eight hours a month once it starts after M9. T1 and T9 do not begin until the
-    // application date, so they are zero here.
-    var PRE_APPLY_TRACK_RATE = { T1:0, T2:1.8, T3:0, T4:0.75, T5:0.25, T6:0, T7:0.4, T8:0.46, T9:0, T10:0.25 };
+    // hours a month, T5 about an hour most months, T7 one piece per layer. T1 and T9
+    // do not begin until the application date, so they are zero here.
+    //
+    // T2 is the one that is not a flat rate. Its own rule starts it after M9, and M9
+    // ends about ninety per cent of the way through this span, so its eight hours a
+    // month (1.8 a week) only runs for the last stretch. Charging the full rate across
+    // the whole span overstated the load by more than a full hour a week and pushed
+    // the application date later than it really is.
+    var PRE_APPLY_TRACK_RATE = { T1:0, T2:0.2, T3:0, T4:0.75, T5:0.25, T6:0, T7:0.4, T8:0.46, T9:0, T10:0.25 };
     var preTrack = Object.keys(PRE_APPLY_TRACK_RATE).reduce(function (a, k) { return a + PRE_APPLY_TRACK_RATE[k] }, 0);
     var applyMods = this.byLayer(0).concat(this.byLayer(1), this.byLayer(2))
       .reduce(function (a, m) { return a + m.hours }, 0);
+    // Below this the answer has collapsed: the tracks eat almost the whole budget,
+    // the modules get the remainder, and dividing by it produces a figure in decades
+    // that is arithmetically right and completely useless. Say so instead.
+    var MIN_MOD_WEEKLY = 2;
     var modWeekly = wk > preTrack ? wk - preTrack : 0;
+    var modWeeklyUsable = modWeekly >= MIN_MOD_WEEKLY;
 
     var fullMonths  = months(full, wk);
     var spineMonths = months(spine, wk);
@@ -529,8 +544,10 @@ var AI_CURRICULUM_API = {
       why = 'Enter your runway and the hours you can actually commit. Everything downstream derives from these two numbers.';
     } else if (needFull && needFull <= wk) {
       rec = 'full';
-      why = 'The full program fits inside your runway at the hours you committed, with room. '
-          + 'You need ' + needFull.toFixed(1) + ' h/week and you have ' + wk + '.';
+      var slack = wk - needFull;
+      why = 'The full program fits inside your runway at the hours you committed'
+          + (slack >= 1 ? ', with room' : slack >= 0.25 ? ', but only just' : ', with nothing to spare')
+          + '. You need ' + needFull.toFixed(1) + ' h/week and you have ' + wk + '.';
     } else if (needFull && Math.round(needFull * 10) / 10 <= CEIL) {
       rec = 'full-tight';
       why = 'The full program fits your runway only at ' + needFull.toFixed(1) + ' h/week — above the '
@@ -560,6 +577,8 @@ var AI_CURRICULUM_API = {
     return {
       fullHours: full, spineHours: spine, spineModuleHours: spineMods, spineTrackHours: spineTracks,
       moduleHours: tot.modules, trackHours: tot.tracks,
+      weeklyHoursEntered: wkEntered, weeklyHoursUsed: wk, ceiling: CEIL,
+      cappedByCeiling: wkEntered > CEIL,
       weeklyHours: wk, runwayMonths: runway,
       fullMonths: fullMonths, spineMonths: spineMonths,
       neededForFull: needFull, neededForSpine: needSpine,
@@ -573,7 +592,13 @@ var AI_CURRICULUM_API = {
       // headline this program opens by condemning, and it errs in the dangerous direction.
       applyTrackHoursPerWeek: preTrack,
       applyModuleHoursPerWeek: modWeekly,
-      applyAfterMonths: (modWeekly > 0 ? applyMods / modWeekly / WK : null),
+      applyAfterMonths: (modWeeklyUsable ? applyMods / modWeekly / WK : null),
+      // Present so a consumer can say WHY there is no date rather than printing a
+      // blank: at this weekly budget the tracks consume nearly all of it.
+      applyAfterBlocked: (!modWeeklyUsable && wk > 0
+        ? 'At ' + wk + ' h/week the parallel tracks take about ' + Math.round(preTrack * 10) / 10
+          + ' of them before any module gets one, which leaves too little to date an application from. '
+          + 'This is the answer the Spine exists for.' : null),
       applyNote: 'Applications start ' + applyMods + ' module hours in, but the tracks running '
         + 'alongside take about ' + preTrack.toFixed(1) + ' h/week out of your weekly budget first. '
         + 'Use applyAfterMonths, not applyAfterHours divided by your weekly hours.'
@@ -614,9 +639,13 @@ var AI_CURRICULUM_API = {
   GATE_EDGES: ['M2', 'M10', 'M12'],
 
   criticalPath: function () {
-    // The graph is a constant; the walk is not free and every render asked for
-    // it. Computed once, then handed back.
-    if (this._cpCache) return this._cpCache;
+    // The walk is not free and every render asked for it, so it is cached. The
+    // key is the shape of the graph itself: AI_CURRICULUM is exported and
+    // mutable, so a cache with no invalidation path would go stale silently if
+    // anything ever edited it.
+    var sig = AI_CURRICULUM.length + ':' + AI_CURRICULUM.reduce(function (a, m) {
+      return a + m.hours + m.dependsOn.length; }, 0);
+    if (this._cpCache && this._cpSig === sig) return this._cpCache;
     var memo = {}, onStack = {}, self = this;
     function walk(id) {
       if (memo[id]) return memo[id];
@@ -644,7 +673,7 @@ var AI_CURRICULUM_API = {
       var r = walk(m.id);
       if (r.hours > winner.hours) winner = r;
     });
-    this._cpCache = winner;
+    this._cpCache = winner; this._cpSig = sig;
     return winner;
   },
 
@@ -826,6 +855,7 @@ var AI_WORDS = {
 M0:[
  ['Runway','How many months you can pay your bills with no paycheck. It is the only number that sets your deadline.'],
  ['Python','A programming language. Some job postings ask for it by name. This program teaches JavaScript (the programming language M1 starts with) first and Python later, unless your postings say otherwise.'],
+ ['Checkpoint','A named piece of a module, with its own finished state. You tick each one as you finish it, and they are what lets a module be claimed. They are also the legitimate places to stop: a bad week should cost you a checkpoint, not the module. This module is short enough to have none.'],
  ['PLAN.md, INCIDENTS.md','Plain text files. The .md ending only means ordinary text with light formatting. Any notes app can make one.'],
  ['Module','One unit of this program. The biggest are about four weeks at the program’s ceiling of 18 hours a week, and longer if you run below it — M3 and M12 are five or six weeks at twelve hours a week, and that is what the checkpoints are for. A few are paced by a calendar and say so on their own page. Each ends with a thing you made and a check by someone else.'],
  ['Reviewer','A person who writes code for a living and has agreed to look at your work for 20 minutes a month. You find them in this module.'],
@@ -900,7 +930,7 @@ M3:[
  ['Discriminated union, exhaustiveness','A type that is one of several named shapes, each carrying a tag field that says which one. Exhaustiveness is the checker’s complaint when your code forgets to handle one of them.'],
  ['Module (of code), import, bundle graph','A module here is one code file that exports things for other files to import. The import graph is the map of which files pull in which; the bundle the browser downloads is built from it, so anything reachable ships.'],
  ['Runtime','The program that runs your code: here it is Node. This module is about what the runtime is doing between the lines you wrote, because that decides the order things happen.'],
- ['Trust boundary','The line in your code where data from outside comes in: from a user, a model, another service. Everything past the line is trusted, so the checking happens at the line. This module owns the idea; M21 builds on it.'],
+ ['Trust boundary','The line in your code where data from outside comes in: from a user, a model, another service. Everything past the line is trusted, so the checking happens at the line. This module owns the idea and M13 takes it further, as the thing you draw for someone else; M21 then attacks a copy of your app across it.'],
  ['Serverless, warm instance, module scope','Serverless hosting starts a copy of your server code for a request and may freeze it afterwards. A warm instance is a copy kept alive and reused, so variables at the top level of a file (module scope) persist between requests you thought were separate.'],
  ['Production','The deployed version real users hit, as opposed to the copy on your laptop. A production bug is one that reached them.'],
  ['Unseen bug','A bug you have not read the fix for. Your reviewer plants one in a single file for this gate, because a bug you have seen before cannot tell you whether you understand the runtime or only remember your own code.'],
@@ -1028,7 +1058,7 @@ M6:[
  ['Interpolate','Insert a changing value (a date, a user’s name) into a fixed string. Done near the front of the system prompt it changes the prefix and kills the cache silently.'],
  ['Primary API docs','The model provider’s own reference pages. This module decays fastest, so you check them the week you build.']],
 M7:[
- ['The wire','The actual bytes travelling over the network, as opposed to what a library shows you.'],
+ ['The wire','The actual bytes traveling over the network, as opposed to what a library shows you.'],
  ['Idempotency key, dedupe table','An ID the client attaches to a request so the server can recognize a repeat. The dedupe table stores each key once; a second request with the same key gets the first result and does no new work. This module owns idempotency.'],
  ['Wire format, transport','The wire format is the exact shape of bytes you send, which the other end must match; the M22 client will consume this one. A transport is the piece of code that moves messages between two ends.'],
  ['Status code, header','The status code is the three-digit number opening every response: 200 OK, 400 bad request, 401 not signed in, 404 not found, 429 slow down, 500 server error. Headers are named lines above the body carrying details such as content type and who you are.'],
@@ -1536,7 +1566,7 @@ M27:[
  ['Coursework','Work done to complete a course, as opposed to work done because someone needed it. Naming it tells the listener you are a student; the same work described as building and operating an app does not.'],
  ['Background answer','Your 30-second reply to tell me about yourself: what you have built and operated and what you are looking for. Delivered without apology and without naming coursework.'],
  ['Follow-ups','The questions a recruiter asks after your answer. The six here are predictable, so each gets a one-line reply written and rehearsed in advance.'],
- ['Remote (work), remote-first, quarterly onsite','Remote here means working from somewhere other than the office, not the git remote of M1. Remote US-only requires you to live in the US; remote in four timezones requires your working day to overlap the team’s. Remote-first means the whole company works this way; quarterly onsite means travelling to the office every three months. They are different jobs with the same word on the posting.'],
+ ['Remote (work), remote-first, quarterly onsite','Remote here means working from somewhere other than the office, not the git remote of M1. Remote US-only requires you to live in the US; remote in four timezones requires your working day to overlap the team’s. Remote-first means the whole company works this way; quarterly onsite means traveling to the office every three months. They are different jobs with the same word on the posting.'],
  ['Employee, contractor','An employee is on the company’s payroll: the company withholds your tax, pays most of your medical cover and gives paid time off. A contractor runs a one-person business that bills the company for work, gets none of that, and can be dropped without notice. Contract job, the M0 posting category, means the second.'],
  ['Terms','Everything a company proposes besides the pay: whether you are an employee or a contractor, hours, where you must live, notice period, and what happens to your equity if you leave. Terms can move more money than the pay figure does.'],
  ['W-2, 1099, FICA','The two US tax forms that name the arrangement. A W-2 is what an employee receives each year, showing pay and the tax already withheld. A 1099 is what a contractor receives, showing only what was paid, with all the tax still owed. People say W-2 job or 1099 job to mean employee or contractor. FICA is the US payroll tax for Social Security and Medicare; on a W-2 the employer pays half of it.'],

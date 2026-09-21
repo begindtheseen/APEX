@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v48';
+var CACHE = 'apex-shell-v50';
 var SHELL = [
   './',
   './index.html',
@@ -91,13 +91,13 @@ self.addEventListener('fetch', function(e) {
       new Promise(function(resolve) {
         var settled = false;
         function done(r) { if (!settled && r) { settled = true; resolve(r); } }
-        // A slow network is not an offline network. The old 3s substitution
-        // discarded a real 200 that simply took a while, so it is only armed
-        // once the request has been outstanding long enough that a stale-but-
-        // working app really is the better answer, and only for this document.
+        // A slow network is not an offline network, but a network that never
+        // answers should not hold a blank page either. Five seconds is long
+        // enough that a real response usually wins, and short enough that a
+        // hanging connection does not look like a broken app.
         var timer = setTimeout(function() {
           caches.match('./index.html').then(done);
-        }, 12000);
+        }, 5000);
         fetch(req).then(function(res) {
           clearTimeout(timer);
           if (cacheable(res) && isHtml(res)) {
@@ -122,10 +122,32 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Same-origin assets: serve the cached copy at once, and refresh it in the
-  // background. Without the refresh, a deploy that forgot to bump CACHE would
-  // pair a new index.html with permanently stale scripts.
+  // Same-origin assets. CacheStorage is per-ORIGIN, not per-path, so on a shared
+  // host every other site the same account publishes can write into this cache.
+  // A cache-first read would then execute whatever they put there, once, on the
+  // next load — so scripts are network-first: the network copy wins whenever
+  // there is one, and the cache is the offline fallback it was meant to be.
+  // Everything else stays cache-first, because a font or an icon is not code.
   if (new URL(req.url).origin === self.location.origin) {
+    var dest = req.destination;
+    var isCode = dest === 'script' || dest === 'worker' || dest === 'style'
+      || /\.(js|css)(\?|$)/i.test(new URL(req.url).pathname);
+    if (isCode) {
+      e.respondWith(
+        fetch(req).then(function(res) {
+          if (cacheable(res)) {
+            var copy = res.clone();
+            caches.open(CACHE).then(function(c) { c.put(req, copy); });
+          }
+          return res;
+        }).catch(function() {
+          return caches.match(req).then(function(hit) {
+            return hit || Response.error();
+          });
+        })
+      );
+      return;
+    }
     e.respondWith(
       caches.match(req).then(function(hit) {
         var net = fetch(req).then(function(res) {

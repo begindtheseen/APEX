@@ -238,7 +238,7 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 | **M25** | Python as a Second Production Language · *trigger* | 35 | M24, M12 |
 | **M26** | Third-Party Integration as a Consumer | 23 | M7, M21, M22 |
 | **M27** | Pay, Terms, and the Negotiation · *trigger* | 11 | M0 |
-| **M28** | The Evidence Layer v1 · *trigger* | 8 | M10 |
+| **M28** | The Evidence Layer v1 · *trigger* | 8 | M2 |
 | **M29** | The Evidence Layer v2 · *trigger* | 12 | M18, M20, M28 |
 | **M30** | Interview Performance · *trigger* | 38 | M28 |
 | **M31** | Employed Mode · *trigger* | 10 | M0 |
@@ -259,9 +259,11 @@ chain has slack, which is where the Compressed Spine’s cuts come from.
 which is a different claim from a prediction that it will happen to you. Your application date is a
 target you set in M0 from your runway, and **it does not move because a module is late**; M10 is the
 readiness condition, not the date. Reaching M10 puts Layers 0–2 behind you, **443 module hours in**.
-That is not 443 divided by your weekly hours: the tracks already running take about **3.9 h/week** out
-of an 18-hour budget first, leaving about fourteen for modules, so a target set at readiness lands
-around **month seven**. Layer 3 is another 115 hours. If the target arrives and M10 has not passed, you
+That is not 443 divided by your weekly hours: the tracks already running take about **2.3 h/week** out
+of an 18-hour budget first, leaving about sixteen for modules, so a target set at readiness lands
+around **month six**. (Only the tracks that have actually started count against it. Track 2 does not
+begin until after M9, which is most of the way through that span, so it is charged at what it really
+costs there rather than at its full cadence.) Layer 3 is another 115 hours. If the target arrives and M10 has not passed, you
 apply anyway with what you have and write down in that month's re-plan what you are applying without. A
 hire that arrives with much of Layers 4–6 undone is the plan *succeeding*. M31 exists so that no
 feedback instrument terminates on hire day.
@@ -2031,11 +2033,13 @@ instead of from you is what does the damage. · Assuming references cover employ
 not: a background check verifies employment records, and for a self-employed year that means 1099s or
 invoices.
 
-## M28 — The Evidence Layer v1 (8h) · `dependsOn: M10` · *trigger: your application date — the target you set in M0*
+## M28 — The Evidence Layer v1 (8h) · `dependsOn: M2` · *trigger: your application date — the target you set in M0*
 
 **It does not move because a module is late.** If M10 has not passed by then, you apply with what you
-have and say in the re-plan what you are applying without. Applications need a resume on that date, not a
-year later.
+have and say in the re-plan what you are applying without — **which is why this module waits only on M2**,
+the flagship its claims point at, rather than on M10. M10 is the readiness condition for *applying*; it
+is not what opens this page, because a module that opened on M10 could not be reached in the very case
+the rule above describes. Applications need a resume on that date, not a year later.
 
 **Core concepts:** A resume that maps each claim to a repo. Two pinned repos now; the pinned three
 (flagship, open-source history, a write-up) arrive in M29. `LAB` vs `EVIDENCE` — labs are private. What
