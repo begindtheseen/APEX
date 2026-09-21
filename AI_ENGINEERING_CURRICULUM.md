@@ -8,11 +8,11 @@
 
 | | hours |
 |---|---|
-| **Module hours** (the 33 modules, M0–M32) | **1,108** |
+| **Module hours** (the 33 modules, M0–M32) | **1,114** |
 | **Parallel track hours** (10 tracks, all mandatory) | **470** |
-| **Real total** | **1,578 focused hours** |
+| **Real total** | **1,584 focused hours** |
 
-**The parallel tracks are mandatory, so they are in the total.** Plan against 1,578 hours, not
+**The parallel tracks are mandatory, so they are in the total.** Plan against 1,584 hours, not
 against the module hours alone.
 
 That total matters more than anything else on this page, because M0’s whole claim to authority is
@@ -20,7 +20,7 @@ That total matters more than anything else on this page, because M0’s whole cl
 miscalculation you experience as a felt sense of perpetual lateness somewhere in month nine, and that
 feeling is what turns a bad stretch into quitting.
 
-### What 1,578 hours actually means
+### What 1,584 hours actually means
 
 - At **18 h/week** — the most the program assumes anyone can sustain for a long stretch — the full
   program is **~20 months** of focused hours.
@@ -48,7 +48,7 @@ your runway, the **scope** is cut to the Spine — the ceiling is never raised.
 
 ### The Compressed Spine — when the full program does not fit your runway
 
-Divide 1,578 by the weeks in your runway. If the answer is more than 18 hours a week, do not attempt
+Divide 1,584 by the weeks in your runway. If the answer is more than 18 hours a week, do not attempt
 the full program. The honest short path is fourteen modules — **M0, M1, M2, M3, M4, M5, M6, M7, M9,
 M10, M12, M27, M28, M30** — which is **552 module hours**, plus the **370 track hours** the Spine keeps,
 for **922 hours in all**. At 18 h/week that is **~12 months** — priced with the tracks it carries, not
@@ -184,7 +184,7 @@ to record an embedding model’s dimensionality because of a ceiling you meet in
 colleagues to ask.
 
 **3. Every module of 30 hours or more has named checkpoints, and five shorter ones carry them too** —
-**149 in total across 26 modules, averaging about 7 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
+**150 in total across 26 modules, averaging about 7 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
 legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
 people conclude they are lost rather than mid-module.
 
@@ -222,7 +222,7 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 | **M8** | The Durable Queue | 18 | M7, M5 |
 | **M9** | Tests That Fail for the Right Reason | 32 | M3, M7, M5, M6 |
 | **M10** | Debugging and Production Observability | 45 | M7, M5 |
-| **M11** | Ingestion: Real Documents Into a Corpus | 30 | M5, M8, M10 |
+| **M11** | Ingestion: Real Documents Into a Corpus | 36 | M5, M8, M10 |
 | **M12** | Evals: The One Harness and the Stats Lab | 70 | M10, M6, M9 |
 | **M13** | System Design and the Design Doc | 15 | M8, M10 |
 | | **▲ HARD GATE — flagship live, two real users, ~100 failure traces, M12 green** | | |
@@ -265,10 +265,23 @@ That is not 443 divided by your weekly hours: the tracks already running take ab
 of an 18-hour budget first, leaving about sixteen for modules, so a target set at readiness lands
 around **month six**. (Only the tracks that have actually started count against it. Track 2 does not
 begin until after M9, which is most of the way through that span, so it is charged at what it really
-costs there rather than at its full cadence.) Layer 3 is another 115 hours. If the target arrives and M10 has not passed, you
+costs there rather than at its full cadence.) Layer 3 is another 121 hours. If the target arrives and M10 has not passed, you
 apply anyway with what you have and write down in that month's re-plan what you are applying without. A
 hire that arrives with much of Layers 4–6 undone is the plan *succeeding*. M31 exists so that no
 feedback instrument terminates on hire day.
+
+> **The rate changes at the application date, and it is the single most missed line on this page.**
+> Track 1 (3–4 h/week) and Track 9 (about 30 minutes) are both zero before that date and switch on at
+> it, and Track 2 steps up to its full cadence around the same stretch. Track load goes from about
+> **2.3 h/week to about 8**, so out of the same 18-hour budget the modules drop from about **sixteen
+> hours a week to about ten** — roughly **a third less module progress per calendar week** for the
+> whole second half of the program. Nothing has gone wrong when that happens; it is the job search
+> being mandatory and priced, which is BET 5. **Re-plan against the lower number in the month your
+> application date lands**, rather than carrying the month-six rate forward. A reader who does not
+> will accumulate about five and a half hours of slippage a week against a schedule that was never
+> achievable, reach Track 8's "six weeks behind" mark in something under four months, and switch to
+> the Compressed Spine on a planning artifact rather than on a real slowdown. The Spine switch is a
+> good rule; feeding it a stale rate is what makes it misfire.
 
 ---
 
@@ -300,7 +313,10 @@ write any yet, and this page is what decides whether you will.
 
 **What you need to understand.** Runway: how many months you can go without a paycheck. It sets the
 deadline; the list of topics never did. Before your application date you build; after it you keep
-building while you apply — the date decides what has to exist first, and that is most of the plan. Why
+building while you apply — the date decides what has to exist first, and that is most of the plan. It
+also decides your pace: Track 1 and Track 9 start on that date and Track 2 reaches full cadence near
+it, so module progress drops by about a third per week from there on. Plan the second half at the
+lower rate rather than discovering it. Why
 finishing a tutorial feels like learning and is not: it reads smoothly, so it feels understood; you
 recognize the answer when it is shown, but cannot produce it; you would swear you could explain it,
 until you try out loud. And a bad week is planned for, not recovered from: decide now what one costs and
@@ -322,7 +338,7 @@ the hours of the program by the weeks of your runway. If the answer is over 18 f
 Compressed Spine and say so in writing; if it is over 18 for the Spine too, the plan is Spine plus a
 contract role.
 
-**2. The hour budget** — **1,108** module hours + **470** track hours = **1,578**, with the line-item
+**2. The hour budget** — **1,114** module hours + **470** track hours = **1,584**, with the line-item
 track table below and your date arithmetic shown. **Add the hours up yourself rather than copying the
 total across** — a budget you have not computed is one you cannot defend, and a wrong total here is the
 exact class of error this module exists to prevent.
@@ -460,7 +476,7 @@ neither on day one. That is a real prerequisite; put the month it takes into the
 
 **Why this exists.** The promise on the cover is first principles, and the event loop is not a first
 principle for a reader who has never opened a terminal. Going from "write a plan" straight to "predict the
-output order of six mixed sync/setTimeout/promise lines" walls that reader at hour 12 of a 1,578-hour
+output order of six mixed sync/setTimeout/promise lines" walls that reader at hour 12 of a 1,584-hour
 program, at the module this document itself calls "the steepest part of the curve." That is not a steep
 curve; it is a missing first step, and every gate after it would inherit the gap — the blind queue asks for
 twenty commits, M3’s and M4’s gates turn on an unseen bug your reviewer plants in a single file, M25’s gate
@@ -574,6 +590,28 @@ app before M3" would be an unrunnable instruction.
 | A third-party account worth connecting | M26 |
 | A CI/deploy pipeline you own | M23 |
 | Model calls being logged from day one | M10, M12 |
+
+**If a line fails anyway, in month ten — the amendment procedure.** The instruction above is to pick a
+different app *now*, and it is the right instruction. But the lines above pay off between M11 and M26,
+which is months eight to eighteen, and you choose the app in month two; some readers will get here
+anyway, and "take the labeled fallback" is not an answer, because that fallback substitutes *traffic*
+and says nothing about a missing tier or a missing role. So:
+
+- **Four of the eight bolt on to a running app at any point.** A paid tier (a payment processor in test
+  mode is free, and M20 needs metering, not revenue). A second role — M5 already builds the auth seam,
+  and M21 only needs two principals to exploit. A third-party account worth connecting: M26 is OAuth
+  against somebody else's API and does not care which app initiates it. And a CI/deploy pipeline, which
+  M23 adds by construction. Budget **10–15 hours** for whichever you are repairing.
+- **Two cannot be bolted on.** A user-uploaded document corpus, because M11 and M18 measure extraction
+  against documents your users actually brought, not a folder you assembled to pass a module. And a
+  streaming chat surface, because M22 rebuilds the surface your app already has. If your flagship has
+  neither, M11, M18 and M22 have no substrate, and no amount of late work creates one.
+- **A second small app is the fallback, and it is partial.** M20, M21 and M26 will accept one — metering,
+  exploitation and OAuth are all self-contained. M11, M18 and M22 will not, for the reason above.
+- **What it costs is Track 3.** Every module that runs on the second app is a module whose artifact does
+  not build on the one before it, which is the dependency spiral the program runs on. Those hours are not
+  in the 1,584 — they are the price of a month-two decision you are paying in month ten, and the honest
+  place to record that is `INCIDENTS.md`: what you believed, what happened, what you changed.
 
 **The artifact** `EVIDENCE` — the smallest honest version of it. A plain HTML page with one text box. A
 server route that sends what the user typed to a model at Anthropic, using your own API key, and returns
@@ -1069,11 +1107,11 @@ uncertainty, so it fills a required field whether or not the input supports it. 
 producing noise that gets muted — after which the system is unmonitored while looking monitored.
 · Postmortems that stop at the code fix without asking why it took 40 minutes to notice.
 
-# LAYER 3 — The AI Production Core (115h)
+# LAYER 3 — The AI Production Core (121h)
 
 *What makes you an AI engineer rather than a web developer: real documents in, a way to measure whether the AI is right, and a design you defended in writing. Opens once you can see inside your app.*
 
-## M11 — Ingestion: Real Documents Into a Corpus (30h) · `dependsOn: M5, M8, M10`
+## M11 — Ingestion: Real Documents Into a Corpus (36h) · `dependsOn: M5, M8, M10`
 
 The first mile of most real AI products, and a seam that is easy to leave to nobody — most retrieval
 material opens at the embedding step, assuming a corpus that already exists as text. **Extraction
@@ -1083,7 +1121,8 @@ recovers a table flattened into word soup at ingestion.
 **Core concepts:** What an embedding is — a fixed-length vector a model emits for a text, near for near
 meaning — and what it structurally cannot do. Object storage, signed upload URLs, scoped paths and short
 expiry. **Private buckets, deny-by-default, server-side content-type and size validation.** Text-layer
-extraction vs OCR. Tables and multi-column layout. **Character-offset provenance** — page-level cannot
+extraction vs OCR **vs the page image through a vision model**, and what each one costs you in
+provenance. Tables and multi-column layout. **Character-offset provenance** — page-level cannot
 verify a span. Ingestion as a resumable job on M8’s queue, with per-file failure. Re-ingestion when the
 parser improves. The embedding dimensionality decision.
 
@@ -1099,16 +1138,30 @@ parser improves. The embedding dimensionality decision.
 > but hit the ceiling in M18. Get this wrong and you hit a flat error there and diagnose it as having
 > written the index wrong.
 
+> **The third extraction path, and the arm this module makes you measure.** Text-layer extraction and
+> OCR are not the only options. Handing the page image to a vision model is what a working team reaches
+> for first on a scanned or multi-column document, and it frequently beats OCR on exactly the thing this
+> module scores: tables. So run it as a real arm — the **same twenty documents**, the same metric, priced
+> in latency and dollars per document. Then try to carry character offsets through it and report what
+> happens honestly. A vision model returns text it read off an image, and on a scanned page there is no
+> text layer to map those characters back into, so **span-level provenance is the thing this arm is worst
+> at.** That is the finding, not a failure of the exercise. M18 needs span citations, so an arm that wins
+> on tables and cannot produce offsets is an arm you **name and cut** — the same move M18 makes with
+> contextual retrieval. Write down which path each document type goes through, and why.
+
 **Checkpoints** ① twenty documents hand-labeled and split into dev and test before any pipeline code is
 written · ② one document uploaded through a signed URL and stored in a private bucket · ③ text extracted
 from a digital PDF, a scanned one and a `.docx`, with character offsets kept · ④ the pipeline resumable on
-the M8 queue, with the orphan-cleanup job and the retention rule written down.
+the M8 queue, with the orphan-cleanup job and the retention rule written down · ⑤ the same twenty
+documents through a vision model as a second extraction arm, scored on the same table metric and priced
+per document, with what happened to character offsets written down.
 
 **Artifact** `EVIDENCE` — a pipeline accepting a real signed-URL upload, handling a digital PDF, a
 scanned PDF, and a `.docx`; character-offset provenance on every chunk. **A private bucket with
 deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an
 orphan-cleanup job, and a stated retention policy.** Resumable on M8’s queue. Scored against **twenty
-hand-labeled documents, split dev/test at creation.**
+hand-labeled documents, split dev/test at creation** — and the **vision-model arm measured against the
+same twenty**, named as kept or cut, with its provenance result stated either way.
 
 > **Exported:** the corpus and its offsets → M18. The embedding dimensionality decision → M18
 > (the **column** holds thousands more than the **index** will take: an HNSW index caps at 2,000
@@ -1116,13 +1169,17 @@ hand-labeled documents, split dev/test at creation.**
 
 **GATE** — **REFEREE:** your reviewer, scoring against your twenty hand-labeled documents — a number you
 cannot fudge. **PASS:** state what percentage of tables your parser destroys, with evidence; show a
-citation that **highlights the exact span** in the correct page of the correct source. **ON FAIL:**
+citation that **highlights the exact span** in the correct page of the correct source; and say which
+extraction path each document type goes through, with **the vision arm's table score and its provenance
+result on the record — kept or cut, and why.** **ON FAIL:**
 provenance is page-level — rebuild to offsets before M18.
 
 **Most-missed:** Storing page-level provenance, then discovering in M18 that span citations are
 unverifiable and offsets are unrecoverable after the fact. · Making the bucket public under time
 pressure. A misconfigured bucket is none of injection, XSS, CSRF or SSRF, so the standard exploit set will
-not catch it. · Picking a 3,072-dimension embedding model without checking the pgvector index ceiling.
+not catch it. · Picking a 3,072-dimension embedding model without checking the pgvector index ceiling. ·
+Running the vision arm, finding it wins on tables, and adopting it without checking whether it can still
+produce the character offsets M18's span citations are built on.
 
 ## M12 — Evals: The One Harness and the Stats Lab (70h) · `dependsOn: M10, M6, M9` · **owns: evals**
 
@@ -2401,7 +2458,10 @@ rate is, the same discipline M12 grades you on.
 channel**, the problem is the channel mix or the evidence rather than the effort; the response is to have
 three people who actually hire read your resume cold, not to send more.
 
-And falling six weeks behind for two months in a row switches you to the Spine.
+And falling six weeks behind for two months in a row switches you to the Spine. **Re-baseline the
+month your application date lands**, because that is when Track 1 and Track 9 switch on and your module
+hours per week drop by about a third; measuring the second half against the first half's rate will walk
+you into that switch on arithmetic rather than on a real slowdown.
 
 **Track 9 — narrated problems.** A coding screen is an interview where you solve a small problem while
 talking through your thinking. **Twenty-four problems**, three from each of the eight shapes that come
