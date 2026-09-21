@@ -1015,6 +1015,10 @@ body{color:var(--text);font-family:var(--sans);}
    and monospace labels surviving a pass whose own comment said the
    reference has no monospace in it. One pass, one value per property. */
 .lsLp{--rc:#4889fa;}
+/* The only light panel on the launcher, so the shared dark-surface label colour
+   lands at 2.34:1 on it. Its own values, measured against #efefef. */
+.ls-panel.lsLp .ls-tag{color:#4a5a67;}
+.ls-panel.lsLp .ls-sub{color:#54636f;}
 #launchpadApp{background:var(--rbg);color:var(--rtext);flex-direction:column;}
 #launchpadApp.active{display:flex;}
 .lp-shell{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
@@ -1069,7 +1073,7 @@ body{color:var(--text);font-family:var(--sans);}
    Fill #020c1a on #00030a, hairline #0c213a. */
 #launchpadApp{
   --rbg:#00030a;--rrail:#01040b;--rsurf:#020c1a;--rline:#0c213a;
-  --rc:#4889fa;--rc2:#5e9bf8;--rbright:#ffffff;--rtext:#b9c6d6;--rdim:#6c7b8d;
+  --rc:#4889fa;--rc2:#5e9bf8;--rbright:#ffffff;--rtext:#b9c6d6;--rdim:#7e8ea1;
   /* The reference is an Inter-class grotesque, not DM Sans — and the DM
      webfont is loaded from Google, which an offline PWA cannot reach. A
      system stack resolves to SF Pro on the devices this is used on and
@@ -1247,7 +1251,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-cmeta{color:#a4b2c2;}
 #launchpadApp .lp-dp{color:#c2ccd8;}
 #launchpadApp .lp-modI{color:#dbe5f0;}
-#launchpadApp .lx-id{background:#2f6fe0;color:#fff;}
+#launchpadApp .lx-id{background:#1d4ea8;color:#fff;}
 #launchpadApp .lp-side-foot{color:#a4b2c2;}
 /* Non-text: an open module and a locked one differed by 1.65:1. */
 #launchpadApp .lp-mrow .lp-dot{background:#3c5f86;}
@@ -1310,11 +1314,11 @@ body{color:var(--text);font-family:var(--sans);}
    fades content, so state is carried by the tile and the rail, not by
    dropping the whole row to 62% opacity. */
 #launchpadApp .lp-secH{display:flex;align-items:center;gap:11px;margin:26px 0 11px;}
-#launchpadApp .lp-secH .n{font:600 0.6562rem/1 var(--sans);letter-spacing:.14em;color:#5a6a7c;}
+#launchpadApp .lp-secH .n{font:600 0.6562rem/1 var(--sans);letter-spacing:.14em;color:#6f8094;}
 #launchpadApp .lp-secH .t{font:600 0.6562rem/1 var(--sans);letter-spacing:.14em;color:#c3ccd8;
   text-transform:uppercase;}
 #launchpadApp .lp-secH .r{flex:1;height:1px;background:var(--rline);}
-#launchpadApp .lp-secH .h{font:500 0.6562rem/1 var(--sans);letter-spacing:.05em;color:#5a6a7c;}
+#launchpadApp .lp-secH .h{font:500 0.6562rem/1 var(--sans);letter-spacing:.05em;color:#6f8094;}
 #launchpadApp .lp-mod{position:relative;display:flex;align-items:center;gap:14px;width:100%;
   text-align:left;padding:13px 16px 13px 17px;margin-bottom:9px;border:1px solid var(--rline);
   border-radius:9px;background:var(--rsurf);cursor:pointer;overflow:hidden;
@@ -1330,7 +1334,7 @@ body{color:var(--text);font-family:var(--sans);}
   font:500 0.6875rem/1 var(--sans);letter-spacing:.03em;color:#8fb8e8;}
 #launchpadApp .lp-mod.done .lp-modI{border-color:rgba(72,137,250,.45);background:rgba(72,137,250,.12);
   color:#8fc0ff;}
-#launchpadApp .lp-mod.lock .lp-modI{color:#6c7b8d;border-color:#16283d;}
+#launchpadApp .lp-mod.lock .lp-modI{color:#7e8ea1;border-color:#16283d;}
 #launchpadApp .lp-modB{flex:1;min-width:0;}
 #launchpadApp .lp-modT{display:block;font:500 0.8438rem/1.3 var(--sans);color:#e6edf5;}
 #launchpadApp .lp-mod.lock .lp-modT{color:#93a2b3;}
@@ -1338,10 +1342,10 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-tag{font:500 0.625rem/1 var(--sans);color:#5f87ad;}
 #launchpadApp .lp-tag.open{color:var(--rc2);}
 #launchpadApp .lp-tag::after{content:'\00B7';margin-left:6px;color:#2b3543;}
-#launchpadApp .lp-dep{font:400 0.6562rem/1 var(--sans);color:#5a6a7c;}
+#launchpadApp .lp-dep{font:400 0.6562rem/1 var(--sans);color:#6f8094;}
 #launchpadApp .lp-modR{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
 #launchpadApp .lp-modHr{font:500 0.7812rem/1 var(--sans);color:#c3ccd8;font-variant-numeric:tabular-nums;}
-#launchpadApp .lp-kind{font:500 0.5938rem/1 var(--sans);letter-spacing:.1em;color:#5a6a7c;}
+#launchpadApp .lp-kind{font:500 0.5938rem/1 var(--sans);letter-spacing:.1em;color:#6f8094;}
 #launchpadApp .lp-kind.ev{color:#5f87ad;}
 #launchpadApp .lp-steps{display:flex;gap:3px;}
 #launchpadApp .lp-mod.lock .lp-steps{visibility:hidden;}
@@ -1363,6 +1367,10 @@ body{color:var(--text);font-family:var(--sans);}
 /* Checkpoints in the lesson body. Same control as the rail's three steps, at
    the width of the page, with a bar so "where am I in this module" is one
    glance rather than a count. */
+#launchpadApp .lp-rulelist{list-style:decimal;margin:0 0 4px;padding:0 0 0 22px;
+  font:400 0.7812rem/1.65 var(--sans);color:#a8b8cc;}
+#launchpadApp .lp-rulelist li{margin:0 0 9px;padding-left:2px;}
+#launchpadApp .lp-rulelist li::marker{color:var(--rc2);font-weight:600;}
 #launchpadApp .lp-cutlist{list-style:decimal;margin:0;padding:0 0 0 20px;}
 #launchpadApp .lp-cutlist li{display:block;}
 #launchpadApp .lp-cutlist li::marker{color:#a4b2c2;font:500 0.75rem/1 var(--mono);}
@@ -1394,9 +1402,9 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-heroArt{display:none;}
 #launchpadApp .lx-heroIn{position:relative;z-index:1;}
 #launchpadApp .lx-eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:13px;}
-#launchpadApp .lx-mt{font:500 0.6562rem/1 var(--sans);letter-spacing:.13em;color:#6c7b8d;
+#launchpadApp .lx-mt{font:500 0.6562rem/1 var(--sans);letter-spacing:.13em;color:#7e8ea1;
   text-transform:uppercase;}
-#launchpadApp .lx-id{font:600 0.6562rem/1 var(--sans);letter-spacing:.07em;background:var(--rc);color:#fff;
+#launchpadApp .lx-id{font:600 0.6562rem/1 var(--sans);letter-spacing:.07em;background:#1d4ea8;color:#fff;
   padding:5px 8px;border-radius:5px;}
 #launchpadApp .lx-title{font:300 2.125rem/1.14 var(--sans);color:#fff;letter-spacing:-.02em;margin-bottom:12px;}
 #launchpadApp .lx-sub{font:400 0.8438rem/1.6 var(--sans);color:#a8b8cc;max-width:64ch;}
@@ -1404,7 +1412,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;white-space:nowrap;}
 #launchpadApp .lx-tk .d{width:12px;height:12px;border-radius:50%;border:1.4px solid #27394c;flex-shrink:0;}
 #launchpadApp .lx-tk.on .d{background:var(--rc);border-color:var(--rc);}
-#launchpadApp .lx-tk span{font:500 0.6562rem/1 var(--sans);letter-spacing:.11em;color:#6c7b8d;
+#launchpadApp .lx-tk span{font:500 0.6562rem/1 var(--sans);letter-spacing:.11em;color:#7e8ea1;
   text-transform:uppercase;}
 #launchpadApp .lx-tk.on span{color:#e6edf5;}
 #launchpadApp .lx-tkr{width:24px;height:1px;background:#1b3350;margin-right:14px;}
@@ -1415,7 +1423,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-secI{width:52px;height:52px;flex-shrink:0;border-radius:14px;border:1px solid #1b304a;
   background:rgba(120,170,230,.04);color:#e6edf5;display:flex;align-items:center;justify-content:center;}
 #launchpadApp .lx-secI .lp-svg{width:28px;height:28px;}
-#launchpadApp .lx-secN{font:600 0.5938rem/1 var(--sans);letter-spacing:.15em;color:#5a6a7c;margin-bottom:7px;}
+#launchpadApp .lx-secN{font:600 0.5938rem/1 var(--sans);letter-spacing:.15em;color:#6f8094;margin-bottom:7px;}
 #launchpadApp .lx-secT{font:600 1.0625rem/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
 #launchpadApp .lx-secD{font:400 0.75rem/1.55 var(--sans);color:#a8b8cc;margin-top:7px;max-width:54ch;}
 #launchpadApp .lx-li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
@@ -1454,7 +1462,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-link:first-of-type{border-top:0;}
 #launchpadApp .lx-li2{flex:1;min-width:0;}
 #launchpadApp .lx-lt{display:block;font:400 0.7812rem/1.3 var(--sans);color:#e6edf5;}
-#launchpadApp .lx-ls{display:block;font:400 0.6562rem/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lx-ls{display:block;font:400 0.6562rem/1 var(--sans);color:#93a3b6;margin-top:6px;}
 
 /* ═══ PLAN + TRACKS ══════════════════════════════════════════════ */
 #launchpadApp .lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
@@ -7012,13 +7020,19 @@ function lpHowHTML() {
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
     ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in the first module\'s Words section, and every module defines its own on its own page. '
      + (lpProgress().M0 && lpProgress().M0.gate ? 'You have passed that module; the definitions are still there if a word stops being obvious.' : 'Open M0 and read Words before anything else.')],
-    ['The rules', lpRulesText()]
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
   rows.forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
   });
+  // The five rules as five rules. Joined into one paragraph they were a wall,
+  // and the two longest are the ones a reader most needs to be able to skim.
+  h += '<div class="lp-gloss"><b>The five rules</b><span></span></div><ol class="lp-rulelist">';
+  try {
+    LAUNCHPAD_RULES.forEach(function (r) { h += '<li>' + esc(r.rule) + '</li>'; });
+  } catch (e) { h += '<li>A gate with no referee is decorative.</li>'; }
+  h += '</ol>';
   return h + '</div>';
 }
 
@@ -7111,6 +7125,19 @@ function lpHomeHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
      + 'Today’s focus</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
   var finished = sum.modulesDone === sum.modulesTotal;
+  // On day one every surface a reader meets — this page, The Plan, M0 — is about
+  // planning, and nothing tells them where code starts. Say it before they
+  // conclude the whole program is spreadsheets.
+  if (!sum.modulesDone) {
+    var m0 = API.byId('M0'), m1 = API.byId('M1'), m2 = API.byId('M2');
+    h += '<div class="lp-dp" style="margin-bottom:14px;color:var(--rtext)"><b style="color:var(--rbright)">'
+       + 'Never written code? Start at M0 and read this first.</b><br>'
+       + 'The first module has no code in it. It is ' + (m0 ? m0.hours : 12) + ' hours of writing one page about '
+       + 'money, time and people, and it comes first because how many months you can pay your bills decides what '
+       + 'you can finish. <b>Code starts in M1</b> — ' + (m1 ? m1.hours : 58) + ' hours of terminal, variables, '
+       + 'loops, errors and git, from an empty file, assuming you know none of it. <b>M2</b> is where you build '
+       + 'the app, in month two. You do not need a project idea today.</div>';
+  }
   if (finished) {
     h += '<div class="lp-dp" style="margin-bottom:12px">You have a deployed app with real users, an eval '
        + 'harness that gates its own CI, measured cost per completed task, three references who have seen '
@@ -7222,18 +7249,22 @@ function lpModulesHTML(API) {
   var h = '<div class="lx-hero">'
         + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in ladder order</span></div>'
         + '<div class="lx-title">The ladder</div>'
-        + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed, '
-        + 'and its claims can only be made in order: write the delta, tick each checkpoint as you finish it, '
-        + 'claim the artifact once they are all ticked, then the gate once a referee has said yes. '
-        + 'You can open a locked one and read it; you cannot tick it. '
-        + 'The longest chain of modules, not the total hours, is what sets how long this takes: '
-        + API.criticalPath().path.join(' → ') + ' is ' + API.criticalPath().hours + 'h, and no amount of hours a week '
-        + 'finishes it faster, because each one needs the one before it. Total hours is the floor on effort; that chain '
-        + 'is the floor on time. '
-        + 'Some modules carry a note about when to start them rather than waiting their turn: "Starts by date" means a date on your plan decides, "Starts after another module" means a particular module has to finish first, "Starts at an event" means something outside the program triggers it (your first final-round interview), and "May start earlier" means a condition can move it forward. Each one says which, inside. '
-        + 'Lab means the result stays private; Evidence means a stranger can see it.'
+        + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed. '
+        + 'You can open a locked one and read it; you cannot tick it.'
         + (onSpine ? ' Your plan points at the Spine, so the ' + AI_COMPRESSED_SPINE.length
             + ' modules it keeps are tagged below; the rest wait until you are earning.' : '') + '</div>'
+        + '<div class="lp-gloss" style="margin-top:16px"><b>The order inside a module</b><span>'
+        + 'Write the delta, tick each checkpoint as you finish it, claim the artifact once they are all ticked, '
+        + 'then the gate once a referee has said yes. Nothing can be claimed out of that order.</span></div>'
+        + '<div class="lp-gloss"><b>What sets how long this takes</b><span>'
+        + 'The longest chain of modules, not the total hours: ' + API.criticalPath().path.join(' → ') + ' is '
+        + API.criticalPath().hours + 'h, and no number of hours a week finishes it faster, because each one needs the '
+        + 'one before it. Total hours is the floor on effort; that chain is the floor on time.</span></div>'
+        + '<div class="lp-gloss"><b>Starts by date</b><span>A date on your plan decides, not the ladder.</span></div>'
+        + '<div class="lp-gloss"><b>Starts after another module</b><span>A particular module has to finish first.</span></div>'
+        + '<div class="lp-gloss"><b>Starts at an event</b><span>Something outside the program triggers it — for these two, your first final-round interview.</span></div>'
+        + '<div class="lp-gloss"><b>May start earlier</b><span>A condition can move it forward in your plan. Each module says which of these applies, inside.</span></div>'
+        + '<div class="lp-gloss"><b>Lab and Evidence</b><span>Lab means the result stays private. Evidence means a stranger can open it and judge it.</span></div>'
         + '</div>';
 
   h += '<div class="lp-cols"><div>';
@@ -7479,7 +7510,9 @@ function lpPlanHTML(API) {
         + '<div class="lx-title">The Plan</div>'
         + '<div class="lx-sub">How many months you can go without a paycheck, and how many hours a week you can truly give. '
         + 'Those two numbers set your deadline and which program you follow. Nothing else does. '
-        + 'They are two of the lines the first module asks you to write; <a href="#" onclick="lpOpen(\'M0\');return false">open M0</a> for the rest.</div></div>';
+        + 'They are two of the lines the first module asks you to write; <a href="#" onclick="lpOpen(\'M0\');return false">open M0</a> for the rest. '
+        + '<b>This tab is a calculator, not the place you start.</b> It needs no code and no project — '
+        + 'just the two numbers — and it is here so you can see what they do before you commit to them.</div></div>';
   h += '<div class="lp-cols"><div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
@@ -7688,7 +7721,12 @@ function lpDetailHTML(API, id) {
 
   var n = 0, pad = function () { return ('0' + (++n)).slice(-2); };
 
-  // Words first. A reader with no background must never meet a term on this
+  // The note goes first, before anything numbered. It is the sentence that
+  // tells you what kind of page this is; at the bottom it arrived too late to
+  // do that.
+  if (m.note) h += '<div class="lp-warn"><b>READ THIS FIRST</b><br>' + esc(m.note) + '</div>';
+
+  // Words next. A reader with no background must never meet a term on this
   // page before its plain definition, so the glossary opens the lesson.
   if (m.words && m.words.length) {
     var wh = '';
@@ -7730,7 +7768,7 @@ function lpDetailHTML(API, id) {
       cpBody += '<div class="lp-chk lx-cp' + (on ? ' on' : '') + (cpLocked ? ' lock' : '') + '" role="checkbox"'
              + ' aria-checked="' + (on ? 'true' : 'false') + '"'
              + (cpLocked
-                ? ' aria-disabled="true" tabindex="-1" style="opacity:.55;cursor:default"'
+                ? ' aria-disabled="true" tabindex="-1" style="opacity:.72;cursor:default"'
                 : ' tabindex="0" onkeydown="lpKey(event)" onclick="lpCp(\'' + esc(id) + '\',' + ci + ')"')
              + '>'
              + '<span class="lp-box">' + (on ? '✓' : (ci + 1)) + '</span>'
@@ -7766,8 +7804,6 @@ function lpDetailHTML(API, id) {
                'Not hypotheticals. Each one is a way this module is commonly failed while it feels like progress.',
                lxList(m.mistakes, 'bad'));
   }
-
-  if (m.note) h += '<div class="lp-warn"><b>NOTE</b><br>' + esc(m.note) + '</div>';
 
   // The figure closes the left column: the mechanism, after the words.
   var VZ = (typeof LAUNCHPAD_VIZ !== 'undefined') ? LAUNCHPAD_VIZ : null;

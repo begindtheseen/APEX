@@ -279,6 +279,16 @@ feedback instrument terminates on hire day.
 *The module was called "The Plan" until the app grew a tab with the same name. It is the page you
 write; the tab is the calculator that fills two of its lines.*
 
+> **Read this first if you have never written code.** There is none in this module, and none is
+> expected. It is twelve hours of writing one page about money, time and people. **Code starts in the
+> very next module, M1** — fifty-eight hours of terminal, variables, loops, errors and git, from an
+> empty file. This one comes first for a single reason: how many months you can pay your bills decides
+> what you can finish, and everything else on this page is worked out from that number. Deciding it
+> after you have built something is how people run out of money in month nine with a half-finished
+> portfolio. **Nothing here needs a project, an idea, or a line of code.** If a line asks for something
+> you cannot judge yet — what an app should do, whether a posting is a good one — write your honest
+> guess and mark it to revisit; the monthly re-plan exists to correct it.
+
 This is day one, and the reader on day one has never written code. So every item below is something a
 person can do with a notebook and an internet connection, said in words they already have. Items that
 need code the reader has not written yet — a commit queue, a model-call log, a smoke test for tools not
@@ -440,6 +450,11 @@ neither on day one. That is a real prerequisite; put the month it takes into the
 ---
 
 ## M1 — First Code (58h) · `dependsOn: M0`
+
+> **This is where code starts, and it starts from nothing:** what a program is, what the terminal is,
+> what a variable is. Fifty-eight hours is the longest module in this layer on purpose — it is the one
+> that decides whether the rest of the program is readable to you. Nothing before this assumed you
+> could write anything, and nothing here assumes it either.
 
 **Why this exists.** The promise on the cover is first principles, and the event loop is not a first
 principle for a reader who has never opened a terminal. Going from "write a plan" straight to "predict the
