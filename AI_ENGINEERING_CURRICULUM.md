@@ -333,7 +333,9 @@ ordering in one paragraph now, so the decision at the hard gate is a lookup rath
 What you decide here is the flagship’s traffic date: **a date in month four by which a dozen people you
 found will have used it.** That is a weekend of asking, not a growth strategy. The target behind it is
 **~100 logged traces containing real failures** — that is what M12 actually consumes and what the hard
-gate counts; a raw request count is not the threshold.
+gate counts; a raw request count is not the threshold. **Two of those users is what the hard gate
+requires**, and M2's own gate gets you those; the dozen by month four is the target that makes the
+traces worth anything.
 
 > **The labeled fallback, stated plainly:** if you cannot get real users, substitute a public corpus
 > with *real human labels you create yourself.* It costs you error-analysis realism — you will be
