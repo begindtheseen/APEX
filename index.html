@@ -16,12 +16,25 @@
      everything else is closed. connect-src 'self' is the line that matters: it
      means injected script cannot send this device's year of progress anywhere.
      base-uri and form-action shut the two redirect tricks, frame-ancestors
-     stops the page being framed, and object-src kills plugin embedding. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+     and object-src kills plugin embedding. frame-ancestors is deliberately
+     absent: a meta CSP cannot carry it, and declaring it here only produces a
+     console warning. It belongs in a response header if the host ever adds one. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <!-- Google sees only that a request happened, not which page asked. -->
 <meta name="referrer" content="no-referrer">
+<!-- The font sheet no longer blocks first paint: it loads as a print
+     stylesheet and is promoted once it arrives. Both families have local
+     fallbacks, and this app has to work with no network at all. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="lpFonts" rel="stylesheet" media="print"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* Until the realm data has parsed, the panels are visible but cannot do
+   anything. Say so, instead of letting a tap land on nothing. */
+body.booting .ls-panel{pointer-events:none;opacity:.55;}
+body.booting .ls-row::after{content:'Loading…';display:block;width:100%;text-align:center;
+  margin-top:14px;font:500 0.75rem/1 var(--mono,monospace);letter-spacing:.18em;color:#5b7fa6;}
 :root{
   /* Deep ocean ice palette — every surface is cold-tinted, never pure black */
   --void:   #020509;
@@ -1528,7 +1541,7 @@ body{color:var(--text);font-family:var(--sans);}
 #warpFlash{position:absolute;inset:0;opacity:0;pointer-events:none;will-change:opacity;}
 </style>
 </head>
-<body>
+<body class="booting">
 <div id="app">
 
 <!-- REALM SELECT — the start page. Three curricula, one engine. -->
@@ -1753,7 +1766,7 @@ body{color:var(--text);font-family:var(--sans);}
      lesson/flashcard/quiz shaped, because that is what this curriculum is. -->
 <div class="screen" id="launchpadApp">
   <div class="lp-shell">
-    <nav class="lp-side" id="lpSide" aria-label="Launch Pad sections"></nav>
+    <nav class="lp-side" id="lpSide" aria-label="LAUNCHPAD sections"></nav>
     <div class="lp-main" id="lpMain">
       <div class="lp-topbar">
         <button class="lp-back lp-exit mo-btn" id="lpBackBtn" style="margin:0" onclick="lpTopBack()">← REALMS</button>
@@ -6027,6 +6040,7 @@ function enterLaunchpad() {
 }
 function exitLaunchpad() {
   document.getElementById('launchpadApp').classList.remove('active');
+  lpFreezeRealm('launchpadApp');
   goLauncher();
 }
 var LP_FROM = 'modules';
@@ -6054,6 +6068,21 @@ function lpBack()   { LP_VIEW = null; renderLaunchpad(); }
 // ticked, and "Gate passed" could be ticked first, so every number on the
 // home page was self-reported in any order. Three things are enforced now.
 var LP_STEPS = ['delta', 'artifact', 'gate'];
+// Name the nearest blocker first. Telling a reader on day one that the only
+// thing in their way is a hard gate needing a deployed app with real users
+// sends them at something nineteen modules away, when what actually blocks
+// them is the module directly above.
+function lpLockWhy(id, P) {
+  var API = lpApi(); if (!API) return 'Locked.';
+  var m = API.byId(id); if (!m) return 'Locked.';
+  var unmet = m.dependsOn.filter(function (d) { var e = P[d]; return !(e && e.gate); });
+  var gateShut = m.layer >= 4 && m.layer <= 6 && !API.flagshipGate(P).open;
+  if (unmet.length && gateShut) return 'Locked. ' + lpAnd(lpSortIds(unmet)) + ' first — and then the hard gate.';
+  if (unmet.length) return 'Locked. ' + lpAnd(lpSortIds(unmet)) + ' ' + (unmet.length > 1 ? 'have' : 'has') + ' to pass first.';
+  if (gateShut) return 'The hard gate is not open yet — all four conditions first.';
+  return 'Locked.';
+}
+
 function lpToggle(id, step) {
   var API = lpApi(); if (!API) return;
   var P = lpProgress();
@@ -6063,20 +6092,12 @@ function lpToggle(id, step) {
   var i = LP_STEPS.indexOf(step);
 
   // 1. A module you have not opened yet has nothing to claim.
-  if (!API.isUnlocked(id, P)) {
-    var mod = API.byId(id);
-    if (mod && mod.layer >= 4 && mod.layer <= 6 && !API.flagshipGate(P).open) {
-      toast('The hard gate is not open yet — all four conditions first', 'warn');
-    } else {
-      toast('Locked. Pass what this module depends on first', 'warn');
-    }
-    return;
-  }
+  if (!API.isUnlocked(id, P)) { toast(lpLockWhy(id, P), 'warn'); return; }
   // 2. In order. The rail says "in order" and now means it.
   if (!m[step] && i > 0) {
     var first = -1;
     for (var q = 0; q < i; q++) { if (!m[LP_STEPS[q]]) { first = q; break; } }
-    if (first === 0) { toast(id === 'M0' ? 'Write the delta first' : 'Write the delta first — that is the reading', 'warn'); return; }
+    if (first === 0) { toast(LX_DELTA[id] ? 'Write the delta first' : 'Write the delta first — that is the reading', 'warn'); return; }
     if (first === 1) { toast('Build the artifact before a referee can pass it', 'warn'); return; }
   }
   // 2b. The checkpoints are the module. "Artifact built" on a module with nine
@@ -6098,8 +6119,14 @@ function lpToggle(id, step) {
     if (alsoHere.length || alsoAfter.length) {
       var lines = ['Un-ticking "' + step + '" on ' + id + ' also clears:'];
       if (alsoHere.length) lines.push('  · ' + alsoHere.join(' and ') + ' on ' + id);
-      if (alsoAfter.length) lines.push('  · every claim on ' + alsoAfter.join(', '));
-      lines.push('', 'This cannot be undone. Continue?');
+      // A list of thirty-two unsorted ids in a system dialog is not read. Give
+      // the count, and the names only while they are still countable by eye.
+      if (alsoAfter.length) {
+        lines.push(alsoAfter.length > 6
+          ? '  · every claim on the other ' + alsoAfter.length + ' modules that follow from it — that is your whole record'
+          : '  · every claim on ' + lpSortIds(alsoAfter).join(', '));
+      }
+      lines.push('', 'Export your progress first if you want to keep it.', 'This cannot be undone. Continue?');
       if (!confirm(lines.join('\n'))) return;
     }
     for (var k = i; k < LP_STEPS.length; k++) m[LP_STEPS[k]] = false;
@@ -6150,16 +6177,9 @@ function lpCp(id, idx) {
   var mod = API.byId(id); if (!mod || !mod.checkpoints) return;
   idx = Number(idx);
   if (!(idx >= 0 && idx < mod.checkpoints.length)) return;
-  if (!API.isUnlocked(id, P)) {
-    if (mod.layer >= 4 && mod.layer <= 6 && !API.flagshipGate(P).open) {
-      toast('The hard gate is not open yet — all four conditions first', 'warn');
-    } else {
-      toast('Locked. Pass what this module depends on first', 'warn');
-    }
-    return;
-  }
+  if (!API.isUnlocked(id, P)) { toast(lpLockWhy(id, P), 'warn'); return; }
   var m = lpEntry(id) || { delta:false, artifact:false, gate:false, cp:Object.create(null) };
-  if (!m.delta) { toast('Write the delta first — that is the reading', 'warn'); return; }
+  if (!m.delta) { toast(LX_DELTA[id] ? 'Write the delta first' : 'Write the delta first — that is the reading', 'warn'); return; }
   if (m.cp[idx]) {
     if (m.artifact || m.gate) {
       var also = [m.artifact ? 'Artifact built' : null, m.gate ? 'Gate passed' : null].filter(Boolean);
@@ -6263,7 +6283,7 @@ function renderLaunchpad(keepScroll) {
       backBtn.setAttribute('aria-label', 'Back to Home');
     } else {
       backBtn.innerHTML = '← REALMS';
-      backBtn.setAttribute('aria-label', 'Leave Launch Pad and choose another realm');
+      backBtn.setAttribute('aria-label', 'Leave LAUNCHPAD and choose another realm');
     }
   }
   var crumb = document.getElementById('lpCrumb');
@@ -6273,9 +6293,8 @@ function renderLaunchpad(keepScroll) {
       var vm = API.byId(LP_VIEW);
       var vl = (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).filter(function (L) {
         return vm && L.id === vm.layer; })[0];
-      var backTab = LP_FROM || 'modules';
-      crumb.innerHTML = '<a href="#" onclick="lpTab(\'' + backTab + '\');return false">'
-        + esc(TABNAME[backTab] || 'Modules') + '</a> / ' + (vl ? esc(vl.name) + ' / ' : '') + '<b>' + LP_VIEW + '</b>';
+      crumb.innerHTML = '<a href="#" onclick="lpTab(\'modules\');return false">Modules</a> / '
+        + (vl ? esc(vl.name) + ' / ' : '') + '<b>' + LP_VIEW + '</b>';
     } else {
       crumb.innerHTML = '<b>' + (TABNAME[LP_TAB] || 'Home') + '</b>';
     }
@@ -6289,10 +6308,13 @@ function renderLaunchpad(keepScroll) {
   // view change; without the reflow read the browser coalesces it away.
   host.className = 'lp-body';
   host.innerHTML = body;
-  void host.offsetWidth;
-  if (!keepScroll) host.classList.add('mo-in');
+  // Re-adding the class next frame replays the entrance animation without
+  // forcing a synchronous layout, which reading offsetWidth here did — 10 to
+  // 43ms on every view change, most of the cost of putting a view on screen.
+  if (!keepScroll) requestAnimationFrame(function () { host.classList.add('mo-in'); });
   if (main) main.scrollTop = keepScroll ? y : 0;
   lpStillIfAsked();
+  lpObserveArt(host);
 }
 
 // ── Icon set. Stroked SVG at 24x24, currentColor, 1.6 weight. Unicode
@@ -6358,6 +6380,48 @@ function lpStillIfAsked(root) {
     }
   } catch (e) {}
 }
+
+// An SVG clock keeps running whether or not anyone can see it. On Home that is
+// 157 animations at once, which costs about half the frame rate while you
+// scroll, and none of it stops when you leave the realm — display:none saves
+// the paint, not the timers. Pause everything off screen; start it again when
+// it comes back.
+var LP_SEE = null;
+function lpObserveArt(root) {
+  try {
+    var host = root || document.getElementById('launchpadApp');
+    if (!host) return;
+    if (!window.IntersectionObserver) return;
+    if (!LP_SEE) {
+      LP_SEE = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var el = entries[i].target;
+          if (!el.pauseAnimations) continue;
+          if (entries[i].isIntersecting) { if (!lpReduced()) el.unpauseAnimations(); }
+          else el.pauseAnimations();
+        }
+      }, { rootMargin: '200px 0px' });
+    }
+    var svgs = host.querySelectorAll('svg');
+    for (var i = 0; i < svgs.length; i++) {
+      if (svgs[i].pauseAnimations) { svgs[i].pauseAnimations(); LP_SEE.observe(svgs[i]); }
+    }
+  } catch (e) {}
+}
+function lpReduced() {
+  try { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  catch (e) { return false; }
+}
+// Leaving a realm stops its clocks. Coming back starts only what is on screen.
+function lpFreezeRealm(hostId) {
+  try {
+    var host = document.getElementById(hostId);
+    if (!host) return;
+    if (LP_SEE) LP_SEE.disconnect();
+    var svgs = host.querySelectorAll('svg');
+    for (var i = 0; i < svgs.length; i++) if (svgs[i].pauseAnimations) svgs[i].pauseAnimations();
+  } catch (e) {}
+}
 function lpSideHTML() {
   var el = document.getElementById('lpSide');
   if (!el) return;
@@ -6374,7 +6438,13 @@ function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
 // ── Layer art. One small animated scene per layer, sitting where the comp
 // puts a screenshot. Abstract on purpose: it should read as the shape of the
 // work rather than as a picture of a screen.
+var LP_ART_ROWS = null, LP_ART_ROWS_KEY = null;
 function lpLayerArt(n) {
+  // All nine scenes used to be rebuilt on each of the nine calls Home makes,
+  // and two of them run plan(). Build the set once per distinct plan input.
+  var key = '';
+  try { key = JSON.stringify(LP_ST.setup || {}); } catch (e) { key = null; }
+  if (LP_ART_ROWS && key !== null && key === LP_ART_ROWS_KEY) return LP_ART_ROWS[n] || '';
   var D = 'stroke="#22456e"', A = 'stroke="#4db8ff"', C = 'stroke="#00d4ff"';
   function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true" focusable="false">' + inner + '</svg>'; }
   var rows = [];
@@ -6417,7 +6487,7 @@ function lpLayerArt(n) {
        + ';' + (0.16 + i * 0.05).toFixed(2) + ';0.93;1" dur="6s" repeatCount="indefinite"/></rect>';
   }
   rows[2] = svg('<text x="26" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">TESTS</text>'
-    + '<text x="112" y="30" font-size="10" fill="#ff4455">1 bug left</text>' + g);
+    + '<text x="112" y="30" font-size="10" fill="#ff4455">one still red</text>' + g);
 
   // L3 The AI Production Core — tokens streaming out of a prompt
   var tk = '';
@@ -6492,15 +6562,17 @@ function lpLayerArt(n) {
          + '<animate attributeName="y" values="' + (pre ? '34;34;34;34' : '34;60;60;34') + '" keyTimes="0;0.35;0.9;1" dur="4s" repeatCount="indefinite"/></rect>';
   }
   var wkLab = (function () {
-    try { var w = (LP_ST.setup && Number(LP_ST.setup.weeklyHours)) || 0;
-          return (isFinite(w) && w > 0 ? String(Math.round(w)) : '18') + ' H / WK'; }
-    catch (e) { return '18 H / WK'; }
+    // This layer's whole content is that the weekly number changes once you are
+    // employed, so printing the pre-hire number here as a fact was the one thing
+    // the badge must not say.
+    return '5\u20138 H / WK';
   })();
   rows[8] = svg('<text x="20" y="22" font-size="10" fill="#5b7fa6" letter-spacing="1">' + wkLab + '</text>'
     + '<text x="99" y="22" font-size="10" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
     + '<line x1="94" y1="28" x2="94" y2="86" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3 3"/>'
     + '<text x="20" y="104" font-size="9.5" fill="#5b7fa6">the plan succeeding</text>');
 
+  LP_ART_ROWS = rows; LP_ART_ROWS_KEY = key;
   return rows[n] || '';
 }
 
@@ -6743,9 +6815,10 @@ function lpHowHTML() {
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
     ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it.'],
-    ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it, about a hundred logged traces contain real failures, and your eval harness runs against them on every push. Working harder does not open it.'],
+    ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it (or the written fallback in its place), about a hundred logged traces contain real failures (or, on the fallback, a hundred cases you labeled yourself), and your eval harness runs against them on every push. Working harder does not open it — but there is a fallback, and it is on the Modules tab.'],
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
-    ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in M0\'s first section. Open M0 and read Words before anything else.'],
+    ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in the first module\'s Words section, and every module defines its own on its own page. '
+     + (lpProgress().M0 && lpProgress().M0.gate ? 'You have passed that module; the definitions are still there if a word stops being obvious.' : 'Open M0 and read Words before anything else.')],
     ['The rules', lpRulesText()]
   ];
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
@@ -6768,8 +6841,8 @@ function lpHomeHTML(API) {
         + '<div class="lp-heroScrim"></div><div class="lp-heroIn">';
   h += '<div class="lp-eyebrow">' + (sum.modulesDone === sum.modulesTotal ? 'Every gate passed'
      : sum.modulesDone ? 'Welcome back' : 'The whole path') + '</div>';
-  h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'Finished'
-     : esc((LP_ST.setup && LP_ST.setup.flagship) || 'Launch Pad')) + '</div>';
+  h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'LAUNCHPAD · finished'
+     : esc((LP_ST.setup && LP_ST.setup.flagship) || 'LAUNCHPAD')) + '</div>';
   h += '<div class="lp-sub">33 modules, from an empty file to hired. '
      + 'Each one ends in something you built and can explain out loud, and in a gate: someone else says yes. Lab modules stay private; Evidence modules are for strangers to see.</div>';
   h += '<div class="lp-heroBar" role="progressbar" aria-valuenow="' + sum.pct + '" aria-valuemin="0" '
@@ -6813,8 +6886,8 @@ function lpHomeHTML(API) {
        + '<div style="flex:1;min-width:0"><div class="lp-layt">' + esc(Lr.name) + '</div>'
        + '<div class="lp-layd">' + esc(Lr.purpose)
        + (Lr.id >= 4 && Lr.id <= 6 && !API.flagshipGate(P).open
-          ? ' <b style="color:#ff8a8a">Behind the hard gate: ' + API.flagshipGate(P).done
-            + ' of ' + API.flagshipGate(P).total + ' conditions done.</b>' : '') + '</div></div></div>';
+          ? ' <b style="color:#ff8a8a">Behind the hard gate — four conditions that do not open by working harder ('
+            + API.flagshipGate(P).done + ' of ' + API.flagshipGate(P).total + ' done, listed on the Modules tab).</b>' : '') + '</div></div></div>';
     h += '<div class="lp-mods" role="list">';
     mods.forEach(function (m) {
       var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
@@ -6879,9 +6952,9 @@ function lpHomeHTML(API) {
        + ' more open — see the ladder.</div>';
   }
   if (later.length) {
-    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Starts by date</b>'
-       + '<span>' + later.map(function (m) { return esc(m.title); }).join(', ')
-       + ' — open, but each one has a note inside saying when to start it.</span></div>';
+    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Open, but with a note about when</b>'
+       + '<span>' + later.map(function (m) { return esc(m.title) + ' (' + lpWhenTag(m).toLowerCase() + ')'; }).join(', ')
+       + ' — each one says inside when to start it.</span></div>';
   }
   h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all ' + sum.modulesTotal + ' modules →</button></div>';
 
@@ -6910,7 +6983,7 @@ function lpHomeHTML(API) {
    ['With the tracks', API.totalHours().total + 'h'],
    ['Artifacts built', String(sum.artifactsDone)],
    ['Deltas written', String(sum.deltasDone)],
-   ['Longest chain', API.criticalPath().hours + 'h'],
+   ['Longest chain', API.criticalPath().path.length + ' modules · ' + API.criticalPath().hours + 'h'],
    ['Your plan', pl.recommend === 'unset' ? 'not set'
       : pl.recommend === 'spine' ? 'Compressed Spine'
       : pl.recommend === 'full-tight' ? 'Full program, tight'
@@ -6931,7 +7004,12 @@ function lpHomeHTML(API) {
 // module page so the two never disagree: a date from your plan decides, or a
 // condition can move the module earlier.
 function lpWhenTag(m) {
-  return /moves earlier|move earlier|follows m/i.test(m.trigger || '') ? 'May start earlier' : 'Starts by date';
+  var t = m.trigger || '';
+  if (/moves earlier|move earlier|follows m/i.test(t)) return 'May start earlier';
+  // Three different things were all called "starts by date". Say which one.
+  if (/first final-round interview|your first offer/i.test(t)) return 'Starts at an event';
+  if (/^after m|once you have|the week m/i.test(t)) return 'Starts after another module';
+  return 'Starts by date';
 }
 function lpModulesHTML(API) {
   var P = lpProgress(), fg = API.flagshipGate(P);
@@ -6946,8 +7024,10 @@ function lpModulesHTML(API) {
         + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed, '
         + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
         + 'You can open a locked one and read it; you cannot tick it. '
-        + 'The longest chain of modules, not the total hours, is what sets how long this takes. '
-        + 'Some modules carry a note about when to start them: "Starts by date" means a date from your plan decides, not the ladder, and "May start earlier" means a condition can move it forward. '
+        + 'The longest chain of modules, not the total hours, is what sets how long this takes: the chain below is '
+        + API.criticalPath().path.length + ' modules and ' + API.criticalPath().hours + 'h, so even at unlimited hours a '
+        + 'week nothing finishes before those are done in order. Total hours is the floor on effort; the chain is the floor on time. '
+        + 'Some modules carry a note about when to start them rather than waiting their turn: "Starts by date" means a date on your plan decides, "Starts after another module" means a particular module has to finish first, "Starts at an event" means something outside the program triggers it (your first final-round interview), and "May start earlier" means a condition can move it forward. Each one says which, inside. '
         + 'Lab means the result stays private; Evidence means a stranger can see it.'
         + (onSpine ? ' Your plan points at the Spine, so the ' + AI_COMPRESSED_SPINE.length
             + ' modules it keeps are tagged below; the rest wait until you are earning.' : '') + '</div>'
@@ -7005,7 +7085,7 @@ function lpModulesHTML(API) {
       var rowCC = lpCpCount(m.id);
       if (un && !pr.gate && rowCC.total && rowCC.done)
         h += '<span class="lp-tag open">' + rowCC.done + ' of ' + rowCC.total + ' checkpoints</span>';
-      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(m.dependsOn) : 'no prerequisites')
+      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(lpSortIds(m.dependsOn)) : 'no prerequisites')
          + (m.layer >= 4 && m.layer <= 6 && !fg.open ? ', and the hard gate' : '')
          + '</span></span></span>';
       h += '<span class="lp-modR"><span class="lp-modHr">' + m.hours + 'h</span>'
@@ -7040,8 +7120,8 @@ function lpModulesHTML(API) {
        + ' more — the ladder shows them all.</div>';
   }
   if (availLater.length) {
-    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Waiting on a date, not a gate</b>'
-       + '<span>' + availLater.map(function (m) { return esc(m.title); }).join(', ')
+    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Open, but with a note about when</b>'
+       + '<span>' + availLater.map(function (m) { return esc(m.title) + ' (' + lpWhenTag(m).toLowerCase() + ')'; }).join(', ')
        + ' — open, but each one has a note inside saying when to start it.</span></div>';
   }
   h += '</div>';
@@ -7050,7 +7130,7 @@ function lpModulesHTML(API) {
   [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
    ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
    ['With the tracks', API.totalHours().total + 'h'],
-   ['Longest chain', API.criticalPath().hours + 'h'],
+   ['Longest chain', API.criticalPath().path.length + ' modules · ' + API.criticalPath().hours + 'h'],
    ['Layers', '9']].forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
@@ -7112,9 +7192,46 @@ function lpTracksHTML(API) {
 
 // The Spine list, in its own container so The Plan can redraw it as the
 // numbers change without rebuilding the inputs the user is typing into.
+// The cut order exists in the data, two modules tell the reader to consult it,
+// and nothing rendered it anywhere. Three lines, on the screen that decides
+// which program you are on.
+function lpCutOrderHTML(API) {
+  var order = (typeof AI_CUT_ORDER !== 'undefined') ? AI_CUT_ORDER : [];
+  if (!order.length) return '';
+  var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
+        + LP_ICON.layers + 'THE CUT ORDER</div><div class="lp-cmeta">69h back</div></div>'
+        + '<div class="lp-dp" style="margin-bottom:10px;color:var(--rdim)">If you need hours back and are not ready '
+        + 'to drop to the Spine, cut in this order and no other. Two modules send you here; this is the list.</div>';
+  order.forEach(function (entry, i) {
+    var id = String(entry).split(' ')[0];
+    var m = API.byId(id);
+    var why = { M26: 'OAuth is the most learn-on-demand module here',
+                M25: 'only if fewer than eight of your twenty postings ask for Python — and not if the trip-wire already moved Python earlier',
+                M16: 'the throughput work, not the delegation policy' }[id] || '';
+    h += '<div class="lp-gloss"><b>' + (i + 1) + '. ' + esc(String(entry)) + '</b><span>'
+       + (m ? esc(m.title) + ' · ' + (String(entry).indexOf('half') >= 0 ? '~' + Math.round(m.hours / 2) : m.hours) + 'h' : '')
+       + (why ? ' — ' + esc(why) : '') + '</span></div>';
+  });
+  h += '<div class="lp-dp" style="margin-top:10px;color:var(--rdim)">M32 is deliberately not on this list: it is the '
+     + 'only module that owns landing well in a real job, which is half of what you are doing this for.</div>';
+  return h + '</div>';
+}
+
 function lpSpineCardHTML(API) {
   var pl = API.plan(LP_ST.setup || {}), P = lpProgress(), h = '';
-  if (pl.recommend !== 'spine' && pl.recommend !== 'full-tight') return '';
+  if (pl.recommend !== 'spine' && pl.recommend !== 'full-tight' && pl.recommend !== 'spine-plus-contract') return '';
+  // What the Spine actually costs, counted rather than asserted. Naming two
+  // dropped modules out of nineteen made it read like a small trim.
+  var dropped = (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []).filter(function (m) {
+    return AI_COMPRESSED_SPINE.indexOf(m.id) === -1;
+  });
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
+     + 'WHAT THE SPINE COSTS</div><div class="lp-cmeta">' + dropped.length + ' DROPPED</div></div>'
+     + '<div class="lp-dp" style="color:var(--rdim)">The Spine keeps ' + AI_COMPRESSED_SPINE.length + ' modules and drops '
+     + dropped.length + ' — including the whole AI layer (M18 to M21), deployment (M23) and Python (M24 and M25). '
+     + 'The two that will hurt first in a contract role are M14, reading code you did not write, and M17, scoping and '
+     + 'estimating: a contract role is the most likely of all to drop you into an unfamiliar codebase with a scoped '
+     + 'deliverable and no ramp. Budget your first month on the job for them.</div></div>';
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.layers
      + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
   AI_COMPRESSED_SPINE.forEach(function (id) {
@@ -7140,7 +7257,7 @@ function lpPlanHTML(API) {
         + '<div class="lx-title">The Plan</div>'
         + '<div class="lx-sub">How many months you can go without a paycheck, and how many hours a week you can truly give. '
         + 'Those two numbers set your deadline and which program you follow. Nothing else does. '
-        + 'They are two of the lines M0 asks you to write; <a href="#" onclick="lpOpen(\'M0\');return false">open M0</a> for the rest.</div></div>';
+        + 'They are two of the lines the first module asks you to write; <a href="#" onclick="lpOpen(\'M0\');return false">open M0</a> for the rest.</div></div>';
   h += '<div class="lp-cols"><div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
@@ -7155,12 +7272,16 @@ function lpPlanHTML(API) {
 
   h += '</div><div>';
   h += '<div id="lpSpineCard">' + lpSpineCardHTML(API) + '</div>';
+  h += lpCutOrderHTML(API);
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
      + 'WHAT THIS DECIDES</div></div>';
   [['Your flagship', (LP_ST.setup && LP_ST.setup.flagship) ? LP_ST.setup.flagship + ' — M2 builds its first version.' : 'Not named yet. M2 builds it; naming it here puts it on the home screen.'],
    ['Your deadline', 'What your runway and your weekly hours allow. Worked out, not guessed.'],
-   ['Which program', 'The full ' + API.totalHours().count + ' modules, or the '
-     + AI_COMPRESSED_SPINE.length + '-module Spine if the runway is short.'],
+   ['Which program', 'The full ' + API.totalHours().count + ' modules, or the Spine — the '
+     + AI_COMPRESSED_SPINE.length + '-module version you take when the runway is short. It is listed below '
+     + 'once your numbers are in, with what it costs you.'],
+   ['The release valve', 'Falling six weeks behind two months in a row switches you to the Spine. That is the plan '
+     + 'working, not the plan failing — it is why the Spine exists. Track 8 checks it once a month.'],
    ['When you apply', 'After Layers 0-2, not when everything is finished. The date goes in your plan now.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
@@ -7202,15 +7323,31 @@ function lpVerdictHTML(API) {
   var CEIL = 18;
   var spineFits = pl.neededForSpine && Math.round(pl.neededForSpine * 10) / 10 <= CEIL;
   var overrun = !unset && !spineFits;
+  // The headline has to match the finding underneath it. "Take the Spine" above
+  // a sentence saying the Spine needs more hours than you have is an instruction
+  // the reader cannot follow.
+  var spineShort = pl.neededForSpine && pl.weeklyHours && pl.neededForSpine > pl.weeklyHours;
   h += '<div class="lp-vrec">' + (unset ? '■ INCOMPLETE'
-        : overrun ? '■ NEITHER FITS UNDER ' + CEIL + ' H/WEEK'
-        : pl.recommend === 'spine' ? '▲ TAKE THE SPINE'
+        : overrun ? '■ NEITHER FITS — SPINE PLUS PAID WORK'
+        : pl.recommend === 'spine' ? (spineShort ? '▲ RAISE THE HOURS, OR TAKE THE SPINE' : '▲ TAKE THE SPINE')
         : pl.recommend === 'full-tight' ? '▲ TIGHT — RAISE HOURS OR TAKE THE SPINE'
         : '▲ FULL PROGRAM FITS') + '</div>';
   h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
+  if (!unset && pl.weeklyHours && pl.weeklyHours > CEIL) {
+    h += '<div class="lp-vwhy" style="color:#a4b2c2">' + CEIL + ' hours a week is the most this program assumes '
+       + 'anyone can sustain for a year, so the arithmetic above uses ' + CEIL + ' as the ceiling even though you '
+       + 'entered ' + pl.weeklyHours + '. Entering more does not make the plan shorter; it makes the plan optimistic.</div>';
+  }
+  if (!unset && spineShort && !overrun) {
+    h += '<div class="lp-vwhy" style="color:#ff8a8a"><b>What to do:</b> raise your weekly hours toward '
+       + lpHrs(pl.neededForSpine) + ', or lengthen the runway. If neither is possible, the plan is the Spine plus '
+       + 'a contract role — and the numbered cut order below buys back the last few hours.</div>';
+  }
   if (!unset) {
     h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0-2 — '
-       + pl.applyAfterHours + 'h of module work in, roughly month '
+       + pl.applyAfterHours + 'h of module work in. That is not '
+       + pl.applyAfterHours + ' divided by your weekly hours: the parallel tracks take about '
+       + lpHrs(pl.applyTrackHoursPerWeek) + ' h/week out of the budget before any module gets one, so it lands roughly month '
        + (pl.applyAfterMonths ? Math.max(1, Math.round(pl.applyAfterMonths)) : '?')
        + '. Not when everything is finished.'
        + (function () {
@@ -7230,6 +7367,19 @@ function lpVerdictHTML(API) {
 // A module is five moves, in the order you make them. Each gets its own
 // plate with a numbered heading and a leading tile, so the page reads as
 // a sequence of things to do rather than as one long document.
+// What "write the delta" means on this module. Most modules have documentation
+// to read; M0 has none yet, and the three market modules have no tools at all,
+// so the general sentence was an instruction their readers could not follow.
+var LX_DELTA = {
+  M0: 'There is no documentation to read for this module. Your delta is one paragraph, written before anything else: what you believe this program will take. What follows is the argument the plan rests on — read it, then write that paragraph, and read it again in month four.',
+  M27: 'Your delta here is not documentation. It is the twenty postings from M0 read against what you assumed the market pays, with every place you were wrong written down.',
+  M31: 'Your delta here is not documentation. It is what you assumed an employed week would look like, written down before the job starts, so month three can be read against it.',
+  M32: 'Your delta here is not documentation. It is what you expect the first ninety days to be, written before day one, against what they turn out to be.'
+};
+function lxDeltaLine(m) {
+  return LX_DELTA[m.id]
+    || 'Read the official documentation for the tools in this module, not a tutorial, and write down every place it proved you wrong. That page of notes is your delta, and it is the proof you read.';
+}
 function lxSec(n, icon, title, sub, body) {
   return '<div class="lx-sec"><div class="lx-secH"><div class="lx-secI">' + LP_ICON[icon] + '</div>'
        + '<div style="flex:1;min-width:0"><div class="lx-secN">' + n + '</div>'
@@ -7247,6 +7397,14 @@ function lxList(items, kind) {
   return h;
 }
 
+// Module ids sort by their number, not as text, so M10 does not come before M2.
+// Printed in arbitrary order on a screen whose entire subject is order, a list
+// reads as a mistake.
+function lpSortIds(list) {
+  return (list || []).slice().sort(function (a, b) {
+    return (parseInt(String(a).slice(1), 10) || 0) - (parseInt(String(b).slice(1), 10) || 0);
+  });
+}
 // Dependency lists read as prose here, so the last two ids join with "and".
 function lpAnd(list) {
   if (!list || !list.length) return '';
@@ -7283,9 +7441,9 @@ function lpDetailHTML(API, id) {
   } else if (openNow) {
     subLine = 'Open now. It needed ' + lpAnd(m.dependsOn) + ', and ' + (m.dependsOn.length > 1 ? 'all are' : 'it is') + ' passed.';
   } else {
-    subLine = 'Locked. Waiting on ' + (unmet.length ? lpAnd(unmet) : '')
+    subLine = 'Locked. Waiting on ' + (unmet.length ? lpAnd(lpSortIds(unmet)) : '')
             + (gated && !fgH.open ? (unmet.length ? ', and the hard gate (' : 'the hard gate (') + fgH.done + ' of ' + fgH.total + ' done, on the Modules tab)' : '')
-            + '.' + (metDeps.length ? ' ' + lpAnd(metDeps) + ' already passed.' : '');
+            + '.' + (metDeps.length ? ' ' + lpAnd(lpSortIds(metDeps)) + ' already passed.' : '');
   }
   h += '<div class="lx-sub">' + subLine + lpOwnsLine(m) + '</div>';
   h += '<div class="lx-track">';
@@ -7316,9 +7474,7 @@ function lpDetailHTML(API, id) {
 
   if (m.concepts && m.concepts.length) {
     h += lxSec(pad() + ' · UNDERSTAND', 'book', 'What you have to hold in your head',
-               m.id === 'M0'
-                 ? 'There is nothing to read yet. Your delta for this module is one paragraph, written before anything else: what you believe this program will take. You will read it again in month four.'
-                 : 'Read the official documentation for the tools in this module, not a tutorial, and write down every place it proved you wrong. That page of notes is your delta, and it is the proof you read.',
+               lxDeltaLine(m),
                lxList(m.concepts));
   }
 
@@ -7396,9 +7552,18 @@ function lpDetailHTML(API, id) {
         ? '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">' + esc(LAUNCHPAD_CONFIG.gateRecord) + '</div>' : '');
   var lockedHere = !API.isUnlocked(id, P);
   if (lockedHere) {
+    // Built from the SAME unmet list the header uses. Saying "until M8, M9 and
+    // M10 have passed" on a page whose header says those three are already
+    // passed is the kind of contradiction that ends a reader's trust.
+    var footUnmet = m.dependsOn.filter(function (d) { var e = P[d]; return !(e && e.gate); });
+    var footMet = m.dependsOn.filter(function (d) { var e = P[d]; return !!(e && e.gate); });
+    var footNeed = [];
+    if (footUnmet.length) footNeed.push(lpAnd(lpSortIds(footUnmet)) + (footUnmet.length > 1 ? ' have' : ' has') + ' passed');
+    if (gated && !fgH.open) footNeed.push('the hard gate is open');
     h += '<div class="lp-warn" style="margin-bottom:12px"><b>LOCKED</b><br>Reading ahead is fine, but nothing here can be ticked until '
-       + (m.dependsOn.length ? lpAnd(m.dependsOn) + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' : 'it opens')
-       + (gated && !fgH.open ? ' and the hard gate is open' : '') + '.</div>';
+       + (footNeed.length ? footNeed.join(' and ') : 'it opens') + '.'
+       + (footMet.length ? ' ' + lpAnd(lpSortIds(footMet)) + (footMet.length > 1 ? ' are' : ' is') + ' already passed.' : '')
+       + '</div>';
   }
   var railCC = lpCpCount(id);
   [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
@@ -7416,13 +7581,27 @@ function lpDetailHTML(API, id) {
 
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">This module</div></div>';
   var facts = [['Hours', m.hours + 'h'], ['Kind', m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab'], ['Layer', 'L' + m.layer],
-               ['Depends on', m.dependsOn.length ? m.dependsOn.join(', ') : '—']];
-  if (m.owns) facts.push(['Teaches for good', lpAnd(m.owns)]);
-  if (m.exports) facts.push(['Hands forward', m.exports.join('; ')]);
+               ['Depends on', m.dependsOn.length ? lpSortIds(m.dependsOn).join(', ') : '—']];
+  if (m.owns) facts.push(['Owns the idea of', lpAnd(m.owns)]);
   facts.forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
   h += '</div>';
+
+  // "Hands forward" used to be an unlabelled list of fragments with ASCII
+  // arrows, sitting beside a differently-derived count of what comes next. It
+  // is its own card now, written as sentences, and it is about the work rather
+  // than about the graph — the card below is about the graph.
+  if (m.exports && m.exports.length) {
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
+       + 'What this hands to later modules</div><div class="lp-cmeta">' + m.exports.length + '</div></div>';
+    m.exports.forEach(function (x) {
+      var parts = String(x).split('->');
+      h += '<div class="lp-gloss"><b>' + esc(parts[0].trim()) + '</b><span>'
+         + (parts.length > 1 ? 'Used by ' + esc(parts.slice(1).join('->').trim()) + '.' : '') + '</span></div>';
+    });
+    h += '</div>';
+  }
 
   // What this opens. Showing it here is the only place the dependency graph
   // answers "why am I doing this one" without the learner tracing edges.
@@ -7683,6 +7862,18 @@ function launchRealm(name, btn) {
 
 obsLoad();
 init();
+// The app is now actually able to answer a tap. Everything above this line ran
+// with the launcher already painted.
+document.body.classList.remove('booting');
+// Promote the font sheet from print to all once it has arrived. Done here
+// rather than with an inline onload attribute, so no element in this page
+// carries an event-handler attribute for an injected string to hide among.
+(function () {
+  var f = document.getElementById('lpFonts');
+  if (!f) return;
+  if (f.sheet) { f.media = 'all'; return; }
+  f.addEventListener('load', function () { f.media = 'all'; });
+})();
 
 </script>
 </body>
