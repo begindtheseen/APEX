@@ -1558,7 +1558,8 @@ residual failure rate means for the user.
 **GATE** — **REFEREE:** a vague two-sentence ticket written by the reviewer, cold, and the reviewer
 playing a PM who will not take no. **PASS:** clarifying questions and a sliced plan in 15 minutes;
 defend what you would cut if the deadline halved; **and report a result that missed its target, in
-writing, without apologizing and without asking for more time.** **ON FAIL:** more data points.
+writing, without apologizing and without asking for more time.** **ON FAIL:** more data points — the
+estimate log is a standing item from M3, not three points gathered here.
 
 > **The estimate log is a standing item from M3, not three data points here.** Costs nothing, produces
 > dozens of points by the time you are interviewing, and *"my median estimate error is X and I most
@@ -1709,7 +1710,8 @@ about your egress policy by itself.**
 inputs from a second agent with a red-team brief and no knowledge of your governor**, with the spend
 assertion living in the test suite. **PASS:** resume correctly after a mid-run kill; replay a failed
 trajectory and name the causing step; the cost ceiling holds across all 200; **the allowlist denial is
-in your logs for the blocked host, and the metadata and RFC1918 regression cases both refused.** Plus: report your agent eval set’s step-level and outcome-level
+in your logs for the blocked host, and the metadata and RFC1918 private-network regression cases
+both refused.** Plus: report your agent eval set’s step-level and outcome-level
 scores. **ON FAIL:** the governor caps iterations but not spend — fix and re-run.
 
 > Fuzz the ceiling, don’t demo it. A demonstration you designed proves you can construct a passing case.
