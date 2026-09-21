@@ -2,7 +2,13 @@
 // Compact, accessible SVGs: every color-coded state also carries a label.
 (function () {
   'use strict';
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  // The same five-character escape the app uses. Escaping only & and < is a
+  // trap: every argument here is a literal today, and the next edit that passes
+  // a variable would inject an event-handler attribute into the SVG.
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
   function flow(title, items, footer) {
     var w=320, gap=8, margin=8, y=36, boxW=(w-margin*2-gap*(items.length-1))/items.length, s='';
     s+='<svg viewBox="0 0 320 180" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans,sans-serif">';

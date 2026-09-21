@@ -9,7 +9,7 @@
 //
 // `kind` is LAB or EVIDENCE. Only EVIDENCE artifacts are ever pinned to a portfolio.
 // `dependsOn` is load-bearing: the LONGEST PATH, not the hour sum, sets the timeline.
-// Run AI_CURRICULUM.validate() to check Rule 2 and compute the critical path.
+// Run AI_CURRICULUM_API.validate() to check Rule 2 and compute the critical path.
 // ============================================================
 
 var AI_LAYERS = [
@@ -27,9 +27,9 @@ var AI_LAYERS = [
 // Concepts with exactly ONE owning module. The registry says who owns each one.
 // Ownership is not the same claim as never-re-taught: five are owned and then
 // only consumed, and three are owned once and then deliberately deepened later.
-// Saying "eight concepts are never re-taught" was false for those three, because
-// they also sit in AI_SPIRAL_PAIRS below. validate() now checks the two lists
-// against each other so the contradiction cannot come back.
+// Those three also sit in AI_SPIRAL_PAIRS below, which is why "eight concepts are
+// never re-taught" is the wrong sentence. validate() checks the two lists against
+// each other so the two claims cannot drift apart.
 var AI_OWNED_CONCEPTS = {
   'flagship': 'M2',
   'trust boundary':  'M3',
@@ -49,6 +49,9 @@ var AI_OWNED_THEN_DEEPENED = ['trust boundary', 'observability', 'cost'];
 
 // Deliberately taught twice at different depths. NOT violations — do not "fix" these.
 // Seven pairs covering six concepts (CI is taught three times, so it appears twice here).
+// Read each pair as first-taught then deepened, which is not always owner-first:
+// 'cost' is introduced in M6 and owned at depth by M20, the reverse of the other two
+// deepened concepts, where the owner teaches it first.
 var AI_SPIRAL_PAIRS = [
   ['M10', 'M12', 'observability'],
   ['M4', 'M5',  'pooling and isolation'],
@@ -64,22 +67,24 @@ var AI_SPIRAL_PAIRS = [
 var LAUNCHPAD_RULES = [
   { n:1, rule:'Every module ends in an artifact — something that runs, or something a stranger can read.' },
   { n:2, rule:'Every module except M0 has an inbound edge, and the longest chain of modules — not the hour sum — sets how long this takes.' },
-  { n:3, rule:'Eight concepts have exactly one owning module. Five are consumed from there on; three are deliberately deepened later, and those three are named in AI_SPIRAL_PAIRS.' },
-  { n:4, rule:'Seven spiral pairs cover six concepts that are deliberately taught twice. Naming them is what stops someone "fixing" the repetition later.' },
-  { n:5, rule:'One verification pass an hour: read the official documentation before you build, and write down where it proved you wrong.' }
+  { n:3, rule:'Eight ideas have exactly one module that owns them. Five are used from there on and never taught again: the flagship (M2), streaming and idempotency (M7), the durable queue (M8), evals (M12). The other three are taught once and then deliberately taken further later — the trust boundary (M3, again in M13), observability (M10, again in M12), and cost (introduced in M6, owned at depth in M20).' },
+  { n:4, rule:'Six ideas are taught twice on purpose, across seven pairs of modules. Three of them are the three from rule 3; the others are pooling and isolation (M4, again in M5), CI (M9, then M12, then M23) and OAuth (M21, again in M26). When you meet one a second time, it is depth, not repetition.' },
+  { n:5, rule:'Every module opens with a one-hour verification pass, charged to the hours it already has: read the official documentation before you build, and write down where it proved this page wrong.' }
 ];
 
 var AI_CURRICULUM = [
 
 // ─────────────── LAYER 0 · THE CONTRACT ───────────────
 { id:'M0', layer:0, hours:12, dependsOn:[], kind:'LAB',
-  title:'The Plan',
-  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. First, the money. How many months you can go without a paycheck, which is your runway \u2014 and then, on the line under it, what this program itself costs you every month, subtracted from that runway to give the runway you actually have. Write the running cost down as a number: model spend (M2, M6 and M12 are steady; M18 and M19 are the expensive ones, because they run a corpus and hundreds of adversarial inputs through a model), hosting for the flagship once it is live, a paid tier anywhere a module needs one (a payment processor in test mode is free, error tracking and a cloud account usually are not), and, if you are paying for review or mock interviews, that too. Guess it now, correct it at every monthly re-plan, and treat the corrected number as a claim on your runway, because it is one. A program whose founding argument is that runway sets the deadline cannot leave the outflow out of the arithmetic. Second, how many hours a week you can truly give this, and the deadline those two numbers force. Third, the date you will start applying for jobs: a target you pick now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date \u2014 if M10 has not passed when the target arrives, you apply anyway with what you have and write down in that month\u2019s re-plan what you are applying without. Twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. A count of how many of the twenty ask for Python (if eight or more do, the Python module moves earlier; expect this to fire). Three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. Be honest with yourself about this one on day one: the gates in this program need either a budget for paid review and paid mock interviews, or two working engineers who will give you real time for a year. If you have neither today, the first thing you build is that, and it can take a month; put that month in the plan rather than discovering it at M3. A dated list of what you can do today, which on day one is honestly "nothing yet". A file called INCIDENTS.md with one line every time something goes wrong from here on. A date in month four by which a dozen people you found will have used your flagship, the one app you will build in month two and keep improving for the rest of the program. And a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
+  title:'The Contract Page',
+  note:'There is no code in this module, and you are not expected to know any. It is twelve hours of writing one page about money, time and people. Code starts in the very next module, M1, which is fifty-eight hours of terminal, variables, loops, errors and git — the actual basics, from an empty file. This one comes first for a single reason: how many months you can pay your bills decides what you can finish, and everything else on this page is worked out from that number. Deciding it after you have built something is how people run out of money in month nine with a half-finished portfolio. Nothing here needs a project, an idea, or a line of code. If a line asks for something you cannot judge yet — what an app should do, whether a posting is a good one — write your honest guess and mark it to revisit; the monthly re-plan exists to correct it.',
+  artifact:'One page, called PLAN.md, that you can read out loud. It holds ten things. First, the money. How many months you can go without a paycheck, which is your runway \u2014 and then, on the line under it, what this program itself costs you every month, subtracted from that runway to give the runway you actually have. Write the running cost down as a number: model spend (M2, M6 and M12 are steady; M18 and M19 are the expensive ones, because they run a corpus and hundreds of adversarial inputs through a model), hosting for the flagship once it is live, a paid tier anywhere a module needs one (a payment processor in test mode is free, error tracking and a cloud account usually are not), and, if you are paying for review or mock interviews, that too. Guess it now, correct it at every monthly re-plan, and treat the corrected number as a claim on your runway, because it is one. A program whose founding argument is that runway sets the deadline cannot leave the outflow out of the arithmetic. Second, how many hours a week you can truly give this, and the deadline those two numbers force. Third, the date you will start applying for jobs: a target you pick now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date \u2014 if M10 has not passed when the target arrives, you apply anyway with what you have and write down in that month\u2019s re-plan what you are applying without. Fourth, twenty real job postings read end to end, with a note on each of what it asks for and whether it is an employee job or a contract job. Fifth, a count of how many of the twenty ask for Python (if eight or more do, the Python modules M24 and M25 move earlier in the order you plan; expect this to fire). The ladder in this app does not rearrange itself — it opens on prerequisites, and M24 still waits on M9 and the hard gate. What moves is your plan: write the alternate ordering down on this page, and do Python first among whatever is open once you get there. Sixth, three messages sent to people who write code for a living, asking each for 20 minutes a month; whoever says yes is your reviewer, the person who checks your work from here on. Be honest with yourself about this one on day one: the gates in this program need either a budget for paid review and paid mock interviews, or two working engineers who will give you real time for a year. If you have neither today, the first thing you build is that, and it can take a month; put that month in the plan rather than discovering it at M3. Seventh, a dated list of what you can do today, which on day one is honestly "nothing yet". Eighth, a file called INCIDENTS.md with one line every time something goes wrong from here on. Ninth, a date in month four by which a dozen people you found will have used your flagship. Two of those is what the hard gate requires, and M2’s own gate gets you those; the dozen is the target that makes the traces M10 and M12 read worth anything. The flagship is the one app you will build in month two and keep improving for the rest of the program. And tenth, a written rule for what a bad week is and what the week after it looks like. No code. You do not know how to write any yet, and this page is what decides whether you will.',
   gate:{ referee:'Anyone \u2014 a friend, a partner, a sibling \u2014 who reads your one page and hands it back.',
          pass:'They can say your runway, your monthly running cost, your weekly hours and your application date without looking at the page. The three messages are sent. The twenty postings are tallied. Your rule for a bad week is written and you can say it.',
          onFail:'This one cannot be failed by lack of skill, only by not finishing it. Name the line your referee could not repeat back, finish that line, and read the page to them again. Nothing else opens until they can.' } },
 
 { id:'M1', layer:0, hours:58, dependsOn:['M0'], kind:'LAB',
+  note:'This is where code starts, and it starts from nothing: what a program is, what the terminal is, what a variable is. Fifty-eight hours is the longest module in this layer on purpose — it is the one that decides whether the rest of the program is readable to you. Nothing before this assumed you could write anything, and nothing here assumes it either.',
   title:'First Code',
   artifact:'Six small programs, each written by you from an empty file and run from the terminal. One that reads a file and prints how many lines it has; one that asks a public API for data and rearranges what comes back; one that fails on purpose, which you fix by reading the error message. Then one where a block you had typed twice becomes a function; one with three tests you wrote before the code they test; and one you broke on purpose and got back with git. The setup around them counts as part of the work: Node installed with its version written down, an editor you can move around in without a mouse, a repo pushed to a remote with commit messages a stranger could follow, and a page naming every tool you installed and what each one is for. Then three short things you can only do now that you have tools. A 30-minute check that your machine can install what later modules need (a local database, a container runtime, a load generator, and a browser you can drive from code), done now so that if something will not install it fails today instead of in month three. Name the floor while you are there, because "a substantial machine" is not a specification: M5 holds a five-million-row Postgres instance and a container runtime at the same time, M11 runs OCR over PDFs and M18 runs a reranker, so plan on at least 16 GB of memory and 50 GB of free disk. The check proves things install; it does not prove M5 will fit. If you are unsure, load five million rows into your local Postgres today and watch what happens \u2014 that is the real smoke test, and finding out now is worth the extra half hour. A first attempt at a coding task you have never seen, scored honestly as a fraction; zero out of six is a real score, and writing it down is the point. And a list of twenty small bug-fix commits from other people\u2019s public repos, found but not read, saved for M14 and M30, where they become practice problems with a real answer. Save a reproducible starting state, not a URL: record each commit\u2019s parent SHA and confirm today that the project builds and its suite is green at that parent. A repo moves on, and a commit you cannot check out and run in fifteen months is not an exercise, it is a merge conflict.',
   gate:{ referee:'Anyone who writes code for a living, watching your screen for 20 minutes, on a task you have not seen.',
@@ -98,20 +103,20 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 1 · THE MACHINE ───────────────
 { id:'M3', layer:1, hours:67, dependsOn:['M1','M2'], kind:'LAB', owns:['trust boundary'],
   title:'The Runtime, Unframed',
-  artifact:'runtime-lab: a set of small programs under plain node --test. MiniPromise from scratch. A harness reproducing all four concurrency failure modes, then fixing each. A Zod boundary rejecting hostile LLM JSON that `as` accepted. A typed error taxonomy with cause chaining and a retry-safety rule per class.',
+  artifact:'runtime-lab: a set of small programs under plain node --test. MiniPromise from scratch. A harness reproducing all four concurrency failure modes, then fixing each. A Zod boundary rejecting hostile LLM JSON that a bare “as” cast accepted. A typed error taxonomy with cause chaining and a retry-safety rule per class. TypeScript strict flags on from day one.',
   exports:['the estimate log starts here and runs until you are hired'],
   note:'This is the largest module in The Machine and it comes early, which is the steepest part of the '
-     + 'curve. Do not read ahead \u2014 start with checkpoint 1, which is a 20-minute prediction '
+     + 'curve. Do not skip to the later checkpoints \u2014 start with checkpoint 1, which is a 20-minute prediction '
      + 'exercise, and let being wrong about the output order be the thing that motivates the other 66 '
      + 'hours. Everything after this module assumes you can reason about what the runtime is doing, so '
      + 'this is the one place where going slower is going faster.',
   gate:{ referee:'Your reviewer, watching the screen recording back with you.',
-         pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real `as`-cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
+         pass:'Narrate unprompted why setTimeout(fn,0) runs after a resolved .then(). Convert a real bare-as cast of model JSON from your own shipped code into a parsed boundary and name the production bug it prevents.',
          onFail:'Rebuild the concurrency harness from empty. Re-attempt in 7 days.', unseen:'The unseen condition: three attempts, 45 minutes each, on an async bug your reviewer plants in a single file you have not seen. Pass 2 of 3. Narrating your own harness cannot distinguish understanding the runtime from remembering what you built.' } },
 
 { id:'M4', layer:1, hours:45, dependsOn:['M3'], kind:'LAB',
   title:'The Machine Model: Ten Seams',
-  artifact:'seams: ten reproductions, each a failing script + fix + proving test. Leak proved with a heap snapshot; money wrong by a cent; UTF-8 grapheme split across streamed chunks; pool exhausted under load; lost update in a database (the Postgres version, with the plan that proves it, is M5’s); four-timezone digest scheduler with an injected fake clock pinned across spring-forward and fall-back.',
+  artifact:'seams: ten reproductions, each a failing script + fix + proving test, one per seam in the list above. (1) Aliasing: a shallow copy that was not a copy. (2) A leak proved with a heap snapshot — an object still reachable that you believed was gone. (3) Money wrong by a cent, then correct. (4) An integer that stopped being exact, on an id big enough to reach the limit. (5) A UTF-8 grapheme split across streamed chunks. (6) JSON losing something on the way through: a Date, an undefined, a Map. (7) A pool exhausted under load. (8) A blocking call freezing the loop, and the same work moved off it. (9) A lost update in a database (the Postgres version, with the plan that proves it, is M5’s). (10) A four-timezone digest scheduler with an injected fake clock pinned across spring-forward and fall-back.',
   gate:{ referee:'Reviewer picks which of the ten, without telling you.',
          pass:'Name the seam and the instrument within 60 seconds, 7 of 10. Then point at the wrong-typed columns in a small table design your reviewer hands you.',
          onFail:'Rewrite the two you missed from empty. Re-attempt in 7 days.', unseen:'The unseen condition: two attempts on a data-seam bug (encoding, money, timezone, pooling) your reviewer plants in a single file you have not seen. Pass 1 of 2.' } },
@@ -122,12 +127,13 @@ var AI_CURRICULUM = [
   exports:['load generator -> M23'],
   gate:{ referee:'Your reviewer, holding an EXPLAIN (ANALYZE, BUFFERS) output you have never seen, taken from their own work. A slow-query log only carries a plan if auto_explain was configured to log one, and only carries actual rows if it was configured with log_analyze — so ask for the plan, not the log line.',
          pass:'State estimated vs actual rows before anything else, then name the fix before reading the query, 3 of 4. If the plan you are handed has no actual rows in it, say so first: plain EXPLAIN reports the planner’s estimates and nothing else, and noticing that is itself the first thing to notice. Explain why your own deployed app exhausted connections and show the pooled fix under the same load.',
-         onFail:'Re-run the slow-to-fast loop on three new queries.' } },
+         onFail:'Re-run the slow-to-fast loop on three new queries.' },
+  currency:'A platform claim wearing fundamentals clothing, and it moves at platform speed. The connection endpoints and their IP-version and plan availability, and the publishable/secret key naming that is replacing the legacy pair, both change on Supabase’s schedule. Verify the current endpoint table and the current key names against the official documentation before you start.' },
 
 { id:'M6', layer:1, hours:30, dependsOn:['M3','M2'], kind:'LAB',
   exports:['stop_reason discriminator -> M9, M19', 'usage and cache meters -> M20'],
   title:'The Model as a Function',
-  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce every stop_reason without exception, including a refusal, showing stop_details as the discriminator; demonstrate the limit of constrained decoding rather than a rejection that cannot happen — a generation that is schema-valid and factually wrong, and, separately, what the API does when the schema you sent is itself invalid, which is a 400 on the request rather than a rejected generation; discover capabilities, context window (max_input_tokens) and output cap (max_tokens) from the Models API rather than a hard-coded table, and note that prices are not on that endpoint, so the price table is the one thing in your client that must carry a check date. Plus a dead-patterns page with every 400 pasted in. And the cost column added to the M2 call log, priced from the usage object, so every call from here on has a price.',
+  artifact:'model-probe CLI: compare token counts against your assumptions across five text types; prove a cache hit from the usage meters and print the cost delta; produce end_turn, max_tokens, tool_use and stop_sequence deliberately, and take the refusal from a recorded fixture rather than trying to trip a safety classifier on demand — that is not reliably producible and drilling it is a bad habit; either way, show stop_details as the discriminator, and note that the categories it carries are an open set, so a switch over the ones you saw this month is a latent bug; demonstrate the limit of constrained decoding rather than a rejection that cannot happen — a generation that is schema-valid and factually wrong, and, separately, what the API does when the schema you sent is itself invalid, which is a 400 on the request rather than a rejected generation; discover capabilities, context window (max_input_tokens) and output cap (max_tokens) from the Models API rather than a hard-coded table, and note that prices are not on that endpoint, so the price table is the one thing in your client that must carry a check date. Plus a dead-patterns page with every 400 pasted in. And the cost column added to the M2 call log, priced from the usage object, so every call from here on has a price.',
   gate:{ referee:'Your reviewer, checking your arithmetic against a real usage object from the service.',
          pass:'Price a request to the cent from its usage object alone, saying where each rate came from and when you last checked it — the Models API does not serve prices, so this one number is hand-carried and dated. Point at the exact byte that broke a cache prefix. Explain why a model-emitted confidence score is generated text, not a probability, and what feature designs that kills.',
          onFail:'Re-derive the pricing by hand from three more requests.' },
@@ -135,7 +141,7 @@ var AI_CURRICULUM = [
 
 { id:'M7', layer:1, hours:45, dependsOn:['M3','M4','M5','M6'], kind:'EVIDENCE', owns:['streaming','idempotency'],
   title:'HTTP, Streaming, and the Wire',
-  artifact:'The streaming LLM proxy — the one the rest of the program builds on. Raw fetch, raw ReadableStream, hand-parsed SSE frames, no SDK. AbortController end to end. Postgres idempotency-key dedupe table. Deliberately reproduces proxy buffering and a mid-stream error, and recovers from both. The wire format you define here is the one M22’s client has to consume; budget that join now; it is not free.',
+  artifact:'The streaming LLM proxy — the one the rest of the program builds on. Raw fetch, raw ReadableStream, hand-parsed SSE frames, no SDK. AbortController end to end. Postgres idempotency-key dedupe table. Deliberately reproduces proxy buffering and a mid-stream error, and recovers from both. The flagship server, written in plain JavaScript in M2, is rebuilt in TypeScript here — this is the module where that move happens. The wire format you define here is the one M22’s client has to consume; budget that join now; it is not free.',
   exports:['SSE transport -> M22','idempotency table -> M8, M20'],
   gate:{ referee:'Your reviewer, reading the server logs and a database row count. Both are facts neither of you can argue with.',
          pass:'Kill the client mid-generation, show from logs that upstream billing stopped. Replay one idempotency key twice, show exactly one row. Narrate what arrives on the wire between first byte and first rendered token.',
@@ -169,15 +175,16 @@ var AI_CURRICULUM = [
 // ─────────────── LAYER 3 · THE AI PRODUCTION CORE ───────────────
 { id:'M11', layer:3, hours:30, dependsOn:['M5','M8','M10'], kind:'EVIDENCE',
   title:'Ingestion: Real Documents Into a Corpus',
-  artifact:'A pipeline accepting a real signed-URL upload, handling a digital PDF, a scanned PDF and a .docx. Character-offset provenance, not page-level: a citation has to highlight the exact sentence that supports a claim, and offsets into extracted text are unrecoverable after the fact, especially through OCR. A private bucket with deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an orphan-cleanup job, a stated retention policy. Resumable on the M8 queue. Scored against twenty hand-labeled documents, split dev/test at creation.',
-  exports:['corpus + offsets -> M18','embedding dimensionality decision -> M18 (pgvector caps: vector 2,000, halfvec 4,000)'],
+  artifact:'A pipeline accepting a real signed-URL upload, handling a digital PDF, a scanned PDF and a .docx. Character-offset provenance, not page-level: a citation has to highlight the exact sentence that supports a claim, and offsets into extracted text are unrecoverable after the fact, especially through OCR. A private bucket with deny-by-default, scoped short-expiry signed URLs, server-side content-type and size validation, an orphan-cleanup job, a stated retention policy. Resumable on the M8 queue. Scored against twenty hand-labeled documents, split dev/test at creation. Write about twenty-five queries against that corpus by hand at the same time and split them dev/test too, with the number in each half written down. M18’s whole argument about how many things it can measure rests on that count, and queries written after you have seen a retriever’s output are not a test set.',
+  exports:['corpus + offsets -> M18','embedding dimensionality decision -> M18 (the column holds thousands more than the index will take: an HNSW index caps at 2,000 dimensions for vector and 4,000 for halfvec)'],
   gate:{ referee:'Your reviewer, scoring against your twenty hand-labeled documents. A number you cannot fudge.',
          pass:'State what percentage of tables your parser destroys, with evidence. Show a citation that highlights the exact span in the correct page of the correct source.',
-         onFail:'Provenance is page-level. Rebuild to offsets before M18.' } },
+         onFail:'Provenance is page-level. Rebuild to offsets before M18.' },
+  currency:'The pgvector dimension ceilings you are choosing an embedding model against are version-pinned, and embedding models change what they emit. Check the current ceilings and the current model’s output dimensionality the week you embed, and write both in the decision log.' },
 
 { id:'M12', layer:3, hours:70, dependsOn:['M10','M6','M9'], kind:'EVIDENCE', owns:['evals'],
   title:'Evals: The One Harness and the Stats Lab',
-  artifact:'One harness, and only one: Postgres + a TypeScript runner, no platform. 100 hand-read labeled traces in four sessions of 25. Named failure taxonomy with counts. Assertion graders. A judge with a measured confusion matrix. Inter-annotator agreement — the reviewer labels 30 using nothing but your written rubric; where you disagree the rubric gets revised, not the labels. Dev/test split at creation. Tiered CI gate: a smoke set of about fifteen cases on every push, full set nightly, recorded-fixture mode so graders cost $0, a per-run dollar ceiling in the job summary, fail condition as a statistical threshold with its bootstrap CI. Then a deliberate model-family migration gated only by your own eval set. Plus stats-lab.',
+  artifact:'One harness, and only one: Postgres + a TypeScript runner, no platform. 100 hand-read labeled traces in four sessions of 25. Named failure taxonomy with counts. Assertion graders. A judge with a measured confusion matrix. Inter-annotator agreement — the reviewer labels 30 using nothing but your written rubric; where you disagree the rubric gets revised, not the labels. Dev/test split at creation. Tiered CI gate: a smoke set of about fifteen cases on every push, full set nightly, recorded-fixture mode so graders cost $0, a per-run dollar ceiling in the job summary, fail condition as a statistical threshold with its bootstrap CI. Then a deliberate model-family migration gated only by your own eval set. Plus stats-lab: the four statistical tests this program actually consumes, each run once against your own data. Base rates, and why accuracy lies when failures are rare. The confusion matrix, with TPR and TNR computed by hand on your own 100 labeled traces. Percentiles from a raw latency array, and why averaging percentiles is wrong. And bootstrap resampling written from scratch, which is what tells you how many labeled examples you need before a delta means anything.',
   exports:['dataset table, assertion graders, calibrated judge -> M18, M19, M23, M25'],
   gate:{ referee:'Your reviewer, handing you a prompt change that is scored against the test set you have not opened.',
          pass:'Ship/no-ship with a bootstrap CI. State judge TPR/TNR together with human-to-human agreement. Name the criterion that produced the most disagreement and how you rewrote it. Break the gate on purpose on a branch and keep the red check — a rehearsal, and labeled as one, because waiting for a real regression to arrive before gate day is not something you can schedule. If a real regression fires it later, replace the screenshot with that one.',
@@ -186,7 +193,7 @@ var AI_CURRICULUM = [
 
 { id:'M13', layer:3, hours:15, dependsOn:['M8','M10'], kind:'EVIDENCE',
   title:'System Design and the Design Doc',
-  artifact:'A one-page design doc with two rejected options for a bounded AI system, reviewed, and pushed back on, by a real reader before any code exists. Keep both the proposed and the built version; the delta is the interview material. And three timed design reps of 45 minutes each, an hour in total once the debrief is counted, one per month from the application date, each on a different bounded system and at least one deliberately outside your stack. You will walk in with real p99 numbers and a real durable queue (and, once M20 is passed, a real cost-per-completed-task table), and no reps at saying any of it.',
+  artifact:'A one-page design doc with two rejected options for a bounded AI system, reviewed, and pushed back on, by a real reader before any code exists. Keep both the proposed and the built version; the delta is the interview material. And three timed design reps of 45 minutes each — about an hour each once the debrief is counted — one per month from the application date, each on a different bounded system and at least one deliberately outside your stack. You will walk in with real p99 numbers and a real durable queue (and, once M20 is passed, a real cost-per-completed-task table), and no reps at saying any of it.',
   gate:{ referee:'The mock interviewer, who must ask questions you did not anticipate. This gate is unadministrable alone.',
          pass:'45 minutes at a whiteboard on one bounded AI system end to end including observability and the failure path, surviving three unscripted follow-ups. Plus: here is where my design was wrong and how I found out.',
          onFail:'Rehearse the weak branch and re-book.' } },
@@ -202,7 +209,7 @@ var AI_CURRICULUM = [
 
 { id:'M15', layer:4, hours:46, dependsOn:['M14'], kind:'EVIDENCE',
   title:'Git, Review, and Code Other People Maintain',
-  artifact:'Five pieces to a real reviewer. A recovery-lab log of six deliberate disasters. A file you have personally been confused by while editing, with 3+ responsibilities, chosen and justified in writing before you touch it, restructured behind M14 characterization tests with a line-item rationale per boundary moved. Every failure path in one feature rewritten to actionable messages. And one PR through a full round trip with 15+ comments, 2+ pushed back on with reasoning, 1+ where you changed your mind and said so. Fifth: twenty consecutive working-day updates posted in public, and a sealed brief handed to your reviewer for M16\u2019s gate.',
+  artifact:'Five pieces to a real reviewer. First: a recovery-lab log of six deliberate disasters. Second: a file you have personally been confused by while editing, with 3+ responsibilities, chosen and justified in writing before you touch it, restructured behind M14 characterization tests with a line-item rationale per boundary moved. Third: every failure path in one feature rewritten to actionable messages. Fourth: one PR through a full round trip with 15+ comments, 2+ pushed back on with reasoning, 1+ where you changed your mind and said so. Fifth: twenty consecutive working-day updates posted in public, and a sealed brief handed to your reviewer for M16\u2019s gate.',
   gate:{ referee:'A real maintainer, in the review thread on your pull request.',
          pass:'Three review rounds completed, every comment addressed or argued in writing, zero structural comments on the final round. And twenty consecutive working-day updates posted in public, and the reviewer can reconstruct your month from the thread alone without asking you.',
          onFail:'The structural comments are the curriculum. Address and resubmit.' },
@@ -228,13 +235,14 @@ var AI_CURRICULUM = [
   artifact:'Retrieval over the M11 corpus, on the M12 runner and tables. A measured recall@k baseline, then two interventions measured independently: hybrid+RRF and a reranker. Two, not five, and the reason is the corpus. M11 gives you twenty hand-labeled documents and about twenty-five hand-written queries split dev/test, which leaves roughly ten queries in the test half; recall@10 over ten queries moves in steps of 0.1 and its bootstrap interval is about plus or minus 0.3. You cannot rank five arms on that, there is no third split left to re-measure a winner on, and taking the maximum of five would bias the margin upward in a way no re-measurement here can undo. So: two arms, each reported with its interval, and contextual retrieval named in writing as the arm you cut and why. Run the long-context comparison (same queries, no retrieval) once as a priced anecdote rather than as a ranked arm, and label it that way. Then span-level citation verification against M11 offsets. Embedding lifecycle: batched generation with rate-limit handling, measured cost per 1,000 chunks, a re-embed as a restartable backfill behind a dual-index read switch (M14\u2019s resumable pattern, if you have passed it). Built with M12\u2019s split discipline.',
   gate:{ referee:'Your reviewer, scoring against your held-out test set, half of it hand-written.',
          pass:'State your delta together with its bootstrap interval and the number of queries behind it, and say out loud whether the interval crosses zero. With a set this small it very probably does, and then the finding is "I cannot distinguish these two with the data I have" — saying that plainly is the pass condition, not a failure of the module. Then state recall@10 before and after with the hnsw.iterative_scan setting named out loud and the dev-test gap stated. Name the arm you cut and the size of corpus that would have justified running it. Defend your routing rule between retrieval and long context using your own numbers.',
-         onFail:'The golden set is LLM-generated, or you tuned on the set you reported, or you reported a winner with no interval. Hand-write 25, re-split, re-run.' } },
+         onFail:'The golden set is LLM-generated, or you tuned on the set you reported, or you reported a winner with no interval. Hand-write 25, re-split, re-run.' },
+  currency:'pgvector index behavior is version-pinned: the dimension ceilings, and whether iterative scanning is on or off by default, both changed inside this program’s own calendar. Check the version you are running and name the setting your recall number was measured under.' },
 
 { id:'M19', layer:5, hours:49, dependsOn:['M7','M8','M6','M12'], kind:'EVIDENCE',
   title:'Agents and Tool Use',
-  artifact:'A hand-rolled agent loop with a hard-stopping budget governor, loop detection, an approval gate on irreversible actions, durable state on the M8 queue, append-only thinking-block replay, replayable trajectory traces scored by M12 graders. You write the governor yourself because that is how you learn what it has to do; then compare it against the server-side task budget the provider offers, and write up what each one catches and what each one misses. Yours stops the run; theirs is a ceiling the model can see, so it paces itself and finishes rather than being cut off. Containment as an enforced execution boundary: container/sandbox for code-shaped tools, domain allowlist for network-shaped, path prefix for filesystem-shaped, per-tool timeout and memory caps. Assert on the policy, not on the response: show the allowlist refusing the request before a socket opens, with the denial in your own logs. Then, separately, point a tool at 169.254.169.254 and at an RFC1918 address on your own network as regression cases, and note in writing that a refusal there may be the platform rather than you — a cloud metadata service usually refuses a bare request on its own account, and a serverless host may have nothing at that address at all, so a green result there proves nothing about your egress policy by itself. Plus context management across a long run: compaction and context editing, what each is for, and when each is the wrong answer. The conversation does not have to go back unchanged, and resend-everything is a choice rather than the only shape. Then one MCP server against a named spec revision. Then the same agent on the SDK tool runner with a written comparison.',
+  artifact:'A hand-rolled agent loop with a hard-stopping budget governor, loop detection, an approval gate on irreversible actions, durable state on the M8 queue, append-only thinking-block replay, replayable trajectory traces scored by M12 graders. You write the governor yourself because that is how you learn what it has to do; then compare it against the server-side task budget the provider offers, and write up what each one catches and what each one misses. Yours stops the run; theirs is a ceiling the model can see, so it paces itself and finishes rather than being cut off. Containment as an enforced execution boundary: container/sandbox for code-shaped tools, domain allowlist for network-shaped, path prefix for filesystem-shaped, per-tool timeout and memory caps. Assert on the policy, not on the response: show the allowlist refusing the request before a socket opens, with the denial in your own logs. Then, separately, point a tool at 169.254.169.254 and at a private-network address on your own network (the 192.168, 10. and 172.16 to 172.31 ranges, called RFC1918 after the document that reserved them) as regression cases, and note in writing that a refusal there may be the platform rather than you — a cloud metadata service usually refuses a bare request on its own account, and a serverless host may have nothing at that address at all, so a green result there proves nothing about your egress policy by itself. Plus context management across a long run: compaction and context editing, what each is for, and when each is the wrong answer. The conversation does not have to go back unchanged, and resend-everything is a choice rather than the only shape. Then one MCP server against a named spec revision. Then the same agent on the SDK tool runner with a written comparison.',
   gate:{ referee:'Your reviewer, sending a kill signal at a random point, plus 200 adversarial inputs from a second agent with a red-team brief and no knowledge of your governor. The spend assertion lives in the test suite.',
-         pass:'Resume correctly after a mid-run kill. Replay a failed trajectory and name the causing step. Cost ceiling holds across all 200. The allowlist denial is in your logs for the blocked host, and the metadata and RFC1918 regression cases both refused. Report step-level and outcome-level agent eval scores.',
+         pass:'Resume correctly after a mid-run kill. Replay a failed trajectory and name the causing step. Cost ceiling holds across all 200. The allowlist denial is in your logs for the blocked host, and the metadata and private-network regression cases both refused. Report step-level and outcome-level agent eval scores.',
          onFail:'The governor caps iterations but not spend. Fix and re-run.' },
   currency:'MCP (defined in the words below) is a versioned specification with dated revisions and breaking changes between them. Look the current revision up the week you build, write it down, and be able to name one thing that changed in it. Do not take a revision date from this page; the point of the exercise is that you checked.' },
 
@@ -273,7 +281,7 @@ var AI_CURRICULUM = [
 { id:'M24', layer:6, hours:15, dependsOn:['M9'], kind:'LAB',
   title:'Python On-Ramp',
   trigger:'Moves earlier, right after M12 and the hard gate, if eight or more of the twenty postings you read in M0 ask for Python. M25 follows it. Plan on that happening: Python appears in most AI-engineering postings, so the trip-wire is the base case and this late slot is the exception. The bet this program is actually making is that learning correctness once in TypeScript and then porting it beats splitting your attention across two languages from month one — not that you can avoid Python.',
-  artifact:'Current tooling (uv, ruff, one pinned type checker — stated shelf life). Python semantics where they differ from TypeScript. pytest. Type hints with a checker in CI. pydantic as the validation boundary. One typed FastAPI route with a test.',
+  artifact:'Current tooling: uv, ruff, and one type checker you pin by name and version — mypy and pyright are the two you will meet most, with faster newer ones arriving; pick one, write down which and when you chose it, and expect the name to age faster than the idea. Python semantics where they differ from TypeScript. pytest. Type hints with a checker in CI. pydantic as the validation boundary. One typed FastAPI route with a test.',
   gate:{ referee:'Your reviewer, with a timer.',
          pass:'Add a typed route and a test to your own small Python service in 60 minutes, and explain each place the idiom differs from what you would write in TypeScript.',
          onFail:'The idiom is wrong. A passing test cannot catch this — that is why the referee is human.' } },
@@ -283,7 +291,7 @@ var AI_CURRICULUM = [
   artifact:'M12 eval runner ported to Python, so this module extends something you already built rather than standing alone. Typed request/response models, streaming, a pytest suite faking the model client, type checker green in CI, plus a written runtime diff including a reproduction of a blocking call freezing the asyncio loop and its fix.',
   trigger:'Follows M24. Both move earlier, right after M12 and the hard gate, if eight or more of the twenty postings you read in M0 ask for Python, which is the likely case. Otherwise they wait until here. If the trip-wire has fired, do not then reach for the cut order’s "M25 second half" line, whose condition is the inverse: you cannot both move Python earlier because the market asks for it and cut it because the market does not.',
   gate:{ referee:'A timer, plus a Python-fluent OSS maintainer reviewing a real PR.',
-         pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes, and have a Python-fluent reviewer confirm there are no idiom comments to make. Gate on that, not on the merge: M15 says not to condition your progress on a stranger’s inbox, and maintainer merge latency runs to months and sometimes to never. Track the merge as a lagging metric in your funnel, the way M27 treats Gate B.',
+         pass:'Add a typed route and test to an unfamiliar Python service in 90 minutes, and have a Python-fluent reviewer confirm there are no idiom comments to make. Gate on that, not on the merge: M15 says not to condition your progress on a stranger’s inbox, and maintainer merge latency runs to months and sometimes to never. Track the merge as a lagging item instead — something you log when it happens rather than wait for. M27 does the same thing with its own second gate.',
          onFail:'You are writing TypeScript with Python syntax. A passing test cannot catch this.' } },
 
 { id:'M26', layer:6, hours:23, dependsOn:['M7','M21','M22'], kind:'EVIDENCE',
@@ -298,15 +306,15 @@ var AI_CURRICULUM = [
   trigger:'One month before your application date, whatever else is unfinished. It stays in every version of the program, including the Spine.',
   title:'Pay, Terms, and the Negotiation',
   artifact:'The tax structures here are the United States ones (W-2 and 1099). If you are somewhere else, substitute your own two employment structures; the exercise is identical. A pay floor and target with the postings that justify them. A spreadsheet modeling the same headline number as W-2 vs 1099 with self-employment tax, health insurance and unpaid time off. A negotiation script rehearsed out loud and recorded, together with a 30-second background answer and a one-line reply to each of the six predictable follow-ups. Plus a references plan: three real people secured before your first offer — your reviewer, one person from your warm list, and a maintainer from Track 2 if that track is running. If you paid your reviewer, say so when you offer them as a reference. It is still a strong reference, a checker will ask what your working relationship was, and the disclosure costs you nothing while being caught out costs you the loop. And know the difference between a reference and employment verification: references speak to your work; employment verification checks employment records, which you do not have, so a background check will ask for 1099s or client invoices instead. Say up front that the last year was self-employed rather than letting it surface at the offer.',
-  gate:{ referee:'GATE A (controllable, one month before your application date): your reviewer playing a recruiter briefed to push back on your number. GATE B (lagging): a real recruiter screen, logged in the funnel table when it happens. Tick this module on Gate A; Gate B depends on a stranger replying and never holds up the ladder.',
+  gate:{ referee:'Gate A (controllable, one month before your application date): your reviewer playing a recruiter briefed to push back on your number. Gate B (lagging): a real recruiter screen, logged in the funnel table when it happens. Tick this module on Gate A; Gate B depends on a stranger replying and never holds up the ladder.',
          pass:'State your floor out loud without hedging, recorded. And deliver a 30-second background answer with no apology and no hedge, plus a one-line non-defensive answer to each of the six predictable follow-ups: not currently employed? what title? how big was the team? who was the client? why no degree? what have you been doing since? Two of those six have no answer inside a framing that hides how you spent the year, so do not use one. Say what is true: full-time self-directed work on an app you built and operate, with a working engineer reviewing your code and an eval harness gating its CI, no client and no team. If they ask how you learned, name the program and offer to show it, including where it was wrong and what you changed. That answer survives all six follow-ups; a framing engineered to be indistinguishable from employment survives two, and the moment a hiring manager works out which one you chose, the loop is over.',
          onFail:'You hedged. That is the rep. Do it again next screen.' } },
 
-{ id:'M28', layer:7, hours:8, dependsOn:['M10'], kind:'EVIDENCE',
-  trigger:'Your application date: the target you set in M0. It does not move because a module is late. If M10 has not passed by then, you apply with what you have and say in the re-plan what you are applying without. Applications need a resume on that date, not a year later.',
+{ id:'M28', layer:7, hours:8, dependsOn:['M2'], kind:'EVIDENCE',
+  trigger:'Your application date: the target you set in M0. It does not move because a module is late. If M10 has not passed by then, you apply with what you have and say in the re-plan what you are applying without — which is why this module waits only on M2, the flagship its claims point at, rather than on M10. M10 is the readiness condition for applying; it is not what opens this page. Applications need a resume on that date, not a year later.',
   title:'The Evidence Layer v1',
   artifact:'A resume mapping each claim to a repo. Two pinned repos: the flagship and one other Evidence artifact. A README in product-spec form. Only Evidence artifacts are pinned — the labs are private. Plus the sentences you will be asked for in a first screen, rehearsed — but only the ones that are true on the day this module fires. Distributed systems: the M8 durable queue, at-least-once delivery and what your idempotent consumer actually guarantees. Algorithms: the complexity work in M5, against your own measurements. The fine-tuning answer and the framework answer are not yours yet: the first needs your own eval numbers (M12) and the second needs the hand-rolled agent loop (M19), and rehearsing either before those exist is rehearsing something you cannot back. They are in M29, where the artifacts behind them exist.',
-  gate:{ referee:'Two strangers, each from a place you name in advance where this ask is on topic and welcome — a language or framework Discord with a feedback or show-and-tell channel, a project’s own discussions tab, or a local meetup’s chat. Post the README link with one line: "Five minutes, three questions, no back-and-forth: what does this do, who is it for, what does it refuse to do?" Five-minute timebox each, answers in writing. Then a third pass you run yourself against the written answers: for each question, mark the exact sentence in the README they got it from, and if there is no such sentence, that is the finding.',
+  gate:{ referee:'Two strangers, each from a place you name in advance where this ask is on topic and welcome — a chat server for a language or framework with a feedback or show-and-tell channel, a project’s own discussions tab, or a local meetup’s chat. Post the README link with one line: "Five minutes, three questions, no back-and-forth: what does this do, who is it for, what does it refuse to do?" Five-minute timebox each, answers in writing. Then a third pass you run yourself against the written answers: for each question, mark the exact sentence in the README they got it from, and if there is no such sentence, that is the finding.',
          pass:'2/2 on all three questions, plus your own marked-up README showing where each correct answer came from.',
          onFail:'Rewrite, then two fresh strangers. Nobody is burned permanently — a person who has read v1 can read v3 cold if enough has changed, and treating a scarce resource as single-use is how you run out of it.' } },
 
@@ -364,31 +372,33 @@ var AI_TRACKS = [
   { id:'T8', title:'Monthly re-plan — with a funnel table', hours:34, cadence:'2 hours a month; continues after you are hired',
     rule:'Once a month, sit down with three inputs. The skills counted across the 20 to 40 job postings you screened that month — a fresh batch, not the twenty you read in M0 — which tell you what the market wants without anyone replying to you. Your delta notes. And a funnel table for each job-search channel: how many sent, how many replies, how many screening calls, how many full interview loops (a company’s full set of interview rounds for one candidate), how many offers, and human contacts per hour spent. Two rules, and both are about not fooling yourself with a small sample. Do not reallocate on a quarter of silence: at six or seven cold applications a month, a quarter with no reply is entirely consistent with a channel that works, and you cannot tell a dead channel from an unlucky one at that volume. Reallocate on contacts per hour, compared across channels, once each channel has at least twenty attempts behind it — and say out loud how wide the interval around each rate is, the same discipline M12 grades you on. Second: if a full quarter of applying produces no conversation with a human at all, across every channel, the problem is the channel mix or the evidence rather than the effort; the response is to have three people who actually hire read your resume cold, not to send more. Falling six weeks behind for two months in a row switches you to the Spine.' },
   { id:'T9', title:'Narrated problems — practice for the coding screen', hours:25, cadence:'about 30 minutes a week, from your application date',
-    rule:'A coding screen is an interview where you solve a small problem while talking through your thinking. Twenty-four problems, three from each of the eight shapes that come up: arrays and hashing (lookup by a computed key), two pointers (walking a list from both ends), sliding window (a moving range over a list), binary search (halving a sorted list), stacks (a last-in first-out pile), intervals (ranges on a line), trees (a branching structure). The eighth is heaps: here, a structure that always hands you the smallest or largest item, not the memory heap of M4 or the table heap of M5. Each is chosen because the same shape appears in your own app: a set for removing duplicates in M7, sorting and binary search for ranking in M18, a heap for the reranker, a sliding window for rate limiting in M7. One first pass of about 30 minutes, spoken aloud with autocomplete off; one repeat two to four weeks later. Scored 0 to 3; three scores under 2 in a row on a shape re-open that shape. Twenty-four is the floor, not a claim about the market: it is chosen because it is what fits alongside everything else. Plenty of AI-product companies, including well-funded ones hiring remotely, still run a conventional algorithm screen, and you will not know which until you are in one. If M0’s twenty postings or your Track 8 screening say algorithm screens are common in your funnel, raise this number and take the hours from the numbered cut order rather than from the modules.' },
+    rule:'A coding screen is an interview where you solve a small problem while talking through your thinking. Twenty-four problems, three from each of the eight shapes that come up: arrays and hashing (lookup by a computed key), two pointers (walking a list from both ends), sliding window (a moving range over a list), binary search (halving a sorted list), stacks (a last-in first-out pile), intervals (ranges on a line), trees (a branching structure). The eighth is heaps: here, a structure that always hands you the smallest or largest item, not the memory heap of M4 or the table heap of M5. Each is chosen because the same shape appears in your own app: a set for removing duplicates in M7, sorting and binary search for ranking in M18, a heap for the reranker, a sliding window for rate limiting in M7. One first pass of about 30 minutes, spoken aloud with autocomplete off; one repeat two to four weeks later. Scored 0 to 3; three scores below 2 in a row on a shape re-open that shape. Twenty-four is the floor, not a claim about the market: it is chosen because it is what fits alongside everything else. Plenty of AI-product companies, including well-funded ones hiring remotely, still run a conventional algorithm screen, and you will not know which until you are in one. If M0’s twenty postings or your Track 8 screening say algorithm screens are common in your funnel, raise this number and take the hours from the numbered cut order rather than from the modules.' },
   { id:'T10', title:'The Sweep — retrieval practice', hours:15, cadence:'15 minutes a week from month four',
     rule:'Retrieval practice is pulling answers from memory — the study technique, not M18’s document search. Five prompts, a blank box, written from memory, no notes and no multiple choice. The prompts are the concept and pitfall lines from the modules themselves, one cue each. Score as a fraction, items you produced over items in that module’s list, so you cannot move the goalposts after seeing the answer. Selection is error-driven: weighted toward your lowest last score and toward modules nothing later builds on, which would otherwise never be touched again. This is the answer to being interviewed long after on month-one material.' }
 ];
 
 var AI_COMPRESSED_SPINE = ['M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M9', 'M10', 'M12', 'M27', 'M28', 'M30'];
-// M27 AND M28 are non-droppable in every variant. The spine exists to get you to a job,
-// and M27's own gate needs a recruiter screen, which needs a resume, which is M28.
+// M27 and M28 are non-droppable in every variant. The Spine exists to get you to a job:
+// M27 is the pay conversation, and M28 is the resume the applications on your application
+// date need that day. Neither is ordered by dependsOn — both are trigger-scheduled off a
+// date on your plan rather than off finishing a module — so the ladder cannot enforce this
+// one; the triggers do. M27 fires a month before the date, M28 on it.
 // Spine track policy (priced in plan()): T7 suspended, T4 every other week, T2 cut to
 // 40 hours rather than suspended, the rest unchanged.
 //
-// T2 used to be suspended too, and that was the wrong cut. The Spine is prescribed to
-// the reader with the shortest runway — the one who most needs a fast hire — and T2 is
+// T2 survives the Spine at 40 hours rather than being suspended. The Spine is prescribed
+// to the reader with the shortest runway — the one who most needs a fast hire — and T2 is
 // the track that manufactures the people who can refer you, which is the largest lever
-// this program has. Suspending it removed the lever from the person who needed it most,
-// and it also removed the Track 2 maintainer from M27's references plan. Forty hours is
-// one accepted contribution and then the ask, which is the part that matters; the second
-// and third contributions are what the Spine drops.
+// this program has. It is also where M27's references plan finds its maintainer. Forty
+// hours is one accepted contribution and then the ask, which is the part that matters;
+// the second and third contributions are what the Spine drops.
 var AI_SPINE_TRACK_HOURS = { T1:200, T2:40, T3:0, T4:30, T5:26, T6:0, T7:0, T8:34, T9:25, T10:15 };
 // The Spine also drops M14 and M17, and a contract role — the thing the Spine aims at —
 // is the most likely of all to drop you into an unfamiliar codebase with a scoped
 // deliverable and no ramp, which is exactly what those two modules are. That is a real
 // cost of the Spine, not an oversight: budget the first month on the job for them.
 var AI_CUT_ORDER = ['M26','M25 second half','M16'];
-// M32 removed from the cut order: it is the only module that owns seamlessness into
+// M32 is not in the cut order: it is the only module that owns seamlessness into
 // real work, which is half the stated goal.
 // 23h + ~18h + 28h = 69 hours back, in this order.
 
@@ -435,7 +445,7 @@ var AI_CURRICULUM_API = {
     if (!m) return false;
     // Layers 4-6 are the thirteen modules the hard gate exists to hold back.
     // Rendering the checklist without consulting it here left the gate
-    // decorative, which Rule 1 of this curriculum specifically forbids.
+    // decorative, which is the one thing the creed says a gate must not be.
     if (m.layer >= 4 && m.layer <= 6 && !this.flagshipGate(progress).open) return false;
     if (m.trigger && m.dependsOn.length === 0) return true;
     return m.dependsOn.every(function (d) {
@@ -443,7 +453,7 @@ var AI_CURRICULUM_API = {
     });
   },
 
-  // What he could legitimately start right now.
+  // What the reader could legitimately start right now.
   available: function (progress) {
     var self = this;
     return AI_CURRICULUM.filter(function (m) {
@@ -463,7 +473,7 @@ var AI_CURRICULUM_API = {
     var items = [
       { key:'deployed', label:'Flagship deployed and reachable' },
       { key:'users',    label:'Two real users who are not you — or the labeled fallback taken in their place, with what it costs you written down' },
-      { key:'traces',   label:'about 100 logged traces containing real failures — on the fallback, 100 cases you labeled yourself over a public corpus' },
+      { key:'traces',   label:'About 100 logged traces containing real failures. If you took the fallback above: 100 cases you labeled yourself over a public corpus' },
       { key:'ci',       label:'M12 harness green in CI against those traces' }
     ];
     var done = items.filter(function (i) { return f[i.key] }).length;
@@ -479,7 +489,7 @@ var AI_CURRICULUM_API = {
   plan: function (setup) {
     var WK = 4.345;                                  // weeks per month
     var tot = this.totalHours();
-    var full = tot.modules + tot.tracks;             // 1108 + 459
+    var full = tot.modules + tot.tracks;             // module hours + track hours
     var self = this;
     var spineMods = (typeof AI_COMPRESSED_SPINE !== 'undefined' ? AI_COMPRESSED_SPINE : [])
       .reduce(function (a, id) { var m = self.byId(id); return a + (m ? m.hours : 0) }, 0);
@@ -492,8 +502,15 @@ var AI_CURRICULUM_API = {
     var CEIL = 18;                                   // hours a week the program assumes anyone can sustain
 
     var s = setup || {};
-    var wk = Number(s.weeklyHours) || 0;
-    var runway = Number(s.runwayMonths) || 0;
+    // A negative is not a small number here, it is a refused one: it would make
+    // every division below produce a negative duration and a confident verdict.
+    var wkEntered = Math.max(0, Number(s.weeklyHours) || 0);
+    // Every duration below is computed at the ceiling, never above it. The
+    // program's own argument is that 18 is the most anyone sustains for a year,
+    // so honouring a larger number here would hand back a shorter plan for
+    // typing a bigger figure — which is the one thing this screen must not do.
+    var wk = Math.min(wkEntered, CEIL);
+    var runway = Math.max(0, Number(s.runwayMonths) || 0);
 
     function months(hours, perWeek) { return perWeek > 0 ? hours / perWeek / WK : null; }
     // What you'd need per week to land inside the runway.
@@ -501,14 +518,24 @@ var AI_CURRICULUM_API = {
 
     // Hours a week the parallel tracks actually consume BEFORE the application date,
     // read off their own cadence lines: T4 45 minutes a week, T10 15 minutes, T8 two
-    // hours a month, T5 about an hour most months, T7 one piece per layer, T2 about
-    // eight hours a month once it starts after M9. T1 and T9 do not begin until the
-    // application date, so they are zero here.
-    var PRE_APPLY_TRACK_RATE = { T1:0, T2:1.8, T3:0, T4:0.75, T5:0.25, T6:0, T7:0.4, T8:0.46, T9:0, T10:0.25 };
+    // hours a month, T5 about an hour most months, T7 one piece per layer. T1 and T9
+    // do not begin until the application date, so they are zero here.
+    //
+    // T2 is the one that is not a flat rate. Its own rule starts it after M9, and M9
+    // ends about ninety per cent of the way through this span, so its eight hours a
+    // month (1.8 a week) only runs for the last stretch. Charging the full rate across
+    // the whole span overstated the load by more than a full hour a week and pushed
+    // the application date later than it really is.
+    var PRE_APPLY_TRACK_RATE = { T1:0, T2:0.2, T3:0, T4:0.75, T5:0.25, T6:0, T7:0.4, T8:0.46, T9:0, T10:0.25 };
     var preTrack = Object.keys(PRE_APPLY_TRACK_RATE).reduce(function (a, k) { return a + PRE_APPLY_TRACK_RATE[k] }, 0);
     var applyMods = this.byLayer(0).concat(this.byLayer(1), this.byLayer(2))
       .reduce(function (a, m) { return a + m.hours }, 0);
+    // Below this the answer has collapsed: the tracks eat almost the whole budget,
+    // the modules get the remainder, and dividing by it produces a figure in decades
+    // that is arithmetically right and completely useless. Say so instead.
+    var MIN_MOD_WEEKLY = 2;
     var modWeekly = wk > preTrack ? wk - preTrack : 0;
+    var modWeeklyUsable = modWeekly >= MIN_MOD_WEEKLY;
 
     var fullMonths  = months(full, wk);
     var spineMonths = months(spine, wk);
@@ -518,11 +545,22 @@ var AI_CURRICULUM_API = {
     var rec, why;
     if (!runway || !wk) {
       rec = 'unset';
-      why = 'Enter your runway and the hours you can actually commit. Everything downstream derives from these two numbers.';
-    } else if (needFull && needFull <= wk) {
+      var bad = [];
+      if (s.runwayMonths !== undefined && s.runwayMonths !== '' && !runway) bad.push('a runway of ' + s.runwayMonths + ' months');
+      if (s.weeklyHours !== undefined && s.weeklyHours !== '' && !wkEntered) bad.push(s.weeklyHours + ' hours a week');
+      why = bad.length
+        ? 'That is not a plan: ' + bad.join(' and ') + '. Both have to be above zero, because every number on '
+          + 'this page is one divided by the other. Put in the smallest honest figures you can live with.'
+        : 'Enter your runway and the hours you can actually commit. Everything downstream derives from these two numbers.';
+    // A tenth of an hour a week short is not a different plan. Rounding up
+    // covers it, and shouting "TIGHT — RAISE HOURS" at a six-minute gap makes
+    // the same warning meaningless when the gap is real.
+    } else if (needFull && needFull <= wk + 0.25) {
       rec = 'full';
-      why = 'The full program fits inside your runway at the hours you committed, with room. '
-          + 'You need ' + needFull.toFixed(1) + ' h/week and you have ' + wk + '.';
+      var slack = wk - needFull;
+      why = 'The full program fits inside your runway at the hours you committed'
+          + (slack >= 1 ? ', with room' : slack >= 0.25 ? ', but only just' : ', with nothing to spare')
+          + '. You need ' + needFull.toFixed(1) + ' h/week and you have ' + wk + '.';
     } else if (needFull && Math.round(needFull * 10) / 10 <= CEIL) {
       rec = 'full-tight';
       why = 'The full program fits your runway only at ' + needFull.toFixed(1) + ' h/week — above the '
@@ -534,18 +572,26 @@ var AI_CURRICULUM_API = {
           + ' h/week, above the ' + CEIL + ' hours a week the program assumes anyone can sustain. The Spine needs '
           + (needSpine ? needSpine.toFixed(1) : '?') + ' h/week' + (needSpine > wk ? ', more than the ' + wk + ' you committed' : '') + '.';
     } else {
-      rec = 'spine';
+      // A distinct value, because this is not the same answer as the branch above.
+      // There the Spine fits; here nothing fits and the recommendation is the Spine
+      // PLUS paid work, which is a different plan and a consumer has to be able to
+      // tell the two apart.
+      rec = 'spine-plus-contract';
       why = 'Neither program fits your runway under ' + CEIL + ' h/week: the full program needs '
           + (needFull ? needFull.toFixed(1) : '?') + ' and the Spine needs ' + (needSpine ? needSpine.toFixed(1) : '?')
           + '. Take the Spine, get a contract role, and learn the rest on someone else’s payroll. '
-          + 'This is a financial decision, not a technical one. Know what it costs you: the Spine drops M14 and M17, '
-          + 'and a contract role is the most likely of all to drop you into an unfamiliar codebase with a scoped '
-          + 'deliverable and no ramp — which is exactly those two modules. Budget your first month on the job for them.';
+          + 'This is a financial decision, not a technical one. Know what it costs you: the Spine keeps fourteen '
+          + 'modules and drops nineteen, including the whole AI layer, deployment and Python. The two that will hurt '
+          + 'first are M14, reading code you did not write, and M17, scoping and estimating — because a contract role '
+          + 'is the most likely of all to drop you into an unfamiliar codebase with a scoped deliverable and no ramp. '
+          + 'Budget your first month on the job for them.';
     }
 
     return {
       fullHours: full, spineHours: spine, spineModuleHours: spineMods, spineTrackHours: spineTracks,
       moduleHours: tot.modules, trackHours: tot.tracks,
+      weeklyHoursEntered: wkEntered, weeklyHoursUsed: wk, ceiling: CEIL,
+      cappedByCeiling: wkEntered > CEIL,
       weeklyHours: wk, runwayMonths: runway,
       fullMonths: fullMonths, spineMonths: spineMonths,
       neededForFull: needFull, neededForSpine: needSpine,
@@ -559,7 +605,13 @@ var AI_CURRICULUM_API = {
       // headline this program opens by condemning, and it errs in the dangerous direction.
       applyTrackHoursPerWeek: preTrack,
       applyModuleHoursPerWeek: modWeekly,
-      applyAfterMonths: (modWeekly > 0 ? applyMods / modWeekly / WK : null),
+      applyAfterMonths: (modWeeklyUsable ? applyMods / modWeekly / WK : null),
+      // Present so a consumer can say WHY there is no date rather than printing a
+      // blank: at this weekly budget the tracks consume nearly all of it.
+      applyAfterBlocked: (!modWeeklyUsable && wk > 0
+        ? 'At ' + wk + ' h/week the parallel tracks take about ' + Math.round(preTrack * 10) / 10
+          + ' of them before any module gets one, which leaves too little to date an application from. '
+          + 'This is the answer the Spine exists for.' : null),
       applyNote: 'Applications start ' + applyMods + ' module hours in, but the tracks running '
         + 'alongside take about ' + preTrack.toFixed(1) + ' h/week out of your weekly budget first. '
         + 'Use applyAfterMonths, not applyAfterHours divided by your weekly hours.'
@@ -590,7 +642,23 @@ var AI_CURRICULUM_API = {
   },
 
   // Longest dependency path in hours — the real floor on calendar time.
+  // The hard gate is a real edge even though it is not in dependsOn: isUnlocked
+  // holds every Layer 4-6 module behind it, and the four things it asks for can
+  // only come from M2 (deployed, users), M10 (traces) and M12 (green in CI). A
+  // longest path that reads dependsOn alone therefore reports a floor lower than
+  // the program can actually be run in. These are added here, and nowhere else,
+  // so the displayed prerequisites on a module page stay the ones the module
+  // itself declares.
+  GATE_EDGES: ['M2', 'M10', 'M12'],
+
   criticalPath: function () {
+    // The walk is not free and every render asked for it, so it is cached. The
+    // key is the shape of the graph itself: AI_CURRICULUM is exported and
+    // mutable, so a cache with no invalidation path would go stale silently if
+    // anything ever edited it.
+    var sig = AI_CURRICULUM.length + ':' + AI_CURRICULUM.reduce(function (a, m) {
+      return a + m.hours + m.dependsOn.length; }, 0);
+    if (this._cpCache && this._cpSig === sig) return this._cpCache;
     var memo = {}, onStack = {}, self = this;
     function walk(id) {
       if (memo[id]) return memo[id];
@@ -600,7 +668,13 @@ var AI_CURRICULUM_API = {
       var m = self.byId(id);
       if (!m) { onStack[id] = false; return { hours: 0, path: [] }; }
       var best = { hours: 0, path: [] };
-      m.dependsOn.forEach(function (d) {
+      var edges = m.dependsOn.slice();
+      if (m.layer >= 4 && m.layer <= 6) {
+        self.GATE_EDGES.forEach(function (g) {
+          if (g !== m.id && edges.indexOf(g) === -1) edges.push(g);
+        });
+      }
+      edges.forEach(function (d) {
         var r = walk(d);
         if (r.hours > best.hours) best = r;
       });
@@ -612,6 +686,7 @@ var AI_CURRICULUM_API = {
       var r = walk(m.id);
       if (r.hours > winner.hours) winner = r;
     });
+    this._cpCache = winner; this._cpSig = sig;
     return winner;
   },
 
@@ -630,7 +705,7 @@ var AI_CURRICULUM_API = {
       if (!m.gate || !m.gate.referee || !m.gate.pass || !m.gate.onFail) {
         errors.push(m.id + ' gate is missing referee / pass / onFail');
       }
-      if (/\bhe can explain\b/i.test((m.gate && m.gate.pass) || '')) {
+      if (/\b(he|she|they|you) can explain\b/i.test((m.gate && m.gate.pass) || '')) {
         warnings.push(m.id + ' gate may be decorative — "can explain" with no external referee');
       }
     });
@@ -716,15 +791,15 @@ M1:{concepts:['What a program is: a file of instructions a runtime (here, Node) 
  mistakes:['Following a tutorial to a working app and mistaking that for being able to write one. The gate here is an empty directory for exactly this reason.','Reading the error message as noise instead of as the answer. It names the file and the line, and usually it names the mistake too.','Copying code you cannot explain, which converts a 5-minute bug into a 2-hour one because you cannot form a hypothesis about your own program.','Setting up a perfect environment (your editor and installed tools) instead of writing programs. A slightly wrong editor that you use beats a perfect one you configure for a week.','Not committing until it works. The point of a save-point is to have one from before it broke.']},
 M2:{concepts:['Client and server: what runs on someone else\u2019s machine and what runs on yours','An API key as a secret \u2014 why it cannot go in the browser, and how to prove it did not','Request and response: one round trip, start to finish','Environment variables and why the same code behaves differently in two places','Deployment as making the thing reachable, not as finishing it','Logging a call before you need the log, because usage you did not record is gone'],
  mistakes:['Putting the key in the client (the browser side) because it works. It works, and it is now public; scrapers (programs that automatically scan public repos for secrets) find committed keys in minutes.','Building the whole product instead of v1. Everything you are tempted to add here has a module later, and each one is easier on top of something already deployed.','Skipping the log because there is nothing to look at yet. M10 and M12 both read this log and neither can reconstruct a month of calls after the fact.','Calling it done when it runs locally. Two strangers on their own devices is the gate for a reason.']},
-M0:{concepts:['Runway: how many months you can go without a paycheck. It sets the deadline. The topic list never did.','The second number in the runway calculation is the one nobody writes down: what this program costs to run. Model spend across M2, M6, M12, M18 and M19, hosting, a paid tier where a module needs one, and any money going to review or mock interviews. Estimate it, subtract it from the runway, and correct it every month. A plan that budgets 1,100 hours and zero dollars is the same error as one that budgets the modules and forgets the tracks.','The application date is a target you choose now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date: if M10 has not passed when the target arrives, you apply with what you have and write down what you are applying without. One definition, everywhere — because M27 has to fire a month before it and its gate has to be booked, which is impossible against a date that means "whenever M10 happens."','Before your application date you build; after it you keep building while you apply. The date decides what has to exist first, and that is most of the plan.','Why finishing a tutorial feels like learning and is not: it reads smoothly, so it feels understood; you recognize the answer when it is shown, but cannot produce it; you would swear you could explain it, until you try out loud.','A bad week is planned for, not recovered from. Decide now what one costs and what the week after looks like, so a missed week is a line in the plan rather than a broken streak.'],
- mistakes:['Building a tracker for the plan instead of doing the plan. The tracker is more pleasant than the work, and it feels like progress.','Budgeting the hours and not the money, then discovering in month five that the runway the whole plan rests on was never the real number.','Assuming the reviewer, the systems person and the mock interviewer will simply appear. Two of the four ways this program suggests finding them cost money and two need a network, and the reader is described as having neither on day one. That is a real prerequisite; put the month it takes into the plan.','Setting every module to run five or six weeks because it feels serious. It breaks the monthly rhythm and you never get the feeling of finishing anything.','Treating the job search as the prize for finishing. It is the instrument that tells you which of your hours mattered.','Skipping the twenty postings because you already know what the job is. You do not yet, and reading them is the cheapest way to find out.']},
+M0:{concepts:['Runway: how many months you can go without a paycheck. It sets the deadline. The topic list never did.','The second number in the runway calculation is the one nobody writes down: what this program costs to run. Model spend across M2, M6, M12, M18 and M19, hosting, a paid tier where a module needs one, and any money going to review or mock interviews. Estimate it, subtract it from the runway, and correct it every month. A plan that budgets 1,108 hours and zero dollars is the same error as one that budgets the modules and forgets the tracks.','The application date is a target you choose now from your runway, and it does not move because a module is late. M10 is the readiness condition, not the date: if M10 has not passed when the target arrives, you apply with what you have and write down what you are applying without. One definition, everywhere — because M27 has to fire a month before it and its gate has to be booked, which is impossible against a date that means "whenever M10 happens."','Before your application date you build; after it you keep building while you apply. The date decides what has to exist first, and that is most of the plan.','Why finishing a tutorial feels like learning and is not: it reads smoothly, so it feels understood; you recognize the answer when it is shown, but cannot produce it; you would swear you could explain it, until you try out loud.','A bad week is planned for, not recovered from. Decide now what one costs and what the week after looks like, so a missed week is a line in the plan rather than a broken streak.'],
+ mistakes:['Building a tracker for the plan instead of doing the plan. The tracker is more pleasant than the work, and it feels like progress.','Budgeting the hours and not the money, then discovering in month five that the runway the whole plan rests on was never the real number.','Assuming the reviewer, the systems person and the mock interviewer will appear on their own. Two of the four ways this program suggests finding them cost money and two need a network, and the reader is described as having neither on day one. That is a real prerequisite; put the month it takes into the plan.','Setting every module to run five or six weeks because it feels serious. It breaks the monthly rhythm and you never get the feeling of finishing anything.','Treating the job search as the prize for finishing. It is the instrument that tells you which of your hours mattered.','Skipping the twenty postings because you already know what the job is. You do not yet, and reading them is the cheapest way to find out.']},
 M3:{concepts:['The event loop: call stack, macrotask vs microtask queue','What a Promise actually is — a notification channel for work that already started','The four concurrency failure modes','Closures, lexical scope, this, reference identity — including warm serverless instances sharing module scope','Structural typing and where the type system lies to you','Parse, don’t assert — the trust boundary','Discriminated unions and exhaustiveness','Error taxonomy, cause chaining, retry safety','Modules and the bundle graph — the import graph is what ships'],
- mistakes:['Believing async means "runs in the background." An async function runs synchronously until its first await, and CPU work inside one blocks the process exactly as hard.','await inside a for loop over independent work — 200 x 200 milliseconds (ms) becomes 40 seconds. And the inverse: Promise.all over an unbounded array, firing 200 requests into a retry storm.','Silencing strict-mode errors with `as` and `!` instead of narrowing — converting a compile error into a runtime crash.','Modeling state as {loading, error?, data?} (the ? marks a field that may be absent), which permits four impossible combinations.','catch (e) { console.log(e) } and continuing — a loud failure becomes a silent wrong answer.']},
+ mistakes:['Believing async means "runs in the background." An async function runs synchronously until its first await, and CPU work inside one blocks the process exactly as hard.','await inside a for loop over independent work — 200 x 200 milliseconds (ms) becomes 40 seconds. And the inverse: Promise.all over an unbounded array, firing 200 requests into a retry storm.','Silencing strict-mode errors with “as” and “!” instead of narrowing — converting a compile error into a runtime crash.','Modeling state as {loading, error?, data?} (the ? marks a field that may be absent), which permits four impossible combinations.','catch (e) { console.log(e) } and continuing — a loud failure becomes a silent wrong answer.']},
 M4:{concepts:['References vs values: aliasing, shallow vs deep copy','Stack vs heap, object lifetime, why a server leaks','Number representation: floats, integer precision, the right type for money and IDs','Text encoding: bytes vs code points vs grapheme clusters, decoding a stream','JSON as a lossy boundary','Blocking: event loop, async I/O, threads, processes','File descriptors, sockets, pools, timeouts','Concurrent mutation (two things changing the same data at once): races, atomicity, idempotency','The lost update: two writers, one row, and the gap between reading and writing','Dates and timezones: DST’s doubled and missing hours, naive vs timezone-aware timestamps'],
  mistakes:['Believing {...obj} or JSON.parse(JSON.stringify(obj)) is a copy. The spread is one level. The JSON trick converts Dates to strings, drops undefined and functions, mangles Maps and Sets, and throws on cycles.','.toFixed(2) "solves" money by fixing the display and leaving the arithmetic wrong.','new TextDecoder() inside the loop — looks identical to correct code, discards the carried partial-character state that is the entire point.','"I’m using a pool" while N serverless instances each hold a pool of M.','Believing a transaction prevents the race. Atomicity is not isolation.']},
-M7:{concepts:['HTTP as a wire format: the status codes and headers that carry meaning in practice — write your own list and be able to defend each entry, because "about twelve headers matter" invites "which twelve?" and there is no list you did not choose','REST and where it stops being the right answer','SSE and chunked transfer, from scratch, no SDK','Production streaming failures: proxy buffering, aborts, mid-stream errors, resumption','Idempotency — why a retry corrupts data unless designed for','Timeouts, backoff with jitter, which failures are retry-safe','Rate limiting from both sides','Webhooks: at-least-once, signature verification on RAW bytes','CORS; cookies vs bearer vs JWT and where each breaks'],
+M7:{concepts:['HTTP as a wire format: the status codes and headers that carry meaning in practice — write your own list and be able to defend each entry, because "about twelve headers matter" invites "which twelve?" and there is no list you did not choose','REST and where it stops being the right answer','SSE and chunked transfer, from scratch, no SDK','Production streaming failures: proxy buffering, aborts, mid-stream errors, resumption','Idempotency — why a retry corrupts data unless designed for','Timeouts, backoff with jitter, which failures are retry-safe','Rate limiting from both sides','Webhooks: at-least-once, signature verification on the raw bytes','CORS; cookies vs bearer vs JWT and where each breaks'],
  mistakes:['chunk.toString().split("\\n") — corrupts output the moment a frame splits across TCP chunks, and works perfectly on localhost, so it ships.','Assuming HTTP 200 means the whole response succeeded. The status commits before the body exists.','Writing the assistant message to the database only in finally/onFinish, which on serverless may never run.','Everything returning 200 {ok:false}, which breaks every retry library, monitor and health check.','A client-generated idempotency key per render instead of per logical operation.','Doing webhook work before responding, so the provider times out and retries, multiplying the work.']},
-M5:{concepts:['Relational modeling — constraints as the thing that actually enforces invariants','SQL without an ORM: joins, aggregates, CTEs, window functions','Indexes and EXPLAIN (ANALYZE, BUFFERS) — the slow-to-fast loop','Transactions, isolation, the lost update','N+1 queries','Connection pooling and the Vercel+Supabase failure mode','RLS: correct first, then fast','Expand/contract as a concept','Asymptotic complexity, taught here because here it is measurable','The planner: force each join strategy with enable_hashjoin/enable_mergejoin/enable_nestloop off and time all three on the same query, so its choice becomes a decision you watched it make','Estimated vs actual rows — the first thing to say about any plan; one query where stale ANALYZE or a correlated predicate breaks the estimate','The four isolation levels: show that M4’s lost update survives READ COMMITTED (the default, which is why putting it in a transaction fails) and dies under REPEATABLE READ','MVCC and dead-tuple bloat: bulk update, watch the query slow with no code change, VACUUM, watch it recover'],
+M5:{concepts:['Relational modeling — constraints as the thing that actually enforces invariants','SQL without an ORM: joins, aggregates, CTEs, window functions','Indexes and EXPLAIN (ANALYZE, BUFFERS) — the slow-to-fast loop','Transactions, isolation, the lost update','N+1 queries','Connection pooling and the Vercel+Supabase failure mode','RLS: correct first, then fast','Expand/contract as a concept','Asymptotic complexity, taught here because here it is measurable','The planner: force each join strategy with enable_hashjoin/enable_mergejoin/enable_nestloop off and time all three on the same query, so its choice becomes a decision you watched it make','Estimated vs actual rows — the first thing to say about any plan; one query where stale ANALYZE or a correlated predicate breaks the estimate','The isolation levels: Postgres accepts four names and behaves in three ways, because READ UNCOMMITTED behaves as READ COMMITTED. Show that M4’s lost update survives READ COMMITTED (the default, which is why putting it in a transaction fails) and is caught under REPEATABLE READ — caught, not silently fixed: the transaction aborts with a serialization failure, and your application has to catch that and retry the whole transaction. The retry loop is the lesson; without it you have turned a silent wrong answer into a 500','MVCC and dead-tuple bloat: bulk update, watch the query slow with no code change, VACUUM, watch it recover'],
  mistakes:['Reading cost= as milliseconds. It is an arbitrary planner unit.','Benchmarking cold-then-warm so the cache gets the credit. Run each variant twice, report the second.','Assuming an index on (a,b) helps a query filtering only on b.','One single-column index per column instead of one correct composite — and forgetting each is a tax on every write.','Holding a transaction open across a model API call, turning a 200ms connection into a 30-second lock.','Schema changes in the dashboard table editor, which bypasses migration history.','USING (true), or a policy against a JWT claim the user can edit.']},
 M8:{concepts:['Moving slow work off the request path','SELECT ... FOR UPDATE SKIP LOCKED','At-least-once delivery and idempotent consumers','Backpressure and dead-letter paths','The read path — polling, SSE and resumable streams are three different products'],
  mistakes:['Starting with a hosted queue and never learning the mechanism, which makes every operational question unanswerable.','Designing the queue and forgetting the read path. Enqueueing is the easy half.','Assuming a cached step result makes a retry safe. book_flight() twice is two bookings.']},
@@ -736,10 +811,10 @@ M24:{concepts:['Environments and dependencies on current tooling (uv, ruff, one 
  mistakes:['Writing TypeScript with Python syntax: classes everywhere, raw dicts, no type hints, camelCase. That is the thing a Python reviewer notices first.','Assuming the tool you learned is the tool the job uses. uv is the current default and the right one to learn here, but poetry is widely used in production teams, pyenv solves a real problem in interpreter-version management, and conda is still standard in ML-adjacent organizations. If a posting stack names one of them, learn it in an afternoon and say nothing — nobody is judging you for the packaging tool, and being doctrinaire about it is its own bad signal.','Assuming type hints behave like TypeScript’s compile-then-trust contract.']},
 M6:{concepts:['Tokens as the unit of everything','The messages array, roles, statelessness, what a system prompt mechanically is','Why text in a user or tool-result message can be forged — that is prompt injection','The context window: what fills it, what degrades before it fills','max_tokens and the full stop_reason enum','Pricing: input/output asymmetry, caching as a byte-exact prefix match','Adaptive thinking and effort — the first quality-trading lever after caching','Discovering capabilities, max_input_tokens and max_tokens from the Models API rather than a hard-coded table — and knowing what it does not serve: prices are not on that endpoint, so the price table in your client is the one thing that carries a check date','Sampling as a per-model fact rather than a property of the field: on the current Anthropic line, temperature, top_p and top_k are removed and return a 400, while the 4.6 family and Haiku still accept them, and assistant prefill is gone across a wider span than the sampling parameters are. Every other provider you might work for still exposes temperature. Check the model you are calling, not the folklore, and do it the way this module already teaches — from the Models API rather than from a table. The durable idea survives either way: non-determinism is structural, not a knob you forgot to set','The structural boundaries — what no prompt fixes','Prefill vs decode and the KV cache — the one mechanism explaining three facts this module asserts: why caching needs a byte-exact prefix — the prefix, not the body — why the tokens you resend grow quadratically with conversation length (dollars do not follow, because cache reads are priced at a fraction; measure both), and why time-to-first-token and inter-token latency are different numbers. No training, no backprop, no attention math. Then measure it: probe a long prompt and a short one and show TTFT scaling with input while inter-token latency does not'],
  mistakes:['Using another provider’s tokenizer or a chars/4 rule to budget tokens.','Treating max_tokens as a cost cap. It is a ceiling the model is unaware of, so it truncates mid-thought. The budget the model can see is the server-side task budget (output_config.task_budget, currently behind a beta header) — know that it exists and what it changes.','Reading content before checking stop_reason. Branch on stop_reason first, every time; stop_details is non-null only on a refusal, and only on models from Opus 4.7 on. What content happens to hold on a refusal is an implementation detail and the wrong thing to build on.','Interpolating anything dynamic near the front of the system prompt. One changed byte invalidates the cache and the failure is completely silent.','Optimizing input tokens while ignoring that output costs several times more.','Asking the model to rate its own confidence and making decisions (routing) on that number. It looks like a probability and behaves like a vibe.']},
-M11:{concepts:['What an embedding is — a fixed-length vector a model emits for a text, near for near meaning — and what it structurally cannot do','Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes `vector` to 2,000 dimensions and `halfvec` to 4,000; several common models emit 3,072; and you choose the model in this module but hit the ceiling in M18 \u2014 so record it in the decision log before you embed anything'],
+M11:{concepts:['What an embedding is — a fixed-length vector a model emits for a text, near for near meaning — and what it structurally cannot do','Object storage, signed upload URLs, scoped paths and short expiry','Private buckets, deny-by-default, server-side content-type and size validation','Text-layer extraction vs OCR','Tables and multi-column layout','Character-offset provenance — page-level cannot verify a span','Ingestion as a resumable job with per-file failure','Re-ingestion when the parser improves','The embedding dimensionality decision: pgvector indexes the vector type to 2,000 dimensions and halfvec to 4,000; several common models emit 3,072; and you choose the model in this module but hit the ceiling in M18 \u2014 so record it in the decision log before you embed anything'],
  mistakes:['Storing page-level provenance, then discovering in M18 that span citations are unverifiable and offsets are unrecoverable after the fact.','Making the bucket public under time pressure. A misconfigured bucket is none of injection, XSS, CSRF or SSRF, so the standard exploit set will not catch it.','Picking a 3,072-dimension embedding model without checking the pgvector index ceiling.']},
 M12:{concepts:['Trace capture: the exact input, usage, stop_reason and attempt count','Error analysis: open coding to axial coding, producing a named taxonomy with counts','What an eval is — a dataset plus a runner — and why it is not a test','Assertion graders before any model grades anything','LLM-as-judge calibrated against human labels, reported as TPR/TNR','Inter-annotator agreement and rubric revision','Train/test discipline: split at creation, open test once','Structured output as a reliability mechanism, and its limit','CI gate economics: tiered gates, recorded fixtures, a dollar ceiling','Prompt and model lifecycle: versioning, pinned IDs, the forced migration'],
- mistakes:['Reporting accuracy instead of TPR/TNR. When failures are rare, a judge that always says pass scores 92% and is worthless. This is the first thing to check in anyone’s eval work, including your own.','Generic categories — "hallucination", "unhelpful". Unactionable. "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.','Delegating the labeling to an LLM. It clusters notes you already wrote. People discover what they care about through labeling.','Building the eval set from cases you invented. An imagined set measures imagination.','A runner that re-implements the model call to keep the eval clean. It then measures a different system than the one that ships.','Using the same model as generator and judge.','Believing schema enforcement solved reliability. It solves shape, not content.']},
+ mistakes:['Reporting accuracy instead of TPR/TNR. When failures are rare, a judge that always says pass scores 92% and is worthless. This is the first thing to check in anyone’s eval work, including your own.','Generic categories — "hallucination", "unhelpful". Unactionable. "Calendar Scheduling Failure" is a fix; "poor coherence" is a shrug.','Delegating the labeling to an LLM. It clusters notes you already wrote. People discover what they care about through labeling.','Building the eval set from cases you invented. An imagined set measures imagination.','A runner that re-implements the model call to keep the eval clean. It then measures a different system than the one that ships.','Using the same model as generator and judge without measuring what it costs you. Self-preference is real, and the confusion matrix you already build is what shows it: if the judge’s errors line up with the generator’s, you will see it there. A same-family judge with a measured matrix beats a different-family judge with none.','Believing schema enforcement solved reliability. It solves shape, not content.']},
 M14:{concepts:['Tracing one user action end to end — architecture is the output of tracing, not the input','A predict-then-ask protocol for using AI on code you are learning','Three layers of code search: ripgrep, ast-grep, LSP','Reading tests as executable specification','Git history as documentation: blame, pickaxe, log -L, bisect','Inferring unwritten conventions','Chesterton’s fence','Characterization tests around code you do not understand','Strangler fig, the resumable backfill, the dual-run cutover'],
  mistakes:['Reading directories top-down, or asking for an architecture overview first.','Asking the assistant to produce the answer rather than pressure-test yours. People who ask it questions learn the code; people who hand it the task do not.','Searching (grepping) for a function name and treating the hits as the complete blast radius.','git blame as the final answer — it gives the last commit to touch the line, usually a formatting sweep.','Pattern-matching ugliness to badness. Your confidence is highest exactly where your context is lowest.','Waiting to understand the whole system before opening anything. The most common ramp killer.']},
 M15:{concepts:['The git object model: commits are snapshots, refs are pointers, the index is a third thing','What merge, rebase and squash do to the graph','Resolving a conflict — including one that merges cleanly and is still wrong','reflog, revert vs reset, shared-branch etiquette','Atomic commits and a PR a reviewer can act on','Giving and receiving review, including of AI-written code','Naming, module boundaries, cohesion and coupling, dependency direction','The rule of three; deleting code; actionable error messages','The three async artifacts — and you produce them yourself: twenty daily-shaped written updates posted publicly in the issue thread across the four weeks around your first submitted PR (what I did, what I am doing next, where I am stuck, what I currently believe), one real blocker escalation, one decision record against real friction. You train a monthly rhythm for the whole program then join a team running a daily one; a team that reads autonomy from your silence will read you as stuck'],
@@ -752,7 +827,7 @@ M18:{concepts:['pgvector HNSW parameters, the dimension ceiling, the recall/late
  mistakes:['Evaluating end to end with a judge scoring answer quality. Answer quality hides retrieval failure — a strong model answers correctly from pretraining even when retrieval returned garbage.','Generating the golden set entirely with an LLM. Synthetic queries are written from the chunk, leak its vocabulary, and every retriever scores artificially high.','Treating HNSW as exact search, and never measuring recall at all.','Reranking too few candidates. If the right chunk is at rank 73 and you rerank the top 10, the reranker is pure added latency.','Skipping lexical search, which is why queries with an error code or a person’s name fail on pure vector.','Asking for citations like [1] and trusting them. Free-text markers are generated text.']},
 M19:{concepts:['The agent loop at the wire-format level, no framework','Writing a tool definition a model can actually use','Reactive loop vs plan-then-execute; when a second agent is overkill','State, memory and durability across steps','Append-only thinking-block replay','Failure taxonomy and validation between steps','Loop detection and cost runaway prevention','Human-in-the-loop checkpoints for irreversible actions','Containment as an enforced execution boundary, not a permission table — and asserted on the policy, not on whether the remote address happened to answer','Context management across a long run: compaction, which summarizes what came before, and context editing, which clears old tool results or thinking blocks outright. What each is for, and when each is the wrong answer. Resending the whole conversation unchanged every turn is one shape, not the only one','The budget the model can see: a server-side task budget paces the model toward finishing, where max_tokens cuts it off mid-thought. Know what your own governor catches that it does not','MCP — pin the spec revision','Trajectory tracing and silent-failure detection'],
  mistakes:['Treating the message array as a chat log of strings — dropping tool_use blocks, producing an agent that re-calls the same tool forever.','Tool descriptions written as API documentation instead of decision-support for a model choosing among eight tools.','Error paths returning the raw text of an exception (the error object code throws), which teaches nothing and causes retry of the identical failing call.','Adding agents to solve what is actually a bad tool definition or a context problem.','Saving state (persisting) after the step instead of around the side effect (the change the step makes in the world, such as an email sent), which turns resuming into a duplicate-execution machine.','Capping iteration count only. An agent alternating between two tools never repeats at lag-1.','Denying an action by silently dropping the tool call, leaving a dangling tool_use with no result.']},
-M20:{concepts:['The usage object and the four-number cost of a request, taken further than M6 took it','Prompt caching mechanics, breakpoint placement, verifying from the meters','Percentiles from raw distributions','Streaming as a perceived-latency fix, not a real one','Model x effort routing, and why caches being model-scoped hurts a cascade','Cost attribution per feature AND per user','Budget alerts and circuit breakers','Unit economics, and the product-analytics question: is it worth keeping'],
+M20:{concepts:['The usage object and the four-number cost of a request, taken further than M6 took it','Prompt caching mechanics, breakpoint placement, verifying from the meters','Percentiles from raw distributions','Streaming as a perceived-latency fix, not a real one','Model x effort routing, and why caches being model-scoped hurts a cascade','Cost attribution per feature and per user, both','Budget alerts and circuit breakers','Unit economics, and the product-analytics question: is it worth keeping'],
  mistakes:['Reporting an average, and computing percentiles by averaging per-minute percentiles. Percentiles do not average.','Quoting a p99 from a sample that cannot support one. On a few hundred requests, p99 is a single observation, and a hiring manager who asks "what is your n?" ends that answer.','Measuring time-to-first-byte instead of time-to-first-token. They can be seconds apart.','Routing on per-token price instead of cost per completed task. A cheap call that needs three retries is not cheap.','Building the alert without the breaker. An alert at 3am tells you about money already spent.','Running the budget check after the API call.','Attributing cost per feature but not per user, which hides the distribution entirely when it is extremely skewed.']},
 M21:{concepts:['Trust boundaries and secrets: what runs where','Authentication vs authorization; broken access control as the bug that actually ships','RLS as a design skill','Injection, XSS, CSRF, SSRF — by exploiting them yourself','Dependency and supply-chain risk','Prompt injection, direct and indirect: contained, not fixed','The lethal trifecta (Simon Willison’s framing, and say so when you use it): private data + untrusted content + exfiltration','Tool permission design and excessive agency','Treating model output as untrusted input','PII, log leakage, deletion, and the constraints you do not control'],
  mistakes:['Believing code is server-side because of where the file lives. One import from server code into browser code drags it into the browser.','Treating a leaked key as fixed by deleting the commit. It is compromised the moment it was pushed; rotation is the only fix.','Trusting an organizationId or userId sent in the request body.','Hiding the admin button in the UI (the screens a user sees) and calling that access control.','USING (true), or the service key in an Edge Function because RLS was in the way.','Believing a classifier or delimiter scheme solves prompt injection.','Assuming indirect injection is exotic. It is the common case: a web page, a PDF, a calendar invite, a row another user can write to.','A confirmation step whose summary the model itself generates. An injected model lies in the confirmation.']},
@@ -763,7 +838,7 @@ M13:{concepts:['The client-server trust boundary again, this time as a thing you
 M23:{concepts:['Environments and configuration as a first-class thing','Secrets across environments; short-lived credentials over stored keys','A CI pipeline you own: what gates a merge and what it costs','Deploy is not release: preview, promote, instant rollback, feature flags','Expand/contract migrations inside the pipeline','Health checks, SLOs, alerting that pages a human only when it should','Exactly enough Docker and Linux, and not one hour more','Consumer contracts — compatibility for callers you cannot redeploy'],
  mistakes:['git revert as the rollback strategy. A full rebuild while the site is broken, and it does nothing about the schema change or the rows already written.','Running migrations at application boot, so every instance races.','Assuming the public-bundle env prefix means "for the frontend" rather than "baked into the public bundle, forever, at build time."','Production secrets in preview environments, where any PR can exfiltrate them.','One /health endpoint used for both liveness and readiness.','The Kubernetes rabbit hole after Docker clicks.','Leaving the practice cloud stack running.']},
 M25:{concepts:['Python semantics at depth','asyncio and the blocking-call trap — a concurrency model that is not JavaScript’s','FastAPI with streaming responses and dependency injection','Reading and debugging idiomatic Python you did not write'],
- mistakes:['Assuming Python’s async is JavaScript’s: a sync HTTP client, a sync database session in an async handler, time.sleep. All compile; all pass local testing with one user.','Unbounded gather(*[...]) — fine on 10 items, rate-limited or OOM on 5,000.','Calling the real model API inside unit tests. The LLM belongs in the eval suite.','Assuming pydantic is strict by default. It coerces unless told otherwise.']},
+ mistakes:['Assuming Python’s async is JavaScript’s: a sync HTTP client, a sync database session in an async handler, time.sleep. All compile; all pass local testing with one user.','Unbounded gather(*[...]) — fine on ten items, rate-limited or OOM on five thousand.','Calling the real model API inside unit tests. The LLM belongs in the eval suite.','Assuming pydantic is strict by default. It coerces unless told otherwise.']},
 M26:{concepts:['OAuth as a consumer: state, PKCE, open redirect','The consent surface: connect, callback, connections screen, re-consent','Encrypted per-tenant credential storage and envelope encryption','Token refresh on the provider’s schedule','Scope upgrades forcing every existing user to re-consent','Revocation surfacing as a 401 in a background job at 3am'],
  mistakes:['Storing tokens encrypted without saying where the master key lives or how it rotates.','Treating the state parameter as decorative. The OAuth callback is the one place CSRF actually matters.','A revocation path that fails silently instead of re-prompting.','Assuming scopes granted for v1 cover v2.']},
 M27:{concepts:['Reading an offer: base vs equity vs bonus, vesting, what startup equity is realistically worth','W-2 vs 1099 vs agency vs employer-of-record','Computing the delta yourself rather than taking a headline number — with your own state, your own premium and your own deductions in your own spreadsheet, because no single percentage survives contact with a real return','References and employment verification when you are self-employed: they are different checks, and a reference you paid gets disclosed','Describing the year accurately: "I spent the last year building and operating X, full-time and self-directed, with a working engineer reviewing my code." Not naming how you learned is fine; constructing a framing designed to be mistaken for employment is not, because the follow-ups this module predicts — what title, how big was the team, who was the client — are exactly where it falls apart'],
@@ -781,14 +856,19 @@ M32:{concepts:['The 30/60/90 plan and the week-one manager questions','The askin
 };
 
 // ============================================================
-// Words. Every technical term a module uses, defined in plain language on
-// the page where it first appears, in the order it appears. The reader
-// with no background should never meet a word before its definition.
+// Words. Every technical term a module uses, defined in plain language on that
+// module's own page, in the order it appears there. Each list is deliberately
+// self-contained rather than a single running glossary: a reader opening M18 in
+// month nine should not have to go back to M4 for a word. So a term used by two
+// modules is defined on both pages, at the depth each one needs — the repeat is
+// the design, not a duplicate to be removed. Within a page, nothing is defined
+// using a word defined lower down.
 // ============================================================
 var AI_WORDS = {
 M0:[
  ['Runway','How many months you can pay your bills with no paycheck. It is the only number that sets your deadline.'],
  ['Python','A programming language. Some job postings ask for it by name. This program teaches JavaScript (the programming language M1 starts with) first and Python later, unless your postings say otherwise.'],
+ ['Checkpoint','A named piece of a module, with its own finished state. You tick each one as you finish it, and they are what lets a module be claimed. They are also the legitimate places to stop: a bad week should cost you a checkpoint, not the module. This module is short enough to have none.'],
  ['PLAN.md, INCIDENTS.md','Plain text files. The .md ending only means ordinary text with light formatting. Any notes app can make one.'],
  ['Module','One unit of this program. The biggest are about four weeks at the program’s ceiling of 18 hours a week, and longer if you run below it — M3 and M12 are five or six weeks at twelve hours a week, and that is what the checkpoints are for. A few are paced by a calendar and say so on their own page. Each ends with a thing you made and a check by someone else.'],
  ['Reviewer','A person who writes code for a living and has agreed to look at your work for 20 minutes a month. You find them in this module.'],
@@ -863,7 +943,7 @@ M3:[
  ['Discriminated union, exhaustiveness','A type that is one of several named shapes, each carrying a tag field that says which one. Exhaustiveness is the checker’s complaint when your code forgets to handle one of them.'],
  ['Module (of code), import, bundle graph','A module here is one code file that exports things for other files to import. The import graph is the map of which files pull in which; the bundle the browser downloads is built from it, so anything reachable ships.'],
  ['Runtime','The program that runs your code: here it is Node. This module is about what the runtime is doing between the lines you wrote, because that decides the order things happen.'],
- ['Trust boundary','The line in your code where data from outside comes in: from a user, a model, another service. Everything past the line is trusted, so the checking happens at the line. This module owns the idea; M21 builds on it.'],
+ ['Trust boundary','The line in your code where data from outside comes in: from a user, a model, another service. Everything past the line is trusted, so the checking happens at the line. This module owns the idea and M13 takes it further, as the thing you draw for someone else; M21 then attacks a copy of your app across it.'],
  ['Serverless, warm instance, module scope','Serverless hosting starts a copy of your server code for a request and may freeze it afterwards. A warm instance is a copy kept alive and reused, so variables at the top level of a file (module scope) persist between requests you thought were separate.'],
  ['Production','The deployed version real users hit, as opposed to the copy on your laptop. A production bug is one that reached them.'],
  ['Unseen bug','A bug you have not read the fix for. Your reviewer plants one in a single file for this gate, because a bug you have seen before cannot tell you whether you understand the runtime or only remember your own code.'],
@@ -967,11 +1047,11 @@ M6:[
  ['end_turn, tool_use','The two common values of stop_reason. end_turn means the model finished its answer; tool_use means it stopped to ask your code to run a tool, a function of yours the model may ask to have run (M19).'],
  ['stop_details, discriminator','stop_details is the field that says more about the stop. A discriminator is the one field you branch on to tell cases apart, the tag from M3’s discriminated unions; here it is the only reliable way to detect a refusal.'],
  ['Generation','One reply produced by the model.'],
- ['Structured output, schema','Asking the model to reply in a JSON shape you declared, rather than free text. The schema is the written description of that shape (the same word as the database schema in M4’s database schema); a malformed generation is a reply that does not fit it.'],
+ ['Structured output, schema','Asking the model to reply in a JSON shape you declared, rather than free text. The schema is the written description of that shape (the same word as the database schema in M4); a malformed generation is a reply that does not fit it.'],
  ['Models API, hard-coded','The provider’s web address that lists which models exist and what each can do. Hard-coded means written into your code as fixed values, which go stale the week a model changes.'],
  ['400, dead pattern','400 is the reply code an API sends when the request itself was wrong; M7 covers the codes. A dead pattern is a request shape that used to work and no longer does, so you keep every 400 you hit on one page.'],
  ['Prompt','The text you send to the model in one request.'],
- ['Prompt caching, cache hit','The service remembers the start of a prompt you sent recently and charges a fraction to read it again. A hit is when that happened, visible in the usage object. Same idea as a cache in front of a database, on the provider’s side (the provider is the company running the model service).'],
+ ['Prompt caching, cache hit','The service can keep the start of a prompt you sent recently and charge a fraction to read it again. It does not do this on its own: you mark where the reusable part ends — the cache breakpoint — or turn on the provider’s automatic version. Three things decide whether you ever see a hit. The prefix has to be long enough (the minimum depends on the model, and below it caching silently does nothing). It has to match byte for byte. And the request is assembled tools, then system, then messages — so a tool list that changes between requests invalidates everything after it, which is the part that catches people building agents. A hit is visible in the usage object as cache_read tokens.'],
  ['Messages array, roles, system prompt','The request is a list of messages, each tagged with a role: user, assistant, or system. The system prompt is the instructions at the top that the model treats as coming from the operator. It is text the model reads, not a command it must obey.'],
  ['Statelessness','The service remembers nothing between calls. Every request must resend the whole conversation.'],
  ['Tool-result message, prompt injection','A tool-result message carries the output of something the model asked your code to run (M19). Prompt injection is instructions hidden inside data the model reads, such as a web page or a user message, written to be obeyed. Contained in M19 and M21, never fixed.'],
@@ -979,7 +1059,7 @@ M6:[
  ['max_tokens, enum','max_tokens caps how long the reply may be; the model does not know the cap exists and is cut off mid-sentence when it hits it. An enum is a fixed list of allowed values, here the possible stop_reasons.'],
  ['Input/output asymmetry','Output tokens cost several times more than input tokens.'],
  ['Byte-exact prefix','Caching matches only when the beginning of the prompt is identical byte for byte. One changed character at the front and nothing after it is cached.'],
- ['Adaptive thinking, effort','A setting for how many tokens the model may spend reasoning before it answers. Turning it down trades quality for cost, the first such lever after caching.'],
+ ['Adaptive thinking, effort','Adaptive thinking means the model decides for itself when to reason and how much. Effort is a coarse dial over that depth and over what a request costs — low, medium, high — not a token count. A fixed number of thinking tokens is the thing this replaced; it belongs on the dead-patterns page, not in your code. Turning effort down trades quality for cost, the first such lever after caching.'],
  ['Structural boundary','Something the model cannot do whatever the prompt says, such as know the current date or measure its own confidence.'],
  ['Prefill, decode, KV cache','Prefill is the model reading the whole prompt in one pass. Decode is producing the reply one token at a time. The KV cache is the working memory built in prefill that every decode step re-reads; it explains why caching needs an exact prefix, why long conversations cost more each turn, and why the first token and later tokens arrive at different speeds.'],
  ['Latency, TTFT, inter-token latency','Latency is how long you wait. Time to first token (TTFT) is the wait before the reply starts, which grows with prompt length; inter-token latency is the gap between tokens after that, which does not.'],
@@ -991,7 +1071,7 @@ M6:[
  ['Interpolate','Insert a changing value (a date, a user’s name) into a fixed string. Done near the front of the system prompt it changes the prefix and kills the cache silently.'],
  ['Primary API docs','The model provider’s own reference pages. This module decays fastest, so you check them the week you build.']],
 M7:[
- ['The wire','The actual bytes travelling over the network, as opposed to what a library shows you.'],
+ ['The wire','The actual bytes traveling over the network, as opposed to what a library shows you.'],
  ['Idempotency key, dedupe table','An ID the client attaches to a request so the server can recognize a repeat. The dedupe table stores each key once; a second request with the same key gets the first result and does no new work. This module owns idempotency.'],
  ['Wire format, transport','The wire format is the exact shape of bytes you send, which the other end must match; the M22 client will consume this one. A transport is the piece of code that moves messages between two ends.'],
  ['Status code, header','The status code is the three-digit number opening every response: 200 OK, 400 bad request, 401 not signed in, 404 not found, 429 slow down, 500 server error. Headers are named lines above the body carrying details such as content type and who you are.'],
@@ -1001,7 +1081,7 @@ M7:[
  ['Mid-stream error','A failure after the response has started, when the status code has already gone out as 200. The client has to be told inside the stream.'],
  ['REST','A convention for HTTP APIs: each URL names a thing and the verb (GET, POST, PUT, DELETE) says what to do with it.'],
  ['Chunked transfer','HTTP’s way of sending a body in pieces without knowing the total length up front. It is what lets a response start before it is finished.'],
- ['Abort, resumption','Aborting is cancelling a request midway. Resumption is a client picking a stream up from where it stopped rather than starting over.'],
+ ['Abort, resumption','Aborting is canceling a request midway. Resumption is a client picking a stream up from where it stopped rather than starting over.'],
  ['Backoff with jitter','Waiting longer between each retry, plus a random extra, so many clients do not retry in lockstep.'],
  ['Webhook','An HTTP request another service sends to a route on your server when something happens, rather than you asking. Delivery is at least once, so the same event can arrive twice.'],
  ['CORS','The browser’s rule about which websites’ pages may call your server, controlled by a header your server sends.'],
@@ -1133,7 +1213,7 @@ M12:[
  ['Assertion grader','A small program that checks one fixed fact about an output: it contains a date, it is valid JSON, it is under 200 words. No model is involved, so it is free and never wrong about what it checks.'],
  ['Judge, LLM-as-judge','A second model call that reads an output and grades it against your written rules. LLM, large language model, is the formal name for the kind of model you have been calling. A judge is only trusted after you have measured how often it agrees with human labels. Calibrated means exactly that: measured against human labels so you know how often it agrees.'],
  ['Confusion matrix','A two-by-two table comparing the judge’s verdicts with the human’s: both said pass, both said fail, judge passed what the human failed, judge failed what the human passed. The four counts tell you exactly how the judge is wrong.'],
- ['Inter-annotator agreement','How often two people, labeling the same traces independently, reach the same verdict. Low agreement means the rules are unclear, not that one person is wrong.'],
+ ['Inter-annotator agreement','How often two people, labeling the same traces independently, reach the same verdict. Report it the way this module makes you report a judge, not as a bare percentage: when nine traces in ten are passes, two annotators who pass everything agree ninety per cent of the time and have agreed about nothing. Use a measure that subtracts the agreement you would get by chance — Cohen’s kappa is the usual one — and say which you used. Low agreement means the rules are unclear, not that one person is wrong.'],
  ['Rubric, criterion','The rubric is the written rules for deciding pass or fail, precise enough that another person applying them alone gets the same answer you would. A criterion is one line of it.'],
  ['Tiered CI gate','A CI check with levels: a small fast set on every push, the full set once a night. Tiering keeps the check cheap enough to leave switched on.'],
  ['Smoke set','About fifteen cases chosen to catch obvious breakage quickly. Named after checking whether a machine smokes when switched on.'],
@@ -1143,12 +1223,12 @@ M12:[
  ['Confidence interval, bootstrap CI','A confidence interval is a range the true score probably lies in, not a single number, because 100 cases can only estimate it. Bootstrap is the way you compute the range: re-draw your cases at random many times, score each draw, and see how much the score moves. Here CI is a confidence interval. The other CI on this page, the continuous-integration check that runs your tests on every push, is always written "CI gate".'],
  ['Statistical threshold','The fail rule written as a range test: the gate fails only when the whole confidence interval falls below the target, so noise alone cannot block a change.'],
  ['Model family, migration','A model family is one provider’s line of models across versions. A migration is switching your app to a different family or version, and here it is allowed only when your own eval set says quality held.'],
- ['Stats-lab','Four statistical tests, each run once against your own data. A statistical test is a calculation that says whether a difference between two measured numbers is larger than chance alone would produce.'],
+ ['Stats-lab','Four statistical tests, each run once against your own data: base rates, the confusion matrix with TPR and TNR, percentiles from a raw array, and a bootstrap confidence interval. A statistical test is a calculation that says whether a difference between two measured numbers is larger than chance alone would produce.'],
  ['Trajectory grader','A grader that scores the sequence of steps an agent took, not only its final answer. An agent is a model run in a loop that chooses its own next action; M19 builds one and uses these graders.'],
  ['Open coding, axial coding','Two passes over your traces. Open coding: write a free-form note on each failure describing what went wrong. Axial coding: group those notes into named categories with counts. The taxonomy comes out of the second pass.'],
  ['Train/test discipline','The rule that the test half of your split is opened once, at the end. Every time you look at it and adjust, it stops measuring anything.'],
  ['Structured output, schema','Asking the model to reply in a fixed shape, such as JSON with named fields, checked against a schema, which is a written description of the shape data must have. It guarantees the shape of a reply, not that its contents are true.'],
- ['Versioning, pinned ID','Versioning: every prompt is saved as a numbered copy, so you can say which one produced a trace. A pinned ID names the exact model version in your code, so the provider updating the model cannot silently change your results.'],
+ ['Versioning, pinned ID','Versioning: every prompt is saved as a numbered copy, so you can say which one produced a trace. A pinned ID is the exact model identifier the provider publishes, written in your code, so the provider updating a model cannot silently change your results. Copy it; do not construct one by adding a date you half-remember from a tutorial. Know whether your provider’s identifiers are aliases that move or snapshots that do not — it differs by provider, and so does the punctuation.'],
  ['Held-out test set','The test half of your split, kept untouched. The gate scores a change against it because it is the only number you cannot have tuned toward.'],
  ['Ship/no-ship','The decision whether a change goes out to users. The point of the harness is that this decision is made by a number and a range, not a feeling.'],
  ['TPR, TNR, accuracy','Two rates from the confusion matrix. True positive rate: of the traces a human marked as failing, the share the judge also caught. True negative rate: of the traces a human passed, the share the judge also passed. Both are needed; accuracy, the share of all verdicts that were right, hides a judge that says pass to everything.'],
@@ -1163,7 +1243,7 @@ M13:[
  ['Stack','The set of languages, tools and services you build with. Yours is Node, TypeScript, Postgres, Supabase and Vercel; a rep outside it forces you to reason instead of recite.'],
  ['Latency, p99','Latency is how long a request takes from being sent to being answered. p99 is found by sorting every request’s latency and reading the value that 99 percent of them came under; it describes the slow tail an average hides. p50 and p95 are the same idea at 50 and 95 percent.'],
  ['Cost per completed task','Total money spent divided by the number of tasks that actually finished, so retries and failed attempts count against you. M20 builds the table later; here you say so out loud when asked.'],
- ['Shared counter','One number many requests read and increase at the same time, such as a usage total. It is hard because two requests can both read 5 and both write 6, losing one.'],
+ ['Shared counter','One number many requests read and increase at the same time, such as a usage total. It is hard because two requests can both read the same number and both write the one after it, losing an update.'],
  ['Serverless, instance','Running your code as functions a hosting company starts on demand, with no server you manage. An instance is one running copy; a cold one is freshly started, a warm one is reused from a previous request and still holds whatever was in memory.'],
  ['Lambda, fan-out','Lambda is a serverless hosting service where each request may start a fresh copy of your code. Fan-out is one request spawning many at once. Together they exhaust a database\u2019s connections.'],
  ['Cache, invalidation','A cache is a saved copy of a result kept close by so the next identical request is answered without redoing the work. Invalidation is deciding when a saved copy has gone stale and must be thrown away; it is the hard half. The three layers are the browser, a copy kept on servers near the user, and your own server or database.'],
@@ -1204,7 +1284,7 @@ M14:[
  ['Formatting sweep','A commit that changed spacing or style across many files without changing what the code does. It is often the last commit to touch a line, which is why blame alone misleads.'],
  ['Ramp','The period of becoming productive in a codebase or job you have newly joined. A ramp killer is a habit that stretches it out.'],
  ['Backfill','A job that walks every existing row and fills in or recomputes a value, done in pieces so it can be stopped and resumed. Resumable means a kill part-way loses nothing already done.'],
- ['.tsx','A TypeScript file that also contains React markup for a page; the x on the ending marks it. Files ending .ts hold plain TypeScript.']],
+ ['.tsx','A TypeScript file that also contains page markup — the tag-shaped description of what a screen looks like, which M22 is where you write; the x on the ending marks it. Files ending .ts hold plain TypeScript.']],
 M15:[
  ['Recovery lab','A log of disasters you cause in a repo on purpose, such as deleting a branch or rewriting shared history, and recover from one by one, so the first real one is not the first.'],
  ['Responsibility (of a file)','One distinct job a file does. A file with three or more is doing too much, and each one is a separate reason it will change.'],
@@ -1242,7 +1322,7 @@ M16:[
  ['Transcript','The full saved conversation with the agent, every instruction and every reply. It is kept so a reviewer can see how you drove it.'],
  ['Agent config','A file in the repo, such as CLAUDE.md or AGENTS.md, that the agent reads before working. It states the house conventions so generated code matches what is already there.'],
  ['Exit criteria','The checkable conditions that mean one unit of work is done, such as a named test passing. Verifiable means a program or a person can confirm them without trusting the agent.'],
- ['Auth, migration','Two things never delegated. Auth is authentication and authorization: who a user is and what they may do. A migration is a scripted change to the database’s structure. Both are hard to verify and expensive when wrong.'],
+ ['Auth, migration','Two things never delegated. Auth is short for two things M21 separates properly: proving who a user is, and deciding what they may do. A migration is a scripted change to the database’s structure. Both are hard to verify and expensive when wrong.'],
  ['Sandbox, permission scope','A sandbox is a sealed environment where the agent can run commands without reaching your real files, network or secrets. Permission scope is the written list of what it is allowed to do; anything outside it needs you.'],
  ['Run cost','What one agent task costs in money, mostly tokens. Measured because a run that costs more than the hour it saved is not a saving.'],
  ['Sealed brief, second agent instance','A sealed brief is a set of instructions written and stored weeks in advance, not seen by you, so the test cannot be shaped around what you expect. A second agent instance is a separate, fresh copy of an agent with no memory of your work.'],
@@ -1266,10 +1346,7 @@ M17:[
  ['Prompt archaeology, prompts in-repo','Prompts in-repo means the prompt text lives in the code files of the project. Archaeology is working out why they say what they say when nobody wrote down the reason, by reading history, tests and traces.'],
  ['Non-engineer','Someone outside engineering, such as a PM or a customer, who wants a guarantee and needs the limit explained in plain words with a number.'],
  ['Missed target','A result that came in below the number you set. Reported as the number, the evidence and what you would do next; not apologized for.'],
- ['Cold (ticket)','Handed to you with no warning and no preparation, the way a real request arrives. Not the cold cache of M5.'],
- ['CSV','Comma-separated values: a plain text table, one row per line with commas between the columns. Spreadsheets open and save it, which is why exports and imports use it.'],
- ['Nullable','A column allowed to hold no value (null). A new column is added nullable so existing rows stay valid until it is filled.'],
- ['Dual write','Writing the same data to the old column and the new one while the migration is in progress, so both stay correct until the contract step drops the old one.']],
+ ['Cold (ticket)','Handed to you with no warning and no preparation, the way a real request arrives. Not the cold cache of M5.'],],
 M18:[
  ['Retrieval','Finding the few passages in your corpus, the document store you built in M11, that are relevant to a question, so the model answers from them instead of from memory.'],
  ['Chunk, chunking','Documents are cut into pieces called chunks before embedding, because one embedding stands for one passage, not a whole book. Chunking is choosing where to cut. Fixed-size means every chunk is the same length, and it is the right starting point.'],
@@ -1294,7 +1371,7 @@ M18:[
  ['Candidate depth','How many results from the first search stage you hand to the reranker. Too few and the right chunk never reaches it.'],
  ['README','The front page of a repo: the text file GitHub shows first, explaining what the project is and how to run it. For evidence repos it carries your measured numbers.'],
  ['Fresh split, dev-test gap','After choosing on the dev set, measure on questions the choice never touched. The dev-test gap is how much worse it does on those; a big gap means you tuned to the questions, not the problem. There is no third split: with two arms and a test half of about ten queries, you get one honest measurement, so report it with its interval rather than hunting for a better one.'],
- ['Bootstrap interval','Resampling your own results many times over to see how much the number would have moved if you had drawn a different set of questions. On ten test queries it is wide — plus or minus roughly 0.3 on recall@10 — which is the reason this module compares two arms rather than five. A delta whose interval crosses zero is a delta you cannot claim.'],
+ ['Bootstrap interval','Resampling your own results many times over to see how much the number would have moved if you had drawn a different set of questions. On ten test queries the interval around one arm’s recall is wide — plus or minus roughly 0.3 — which is the reason this module compares two arms rather than five. Resample the per-question differences between the two arms, not the two recalls separately: the arms answered the same questions, so the difficulty of each question cancels, and the paired interval is meaningfully tighter than subtracting two independent ones. A delta whose interval crosses zero is a delta you cannot claim.'],
  ['hnsw.iterative_scan','A pgvector setting that tells the HNSW index to keep scanning when a filter throws away most of its results, instead of returning too few. Named in the gate because it changes the number.'],
  ['Routing rule','The written rule your app uses to decide, per request, whether to retrieve or to send the long context. Defended with your own numbers.'],
  ['Pretraining','The training the model had before you ever called it. A strong model can answer from that alone, which hides a retrieval that returned nothing useful.'],
@@ -1393,7 +1470,7 @@ M22:[
  ['Component, props, state','A component is one reusable piece of the page, written as a function. Props are the values passed into it; state is the values it keeps and changes itself.'],
  ['Render, re-render','Rendering is React running a component to produce what it shows. A re-render is running it again because a prop or state changed. Knowing what triggers one is the rendering model.'],
  ['Effect','Code in a component that runs after rendering, for things outside the page such as opening a connection. Written with useEffect. Its four failure modes: running too often, not often enough, at the wrong time, and never cleaning up.'],
- ['Opt-in caching','The current rule in the framework: nothing is cached unless you ask for it. Earlier versions cached by default, which is why older tutorials disagree.'],
+ ['Opt-in caching','The direction the framework moved: data fetching, GET route handlers and the client-side router no longer cache unless you ask. Statically rendered routes still are cached, so “it caches nothing by default” is the overstatement that loses you the follow-up. Earlier versions cached far more by default, which is why older tutorials disagree.'],
  ['Form, mutation','A form is the part of a page that collects input. A mutation is a request that changes data on the server, as opposed to one that only reads.'],
  ['Optimistic UI','Showing the result of a change on the page before the server has confirmed it, then correcting if the server says no.'],
  ['Cancellation, abort propagation','Cancellation is the user stopping a request. Propagation is passing that stop all the way through: page, server, provider. If it stops at the page, billing continues.'],
@@ -1429,9 +1506,9 @@ M23:[
  ['Build time, public-bundle env prefix','Build time is when the code is packaged, before it runs anywhere. Variables with the public prefix are copied into the client bundle at that moment, so they are public forever and cannot be secrets.'],
  ['Kubernetes','A system for running many containers across many machines. Powerful, and a rabbit hole; not needed for one app.'],
  ['Cloud stack, torn down','The set of rented cloud pieces you created for the deploy. Tearing it down deletes all of them the same day, because idle cloud resources bill by the hour.'],
- ['CSV','Comma-separated values: a plain text table, one row per line with commas between the columns. The figure’s export lands in one.'],
- ['Nullable','A column allowed to hold no value (null). The expand step adds the new column nullable so existing rows stay valid until it is filled.'],
- ['Dual write','Writing the same data to the old column and the new one while the migration is in progress, so both stay correct until the contract step drops the old one.']],
+ ['CSV','Comma-separated values: a plain text table, one row per line with commas between the columns. Spreadsheets open and save it, which is why exports and reports use it.'],
+ ['Nullable','A column allowed to hold no value (null). The expand step adds the new column this way — the figure calls it “allowed empty” — so existing rows stay valid until it is filled.'],
+ ['Dual write','Writing the same data to the old column and the new one while the migration is in progress — the figure calls it “write both” — so both stay correct until the contract step drops the old one.']],
 M24:[
  ['Tooling','The programs around a language that install packages, check style and run tests. Python’s changed recently, so older tutorials name the wrong ones.'],
  ['ruff','The current Python linter and formatter: it applies lint rules and rewrites spacing and layout to the standard style.'],
@@ -1483,7 +1560,7 @@ M26:[
  ['Open redirect','A route that sends the user on to any address given in the request. Attackers use one to make a callback land on their site instead of yours.'],
  ['Per-tenant credential storage','Each user’s tokens kept in their own encrypted row, so one leaked row exposes one user.'],
  ['401','The HTTP status code meaning the credential was missing or no longer valid. From a revoked provider it arrives at 3am in a background job, where nobody is watching.'],
- ['Revocation','The user or the provider cancelling the grant. Your next request gets a 401 and must lead to a re-prompt, not a silent failure.'],
+ ['Revocation','The user or the provider canceling the grant. Your next request gets a 401 and must lead to a re-prompt, not a silent failure.'],
  ['Session','The server’s record that a user is signed in, tied to a cookie the browser sends back on every visit. The connection you build is stored against the session’s user.'],
  ['code_verifier','The PKCE secret your server makes and keeps for one sign-in. The scrambled version it sends out is the code_challenge; the verifier goes back when the code is exchanged, proving the same server started and finished.'],
  ['Master key','The one key that unlocks the per-row keys. Its location per environment is written down, because if it lives next to the data the scrambling is decorative.'],
@@ -1502,7 +1579,7 @@ M27:[
  ['Coursework','Work done to complete a course, as opposed to work done because someone needed it. Naming it tells the listener you are a student; the same work described as building and operating an app does not.'],
  ['Background answer','Your 30-second reply to tell me about yourself: what you have built and operated and what you are looking for. Delivered without apology and without naming coursework.'],
  ['Follow-ups','The questions a recruiter asks after your answer. The six here are predictable, so each gets a one-line reply written and rehearsed in advance.'],
- ['Remote (work), remote-first, quarterly onsite','Remote here means working from somewhere other than the office, not the git remote of M1. Remote US-only requires you to live in the US; remote in four timezones requires your working day to overlap the team’s. Remote-first means the whole company works this way; quarterly onsite means travelling to the office every three months. They are different jobs with the same word on the posting.'],
+ ['Remote (work), remote-first, quarterly onsite','Remote here means working from somewhere other than the office, not the git remote of M1. Remote US-only requires you to live in the US; remote in four timezones requires your working day to overlap the team’s. Remote-first means the whole company works this way; quarterly onsite means traveling to the office every three months. They are different jobs with the same word on the posting.'],
  ['Employee, contractor','An employee is on the company’s payroll: the company withholds your tax, pays most of your medical cover and gives paid time off. A contractor runs a one-person business that bills the company for work, gets none of that, and can be dropped without notice. Contract job, the M0 posting category, means the second.'],
  ['Terms','Everything a company proposes besides the pay: whether you are an employee or a contractor, hours, where you must live, notice period, and what happens to your equity if you leave. Terms can move more money than the pay figure does.'],
  ['W-2, 1099, FICA','The two US tax forms that name the arrangement. A W-2 is what an employee receives each year, showing pay and the tax already withheld. A 1099 is what a contractor receives, showing only what was paid, with all the tax still owed. People say W-2 job or 1099 job to mean employee or contractor. FICA is the US payroll tax for Social Security and Medicare; on a W-2 the employer pays half of it.'],
@@ -1531,7 +1608,7 @@ M28:[
  ['Contribution, OSS contribution history','A contribution is a change of yours accepted into someone else’s open-source project. Your contribution history is the public record of all of them, with their review threads, which GitHub shows on your profile.'],
  ['Write-up, public write-up','A short published piece explaining something you built or measured, with the numbers. Public means posted where strangers can read it, such as a blog or a forum, rather than kept in the repo.'],
  
- ['Channel, named channel','A place where you can reach people who are not your friends. Named means you write down which one each reader came from. Pick places where this ask is on topic and welcome, or it reads as self-promotion and gets removed: a language or framework Discord with a feedback or show-and-tell channel, the discussions tab of a project you have contributed to, or the chat of a local meetup you attend. A general subreddit or a busy mailing list is where this request goes to be ignored. Post the link with exactly one line — "Five minutes, three questions, no back-and-forth: what does this do, who is it for, what does it refuse to do?" — and take the answers in writing.'],
+ ['Channel, named channel','A place where you can reach people who are not your friends. Named means you write down which one each reader came from. Pick places where this ask is on topic and welcome, or it reads as self-promotion and gets removed: a chat server for a language or framework with a feedback or show-and-tell channel, the discussions tab of a project you have contributed to, or the chat of a local meetup you attend. A general subreddit or a busy mailing list is where this request goes to be ignored. Post the link with exactly one line — "Five minutes, three questions, no back-and-forth: what does this do, who is it for, what does it refuse to do?" — and take the answers in writing.'],
  ['Operating','Running a live system for real users over time: keeping it up, watching cost and quality, fixing it when it breaks. Building is one weekend; operating is the year after, and it is the half employers ask about.'],
  ['Upstream (contributed upstream)','Contributed upstream means your change went into the original project itself, so everyone who downloads it gets your fix. Not the M7 upstream, the service your server calls.'],
  ['Resume','A one- or two-page summary of your work and skills, sent to every job you apply for. Here every line on it points at a repo where a reader can check it.'],
@@ -1580,7 +1657,7 @@ M30:[
 M31:[
  ['Onsite (interview)','The final round of interviews, several in one day, with the team you would join. Once done in the office, now often on video and still called an onsite. It is the last step before an offer, which follows one to three weeks later.'],
  ['Operating contract','The one page from M0 that sets your hours, your reviewer and your rule for a bad week. The second one is the same page rewritten for a person with a job.'],
- ['Weekly budget','The hours per week you will honestly give the program. Employed, that is 5 to 8 hours, and every plan built on 18 has to be rebuilt.'],
+ ['Weekly budget','The hours per week you will honestly give the program. Employed, that is five to eight hours, and every plan built on eighteen has to be rebuilt.'],
  ['Component (of a codebase)','One self-contained part of a larger codebase, such as the billing code or the search code. Not the React sense from M22.'],
  ['Re-contracted','Agreed again on new terms. Your reviewer signed up for 20 minutes a month with an unemployed learner; the employed version needs asking for afresh, or a different person.'],
  ['Monthly re-plan','The 2 hours each month, from Track 8 (Tracks tab), where you re-read the plan against what actually arrived: postings screened, the funnel table, your delta notes. It continues after hire with the job as a new input.'],
@@ -1618,10 +1695,10 @@ M32:[
 })();
 
 // ============================================================
-// Checkpoints. Named sub-goals on every module of 30 hours or more, over
-// 30 hours, each with its own done-state and each a legitimate stopping point
-// in a bad week. Two modules had them and fourteen did not, which is the
-// single largest flow defect in the program: forty hours in with no defined
+// Checkpoints. Named sub-goals on every module of 30 hours or more, plus five
+// shorter ones that earn them, each with its own done-state and each a legitimate
+// stopping point in a bad week. A module without them is the single largest flow
+// defect available to a program like this: forty hours in with no defined
 // intermediate target is where people conclude they are lost rather than
 // mid-module. Ordered easiest-first inside each module so the first one lands
 // early and the module opens with a win rather than a wall.
@@ -1634,8 +1711,8 @@ var AI_CHECKPOINTS = {
       'A real reader’s pushback on it, and the version that changed because of it',
       'The first timed design rep done and debriefed, on a system outside your stack'],
   M16:['The delegation policy written, and the pre-commit hook that enforces it',
-      'Three real tickets handed to an assistant, with a defect log naming which module let you catch each one',
-      'One flagship feature shipped in a timebox with assistants, measured against one written by hand'],
+      'Three real tickets handed to a coding agent, with a defect log naming which module let you catch each one',
+      'One flagship feature shipped in a timebox with a coding agent, measured against one written by hand'],
   M17:['The scoping doc for one real request: what is in, what is out, how it is cut',
       'An estimate written before the work and the actual time beside it',
       'One open-ended request delivered as a plan with a number, not as an answer'],
@@ -1644,9 +1721,9 @@ var AI_CHECKPOINTS = {
       'The connections screen, and the scopes you asked for written down with why'],
   M6:['Token counts compared against your assumptions across five text types',
       'One cache hit proved from the usage meters, with its cost delta printed',
-      'Every stop_reason produced on purpose, including a refusal, and the cost column live in the M2 log',
-      'A structured-output schema rejecting a malformed reply, capabilities read from the Models API, and every 400 pasted into the dead-patterns page'],
-  M11:['Twenty documents hand-labeled and split into dev and test before any pipeline code is written',
+      'Every stop_reason produced on purpose, with the refusal taken from a recorded fixture, and the cost column live in the M2 log',
+      'The limit of constrained decoding shown two ways — a schema-valid reply that is factually wrong, and the 400 the API returns when the schema itself is invalid — with capabilities read from the Models API and every 400 pasted into the dead-patterns page'],
+  M11:['Twenty documents hand-labeled and about twenty-five queries hand-written against them, split into dev and test before any pipeline code is written, with the number in each half recorded',
       'One document uploaded through a signed URL and stored in a private bucket',
       'Text extracted from a digital PDF, a scanned one and a .docx, with character offsets kept',
       'The pipeline resumable on the M8 queue, with the orphan-cleanup job and the retention rule written down'],
@@ -1689,12 +1766,12 @@ var AI_CHECKPOINTS = {
       'The tiered CI gate: a smoke set on every push, the full set nightly, recorded fixtures so graders cost nothing',
       'The fail condition stated as a statistical threshold with its bootstrap interval, not as a single number',
       'A deliberate model-family migration gated only by this eval set',
-      'stats-lab: the four tests you will actually use, each run once against your own data'],
+      'stats-lab: the four tests, each run once against your own data — base rates, the confusion matrix with TPR and TNR, percentiles from a raw array, and a bootstrap confidence interval you wrote yourself'],
   M3:['Hello, event loop: predict the output order of six mixed sync/setTimeout/promise lines, then run it and reconcile',
       'One failing async test you wrote, fixed for the right reason',
       'MiniPromise: then/catch/chaining passing your own tests',
       'The four concurrency failure modes reproduced on demand',
-      'The Zod boundary rejecting model JSON that `as` accepted',
+      'The Zod boundary rejecting model JSON that a bare “as” cast accepted',
       'The typed error taxonomy with a documented retry rule per class'],
   M4:['Aliasing and the shallow-copy trap, reproduced and fixed',
       'Money wrong by a cent, then correct',
@@ -1712,7 +1789,7 @@ var AI_CHECKPOINTS = {
       'The four test doubles, each used once where it belongs',
       'Integration tests against real Postgres, including two RLS policies',
       'The record-replay model client, with a split-frame stream recorded',
-      'Green required check in CI, plus a mutation score of 70% or more'],
+      'Green required check in CI, plus a mutation score around 70% on the module you scored'],
   M10:['Read one real stack trace to its actual cause',
       'A bug found with a conditional breakpoint you could not have printed your way to',
       'Structured logs with correlation IDs surviving one async hop',
@@ -1780,3 +1857,13 @@ var AI_CHECKPOINTS = {
     if (cp && !AI_CURRICULUM[i].checkpoints) AI_CURRICULUM[i].checkpoints = cp;
   }
 })();
+
+// AI_DETAIL, AI_WORDS, AI_CHECKPOINTS and AI_SPINE_TRACK_HOURS are declared below the
+// module.exports block above, so they were still undefined when it ran. A Node consumer
+// got the graph and no glossary. Export them here, where they exist.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.AI_DETAIL = AI_DETAIL;
+  module.exports.AI_WORDS = AI_WORDS;
+  module.exports.AI_CHECKPOINTS = AI_CHECKPOINTS;
+  module.exports.AI_SPINE_TRACK_HOURS = AI_SPINE_TRACK_HOURS;
+}

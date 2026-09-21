@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v41';
+var CACHE = 'apex-shell-v52';
 var SHELL = [
   './',
   './index.html',
@@ -25,6 +25,21 @@ var SHELL = [
 // replaced by an error page, with no way to recover while offline.
 function cacheable(res) {
   return !!res && res.ok && res.status === 200 && res.type !== 'opaque';
+}
+
+// The shell is one specific document. cacheable() alone said yes to any 200 in
+// scope, so a single navigation to ./icon.svg or a .md file in the repo root
+// replaced the offline app with that file — an installed PWA that renders a
+// bare SVG when the device is offline, with no way back. Two extra conditions:
+// the request has to BE the shell, and the answer has to be HTML.
+var SHELL_URL = new URL('./index.html', self.location).pathname;
+var ROOT_URL = new URL('./', self.location).pathname;
+function isShellRequest(req) {
+  var path = new URL(req.url).pathname;
+  return path === SHELL_URL || path === ROOT_URL;
+}
+function isHtml(res) {
+  return (res.headers.get('content-type') || '').indexOf('text/html') === 0;
 }
 
 self.addEventListener('install', function(e) {
@@ -65,23 +80,34 @@ self.addEventListener('fetch', function(e) {
   // Navigations: network-first so a refresh picks up a new build, falling back
   // to the cached shell when offline or when the network is answering slowly
   // enough that a good cached copy is the better answer.
+  // Navigations to the app itself: network-first so a refresh picks up a new
+  // build, falling back to the cached shell when the network fails. A
+  // navigation to anything ELSE in scope is left alone entirely — this worker
+  // does not own those pages, and answering them with the APEX shell broke
+  // every other project published on the same origin.
   if (req.mode === 'navigate') {
+    if (!isShellRequest(req)) return;
     e.respondWith(
       new Promise(function(resolve) {
         var settled = false;
         function done(r) { if (!settled && r) { settled = true; resolve(r); } }
+        // A slow network is not an offline network, but a network that never
+        // answers should not hold a blank page either. Five seconds is long
+        // enough that a real response usually wins, and short enough that a
+        // hanging connection does not look like a broken app.
         var timer = setTimeout(function() {
           caches.match('./index.html').then(done);
-        }, 3000);
+        }, 5000);
         fetch(req).then(function(res) {
           clearTimeout(timer);
-          if (cacheable(res)) {
+          if (cacheable(res) && isHtml(res)) {
             var copy = res.clone();
             caches.open(CACHE).then(function(c) { c.put('./index.html', copy); });
             done(res);
           } else if (!settled) {
-            // A 404 or a 5xx must never become the offline shell. Serve the
-            // last good copy if there is one, otherwise the server's answer.
+            // A 404, a 5xx, or a 200 that is not HTML must never become the
+            // offline shell. Serve the last good copy if there is one,
+            // otherwise the server's answer.
             caches.match('./index.html').then(function(hit) { done(hit || res); });
           }
         }).catch(function() {
@@ -96,10 +122,32 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Same-origin assets: serve the cached copy at once, and refresh it in the
-  // background. Without the refresh, a deploy that forgot to bump CACHE would
-  // pair a new index.html with permanently stale scripts.
+  // Same-origin assets. CacheStorage is per-ORIGIN, not per-path, so on a shared
+  // host every other site the same account publishes can write into this cache.
+  // A cache-first read would then execute whatever they put there, once, on the
+  // next load — so scripts are network-first: the network copy wins whenever
+  // there is one, and the cache is the offline fallback it was meant to be.
+  // Everything else stays cache-first, because a font or an icon is not code.
   if (new URL(req.url).origin === self.location.origin) {
+    var dest = req.destination;
+    var isCode = dest === 'script' || dest === 'worker' || dest === 'style'
+      || /\.(js|css)(\?|$)/i.test(new URL(req.url).pathname);
+    if (isCode) {
+      e.respondWith(
+        fetch(req).then(function(res) {
+          if (cacheable(res)) {
+            var copy = res.clone();
+            caches.open(CACHE).then(function(c) { c.put(req, copy); });
+          }
+          return res;
+        }).catch(function() {
+          return caches.match(req).then(function(hit) {
+            return hit || Response.error();
+          });
+        })
+      );
+      return;
+    }
     e.respondWith(
       caches.match(req).then(function(hit) {
         var net = fetch(req).then(function(res) {
