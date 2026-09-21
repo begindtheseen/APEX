@@ -67,8 +67,8 @@ var AI_SPIRAL_PAIRS = [
 var LAUNCHPAD_RULES = [
   { n:1, rule:'Every module ends in an artifact — something that runs, or something a stranger can read.' },
   { n:2, rule:'Every module except M0 has an inbound edge, and the longest chain of modules — not the hour sum — sets how long this takes.' },
-  { n:3, rule:'Eight concepts have exactly one owning module. Five are consumed from there on; three are deliberately deepened later, and those three are named in AI_SPIRAL_PAIRS.' },
-  { n:4, rule:'Seven spiral pairs cover six concepts that are deliberately taught twice. Naming them is what stops someone "fixing" the repetition later.' },
+  { n:3, rule:'Eight ideas have exactly one module that owns them. Five are used from there on and never taught again: the flagship (M2), streaming and idempotency (M7), the durable queue (M8), evals (M12). The other three are taught once and then deliberately taken further later — the trust boundary (M3, again in M13), observability (M10, again in M12), and cost (introduced in M6, owned at depth in M20).' },
+  { n:4, rule:'Six ideas are taught twice on purpose, across seven pairs of modules. Three of them are the three from rule 3; the others are pooling and isolation (M4, again in M5), CI (M9, then M12, then M23) and OAuth (M21, again in M26). When you meet one a second time, it is depth, not repetition.' },
   { n:5, rule:'Every module opens with a one-hour verification pass, charged to the hours it already has: read the official documentation before you build, and write down where it proved this page wrong.' }
 ];
 

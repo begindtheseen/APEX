@@ -1340,6 +1340,23 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-chk.on{color:#e6edf5;}
 #launchpadApp .lp-chk.on .lp-box{background:var(--rc);border-color:var(--rc);color:#02101f;}
 
+/* Checkpoints in the lesson body. Same control as the rail's three steps, at
+   the width of the page, with a bar so "where am I in this module" is one
+   glance rather than a count. */
+#launchpadApp .lx-cpbar{display:flex;align-items:center;gap:12px;margin:2px 0 8px;
+  font:500 0.6875rem/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#a4b2c2;}
+#launchpadApp .lx-cpt{flex:1;height:6px;border-radius:99px;background:#22364d;overflow:hidden;}
+#launchpadApp .lx-cpt i{display:block;height:100%;background:var(--rc);border-radius:99px;
+  transition:width var(--t-state) var(--e-out);}
+#launchpadApp .lp-chk.lx-cp{font:400 0.8125rem/1.5 var(--sans);align-items:center;}
+#launchpadApp .lp-chk.lx-cp .lp-box{border-radius:50%;flex:0 0 auto;
+  font:600 0.6875rem/1 var(--mono);color:#7f93ab;}
+#launchpadApp .lp-chk.lx-cp.on .lp-box{color:#02101f;}
+@media (forced-colors: active){
+  #launchpadApp .lx-cpt i{background:Highlight;forced-color-adjust:none;}
+  #launchpadApp .lx-cpt{border:1px solid CanvasText;forced-color-adjust:none;}
+}
+
 /* ═══ THE LESSON ═════════════════════════════════════════════════ */
 #launchpadApp .lx-hero{border:0;border-radius:0;background:none;padding:30px 0 22px;margin:0 0 4px;
   position:relative;overflow:visible;}
@@ -5838,6 +5855,31 @@ var LP_TAB = 'home';
 function lpCfg() { return (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG) ? LAUNCHPAD_CONFIG : {}; }
 function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRICULUM_API : null; }
 
+// Owning an idea and never teaching it again are two different claims, and the
+// data already separates them. Five concepts are owned and then only consumed;
+// three are owned once and deliberately taken further later, and saying "taught
+// here and nowhere else" about those three contradicted the same module's own
+// Words block a screen further down.
+function lpOwnsLine(m) {
+  if (!m.owns || !m.owns.length) return '';
+  var once = (typeof AI_OWNED_ONCE !== 'undefined') ? AI_OWNED_ONCE : [];
+  var pairs = (typeof AI_SPIRAL_PAIRS !== 'undefined') ? AI_SPIRAL_PAIRS : [];
+  var cap = function (o) { return o.charAt(0).toUpperCase() + o.slice(1); };
+  var out = '';
+  m.owns.forEach(function (o) {
+    if (once.indexOf(o) >= 0) { out += ' ' + cap(o) + ' is taught here and nowhere else.'; return; }
+    // Find the other module in the pair and name it, so "again later" is a place.
+    var later = null;
+    pairs.forEach(function (pr) {
+      if (pr[2] !== o) return;
+      if (pr[0] === m.id) later = pr[1];
+      else if (pr[1] === m.id && !later) later = pr[0];
+    });
+    out += ' ' + cap(o) + (later ? ' is taught here and taken further in ' + later + '.' : ' is owned here.');
+  });
+  return out;
+}
+
 function lpLoad() {
   try {
     var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
@@ -5873,7 +5915,7 @@ function lpClean(st) {
   for (var i = 0; i < all.length; i++) {
     var id = all[i].id, v = src[id];
     if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
-    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
+    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp) };
   }
   var flag = {}, fs = st.flagship || {};
   try {
@@ -5951,7 +5993,28 @@ function lpEntry(id) {
   if (!Object.prototype.hasOwnProperty.call(LP_ST.mods, id)) return null;
   var v = LP_ST.mods[id];
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
+  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate, cp: lpCpMap(id, v.cp) };
+}
+
+// The checkpoints a module has ticked, rebuilt against the curriculum's own
+// list so a stale or hand-edited value can never claim a checkpoint that does
+// not exist. Keyed by index, prototype-less.
+function lpCpMap(id, src) {
+  var out = Object.create(null);
+  var m = lpApi() ? lpApi().byId(id) : null;
+  var n = (m && m.checkpoints) ? m.checkpoints.length : 0;
+  if (src && typeof src === 'object' && !Array.isArray(src)) {
+    for (var i = 0; i < n; i++) if (src[i]) out[i] = true;
+  }
+  return out;
+}
+function lpCpCount(id) {
+  var e = lpEntry(id);
+  var m = lpApi() ? lpApi().byId(id) : null;
+  var total = (m && m.checkpoints) ? m.checkpoints.length : 0;
+  var done = 0;
+  if (e) for (var i = 0; i < total; i++) if (e.cp[i]) done++;
+  return { done: done, total: total };
 }
 
 function enterLaunchpad() {
@@ -5996,7 +6059,7 @@ function lpToggle(id, step) {
   var P = lpProgress();
   // lpEntry normalises: a stored value that is not a plain object (a corrupted
   // or hand-edited backup) would otherwise swallow every tick in silence.
-  var m = lpEntry(id) || { delta:false, artifact:false, gate:false };
+  var m = lpEntry(id) || { delta:false, artifact:false, gate:false, cp:Object.create(null) };
   var i = LP_STEPS.indexOf(step);
 
   // 1. A module you have not opened yet has nothing to claim.
@@ -6013,8 +6076,18 @@ function lpToggle(id, step) {
   if (!m[step] && i > 0) {
     var first = -1;
     for (var q = 0; q < i; q++) { if (!m[LP_STEPS[q]]) { first = q; break; } }
-    if (first === 0) { toast('Write the delta first — that is the reading', 'warn'); return; }
+    if (first === 0) { toast(id === 'M0' ? 'Write the delta first' : 'Write the delta first — that is the reading', 'warn'); return; }
     if (first === 1) { toast('Build the artifact before a referee can pass it', 'warn'); return; }
+  }
+  // 2b. The checkpoints are the module. "Artifact built" on a module with nine
+  //     named sub-goals and none of them ticked is a claim with nothing behind
+  //     it, which is the decorative gate this program exists to refuse.
+  if (!m.artifact && step === 'artifact') {
+    var cc = lpCpCount(id);
+    if (cc.total && cc.done < cc.total) {
+      toast('Tick the checkpoints first — ' + cc.done + ' of ' + cc.total + ' done', 'warn');
+      return;
+    }
   }
   LP_ST.mods[id] = m;
   // 3. Un-ticking a step un-ticks everything that followed from it, so the
@@ -6068,6 +6141,47 @@ function lpDownstreamPassed(id) {
   }
   return hit;
 }
+// One checkpoint. The same rules as the three module steps: a locked module
+// cannot be claimed, and un-ticking a checkpoint takes back the artifact and
+// the gate that rested on it.
+function lpCp(id, idx) {
+  var API = lpApi(); if (!API) return;
+  var P = lpProgress();
+  var mod = API.byId(id); if (!mod || !mod.checkpoints) return;
+  idx = Number(idx);
+  if (!(idx >= 0 && idx < mod.checkpoints.length)) return;
+  if (!API.isUnlocked(id, P)) {
+    if (mod.layer >= 4 && mod.layer <= 6 && !API.flagshipGate(P).open) {
+      toast('The hard gate is not open yet — all four conditions first', 'warn');
+    } else {
+      toast('Locked. Pass what this module depends on first', 'warn');
+    }
+    return;
+  }
+  var m = lpEntry(id) || { delta:false, artifact:false, gate:false, cp:Object.create(null) };
+  if (!m.delta) { toast('Write the delta first — that is the reading', 'warn'); return; }
+  if (m.cp[idx]) {
+    if (m.artifact || m.gate) {
+      var also = [m.artifact ? 'Artifact built' : null, m.gate ? 'Gate passed' : null].filter(Boolean);
+      var after = m.gate ? lpDownstreamPassed(id) : [];
+      var lines = ['Un-ticking checkpoint ' + (idx + 1) + ' on ' + id + ' also clears:',
+                   '  · ' + also.join(' and ') + ' on ' + id];
+      if (after.length) lines.push('  · every claim on the ' + after.length + ' module' + (after.length > 1 ? 's' : '') + ' after it');
+      lines.push('', 'This cannot be undone. Continue?');
+      if (!confirm(lines.join('\n'))) return;
+      var hadGate = m.gate;
+      m.artifact = false; m.gate = false;
+      if (hadGate) lpClearDownstream(id);
+    }
+    delete m.cp[idx];
+  } else {
+    m.cp[idx] = true;
+  }
+  LP_ST.mods[id] = m;
+  lpSave();
+  lpRerenderKeepingFocus();
+}
+
 function lpClearDownstream(id) {
   var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
   var queue = [id], seen = {};
@@ -6078,7 +6192,7 @@ function lpClearDownstream(id) {
       if (seen[m.id] || m.dependsOn.indexOf(cur) === -1) continue;
       seen[m.id] = true;
       var e = LP_ST.mods[m.id];
-      if (e && typeof e === 'object') { e.delta = false; e.artifact = false; e.gate = false; }
+      if (e && typeof e === 'object') { e.delta = false; e.artifact = false; e.gate = false; e.cp = Object.create(null); }
       queue.push(m.id);
     }
   }
@@ -6888,6 +7002,9 @@ function lpModulesHTML(API) {
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
       if (inSpine) h += '<span class="lp-tag open">On the Spine</span>';
       if (m.trigger) h += '<span class="lp-tag">' + lpWhenTag(m) + '</span>';
+      var rowCC = lpCpCount(m.id);
+      if (un && !pr.gate && rowCC.total && rowCC.done)
+        h += '<span class="lp-tag open">' + rowCC.done + ' of ' + rowCC.total + ' checkpoints</span>';
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(m.dependsOn) : 'no prerequisites')
          + (m.layer >= 4 && m.layer <= 6 && !fg.open ? ', and the hard gate' : '')
          + '</span></span></span>';
@@ -7170,8 +7287,7 @@ function lpDetailHTML(API, id) {
             + (gated && !fgH.open ? (unmet.length ? ', and the hard gate (' : 'the hard gate (') + fgH.done + ' of ' + fgH.total + ' done, on the Modules tab)' : '')
             + '.' + (metDeps.length ? ' ' + lpAnd(metDeps) + ' already passed.' : '');
   }
-  h += '<div class="lx-sub">' + subLine
-     + (m.owns ? ' ' + lpAnd(m.owns.map(function (o) { return o.charAt(0).toUpperCase() + o.slice(1); })) + (m.owns.length > 1 ? ' are taught here and nowhere else.' : ' is taught here and nowhere else.') : '') + '</div>';
+  h += '<div class="lx-sub">' + subLine + lpOwnsLine(m) + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
     if (i) h += '<span class="lx-tkr"></span>';
@@ -7216,9 +7332,30 @@ function lpDetailHTML(API, id) {
                '<div class="lx-body">None. This module is short enough to do in one sitting; if a bad week lands in the middle of it, start it again rather than resuming.</div>');
   }
   if (m.checkpoints && m.checkpoints.length) {
-    h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Legitimate places to stop',
-               'A bad week should cost you a checkpoint, not the module. Each of these is a real stopping point.',
-               lxList(m.checkpoints, 'num'));
+    // Tickable, because a module is finished when its checkpoints are, and the
+    // artifact cannot be claimed until they all are. Reading a page is not
+    // progress; this is the record that you did the thing on it.
+    var cc = lpCpCount(id);
+    var cpLocked = !API.isUnlocked(id, P);
+    var cpBody = '<div class="lx-cpbar"><span>' + cc.done + ' of ' + cc.total + ' done</span>'
+               + '<span class="lx-cpt"><i style="width:' + (cc.total ? Math.round(cc.done / cc.total * 100) : 0) + '%"></i></span></div>';
+    m.checkpoints.forEach(function (t, ci) {
+      var on = !!(pr.cp && pr.cp[ci]);
+      cpBody += '<div class="lp-chk lx-cp' + (on ? ' on' : '') + (cpLocked ? ' lock' : '') + '" role="checkbox"'
+             + ' aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"'
+             + (cpLocked ? ' aria-disabled="true" style="opacity:.55"' : '')
+             + ' onkeydown="lpKey(event)" onclick="lpCp(\'' + esc(id) + '\',' + ci + ')">'
+             + '<span class="lp-box">' + (on ? '✓' : (ci + 1)) + '</span>'
+             + '<span><span style="display:block">' + esc(t) + '</span></span></div>';
+    });
+    cpBody += '<div class="lx-ls" style="margin-top:10px">'
+            + (cc.done >= cc.total
+               ? 'All ' + cc.total + ' done. The artifact can be claimed in the rail.'
+               : 'Tick each one as you finish it. "Artifact built" does not open until all ' + cc.total + ' are ticked.')
+            + '</div>';
+    h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Your progress through this module',
+               'A bad week should cost you a checkpoint, not the module. Tick each one as you finish it — the module cannot be claimed until they are all ticked.',
+               cpBody);
   }
 
   h += lxSec(pad() + ' · THE GATE', 'shield', 'What a referee has to say yes to',
@@ -7263,8 +7400,11 @@ function lpDetailHTML(API, id) {
        + (m.dependsOn.length ? lpAnd(m.dependsOn) + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' : 'it opens')
        + (gated && !fgH.open ? ' and the hard gate is open' : '') + '.</div>';
   }
+  var railCC = lpCpCount(id);
   [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
-   ['artifact', 'Artifact built', 'not a plan to build it'],
+   ['artifact', 'Artifact built', railCC.total
+      ? (railCC.done >= railCC.total ? 'all ' + railCC.total + ' checkpoints ticked' : 'checkpoints first — ' + railCC.done + ' of ' + railCC.total + ' done')
+      : 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
     h += '<div class="lp-chk' + (on ? ' on' : '') + (lockedHere ? ' lock' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"' + (lockedHere ? ' aria-disabled="true" style="opacity:.55"' : '') + ' onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
