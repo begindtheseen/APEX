@@ -871,6 +871,10 @@ while inter-token latency does not.
 > `if (!response.content.length)` and that branch never runs — so refusal prose flows downstream and
 > gets rendered as the answer, which is precisely the wrong-but-200 failure M10 and M12 exist to catch.
 > **Branch on `stop_reason` before you read content.** Add server-side fallbacks as the production handling.
+> One value is deliberately out of reach here: **`pause_turn` only arises from long-running *server-side*
+> tool use**, and nothing in this module declares a server tool, so you cannot produce it on purpose yet.
+> Handle it in the switch anyway — an unhandled `pause_turn` in M19's agent loop reads as a finished turn
+> and silently truncates the run.
 
 > **Sampling is a per-model fact, not a property of the field.** On the current Anthropic line,
 > `temperature`, `top_p` and `top_k` are removed and return a 400, **while the 4.6 family and Haiku still
@@ -880,7 +884,7 @@ while inter-token latency does not.
 > forgot to set** — which is more true now, not less.
 
 **Checkpoints** ① token counts compared against your guesses across five kinds of text · ② one cache
-hit proved from the usage meters, with its cost delta printed · ③ every `stop_reason` produced on
+hit proved from the usage meters, with its cost delta printed · ③ every `stop_reason` this module can reach produced on
 purpose, with the refusal taken from a recorded fixture, and the cost column live in the M2 log · ④ the limit of constrained
 decoding shown two ways — a schema-valid reply that is factually wrong, and the 400 the API returns when
 the schema itself is invalid — with capabilities read from the Models API and every 400 pasted into the
