@@ -12,6 +12,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="APEX">
+<!-- The whole app is one inline script, so 'unsafe-inline' has to stay for now;
+     everything else is closed. connect-src 'self' is the line that matters: it
+     means injected script cannot send this device's year of progress anywhere.
+     base-uri and form-action shut the two redirect tricks, frame-ancestors
+     stops the page being framed, and object-src kills plugin embedding. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<!-- Google sees only that a request happened, not which page asked. -->
+<meta name="referrer" content="no-referrer">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap');
 :root{
@@ -2140,41 +2148,124 @@ var ST = {
   readiness:{sleep:0,morning:0,training:0,fuel:0,asvab:0,navyknow:0,cognitive:0,evening:0}
 };
 
+// Rebuild a saved state field by field instead of trusting it. Everything that
+// reaches this function is untrusted: localStorage is shared by every page on
+// this origin, and an imported backup is a file the user was handed. Taking a
+// value on faith is what turns a hostile string into markup on a tab, or one
+// bad entry into the silent loss of every entry after it. Unknown keys are
+// dropped, wrong types are dropped rather than coerced into nonsense, and one
+// rejected field never stops the rest from loading.
+function apexStr(v, max) { return typeof v === 'string' ? v.slice(0, max || 200) : null; }
+// Three names that mean something to the language rather than to this app. A
+// map key called __proto__ resolves to Object.prototype on a plain object, and
+// a value called that reaches a lookup somewhere else. Drop them at the door.
+function apexKeyOk(k) { return k !== '__proto__' && k !== 'constructor' && k !== 'prototype'; }
+function apexNum(v, lo, hi) {
+  var n = Number(v);
+  if (!isFinite(n)) return null;
+  if (lo !== undefined && n < lo) return null;
+  if (hi !== undefined && n > hi) return null;
+  return n;
+}
+// Object.create(null) throughout: a map keyed by user or file data must not
+// inherit from Object.prototype, or a key called __proto__ resolves to it.
+function apexMapOfNum(v, lo, hi) {
+  var out = Object.create(null);
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  Object.keys(v).forEach(function (k) {
+    if (!apexKeyOk(k)) return;
+    var n = apexNum(v[k], lo, hi);
+    if (n !== null) out[apexStr(k, 64)] = n;
+  });
+  return out;
+}
+function apexMapOfStr(v, max) {
+  var out = Object.create(null);
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  Object.keys(v).forEach(function (k) {
+    if (!apexKeyOk(k)) return;
+    var t = apexStr(v[k], max || 200);
+    if (t !== null) out[apexStr(k, 64)] = t;
+  });
+  return out;
+}
+function apexClean(s) {
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
+  var start = apexStr(s.startDate, 32);
+  if (!start) return null;
+  var out = {
+    phase: apexNum(s.phase, 1, 99) || 1,
+    streak: apexNum(s.streak, 0, 1e6) || 0,
+    total: apexNum(s.total, 0, 1e9) || 0,
+    lastDate: apexStr(s.lastDate, 32),
+    lastGoodDate: apexStr(s.lastGoodDate, 32),
+    startDate: start,
+    shipDate: apexStr(s.shipDate, 32) || '2027-01-23',
+    targetJob: apexStr(s.targetJob, 120),
+    prevJob: apexStr(s.prevJob, 120),
+    lastBackup: apexStr(s.lastBackup, 64),
+    studyHours: apexNum(s.studyHours, 0, 24) || 2,
+    consecutiveGoodDays: apexNum(s.consecutiveGoodDays, 0, 1e6) || 0,
+    onboardDone: !!s.onboardDone
+  };
+  var prt = {}; ['run','pu','cu','pl'].forEach(function (k) {
+    var src = (s.prt && typeof s.prt === 'object') ? s.prt[k] : null;
+    prt[k] = (src === null || src === undefined) ? null : (apexStr(src, 16) !== null ? apexStr(src, 16) : apexNum(src, 0, 1e6));
+  });
+  out.prt = prt;
+  out.asvab = { afqt: apexNum(s.asvab && s.asvab.afqt, 0, 99), nf: apexNum(s.asvab && s.asvab.nf, 0, 1000) };
+  var rd = {};
+  Object.keys(ST.readiness).forEach(function (k) {
+    rd[k] = apexNum(s.readiness && s.readiness[k], 0, 100) || 0;
+  });
+  out.readiness = rd;
+  out.logs = [];
+  if (Array.isArray(s.logs)) {
+    s.logs.slice(0, 5000).forEach(function (lg) {
+      if (!lg || typeof lg !== 'object' || Array.isArray(lg)) return;
+      var type = apexStr(lg.type, 40);
+      if (!type || !apexKeyOk(type)) return;
+      var e = { date: apexStr(lg.date, 32) || '', type: type };
+      e.val = (typeof lg.val === 'number' && isFinite(lg.val)) ? lg.val : (apexStr(lg.val, 40) || '');
+      if (typeof lg.raw === 'number' && isFinite(lg.raw)) e.raw = lg.raw;
+      out.logs.push(e);
+    });
+  }
+  out.asvabLogs = Array.isArray(s.asvabLogs) ? s.asvabLogs.slice(0, 5000).filter(function (x) {
+    return x && typeof x === 'object' && !Array.isArray(x);
+  }) : [];
+  out.enlist = apexMapOfStr(s.enlist, 400);
+  out.study = apexMapOfNum(s.study, 0, 1e6);
+  out.studyDays = apexMapOfNum(s.studyDays, 0, 1e6);
+  out.repCounts = apexMapOfNum(s.repCounts, 0, 1e6);
+  out.catStruggle = apexMapOfNum(s.catStruggle, 0, 1e6);
+  out.skipReasons = apexMapOfStr(s.skipReasons, 200);
+  out.skipLog = Object.create(null);
+  if (s.skipLog && typeof s.skipLog === 'object' && !Array.isArray(s.skipLog)) {
+    Object.keys(s.skipLog).forEach(function (k) {
+      var v = s.skipLog[k];
+      if (apexKeyOk(k) && Array.isArray(v)) out.skipLog[apexStr(k, 32)] = v.filter(function (x) { return typeof x === 'string'; }).slice(0, 200);
+    });
+  }
+  // One bad day must not take the rest of the year with it: a key whose value
+  // is not an array is skipped, and every other key still loads.
+  out.checks = Object.create(null);
+  if (s.checks && typeof s.checks === 'object' && !Array.isArray(s.checks)) {
+    Object.keys(s.checks).forEach(function (k) {
+      var v = s.checks[k];
+      if (apexKeyOk(k) && Array.isArray(v)) out.checks[apexStr(k, 32)] = v.filter(function (x) { return typeof x === 'string'; }).slice(0, 200);
+    });
+  }
+  return out;
+}
+
 function loadState() {
-  try {
-    var s = JSON.parse(localStorage.getItem('apex_v4') || '{}');
-    if (!s.startDate) return;
-    ST.phase = s.phase || 1;
-    ST.streak = s.streak || 0;
-    ST.total = s.total || 0;
-    ST.lastDate = s.lastDate || null;
-    ST.lastGoodDate = s.lastGoodDate || null;
-    ST.startDate = s.startDate;
-    ST.prt = s.prt || ST.prt;
-    ST.asvab = s.asvab || ST.asvab;
-    ST.asvabLogs = s.asvabLogs || [];
-    ST.targetJob = s.targetJob || null;
-    ST.prevJob = s.prevJob || null;
-    ST.enlist = s.enlist || {};
-    ST.study = s.study || {};
-    ST.studyDays = s.studyDays || {};
-    ST.studyHours = s.studyHours || 2;
-    ST.shipDate = s.shipDate || '2027-01-23';
-    ST.logs = s.logs || [];
-    ST.onboardDone = s.onboardDone || false;
-    ST.consecutiveGoodDays = s.consecutiveGoodDays || 0;
-    ST.repCounts = s.repCounts || {};
-    ST.skipLog = s.skipLog || {};
-    ST.catStruggle = s.catStruggle || {};
-    ST.skipReasons = s.skipReasons || {};
-    ST.lastBackup = s.lastBackup || null;
-    ST.readiness = s.readiness || ST.readiness;
-    if (s.checks) {
-      ST.checks = {};
-      var ks = Object.keys(s.checks);
-      for (var i = 0; i < ks.length; i++) ST.checks[ks[i]] = new Set(s.checks[ks[i]]);
-    }
-  } catch(e) {}
+  var s;
+  try { s = apexClean(JSON.parse(localStorage.getItem('apex_v4') || '{}')); } catch(e) { return; }
+  if (!s) return;
+  Object.keys(s).forEach(function (k) { if (k !== 'checks') ST[k] = s[k]; });
+  ST.checks = Object.create(null);
+  Object.keys(s.checks).forEach(function (k) { ST.checks[k] = new Set(s.checks[k]); });
 }
 
 // Self-heal any saved state. Removes legacy phantom skips logged for days
@@ -2247,10 +2338,22 @@ function serializeState() {
   return out;
 }
 
+// A save that fails and says nothing is the worst failure this app has: the
+// checkbox ticks, the toast says "Logged.", and the day is gone on the next
+// reload. Tell the user, once, and tell them what to do about it.
+var APEX_SAVE_WARNED = false;
 function saveState() {
   try {
     localStorage.setItem('apex_v4', JSON.stringify(serializeState()));
-  } catch(e) {}
+    APEX_SAVE_WARNED = false;
+    return true;
+  } catch(e) {
+    if (!APEX_SAVE_WARNED) {
+      APEX_SAVE_WARNED = true;
+      try { toast('Could not save — this device is out of storage. Export a backup now.', 'warn'); } catch(e2) {}
+    }
+    return false;
+  }
 }
 
 // ── BACKUP / RESTORE ─────────────────────────────────────────
@@ -2294,14 +2397,18 @@ function importData(ev) {
   var reader = new FileReader();
   reader.onload = function() {
     try {
-      var s = JSON.parse(reader.result);
-      if (!s || !s.startDate) { toast('Not a valid APEX backup', 'warn'); return; }
+      // Clean the file before it is written, not after it is read back. A
+      // backup is a file the user was handed by something; the only version of
+      // it that reaches storage is the one this app rebuilt itself.
+      var s = apexClean(JSON.parse(reader.result));
+      if (!s) { toast('Not a valid APEX backup', 'warn'); return; }
       if (!confirm('Restore this backup? It replaces the progress currently on this device.')) return;
-      localStorage.setItem('apex_v4', JSON.stringify(s));
-      ST.checks = {};
+      try { localStorage.setItem('apex_v4', JSON.stringify(s)); }
+      catch (e2) { toast('Could not save — this device is out of storage.', 'warn'); return; }
+      ST.checks = Object.create(null);
       loadState();
       ST.onboardDone = true;
-      saveState();
+      if (!saveState()) return;
       document.getElementById('onboardScreen').classList.remove('active');
       document.getElementById('mainApp').classList.add('active');
       goTab('today');
@@ -2455,7 +2562,7 @@ function getAdaptiveNote(habitId) {
 
 function getMostCommonReason(habitId) {
   if (!ST.skipReasons || !ST.skipReasons[habitId] || !ST.skipReasons[habitId].length) return null;
-  var counts = {};
+  var counts = Object.create(null);
   var reasons = ST.skipReasons[habitId];
   for (var i = 0; i < reasons.length; i++) {
     var r = reasons[i].reason;
@@ -2835,7 +2942,10 @@ function cognitiveTestReadiness() {
 // PRT score trajectory (first vs latest logged) per event.
 function computePrtTrend() {
   if (!ST.logs || ST.logs.length < 2) return null;
-  var byType = {};
+  // Keyed by a value that comes from storage: "__proto__" as a log type would
+  // otherwise resolve to Object.prototype, which is truthy, so the initialiser
+  // is skipped and .push does not exist.
+  var byType = Object.create(null);
   for (var i = 0; i < ST.logs.length; i++) {
     var lg = ST.logs[i]; if (!lg.type) continue;
     if (!byType[lg.type]) byType[lg.type] = [];
@@ -2881,7 +2991,7 @@ function computeReasonTrend() {
     for (var i = 0; i < rs.length; i++) { if (rs[i] && rs[i].date && rs[i].reason) entries.push({ date: rs[i].date, reason: rs[i].reason }); }
   }
   if (entries.length < 4) return null;
-  var counts = {};
+  var counts = Object.create(null);
   for (var e = 0; e < entries.length; e++) counts[entries[e].reason] = (counts[entries[e].reason] || 0) + 1;
   var top = null, tc = 0;
   for (var r in counts) { if (counts[r] > tc) { tc = counts[r]; top = r; } }
@@ -3026,8 +3136,8 @@ function renderInsights() {
       var arrow = pr.improved ? '&#8593;' : (pr.same ? '&#8594;' : '&#8595;');
       var ac = pr.improved ? 'var(--green)' : (pr.same ? 'var(--muted)' : 'var(--red)');
       if (pr.improved) upCount++;
-      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(30,58,95,.5)"><span style="color:var(--text)">' + pr.type + '</span>';
-      html += '<span style="font-family:var(--mono);color:var(--muted)">' + pr.firstStr + ' &#8594; <span style="color:#fff">' + pr.lastStr + '</span> <span style="color:' + ac + '">' + arrow + '</span></span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(30,58,95,.5)"><span style="color:var(--text)">' + esc(pr.type) + '</span>';
+      html += '<span style="font-family:var(--mono);color:var(--muted)">' + esc(pr.firstStr) + ' &#8594; <span style="color:#fff">' + esc(pr.lastStr) + '</span> <span style="color:' + ac + '">' + arrow + '</span></span></div>';
     }
     var ts = ST.readiness.training;
     var note;
@@ -3701,8 +3811,8 @@ function updatePRT() {
   var hh='<div style="background:var(--s1);border:1px solid var(--b1);border-radius:10px;overflow:hidden">';
   for (var i=0;i<last.length;i++) {
     hh+='<div style="padding:10px 13px;border-bottom:1px solid var(--b2);display:flex;justify-content:space-between;align-items:center">'
-      +'<span style="color:var(--muted);font-size:11px">'+last[i].date+' — '+last[i].type+'</span>'
-      +'<span style="color:var(--bright);font-weight:600;font-family:var(--mono)">'+last[i].val+'</span></div>';
+      +'<span style="color:var(--muted);font-size:11px">'+esc(last[i].date)+' — '+esc(last[i].type)+'</span>'
+      +'<span style="color:var(--bright);font-weight:600;font-family:var(--mono)">'+esc(last[i].val)+'</span></div>';
   }
   hist.innerHTML=hh+'</div>';
 }
@@ -3840,8 +3950,8 @@ function renderReady() {
   html += '</div>';
   // Log practice ASVAB scores (parallel to the PRT tab's score logging).
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
-  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;afqt&#39;)">Log AFQT' + (ST.asvab && ST.asvab.afqt ? ' (' + ST.asvab.afqt + ')' : '') + '</button>';
-  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;nf&#39;)">Log NF' + (ST.asvab && ST.asvab.nf ? ' (' + ST.asvab.nf + ')' : '') + '</button>';
+  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;afqt&#39;)">Log AFQT' + (ST.asvab && ST.asvab.afqt ? ' (' + esc(ST.asvab.afqt) + ')' : '') + '</button>';
+  html += '<button class="prtbtn" style="margin-top:0" onclick="openLog(&#39;nf&#39;)">Log NF' + (ST.asvab && ST.asvab.nf ? ' (' + esc(ST.asvab.nf) + ')' : '') + '</button>';
   html += '</div>';
 
   html += renderConsistency();
@@ -3901,7 +4011,7 @@ function renderReady() {
     // Top skip reason
     var catHabitsForReason = [];
     for (var hid3 in HABIT_CAT) { if (HABIT_CAT[hid3] === s2.cat) catHabitsForReason.push(hid3); }
-    var allCatReasons = {};
+    var allCatReasons = Object.create(null);
     for (var hIdx2 = 0; hIdx2 < catHabitsForReason.length; hIdx2++) {
       var hReasons2 = ST.skipReasons[catHabitsForReason[hIdx2]] || [];
       for (var rIdx2 = 0; rIdx2 < hReasons2.length; rIdx2++) {
@@ -4801,7 +4911,10 @@ function toast(msg, cls) {
 function init() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js').catch(function(){});
+      // Explicit scope. Without it the worker takes the script's directory,
+      // which on a user-root deployment is the whole origin — and then this
+      // app's worker is answering for every other site the user publishes.
+      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function(){});
     });
   }
   loadState();
@@ -5004,16 +5117,61 @@ function obsSubOrder() {
   return order;
 }
 
-function obsLoad() {
-  try {
-    var s = JSON.parse(localStorage.getItem(realm().key) || '{}');
-    OBS_ST.topics = s.topics || {};
-    OBS_ST.subs = s.subs || {};
-    OBS_ST.exams = s.exams || [];
-    OBS_ST.reps = s.reps || [];
-  } catch(e) {}
+// The same rebuild-don't-trust rule as the blue realm. One rep note that is not
+// a string used to throw inside the renderer, before the realm drew anything —
+// a blank screen on every load, with the reset button stranded inside the realm
+// that would not render.
+function obsClean(s) {
+  var out = { topics: Object.create(null), subs: Object.create(null), exams: [], reps: [] };
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return out;
+  function num(v, lo, hi) { var n = Number(v); return (isFinite(n) && n >= lo && n <= hi) ? n : 0; }
+  function str(v, max) { return typeof v === 'string' ? v.slice(0, max) : ''; }
+  if (s.topics && typeof s.topics === 'object' && !Array.isArray(s.topics)) {
+    Object.keys(s.topics).forEach(function (k) {
+      if (!apexKeyOk(k)) return;
+      var t = s.topics[k];
+      if (!t || typeof t !== 'object' || Array.isArray(t)) return;
+      out.topics[str(k, 80)] = { box: num(t.box, 0, 9), due: str(t.due, 32) || null,
+                                 seen: num(t.seen, 0, 1e6), correct: num(t.correct, 0, 1e6) };
+    });
+  }
+  if (s.subs && typeof s.subs === 'object' && !Array.isArray(s.subs)) {
+    Object.keys(s.subs).forEach(function (k) {
+      if (!apexKeyOk(k)) return;
+      var v = s.subs[k];
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+      out.subs[str(k, 80)] = { seen: num(v.seen, 0, 1e6), correct: num(v.correct, 0, 1e6) };
+    });
+  }
+  if (Array.isArray(s.exams)) out.exams = s.exams.slice(0, 2000).filter(function (e) {
+    return e && typeof e === 'object' && !Array.isArray(e);
+  });
+  if (Array.isArray(s.reps)) s.reps.slice(0, 5000).forEach(function (e) {
+    if (!e || typeof e !== 'object' || Array.isArray(e)) return;
+    out.reps.push({ k: str(e.k, 40), d: str(e.d, 32), n: str(e.n, 2000), s: str(e.s, 8) });
+  });
+  return out;
 }
-function obsSave() { try { localStorage.setItem(realm().key, JSON.stringify(OBS_ST)); } catch(e) {} }
+function obsLoad() {
+  try { OBS_ST = obsClean(JSON.parse(localStorage.getItem(realm().key) || '{}')); } catch(e) {}
+}
+// Fails loudly, the way lpSave and saveState do. A silent save failure on a
+// realm whose whole value is a year of accumulated progress is the worst
+// outcome available.
+var OBS_SAVE_WARNED = false;
+function obsSave() {
+  try {
+    localStorage.setItem(realm().key, JSON.stringify(OBS_ST));
+    OBS_SAVE_WARNED = false;
+    return true;
+  } catch(e) {
+    if (!OBS_SAVE_WARNED) {
+      OBS_SAVE_WARNED = true;
+      try { toast('Could not save — this device is out of storage. Export a backup now.', 'warn'); } catch(e2) {}
+    }
+    return false;
+  }
+}
 function obsTopicState(id) { if (!OBS_ST.topics[id]) OBS_ST.topics[id] = { box:0, due:null, seen:0, correct:0 }; return OBS_ST.topics[id]; }
 function obsSubState(sub) { if (!OBS_ST.subs[sub]) OBS_ST.subs[sub] = { seen:0, correct:0 }; return OBS_ST.subs[sub]; }
 
@@ -5223,15 +5381,15 @@ function obsImport(ev) {
       // Both realms export the same shape, so the shape alone cannot tell them
       // apart. The stamp was written and never read; read it.
       if (!s || !s.topics) { toast('Not a valid ' + realm().dataName + ' backup', 'warn'); return; }
-      if (s.appVersion && s.appVersion !== realm().key) {
-        toast('That backup belongs to a different realm — nothing was changed.', 'warn'); return;
+      // Required, not optional. Honouring the stamp only when it is present
+      // meant a file with the field deleted was accepted by whichever realm
+      // happened to be open, and one realm's backup overwrote the other's.
+      if (s.appVersion !== realm().key) {
+        toast('That backup is not a ' + realm().dataName + ' backup — nothing was changed.', 'warn'); return;
       }
       if (!confirm('Restore this ' + realm().dataName + ' backup? It replaces the ' + realm().dataName + ' progress on this device.')) return;
-      OBS_ST.topics = s.topics || {};
-      OBS_ST.subs = s.subs || {};
-      OBS_ST.exams = s.exams || [];
-      OBS_ST.reps = s.reps || [];
-      obsSave();
+      OBS_ST = obsClean(s);
+      if (!obsSave()) return;
       toast(realm().dataName + ' backup restored', 'ok');
       renderObsidian();
     } catch(e) { toast('Could not read that file', 'warn'); }
@@ -5264,7 +5422,7 @@ function obsRepCount(k) {
 }
 // Journal streak: consecutive days (ending today or yesterday) with an entry.
 function obsRepStreak(k) {
-  var days = {}; var es = obsRepEntries(k);
+  var days = Object.create(null); var es = obsRepEntries(k);
   for (var i = 0; i < es.length; i++) days[es[i].d] = true;
   var start = days[todayKey()] ? todayKey() : shiftKey(todayKey(), -1);
   if (!days[start]) return 0;
@@ -5763,8 +5921,11 @@ window.addEventListener('storage', function (ev) {
   try {
     if (ev.key !== (lpCfg().key || 'apex_launchpad_v1') || !ev.newValue) return;
     var raw = JSON.parse(ev.newValue);
-    LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {},
-                        setup: raw.setup || {}, ids: raw.ids || 1 });
+    // Clean here too. A storage event fires in every other document on this
+    // origin, so the value arriving is no more trustworthy than an imported
+    // file — and this was the one path into LP_ST that skipped lpClean.
+    LP_ST = lpClean(lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {},
+                               setup: raw.setup || {}, ids: raw.ids || 1 }));
     delete LP_ST.migrated;
     var app = document.getElementById('launchpadApp');
     if (app && app.classList.contains('active')) renderLaunchpad(true);
