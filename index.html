@@ -2264,12 +2264,65 @@ function apexClean(s) {
   out.asvabLogs = Array.isArray(s.asvabLogs) ? s.asvabLogs.slice(0, 5000).filter(function (x) {
     return x && typeof x === 'object' && !Array.isArray(x);
   }) : [];
-  out.enlist = apexMapOfStr(s.enlist, 400);
-  out.study = apexMapOfNum(s.study, 0, 1e6);
-  out.studyDays = apexMapOfNum(s.studyDays, 0, 1e6);
+  // enlist is a set of ticked checklist ids: { id: true }.
+  out.enlist = Object.create(null);
+  if (s.enlist && typeof s.enlist === 'object' && !Array.isArray(s.enlist)) {
+    Object.keys(s.enlist).forEach(function (k) {
+      if (apexKeyOk(k) && s.enlist[k]) out.enlist[apexStr(k, 80)] = true;
+    });
+  }
+  // study is nested, not flat: { topics:{id:{box,due,seen,correct}},
+  // subs:{sub:{seen,correct}}, exams:[...] }. Flattening it to numbers here
+  // would have silently erased every ASVAB topic the reader had studied.
+  out.study = {};
+  var sy = (s.study && typeof s.study === 'object' && !Array.isArray(s.study)) ? s.study : {};
+  out.study.topics = Object.create(null);
+  if (sy.topics && typeof sy.topics === 'object' && !Array.isArray(sy.topics)) {
+    Object.keys(sy.topics).forEach(function (k) {
+      if (!apexKeyOk(k)) return;
+      var t = sy.topics[k];
+      if (!t || typeof t !== 'object' || Array.isArray(t)) return;
+      out.study.topics[apexStr(k, 80)] = {
+        box: apexNum(t.box, 0, 9) || 0, due: apexStr(t.due, 32),
+        seen: apexNum(t.seen, 0, 1e6) || 0, correct: apexNum(t.correct, 0, 1e6) || 0 };
+    });
+  }
+  out.study.subs = Object.create(null);
+  if (sy.subs && typeof sy.subs === 'object' && !Array.isArray(sy.subs)) {
+    Object.keys(sy.subs).forEach(function (k) {
+      if (!apexKeyOk(k)) return;
+      var v = sy.subs[k];
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return;
+      out.study.subs[apexStr(k, 80)] = {
+        seen: apexNum(v.seen, 0, 1e6) || 0, correct: apexNum(v.correct, 0, 1e6) || 0 };
+    });
+  }
+  out.study.exams = Array.isArray(sy.exams) ? sy.exams.slice(0, 2000).filter(function (e) {
+    return e && typeof e === 'object' && !Array.isArray(e);
+  }) : [];
+  // studyDays is { dateKey: { mins, q } }, not a number per day.
+  out.studyDays = Object.create(null);
+  if (s.studyDays && typeof s.studyDays === 'object' && !Array.isArray(s.studyDays)) {
+    Object.keys(s.studyDays).forEach(function (k) {
+      if (!apexKeyOk(k)) return;
+      var d = s.studyDays[k];
+      if (!d || typeof d !== 'object' || Array.isArray(d)) return;
+      out.studyDays[apexStr(k, 32)] = { mins: apexNum(d.mins, 0, 1e6) || 0, q: apexNum(d.q, 0, 1e6) || 0 };
+    });
+  }
   out.repCounts = apexMapOfNum(s.repCounts, 0, 1e6);
   out.catStruggle = apexMapOfNum(s.catStruggle, 0, 1e6);
-  out.skipReasons = apexMapOfStr(s.skipReasons, 200);
+  // skipReasons is { habitId: [{ date, reason }] }, not a string per habit.
+  out.skipReasons = Object.create(null);
+  if (s.skipReasons && typeof s.skipReasons === 'object' && !Array.isArray(s.skipReasons)) {
+    Object.keys(s.skipReasons).forEach(function (k) {
+      if (!apexKeyOk(k) || !Array.isArray(s.skipReasons[k])) return;
+      out.skipReasons[apexStr(k, 80)] = s.skipReasons[k].slice(0, 2000).map(function (r) {
+        if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+        return { date: apexStr(r.date, 32) || '', reason: apexStr(r.reason, 200) || '' };
+      }).filter(Boolean);
+    });
+  }
   out.skipLog = Object.create(null);
   if (s.skipLog && typeof s.skipLog === 'object' && !Array.isArray(s.skipLog)) {
     Object.keys(s.skipLog).forEach(function (k) {
