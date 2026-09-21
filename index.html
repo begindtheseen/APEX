@@ -1731,7 +1731,7 @@ body{color:var(--text);font-family:var(--sans);}
     <nav class="lp-side" id="lpSide" aria-label="Launch Pad sections"></nav>
     <div class="lp-main" id="lpMain">
       <div class="lp-topbar">
-        <button class="lp-back lp-exit mo-btn" style="margin:0" onclick="exitLaunchpad()">← REALMS</button>
+        <button class="lp-back lp-exit mo-btn" id="lpBackBtn" style="margin:0" onclick="lpTopBack()">← REALMS</button>
         <nav class="lp-crumb" id="lpCrumb" aria-label="You are here"></nav>
       </div>
       <main class="lp-body" id="launchpadContent" tabindex="-1"></main>
@@ -5805,13 +5805,23 @@ function exitLaunchpad() {
   document.getElementById('launchpadApp').classList.remove('active');
   goLauncher();
 }
+var LP_FROM = 'modules';
 function lpOpen(id) {
   var API = lpApi();
   // The ladder disables locked rows, but the id is reachable other ways.
   // A locked module still opens — reading ahead is fine — it just cannot
   // be claimed, which lpToggle enforces.
   if (API && !API.byId(id)) return;
+  if (!LP_VIEW) LP_FROM = LP_TAB;      // only the first hop records where we came from
   LP_VIEW = id; renderLaunchpad();
+}
+// One button, three jobs. Leaving the realm is something you do from Home, on
+// purpose; everywhere else the same button walks you back one step, so a lesson
+// never strands you outside the app.
+function lpTopBack() {
+  if (LP_VIEW) { LP_VIEW = null; LP_TAB = LP_FROM || 'modules'; renderLaunchpad(); return; }
+  if (LP_TAB !== 'home') { LP_TAB = 'home'; renderLaunchpad(); return; }
+  exitLaunchpad();
 }
 function lpBack()   { LP_VIEW = null; renderLaunchpad(); }
 
@@ -5967,6 +5977,20 @@ function renderLaunchpad(keepScroll) {
   var main = document.getElementById('lpMain');
   var y = keepScroll && main ? main.scrollTop : 0;
   lpSideHTML();
+  var backBtn = document.getElementById('lpBackBtn');
+  if (backBtn) {
+    var TABBACK = { home:'Home', modules:'Modules', plan:'The Plan', tracks:'Tracks' };
+    if (LP_VIEW) {
+      backBtn.innerHTML = '← BACK';
+      backBtn.setAttribute('aria-label', 'Back to ' + (TABBACK[LP_FROM] || 'Modules'));
+    } else if (LP_TAB !== 'home') {
+      backBtn.innerHTML = '← BACK';
+      backBtn.setAttribute('aria-label', 'Back to Home');
+    } else {
+      backBtn.innerHTML = '← REALMS';
+      backBtn.setAttribute('aria-label', 'Leave Launch Pad and choose another realm');
+    }
+  }
   var crumb = document.getElementById('lpCrumb');
   if (crumb) {
     var TABNAME = { home:'Home', modules:'Modules', plan:'The Plan', tracks:'Tracks' };
@@ -5974,7 +5998,9 @@ function renderLaunchpad(keepScroll) {
       var vm = API.byId(LP_VIEW);
       var vl = (typeof AI_LAYERS !== 'undefined' ? AI_LAYERS : []).filter(function (L) {
         return vm && L.id === vm.layer; })[0];
-      crumb.innerHTML = '<a href="#" onclick="lpTab(\'modules\');return false">Modules</a> / ' + (vl ? esc(vl.name) + ' / ' : '') + '<b>' + LP_VIEW + '</b>';
+      var backTab = LP_FROM || 'modules';
+      crumb.innerHTML = '<a href="#" onclick="lpTab(\'' + backTab + '\');return false">'
+        + esc(TABNAME[backTab] || 'Modules') + '</a> / ' + (vl ? esc(vl.name) + ' / ' : '') + '<b>' + LP_VIEW + '</b>';
     } else {
       crumb.innerHTML = '<b>' + (TABNAME[LP_TAB] || 'Home') + '</b>';
     }
