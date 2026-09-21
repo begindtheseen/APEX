@@ -215,7 +215,7 @@
     'What must a strategic insight produce?', 'A falsifiable explanation of a meaningful pattern that changes a decision and predicts an outcome.');
 
   // ── C0 · CONTENT STRATEGY + IDEAS ────────────────────────
-  mod('C0', 'Level 3 · Content Strategy &amp; Idea Engine', 'Goals, pillars, formats, editorial systems, trend judgment, and an idea bank that never depends on inspiration.');
+  mod('C0', 'Level 3 · Content Strategy & Idea Engine', 'Goals, pillars, formats, editorial systems, trend judgment, and an idea bank that never depends on inspiration.');
   add('C0','c0_goal','Business goal → audience behavior → content job',
     'Why is “increase engagement” not a complete content objective?',
     'Content is a means to an audience behavior that supports a business outcome. Awareness, consideration, conversion, retention, advocacy, and recruiting require different messages and measures.',
@@ -274,7 +274,7 @@
     'What is the brief’s single most important job?', 'Preserve a shared understanding of the audience problem, intended change, message, proof, and definition of success.');
 
   // ── W0 · WRITING + STORY ─────────────────────────────────
-  mod('W0', 'Level 4 · Hooks, Scripts &amp; Story (Ralston Spine)', 'Attention, retention, persuasion, Caleb Ralston’s story framework, interviews, CTAs, and ethical copy.');
+  mod('W0', 'Level 4 · Hooks, Scripts & Story (Ralston Spine)', 'Attention, retention, persuasion, Caleb Ralston’s story framework, interviews, CTAs, and ethical copy.');
   add('W0','w0_hook','Hooks are promises under time pressure',
     'Why does a loud first sentence fail when the next seconds do not deliver it?',
     'A hook earns the next moment by making a clear, credible promise: useful change, unresolved tension, surprising evidence, identity relevance, spectacle, or emotional stakes.',
@@ -325,7 +325,7 @@
     'What makes a CTA effective?', 'One clear, valuable next step matched to audience readiness, content proof, platform behavior, and measurement.');
 
   // ── P0 · PRODUCTION + EDITING ────────────────────────────
-  mod('P0', 'Level 5 · Production, Editing &amp; Design (Ralston Spine)', 'Phone-to-studio capture, talent direction, visual grammar, editing, audio, graphics, accessibility, and file systems.');
+  mod('P0', 'Level 5 · Production, Editing & Design (Ralston Spine)', 'Phone-to-studio capture, talent direction, visual grammar, editing, audio, graphics, accessibility, and file systems.');
   add('P0','p0_prepro','Pre-production — spend thought before money',
     'Which production problem is cheapest to solve before filming starts?',
     'Pre-production turns a strategy into a shootable plan: objective, concept, script or beats, locations, people, props, permissions, shot list, schedule, gear, risk, deliverables, and backups.',
@@ -486,7 +486,7 @@
     'What converts a viral post into durable growth?', 'A profile, library, series, follow-up, community, and funnel that capture and continue the new viewer’s interest.');
 
   // ── N0 · ANALYTICS + EXPERIMENTATION ────────────────────
-  mod('N0', 'Level 8 · Analytics &amp; Experimentation', 'Metric trees, clean tests, retention diagnosis, attribution, reporting, and decision-making under uncertainty.');
+  mod('N0', 'Level 8 · Analytics & Experimentation', 'Metric trees, clean tests, retention diagnosis, attribution, reporting, and decision-making under uncertainty.');
   add('N0','n0_tree','Build a metric tree from revenue backward',
     'Which leading metric would you monitor before monthly revenue can answer?',
     'A metric tree links business outcome to conversion, qualified demand, traffic, content response, and production inputs. It distinguishes controllable leading indicators from delayed lagging results.',
@@ -714,7 +714,7 @@
     'How should YouTube CTR be interpreted?', 'With impressions, traffic source, audience breadth, watch behavior, satisfaction, and business context—not as an isolated universal benchmark.');
 
   // ── PX · FACEBOOK, THREADS, LINKEDIN, X, PINTEREST ──────
-  mod('PX', 'Platform Lab · Facebook, Threads, LinkedIn, X &amp; Pinterest', 'Master the remaining major networks by user intent instead of treating them as repost bins.');
+  mod('PX', 'Platform Lab · Facebook, Threads, LinkedIn, X & Pinterest', 'Master the remaining major networks by user intent instead of treating them as repost bins.');
   add('PX','px_facebook','Facebook — communities, Pages, Groups, Reels, and local reach',
     'Why might a useful post thrive in a Facebook Group and fail on a brand Page?',
     'Facebook combines relationship Feed, recommended content, Groups, Pages, Events, Marketplace, video/Reels, messaging, and ads. Each surface carries different trust, identity, and intent.',
@@ -765,7 +765,7 @@
     'When should a brand add another active platform?', 'When audience and business value are clear and the team can execute natively without starving the proven primary system.');
 
   // ── F0 · COMMUNITY, FUNNEL, AND REVENUE ──────────────────
-  mod('F0', 'Level 10 · Community, Funnel &amp; Conversion', 'Turn attention into trust, owned audience, qualified demand, sales, retention, and advocacy without corrupting the brand.');
+  mod('F0', 'Level 10 · Community, Funnel & Conversion', 'Turn attention into trust, owned audience, qualified demand, sales, retention, and advocacy without corrupting the brand.');
   add('F0','f0_profile','The profile storefront and conversion path',
     'What are the four questions a profile must answer before a stranger leaves?',
     'A profile converts a moment of interest into continued relationship. It must communicate identity, audience, valuable change, proof, and a low-friction next step.',
@@ -816,7 +816,7 @@
     'How does content support retention?', 'It sets expectations, helps customers succeed, reinforces progress and belonging, captures feedback, and enables advocacy.');
 
   // ── AD · PAID SOCIAL ─────────────────────────────────────
-  mod('AD', 'Level 11 · Paid Social &amp; Creative Performance', 'Objectives, tracking, audiences, creative, testing, economics, scaling, and the relationship between organic and paid.');
+  mod('AD', 'Level 11 · Paid Social & Creative Performance', 'Objectives, tracking, audiences, creative, testing, economics, scaling, and the relationship between organic and paid.');
   add('AD','ad_foundation','Paid media is an auction and optimization system',
     'Why can the highest bidder still lose an ad opportunity?',
     'Paid social delivery balances bid or budget, predicted action, creative/ad quality, user experience, objective, eligibility, and auction competition. Buying impressions does not buy attention or profit.',
@@ -918,7 +918,7 @@
     'What should pricing account for?', 'Client value and economics, scope, complexity, expertise, capacity, risk, usage, and delivery cost—not content quantity alone.');
 
   // ── O0 · CLIENT DELIVERY + TEAM ──────────────────────────
-  mod('O0', 'Level 13 · Client Delivery &amp; Agency Operations (Ralston Spine)', 'Onboarding, workflow, approvals, reporting, hiring, 30/60/90, 1:1s, and maker/manager systems.');
+  mod('O0', 'Level 13 · Client Delivery & Agency Operations (Ralston Spine)', 'Onboarding, workflow, approvals, reporting, hiring, 30/60/90, 1:1s, and maker/manager systems.');
   add('O0','o0_onboard','Client onboarding and the first 30 days',
     'What must be true before the agency publishes the first client post?',
     'Onboarding converts a signed promise into shared operating reality. It secures access, context, assets, strategy, communication, approvals, measurement, safety, and expectations before speed.',
@@ -969,7 +969,7 @@
     'What is the purpose of maker/manager separation?', 'Protect deep creative work while giving coordination predictable space, reducing context switching and burnout.');
 
   // ── X0 · LEGAL, RISK, AND CAPSTONE ───────────────────────
-  mod('X0', 'Level X · Law, Risk, Crisis &amp; Professional Capstone', 'Copyright, disclosure, privacy, accessibility, platform safety, crisis response, AI ethics, portfolio, and graduation.');
+  mod('X0', 'Level X · Law, Risk, Crisis & Professional Capstone', 'Copyright, disclosure, privacy, accessibility, platform safety, crisis response, AI ethics, portfolio, and graduation.');
   add('X0','x0_rights','Copyright, music, trademarks, releases, and usage rights',
     'Does crediting a creator automatically give permission to reuse their work?',
     'Credit is not a license. Social operators must understand ownership, licensed use, platform music terms, fair-use uncertainty, trademarks, publicity/privacy rights, model/location releases, and client/contractor IP assignment.',
@@ -1063,7 +1063,7 @@
       {k:'adtest',tier:'AD',name:'Paid Creative Analysis',target:25,hint:'Build or analyze one paid creative against audience, hook, body, proof, offer, CTA, tracking, and unit economics.'},
       {k:'prospect',tier:'S0',name:'Relevant Outreach',g:true,target:50,hint:'Send one researched, useful, permission-based prospect message; grade reply, qualification, and next step.'},
       {k:'client',tier:'O0',name:'Client System Artifact',target:25,hint:'Create or improve one brief, calendar, report, SOP, approval, onboarding, meeting, hiring, or quality artifact.'},
-      {k:'risk',tier:'X0',name:'Rights &amp; Risk Check',target:25,hint:'Audit one asset or campaign for claims, disclosures, copyright, releases, privacy, accessibility, platform policy, and escalation.'},
+      {k:'risk',tier:'X0',name:'Rights & Risk Check',target:25,hint:'Audit one asset or campaign for claims, disclosures, copyright, releases, privacy, accessibility, platform policy, and escalation.'},
       {k:'capstone',tier:'X0',name:'Capstone Milestone',target:12,hint:'Complete one inspectable milestone in the professional portfolio: research, system, content, test, report, funnel, proposal, or retrospective.'}
     ]
   };

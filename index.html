@@ -696,6 +696,12 @@ body{color:var(--text);font-family:var(--sans);}
   transition:transform .18s ease;
 }
 .ls-panel:active{transform:scale(.96);}
+/* Below 560px four panels in a row shrink until their sublabels are clipped
+   away entirely. Two by two keeps every name and count readable. */
+@media(max-width:560px){
+  .ls-row{flex-wrap:wrap;gap:12px;}
+  .ls-panel{flex:0 0 calc(50% - 6px);max-width:calc(50% - 6px);aspect-ratio:10/9;}
+}
 /* travelling sheen, staggered per panel so the page never sits still.
    will-change promotes each animated piece to its own compositor layer so
    the sweep/float never trigger paint — transform/opacity only. */
@@ -920,7 +926,7 @@ body{color:var(--text);font-family:var(--sans);}
 .lp-navbtn.on::after{height:64%;}
 @media(hover:hover){.lp-navbtn:hover .lp-navi{transform:scale(1.16);}}
 .lp-navi{transition:transform var(--t-micro) var(--e-spring);}
-@media(max-width:820px){
+@media(max-width:820px),(max-height:520px){
   .lp-navbtn::after{left:0;right:0;top:auto;bottom:0;width:auto;height:0;transform:none;}
   .lp-navbtn.on::after{height:2px;}
 }
@@ -986,28 +992,28 @@ body{color:var(--text);font-family:var(--sans);}
 .lp-shell{display:flex;flex:1;min-height:0;position:relative;z-index:1;}
 .lp-side{width:187px;flex-shrink:0;background:var(--rrail);border-right:1px solid var(--rline);
   display:flex;flex-direction:column;padding:0;}
-.lp-wordmark{font:700 15px/1 var(--sans);letter-spacing:.28em;color:var(--rbright);padding:26px 22px 34px;}
+.lp-wordmark{font:700 0.9375rem/1 var(--sans);letter-spacing:.28em;color:var(--rbright);padding:26px 22px 34px;}
 .lp-wordmark span{color:var(--rc);}
 .lp-navbtn{position:relative;display:flex;align-items:center;gap:14px;background:none;border:0;
   width:100%;height:52px;padding:0 22px;cursor:pointer;color:var(--rdim);
-  font:400 13px/52px var(--sans);text-align:left;transition:color .15s,background .15s;}
+  font:400 0.8125rem/52px var(--sans);text-align:left;transition:color .15s,background .15s;}
 .lp-navbtn::after{content:'';position:absolute;left:0;top:50%;width:4px;height:0;border-radius:0 2px 2px 0;
   background:var(--rc);transform:translateY(-50%);transition:height .2s var(--e-out);}
 .lp-navbtn.on::after{height:48px;}
 .lp-navi{display:flex;align-items:center;justify-content:center;width:22px;height:22px;}
 .lp-svg{width:20px;height:20px;display:block;}
 .lp-navi .lp-svg{width:22px;height:22px;}
-.lp-side-foot{margin-top:auto;padding:22px;font:600 9px/2.1 var(--sans);letter-spacing:.28em;
+.lp-side-foot{margin-top:auto;padding:22px;font:600 0.5625rem/2.1 var(--sans);letter-spacing:.28em;
   color:var(--rdim);opacity:.55;text-transform:uppercase;}
 .lp-main{flex:1;min-width:0;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;}
 .lp-topbar{display:flex;align-items:center;gap:12px;padding:14px 17px;position:sticky;top:0;
   background:color-mix(in srgb,var(--rbg) 92%,transparent);backdrop-filter:blur(10px);z-index:5;}
-.lp-crumb{margin-left:auto;font:500 9.5px/1 var(--sans);letter-spacing:.2em;color:var(--rdim);
+.lp-crumb{margin-left:auto;font:500 0.5938rem/1 var(--sans);letter-spacing:.2em;color:var(--rdim);
   text-transform:uppercase;}
 .lp-crumb b{color:var(--rbright);font-weight:500;}
 .lp-body{padding:0 17px 40px 14px;max-width:1180px;}
 .lp-back{background:none;border:1px solid var(--rline);border-radius:7px;color:var(--rdim);
-  font:600 10px/1 var(--sans);letter-spacing:.14em;padding:9px 13px;cursor:pointer;
+  font:600 0.625rem/1 var(--sans);letter-spacing:.14em;padding:9px 13px;cursor:pointer;
   transition:border-color .15s,color .15s;}
 .lp-back:hover{border-color:color-mix(in srgb,var(--rc) 50%,transparent);color:var(--rc);}
 
@@ -1016,17 +1022,17 @@ body{color:var(--text);font-family:var(--sans);}
 .lp-card,.lp-lay,.lp-quote{position:relative;border:1px solid var(--rline);border-radius:9px;
   background:var(--rsurf);padding:16px;margin-bottom:13px;}
 .lp-ch{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.lp-ct{display:flex;align-items:center;gap:10px;font:500 13px/1 var(--sans);letter-spacing:.06em;
+.lp-ct{display:flex;align-items:center;gap:10px;font:500 0.8125rem/1 var(--sans);letter-spacing:.06em;
   color:var(--rbright);text-transform:uppercase;}
 .lp-ct .lp-svg{width:17px;height:17px;color:var(--rtext);flex-shrink:0;}
-.lp-cmeta{margin-left:auto;font:500 11px/1 var(--sans);letter-spacing:.07em;color:var(--rdim);
+.lp-cmeta{margin-left:auto;font:500 0.6875rem/1 var(--sans);letter-spacing:.07em;color:var(--rdim);
   text-transform:uppercase;}
 .lp-cols{display:grid;grid-template-columns:minmax(0,1fr) 269px;gap:15px;align-items:start;}
-.lp-dp{font:400 13px/1.62 var(--sans);color:var(--rtext);}
+.lp-dp{font:400 0.8125rem/1.62 var(--sans);color:var(--rtext);}
 .lp-warn{border:1px solid color-mix(in srgb,var(--rc) 28%,transparent);border-radius:9px;
   padding:14px 16px;margin:13px 0;background:color-mix(in srgb,var(--rc) 6%,transparent);
-  font:400 12.5px/1.6 var(--sans);color:var(--rtext);}
-.lp-warn b{display:block;font:600 9.5px/1 var(--sans);letter-spacing:.14em;color:var(--rc);
+  font:400 0.7812rem/1.6 var(--sans);color:var(--rtext);}
+.lp-warn b{display:block;font:600 0.5938rem/1 var(--sans);letter-spacing:.14em;color:var(--rc);
   text-transform:uppercase;margin-bottom:7px;}
 
 /* ═══ LAUNCHPAD ══════════════════════════════════════════════════
@@ -1044,7 +1050,9 @@ body{color:var(--text);font-family:var(--sans);}
 }
 #launchpadApp .lp-side{background:linear-gradient(180deg,#01050d,#000308);border-right-color:#041c2e;}
 #launchpadApp .lp-wordmark{padding:29px 22px 40px;letter-spacing:.3em;}
-#launchpadApp .lp-navbtn{color:#aab6c4;}
+#launchpadApp .lp-navbtn{color:#c2ccd8;}
+#launchpadApp .lp-nav{gap:6px;}
+#launchpadApp .lx-link + .lx-link,#launchpadApp .lp-task + .lp-task{margin-top:8px;}
 #launchpadApp .lp-navbtn .lp-navi{color:#93a1b0;}
 #launchpadApp .lp-navbtn:hover{background:rgba(72,137,250,.06);color:#dbe6f2;}
 #launchpadApp .lp-navbtn.on{color:#8fb8e8;background:none;
@@ -1052,8 +1060,9 @@ body{color:var(--text);font-family:var(--sans);}
   background-repeat:no-repeat;background-size:100% 48px;background-position:0 center;}
 #launchpadApp .lp-navbtn.on .lp-navi{color:var(--rc2);}
 #launchpadApp .lp-navbtn.on .lp-svg{fill:rgba(72,137,250,.2);}
-#launchpadApp .lp-back{border-color:rgba(255,255,255,.1);background:rgba(0,3,10,.5);color:#93a0b0;}
-#launchpadApp .lp-crumb{color:#4a5c6d;text-transform:none;letter-spacing:.05em;font-size:11px;}
+#launchpadApp .lp-back{border-color:rgba(255,255,255,.18);background:rgba(0,3,10,.5);color:#b6c2d0;
+  min-height:44px;display:inline-flex;align-items:center;}
+#launchpadApp .lp-crumb{color:#4a5c6d;text-transform:none;letter-spacing:.05em;font-size:0.6875rem;}
 #launchpadApp .lp-crumb a{color:#7f8ea0;text-decoration:none;}
 #launchpadApp .lp-crumb a:hover{color:var(--rc2);}
 
@@ -1068,10 +1077,10 @@ body{color:var(--text);font-family:var(--sans);}
     rgba(0,3,10,.07) 72%,transparent 86%),
     linear-gradient(0deg,#00030a 0%,rgba(0,3,10,.28) 22%,transparent 46%);}
 #launchpadApp .lp-heroIn{position:relative;z-index:2;display:block;padding:92px 43px 24px;max-width:58%;}
-#launchpadApp .lp-eyebrow{display:block;font:300 19px/1 var(--sans);color:#f3f6fa;margin-bottom:12px;}
-#launchpadApp .lp-name{font:300 40px/1.1 var(--sans);color:#fff;letter-spacing:-.015em;margin:0 0 16px;}
+#launchpadApp .lp-eyebrow{display:block;font:300 1.1875rem/1 var(--sans);color:#f3f6fa;margin-bottom:12px;}
+#launchpadApp .lp-name{font:300 2.5rem/1.1 var(--sans);color:#fff;letter-spacing:-.015em;margin:0 0 16px;}
 #launchpadApp .lp-name b{font-weight:300;}
-#launchpadApp .lp-sub{font:400 14px/1.5 var(--sans);color:#c2d0eb;max-width:46ch;}
+#launchpadApp .lp-sub{font:400 0.875rem/1.5 var(--sans);color:#c2d0eb;max-width:46ch;}
 #launchpadApp .lp-heroBar{width:141px;height:4px;border-radius:2px;background:#05101f;
   margin-top:19px;overflow:hidden;}
 #launchpadApp .lp-heroBar span{display:block;height:100%;border-radius:2px;background:#4889fa;}
@@ -1093,10 +1102,10 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-bico .lp-svg{width:23px;height:23px;}
 #launchpadApp .lp-bcode{display:none;}
 #launchpadApp .lp-bwrap{flex:1;min-width:0;}
-#launchpadApp .lp-blab{font:500 12.5px/1 var(--sans);color:#f4f7f6;margin-bottom:8px;}
+#launchpadApp .lp-blab{font:500 0.7812rem/1 var(--sans);color:#f4f7f6;margin-bottom:8px;}
 #launchpadApp .lp-btr{height:7px;border-radius:4px;background:#0c1e34;overflow:hidden;}
 #launchpadApp .lp-btr span{display:block;height:100%;border-radius:4px;background:#4889fa;}
-#launchpadApp .lp-bpct{flex-shrink:0;width:34px;text-align:right;font:400 13px/1 var(--sans);
+#launchpadApp .lp-bpct{flex-shrink:0;width:34px;text-align:right;font:400 0.8125rem/1 var(--sans);
   color:#9fb0c4;font-variant-numeric:tabular-nums;}
 #launchpadApp .lp-ring{position:relative;width:73px;height:73px;flex-shrink:0;margin-top:6px;}
 #launchpadApp .lp-ring svg{width:73px;height:73px;transform:rotate(-90deg);}
@@ -1104,7 +1113,7 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-ring .rfg{fill:none;stroke:#5f94f2;stroke-width:6;stroke-linecap:round;
   transition:stroke-dashoffset .6s;}
 #launchpadApp .lp-rtx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-#launchpadApp .lp-rv{font:500 20px/1 var(--sans);color:#fff;}
+#launchpadApp .lp-rv{font:500 1.25rem/1 var(--sans);color:#fff;}
 #launchpadApp .lp-rk{display:none;}
 
 /* Subject card: 52px tile in a left gutter, copy column, a 148px plate top
@@ -1116,32 +1125,32 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-layi{width:52px;height:52px;flex-shrink:0;border-radius:14px;border:1px solid #1b304a;
   background:rgba(120,170,230,.04);color:#e6edf5;display:flex;align-items:center;justify-content:center;}
 #launchpadApp .lp-layi .lp-svg{width:28px;height:28px;}
-#launchpadApp .lp-layt{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
-#launchpadApp .lp-layd{font:400 12px/1.3 var(--sans);color:#a8b8cc;margin-top:8px;max-width:46ch;}
+#launchpadApp .lp-layt{font:600 1.0625rem/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
+#launchpadApp .lp-layd{font:400 0.75rem/1.3 var(--sans);color:#a8b8cc;margin-top:8px;max-width:46ch;}
 #launchpadApp .lp-layc{display:none;}
 #launchpadApp .lp-mods{display:block;margin:14px 0 0;padding-left:70px;}
 #launchpadApp .lp-mrow{display:flex;align-items:flex-start;gap:7px;min-height:16.5px;
-  font:400 11px/1.5 var(--sans);color:#c5d2e0;}
+  font:400 0.6875rem/1.5 var(--sans);color:#c5d2e0;}
 #launchpadApp .lp-dot{width:12px;height:12px;margin-top:2px;border-radius:50%;border:1.3px solid #3a5a7a;
   flex-shrink:0;}
 #launchpadApp .lp-mrow.lock{color:#8593a4;}
 #launchpadApp .lp-mrow.lock .lp-dot{border-color:#27394c;}
 #launchpadApp .lp-mrow.done{color:#e6edf5;}
 #launchpadApp .lp-mrow.done .lp-dot{background:var(--rc);border-color:var(--rc);}
-#launchpadApp .lp-artWrap{width:148px;flex:0 0 148px;height:149px;border-radius:6px;overflow:hidden;
+#launchpadApp .lp-artWrap{width:206px;flex:0 0 206px;height:149px;border-radius:6px;overflow:hidden;
   border:0;background:#04101d;display:flex;flex-direction:column;}
 #launchpadApp .lp-artCap{display:none;}
 #launchpadApp .lp-artBox{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;}
 #launchpadApp .lp-art{width:100%;height:auto;display:block;max-height:130px;}
 #launchpadApp .lp-layf{display:flex;align-items:flex-end;gap:16px;margin-top:16px;}
-#launchpadApp .lp-go{height:26px;padding:0 15px;border-radius:8px;cursor:pointer;
-  font:500 12.5px/24px var(--sans);background:#021630;border:1px solid #3264aa;color:#86d1f4;
+#launchpadApp .lp-go{min-height:44px;padding:0 18px;border-radius:8px;cursor:pointer;
+  font:500 0.7812rem/24px var(--sans);background:#021630;border:1px solid #3264aa;color:#86d1f4;
   transition:background .15s,border-color .15s,color .15s;}
 #launchpadApp .lp-go:hover{background:#052243;border-color:#4a8ad0;color:#b9e3fb;}
 #launchpadApp .lp-go.ghost{background:none;border-color:#1d3350;color:#7f8ea0;}
 #launchpadApp .lp-go.ghost:hover{background:rgba(72,137,250,.07);border-color:#3264aa;color:#b4bfcb;}
 #launchpadApp .lp-pctlab{margin-left:auto;width:158px;max-width:52%;}
-#launchpadApp .lp-pctlab .k{display:block;font:600 9px/1 var(--sans);letter-spacing:.13em;
+#launchpadApp .lp-pctlab .k{display:block;font:600 0.5625rem/1 var(--sans);letter-spacing:.13em;
   color:#8fb3d2;text-transform:uppercase;margin-bottom:8px;}
 #launchpadApp .lp-pctlab .t{display:block;height:5px;border-radius:3px;background:#081626;overflow:hidden;}
 #launchpadApp .lp-pctlab .t i{display:block;height:100%;border-radius:3px;background:#5992f7;}
@@ -1152,27 +1161,27 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-task:first-of-type{border-top:0;}
 #launchpadApp .lp-box{width:16px;height:16px;border-radius:50%;border:1.6px solid #8494a8;
   flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;
-  font-size:9px;color:var(--rc);}
-#launchpadApp .lp-tt{font:400 12.5px/1.35 var(--sans);color:#e6edf5;}
-#launchpadApp .lp-ts{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:8px;}
+  font-size:0.5625rem;color:var(--rc);}
+#launchpadApp .lp-tt{font:400 0.7812rem/1.35 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-ts{display:block;font:400 0.6562rem/1 var(--sans);color:#7b8a9c;margin-top:8px;}
 #launchpadApp .lp-link{display:flex;gap:13px;align-items:center;width:100%;text-align:left;
   background:none;border:0;border-top:1px solid #0d2340;padding:10px 0;cursor:pointer;color:inherit;}
 #launchpadApp .lp-link:first-of-type{border-top:0;}
 #launchpadApp .lp-lki{width:36px;height:36px;flex-shrink:0;border-radius:10px;border:1px solid #1b304a;
   background:rgba(120,170,230,.04);color:#cfdbe8;display:flex;align-items:center;justify-content:center;}
 #launchpadApp .lp-lki .lp-svg{width:19px;height:19px;}
-#launchpadApp .lp-lkt{font:500 12px/1.3 var(--sans);color:#e6edf5;}
-#launchpadApp .lp-lks{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lp-lkt{font:500 0.75rem/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-lks{display:block;font:400 0.6562rem/1 var(--sans);color:#7b8a9c;margin-top:6px;}
 #launchpadApp .lp-arrow{margin-left:auto;color:#4a5c6d;flex-shrink:0;}
 #launchpadApp .lp-arrow .lp-svg{width:14px;height:14px;}
-#launchpadApp .lp-wide{display:block;width:100%;height:36px;margin-top:14px;border-radius:7px;
+#launchpadApp .lp-wide{display:block;width:100%;min-height:44px;margin-top:14px;border-radius:7px;
   background:linear-gradient(180deg,#0c2036,#14304f);border:1px solid #20395a;cursor:pointer;
-  font:500 12.5px/34px var(--sans);color:#fff;text-align:center;}
+  font:500 0.7812rem/34px var(--sans);color:#fff;text-align:center;}
 #launchpadApp .lp-wide:hover{background:linear-gradient(180deg,#123052,#1b4472);border-color:#2d5182;}
 #launchpadApp .lx-rk{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid #0d2340;}
 #launchpadApp .lx-rk:first-of-type{border-top:0;}
-#launchpadApp .lx-rk .k{font:400 12px/1 var(--sans);color:#a8b8cc;}
-#launchpadApp .lx-rk .v{margin-left:auto;font:500 12px/1 var(--sans);color:#fff;
+#launchpadApp .lx-rk .k{font:400 0.75rem/1 var(--sans);color:#a8b8cc;}
+#launchpadApp .lx-rk .v{margin-left:auto;font:500 0.75rem/1 var(--sans);color:#fff;
   font-variant-numeric:tabular-nums;text-align:right;}
 
 /* Quote card: sky behind a scrim, hanging indent, 224px tall. */
@@ -1184,10 +1193,10 @@ body{color:var(--text);font-family:var(--sans);}
   background:linear-gradient(180deg,rgba(0,3,10,.3),rgba(0,3,10,.72) 78%),
     linear-gradient(90deg,rgba(0,3,10,.6),rgba(0,3,10,.05) 62%);}
 #launchpadApp .lp-qt,#launchpadApp .lp-qa{position:relative;z-index:2;}
-#launchpadApp .lp-qt{font:300 20px/1.42 var(--sans);color:#fff;letter-spacing:-.01em;
+#launchpadApp .lp-qt{font:300 1.25rem/1.42 var(--sans);color:#fff;letter-spacing:-.01em;
   text-indent:-8px;padding-left:8px;}
 #launchpadApp .lp-qt b{font-weight:500;}
-#launchpadApp .lp-qa{font:400 12.5px/1 var(--sans);color:#95a9c9;margin-top:13px;}
+#launchpadApp .lp-qa{font:400 0.7812rem/1 var(--sans);color:#95a9c9;margin-top:13px;}
 
 /* Rows sit after a header div, so `:first-of-type` matched the header and
    never the first row — every rail card opened with two hairlines 4px
@@ -1200,25 +1209,62 @@ body{color:var(--text);font-family:var(--sans);}
    and #4d5867 they measured 2.0:1 and 2.7:1, which is not readable text,
    it is decoration shaped like text. */
 #launchpadApp .lp-side-foot{color:#5d6b7c;opacity:1;}
-#launchpadApp .lp-kind,#launchpadApp .lp-mod.lock .lp-modI{color:#8593a4;}
-#launchpadApp .lp-secH .n,#launchpadApp .lp-secH .h{color:#7f8ea0;}
-#launchpadApp .lp-dep,#launchpadApp .lx-secN{color:#8593a4;}
-#launchpadApp .lp-crumb{color:#7f8ea0;opacity:1;}
-#launchpadApp .lx-mt,#launchpadApp .lx-tk span,#launchpadApp .lp-tag{color:#93a2b3;}
+/* Every dim label here was between 3.4:1 and 4.4:1 against the plate it sits
+   on. These are the lightened values; nothing below 4.5:1 for body text. */
+#launchpadApp .lp-kind,#launchpadApp .lp-mod.lock .lp-modI{color:#a8b6c6;}
+#launchpadApp .lp-secH .n,#launchpadApp .lp-secH .h{color:#a4b2c2;}
+#launchpadApp .lp-dep,#launchpadApp .lx-secN{color:#a8b6c6;}
+#launchpadApp .lp-crumb{color:#a4b2c2;opacity:1;}
+#launchpadApp .lx-mt,#launchpadApp .lx-tk span,#launchpadApp .lp-tag{color:#aebbc9;}
+#launchpadApp .lp-cmeta{color:#a4b2c2;}
+#launchpadApp .lp-dp{color:#c2ccd8;}
+#launchpadApp .lp-modI{color:#dbe5f0;}
+#launchpadApp .lx-id{background:#2f6fe0;color:#fff;}
+#launchpadApp .lp-side-foot{color:#a4b2c2;}
+/* Non-text: an open module and a locked one differed by 1.65:1. */
+#launchpadApp .lp-mrow .lp-dot{background:#3c5f86;}
+#launchpadApp .lp-mrow.lock .lp-dot{background:#20364f;box-shadow:inset 0 0 0 1px #46658c;}
+#launchpadApp .lp-btr{background:#22364d;}
+
+/* In forced-colors mode the painted bars and the active-tab underline are
+   backgrounds, which the mode strips; redraw them with system colours. */
+@media (forced-colors: active){
+  #launchpadApp .lp-heroBar span,#launchpadApp .lp-btr span,#launchpadApp .lp-pctlab .t i{
+    background:Highlight;forced-color-adjust:none;}
+  #launchpadApp .lp-heroBar,#launchpadApp .lp-btr,#launchpadApp .lp-pctlab .t{
+    border:1px solid CanvasText;forced-color-adjust:none;}
+  #launchpadApp .lp-navbtn.on{border-bottom:3px solid Highlight;}
+  #launchpadApp .lp-mod.lock{opacity:1;border-style:dashed;}
+}
 
 /* A checkbox you cannot reach with a keyboard is not a checkbox. */
 #launchpadApp .lp-chk:focus-visible,#launchpadApp .lp-task:focus-visible,
 #launchpadApp .lp-go:focus-visible,#launchpadApp .lp-link:focus-visible,
 #launchpadApp .lx-link:focus-visible,#launchpadApp .lp-wide:focus-visible,
 #launchpadApp .lp-mod:focus-visible,#launchpadApp .lp-navbtn:focus-visible,
-#launchpadApp .lp-back:focus-visible,#launchpadApp .lp-crumb a:focus-visible{
+#launchpadApp .lp-back:focus-visible,#launchpadApp .lp-crumb a:focus-visible,
+#launchpadApp .lx-words > summary:focus-visible,#launchpadApp .lx-sub a:focus-visible,
+#launchpadApp .lp-gloss a:focus-visible,#launchpadApp a:focus-visible{
   outline:2px solid var(--rc2);outline-offset:2px;border-radius:6px;}
-#launchpadApp .lp-f input:focus{outline:2px solid var(--rc2);outline-offset:1px;}
+/* :focus, not only :focus-visible — a text input must show the ring however
+   focus arrived, and the rule below must not be overridden later. */
+#launchpadApp .lp-f input:focus,#launchpadApp .lp-f input:focus-visible{
+  outline:2px solid #7fb0ff;outline-offset:1px;}
+/* Links inside prose inherit the realm's blue; the user-agent default was
+   unreadable on this background. */
+#launchpadApp a{color:var(--rc2);}
 
 /* The vocabulary card. */
 #launchpadApp .lp-gloss{padding:10px 0;border-top:1px solid #0d2340;}
-#launchpadApp .lp-gloss b{display:block;font:500 12px/1 var(--sans);color:#e6edf5;margin-bottom:5px;}
-#launchpadApp .lp-gloss span{display:block;font:400 11.5px/1.5 var(--sans);color:#93a2b3;}
+/* Inline links inside prose are touch targets too: give them the height a
+   finger needs without disturbing the line they sit in. */
+#launchpadApp .lx-sub a,#launchpadApp .lp-gloss a,#launchpadApp .lp-crumb a{
+  display:inline-block;min-height:44px;line-height:44px;padding:0 4px;margin:-12px 0;
+  vertical-align:middle;}
+#launchpadApp .lp-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+#launchpadApp .lp-gloss b{display:block;font:500 0.75rem/1 var(--sans);color:#e6edf5;margin-bottom:5px;}
+#launchpadApp .lp-gloss span{display:block;font:400 0.7188rem/1.5 var(--sans);color:#93a2b3;}
 
 @media(prefers-reduced-motion:reduce){
   #launchpadApp .lp-mod,#launchpadApp .lx-link,#launchpadApp .lp-navbtn::after,
@@ -1236,11 +1282,11 @@ body{color:var(--text);font-family:var(--sans);}
    fades content, so state is carried by the tile and the rail, not by
    dropping the whole row to 62% opacity. */
 #launchpadApp .lp-secH{display:flex;align-items:center;gap:11px;margin:26px 0 11px;}
-#launchpadApp .lp-secH .n{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#5a6a7c;}
-#launchpadApp .lp-secH .t{font:600 10.5px/1 var(--sans);letter-spacing:.14em;color:#c3ccd8;
+#launchpadApp .lp-secH .n{font:600 0.6562rem/1 var(--sans);letter-spacing:.14em;color:#5a6a7c;}
+#launchpadApp .lp-secH .t{font:600 0.6562rem/1 var(--sans);letter-spacing:.14em;color:#c3ccd8;
   text-transform:uppercase;}
 #launchpadApp .lp-secH .r{flex:1;height:1px;background:var(--rline);}
-#launchpadApp .lp-secH .h{font:500 10.5px/1 var(--sans);letter-spacing:.05em;color:#5a6a7c;}
+#launchpadApp .lp-secH .h{font:500 0.6562rem/1 var(--sans);letter-spacing:.05em;color:#5a6a7c;}
 #launchpadApp .lp-mod{position:relative;display:flex;align-items:center;gap:14px;width:100%;
   text-align:left;padding:13px 16px 13px 17px;margin-bottom:9px;border:1px solid var(--rline);
   border-radius:9px;background:var(--rsurf);cursor:pointer;overflow:hidden;
@@ -1253,21 +1299,21 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-mod:disabled{pointer-events:none;}
 #launchpadApp .lp-modI{width:38px;height:38px;flex-shrink:0;border-radius:10px;display:flex;
   align-items:center;justify-content:center;border:1px solid #1b304a;background:rgba(120,170,230,.04);
-  font:500 11px/1 var(--sans);letter-spacing:.03em;color:#8fb8e8;}
+  font:500 0.6875rem/1 var(--sans);letter-spacing:.03em;color:#8fb8e8;}
 #launchpadApp .lp-mod.done .lp-modI{border-color:rgba(72,137,250,.45);background:rgba(72,137,250,.12);
   color:#8fc0ff;}
 #launchpadApp .lp-mod.lock .lp-modI{color:#6c7b8d;border-color:#16283d;}
 #launchpadApp .lp-modB{flex:1;min-width:0;}
-#launchpadApp .lp-modT{display:block;font:500 13.5px/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lp-modT{display:block;font:500 0.8438rem/1.3 var(--sans);color:#e6edf5;}
 #launchpadApp .lp-mod.lock .lp-modT{color:#93a2b3;}
 #launchpadApp .lp-modM{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
-#launchpadApp .lp-tag{font:500 10px/1 var(--sans);color:#5f87ad;}
+#launchpadApp .lp-tag{font:500 0.625rem/1 var(--sans);color:#5f87ad;}
 #launchpadApp .lp-tag.open{color:var(--rc2);}
 #launchpadApp .lp-tag::after{content:'\00B7';margin-left:6px;color:#2b3543;}
-#launchpadApp .lp-dep{font:400 10.5px/1 var(--sans);color:#5a6a7c;}
+#launchpadApp .lp-dep{font:400 0.6562rem/1 var(--sans);color:#5a6a7c;}
 #launchpadApp .lp-modR{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
-#launchpadApp .lp-modHr{font:500 12.5px/1 var(--sans);color:#c3ccd8;font-variant-numeric:tabular-nums;}
-#launchpadApp .lp-kind{font:500 9.5px/1 var(--sans);letter-spacing:.1em;color:#5a6a7c;}
+#launchpadApp .lp-modHr{font:500 0.7812rem/1 var(--sans);color:#c3ccd8;font-variant-numeric:tabular-nums;}
+#launchpadApp .lp-kind{font:500 0.5938rem/1 var(--sans);letter-spacing:.1em;color:#5a6a7c;}
 #launchpadApp .lp-kind.ev{color:#5f87ad;}
 #launchpadApp .lp-steps{display:flex;gap:3px;}
 #launchpadApp .lp-mod.lock .lp-steps{visibility:hidden;}
@@ -1275,11 +1321,12 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lp-step.on{background:var(--rc);}
 #launchpadApp .lp-gate{border:1px solid #1b304a;border-radius:9px;padding:16px;margin:16px 0;
   background:var(--rsurf);}
-#launchpadApp .lp-gt{font:600 10.5px/1 var(--sans);letter-spacing:.13em;color:var(--rc2);
+#launchpadApp .lp-gt{font:600 0.6562rem/1 var(--sans);letter-spacing:.13em;color:var(--rc2);
   text-transform:uppercase;}
-#launchpadApp .lp-gs{font:400 12.5px/1.6 var(--sans);color:#a8b8cc;margin:9px 0 11px;}
-#launchpadApp .lp-chk{display:flex;align-items:flex-start;gap:12px;padding:11px 0;cursor:pointer;
-  border-top:1px solid #0d2340;color:var(--rtext);font:400 12.5px/1.4 var(--sans);}
+#launchpadApp .lp-gs{font:400 0.7812rem/1.6 var(--sans);color:#a8b8cc;margin:9px 0 11px;}
+#launchpadApp .lp-chk{display:flex;align-items:flex-start;gap:12px;padding:13px 0;min-height:44px;
+  box-sizing:border-box;cursor:pointer;
+  border-top:1px solid #0d2340;color:var(--rtext);font:400 0.7812rem/1.4 var(--sans);}
 #launchpadApp .lp-chk:first-of-type{border-top:0;}
 #launchpadApp .lp-chk .lp-box{border-radius:50%;}
 #launchpadApp .lp-chk.on{color:#e6edf5;}
@@ -1293,17 +1340,17 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-heroArt{display:none;}
 #launchpadApp .lx-heroIn{position:relative;z-index:1;}
 #launchpadApp .lx-eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:13px;}
-#launchpadApp .lx-mt{font:500 10.5px/1 var(--sans);letter-spacing:.13em;color:#6c7b8d;
+#launchpadApp .lx-mt{font:500 0.6562rem/1 var(--sans);letter-spacing:.13em;color:#6c7b8d;
   text-transform:uppercase;}
-#launchpadApp .lx-id{font:600 10.5px/1 var(--sans);letter-spacing:.07em;background:var(--rc);color:#fff;
+#launchpadApp .lx-id{font:600 0.6562rem/1 var(--sans);letter-spacing:.07em;background:var(--rc);color:#fff;
   padding:5px 8px;border-radius:5px;}
-#launchpadApp .lx-title{font:300 34px/1.14 var(--sans);color:#fff;letter-spacing:-.02em;margin-bottom:12px;}
-#launchpadApp .lx-sub{font:400 13.5px/1.6 var(--sans);color:#a8b8cc;max-width:64ch;}
-#launchpadApp .lx-track{display:flex;flex-wrap:wrap;align-items:center;margin-top:20px;}
-#launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;}
+#launchpadApp .lx-title{font:300 2.125rem/1.14 var(--sans);color:#fff;letter-spacing:-.02em;margin-bottom:12px;}
+#launchpadApp .lx-sub{font:400 0.8438rem/1.6 var(--sans);color:#a8b8cc;max-width:64ch;}
+#launchpadApp .lx-track{display:flex;flex-wrap:wrap;align-items:center;margin-top:20px;row-gap:9px;}
+#launchpadApp .lx-tk{display:flex;align-items:center;gap:8px;padding:0 14px 0 0;white-space:nowrap;}
 #launchpadApp .lx-tk .d{width:12px;height:12px;border-radius:50%;border:1.4px solid #27394c;flex-shrink:0;}
 #launchpadApp .lx-tk.on .d{background:var(--rc);border-color:var(--rc);}
-#launchpadApp .lx-tk span{font:500 10.5px/1 var(--sans);letter-spacing:.11em;color:#6c7b8d;
+#launchpadApp .lx-tk span{font:500 0.6562rem/1 var(--sans);letter-spacing:.11em;color:#6c7b8d;
   text-transform:uppercase;}
 #launchpadApp .lx-tk.on span{color:#e6edf5;}
 #launchpadApp .lx-tkr{width:24px;height:1px;background:#1b3350;margin-right:14px;}
@@ -1314,81 +1361,91 @@ body{color:var(--text);font-family:var(--sans);}
 #launchpadApp .lx-secI{width:52px;height:52px;flex-shrink:0;border-radius:14px;border:1px solid #1b304a;
   background:rgba(120,170,230,.04);color:#e6edf5;display:flex;align-items:center;justify-content:center;}
 #launchpadApp .lx-secI .lp-svg{width:28px;height:28px;}
-#launchpadApp .lx-secN{font:600 9.5px/1 var(--sans);letter-spacing:.15em;color:#5a6a7c;margin-bottom:7px;}
-#launchpadApp .lx-secT{font:600 17px/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
-#launchpadApp .lx-secD{font:400 12px/1.55 var(--sans);color:#a8b8cc;margin-top:7px;max-width:54ch;}
+#launchpadApp .lx-secN{font:600 0.5938rem/1 var(--sans);letter-spacing:.15em;color:#5a6a7c;margin-bottom:7px;}
+#launchpadApp .lx-secT{font:600 1.0625rem/1.25 var(--sans);color:#fff;letter-spacing:-.005em;}
+#launchpadApp .lx-secD{font:400 0.75rem/1.55 var(--sans);color:#a8b8cc;margin-top:7px;max-width:54ch;}
 #launchpadApp .lx-li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
   border-top:1px solid #0d2340;}
 #launchpadApp .lx-li:first-child{border-top:0;padding-top:0;}
 #launchpadApp .lx-li b{flex-shrink:0;width:14px;height:14px;margin-top:2px;border-radius:50%;
   border:1.3px solid #3a5a7a;display:block;}
-#launchpadApp .lx-li p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-li p{margin:0;font:400 0.7812rem/1.6 var(--sans);color:#b9c6d6;overflow-wrap:anywhere;}
 #launchpadApp .lx-li.num b{border-color:#2b4a6b;color:var(--rc2);font:500 8.5px/12px var(--sans);
   text-align:center;}
-#launchpadApp .lx-li.bad b{border:0;width:11px;text-align:center;color:#e0675c;font:500 12px/1 var(--sans);}
+#launchpadApp .lx-li.bad b{border:0;width:11px;text-align:center;color:#e0675c;font:500 0.75rem/1 var(--sans);}
+#launchpadApp .lx-words > summary{cursor:pointer;list-style:none;padding:14px;min-height:44px;
+  box-sizing:border-box;display:flex;align-items:center;border:1px solid #1b304a;
+  border-radius:8px;font:500 0.7812rem/1.4 var(--sans);color:var(--rc2);background:#07152a;}
+#launchpadApp .lx-words > summary::-webkit-details-marker{display:none;}
+#launchpadApp .lx-words > summary::after{content:' ▾';color:#5b7fa6;}
+#launchpadApp .lx-words[open] > summary{margin-bottom:12px;}
+#launchpadApp .lx-words[open] > summary::after{content:' ▴';}
 #launchpadApp .lx-wd{display:grid;grid-template-columns:118px 1fr;gap:6px 14px;padding:9px 0;border-top:1px solid #0d2340;}
 #launchpadApp .lx-wd:first-child{border-top:0;padding-top:0;}
-#launchpadApp .lx-wd b{font:600 12px/1.5 var(--sans);color:var(--rc2);letter-spacing:.01em;word-break:break-word;}
-#launchpadApp .lx-wd p{margin:0;font:400 12.5px/1.6 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-wd b{font:600 0.75rem/1.5 var(--sans);color:var(--rc2);letter-spacing:.01em;word-break:break-word;}
+#launchpadApp .lx-wd p{margin:0;font:400 0.7812rem/1.6 var(--sans);color:#b9c6d6;}
 @media (max-width:520px){#launchpadApp .lx-wd{grid-template-columns:1fr;gap:2px;}}
-#launchpadApp .lx-body{font:400 13px/1.7 var(--sans);color:#b9c6d6;}
+#launchpadApp .lx-body{font:400 0.8125rem/1.7 var(--sans);color:#b9c6d6;overflow-wrap:anywhere;}
+#launchpadApp .lx-gv,#launchpadApp .lx-wd p,#launchpadApp .lp-tkr,#launchpadApp .lp-dp{overflow-wrap:anywhere;}
 #launchpadApp .lx-gate{border:1px solid #1b304a;border-radius:8px;overflow:hidden;}
 #launchpadApp .lx-gr{display:flex;gap:16px;padding:13px 15px;border-top:1px solid #0d2340;}
 #launchpadApp .lx-gr:first-child{border-top:0;}
-#launchpadApp .lx-gk{flex:0 0 84px;font:600 9.5px/1.5 var(--sans);letter-spacing:.13em;color:var(--rc2);
+#launchpadApp .lx-gk{flex:0 0 84px;font:600 0.5938rem/1.5 var(--sans);letter-spacing:.13em;color:var(--rc2);
   text-transform:uppercase;}
 #launchpadApp .lx-gr.fail .lx-gk{color:#e0675c;}
-#launchpadApp .lx-gv{flex:1;min-width:0;font:400 12.5px/1.6 var(--sans);color:#b6c4d3;}
+#launchpadApp .lx-gv{flex:1;min-width:0;font:400 0.7812rem/1.6 var(--sans);color:#b6c4d3;}
 #launchpadApp .lx-link{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
   background:none;border:0;border-top:1px solid #0d2340;padding:11px 0;cursor:pointer;color:inherit;
   transition:padding-left .2s var(--e-out);}
 #launchpadApp .lx-link:first-of-type{border-top:0;}
 #launchpadApp .lx-li2{flex:1;min-width:0;}
-#launchpadApp .lx-lt{display:block;font:400 12.5px/1.3 var(--sans);color:#e6edf5;}
-#launchpadApp .lx-ls{display:block;font:400 10.5px/1 var(--sans);color:#7b8a9c;margin-top:6px;}
+#launchpadApp .lx-lt{display:block;font:400 0.7812rem/1.3 var(--sans);color:#e6edf5;}
+#launchpadApp .lx-ls{display:block;font:400 0.6562rem/1 var(--sans);color:#7b8a9c;margin-top:6px;}
 
 /* ═══ PLAN + TRACKS ══════════════════════════════════════════════ */
 #launchpadApp .lp-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
 #launchpadApp .lp-f.wide{grid-column:1 / -1;}
-#launchpadApp .lp-f label{display:block;font:600 10px/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;
+#launchpadApp .lp-f label{display:block;font:600 0.625rem/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;
   text-transform:uppercase;margin-bottom:9px;}
-#launchpadApp .lp-f input{width:100%;padding:12px 14px;border-radius:8px;border:1px solid #1b304a;
-  background:#010a14;color:#fff;font:400 14px/1 var(--sans);}
-#launchpadApp .lp-f input:focus{border-color:#3264aa;outline:none;}
+#launchpadApp .lp-f input{width:100%;min-height:44px;padding:12px 14px;border-radius:8px;
+  border:1px solid #33506f;background:#010a14;color:#fff;font:400 0.875rem/1 var(--sans);}
+#launchpadApp .lp-f input:focus{border-color:#7fb0ff;}
 #launchpadApp .lp-f input::placeholder{color:#4d5867;}
 #launchpadApp .lp-paths{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
 #launchpadApp .lp-path{border:1px solid #1b304a;border-radius:9px;padding:15px;background:#010a14;}
 #launchpadApp .lp-path.on{border-color:#3264aa;background:rgba(72,137,250,.06);}
-#launchpadApp .lp-pn{font:600 10px/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;text-transform:uppercase;}
-#launchpadApp .lp-pv{font:300 26px/1 var(--sans);color:#fff;margin:12px 0 8px;
+#launchpadApp .lp-pn{font:600 0.625rem/1 var(--sans);letter-spacing:.13em;color:#8fa0b5;text-transform:uppercase;}
+#launchpadApp .lp-pv{font:300 1.625rem/1 var(--sans);color:#fff;margin:12px 0 8px;
   font-variant-numeric:tabular-nums;}
 #launchpadApp .lp-path.on .lp-pv{color:#9ec8f5;}
-#launchpadApp .lp-ps{font:400 12px/1.5 var(--sans);color:#7f8ea0;}
-#launchpadApp .lp-vrec{font:600 11.5px/1 var(--sans);letter-spacing:.11em;color:var(--rc2);
+#launchpadApp .lp-ps{font:400 0.75rem/1.5 var(--sans);color:#7f8ea0;}
+#launchpadApp .lp-vrec{font:600 0.7188rem/1 var(--sans);letter-spacing:.11em;color:var(--rc2);
   margin:18px 0 10px;text-transform:uppercase;}
-#launchpadApp .lp-vwhy{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;margin-bottom:8px;}
-#launchpadApp .lp-tkc{font:500 11.5px/1 var(--sans);color:#8ab4dd;margin-bottom:9px;}
-#launchpadApp .lp-tkr{font:400 12.5px/1.62 var(--sans);color:#a8b8cc;}
+#launchpadApp .lp-vwhy{font:400 0.7812rem/1.62 var(--sans);color:#a8b8cc;margin-bottom:8px;}
+#launchpadApp .lp-tkc{font:500 0.7188rem/1 var(--sans);color:#8ab4dd;margin-bottom:9px;}
+#launchpadApp .lp-tkr{font:400 0.7812rem/1.62 var(--sans);color:#a8b8cc;}
 
 /* Mechanism figure: the same plate as everything else. */
 #launchpadApp .lp-viz{border:1px solid var(--rline);border-radius:8px;background:#04101d;
   padding:0;overflow:hidden;margin-top:10px;}
 #launchpadApp .lp-vizBox{padding:14px 12px;}
+@media (max-width:430px){#launchpadApp .lp-vizBox{padding:12px 0;} #launchpadApp .lp-vizBox svg{max-width:none !important;}
+  #launchpadApp .lp-viz{margin-left:-16px;margin-right:-16px;}}
 
 /* ═══ RESPONSIVE ═════════════════════════════════════════════════
    The rail became a 187px strip on phones because a scoped desktop width
    out-specified the unscoped mobile one. Four tabs, equal quarters, no
    horizontal scrolling, and touch targets that clear 44px. */
 @media(max-width:900px){
-  #launchpadApp .lp-cols{grid-template-columns:1fr;}
+  #launchpadApp .lp-cols{grid-template-columns:minmax(0,1fr);}
 }
-@media(max-width:820px){
+@media(max-width:820px),(max-height:520px){
   #launchpadApp .lp-shell{flex-direction:column;}
   #launchpadApp .lp-side{width:100%;flex-direction:row;border-right:0;
     border-bottom:1px solid var(--rline);background:#01050d;}
   #launchpadApp .lp-wordmark,#launchpadApp .lp-side-foot{display:none;}
   #launchpadApp .lp-navbtn{flex:1 1 0;min-width:0;height:56px;padding:0 4px;gap:7px;
-    flex-direction:column;justify-content:center;font:500 11px/1 var(--sans);}
+    flex-direction:column;justify-content:center;font:500 0.6875rem/1 var(--sans);}
   #launchpadApp .lp-navbtn::after{left:0;right:0;top:auto;bottom:0;width:auto;height:0;
     transform:none;border-radius:0;}
   #launchpadApp .lp-navbtn.on::after{height:3px;}
@@ -1398,9 +1455,9 @@ body{color:var(--text);font-family:var(--sans);}
   #launchpadApp .lp-hero-lg{margin:-52px -14px 0;}
   #launchpadApp .lp-heroIn{padding:76px 14px 22px;max-width:100%;}
   #launchpadApp .lp-heroScrim{background:linear-gradient(180deg,rgba(0,3,10,.42),#00030a 76%);}
-  #launchpadApp .lp-name{font-size:30px;}
-  #launchpadApp .lp-eyebrow{font-size:16px;}
-  #launchpadApp .lx-title{font-size:27px;}
+  #launchpadApp .lp-name{font-size:1.875rem;}
+  #launchpadApp .lp-eyebrow{font-size:1rem;}
+  #launchpadApp .lx-title{font-size:1.6875rem;}
   /* A 26px pill is a fine mouse target and a poor thumb target. */
   #launchpadApp .lp-go,#launchpadApp .lp-wide{height:44px;line-height:42px;}
   #launchpadApp .lp-go{padding:0 20px;}
@@ -1482,7 +1539,7 @@ body{color:var(--text);font-family:var(--sans);}
       <div class="ls-glyph">⬢</div>
       <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,26 16,22 30,23 44,14 58,16 72,7 98,3"/></svg>
       <div class="ls-name">LAUNCHPAD</div>
-      <div class="ls-tag">AI engineering · hireable · remote</div>
+      <div class="ls-tag">HIREABLE · REMOTE · PRODUCTION</div>
       <div class="ls-sub" id="lsSubLp"></div>
     </button>
   </div>
@@ -1671,13 +1728,13 @@ body{color:var(--text);font-family:var(--sans);}
      lesson/flashcard/quiz shaped, because that is what this curriculum is. -->
 <div class="screen" id="launchpadApp">
   <div class="lp-shell">
-    <nav class="lp-side" id="lpSide"></nav>
+    <nav class="lp-side" id="lpSide" aria-label="Launch Pad sections"></nav>
     <div class="lp-main" id="lpMain">
       <div class="lp-topbar">
         <button class="lp-back lp-exit mo-btn" style="margin:0" onclick="exitLaunchpad()">← REALMS</button>
-        <div class="lp-crumb" id="lpCrumb"></div>
+        <nav class="lp-crumb" id="lpCrumb" aria-label="You are here"></nav>
       </div>
-      <div class="lp-body" id="launchpadContent"></div>
+      <main class="lp-body" id="launchpadContent" tabindex="-1"></main>
     </div>
   </div>
 </div>
@@ -1717,7 +1774,7 @@ body{color:var(--text);font-family:var(--sans);}
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
 <input type="file" id="obsImportFile" accept="application/json,.json" style="display:none" onchange="obsImport(event)">
 <script src="curriculum.js"></script>
@@ -4533,7 +4590,12 @@ var EXAM = null;
 function qbank(sub) { return (typeof QBANK !== 'undefined' && QBANK[sub]) ? QBANK[sub] : []; }
 function shuffleArr(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 function pickQs(sub, n) { var b = qbank(sub); return shuffleArr(b).slice(0, Math.min(n, b.length)); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Escapes for both text and attribute contexts. Quotes matter: a name typed
+// into an input is written back into a value="" attribute.
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function fmtClock(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); }
 
 // Adaptive (CAT-style) picker: choose an UNUSED question at the target difficulty
@@ -4757,8 +4819,6 @@ function init() {
 // composite you need, the subtests that deserve the most attention, what
 // carries over from your current path, and the civilian outlook.
 var CAREER_CAT = null;
-
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function selectCareerCat(id){ CAREER_CAT = id; renderCareer(); }
 
@@ -5160,7 +5220,12 @@ function obsImport(ev) {
   reader.onload = function() {
     try {
       var s = JSON.parse(reader.result);
+      // Both realms export the same shape, so the shape alone cannot tell them
+      // apart. The stamp was written and never read; read it.
       if (!s || !s.topics) { toast('Not a valid ' + realm().dataName + ' backup', 'warn'); return; }
+      if (s.appVersion && s.appVersion !== realm().key) {
+        toast('That backup belongs to a different realm — nothing was changed.', 'warn'); return;
+      }
       if (!confirm('Restore this ' + realm().dataName + ' backup? It replaces the ' + realm().dataName + ' progress on this device.')) return;
       OBS_ST.topics = s.topics || {};
       OBS_ST.subs = s.subs || {};
@@ -5618,18 +5683,114 @@ function lpApi() { return (typeof AI_CURRICULUM_API !== 'undefined') ? AI_CURRIC
 function lpLoad() {
   try {
     var raw = JSON.parse(localStorage.getItem(lpCfg().key || 'apex_launchpad_v1') || '{}');
-    LP_ST = { mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {} };
-  } catch (e) { LP_ST = { mods:{}, flagship:{}, setup:{} }; }
+    var wasMigrated = false;
+    LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {}, setup: raw.setup || {}, ids: raw.ids || 1 });
+    wasMigrated = !!LP_ST.migrated; delete LP_ST.migrated;
+    // Clean on load, not only on import: a value edited by hand, truncated by a
+    // crash, or written by a newer version must not be able to swallow ticks.
+    var before = JSON.stringify(LP_ST.mods);
+    LP_ST = lpClean(LP_ST);
+    if (wasMigrated || JSON.stringify(LP_ST.mods) !== before) lpSave();
+  } catch (e) {
+    // The stored value is unreadable. Keep it under a dated key so it can be
+    // repaired by hand, and say so, rather than quietly starting from zero.
+    try {
+      var k = lpCfg().key || 'apex_launchpad_v1', bad = localStorage.getItem(k);
+      if (bad) localStorage.setItem(k + '_unreadable_' + Date.now(), bad);
+      setTimeout(function () {
+        try { toast('Saved progress could not be read. A copy was kept; import a backup to restore.', 'warn'); } catch (e2) {}
+      }, 1200);
+    } catch (e3) {}
+    LP_ST = { mods:{}, flagship:{}, setup:{}, ids:2 };
+  }
 }
+// Modules were renumbered once, into ladder order. Progress saved under the
+// old ids is carried across on first load (or import) and the map version is
+// stamped, so the rename can never run twice over the new ids.
+// Everything that comes from a file is rebuilt field by field: only known
+// module ids, only booleans, only finite non-negative numbers.
+function lpClean(st) {
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  var mods = {}, src = st.mods || {};
+  for (var i = 0; i < all.length; i++) {
+    var id = all[i].id, v = src[id];
+    if (!v || typeof v !== 'object' || Array.isArray(v)) continue;
+    mods[id] = { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
+  }
+  var flag = {}, fs = st.flagship || {};
+  try {
+    (lpApi() ? lpApi().flagshipGate({}).items : []).forEach(function (it) {
+      if (fs[it.key]) flag[it.key] = true;
+    });
+  } catch (e) {}
+  var ss = st.setup || {}, setup = {};
+  var rn = Number(ss.runwayMonths), wh = Number(ss.weeklyHours);
+  if (isFinite(rn) && rn > 0) setup.runwayMonths = rn;
+  if (isFinite(wh) && wh > 0) setup.weeklyHours = wh;
+  if (typeof ss.flagship === 'string') setup.flagship = ss.flagship.slice(0, 200);
+  return { mods: mods, flagship: flag, setup: setup, ids: 2 };
+}
+function lpMigrate(st) {
+  if (!st.ids || st.ids < 2) {
+    var OLD = {"M0A": "M1", "M0B": "M2", "M1": "M3", "M2": "M4", "M4": "M5", "M9": "M6", "M3": "M7", "M5": "M8", "M6": "M9", "M7": "M10", "M10": "M11", "M11": "M12", "M21": "M13", "M12": "M14", "M13": "M15", "M14": "M16", "M15": "M17", "M16": "M18", "M17": "M19", "M18": "M20", "M19": "M21", "M20": "M22", "M22": "M23", "M8": "M24", "M23": "M25", "M24": "M26", "M25": "M27", "M26": "M28", "M27": "M29", "M28": "M30", "M29": "M31", "M30": "M32"}, moved = {};
+    for (var k in st.mods) {
+      if (!Object.prototype.hasOwnProperty.call(st.mods, k)) continue;
+      moved[Object.prototype.hasOwnProperty.call(OLD, k) ? OLD[k] : k] = st.mods[k];
+    }
+    st.mods = moved; st.ids = 2; st.migrated = true;
+  }
+  return st;
+}
+// A save that fails silently is worse than one that fails loudly: the tick
+// appears, the reader trusts it, and a year is gone at the next reload.
+var LP_SAVE_WARNED = false;
 function lpSave() {
-  try { localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST)); } catch (e) {}
+  try {
+    localStorage.setItem(lpCfg().key || 'apex_launchpad_v1', JSON.stringify(LP_ST));
+    LP_SAVE_WARNED = false;
+    return true;
+  } catch (e) {
+    if (!LP_SAVE_WARNED) {
+      LP_SAVE_WARNED = true;
+      try { toast('Could not save — this browser is full or storage is blocked. Export a backup now.', 'warn'); } catch (e2) {}
+    }
+    return false;
+  }
 }
+// DUR-3: another tab writing the same key would otherwise overwrite this tab's
+// stale copy over the newer one. Adopt whatever the other tab wrote.
+window.addEventListener('storage', function (ev) {
+  try {
+    if (ev.key !== (lpCfg().key || 'apex_launchpad_v1') || !ev.newValue) return;
+    var raw = JSON.parse(ev.newValue);
+    LP_ST = lpMigrate({ mods: raw.mods || {}, flagship: raw.flagship || {},
+                        setup: raw.setup || {}, ids: raw.ids || 1 });
+    delete LP_ST.migrated;
+    var app = document.getElementById('launchpadApp');
+    if (app && app.classList.contains('active')) renderLaunchpad(true);
+    lpSideHTML();
+  } catch (e) {}
+});
 // The API takes one progress map; __flagship rides along on it.
 function lpProgress() {
   var p = {};
-  for (var k in LP_ST.mods) p[k] = LP_ST.mods[k];
-  p.__flagship = LP_ST.flagship;
+  // Built from the curriculum's own ids, never from the stored keys: a backup
+  // carrying __proto__ or an unknown id must not reach the progress map.
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  for (var i = 0; i < all.length; i++) {
+    var e = lpEntry(all[i].id);
+    if (e) p[all[i].id] = e;
+  }
+  p.__flagship = LP_ST.flagship || {};
   return p;
+}
+// One module's claims, or null. A stored value that is not a plain object is
+// treated as no progress rather than silently swallowing every later tick.
+function lpEntry(id) {
+  if (!Object.prototype.hasOwnProperty.call(LP_ST.mods, id)) return null;
+  var v = LP_ST.mods[id];
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  return { delta: !!v.delta, artifact: !!v.artifact, gate: !!v.gate };
 }
 
 function enterLaunchpad() {
@@ -5662,7 +5823,9 @@ var LP_STEPS = ['delta', 'artifact', 'gate'];
 function lpToggle(id, step) {
   var API = lpApi(); if (!API) return;
   var P = lpProgress();
-  var m = LP_ST.mods[id] || (LP_ST.mods[id] = {});
+  // lpEntry normalises: a stored value that is not a plain object (a corrupted
+  // or hand-edited backup) would otherwise swallow every tick in silence.
+  var m = lpEntry(id) || { delta:false, artifact:false, gate:false };
   var i = LP_STEPS.indexOf(step);
 
   // 1. A module you have not opened yet has nothing to claim.
@@ -5671,38 +5834,98 @@ function lpToggle(id, step) {
     if (mod && mod.layer >= 4 && mod.layer <= 6 && !API.flagshipGate(P).open) {
       toast('The hard gate is not open yet — all four conditions first', 'warn');
     } else {
-      toast('Locked. Pass what this module depends on first.', 'warn');
+      toast('Locked. Pass what this module depends on first', 'warn');
     }
     return;
   }
   // 2. In order. The rail says "in order" and now means it.
-  if (!m[step] && i > 0 && !m[LP_STEPS[i - 1]]) {
-    toast(i === 1 ? 'Write the DELTA first — that is the reading'
-                  : 'Build the artifact before a referee can pass it', 'warn');
-    return;
+  if (!m[step] && i > 0) {
+    var first = -1;
+    for (var q = 0; q < i; q++) { if (!m[LP_STEPS[q]]) { first = q; break; } }
+    if (first === 0) { toast('Write the delta first — that is the reading', 'warn'); return; }
+    if (first === 1) { toast('Build the artifact before a referee can pass it', 'warn'); return; }
   }
+  LP_ST.mods[id] = m;
   // 3. Un-ticking a step un-ticks everything that followed from it, so the
   //    record can never say "gate passed, artifact not built".
   if (m[step]) {
+    var alsoHere = LP_STEPS.slice(i + 1).filter(function (st) { return m[st]; });
+    var alsoAfter = (step !== 'gate' || m.gate) ? lpDownstreamPassed(id) : [];
+    if (alsoHere.length || alsoAfter.length) {
+      var lines = ['Un-ticking "' + step + '" on ' + id + ' also clears:'];
+      if (alsoHere.length) lines.push('  · ' + alsoHere.join(' and ') + ' on ' + id);
+      if (alsoAfter.length) lines.push('  · every claim on ' + alsoAfter.join(', '));
+      lines.push('', 'This cannot be undone. Continue?');
+      if (!confirm(lines.join('\n'))) return;
+    }
     for (var k = i; k < LP_STEPS.length; k++) m[LP_STEPS[k]] = false;
+    if (step === 'gate' || i < LP_STEPS.indexOf('gate')) lpClearDownstream(id);
   } else {
     m[step] = true;
   }
   lpSave();
+  lpRerenderKeepingFocus();
+}
+// A tick rebuilds the view, which would drop keyboard focus on the body; put
+// it back on the same row so Tab continues where it was.
+function lpRerenderKeepingFocus() {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#launchpadApp .lp-chk'));
+  var at = rows.indexOf(document.activeElement);
   renderLaunchpad(true);
+  if (at >= 0) {
+    var again = document.querySelectorAll('#launchpadApp .lp-chk');
+    if (again[at]) again[at].focus();
+  }
+}
+// Un-passing a gate un-passes everything that depended on it, transitively.
+// Without this the record can say "M5 passed" while M4, which it needs, is not.
+// Which modules downstream of this one currently have something claimed, so
+// the warning can name them before anything is cleared.
+function lpDownstreamPassed(id) {
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  var queue = [id], seen = {}, hit = [];
+  while (queue.length) {
+    var cur = queue.shift();
+    for (var i = 0; i < all.length; i++) {
+      var m = all[i];
+      if (seen[m.id] || m.dependsOn.indexOf(cur) === -1) continue;
+      seen[m.id] = true;
+      var e = lpEntry(m.id);
+      if (e && (e.delta || e.artifact || e.gate)) hit.push(m.id);
+      queue.push(m.id);
+    }
+  }
+  return hit;
+}
+function lpClearDownstream(id) {
+  var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+  var queue = [id], seen = {};
+  while (queue.length) {
+    var cur = queue.shift();
+    for (var i = 0; i < all.length; i++) {
+      var m = all[i];
+      if (seen[m.id] || m.dependsOn.indexOf(cur) === -1) continue;
+      seen[m.id] = true;
+      var e = LP_ST.mods[m.id];
+      if (e && typeof e === 'object') { e.delta = false; e.artifact = false; e.gate = false; }
+      queue.push(m.id);
+    }
+  }
 }
 function lpSet(field, val) {
   LP_ST.setup = LP_ST.setup || {};
   var n = parseFloat(val);
   LP_ST.setup[field] = (field === 'flagship') ? val : (isFinite(n) && n > 0 ? n : 0);
   lpSave();
-  // Deliberately NOT a full re-render. These fields fire on blur, and rebuilding
+  // Deliberately NOT a full re-render. These fields fire on every keystroke, and rebuilding
   // the panel would replace the input the user just tabbed into, swallowing the
   // keystrokes. Only the derived half is redrawn.
   var v = document.getElementById('lpVerdict');
   var API = lpApi();
   if (v && API) {
     v.innerHTML = lpVerdictHTML(API);
+    var sc = document.getElementById('lpSpineCard');
+    if (sc) sc.innerHTML = lpSpineCardHTML(API);
     var panel = document.getElementById('lpSetup');
     if (panel) {
       var rec = API.plan(LP_ST.setup).recommend;
@@ -5711,9 +5934,22 @@ function lpSet(field, val) {
   } else { renderLaunchpad(true); }
 }
 function lpFlag(key) {
+  var API = lpApi();
+  // Closing the gate again has to un-claim the modules it let you claim, or
+  // the record says "passed" for work the gate was never open for.
+  if (API && LP_ST.flagship[key]) {
+    var P = lpProgress();
+    var held = (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []).filter(function (m) {
+      var e = lpEntry(m.id);
+      return m.layer >= 4 && m.layer <= 6 && e && (e.delta || e.artifact || e.gate);
+    }).map(function (m) { return m.id; });
+    if (held.length && !confirm('Un-ticking this closes the hard gate, which clears every claim on '
+        + held.join(', ') + '.\n\nThis cannot be undone. Continue?')) return;
+    held.forEach(function (id) { LP_ST.mods[id] = { delta:false, artifact:false, gate:false }; });
+  }
   LP_ST.flagship[key] = !LP_ST.flagship[key];
   lpSave();
-  renderLaunchpad(true);
+  lpRerenderKeepingFocus();
 }
 
 function renderLaunchpad(keepScroll) {
@@ -5721,7 +5957,12 @@ function renderLaunchpad(keepScroll) {
   if (!host) return;
   var API = lpApi();
   if (!API || typeof AI_CURRICULUM === 'undefined') {
-    host.innerHTML = '<div class="lp-card">Curriculum data unavailable.</div>'; return;
+    lpSideHTML();
+    var cb = document.getElementById('lpCrumb');
+    if (cb) cb.innerHTML = '<b>Home</b>';
+    host.innerHTML = '<div class="lp-card">Curriculum data unavailable. '
+                   + 'Reload the page; if it persists the app needs reinstalling.</div>';
+    return;
   }
   var main = document.getElementById('lpMain');
   var y = keepScroll && main ? main.scrollTop : 0;
@@ -5750,13 +5991,14 @@ function renderLaunchpad(keepScroll) {
   void host.offsetWidth;
   if (!keepScroll) host.classList.add('mo-in');
   if (main) main.scrollTop = keepScroll ? y : 0;
+  lpStillIfAsked();
 }
 
 // ── Icon set. Stroked SVG at 24x24, currentColor, 1.6 weight. Unicode
 // glyphs rendered as mojibake on half the devices and never looked drawn.
 var LP_ICON = (function () {
   function w(d, extra) {
-    return '<svg class="lp-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    return '<svg class="lp-svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + d + (extra || '') + '</svg>';
   }
   return {
@@ -5833,15 +6075,24 @@ function lpTab(t) { LP_TAB = t; LP_VIEW = null; renderLaunchpad(); }
 // work rather than as a picture of a screen.
 function lpLayerArt(n) {
   var D = 'stroke="#22456e"', A = 'stroke="#4db8ff"', C = 'stroke="#00d4ff"';
-  function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true">' + inner + '</svg>'; }
+  function svg(inner) { return '<svg class="lp-art" viewBox="0 0 180 118" aria-hidden="true" focusable="false">' + inner + '</svg>'; }
   var rows = [];
 
   // L0 The Contract — a runway bar and a marker landing on a decision
-  rows[0] = svg('<text x="14" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">RUNWAY</text>'
+  var planSet = (function () { try { return lpApi().plan(LP_ST.setup || {}).recommend !== 'unset'; } catch (e) { return false; } })();
+  rows[0] = svg('<text x="14" y="34" font-size="10" fill="#5b7fa6" letter-spacing="1">' + (planSet ? 'FINISH' : 'RUNWAY') + '</text>'
     + '<rect x="14" y="52" width="152" height="8" rx="4" fill="#0d1c31"/>'
     + '<rect x="14" y="52" height="8" rx="4" fill="#4db8ff" opacity=".8"><animate attributeName="width" values="30;100;30" dur="6s" repeatCount="indefinite"/></rect>'
     + '<circle cy="56" r="4.5" fill="#00d4ff"><animate attributeName="cx" values="44;114;44" dur="6s" repeatCount="indefinite"/></circle>'
-    + '<text x="14" y="84" font-size="8" fill="#5b7fa6">the deadline is computed</text>');
+    + '<text x="14" y="84" font-size="8" fill="#5b7fa6">' + (function () {
+        try {
+          var pl = lpApi().plan(LP_ST.setup || {});
+          if (pl.recommend !== 'unset' && pl.fullMonths) {
+            var mo = (pl.recommend === 'spine' ? pl.spineMonths : pl.fullMonths);
+            return mo.toFixed(1) + ' months' + (mo > pl.runwayMonths ? ' — past your runway' : ' at your hours');
+          }
+        } catch (e) {}
+        return 'set your two numbers on The Plan'; })() + '</text>');
 
   // L1 The Machine — a call stack pushing and popping
   var st = '';
@@ -5851,7 +6102,7 @@ function lpLayerArt(n) {
         + '<animate attributeName="opacity" values="0;.34;.34;0" keyTimes="0;' + (0.12 + i * 0.1).toFixed(2)
         + ';' + (0.6 - i * 0.1).toFixed(2) + ';1" dur="5s" repeatCount="indefinite"/></rect>';
   }
-  rows[1] = svg('<text x="30" y="26" font-size="8" fill="#5b7fa6" letter-spacing="1">CALL STACK</text>' + st
+  rows[1] = svg('<text x="30" y="26" font-size="10" fill="#5b7fa6" letter-spacing="1">HOW CODE RUNS</text>' + st
     + '<circle cx="160" r="3.5" fill="#00d4ff"><animate attributeName="cy" values="82;42;82" dur="5s" repeatCount="indefinite"/></circle>');
 
   // L2 The Craft I — a test grid going green, one stubborn survivor
@@ -5861,45 +6112,45 @@ function lpLayerArt(n) {
     g += '<rect x="' + cx + '" y="' + cy + '" width="18" height="18" rx="4" fill="' + (red ? '#2a1116' : '#0d1c31')
        + '" stroke="' + (red ? '#ff4455' : '#22456e') + '" stroke-width="1"/>';
     if (!red) g += '<rect x="' + cx + '" y="' + cy + '" width="18" height="18" rx="4" fill="#4db8ff" opacity="0">'
-       + '<animate attributeName="opacity" values="0;0;.55;.55" keyTimes="0;' + (0.08 + i * 0.05).toFixed(2)
-       + ';' + (0.16 + i * 0.05).toFixed(2) + ';1" dur="6s" repeatCount="indefinite"/></rect>';
+       + '<animate attributeName="opacity" values="0;0;.55;.55;0" keyTimes="0;' + (0.08 + i * 0.05).toFixed(2)
+       + ';' + (0.16 + i * 0.05).toFixed(2) + ';0.93;1" dur="6s" repeatCount="indefinite"/></rect>';
   }
-  rows[2] = svg('<text x="26" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">SUITE</text>'
-    + '<text x="118" y="30" font-size="8" fill="#ff4455">1 survives</text>' + g);
+  rows[2] = svg('<text x="26" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">TESTS</text>'
+    + '<text x="112" y="30" font-size="10" fill="#ff4455">1 bug left</text>' + g);
 
   // L3 The AI Production Core — tokens streaming out of a prompt
   var tk = '';
   for (i = 0; i < 6; i++) {
-    tk += '<rect y="' + (52 + (i % 2) * 12) + '" width="14" height="7" rx="3" fill="#4db8ff">'
+    tk += '<rect x="68" y="' + (52 + (i % 2) * 12) + '" width="14" height="7" rx="3" fill="#4db8ff" opacity="0">'
         + '<animate attributeName="x" values="68;' + (150 - i * 4) + '" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/>'
         + '<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.7;1" dur="3.4s" begin="' + (i * 0.42).toFixed(2) + 's" repeatCount="indefinite"/></rect>';
   }
-  rows[3] = svg('<text x="14" y="32" font-size="8" fill="#5b7fa6" letter-spacing="1">TOKENS</text>'
+  rows[3] = svg('<text x="14" y="32" font-size="10" fill="#5b7fa6" letter-spacing="1">THE MODEL</text>'
     + '<rect x="14" y="44" width="46" height="32" rx="5" fill="#0d1c31" stroke="#22456e" stroke-width="1"/>'
     + '<text x="37" y="64" font-size="7.5" fill="#7dd3fc" text-anchor="middle">PROMPT</text>' + tk
-    + '<text x="14" y="96" font-size="8" fill="#5b7fa6">measured, not guessed</text>');
+    + '<text x="14" y="96" font-size="9.5" fill="#5b7fa6">measured, not guessed</text>');
 
   // L4 The Craft II — a branch leaving main and merging back
   var dots = '';
   [24, 60, 96, 132, 156].forEach(function (x) {
     dots += '<circle cx="' + x + '" cy="78" r="4" fill="#0d1c31" stroke="#4db8ff" stroke-width="1.4"/>';
   });
-  rows[4] = svg('<text x="24" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">HISTORY</text>'
+  rows[4] = svg('<text x="24" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">SHARED CODE</text>'
     + '<path d="M24 78 H156" ' + D + ' stroke-width="1.4" fill="none"/>'
     + '<path d="M60 78 C 78 78, 82 48, 100 48 H124 C 142 48, 146 78, 156 78" ' + A + ' stroke-width="1.4" fill="none" '
-    + 'stroke-dasharray="160" stroke-dashoffset="160"><animate attributeName="stroke-dashoffset" values="160;0" dur="4.5s" repeatCount="indefinite"/></path>'
+    + 'stroke-dasharray="160" stroke-dashoffset="160"><animate attributeName="stroke-dashoffset" values="160;0;0;160" keyTimes="0;0.55;0.9;1" dur="4.5s" repeatCount="indefinite"/></path>'
     + dots + '<circle cx="100" cy="48" r="4" fill="#0d1c31" stroke="#00d4ff" stroke-width="1.4"/>'
     + '<circle cx="124" cy="48" r="4" fill="#0d1c31" stroke="#00d4ff" stroke-width="1.4"/>');
 
   // L5 The AI Layer — a query reaching the nearest candidate
   var pts = [[46,46],[70,74],[98,40],[120,68],[144,52],[60,94],[130,92]], cand = '';
   pts.forEach(function (pt) { cand += '<circle cx="' + pt[0] + '" cy="' + pt[1] + '" r="3" fill="#22456e"/>'; });
-  rows[5] = svg('<text x="14" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">RETRIEVAL</text>' + cand
+  rows[5] = svg('<text x="14" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">SEARCH</text>' + cand
     + '<circle cx="88" cy="60" r="4.5" fill="#00d4ff"><animate attributeName="r" values="4.5;6.5;4.5" dur="3s" repeatCount="indefinite"/></circle>'
     + '<circle cx="24" cy="66" r="5" fill="none" ' + A + ' stroke-width="1.5"/>'
     + '<line x1="29" y1="66" x2="83" y2="61" ' + C + ' stroke-width="1.2" stroke-dasharray="58" stroke-dashoffset="58">'
     + '<animate attributeName="stroke-dashoffset" values="58;0;0;58" keyTimes="0;.35;.75;1" dur="4s" repeatCount="indefinite"/></line>'
-    + '<text x="14" y="108" font-size="8" fill="#5b7fa6">recall@k, measured</text>');
+    + '<text x="14" y="108" font-size="9.5" fill="#5b7fa6">hits, measured</text>');
 
   // L6 Product and Platform — a pipeline advancing stage by stage
   var pipe = '';
@@ -5911,18 +6162,18 @@ function lpLayerArt(n) {
           + ';' + (0.34 + i * 0.18).toFixed(2) + ';1" dur="5.5s" repeatCount="indefinite"/></rect>';
     if (i < 3) pipe += '<line x1="' + (px + 28) + '" y1="61" x2="' + (px + 40) + '" y2="61" ' + D + ' stroke-width="1.2"/>';
   }
-  rows[6] = svg('<text x="18" y="34" font-size="8" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
-    + pipe + '<text x="18" y="92" font-size="8" fill="#5b7fa6">rollback rehearsed</text>');
+  rows[6] = svg('<text x="18" y="34" font-size="10" fill="#5b7fa6" letter-spacing="1">BUILD / GATE / SHIP</text>'
+    + pipe + '<text x="18" y="92" font-size="9.5" fill="#5b7fa6">undo rehearsed</text>');
 
   // L7 The Market — the cold funnel beside the referred door
   var drops = '';
   for (i = 0; i < 5; i++) {
-    drops += '<circle cx="' + (32 + i * 11) + '" r="2.6" fill="#7dd3fc">'
+    drops += '<circle cx="' + (32 + i * 11) + '" cy="36" r="2.6" fill="#7dd3fc" opacity="0">'
           + '<animate attributeName="cy" values="36;88" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/>'
           + '<animate attributeName="opacity" values="1;1;0" keyTimes="0;.5;1" dur="4s" begin="' + (i * 0.55).toFixed(2) + 's" repeatCount="indefinite"/></circle>';
   }
-  rows[7] = svg('<text x="20" y="30" font-size="8" fill="#5b7fa6" letter-spacing="1">COLD</text>'
-    + '<text x="110" y="30" font-size="8" fill="#4db8ff" letter-spacing="1">REFERRED</text>'
+  rows[7] = svg('<text x="20" y="30" font-size="10" fill="#5b7fa6" letter-spacing="1">COLD</text>'
+    + '<text x="106" y="30" font-size="10" fill="#4db8ff" letter-spacing="1">REFERRED</text>'
     + '<path d="M20 40 H90 L72 68 V90 H38 V68 Z" fill="#4db8ff" fill-opacity=".08" ' + D + ' stroke-width="1.3"/>' + drops
     + '<rect x="110" y="44" width="50" height="46" rx="7" fill="#0d1c31" ' + A + ' stroke-width="1.3"/>'
     + '<circle cx="135" cy="60" r="5.5" fill="none" ' + C + ' stroke-width="1.3"/>'
@@ -5936,13 +6187,18 @@ function lpLayerArt(n) {
   for (i = 0; i < 8; i++) {
     var bx = 20 + i * 19, pre = i < 4;
     bars += '<rect x="' + bx + '" width="12" rx="3" fill="' + (pre ? '#22456e' : '#4db8ff') + '" opacity="' + (pre ? '.75' : '.9') + '">'
-         + '<animate attributeName="height" values="' + (pre ? '44;44' : '44;18') + '" dur="4s" repeatCount="indefinite"/>'
-         + '<animate attributeName="y" values="' + (pre ? '34;34' : '34;60') + '" dur="4s" repeatCount="indefinite"/></rect>';
+         + '<animate attributeName="height" values="' + (pre ? '44;44;44;44' : '44;18;18;44') + '" keyTimes="0;0.35;0.9;1" dur="4s" repeatCount="indefinite"/>'
+         + '<animate attributeName="y" values="' + (pre ? '34;34;34;34' : '34;60;60;34') + '" keyTimes="0;0.35;0.9;1" dur="4s" repeatCount="indefinite"/></rect>';
   }
-  rows[8] = svg('<text x="20" y="22" font-size="8" fill="#5b7fa6" letter-spacing="1">18 H / WK</text>'
-    + '<text x="99" y="22" font-size="8" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
+  var wkLab = (function () {
+    try { var w = (LP_ST.setup && Number(LP_ST.setup.weeklyHours)) || 0;
+          return (isFinite(w) && w > 0 ? String(Math.round(w)) : '18') + ' H / WK'; }
+    catch (e) { return '18 H / WK'; }
+  })();
+  rows[8] = svg('<text x="20" y="22" font-size="10" fill="#5b7fa6" letter-spacing="1">' + wkLab + '</text>'
+    + '<text x="99" y="22" font-size="10" fill="#00d4ff" letter-spacing="1">HIRED</text>' + bars
     + '<line x1="94" y1="28" x2="94" y2="86" stroke="#00d4ff" stroke-width="1.2" stroke-dasharray="3 3"/>'
-    + '<text x="20" y="104" font-size="8" fill="#5b7fa6">the plan succeeding</text>');
+    + '<text x="20" y="104" font-size="9.5" fill="#5b7fa6">the plan succeeding</text>');
 
   return rows[n] || '';
 }
@@ -6086,7 +6342,8 @@ function lpHeroArt(quiet) {
 // and sat 18px lower than the reference's.
 function lpRing(pct) {
   var S = 73, r = (S - 6) / 2, c = 2 * Math.PI * r, m = S / 2;
-  return '<div class="lp-ring"><svg width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '">'
+  return '<div class="lp-ring" role="img" aria-label="Overall readiness ' + pct + ' percent">'
+    + '<svg aria-hidden="true" width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '">'
     + '<circle class="rbg" cx="' + m + '" cy="' + m + '" r="' + r + '"/>'
     + '<circle class="rfg" cx="' + m + '" cy="' + m + '" r="' + r + '" stroke-dasharray="' + c + '" '
     + 'stroke-dashoffset="' + (c * (1 - pct / 100)) + '" style="--dash:' + c + '"/></svg>'
@@ -6098,7 +6355,7 @@ function lpLayerIcon(n){ return LP_ICON[LP_LAYER_ICON_SVG[n]] || LP_ICON.doc; }
 // which is one device and one browser profile - a cleared cache loses a year.
 function lpExport() {
   try {
-    var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup,
+    var snap = { mods:LP_ST.mods, flagship:LP_ST.flagship, setup:LP_ST.setup, ids:LP_ST.ids || 2,
                  exportedAt:new Date().toISOString(), appVersion:(lpCfg().key || 'apex_launchpad_v1') };
     var blob = new Blob([JSON.stringify(snap, null, 2)], {type:'application/json'});
     var url = URL.createObjectURL(blob);
@@ -6106,7 +6363,7 @@ function lpExport() {
     a.href = url; a.download = 'launchpad-backup-' + todayKey() + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    toast('LAUNCHPAD backup downloaded', 'ok');
+    toast('Saved launchpad-backup-' + todayKey() + '.json to your downloads', 'ok');
   } catch (e) { toast('Export failed', 'warn'); }
 }
 function lpTriggerImport() { var el = document.getElementById('lpImportFile'); if (el) el.click(); }
@@ -6121,12 +6378,32 @@ function lpImport(ev) {
       // Any JSON used to pass this: an OBSIDIAN backup, an array, {"a":1}.
       // It then wiped every gate and reported success. Check the shape
       // before destroying a year of progress.
-      if (!d || typeof d !== 'object' || Array.isArray(d) ||
-          (typeof d.mods !== 'object' && typeof d.flagship !== 'object' && typeof d.setup !== 'object')) {
+      function plain(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+      if (!plain(d) || (!plain(d.mods) && !plain(d.flagship) && !plain(d.setup))) {
         toast('That file is not a LAUNCHPAD backup', 'warn'); ev.target.value = ''; return;
       }
       if (!confirm('Replace all LAUNCHPAD progress with this backup?')) { ev.target.value = ''; return; }
-      LP_ST = { mods:d.mods || {}, flagship:d.flagship || {}, setup:d.setup || {} };
+      // A file with no ids stamp predates the stamp only if its module ids look
+      // like the old scheme. Guessing wrong renumbers a good backup onto the
+      // wrong modules, so look before migrating.
+      var keys = Object.keys(plain(d.mods) ? d.mods : {});
+      var looksOld = keys.some(function (k) { return k === 'M0A' || k === 'M0B'; });
+      var stamp = (typeof d.ids === 'number' && d.ids >= 1) ? d.ids : (looksOld ? 1 : 2);
+      if (stamp > 2 && !confirm('This backup was written by a newer version of the app. '
+          + 'Importing it here may drop progress that this version does not understand. Continue?')) {
+        ev.target.value = ''; return;
+      }
+      LP_ST = lpMigrate({ mods:plain(d.mods) ? d.mods : {}, flagship:plain(d.flagship) ? d.flagship : {},
+                          setup:plain(d.setup) ? d.setup : {}, ids:stamp });
+      delete LP_ST.migrated;
+      var known = lpClean(LP_ST);
+      // EXP-3: a file whose ids match nothing in this curriculum is not a
+      // backup of this realm; refuse rather than reporting a successful wipe.
+      if (keys.length && !Object.keys(known.mods).length) {
+        toast('That backup does not match this curriculum — nothing was changed.', 'warn');
+        ev.target.value = ''; return;
+      }
+      LP_ST = known;
       lpSave(); renderLaunchpad();
       toast('LAUNCHPAD progress restored', 'ok');
     } catch (e) { toast('That file is not a LAUNCHPAD backup', 'warn'); }
@@ -6138,17 +6415,39 @@ function lpImport(ev) {
 // The vocabulary this curriculum runs on, glossed once, where a first-time
 // reader meets it. Without this, "gate", "referee" and "DELTA" are jargon
 // the product uses constantly and never defines.
+// The flagship's consumers are listed once, in M2's exports; the count a
+// reader sees comes from there rather than from a number typed twice.
+function lpFlagshipCount() {
+  var W = ['one','two','three','four','five','six','seven','eight','nine','ten',
+           'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+  try {
+    var n = (lpApi().byId('M2').exports[0].match(/M\d+/g) || []).length;
+    return W[n - 1] ? W[n - 1].charAt(0).toUpperCase() + W[n - 1].slice(1) : String(n);
+  } catch (e) { return 'Many'; }
+}
+// The rules are numbered once, in the data. The home page used to carry its
+// own numbering, which disagreed with the one validate() enforces.
+function lpRulesText() {
+  try {
+    return LAUNCHPAD_RULES.map(function (r) { return r.n + '. ' + r.rule; }).join(' ');
+  } catch (e) { return 'A gate with no referee is decorative.'; }
+}
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work, two to four weeks long. 33 of them, each opening when the ones before it are passed.'],
+    ['Module', 'A unit of work. Most take under four weeks at 18 hours a week; a few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.'],
+    ['Lab', 'A module whose result stays private. It is for learning, not for showing.'],
+    ['Evidence', 'A module whose result a stranger can open and judge. These are what get you hired.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
     ['Delta', 'A page of notes: what the official documentation proved you wrong about, written before you build.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
-    ['Flagship', 'One real app you keep extending. Twelve modules bolt onto it.'],
-    ['Primary source', 'The official documentation or specification for the thing — not a tutorial about it.']
+    ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it.'],
+    ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it, about a hundred logged traces contain real failures, and your eval harness runs against them on every push. Working harder does not open it.'],
+    ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
+    ['The words in the titles', 'Postgres, Supabase, HTTP, streaming, evals, corpus, retrieval, metering, unit economics, CI/CD, frontend, trust boundary, tool use, durable queue: every one is defined in plain words in M0\'s first section. Open M0 and read Words before anything else.'],
+    ['The rules', lpRulesText()]
   ];
-  var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">'
+  var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
         + LP_ICON.book + 'HOW THIS WORKS</div></div>';
   rows.forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
@@ -6166,19 +6465,20 @@ function lpHomeHTML(API) {
   // competing with the one image the page has.
   var h = '<div class="lp-hero lp-hero-lg">' + lpHeroArt()
         + '<div class="lp-heroScrim"></div><div class="lp-heroIn">';
-  h += '<div class="lp-eyebrow">' + (sum.modulesDone === sum.modulesTotal ? 'Every gate passed,'
-     : sum.modulesDone ? 'Welcome back,' : 'This is the whole path,') + '</div>';
-  h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'Engineer'
-     : 'Future Engineer') + '</div>';
+  h += '<div class="lp-eyebrow">' + (sum.modulesDone === sum.modulesTotal ? 'Every gate passed'
+     : sum.modulesDone ? 'Welcome back' : 'The whole path') + '</div>';
+  h += '<div class="lp-name">' + (sum.modulesDone === sum.modulesTotal ? 'Finished'
+     : esc((LP_ST.setup && LP_ST.setup.flagship) || 'Launch Pad')) + '</div>';
   h += '<div class="lp-sub">33 modules, from an empty file to hired. '
-     + 'Each one ends in something you built and can explain out loud.</div>';
-  h += '<div class="lp-heroBar"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
+     + 'Each one ends in something you built and can explain out loud, and in a gate: someone else says yes. Lab modules stay private; Evidence modules are for strangers to see.</div>';
+  h += '<div class="lp-heroBar" role="progressbar" aria-valuenow="' + sum.pct + '" aria-valuemin="0" '
+     + 'aria-valuemax="100" aria-label="Modules passed"><span style="width:' + Math.max(sum.pct, 3) + '%"></span></div>';
   h += '</div></div>';
 
   h += '<div class="lp-cols"><div>';
 
   // Mission progress: one row per layer, one ring for the whole thing.
-  h += '<div class="lp-card lp-mc"><div class="lp-ch"><div class="lp-ct">YOUR MISSION PROGRESS</div>'
+  h += '<div class="lp-card lp-mc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Your mission progress</div>'
      + '<div class="lp-cmeta">OVERALL READINESS</div></div><div class="lp-ready"><div class="lp-bars">';
   LAY.forEach(function (Lr) {
     var mods = API.byLayer(Lr.id); if (!mods.length) return;
@@ -6187,7 +6487,8 @@ function lpHomeHTML(API) {
     var pct = tot ? Math.round(got / tot * 100) : 0;
     h += '<div class="lp-brow"><div class="lp-bico">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div class="lp-bwrap"><div class="lp-blab">' + esc(Lr.name) + '</div>'
-       + '<div class="lp-btr"><span style="width:' + pct + '%"></span></div></div>'
+       + '<div class="lp-btr" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" '
+       + 'aria-label="' + esc(Lr.name) + '"><span style="width:' + pct + '%"></span></div></div>'
        + '<div class="lp-bpct">' + pct + '%</div></div>';
   });
   h += '</div>' + lpRing(sum.pct) + '</div></div>';
@@ -6197,7 +6498,8 @@ function lpHomeHTML(API) {
     var mods = API.byLayer(Lr.id); if (!mods.length) return;
     var tot = mods.reduce(function (a, m) { return a + m.hours }, 0);
     var done = mods.filter(function (m) { return P[m.id] && P[m.id].gate }).length;
-    var pct = mods.length ? Math.round(done / mods.length * 100) : 0;
+    var got = mods.reduce(function (a, m) { return a + ((P[m.id] && P[m.id].gate) ? m.hours : 0) }, 0);
+    var pct = tot ? Math.round(got / tot * 100) : 0;
     var open = mods.some(function (m) { return API.isUnlocked(m.id, P); });
     // The next thing to actually do in this layer, so Continue continues.
     var nx = mods.filter(function (m) {
@@ -6208,20 +6510,25 @@ function lpHomeHTML(API) {
        + '<div class="lp-layTop"><div class="lp-layMain">'
        + '<div class="lp-layh"><div class="lp-layi">' + lpLayerIcon(Lr.id) + '</div>'
        + '<div style="flex:1;min-width:0"><div class="lp-layt">' + esc(Lr.name) + '</div>'
-       + '<div class="lp-layd">' + esc(Lr.purpose) + '</div></div></div>';
-    h += '<div class="lp-mods">';
+       + '<div class="lp-layd">' + esc(Lr.purpose)
+       + (Lr.id >= 4 && Lr.id <= 6 && !API.flagshipGate(P).open
+          ? ' <b style="color:#ff8a8a">Behind the hard gate: ' + API.flagshipGate(P).done
+            + ' of ' + API.flagshipGate(P).total + ' conditions done.</b>' : '') + '</div></div></div>';
+    h += '<div class="lp-mods" role="list">';
     mods.forEach(function (m) {
       var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
-      h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '">'
-         + '<span class="lp-dot"></span>' + esc(m.title) + '</div>';
+      h += '<div class="lp-mrow' + (pr.gate ? ' done' : (un ? '' : ' lock')) + '" role="listitem">'
+         + '<span class="lp-dot" aria-hidden="true"></span>' + esc(m.title)
+         + '<span class="lp-sr">' + (pr.gate ? ' — passed' : (un ? ' — open' : ' — locked')) + '</span></div>';
     });
     h += '</div></div><div class="lp-artWrap"><div class="lp-artBox">'
        + lpLayerArt(Lr.id) + '</div></div></div>';
     h += '<div class="lp-layf">'
        + '<button class="lp-go mo-btn' + (open ? '' : ' ghost') + '" onclick="'
-       +   (nextIn ? 'lpOpen(\'' + nextIn + '\')' : 'lpTab(\'modules\')') + '">'
+       +   (nextIn ? 'lpOpen(\'' + nextIn + '\')' : 'lpTab(\'modules\')') + '"'
+       +   ' aria-label="' + (nextIn ? 'Continue ' + esc(Lr.name) + ' with ' + nextIn : 'View ' + esc(Lr.name)) + '">'
        +   (nextIn ? 'Continue' : 'View') + ' →</button>'
-       + '<div class="lp-pctlab"><span class="k">' + pct + '% complete</span>'
+       + '<div class="lp-pctlab"><span class="k">' + pct + '% of these hours · ' + done + ' of ' + mods.length + ' passed</span>'
        + '<span class="t"><i style="width:' + pct + '%"></i></span></div>'
        + '</div></div>';
   });
@@ -6234,60 +6541,79 @@ function lpHomeHTML(API) {
      + '<div class="lp-qa">— Rule 1</div></div>';
 
   h += lpHowHTML();
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
-     + 'TODAY’S FOCUS</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
+     + 'Today’s focus</div><div class="lp-cmeta">' + avail.length + ' OPEN</div></div>';
   var finished = sum.modulesDone === sum.modulesTotal;
   if (finished) {
     h += '<div class="lp-dp" style="margin-bottom:12px">You have a deployed app with real users, an eval '
        + 'harness that gates its own CI, measured cost per completed task, three references who have seen '
        + 'you work, and a resume where every claim points at a repo.</div>'
        + '<div class="lp-dp" style="color:#8ab4dd">What is left is not a module. Keep the tracks running, '
-       + 'keep the estimate log going against real tickets, and re-read M29 and M30 on the day you start.</div>';
+       + 'keep the estimate log going against real tickets, and re-read M31 and M32 on the day you start.</div>';
   } else if (!avail.length) {
-    h += '<div class="lp-dp">Nothing open. Every module here depends on one you have not passed yet — '
+    h += '<div class="lp-dp">Nothing open. Every remaining module depends on one you have not passed yet — '
        + 'the ladder shows which.</div>';
   }
   var today = avail.filter(function (m) { return !m.trigger; });
   var later = avail.filter(function (m) { return m.trigger; });
-  today.slice(0, 4).forEach(function (m) {
+  var fgT = API.flagshipGate(P);
+  var l03done = AI_CURRICULUM.filter(function (m) { return m.layer <= 3; }).every(function (m) { return P[m.id] && P[m.id].gate; });
+  if (l03done && !fgT.open && !finished) {
+    h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpTab(\'modules\')">'
+       + '<span class="lp-box"></span><div><div class="lp-tt">Next: the hard gate</div>'
+       + '<div class="lp-ts">' + fgT.done + '/' + fgT.total + ' conditions · the work is off the ladder</div></div></div>'
+       + '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>What that means today</b>'
+       + '<span>Nothing new opens by finishing another module. Put the flagship in front of two real people, let M10\'s '
+       + 'logging collect about a hundred traces with real failures in them, and run M12\'s harness against those traces '
+       + 'in continuous integration. Tick each one on the Modules tab as it becomes true.</span></div>';
+  }
+  var shownT = today.slice(0, 4);
+  shownT.forEach(function (m) {
     h += '<div class="lp-task mo-lift" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lp-box"></span><div><div class="lp-tt">' + esc(m.title) + '</div>'
        + '<div class="lp-ts">' + m.id + ' · ' + m.hours + 'h · ' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</div></div></div>';
   });
+  if (today.length > shownT.length) {
+    h += '<div class="lp-dp" style="color:var(--rdim)">and ' + (today.length - shownT.length)
+       + ' more open — see the ladder.</div>';
+  }
   if (later.length) {
-    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Waiting on a date, not a gate</b>'
+    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Starts by date</b>'
        + '<span>' + later.map(function (m) { return esc(m.title); }).join(', ')
-       + ' — open, but each one has a trigger inside that says when.</span></div>';
+       + ' — open, but each one has a note inside saying when to start it.</span></div>';
   }
   h += '<button class="lp-wide" onclick="lpTab(\'modules\')">See all ' + sum.modulesTotal + ' modules →</button></div>';
 
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.bolt
-     + 'QUICK TOOLS</div></div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.bolt
+     + 'Quick tools</div></div>'
      + '<button class="lp-link mo-lift" onclick="lpTab(\'plan\')"><span class="lp-lki">' + LP_ICON.target + '</span>'
      + '<div><div class="lp-lkt">The Plan</div><div class="lp-lks">Runway, hours, which program</div></div>'
      + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
      + '<button class="lp-link mo-lift" onclick="lpTab(\'tracks\')"><span class="lp-lki">' + LP_ICON.loop + '</span>'
-     + '<div><div class="lp-lkt">Parallel tracks</div><div class="lp-lks">The 10 continuous habits</div></div>'
+     + '<div><div class="lp-lkt">Parallel tracks</div><div class="lp-lks">The ten continuous habits</div></div>'
      + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
      + '<button class="lp-link mo-lift" onclick="lpExport()"><span class="lp-lki">' + LP_ICON.down + '</span>'
      + '<div><div class="lp-lkt">Export progress</div><div class="lp-lks">Back up to a file</div></div>'
      + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
      + '<button class="lp-link mo-lift" onclick="lpTriggerImport()"><span class="lp-lki">' + LP_ICON.up + '</span>'
-     + '<div><div class="lp-lkt">Import</div><div class="lp-lks">Restore from a backup</div></div>'
+     + '<div><div class="lp-lkt">Import progress</div><div class="lp-lks">Restore from a backup</div></div>'
      + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>'
      + '<input type="file" id="lpImportFile" accept="application/json" style="display:none" onchange="lpImport(event)">'
      + '</div>';
 
   // Counts, as one-line rows rather than another set of tiles.
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.doc
-     + 'BY THE NUMBERS</div></div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.doc
+     + 'By the numbers</div></div>';
   [['Modules passed', sum.modulesDone + ' / ' + sum.modulesTotal],
-   ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['With the tracks', API.totalHours().total + 'h'],
    ['Artifacts built', String(sum.artifactsDone)],
-   ['DELTAs written', String(sum.deltasDone)],
+   ['Deltas written', String(sum.deltasDone)],
    ['Longest chain', API.criticalPath().hours + 'h'],
-   ['Your plan', pl.recommend === 'unset' ? 'not set' :
-      (pl.recommend === 'spine' ? 'Compressed Spine' : 'Full program')]
+   ['Your plan', pl.recommend === 'unset' ? 'not set'
+      : pl.recommend === 'spine' ? 'Compressed Spine'
+      : pl.recommend === 'full-tight' ? 'Full program, tight'
+      : 'Full program']
   ].forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
@@ -6300,17 +6626,30 @@ function lpHomeHTML(API) {
   return h;
 }
 
+// Two kinds of timing note, one label each, used in the ladder and on the
+// module page so the two never disagree: a date from your plan decides, or a
+// condition can move the module earlier.
+function lpWhenTag(m) {
+  return /moves earlier|move earlier|follows m/i.test(m.trigger || '') ? 'May start earlier' : 'Starts by date';
+}
 function lpModulesHTML(API) {
   var P = lpProgress(), fg = API.flagshipGate(P);
   var avail = API.available(P), availIds = avail.map(function (m) { return m.id });
   var sum = API.progressSummary(P);
+  var recNow = API.plan(LP_ST.setup || {}).recommend;
+  var onSpine = (recNow === 'spine' || recNow === 'full-tight');
 
   var h = '<div class="lx-hero">'
-        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in the order they open</span></div>'
+        + '<div class="lx-eyebrow"><span class="lx-mt">All ' + sum.modulesTotal + ' modules · in ladder order</span></div>'
         + '<div class="lx-title">The ladder</div>'
-        + '<div class="lx-sub">A module opens when every module it needs has been passed, '
+        + '<div class="lx-sub" id="lpLockNote">A module opens when every module it needs has been passed, '
         + 'and its three ticks (delta, artifact, gate) can only be made in that order. '
-        + 'The longest chain of modules, not the total hours, is what sets how long this takes.</div>'
+        + 'You can open a locked one and read it; you cannot tick it. '
+        + 'The longest chain of modules, not the total hours, is what sets how long this takes. '
+        + 'Some modules carry a note about when to start them: "Starts by date" means a date from your plan decides, not the ladder, and "May start earlier" means a condition can move it forward. '
+        + 'Lab means the result stays private; Evidence means a stranger can see it.'
+        + (onSpine ? ' Your plan points at the Spine, so the ' + AI_COMPRESSED_SPINE.length
+            + ' modules it keeps are tagged below; the rest wait until you are earning.' : '') + '</div>'
         + '</div>';
 
   h += '<div class="lp-cols"><div>';
@@ -6323,12 +6662,22 @@ function lpModulesHTML(API) {
     if (Lr.id === 4) {
       h += '<div class="lp-gate' + (fg.open ? '' : ' shut') + '">';
       h += '<div class="lp-gt">' + (fg.open ? '▲ GATE OPEN' : '■ HARD GATE — ' + fg.done + '/' + fg.total) + '</div>';
-      h += '<div class="lp-gs">Layer 4 does not start until all four are true. It holds back twelve modules and '
-         + 'it is the only requirement here that cannot be met by working harder. '
-         + 'Each line will make sense by M11; for now it is the reason the middle of the ladder is locked.</div>';
+      var srcDone = ['M2', 'M10', 'M12'].filter(function (id) { return P[id] && P[id].gate; });
+      h += '<div class="lp-gs">' + (fg.open
+         ? 'All four are true, so Layers 4 to 6 are open. This box stays as the record of what opened them.'
+         : 'Layer 4 does not start until all four are true. It holds back thirteen modules, and it is the only '
+           + 'requirement here that cannot be met by working harder. '
+           + (srcDone.length === 3
+              ? 'All four lines come from work you have already done: M2 deployed the app and put it in front of two people, '
+                + 'M10 logs the traces, M12 runs the harness. What is left is off the ladder — go and make each one true '
+                + 'on the live app, then tick it here.'
+              : 'The four lines are built by M2, M10 and M12, further up the ladder; for now this is the reason the '
+                + 'middle of the ladder is locked.')) + '</div>'
+         + '<div class="lp-gs" style="margin-top:6px">Referee: your reviewer confirms all four, the same as any module '
+           + 'gate. The two users and the harness run are facts they can check.</div>';
       fg.items.forEach(function (it) {
         var on = !!LP_ST.flagship[it.key];
-        h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
+        h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0" onkeydown="lpKey(event)" onclick="lpFlag(\'' + it.key + '\')">'
            + '<span class="lp-box">' + (on ? '✓' : '') + '</span>' + esc(it.label) + '</div>';
       });
       h += '</div>';
@@ -6343,14 +6692,17 @@ function lpModulesHTML(API) {
     mods.forEach(function (m) {
       var pr = P[m.id] || {}, un = API.isUnlocked(m.id, P);
       var cls = pr.gate ? ' done' : (un ? '' : ' lock');
-      h += '<button class="lp-mod mo-lift' + cls + '"'
-         + (un ? ' onclick="lpOpen(\'' + m.id + '\')"' : ' disabled') + '>';
-      h += '<span class="lp-modI">' + (pr.gate ? '✓' : m.id) + '</span>';
+      var inSpine = onSpine && typeof AI_COMPRESSED_SPINE !== 'undefined' && AI_COMPRESSED_SPINE.indexOf(m.id) !== -1;
+      // Reading ahead is allowed; claiming is not. lpToggle enforces the gate.
+      h += '<button class="lp-mod mo-lift' + cls + '" onclick="lpOpen(\'' + m.id + '\')"'
+         + (un ? '' : ' aria-describedby="lpLockNote"') + '>';
+      h += '<span class="lp-modI">' + (pr.gate ? '✓ ' + m.id : m.id) + '</span>';
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
       if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
-      if (m.owns) m.owns.forEach(function (o) { h += '<span class="lp-tag">Teaches ' + esc(o) + '</span>'; });
-      if (m.trigger) h += '<span class="lp-tag">Starts by date</span>';
-      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + m.dependsOn.join(', ') : 'no prerequisites')
+      if (inSpine) h += '<span class="lp-tag open">On the Spine</span>';
+      if (m.trigger) h += '<span class="lp-tag">' + lpWhenTag(m) + '</span>';
+      h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(m.dependsOn) : 'no prerequisites')
+         + (m.layer >= 4 && m.layer <= 6 && !fg.open ? ', and the hard gate' : '')
          + '</span></span></span>';
       h += '<span class="lp-modR"><span class="lp-modHr">' + m.hours + 'h</span>'
          + '<span class="lp-kind ' + (m.kind === 'EVIDENCE' ? 'ev">Evidence' : 'lab">Lab') + '</span>'
@@ -6365,23 +6717,38 @@ function lpModulesHTML(API) {
   h += '</div><div>';
 
   // Rail: what is open, what the path costs, and the rule the view enforces.
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Open now</div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Open now</div>'
      + '<div class="lp-cmeta">' + avail.length + ' unlocked</div></div>';
-  if (!avail.length) h += '<div class="lp-dp">Nothing unlocked. Pass a gate to open the next module.</div>';
-  avail.slice(0, 6).forEach(function (m) {
+  var availNow = avail.filter(function (m) { return !m.trigger; });
+  var availLater = avail.filter(function (m) { return m.trigger; });
+  if (!avail.length) h += '<div class="lp-dp">' + (sum.modulesDone === sum.modulesTotal
+      ? 'All ' + sum.modulesTotal + ' passed. Nothing is left to unlock; the tracks keep running until you are hired.'
+      : 'Nothing unlocked. Pass a gate to open the next module.') + '</div>';
+  var shown = availNow.slice(0, 6);
+  shown.forEach(function (m) {
     h += '<button class="lx-link" onclick="lpOpen(\'' + m.id + '\')">'
        + '<span class="lx-li2"><span class="lx-lt">' + esc(m.title) + '</span>'
        + '<span class="lx-ls">' + m.id + ' · ' + m.hours + 'h · ' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</span></span>'
        + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
   });
+  if (availNow.length > shown.length) {
+    h += '<div class="lp-dp" style="color:var(--rdim)">and ' + (availNow.length - shown.length)
+       + ' more — the ladder shows them all.</div>';
+  }
+  if (availLater.length) {
+    h += '<div class="lp-gloss" style="border-top:1px solid #0d2340"><b>Waiting on a date, not a gate</b>'
+       + '<span>' + availLater.map(function (m) { return esc(m.title); }).join(', ')
+       + ' — open, but each one has a note inside saying when to start it.</span></div>';
+  }
   h += '</div>';
 
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">By the numbers</div></div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">By the numbers</div></div>';
   [['Modules passed', sum.modulesDone + '/' + sum.modulesTotal],
-   ['Hours logged', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
+   ['With the tracks', API.totalHours().total + 'h'],
    ['Longest chain', API.criticalPath().hours + 'h'],
    ['Layers', '9']].forEach(function (r) {
-    h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + r[1] + '</span></div>';
+    h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
   h += '</div>';
 
@@ -6395,30 +6762,42 @@ function lpModulesHTML(API) {
 function lpTracksHTML(API) {
   var T = (typeof AI_TRACKS !== 'undefined') ? AI_TRACKS : [];
   var th = T.reduce(function (a, t) { return a + t.hours }, 0);
-  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Continuous, mandatory, and counted</span></div>'
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Run the whole way, counted in the total</span></div>'
         + '<div class="lx-title">Parallel tracks</div>'
-        + '<div class="lx-sub">' + th + ' hours. Leaving these out of the headline is what made an earlier '
-        + 'version understate the commitment by 40%.</div></div>';
+        + '<div class="lx-sub">' + th + ' hours that run alongside the modules, from start to hired. '
+        + 'They are in the headline total because they are real work, not extras. '
+        + ((typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.tracksNote)
+           ? esc(LAUNCHPAD_CONFIG.tracksNote) : '') + '</div></div>';
   h += '<div class="lp-cols"><div>';
+  var recT = API.plan(LP_ST.setup || {}).recommend;
+  var spineT = (recT === 'spine' || recT === 'full-tight');
+  var POL = (typeof AI_SPINE_TRACK_HOURS !== 'undefined') ? AI_SPINE_TRACK_HOURS : {};
   T.forEach(function (t) {
-    h += '<div class="lp-card lp-rc lp-tk"><div class="lp-ch"><div class="lp-ct">' + esc(t.title) + '</div>'
+    var sp = POL[t.id];
+    h += '<div class="lp-card lp-rc lp-tk"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + esc(t.title) + '</div>'
        + '<div class="lp-cmeta">' + t.id + ' · ' + (t.hours ? t.hours + 'h' : 'continuous') + '</div></div>'
        + '<div class="lp-tkc">' + esc(t.cadence) + '</div>'
+       + (spineT && sp !== undefined && sp !== t.hours
+          ? '<div class="lp-tkc" style="color:#ff8a8a">On the Spine: '
+            + (sp === 0 ? 'paused until you are earning' : sp + 'h, about half the pace') + '</div>' : '')
        + '<div class="lp-tkr">' + esc(t.rule) + '</div></div>';
   });
   h += '</div><div>';
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.loop
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.loop
      + 'WHY THESE ARE SEPARATE</div></div>';
   [['They never finish', 'A module ends at a gate. A track runs the whole way.'],
-   ['They are counted', 'Their hours are in the headline total, because leaving them out understated it by 40%.'],
-   ['They are not optional', 'The job search and the OSS contributions are the two that get you hired.']
+   ['They are counted', 'Their hours are in the headline total. Left out, the total would read 29% too low.'],
+   ['They are not optional', 'The job search and the open-source contributions are the two that get you hired. The Spine is the one exception: it pauses the open-source track until you are earning.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
   });
   h += '</div>';
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Totals</div></div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Totals</div></div>'
      + '<div class="lx-rk"><span class="k">Tracks</span><span class="v">' + T.length + '</span></div>'
-     + '<div class="lx-rk"><span class="k">Track hours</span><span class="v">' + th + 'h</span></div>'
+     + '<div class="lx-rk"><span class="k">Track hours</span><span class="v">' + th + 'h'
+     + (typeof AI_SPINE_TRACK_HOURS !== 'undefined'
+        ? ' · ' + T.reduce(function (a, t) { return a + (AI_SPINE_TRACK_HOURS[t.id] !== undefined ? AI_SPINE_TRACK_HOURS[t.id] : t.hours); }, 0) + 'h on the Spine'
+        : '') + '</span></div>'
      + '<div class="lx-rk"><span class="k">Module hours</span><span class="v">'
      + API.totalHours().modules + 'h</span></div>'
      + '<div class="lx-rk"><span class="k">Everything</span><span class="v">'
@@ -6427,44 +6806,58 @@ function lpTracksHTML(API) {
   return h;
 }
 
+// The Spine list, in its own container so The Plan can redraw it as the
+// numbers change without rebuilding the inputs the user is typing into.
+function lpSpineCardHTML(API) {
+  var pl = API.plan(LP_ST.setup || {}), P = lpProgress(), h = '';
+  if (pl.recommend !== 'spine' && pl.recommend !== 'full-tight') return '';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.layers
+     + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
+  AI_COMPRESSED_SPINE.forEach(function (id) {
+    var sm = API.byId(id); if (!sm) return;
+    var un = API.isUnlocked(id, P);
+    h += '<button class="lx-link" onclick="lpOpen(\'' + id + '\')"' + (un ? '' : ' style="opacity:.7"') + '>'
+       + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
+       + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h' + (un ? '' : ' · locked') + '</span></span>'
+       + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
+  });
+  return h + '</div>';
+}
+// A stored number is only ever a finite, non-negative number here; anything
+// else (a string from an edited backup, Infinity, NaN) shows as empty.
+function lpNum(v) {
+  var n = Number(v);
+  return (isFinite(n) && n > 0) ? n : '';
+}
 function lpPlanHTML(API) {
   var st = LP_ST.setup || {};
   var pl2 = API.plan(st);
-  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">M0 · the only module with authority</span></div>'
+  var h = '<div class="lx-hero"><div class="lx-eyebrow"><span class="lx-mt">Two numbers that decide everything else</span></div>'
         + '<div class="lx-title">The Plan</div>'
-        + '<div class="lx-sub">Runway sets the deadline — not the topic list. The weekly number is '
-        + 'derived here, never assumed.</div></div>';
+        + '<div class="lx-sub">How many months you can go without a paycheck, and how many hours a week you can truly give. '
+        + 'Those two numbers set your deadline and which program you follow. Nothing else does. '
+        + 'They are two of the lines M0 asks you to write; <a href="#" onclick="lpOpen(\'M0\');return false">open M0</a> for the rest.</div></div>';
   h += '<div class="lp-cols"><div>';
   h += '<div class="lp-card" id="lpSetup">';
   h += '<div class="lp-fields">';
-  h += '<div class="lp-f"><label>Runway (months)</label><input type="number" inputmode="decimal" min="0" '
-     + 'value="' + (st.runwayMonths || '') + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f"><label>Hours / week</label><input type="number" inputmode="decimal" min="0" '
-     + 'value="' + (st.weeklyHours || '') + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
-  h += '<div class="lp-f wide"><label>The flagship — twelve modules bolt onto it</label>'
-     + '<input type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
+  h += '<div class="lp-f"><label for="lpRunway">Runway (months)</label><input id="lpRunway" type="number" inputmode="decimal" min="0" '
+     + 'value="' + esc(lpNum(st.runwayMonths)) + '" oninput="lpSet(\'runwayMonths\',this.value)" placeholder="0"></div>';
+  h += '<div class="lp-f"><label for="lpHours">Hours a week</label><input id="lpHours" type="number" inputmode="decimal" min="0" '
+     + 'value="' + esc(lpNum(st.weeklyHours)) + '" oninput="lpSet(\'weeklyHours\',this.value)" placeholder="0"></div>';
+  h += '<div class="lp-f wide"><label for="lpFlagship">Your flagship — the one app you keep building</label>'
+     + '<input id="lpFlagship" type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
   h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
 
   h += '</div><div>';
-  if (pl2.recommend === 'spine' || pl2.recommend === 'full-tight') {
-    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.layers
-       + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
-    AI_COMPRESSED_SPINE.forEach(function (id) {
-      var sm = API.byId(id); if (!sm) return;
-      h += '<button class="lx-link" onclick="lpOpen(\'' + id + '\')">'
-         + '<span class="lx-li2"><span class="lx-lt">' + esc(sm.title) + '</span>'
-         + '<span class="lx-ls">' + id + ' · ' + sm.hours + 'h</span></span>'
-         + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
-    });
-    h += '</div>';
-  }
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">' + LP_ICON.target
+  h += '<div id="lpSpineCard">' + lpSpineCardHTML(API) + '</div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
      + 'WHAT THIS DECIDES</div></div>';
-  [['Your deadline', 'Runway divided by the hours you can actually commit. Not a guess.'],
+  [['Your flagship', (LP_ST.setup && LP_ST.setup.flagship) ? LP_ST.setup.flagship + ' — M2 builds its first version.' : 'Not named yet. M2 builds it; naming it here puts it on the home screen.'],
+   ['Your deadline', 'What your runway and your weekly hours allow. Worked out, not guessed.'],
    ['Which program', 'The full ' + API.totalHours().count + ' modules, or the '
-     + AI_COMPRESSED_SPINE.length + '-module spine if the runway is short.'],
-   ['When you apply', 'After Layers 0-2, not when everything is finished.']
+     + AI_COMPRESSED_SPINE.length + '-module Spine if the runway is short.'],
+   ['When you apply', 'After Layers 0-2, not when everything is finished. The date goes in your plan now.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
   });
@@ -6475,6 +6868,10 @@ function lpPlanHTML(API) {
   return h;
 }
 
+function lpHrs(n) {
+  if (!n && n !== 0) return '—';
+  return n < 0.1 ? 'under 0.1' : n.toFixed(1);
+}
 function lpVerdictHTML(API) {
   var pl = API.plan(LP_ST.setup || {});
   var unset = pl.recommend === 'unset';
@@ -6483,25 +6880,45 @@ function lpVerdictHTML(API) {
     var fullOn = (pl.recommend === 'full' || pl.recommend === 'full-tight');
     h += '<div class="lp-paths">';
     h += '<div class="lp-path' + (fullOn ? ' on' : '') + '"><div class="lp-pn">Full program</div>'
-       + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.fullHours + 'h · needs '
-       + (pl.neededForFull ? pl.neededForFull.toFixed(1) : '—') + ' h/wk to fit your runway</div></div>';
+       + '<div class="lp-pv">' + (pl.fullMonths ? pl.fullMonths.toFixed(1) : '—') + ' mo'
+       + (pl.fullMonths && pl.runwayMonths && pl.fullMonths > pl.runwayMonths
+          ? '<span style="display:block;font:500 10.5px/1.4 var(--sans);color:#ff8a8a;letter-spacing:.06em">'
+            + (pl.fullMonths - pl.runwayMonths).toFixed(1) + ' months past your runway</span>' : '') + '</div>'
+       + '<div class="lp-ps">' + pl.moduleHours + 'h of modules + ' + pl.trackHours + 'h of tracks · needs '
+       + lpHrs(pl.neededForFull) + ' h/week to fit your runway</div></div>';
     h += '<div class="lp-path' + (!fullOn ? ' on' : '') + '"><div class="lp-pn">Compressed Spine</div>'
-       + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo</div>'
-       + '<div class="lp-ps">' + pl.spineHours + 'h · needs '
-       + (pl.neededForSpine ? pl.neededForSpine.toFixed(1) : '—') + ' h/wk</div></div>';
+       + '<div class="lp-pv">' + (pl.spineMonths ? pl.spineMonths.toFixed(1) : '—') + ' mo'
+       + (pl.spineMonths && pl.runwayMonths && pl.spineMonths > pl.runwayMonths
+          ? '<span style="display:block;font:500 10.5px/1.4 var(--sans);color:#ff8a8a;letter-spacing:.06em">'
+            + (pl.spineMonths - pl.runwayMonths).toFixed(1) + ' months past your runway</span>' : '') + '</div>'
+       + '<div class="lp-ps">' + pl.spineModuleHours + 'h of modules + ' + pl.spineTrackHours + 'h of tracks · needs '
+       + lpHrs(pl.neededForSpine) + ' h/week</div></div>';
     h += '</div>';
   }
+  var CEIL = 18;
+  var spineFits = pl.neededForSpine && Math.round(pl.neededForSpine * 10) / 10 <= CEIL;
+  var overrun = !unset && !spineFits;
   h += '<div class="lp-vrec">' + (unset ? '■ INCOMPLETE'
+        : overrun ? '■ NEITHER FITS UNDER ' + CEIL + ' H/WEEK'
         : pl.recommend === 'spine' ? '▲ TAKE THE SPINE'
         : pl.recommend === 'full-tight' ? '▲ TIGHT — RAISE HOURS OR TAKE THE SPINE'
         : '▲ FULL PROGRAM FITS') + '</div>';
   h += '<div class="lp-vwhy">' + esc(pl.why) + '</div>';
   if (!unset) {
-    h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0–2 — '
-       + pl.applyAfterHours + 'h in, roughly month '
-       + (pl.weeklyHours ? Math.max(1, Math.round(pl.applyAfterHours / pl.weeklyHours / 4.345)) : '?')
-       + '. Not when everything is finished.</div>';
+    h += '<div class="lp-vwhy" style="color:#5b7fa6">Applications start after Layers 0-2 — '
+       + pl.applyAfterHours + 'h of module work in, roughly month '
+       + (pl.applyAfterMonths ? Math.max(1, Math.round(pl.applyAfterMonths)) : '?')
+       + '. Not when everything is finished.'
+       + (function () {
+           if (!pl.weeklyHours || !pl.runwayMonths) return '';
+           var am = pl.applyAfterMonths || (pl.applyAfterHours / pl.weeklyHours / 4.345);
+           if (am <= pl.runwayMonths - 2) return '';
+           var advice = pl.weeklyHours < CEIL
+             ? 'Raise the hours toward ' + CEIL + ', or take the Spine.'
+             : (spineFits ? 'Take the Spine.' : 'Neither program fits: plan on the Spine plus a contract role.');
+           return ' <b style="color:#ff8a8a">That is month ' + Math.max(1, Math.round(am)) + ' of a '
+                + pl.runwayMonths + '-month runway — tight. ' + advice + '</b>';
+         })() + '</div>';
   }
   return h;
 }
@@ -6512,7 +6929,7 @@ function lpVerdictHTML(API) {
 function lxSec(n, icon, title, sub, body) {
   return '<div class="lx-sec"><div class="lx-secH"><div class="lx-secI">' + LP_ICON[icon] + '</div>'
        + '<div style="flex:1;min-width:0"><div class="lx-secN">' + n + '</div>'
-       + '<div class="lx-secT">' + title + '</div>'
+       + '<h2 class="lx-secT">' + title + '</h2>'
        + (sub ? '<div class="lx-secD">' + sub + '</div>' : '') + '</div></div>'
        + body + '</div>';
 }
@@ -6526,6 +6943,12 @@ function lxList(items, kind) {
   return h;
 }
 
+// Dependency lists read as prose here, so the last two ids join with "and".
+function lpAnd(list) {
+  if (!list || !list.length) return '';
+  if (list.length === 1) return String(list[0]);
+  return list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1];
+}
 function lpDetailHTML(API, id) {
   var m = API.byId(id);
   if (!m) return '<div class="lp-card">Unknown module.</div>';
@@ -6543,9 +6966,25 @@ function lpDetailHTML(API, id) {
      + '<span class="lx-mt">' + (m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab') + '</span>'
      + '<span class="lx-mt">' + m.hours + 'h</span>'
      + '<span class="lx-mt">L' + m.layer + (layer ? ' ' + esc(layer.name) : '') + '</span></div>';
-  h += '<div class="lx-title">' + esc(m.title) + '</div>';
-  h += '<div class="lx-sub">' + (m.dependsOn.length ? 'Opens once ' + m.dependsOn.join(', ') + ' have passed.' : 'No prerequisites — this is where the curriculum starts.')
-     + (m.owns ? ' Teaches ' + m.owns.join(', ') + ' for good; no later module re-teaches it.' : '') + '</div>';
+  h += '<h1 class="lx-title">' + esc(m.title) + '</h1>';
+  var fgH = API.flagshipGate(P), gated = m.layer >= 4 && m.layer <= 6;
+  var unmet = m.dependsOn.filter(function (d) { return !(P[d] && P[d].gate); });
+  var metDeps = m.dependsOn.filter(function (d) { return P[d] && P[d].gate; });
+  var openNow = API.isUnlocked(m.id, P);
+  var subLine;
+  if (P[m.id] && P[m.id].gate) {
+    subLine = 'Passed. Delta written, artifact built, gate passed.';
+  } else if (!m.dependsOn.length) {
+    subLine = 'No prerequisites — this is where the curriculum starts.';
+  } else if (openNow) {
+    subLine = 'Open now. It needed ' + lpAnd(m.dependsOn) + ', and ' + (m.dependsOn.length > 1 ? 'all are' : 'it is') + ' passed.';
+  } else {
+    subLine = 'Locked. Waiting on ' + (unmet.length ? lpAnd(unmet) : '')
+            + (gated && !fgH.open ? (unmet.length ? ', and the hard gate (' : 'the hard gate (') + fgH.done + ' of ' + fgH.total + ' done, on the Modules tab)' : '')
+            + '.' + (metDeps.length ? ' ' + lpAnd(metDeps) + ' already passed.' : '');
+  }
+  h += '<div class="lx-sub">' + subLine
+     + (m.owns ? ' ' + lpAnd(m.owns.map(function (o) { return o.charAt(0).toUpperCase() + o.slice(1); })) + (m.owns.length > 1 ? ' are taught here and nowhere else.' : ' is taught here and nowhere else.') : '') + '</div>';
   h += '<div class="lx-track">';
   [['delta', 'Delta written'], ['artifact', 'Artifact built'], ['gate', 'Gate passed']].forEach(function (st, i) {
     if (i) h += '<span class="lx-tkr"></span>';
@@ -6553,8 +6992,8 @@ function lpDetailHTML(API, id) {
   });
   h += '</div></div></div>';
 
-  if (m.trigger) h += '<div class="lp-warn"><b>TRIGGER</b><br>' + esc(m.trigger) + '</div>';
-  if (m.currency) h += '<div class="lp-warn"><b>CURRENCY</b><br>' + esc(m.currency) + '</div>';
+  if (m.trigger) h += '<div class="lp-warn"><b>' + lpWhenTag(m).toUpperCase() + '</b><br>' + esc(m.trigger) + '</div>';
+  if (m.currency) h += '<div class="lp-warn"><b>CHECK THIS IS STILL TRUE</b><br>' + esc(m.currency) + '</div>';
 
   h += '<div class="lp-cols"><div>';
 
@@ -6567,9 +7006,9 @@ function lpDetailHTML(API, id) {
     m.words.forEach(function (w) {
       wh += '<div class="lx-wd"><b>' + esc(w[0]) + '</b><p>' + esc(w[1]) + '</p></div>';
     });
-    h += lxSec(pad() + ' · WORDS', 'doc', 'Words used on this page',
-               'Plain definitions, in the order the words appear below. Nothing on this page assumes you already know them.',
-               wh);
+    h += lxSec(pad() + ' · WORDS', 'doc', m.words.length + ' words used on this page',
+               'Plain definitions, each one written before anything else on the page uses it. Open it now, or come back when a word stops you.',
+               '<details class="lx-words"><summary>Show the ' + m.words.length + ' definitions</summary>' + wh + '</details>');
   }
 
   if (m.concepts && m.concepts.length) {
@@ -6584,6 +7023,11 @@ function lpDetailHTML(API, id) {
              'One buildable thing. If you cannot explain it out loud, it does not count as built.',
              '<div class="lx-body">' + esc(m.artifact) + '</div>');
 
+  if (!(m.checkpoints && m.checkpoints.length)) {
+    h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Legitimate places to stop',
+               'Short enough to finish in one go, so there is no half-finished state to come back to.',
+               '<div class="lx-body">None. This module is short enough to do in one sitting; if a bad week lands in the middle of it, start it again rather than resuming.</div>');
+  }
   if (m.checkpoints && m.checkpoints.length) {
     h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Legitimate places to stop',
                'A bad week should cost you a checkpoint, not the module. Each of these is a real stopping point.',
@@ -6610,36 +7054,44 @@ function lpDetailHTML(API, id) {
   // The figure closes the left column: the mechanism, after the words.
   var VZ = (typeof LAUNCHPAD_VIZ !== 'undefined') ? LAUNCHPAD_VIZ : null;
   if (VZ && VZ[m.id]) {
-    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Mechanism</div>'
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Mechanism</div>'
        + '<div class="lp-cmeta">how it actually works</div></div>'
        + '<div class="lp-viz">'
        + '<div class="lp-artCap"><b>Fig. ' + esc(m.id) + '</b> · mechanism<i>L' + m.layer + '</i></div>'
-       + '<div class="lp-vizBox">' + VZ[m.id] + '</div></div></div>';
+       + '<div class="lp-vizBox">' + VZ[m.id].replace('<svg ', '<svg role="img" aria-label="Figure ' + esc(m.id) + ': how ' + esc(m.title) + ' works" ') + '</div></div></div>';
   }
 
   h += '</div><div>';
 
   // Rail. Claim the three steps, then the facts, then where this leads.
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Claim progress</div>'
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Claim progress</div>'
      + '<div class="lp-cmeta">in order</div></div>'
-     + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the documentation proved you wrong. '
-     + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module.</div>';
-  [['delta', 'Delta written', 'the documentation read, your notes made'],
-   ['artifact', 'Artifact built and running', 'not a plan to build it'],
+     + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the official documentation proved you wrong. '
+     + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module. Un-ticking one clears the ones after it, here and in every module that depended on this one.</div>'
+     + ((typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.gateRecord)
+        ? '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">' + esc(LAUNCHPAD_CONFIG.gateRecord) + '</div>' : '');
+  var lockedHere = !API.isUnlocked(id, P);
+  if (lockedHere) {
+    h += '<div class="lp-warn" style="margin-bottom:12px"><b>LOCKED</b><br>Reading ahead is fine, but nothing here can be ticked until '
+       + (m.dependsOn.length ? lpAnd(m.dependsOn) + (m.dependsOn.length > 1 ? ' have' : ' has') + ' passed' : 'it opens')
+       + (gated && !fgH.open ? ' and the hard gate is open' : '') + '.</div>';
+  }
+  [['delta', 'Delta written', id === 'M0' ? 'one paragraph: what you believe this will take' : 'the documentation read, your notes made'],
+   ['artifact', 'Artifact built', 'not a plan to build it'],
    ['gate', 'Gate passed', 'a referee said yes']].forEach(function (st) {
     var on = !!pr[st[0]];
-    h += '<div class="lp-chk' + (on ? ' on' : '') + '" role="button" tabindex="0" onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
+    h += '<div class="lp-chk' + (on ? ' on' : '') + (lockedHere ? ' lock' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"' + (lockedHere ? ' aria-disabled="true" style="opacity:.55"' : '') + ' onkeydown="lpKey(event)" onclick="lpToggle(\'' + id + '\',\'' + st[0] + '\')">'
        + '<span class="lp-box">' + (on ? '✓' : '') + '</span>'
        + '<span><span style="display:block">' + st[1] + '</span>'
        + '<span class="lx-ls">' + st[2] + '</span></span></div>';
   });
   h += '</div>';
 
-  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">This module</div></div>';
+  h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">This module</div></div>';
   var facts = [['Hours', m.hours + 'h'], ['Kind', m.kind === 'EVIDENCE' ? 'Evidence' : 'Lab'], ['Layer', 'L' + m.layer],
                ['Depends on', m.dependsOn.length ? m.dependsOn.join(', ') : '—']];
-  if (m.owns) facts.push(['Teaches for good', m.owns.join(', ')]);
-  if (m.exports) facts.push(['Hands on', m.exports.join(', ')]);
+  if (m.owns) facts.push(['Teaches for good', lpAnd(m.owns)]);
+  if (m.exports) facts.push(['Hands forward', m.exports.join('; ')]);
   facts.forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
@@ -6651,16 +7103,32 @@ function lpDetailHTML(API, id) {
     return x.dependsOn && x.dependsOn.indexOf(m.id) !== -1;
   });
   if (opens.length) {
-    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct">Passing this opens</div>'
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Modules that need this</div>'
        + '<div class="lp-cmeta">' + opens.length + '</div></div>';
     opens.forEach(function (x) {
       var un = API.isUnlocked(x.id, P);
-      h += '<button class="lx-link"' + (un ? ' onclick="lpOpen(\'' + x.id + '\')"' : ' disabled style="opacity:.55;cursor:default"') + '>'
+      var others = x.dependsOn.filter(function (d) { return d !== m.id; });
+      h += '<button class="lx-link" onclick="lpOpen(\'' + x.id + '\')"' + (un ? '' : ' style="opacity:.7"') + '>'
          + '<span class="lx-li2"><span class="lx-lt">' + esc(x.title) + '</span>'
-         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h</span></span>'
+         + '<span class="lx-ls">' + x.id + ' · ' + x.hours + 'h · ' + ((P[x.id] && P[x.id].gate) ? 'passed' : others.length ? 'also needs ' + lpAnd(others) : 'opens when this passes') + (x.layer >= 4 && x.layer <= 6 && !fgH.open ? ' · and the hard gate' : '') + '</span></span>'
          + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button>';
     });
     h += '</div>';
+  }
+
+  // The next rung, so no lesson ends without saying where to go.
+  var all = (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []);
+  var at = all.indexOf(m), nx = at >= 0 ? all[at + 1] : null;
+  if (nx) {
+    var nun = API.isUnlocked(nx.id, P);
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Next on the ladder</div></div>'
+       + '<button class="lx-link" onclick="lpOpen(\'' + nx.id + '\')"' + (nun ? '' : ' style="opacity:.7"') + '>'
+       + '<span class="lx-li2"><span class="lx-lt">' + esc(nx.title) + '</span>'
+       + '<span class="lx-ls">' + nx.id + ' · ' + nx.hours + 'h' + ((P[nx.id] && P[nx.id].gate) ? ' · passed' : nun ? ' · open now' : ' · locked until ' + lpAnd(nx.dependsOn.filter(function (d) { return !(P[d] && P[d].gate); })) + ' passed' + (nx.layer >= 4 && nx.layer <= 6 && !fgH.open ? ' and the hard gate is open' : '')) + '</span></span>'
+       + '<span class="lp-arrow">' + LP_ICON.chev + '</span></button></div>';
+  } else {
+    h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">Last module</div></div>'
+       + '<div class="lp-dp">There is no next rung. From here the tracks continue (Tracks tab) until you are hired, and M31 and M32 are re-read on the day you start.</div></div>';
   }
 
   h += '</div></div>';
@@ -6695,14 +7163,25 @@ function lpDoneCount() {
   try {
     var key = (typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.key) || 'apex_launchpad_v1';
     var s = JSON.parse(localStorage.getItem(key) || '{}');
-    var mods = s.mods || {}, n = 0;
-    for (var k in mods) if (mods[k] && mods[k].gate) n++;
-    var tot = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM.length : 0;
-    return n + '/' + tot + ' GATES';
+    // The rename migration runs in lpLoad, which has not happened yet if the
+    // realm was never opened. Count what lpLoad would see, not what is stored.
+    var mods = (typeof lpMigrate === 'function'
+      ? lpMigrate({ mods: s.mods || {}, ids: s.ids || 1 }).mods
+      : (s.mods || {})), n = 0;
+    var all = (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM : [];
+    for (var i = 0; i < all.length; i++) {
+      var e = mods[all[i].id];
+      if (e && typeof e === 'object' && e.gate) n++;
+    }
+    var tot = all.length;
+    return n + '/' + tot + ' PASSED';
   } catch (e) { return ''; }
 }
 function goLauncher() {
   if (OBS_EXAM && OBS_EXAM.timer) clearInterval(OBS_EXAM.timer);
+  // An APEX drill left running while another realm is on screen keeps ticking
+  // and can mark itself finished behind your back.
+  if (typeof EXAM !== 'undefined' && EXAM && EXAM.timer) { clearInterval(EXAM.timer); EXAM.timer = null; }
   OBS_EXAM = null; OBS_VIEW = null;
   var app = document.getElementById('obsidianApp');
   app.classList.remove('active');
@@ -6724,6 +7203,9 @@ function routeRealm(name) {
     if (!ST.onboardDone) { document.getElementById('onboardScreen').classList.add('active'); }
     else {
       document.getElementById('mainApp').classList.add('active');
+      // A drill paused by leaving the realm starts ticking again on return.
+      if (typeof EXAM !== 'undefined' && EXAM && !EXAM.done && !EXAM.timer
+          && typeof startExamTimer === 'function') startExamTimer();
       ACTIVE_TAB = 'today';
       renderActiveTab();
     }
