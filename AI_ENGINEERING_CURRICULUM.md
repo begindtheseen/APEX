@@ -209,7 +209,7 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 
 | # | Module | h | dependsOn |
 |---|---|---|---|
-| **M0** | The Plan | 12 | — |
+| **M0** | The Contract Page | 12 | — |
 | **M1** | First Code | 58 | M0 |
 | **M2** | Flagship v1 | 30 | M1 |
 | **M3** | The Runtime, Unframed | 67 | M1, M2 |
@@ -272,7 +272,10 @@ feedback instrument terminates on hire day.
 
 *Your numbers, your first code, your reviewer (a working engineer who checks your work), and your flagship (the one app you keep building). Decided and built first, because everything after this rests on them.*
 
-## M0 — The Plan (12h) · `dependsOn: —`
+## M0 — The Contract Page (12h) · `dependsOn: —`
+
+*The module was called "The Plan" until the app grew a tab with the same name. It is the page you
+write; the tab is the calculator that fills two of its lines.*
 
 This is day one, and the reader on day one has never written code. So every item below is something a
 person can do with a notebook and an internet connection, said in words they already have. Items that
@@ -709,9 +712,13 @@ N+1. **Connection pooling and the Vercel+Supabase failure mode.** RLS — correc
 Expand/contract *as a concept*. **The planner:** force each join strategy with `enable_hashjoin` /
 `enable_mergejoin` / `enable_nestloop` off and time all three on the same query, so its choice becomes a
 decision you watched it make. **Estimated vs actual rows** — the first thing to say about any plan; one
-query where stale `ANALYZE` or a correlated predicate breaks the estimate. **The four isolation levels:**
-show that M4’s lost update survives READ COMMITTED (the default, which is why putting it in a transaction
-fails) and dies under REPEATABLE READ. **MVCC and dead-tuple bloat:** bulk update, watch the query slow
+query where stale `ANALYZE` or a correlated predicate breaks the estimate. **The isolation levels — four names, three
+behaviours**, because READ UNCOMMITTED behaves as READ COMMITTED: show that M4’s lost update survives
+READ COMMITTED (the default, which is why putting it in a transaction fails) and is **caught** under
+REPEATABLE READ. Caught, not silently fixed — the transaction aborts with a serialization failure, and
+**your application has to catch that and retry the whole transaction.** The retry loop is the lesson;
+without it you have converted a silent wrong answer into a user-visible 500 and will conclude that
+REPEATABLE READ does not work. **MVCC and dead-tuple bloat:** bulk update, watch the query slow
 with no code change, `VACUUM`, watch it recover. The local Supabase stack runs in the containers you
 checked could install in M1.
 
@@ -781,8 +788,15 @@ The context window — what fills it, what degrades before it fills; the API is 
 the whole history every turn, so **the tokens you resend grow quadratically** with conversation length —
 dollars do not follow, because cache reads are priced at a fraction, so measure both. Output control:
 `max_tokens`
-and **the full `stop_reason` enum**. Pricing: input/output asymmetry, prompt caching as a byte-exact
-prefix match. **Adaptive thinking and effort** — the first quality-trading lever after caching.
+and **the full `stop_reason` enum**, whose refusal `category` is an **open set**. Pricing:
+input/output asymmetry, and prompt caching as a byte-exact prefix match you **opt into** — a breakpoint
+you place, or the provider's automatic version. Three things decide whether a hit ever happens: the
+prefix has to clear a model-dependent **minimum length**, below which caching silently does nothing; it
+has to match byte for byte; and the request is assembled **tools → system → messages**, so a tool list
+that varies between requests invalidates everything after it, which is what catches people building
+agents. **Adaptive thinking and effort** — the model decides when and how much to reason, and effort is
+a coarse dial over that depth and over what the request costs, **not a token count**; a fixed thinking-
+token budget is the dead pattern it replaced. It is the first quality-trading lever after caching.
 Discovering capabilities, `max_input_tokens` and `max_tokens` **from the Models API** rather than a
 hard-coded table — **and knowing what it does not serve:** prices are not on that endpoint, so the price
 table in your client is the one thing that carries a check date. The structural boundaries — what no prompt fixes.
@@ -810,14 +824,17 @@ while inter-token latency does not.
 
 **Checkpoints** ① token counts compared against your guesses across five kinds of text · ② one cache
 hit proved from the usage meters, with its cost delta printed · ③ every `stop_reason` produced on
-purpose, including a refusal, and the cost column live in the M2 log · ④ the limit of constrained
+purpose, with the refusal taken from a recorded fixture, and the cost column live in the M2 log · ④ the limit of constrained
 decoding shown two ways — a schema-valid reply that is factually wrong, and the 400 the API returns when
 the schema itself is invalid — with capabilities read from the Models API and every 400 pasted into the
 dead-patterns page.
 
 **Artifact** `LAB` — a `model-probe` CLI: compare token counts against your assumptions across five
 text types; prove a cache hit from the usage meters and print the cost delta; produce **every**
-`stop_reason` deliberately, including a refusal, and show `stop_details` as the discriminator;
+`stop_reason` you can produce deliberately — `end_turn`, `max_tokens`, `tool_use`, `stop_sequence` —
+and take the refusal from a recorded fixture rather than trying to trip a safety classifier on demand,
+which is not reliably producible; show `stop_details` as the discriminator, and note that the categories
+it carries are an **open set**, so a `switch` over the ones you saw this month is a latent bug;
 demonstrate **the limit of constrained decoding rather than a rejection that cannot happen** — a
 generation that is schema-valid and factually wrong, and, separately, what the API does when the schema
 you sent is itself invalid, which is a 400 on the request rather than a rejected generation; discover
@@ -1075,7 +1092,8 @@ orphan-cleanup job, and a stated retention policy.** Resumable on M8’s queue. 
 hand-labeled documents, split dev/test at creation.**
 
 > **Exported:** the corpus and its offsets → M18. The embedding dimensionality decision → M18
-> (pgvector caps: `vector` 2,000, `halfvec` 4,000).
+> (the **column** holds thousands more than the **index** will take: an HNSW index caps at 2,000
+> dimensions for `vector` and 4,000 for `halfvec`).
 
 **GATE** — **REFEREE:** your reviewer, scoring against your twenty hand-labeled documents — a number you
 cannot fudge. **PASS:** state what percentage of tables your parser destroys, with evidence; show a
@@ -1118,6 +1136,13 @@ you will actually use, each run once against your own data: base rates and why a
 failures are rare; the confusion matrix and TPR/TNR computed by hand on your own 100 labeled traces;
 percentiles from a raw latency array and why averaging them is wrong; **bootstrap resampling written
 from scratch**, and with it how many labeled examples you need before a delta means anything.
+
+> **Resample the differences, not the two scores.** Every comparison this program asks you to make — a
+> prompt change against the same 100 cases, one retrieval arm against another on the same queries — is a
+> **paired** comparison: the two sides answered the same items. Resampling the per-item differences
+> cancels the difficulty of each item and gives an interval meaningfully tighter than subtracting two
+> independent ones. Doing it unpaired makes almost every real improvement look inconclusive, which
+> teaches you to distrust a working instrument.
 
 **Three things that are each the difference between a harness a team adopts and one they quietly stop
 citing:**
@@ -1165,7 +1190,9 @@ per run. M19 uses these graders; traces that are *captured* but never *scored* a
 
 **GATE** — **REFEREE:** your reviewer, handing you a prompt change that is scored against your
 **held-out test set** — a number you cannot argue with. **PASS:** return ship/no-ship with a bootstrap
-CI; state your judge’s TPR and TNR **and your human-to-human agreement rate**; name the criterion that
+CI; state your judge’s TPR and TNR **and your human-to-human agreement — corrected for chance, not as a
+raw percentage**, because on a skewed label set two annotators who pass everything agree ninety per cent
+of the time and have agreed about nothing (Cohen’s κ is the usual measure; say which you used); name the criterion that
 produced the most disagreement and how you rewrote it; **and break the gate on purpose on a branch and
 keep the red check — a rehearsal, and labeled as one**, because waiting for a real regression to arrive
 before gate day is not something you can schedule. If a real regression fires it later, replace the
@@ -1182,7 +1209,10 @@ is a fix; "poor coherence" is a shrug. · **Delegating the labeling to an LLM.**
 you already wrote. People discover what they actually care about *through* labeling. · Building the set
 from cases you invented. An imagined set measures imagination. · A runner that re-implements the model
 call "to keep the eval clean" — then it measures a different system than the one that ships. · Same
-model as generator and judge. · Believing schema enforcement solved reliability. It solves shape, not
+model as generator and judge *without measuring what it costs you.* Self-preference is real, and the
+confusion matrix you already built is what shows it: if the judge's errors line up with the generator's,
+you will see them there. A same-family judge with a measured matrix beats a different-family judge with
+none. · Believing schema enforcement solved reliability. It solves shape, not
 content.
 
 ---
@@ -1475,8 +1505,8 @@ evidence.
 **Build the measuring instrument before the retriever.** Imports M12’s dataset table and graders —
 swapping in retrieval graders is hours, not a rebuild.
 
-**Core concepts:** **pgvector: HNSW parameters, the dimension ceiling (`vector` 2,000 / `halfvec` 4,000),
-and the recall/latency curve.** Chunking — why fixed-size is the right baseline and what contextual
+**Core concepts:** **pgvector: HNSW parameters, the *index* dimension ceiling (2,000 for `vector`,
+4,000 for `halfvec` — the column itself holds far more), and the recall/latency curve.** Chunking — why fixed-size is the right baseline and what contextual
 retrieval actually fixes. Two-stage retrieval: hybrid lexical+semantic fused with RRF, then a
 cross-encoder reranker. Agentic and iterative retrieval. **Grounding and span-level citation
 verification** against M11’s character offsets. The long-context baseline, and when to skip retrieval
@@ -1839,8 +1869,9 @@ checker.** (The names have a shelf life; the module is unchanged if they move.) 
 vs values, LEGB, truthiness, generators. pytest. Type hints with a checker in CI. pydantic as the runtime
 validation boundary. One typed FastAPI route.
 
-**Artifact** `LAB` — current tooling (`uv`, `ruff`, one pinned type checker — with its stated shelf
-life). Python semantics where they differ from TS, each proved by a small script. pytest. Type hints with
+**Artifact** `LAB` — current tooling: `uv`, `ruff`, and **one type checker you pin by name and
+version** — mypy and pyright are the two you will meet most, with faster newer ones arriving; pick one,
+write down which and when you chose it, and expect the name to age faster than the idea. Python semantics where they differ from TS, each proved by a small script. pytest. Type hints with
 a checker green in CI. pydantic as the validation boundary. One typed FastAPI route with a test.
 
 **GATE** — **REFEREE:** your reviewer, with a timer. **PASS:** add a typed route and a test to your own
