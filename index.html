@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APEX — Progressive Protocol</title>
 <meta name="description" content="APEX Progressive Protocol — brain recovery, Navy boot camp prep, and ASVAB study tracker. Your progress is saved on this device.">
 <meta name="theme-color" content="#020509">
@@ -33,6 +33,7 @@
 /* Until the realm data has parsed, the panels are visible but cannot do
    anything. Say so, instead of letting a tap land on nothing. */
 body.booting .ls-panel{pointer-events:none;opacity:.55;}
+body.booting .ls-row::before{content:'';}
 body.booting .ls-row::after{content:'Loading…';display:block;width:100%;text-align:center;
   margin-top:14px;font:500 0.75rem/1 var(--mono,monospace);letter-spacing:.18em;color:#5b7fa6;}
 :root{
@@ -717,6 +718,12 @@ body{color:var(--text);font-family:var(--sans);}
   transition:transform .18s ease;
 }
 .ls-panel:active{transform:scale(.96);}
+/* outline:none above removes the browser's own ring, so put one back. Measured
+   at zero changed pixels on focus before this. */
+.ls-panel:focus-visible{outline:3px solid #7fb0ff;outline-offset:3px;}
+/* Same for every control that carries its own role rather than being a button. */
+.stopic:focus-visible,.hck:focus-visible{outline:2px solid #7fb0ff;outline-offset:2px;border-radius:8px;}
+.stopic{cursor:pointer;}
 /* Below 560px four panels in a row shrink until their sublabels are clipped
    away entirely. Two by two keeps every name and count readable. */
 @media(max-width:560px){
@@ -1356,15 +1363,24 @@ body{color:var(--text);font-family:var(--sans);}
 /* Checkpoints in the lesson body. Same control as the rail's three steps, at
    the width of the page, with a bar so "where am I in this module" is one
    glance rather than a count. */
+#launchpadApp .lp-cutlist{list-style:decimal;margin:0;padding:0 0 0 20px;}
+#launchpadApp .lp-cutlist li{display:block;}
+#launchpadApp .lp-cutlist li::marker{color:#a4b2c2;font:500 0.75rem/1 var(--mono);}
 #launchpadApp .lx-cpbar{display:flex;align-items:center;gap:12px;margin:2px 0 8px;
   font:500 0.6875rem/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#a4b2c2;}
-#launchpadApp .lx-cpt{flex:1;height:6px;border-radius:99px;background:#22364d;overflow:hidden;}
+#launchpadApp .lx-cpt{flex:1;height:6px;border-radius:99px;background:#3a5372;overflow:hidden;
+  border:1px solid #52719a;box-sizing:border-box;}
 #launchpadApp .lx-cpt i{display:block;height:100%;background:var(--rc);border-radius:99px;
   transition:width var(--t-state) var(--e-out);}
 #launchpadApp .lp-chk.lx-cp{font:400 0.8125rem/1.5 var(--sans);align-items:center;}
 #launchpadApp .lp-chk.lx-cp .lp-box{border-radius:50%;flex:0 0 auto;
   font:600 0.6875rem/1 var(--mono);color:#7f93ab;}
 #launchpadApp .lp-chk.lx-cp.on .lp-box{color:#02101f;}
+@media (prefers-reduced-motion: reduce){
+  #launchpadApp .lp-chk.on .lp-box,.lp-chk.on .lp-box,.lp-task.on .lp-box{animation:none;}
+  #launchpadApp .lx-cpt i{transition:none;}
+  .hero,.ls-panel,.ls-trace{animation:none !important;}
+}
 @media (forced-colors: active){
   #launchpadApp .lx-cpt i{background:Highlight;forced-color-adjust:none;}
   #launchpadApp .lx-cpt{border:1px solid CanvasText;forced-color-adjust:none;}
@@ -1551,7 +1567,7 @@ body{color:var(--text);font-family:var(--sans);}
     <div class="ls-kicker">ONE ENGINE · FOUR CURRICULA</div>
     <div class="ls-title">SELECT REALM</div>
   </div>
-  <div class="ls-row">
+  <div class="ls-row" id="lsRow" aria-busy="true">
     <button class="ls-panel lsApex" onclick="launchRealm('apex',this)">
       <div class="ls-glyph">■</div>
       <svg class="ls-trace" viewBox="0 0 100 28"><polyline pathLength="100" points="2,24 18,10 30,18 46,4 60,16 74,8 98,22"/></svg>
@@ -3549,7 +3565,8 @@ function renderToday() {
         if (hLocked) {
           html += '<div class="hck locked-ck"><span style="font-size:10px">🔒</span></div>';
         } else {
-          html += '<div class="hck' + (isChecked ? ' on' : '') + '" onclick="tglHabit(\'' + h.id + '\')"></div>';
+          html += '<div class="hck' + (isChecked ? ' on' : '') + '" role="checkbox" aria-checked="' + (isChecked ? 'true' : 'false')
+                + '" tabindex="0" aria-label="' + esc(h.name || h.id) + '" onkeydown="ckKey(event)" onclick="tglHabit(\'' + h.id + '\')"></div>';
         }
         html += '<div class="hinfo">';
         html += '<div class="hn' + (isChecked ? ' done' : '') + '">' + h.n + '</div>';
@@ -4229,7 +4246,8 @@ function renderEnlist() {
     for (var ii = 0; ii < grp.items.length; ii++) {
       var it = grp.items[ii];
       var on = !!ST.enlist[it.id];
-      html += '<div class="hrow"><div class="hck' + (on ? ' on' : '') + '" onclick="toggleEnlist(\'' + it.id + '\')"></div><div class="hinfo">';
+      html += '<div class="hrow"><div class="hck' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + (on ? 'true' : 'false')
+           + '" tabindex="0" aria-label="' + esc(it.label || it.id) + '" onkeydown="ckKey(event)" onclick="toggleEnlist(\'' + it.id + '\')"></div><div class="hinfo">';
       html += '<div class="hn' + (on ? ' done' : '') + '">' + it.t + '</div>';
       if (it.n) html += '<div class="hw">' + it.n + '</div>';
       html += '</div></div>';
@@ -4634,7 +4652,8 @@ function renderStudy() {
     for (var i = 0; i < batch.length; i++) {
       var tp = batch[i]; var done = topicDone(tp.id);
       var sName = ASVAB_SUBS[tp.sub] ? ASVAB_SUBS[tp.sub].name : tp.sub;
-      html += '<div class="hrow" style="padding:9px 0;border-color:rgba(30,58,95,.4)"><div class="hck' + (done ? ' on' : '') + '" onclick="openTopic(\'' + tp.id + '\')"></div>'
+      html += '<div class="hrow" style="padding:9px 0;border-color:rgba(30,58,95,.4)"><div class="hck' + (done ? ' on' : '') + '" role="button"'
+           + ' tabindex="0" aria-label="Open ' + esc(tp.title || tp.id) + '" onkeydown="ckKey(event)" onclick="openTopic(\'' + tp.id + '\')"></div>'
            + '<div class="hinfo" onclick="openTopic(\'' + tp.id + '\')" style="cursor:pointer"><div class="hn' + (done ? ' done' : '') + '">' + tp.title + '</div>'
            + '<div class="hw">' + sName + '</div></div></div>';
     }
@@ -4719,7 +4738,7 @@ function renderStudy() {
       var mastered = ts && ts.box >= 3;
       var started = ts && ts.seen > 0;
       var badge = mastered ? '<span class="st-m cg">MASTERED</span>' : (started ? '<span class="st-m cb">STARTED</span>' : '<span class="st-m" style="background:var(--mid);color:var(--muted)">NEW</span>');
-      html += '<div class="stopic" onclick="openTopic(\'' + tp.id + '\')"><div class="st-n">' + tp.title + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
+      html += '<div class="stopic" role="button" tabindex="0" onkeydown="ckKey(event)" onclick="openTopic(\'' + tp.id + '\')"><div class="st-n">' + tp.title + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
     }
   }
 
@@ -4812,6 +4831,13 @@ function shuffleArr(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0
 function pickQs(sub, n) { var b = qbank(sub); return shuffleArr(b).slice(0, Math.min(n, b.length)); }
 // Escapes for both text and attribute contexts. Quotes matter: a name typed
 // into an input is written back into a value="" attribute.
+// Enter and Space on anything given role=button or role=checkbox. Without it
+// those controls were announced as operable and then did nothing on a key.
+function ckKey(e) {
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault(); e.currentTarget.click();
+  }
+}
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -5731,7 +5757,7 @@ function obsRenderDash() {
     html += '<div class="sl">REVIEW DUE — ' + due.length + '</div>';
     for (var i = 0; i < due.length; i++) {
       var t = due[i], ts2 = OBS_ST.topics[t.id];
-      html += '<div class="stopic" onclick="obsOpenTopic(\'' + t.id + '\',\'quiz\')"><div class="st-n">' + esc(t.title)
+      html += '<div class="stopic" role="button" tabindex="0" onkeydown="ckKey(event)" onclick="obsOpenTopic(\'' + t.id + '\',\'quiz\')"><div class="st-n">' + esc(t.title)
            + '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">' + esc(obsSubName(t.sub)) + ' · box ' + (ts2.box || 0) + '/5 · due ' + esc(ts2.due) + '</div></div>'
            + '<span class="st-m cy">REVIEW</span><span class="ac-chev">▸</span></div>';
     }
@@ -5787,7 +5813,7 @@ function obsRenderDash() {
       var m = ts3 && ts3.box >= 3;
       var st = ts3 && ts3.seen > 0;
       var badge = m ? '<span class="st-m cg">MASTERED</span>' : (st ? '<span class="st-m cb">STARTED</span>' : '<span class="st-m" style="background:var(--mid);color:var(--muted)">NEW</span>');
-      html += '<div class="stopic" onclick="obsOpenTopic(\'' + tp.id + '\')"><div class="st-n">' + esc(tp.title) + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
+      html += '<div class="stopic" role="button" tabindex="0" onkeydown="ckKey(event)" onclick="obsOpenTopic(\'' + tp.id + '\')"><div class="st-n">' + esc(tp.title) + '</div>' + badge + '<span class="ac-chev">▸</span></div>';
     }
   }
 
@@ -6955,6 +6981,12 @@ function lpFlagshipCount() {
     return W[n - 1] ? W[n - 1].charAt(0).toUpperCase() + W[n - 1].slice(1) : String(n);
   } catch (e) { return 'Many'; }
 }
+// Which modules, not just how many. A count taken from a hidden string is a
+// number the reader cannot check, in a document that polices its own numbers.
+function lpFlagshipList() {
+  try { return (lpApi().byId('M2').exports[0].match(/M\d+/g) || []).join(', '); }
+  catch (e) { return ''; }
+}
 // The rules are numbered once, in the data. The home page used to carry its
 // own numbering, which disagreed with the one validate() enforces.
 function lpRulesText() {
@@ -6964,14 +6996,17 @@ function lpRulesText() {
 }
 function lpHowHTML() {
   var rows = [
-    ['Module', 'A unit of work. Most take under four weeks at 18 hours a week; a few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.'],
+    ['Module', 'A unit of work. The biggest is ' + (function () {
+      var mx = 0; (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []).forEach(function (m) { if (m.hours > mx) mx = m.hours; });
+      return mx; })() + ' hours — four weeks at the 18-hour ceiling, six at twelve. A few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.'],
     ['Lab', 'A module whose result stays private. It is for learning, not for showing.'],
     ['Evidence', 'A module whose result a stranger can open and judge. These are what get you hired.'],
     ['Artifact', 'The thing you build. A module is not done until it runs.'],
     ['Delta', 'A page of notes: what the official documentation proved you wrong about, written before you build.'],
     ['Gate', 'A pass condition with a named person who says yes or no.'],
     ['Referee', 'That person. A gate with no referee is decorative.'],
-    ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it.'],
+    ['Flagship', 'One real app you keep extending. ' + lpFlagshipCount() + ' later modules build on it: '
+     + lpFlagshipList() + '. It is specified in M2, before any of them.'],
     ['Checkpoint', 'A named piece of a module — one of up to eleven — with its own finished state. You tick each one as you finish it, and they are what "Artifact built" waits for. They are also the legitimate places to stop: a bad week should cost you a checkpoint, not the whole module.'],
     ['Hard gate', 'A second kind of lock, used once. Layers 4 to 6 stay shut until the flagship is live, two real people who are not you have used it (or the written fallback in its place), about a hundred logged traces contain real failures (or, on the fallback, a hundred cases you labeled yourself), and your eval harness runs against them on every push. Working harder does not open it — but there is a fallback, and it is on the Modules tab.'],
     ['Primary source', 'The official documentation or specification for the tool you are using — not a tutorial about it.'],
@@ -7070,7 +7105,7 @@ function lpHomeHTML(API) {
   // ── Rail ──────────────────────────────────────────────────────
   h += '<div class="lp-quote"><div class="lp-quoteArt">' + lpHeroArt(true) + '</div>'
      + '<div class="lp-qt">"A gate with no referee is decorative."</div>'
-     + '<div class="lp-qa">— Rule 1</div></div>';
+     + '<div class="lp-qa">— the creed</div></div>';
 
   h += lpHowHTML();
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.target
@@ -7139,9 +7174,17 @@ function lpHomeHTML(API) {
   [['Modules passed', sum.modulesDone + ' / ' + sum.modulesTotal],
    ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
    ['With the tracks', API.totalHours().total + 'h'],
+   ['Checkpoints ticked', (function () {
+      var d = 0, t = 0;
+      (typeof AI_CURRICULUM !== 'undefined' ? AI_CURRICULUM : []).forEach(function (m) {
+        var c = lpCpCount(m.id); d += c.done; t += c.total;
+      });
+      return d + ' / ' + t;
+    })()],
    ['Artifacts built', String(sum.artifactsDone)],
    ['Deltas written', String(sum.deltasDone)],
    ['Longest chain', API.criticalPath().path.length + ' modules · ' + API.criticalPath().hours + 'h'],
+   ['That chain', API.criticalPath().path.join(' → ').replace('M12 → ', 'M12 → [hard gate] → ')],
    ['Your plan', pl.recommend === 'unset' ? 'not set'
       : pl.recommend === 'spine' ? 'Compressed Spine'
       : pl.recommend === 'full-tight' ? 'Full program, tight'
@@ -7206,7 +7249,7 @@ function lpModulesHTML(API) {
       var srcDone = ['M2', 'M10', 'M12'].filter(function (id) { return P[id] && P[id].gate; });
       h += '<div class="lp-gs">' + (fg.open
          ? 'All four are true, so Layers 4 to 6 are open. This box stays as the record of what opened them.'
-         : 'Layer 4 does not start until all four are true. It holds back thirteen modules, and it is the only '
+         : 'Layer 4 does not start until all four are true. It holds back thirteen modules and 465 of the 1,108 module hours, and it is the only '
            + 'requirement here that cannot be met by working harder. '
            + (srcDone.length === 3
               ? 'All four lines come from work you have already done: M2 deployed the app and put it in front of two people, '
@@ -7239,12 +7282,18 @@ function lpModulesHTML(API) {
          + (un ? '' : ' aria-describedby="lpLockNote"') + '>';
       h += '<span class="lp-modI">' + (pr.gate ? '✓ ' + m.id : m.id) + '</span>';
       h += '<span class="lp-modB"><span class="lp-modT">' + esc(m.title) + '</span><span class="lp-modM">';
-      if (availIds.indexOf(m.id) !== -1 && !pr.gate) h += '<span class="lp-tag open">Open now</span>';
+      // A trigger module is not "open now" in the sense the rest of the ladder
+      // means: its own note says what starts it, and for two of them that is
+      // being employed. Saying both at once is the contradiction.
+      if (availIds.indexOf(m.id) !== -1 && !pr.gate && !m.trigger)
+        h += '<span class="lp-tag open">Open now</span>';
       if (inSpine) h += '<span class="lp-tag open">On the Spine</span>';
       if (m.trigger) h += '<span class="lp-tag">' + lpWhenTag(m) + '</span>';
       var rowCC = lpCpCount(m.id);
-      if (un && !pr.gate && rowCC.total && rowCC.done)
-        h += '<span class="lp-tag open">' + rowCC.done + ' of ' + rowCC.total + ' checkpoints</span>';
+      if (rowCC.total && !pr.gate)
+        h += '<span class="lp-tag' + (un && rowCC.done ? ' open' : '') + '">'
+           + (un ? rowCC.done + ' of ' + rowCC.total + ' checkpoints' : rowCC.total + ' checkpoints')
+           + '</span>';
       h += '<span class="lp-dep">' + (m.dependsOn.length ? 'needs ' + lpAnd(lpSortIds(m.dependsOn)) : 'no prerequisites')
          + (m.layer >= 4 && m.layer <= 6 && !fg.open ? ', and the hard gate' : '')
          + '</span></span></span>';
@@ -7291,6 +7340,7 @@ function lpModulesHTML(API) {
    ['Module hours', sum.hoursDone + ' / ' + sum.hoursTotal],
    ['With the tracks', API.totalHours().total + 'h'],
    ['Longest chain', API.criticalPath().path.length + ' modules · ' + API.criticalPath().hours + 'h'],
+   ['That chain', API.criticalPath().path.join(' → ').replace('M12 → ', 'M12 → [hard gate] → ')],
    ['Layers', '9']].forEach(function (r) {
     h += '<div class="lx-rk"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>';
   });
@@ -7330,7 +7380,9 @@ function lpTracksHTML(API) {
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.loop
      + 'WHY THESE ARE SEPARATE</div></div>';
   [['They never finish', 'A module ends at a gate. A track runs the whole way.'],
-   ['They are counted', 'Their hours are in the headline total. Left out, the total would read 29% too low.'],
+   ['They are counted', 'Their hours are in the headline total. Leave them out and you would plan for '
+     + API.totalHours().modules + ' hours of work that actually takes ' + API.totalHours().total
+     + ' — ' + Math.round(API.totalHours().tracks / API.totalHours().modules * 100) + '% more than you budgeted.'],
    ['They are not optional', 'The job search and the open-source contributions are the two that get you hired. The Spine is the one exception: it pauses the open-source track until you are earning.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
@@ -7358,20 +7410,26 @@ function lpTracksHTML(API) {
 function lpCutOrderHTML(API) {
   var order = (typeof AI_CUT_ORDER !== 'undefined') ? AI_CUT_ORDER : [];
   if (!order.length) return '';
+  var back = order.reduce(function (a, entry) {
+    var m = API.byId(String(entry).split(' ')[0]);
+    return a + (m ? (String(entry).indexOf('half') >= 0 ? Math.round(m.hours / 2) : m.hours) : 0);
+  }, 0);
   var h = '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">'
-        + LP_ICON.layers + 'THE CUT ORDER</div><div class="lp-cmeta">69h back</div></div>'
+        + LP_ICON.layers + 'THE CUT ORDER</div><div class="lp-cmeta">' + back + 'h back</div></div>'
         + '<div class="lp-dp" style="margin-bottom:10px;color:var(--rdim)">If you need hours back and are not ready '
         + 'to drop to the Spine, cut in this order and no other. Two modules send you here; this is the list.</div>';
+  h += '<ol class="lp-cutlist">';
   order.forEach(function (entry, i) {
     var id = String(entry).split(' ')[0];
     var m = API.byId(id);
     var why = { M26: 'OAuth is the most learn-on-demand module here',
-                M25: 'only if fewer than eight of your twenty postings ask for Python — and not if the trip-wire already moved Python earlier',
+                M25: 'only if fewer than eight of your twenty postings ask for Python — and not if that count already moved Python earlier in your plan, since you cannot both move it up because the market asks for it and cut it because the market does not',
                 M16: 'the throughput work, not the delegation policy' }[id] || '';
-    h += '<div class="lp-gloss"><b>' + (i + 1) + '. ' + esc(String(entry)) + '</b><span>'
+    h += '<li class="lp-gloss"><b>' + esc(String(entry)) + '</b><span>'
        + (m ? esc(m.title) + ' · ' + (String(entry).indexOf('half') >= 0 ? '~' + Math.round(m.hours / 2) : m.hours) + 'h' : '')
-       + (why ? ' — ' + esc(why) : '') + '</span></div>';
+       + (why ? ' — ' + esc(why) : '') + '</span></li>';
   });
+  h += '</ol>';
   h += '<div class="lp-dp" style="margin-top:10px;color:var(--rdim)">M32 is deliberately not on this list: it is the '
      + 'only module that owns landing well in a real job, which is half of what you are doing this for.</div>';
   return h + '</div>';
@@ -7389,9 +7447,13 @@ function lpSpineCardHTML(API) {
      + 'WHAT THE SPINE COSTS</div><div class="lp-cmeta">' + dropped.length + ' DROPPED</div></div>'
      + '<div class="lp-dp" style="color:var(--rdim)">The Spine keeps ' + AI_COMPRESSED_SPINE.length + ' modules and drops '
      + dropped.length + ' — including the whole AI layer (M18 to M21), deployment (M23) and Python (M24 and M25). '
-     + 'The two that will hurt first in a contract role are M14, reading code you did not write, and M17, scoping and '
-     + 'estimating: a contract role is the most likely of all to drop you into an unfamiliar codebase with a scoped '
-     + 'deliverable and no ramp. Budget your first month on the job for them.</div></div>';
+     + 'The two that will hurt first on your first job are M14, reading code you did not write, and M17, scoping and '
+     + 'estimating'
+     + (pl.recommend === 'spine-plus-contract'
+        ? ': a contract role, which is what the verdict above points you at, is the most likely of all to drop you '
+          + 'into an unfamiliar codebase with a scoped deliverable and no ramp'
+        : ', because both are about working to someone else\'s constraints and nothing on the Spine teaches that')
+     + '. Budget your first month on the job for them.</div></div>';
   h += '<div class="lp-card lp-rc"><div class="lp-ch"><div class="lp-ct" role="heading" aria-level="2">' + LP_ICON.layers
      + 'THE SPINE, NAMED</div><div class="lp-cmeta">' + AI_COMPRESSED_SPINE.length + '</div></div>';
   AI_COMPRESSED_SPINE.forEach(function (id) {
@@ -7428,7 +7490,7 @@ function lpPlanHTML(API) {
   h += '<div class="lp-f wide"><label for="lpFlagship">Your flagship — the one app you keep building</label>'
      + '<input id="lpFlagship" type="text" value="' + esc(st.flagship || '') + '" oninput="lpSet(\'flagship\',this.value)" '
      + 'placeholder="Name the app"></div>';
-  h += '</div><div id="lpVerdict">' + lpVerdictHTML(API) + '</div></div>';
+  h += '</div><div id="lpVerdict" role="status" aria-live="polite" aria-atomic="true">' + lpVerdictHTML(API) + '</div></div>';
 
   h += '</div><div>';
   h += '<div id="lpSpineCard">' + lpSpineCardHTML(API) + '</div>';
@@ -7440,8 +7502,9 @@ function lpPlanHTML(API) {
    ['Which program', 'The full ' + API.totalHours().count + ' modules, or the Spine — the '
      + AI_COMPRESSED_SPINE.length + '-module version you take when the runway is short. It is listed below '
      + 'once your numbers are in, with what it costs you.'],
-   ['The release valve', 'Falling six weeks behind two months in a row switches you to the Spine. That is the plan '
-     + 'working, not the plan failing — it is why the Spine exists. Track 8 checks it once a month.'],
+   ['The release valve', 'Falling six weeks behind two months in a row switches you to the Spine — the shorter '
+     + 'program named below. That is the plan working, not the plan failing; it is why the Spine exists. The monthly '
+     + 're-plan (Track 8, on the Tracks tab) is what checks it.'],
    ['When you apply', 'After Layers 0-2, not when everything is finished. The date goes in your plan now.']
   ].forEach(function (r) {
     h += '<div class="lp-gloss"><b>' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>';
@@ -7518,6 +7581,7 @@ function lpVerdictHTML(API) {
            if (!pl.weeklyHours || !pl.runwayMonths) return '';
            var am = pl.applyAfterMonths || (pl.applyAfterHours / pl.weeklyHours / 4.345);
            if (am <= pl.runwayMonths - 2) return '';
+           if (pl.recommend === 'spine-plus-contract') return '';   // that verdict has already said it
            var advice = pl.weeklyHours < CEIL
              ? 'Raise the hours toward ' + CEIL + ', or take the Spine.'
              : (spineFits ? 'Take the Spine.' : 'Neither program fits: plan on the Spine plus a contract role.');
@@ -7647,9 +7711,11 @@ function lpDetailHTML(API, id) {
              '<div class="lx-body">' + esc(m.artifact) + '</div>');
 
   if (!(m.checkpoints && m.checkpoints.length)) {
-    h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Legitimate places to stop',
-               'Short enough to finish in one go, so there is no half-finished state to come back to.',
-               '<div class="lx-body">None. This module is short enough to do in one sitting; if a bad week lands in the middle of it, start it again rather than resuming.</div>');
+    h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'No stable half-finished state',
+               'This one has no point you can stop at and come back to without losing the thread.',
+               '<div class="lx-body">None — this module is small enough that a bad week costs you the module '
+               + 'rather than a checkpoint. It is ' + m.hours + ' hours: plan a run of consecutive days for it, '
+               + 'and if a bad week lands in the middle, start it again rather than resuming.</div>');
   }
   if (m.checkpoints && m.checkpoints.length) {
     // Tickable, because a module is finished when its checkpoints are, and the
@@ -7662,9 +7728,11 @@ function lpDetailHTML(API, id) {
     m.checkpoints.forEach(function (t, ci) {
       var on = !!(pr.cp && pr.cp[lpCpKey(t)]);
       cpBody += '<div class="lp-chk lx-cp' + (on ? ' on' : '') + (cpLocked ? ' lock' : '') + '" role="checkbox"'
-             + ' aria-checked="' + (on ? 'true' : 'false') + '" tabindex="0"'
-             + (cpLocked ? ' aria-disabled="true" style="opacity:.55"' : '')
-             + ' onkeydown="lpKey(event)" onclick="lpCp(\'' + esc(id) + '\',' + ci + ')">'
+             + ' aria-checked="' + (on ? 'true' : 'false') + '"'
+             + (cpLocked
+                ? ' aria-disabled="true" tabindex="-1" style="opacity:.55;cursor:default"'
+                : ' tabindex="0" onkeydown="lpKey(event)" onclick="lpCp(\'' + esc(id) + '\',' + ci + ')"')
+             + '>'
              + '<span class="lp-box">' + (on ? '✓' : (ci + 1)) + '</span>'
              + '<span><span style="display:block">' + esc(t) + '</span></span></div>';
     });
@@ -7674,7 +7742,7 @@ function lpDetailHTML(API, id) {
                : !pr.delta
                  ? 'Write the delta first — that is what opens these.'
                  : cc.done >= cc.total
-                   ? 'All ' + cc.total + ' done. The artifact can be claimed in the rail.'
+                   ? 'All ' + cc.total + ' done. Tick "Artifact built" under Claim progress.'
                    : 'Tick each one as you finish it. "Artifact built" does not open until all ' + cc.total + ' are ticked.')
             + '</div>';
     h += lxSec(pad() + ' · CHECKPOINTS', 'flag', 'Your progress through this module',
@@ -7719,7 +7787,11 @@ function lpDetailHTML(API, id) {
      + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">Delta: your notes on where the official documentation proved you wrong. '
      + 'Artifact: the thing you built. Gate: someone else checked it and said yes. Tick them in order; the gate is what opens the next module. Un-ticking one clears the ones after it, here and in every module that depended on this one.</div>'
      + ((typeof LAUNCHPAD_CONFIG !== 'undefined' && LAUNCHPAD_CONFIG.gateRecord)
-        ? '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">' + esc(LAUNCHPAD_CONFIG.gateRecord) + '</div>' : '');
+        ? '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">' + esc(LAUNCHPAD_CONFIG.gateRecord) + '</div>' : '')
+     + '<div class="lp-dp" style="margin-bottom:12px;color:var(--rdim)">No referee available for this one? '
+     + '<a href="#" onclick="lpTab(\'tracks\');return false">Track 5</a> says what may stand in, once per attempt, '
+     + 'and what it costs: the whole conversation is kept, failures included, and a failed stand-in review counts '
+     + 'as a failed gate.</div>';
   var lockedHere = !API.isUnlocked(id, P);
   if (lockedHere) {
     // Built from the SAME unmet list the header uses. Saying "until M8, M9 and
@@ -8035,11 +8107,27 @@ function launchRealm(name, btn) {
 // The launcher is painted but inert until this has run. Whatever happens, take
 // the class off: leaving it on means a dimmed, unclickable page saying
 // "Loading…" forever, which is a worse failure than whatever threw.
+// While these are true the launcher is painted but cannot answer: the panels
+// are marked busy and disabled so a keyboard or screen-reader user is told so,
+// rather than tabbing onto an enabled-looking button that throws.
+(function () {
+  var row = document.getElementById('lsRow');
+  if (row) Array.prototype.forEach.call(row.querySelectorAll('.ls-panel'), function (x) {
+    x.setAttribute('disabled', 'disabled'); x.setAttribute('aria-disabled', 'true');
+  });
+})();
 try {
   obsLoad();
   init();
 } finally {
   document.body.classList.remove('booting');
+  var lsRow = document.getElementById('lsRow');
+  if (lsRow) {
+    lsRow.setAttribute('aria-busy', 'false');
+    Array.prototype.forEach.call(lsRow.querySelectorAll('.ls-panel'), function (x) {
+      x.removeAttribute('disabled'); x.removeAttribute('aria-disabled');
+    });
+  }
 }
 // Promote the font sheet from print to all once it has arrived. Done here
 // rather than with an inline onload attribute, so no element in this page
