@@ -8,7 +8,7 @@ const {chromium}=require('playwright');
  for(const vp of [{width:390,height:900},{width:1280,height:1000}]){
   const p=await b.newPage({viewport:vp});
   const errs=[];p.on('pageerror',e=>errs.push(e.message));
-  await p.goto('http://127.0.0.1:8791/index.html',{waitUntil:'networkidle'});
+  await p.goto(ENV.BASE + '/index.html',{waitUntil:'networkidle'});
   await p.evaluate(()=>{const x=[...document.querySelectorAll('button,[onclick]')].find(e=>/LAUNCHPAD/i.test(e.textContent||''));if(x)x.click();});
   await p.waitForTimeout(2400);
   const bad=[];

@@ -146,10 +146,10 @@ function ok(n, c, d) { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '   
 
   // ---- H3/H4: the service worker only owns the shell ----
   {
-    const sw = require('fs').readFileSync('/home/user/APEX/sw.js', 'utf8');
+    const sw = require('fs').readFileSync(require('path').join(ENV.REPO, 'sw.js'), 'utf8');
     ok('H3 the shell is only written for a shell request', /isShellRequest\(req\)/.test(sw) && /isHtml\(res\)/.test(sw));
     ok('H4 non-shell navigations are not answered', /if \(!isShellRequest\(req\)\) return;/.test(sw));
-    const idx = require('fs').readFileSync('/home/user/APEX/index.html', 'utf8');
+    const idx = require('fs').readFileSync(require('path').join(ENV.REPO, 'index.html'), 'utf8');
     ok('H4 the worker registers with an explicit scope', /register\('sw\.js', \{ scope: '\.\/' \}\)/.test(idx));
     ok('M4 a CSP ships', /Content-Security-Policy/.test(idx) && /connect-src 'self'/.test(idx));
     ok('M4 a referrer policy ships', /name="referrer" content="no-referrer"/.test(idx));

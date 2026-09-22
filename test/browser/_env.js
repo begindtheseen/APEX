@@ -15,4 +15,9 @@ var pinned = process.env.APEX_CHROMIUM || '/opt/pw-browsers/chromium';
 var launchOpts = {};
 try { if (fs.existsSync(pinned)) launchOpts.executablePath = pinned; } catch (e) {}
 
-module.exports = { BASE: BASE, launchOpts: launchOpts };
+// Some suites read source files off disk rather than over HTTP. They used
+// absolute paths into the container this was written in, which resolve here and
+// nowhere else. Resolve the repo root once, relative to this file.
+var REPO = require('path').join(__dirname, '..', '..');
+
+module.exports = { BASE: BASE, launchOpts: launchOpts, REPO: REPO };
