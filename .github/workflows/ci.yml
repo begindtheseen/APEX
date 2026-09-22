@@ -1,0 +1,37 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The curriculum is written down twice -- as prose in the markdown and as data
+  # the app renders. This job is the thing that stops them rotting apart. It needs
+  # no browser and finishes in seconds, so it gates every push.
+  drift:
+    name: The document and the app agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm run test:drift
+
+  browser:
+    name: The app in a browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
