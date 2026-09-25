@@ -16,6 +16,7 @@ import { runWebChecks } from '@/lib/web'
 import { domSteps } from './grade'
 import bash from './tracks/bash.txt?raw'
 import cpp from './tracks/cpp.txt?raw'
+import git from './tracks/git.txt?raw'
 import html from './tracks/html.txt?raw'
 import javascript from './tracks/javascript.txt?raw'
 import python from './tracks/python.txt?raw'
@@ -27,6 +28,7 @@ import type { LearnLang, LearnLesson, LearnRun, Roadmap } from './types'
 /** The tracks this app teaches, in the order a beginner should meet them. */
 export const LEARN_SOURCES: [LearnLang, string][] = [
   ['bash', bash],
+  ['git', git],
   ['html', html],
   ['javascript', javascript],
   ['typescript', typescript],
@@ -38,41 +40,47 @@ export const LEARN_SOURCES: [LearnLang, string][] = [
 export const LEARN_LANGS: LearnLang[] = LEARN_SOURCES.map(([lang]) => lang)
 
 /**
- * The goals Learn to code opens on. The first is LAUNCHPAD's own order: the
- * terminal (M1), JavaScript and TypeScript for the product (M3–M4), the page
- * it runs in, SQL for its data (the Postgres modules) and Python for the
- * models (M24).
+ * The goals Learn to code opens on, each in the order a mentor would teach
+ * it. The first is LAUNCHPAD's own order: the terminal and git (M1),
+ * JavaScript and TypeScript for the product (M3–M4), the page it runs in,
+ * SQL for its data (the Postgres modules) and Python for the models (M24).
  */
 export const ROADMAPS: Roadmap[] = [
   {
     id: 'ai-product',
     title: 'AI Product Engineer',
-    blurb: 'The order LAUNCHPAD itself teaches in: the terminal, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.',
-    steps: ['bash', 'javascript', 'typescript', 'html', 'sql', 'python'],
+    blurb: 'The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.',
+    steps: ['bash', 'git', 'javascript', 'typescript', 'html', 'sql', 'python'],
+  },
+  {
+    id: 'software',
+    title: 'Software Engineer',
+    blurb: 'The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.',
+    steps: ['python', 'bash', 'git', 'sql', 'cpp'],
   },
   {
     id: 'frontend',
     title: 'Frontend Developer',
-    blurb: 'Pages people use: HTML and CSS first, then the JavaScript that makes them react, then TypeScript to keep it correct as it grows.',
-    steps: ['bash', 'html', 'javascript', 'typescript'],
+    blurb: 'Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.',
+    steps: ['html', 'javascript', 'typescript', 'bash', 'git'],
   },
   {
     id: 'backend',
     title: 'Backend Developer',
-    blurb: 'The server side: JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.',
-    steps: ['bash', 'javascript', 'typescript', 'sql'],
+    blurb: 'The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.',
+    steps: ['bash', 'git', 'javascript', 'typescript', 'sql'],
   },
   {
     id: 'data',
     title: 'Data & ML',
-    blurb: 'Python, the language of data work and machine learning, and SQL to get the data out of where it lives.',
-    steps: ['bash', 'python', 'sql'],
+    blurb: 'Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.',
+    steps: ['python', 'sql', 'bash', 'git'],
   },
   {
     id: 'systems',
     title: 'Systems & C++',
-    blurb: 'Close to the machine: Python to learn to think in code, then C++ for programs that are fast and exact about memory.',
-    steps: ['bash', 'python', 'cpp'],
+    blurb: 'Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.',
+    steps: ['bash', 'git', 'python', 'cpp'],
   },
 ]
 
@@ -93,6 +101,7 @@ export async function runLearn(
   const { onStatus } = opts
   switch (lesson.lang) {
     case 'bash':
+    case 'git':
       return { stdout: '', stderr: '', error: null, ...(opts.shell ? { shell: opts.shell } : {}), ms: 0 }
     case 'html': {
       const r = await runWebChecks(program, domSteps(lesson))
@@ -125,7 +134,7 @@ export async function runLearn(
 
 /** The editor's grammar for a lesson's language. LAUNCHPAD's editor knows them all. */
 export function editorLang(lang: LearnLang): Lang {
-  return lang
+  return lang === 'git' ? 'bash' : lang
 }
 
 /** Starts a language's runtime downloading before the first Run, where that is cheap. */

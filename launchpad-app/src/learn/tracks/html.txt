@@ -1,5 +1,6 @@
 @track html
 @title Web
+@name HTML and CSS: building pages
 @blurb HTML, CSS and a little JavaScript, with a live preview: from your first heading to a page that reacts to clicks.
 
 === web-01 | Your first page

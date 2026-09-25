@@ -1,5 +1,6 @@
 @track typescript
 @title TypeScript
+@name TypeScript: types that catch bugs
 @blurb JavaScript with a checker that reads your code before it runs. Strict mode, from annotations to generics.
 
 === ts-01 | Type annotations

@@ -13,17 +13,19 @@ rebuilt around four modes, where every language really runs.
   a table; Web renders HTML, CSS and JavaScript in a live preview with its console; Terminal is a
   practice shell. One IDE window for all of them: a floating Run Code button, and a panel below
   with Test cases, Console, Input, Results or Preview.
-- **Learn to code.** It opens on roadmaps: pick a goal — AI Product Engineer, Frontend, Backend, Data
-  & ML, Systems & C++ — and its courses are laid out in the order a mentor would teach them, as a
-  numbered path ending at a finish line. Seven courses, 83 lessons: Terminal, Web, JavaScript,
-  TypeScript, Python, SQL and C++. Each lesson is a short explanation and a challenge, done in the
+- **Learn to code.** It opens on roadmaps: pick a goal — AI Product Engineer, Software Engineer,
+  Frontend, Backend, Data & ML, Systems & C++ — and its courses are laid out in the order a mentor
+  would teach them, as a numbered path of course tiles ending at a certificate, lit up as you go.
+  See the roadmap walks a goal step by step. Eight courses, 93 lessons: Linux and the command line,
+  Git and version control, HTML and CSS, JavaScript, TypeScript, Python, SQL and C++. Each lesson is a short explanation and a challenge, done in the
   same IDE window; Run Code really runs your code and shows every check as a test case — the input,
   what was expected, and what your code produced. Hints come one at a time, the solution when you
   ask. Your code, progress and a daily streak are saved on this device. It is practice: it does not
   change claims, readiness or reviews. More lessons, past the basics, will follow.
 - **A practice terminal.** A pretend computer that lives in the page: `pwd`, `ls`, `cd`, `mkdir`,
-  `touch`, `echo` with `>` and `>>`, `cat`, `cp`, `mv`, `rm`, `grep`, `&&`, and enough git — init,
-  status, add, commit, log, branch, checkout — to practise the loop. It says plainly that it is a
+  `touch`, `echo` with `>` and `>>`, `cat`, `cp`, `mv`, `rm`, `grep`, `&&`, and git — init, status,
+  add, commit, log, diff, restore, branch, switch and merge, with switching branches really swapping
+  the files in the folder. It says plainly that it is a
   simulation; M1's real terminal work still happens on your own machine.
 - **C++ compiles and runs in your browser.** Real clang++ (C++20, warnings on), compiled to
   WebAssembly and running in the tab: containers, algorithms, strings, streams, smart pointers. The

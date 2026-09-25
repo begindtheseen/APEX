@@ -1,5 +1,6 @@
 @track javascript
 @title JavaScript
+@name JavaScript, the language of the web
 @blurb The language of the web, from console.log to async/await — the ground M1 to M3 build on.
 
 === js-01 | Printing

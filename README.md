@@ -110,9 +110,10 @@ exactly as written.
   `src/lib/shell.ts`). The compilers are downloaded from a CDN on first use;
   the browser suite serves the same pinned versions from `node_modules`.
 - **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
-  as a numbered path — over seven courses of basics (Terminal, Web,
-  JavaScript, TypeScript, Python, SQL, C++), each lesson done in the same IDE
-  window and graded as test cases. Lessons are plain text in
+  as a numbered path of course tiles ending at a certificate — over eight
+  courses of basics (the command line, Git, HTML and CSS, JavaScript,
+  TypeScript, Python, SQL, C++), each lesson done in the same IDE window and
+  graded as test cases. Lessons are plain text in
   `launchpad-app/src/learn/tracks/*.txt` (the format is described in
   `src/learn/parse.ts`); the roadmaps are in `src/learn/platform.ts`;
   `test/browser/learn.js` proves every lesson's solution passes and every

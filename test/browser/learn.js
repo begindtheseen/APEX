@@ -70,7 +70,7 @@ async function typeCommands(p, text) {
 (async () => {
   const src = path.join(ENV.REPO, 'launchpad-app', 'src', 'learn');
   const { parseTrack } = await import(pathToFileURL(path.join(src, 'parse.ts')).href);
-  const langs = ['bash', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
+  const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
   const tracks = langs.map((l) => parseTrack(fs.readFileSync(path.join(src, 'tracks', l + '.txt'), 'utf8'), l + '.txt'));
 
   const b = await chromium.launch(ENV.launchOpts);
@@ -83,16 +83,24 @@ async function typeCommands(p, text) {
   await LP.reset(p);
   await LP.open(p, '/learn');
 
-  const goals = await p.$$eval('.ide-modes [role=tab]', (e) => e.map((c) => c.textContent.trim()));
-  ok('Learn to code opens on roadmaps: a pill per goal', goals.length >= 4 && goals[0] === 'AI Product Engineer', goals.join(', '));
-  const tiles = await p.$$eval('.rm-tile', (e) => e.map((t) => (t.querySelector('.rm-tile__title') || {}).textContent));
-  ok('the goal shows its courses in order, ending at a finish line', tiles.join(',') === 'Terminal,JavaScript,TypeScript,Web,SQL,Python,Finish line', tiles.join(','));
-  const links = await p.$$eval('.rm-tile[data-link]', (e) => e.map((t) => t.dataset.link));
-  ok('the path snakes: along a row, down, and back', links.includes('right') && links.includes('down') && links.includes('left'), links.join(','));
-  await p.click('.ide-modes [role=tab]:has-text("Data & ML")');
+  const goals = await p.$$eval('.rm-goals [role=tab]', (e) => e.map((c) => c.textContent.trim()));
+  ok('Learn to code opens on roadmaps: a pill per goal', goals.length >= 5 && goals[0] === 'AI Product Engineer' && goals.includes('Software Engineer'), goals.join(', '));
+  const steps = await p.$$eval('.rm-step', (e) => e.map((t) => (t.querySelector('.rm-step__label') || {}).textContent || (t.querySelector('.rm-tile--end') ? 'CERTIFICATE' : '')));
+  ok('the goal shows its courses in order, ending at a certificate',
+    steps.join(' / ') === 'Linux and the command line / Git and version control / JavaScript, the language of the web / TypeScript: types that catch bugs / HTML and CSS: building pages / SQL fundamentals / Python, a first language / CERTIFICATE', steps.join(' / '));
+  const badges = await p.$$eval('.rm-tile__n', (e) => e.map((t) => t.textContent.trim()));
+  ok('each course tile carries its step number', badges.join(',') === '1,2,3,4,5,6,7', badges.join(','));
+  const links = await p.$$eval('.rm-link', (e) => e.map((t) => t.dataset.dir));
+  ok('the dotted path snakes: along a row, around the end, and back', links.includes('right') && links.includes('turn-right') && links.includes('left'), links.join(','));
+  await p.click('.rm-goals [role=tab]:has-text("Data & ML")');
   await p.waitForTimeout(300);
-  const dataTiles = await p.$$eval('.rm-tile .rm-tile__title', (e) => e.map((t) => t.textContent));
-  ok('picking another goal shows its roadmap', dataTiles.join(',') === 'Terminal,Python,SQL,Finish line' && /goal=data/.test(p.url()), dataTiles.join(','));
+  const dataSteps = await p.$$eval('.rm-step__label', (e) => e.map((t) => t.textContent));
+  ok('picking another goal shows its roadmap', dataSteps.join(' / ') === 'Python, a first language / SQL fundamentals / Linux and the command line / Git and version control' && /goal=data/.test(p.url()), dataSteps.join(' / '));
+  await p.click('.rm__see');
+  await p.waitForTimeout(400);
+  const detail = await p.$$eval('.rmv-step', (e) => e.length);
+  ok('See the roadmap opens the goal step by step', /#\/learn\/roadmap-data/.test(p.url()) && detail === 5, p.url() + ' ' + detail);
+  await LP.go(p, '/learn');
   const courses = await p.$$eval('.lm-course', (e) => e.length);
   ok('every course is listed too', courses === langs.length, String(courses));
   const navLearn = await p.$$eval('.side .nav-item', (e) => e.some((a) => /Learn to code/.test(a.textContent)));
@@ -105,7 +113,7 @@ async function typeCommands(p, text) {
     const t0 = Date.now();
     for (const lesson of track.lessons) {
       await LP.go(p, '/learn/' + lesson.id);
-      if (track.lang === 'bash') {
+      if (track.lang === 'bash' || track.lang === 'git') {
         await p.waitForSelector('#termInput');
         const s = await check(p);
         if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
@@ -127,8 +135,9 @@ async function typeCommands(p, text) {
   await LP.go(p, '/learn');
   const metas = await p.$$eval('.lm-course__meta', (e) => e.map((c) => c.textContent.trim()));
   ok('every course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
-  const end = await p.$eval('.rm-tile--end', (e) => e.dataset.state).catch(() => '');
-  ok('and the goal reaches its finish line', only ? true : end === 'done', end);
+  const end = await p.$eval('.rm-tile--end', (e) => e.dataset.lit).catch(() => '');
+  const lit = await p.$$eval('.rm-tile:not(.rm-tile--end)', (e) => e.every((t) => t.dataset.lit === 'true'));
+  ok('and every step lights up, through to the certificate', only ? true : end === 'true' && lit, end);
   await LP.go(p, '/learn/javascript');
   const outline = await p.$$eval('.lm-outline li', (e) => e.map((li) => li.dataset.done));
   ok('a course page lists its lessons with what was passed', outline.length === 12 && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
