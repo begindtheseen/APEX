@@ -1,4 +1,4 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-QTR4qJgX.js";import{t as p}from"./markdown-ChhZRiFg.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as ee,b as y,c as te,d as ne,g as b,i as x,j as S,k as C,l as w,m as T,p as re,r as ie,s as ae,t as oe,v as se,x as ce,y as E}from"./lessonCode-CIep__Ie.js";var D=e(),O=`@@LEARN`,le=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var ue=`const throws = (f) => { try { f(); return false } catch { return true } }
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-DhKNh0QM.js";import{t as p}from"./markdown-C6hN59LO.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as ee,b as y,c as te,d as ne,g as b,i as x,j as S,k as C,l as w,m as T,p as re,r as ie,s as ae,t as oe,v as se,x as ce,y as E}from"./lessonCode-DYwfHxCs.js";var D=e(),O=`@@LEARN`,le=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var ue=`const throws = (f) => { try { f(); return false } catch { return true } }
   const __eq = (a, b) => { if (Object.is(a, b)) return true; if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => __eq(a[k], b[k])) }
   const __show = (v) => { if (v === undefined) return 'undefined'; if (typeof v === 'function') return '[Function]'; if (typeof v === 'bigint') return v + 'n'; try { const j = JSON.stringify(v); return j === undefined ? String(v) : j } catch { return String(v) } }
   const __err = (e) => (e instanceof Error ? e.name + ': ' + e.message : String(e))
@@ -43,294 +43,7 @@ template <class T> std::string __learn_show(const T& v) { if constexpr (requires
 `),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?k(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=j(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:P(t),actual:P(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(j(e)));return f(!e.length,{expected:r.expect.join(`
 `),actual:P(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:k(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=N(r.rows)+(r.ordered?`
 (in this order)`:``);return e?f(M(r.rows,e.rows,r.ordered),{expected:t,actual:N(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);return e?f(M(r.rows,e,!0),{input:r.sql,expected:N(r.rows),actual:N(e)}):f(!1,{input:r.sql,detail:`This check never ran.`})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
-`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Se=`@track bash
-@title Terminal
-@name Linux and the command line
-@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.
-
-=== term-01 | Where am I?
---- teach
-The **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.
-
-The line before your cursor is the **prompt**: \`~/project $\` means you are in a folder called \`project\` inside your home folder (\`~\`). Two commands you will use every day:
-
-- \`pwd\` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.
-- \`ls\` — **l**i**s**t what is in it. Folders show with a \`/\` at the end.
-
-This terminal is a practice one: it lives in the page, so nothing you type can touch your real files.
---- task
-Run \`pwd\` to see where you are, then \`ls\` to see what is in this folder.
---- starter
-mkdir src
-touch README.md
---- solution
-pwd
-ls
---- hint
-Type \`pwd\` and press Enter. Then type \`ls\` and press Enter.
---- check shell | You printed where you are
-ran pwd
-printed /home/you/project
---- check shell | You listed the folder
-ran ls
-printed README.md
-
-=== term-02 | Making folders and moving into them
---- teach
-\`mkdir name\` **m**a**k**es a **dir**ectory (a folder). \`cd name\` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.
-
-\`\`\`
-~/project $ mkdir notes
-~/project $ cd notes
-~/project/notes $
-\`\`\`
-
-\`cd ..\` goes back up one level, and \`cd\` on its own takes you home.
---- task
-Make a folder called \`notes\` and move into it.
---- starter
---- solution
-mkdir notes
-cd notes
---- hint
-First \`mkdir notes\`, then \`cd notes\`.
---- check shell | The notes folder exists
-dir notes
---- check shell | You are inside it
-cwd notes
-
-=== term-03 | Files: create, write, read
---- teach
-\`touch name\` makes an empty file. To put text in a file, \`echo\` it and **redirect** the output with \`>\`:
-
-\`\`\`
-echo "Launch at dawn" > plan.txt
-\`\`\`
-
-\`echo\` prints its text; \`> plan.txt\` sends that text into the file instead of the screen. Careful: \`>\` **replaces** whatever the file held.
-
-\`cat plan.txt\` prints a file's contents, so you can check what you wrote.
---- task
-Create \`hello.txt\` containing exactly \`Hello, terminal!\`, then show it with \`cat\`.
---- starter
---- solution
-echo "Hello, terminal!" > hello.txt
-cat hello.txt
---- hint
-Put the text in quotes: \`echo "Hello, terminal!" > hello.txt\`.
---- hint
-Then \`cat hello.txt\`.
---- check shell | hello.txt holds the greeting
-file hello.txt == Hello, terminal!
---- check shell | You read it back with cat
-ran cat
-printed Hello, terminal!
-
-=== term-04 | Paths
---- teach
-A **path** says where something is. \`docs/guides\` means "the \`guides\` folder inside \`docs\`, inside where I am now" — a **relative** path. \`..\` means "the folder above", so \`../..\` is two levels up. \`~\` is your home folder, and a path starting with \`/\` is **absolute**: it starts from the very top.
-
-\`mkdir -p\` makes every folder along a path at once, so you do not need one \`mkdir\` per level:
-
-\`\`\`
-mkdir -p src/components/buttons
-cd src/components
-cd ../..
-\`\`\`
---- task
-With one command, make the folders \`docs/guides\`. Move into \`docs/guides\`, then come back up to \`project\` using \`..\`.
---- starter
---- solution
-mkdir -p docs/guides
-cd docs/guides
-cd ../..
---- hint
-\`mkdir -p docs/guides\` makes both folders.
---- hint
-From \`docs/guides\`, two levels up is \`cd ../..\`.
---- check shell | docs/guides exists
-dir docs/guides
---- check shell | You went into it
-ran cd docs/guides
---- check shell | You came back up with ..
-used ..
-cwd .
-
-=== term-05 | Copying and moving
---- teach
-\`cp source destination\` **c**o**p**ies a file. \`mv source destination\` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, \`mv\` is also how you rename:
-
-\`\`\`
-cp report.txt report-backup.txt
-mv report.txt final-report.txt
-\`\`\`
-
-If the destination is a folder, the file goes inside it with the same name: \`mv notes.txt archive/\`. Copying a whole folder needs \`cp -r\` (**r**ecursive).
---- task
-There is a file called \`draft.txt\`. Copy it to \`backup.txt\`, then rename \`draft.txt\` to \`final.txt\`.
---- starter
-echo "Our first mission plan" > draft.txt
---- solution
-cp draft.txt backup.txt
-mv draft.txt final.txt
---- hint
-\`cp draft.txt backup.txt\` first; then \`mv draft.txt final.txt\`.
---- check shell | backup.txt is a copy
-file backup.txt == Our first mission plan
---- check shell | draft.txt is now final.txt
-file final.txt == Our first mission plan
-missing draft.txt
-
-=== term-06 | Deleting
---- teach
-\`rm file\` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.
-
-A folder needs \`rm -r folder\`: \`-r\` removes it and everything inside it. (\`rmdir\` only removes a folder that is already empty.)
-
-\`\`\`
-rm old-notes.txt
-rm -r build
-\`\`\`
---- task
-Delete the file \`junk.txt\` and the whole \`old\` folder (it has files inside). Leave \`keep.txt\` alone.
---- starter
-touch junk.txt
-touch keep.txt
-mkdir -p old/logs
-echo "stale" > old/logs/app.log
---- solution
-rm junk.txt
-rm -r old
---- hint
-\`rm junk.txt\` for the file, \`rm -r old\` for the folder.
---- check shell | junk.txt is gone
-missing junk.txt
---- check shell | old/ and everything in it is gone
-missing old
---- check shell | keep.txt is still there
-file keep.txt
-
-=== term-07 | Looking inside files
---- teach
-Real files can be long, so there are commands that show just part of one:
-
-- \`head -n 3 file\` — the first 3 lines. \`tail -n 3 file\` — the last 3.
-- \`wc -l file\` — **w**ord **c**ount; with \`-l\`, how many **l**ines.
-- \`grep text file\` — only the lines that contain \`text\`. Add \`-i\` to ignore case, \`-n\` to show line numbers.
-
-\`grep\` is how developers dig through logs: \`grep ERROR server.log\` pulls every error out of thousands of lines.
---- task
-\`launch.log\` is the log from a test launch. Count its lines with \`wc -l\`, then use \`grep\` to show only the lines containing \`ERROR\`.
---- starter
-echo "09:00 INFO systems check" > launch.log
-echo "09:01 INFO fuel loaded" >> launch.log
-echo "09:02 ERROR valve 3 stuck" >> launch.log
-echo "09:03 INFO valve 3 reset" >> launch.log
-echo "09:04 ERROR telemetry dropout" >> launch.log
-echo "09:05 INFO liftoff" >> launch.log
---- solution
-wc -l launch.log
-grep ERROR launch.log
---- hint
-\`wc -l launch.log\` counts the lines.
---- hint
-\`grep ERROR launch.log\` prints only the error lines.
---- check shell | You counted the lines
-ran wc -l
-printed 6 launch.log
---- check shell | You found both errors
-ran grep
-printed 09:02 ERROR valve 3 stuck
-printed 09:04 ERROR telemetry dropout
-
-=== term-08 | Chaining and appending
---- teach
-\`&&\` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:
-
-\`\`\`
-mkdir build && cd build
-\`\`\`
-
-\`>>\` is like \`>\`, but it **adds** to the end of the file instead of replacing it:
-
-\`\`\`
-echo "first" > list.txt
-echo "second" >> list.txt
-\`\`\`
---- task
-In a single line, make a folder \`logs\` and move into it using \`&&\`. Then build \`todo.txt\` with two lines, \`buy fuel\` then \`check engines\`, using \`>\` for the first and \`>>\` for the second.
---- starter
---- solution
-mkdir logs && cd logs
-echo "buy fuel" > todo.txt
-echo "check engines" >> todo.txt
---- hint
-\`mkdir logs && cd logs\` does both steps.
---- hint
-\`echo "buy fuel" > todo.txt\`, then \`echo "check engines" >> todo.txt\`.
---- check shell | You used && to make and enter logs
-used &&
-dir logs
-cwd logs
---- check shell | todo.txt has both lines, in order
-file logs/todo.txt contains buy fuel
-file logs/todo.txt contains check engines
-used >>
-
-=== term-09 | Hidden files, and the long listing
---- teach
-A file or folder whose name starts with a dot is **hidden**: plain \`ls\` skips it. Settings live in files like that — \`.env\`, \`.gitignore\`, \`.config\` — so you need to be able to see them.
-
-- \`ls -a\` shows **a**ll of them, hidden ones included (plus \`.\` for this folder and \`..\` for the one above).
-- \`ls -l\` is the **l**ong listing: one line per entry, with whether it is a folder (\`d\`) or a file (\`-\`), and its size.
-
-Flags combine: \`ls -la\` is both at once.
---- task
-Something in this folder is hidden. Find it with \`ls -a\`, then look at the sizes with \`ls -l\`.
---- starter
-echo "API_KEY=demo" > .env
-mkdir src
-echo "print('hi')" > main.py
---- solution
-ls -a
-ls -l
---- hint
-\`ls -a\` shows the hidden file.
---- hint
-\`ls -l\` shows one line per file, starting with \`-rw-r--r--\` for files.
---- check shell | You found the hidden file
-printed .env
---- check shell | You used the long listing
-printed -rw-r--r--
-
-=== term-10 | Getting home, and back again
---- teach
-Deep in a project, three shortcuts save a lot of typing:
-
-- \`cd ~\` (or just \`cd\`) jumps straight to your **home** folder, wherever you are.
-- \`cd -\` jumps back to wherever you were **before** the last \`cd\`.
-- An **absolute** path works from anywhere: \`cd /home/you/project\`.
-
-Run \`pwd\` whenever you want to be sure where you have landed.
---- task
-You are three folders deep, in \`src/app/components\`. Jump to your home folder, check with \`pwd\` that you are there, then come straight back with \`cd -\`.
---- starter
-mkdir -p src/app/components
-cd src/app/components
---- solution
-cd ~
-pwd
-cd -
---- hint
-\`cd ~\` goes home; \`pwd\` then prints \`/home/you\`.
---- hint
-\`cd -\` takes you back to \`src/app/components\` in one step.
---- check shell | You checked that you were home
-printed-line /home/you
---- check shell | You came back with cd -
-ran cd -
-cwd src/app/components
-`,Ce=`@track cpp
+`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Se='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',Ce=`@track cpp
 @title C++
 @name C++, close to the machine
 @blurb Compiled for real by clang++ in your browser: from main() and std::cout to vectors, strings, references, classes and pointers.
@@ -439,7 +152,7 @@ int add(int a, int b) {
 }
 \`\`\`
 
-The return type comes first, then the name, then typed parameters.
+The return type comes first, then the name, then the typed **parameters** (\`a\` and \`b\`). The values a call passes in — \`2\` and \`3\` in \`add(2, 3)\` — are the **arguments**.
 
 Arithmetic has one trap everyone meets: dividing two \`int\`s gives an \`int\`, throwing the remainder away.
 
@@ -775,7 +488,7 @@ s.substr(4, 4);        // "Love"
 for (char c : s) { }   // each character
 \`\`\`
 
-\`<cctype>\` has helpers for single characters: \`std::toupper(c)\`, \`std::isspace(c)\`, \`std::isdigit(c)\`.
+\`<cctype>\` has helpers for single characters: \`std::toupper(c)\`, \`std::isspace(c)\`, \`std::isdigit(c)\`. They take and return an \`int\`, not a \`char\`, so convert on the way in and out: \`static_cast<char>(std::toupper(static_cast<unsigned char>(c)))\`. The \`unsigned char\` step matters for letters outside plain English (like \`é\`), which a \`char\` can hold as a negative number the helpers are not allowed to receive.
 --- task
 Write \`std::string initials(const std::string& name)\` returning the uppercase first letter of each word (\`"ada lovelace"\` → \`"AL"\`; words are separated by spaces), and \`int count_char(const std::string& s, char c)\`. No \`main\`.
 --- starter
@@ -817,7 +530,7 @@ int count_char(const std::string& s, char c) {
 --- hint
 Keep a flag "the next letter starts a word": true at the start and after each space.
 --- hint
-\`out += static_cast<char>(std::toupper(c));\` appends one character.
+\`out += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));\` appends one uppercase character.
 --- check case | initials("ada lovelace") is "AL"
 initials("ada lovelace")
 => "AL"
@@ -848,6 +561,8 @@ So there are three ways to take an argument:
 - \`int n\` — a copy; cheap for small types
 - \`const std::vector<int>& v\` — no copy, read-only; the default for big things
 - \`std::vector<int>& v\` — no copy, and the function may change it
+
+The checks in this lesson are written as \`[] { …; return …; }()\`. That is a **lambda** — a small unnamed function — defined and called on the spot, so a check can set up variables, call your function and test the result. You will write lambdas yourself later; here you only need to read them.
 --- task
 Write \`void double_all(std::vector<int>& v)\` that doubles every element **in place**, and \`void swap_values(int& a, int& b)\`. No \`main\`.
 --- starter
@@ -1521,12 +1236,14 @@ ol li count == 3
 Forms collect input. A \`label\` names a field; its \`for\` matches the field's \`id\`, so clicking the label focuses the field (and screen readers read them together):
 
 \`\`\`html
-<label for="email">Email</label>
-<input id="email" type="email" placeholder="you@example.com">
-<button type="submit">Sign up</button>
+<form>
+  <label for="email">Email</label>
+  <input id="email" type="email" placeholder="you@example.com">
+  <button type="submit">Sign up</button>
+</form>
 \`\`\`
 
-\`type\` changes the field: \`text\`, \`email\`, \`password\`, \`number\`, \`checkbox\`… A \`button\` is what people press.
+A \`form\` wraps the fields that belong together. \`type\` changes the field: \`text\`, \`email\`, \`password\`, \`number\`, \`checkbox\`… \`placeholder\` is grey example text that disappears when you type. A \`button\` is what people press.
 --- task
 Build a small sign-in form: a label \`Username\` joined to an \`input\` with \`id="username"\`, a label \`Password\` joined to a password \`input\` with \`id="password"\`, and a button that says \`Sign in\`.
 --- starter
@@ -1755,6 +1472,12 @@ A \`<script>\` tag runs JavaScript in the page. It can find elements and change 
 \`\`\`
 
 \`querySelector\` takes the same selectors as CSS. \`addEventListener('click', …)\` runs a function every time the button is clicked. Put the script after the elements it uses.
+
+The JavaScript in that example, piece by piece:
+
+- \`const button = …\` makes a **variable**: a name for a value, here the element found on the page. Use \`const\` for a name that will always mean the same thing, and \`let\` for one you will change later: \`let n = 0\`, then \`n = n + 1\`.
+- \`() => { … }\` is an **arrow function**: a block of code saved to run later. Handing it to \`addEventListener\` means "run this every time the button is clicked", not "run it now".
+- \`'Lift off!'\` is a **string** — text in quotes, single or double.
 --- task
 Make a counter: a button with \`id="add"\` and a paragraph with \`id="count"\` that starts at \`0\`. Each click adds one to the number shown.
 --- starter
@@ -1808,8 +1531,10 @@ An \`input\` fires an \`input\` event every time its text changes, and \`.value\
 \`\`\`
 
 This is the loop behind every live search box and character counter.
+
+Two string tools do the work here. \`+\` joins strings together: \`'Hello, ' + 'Ada'\` is \`'Hello, Ada'\`, and a number joined to a string becomes text, so \`18 + ' left'\` is \`'18 left'\`. \`.length\` is how many characters a string holds: \`'rocket'.length\` is \`6\` (no brackets — it is a value, not a call). Use brackets to do the arithmetic first: \`(20 - 6) + ' left'\`.
 --- task
-Make a character counter: an \`input\` with \`id="message"\` and a paragraph with \`id="left"\`. As she types, \`#left\` should say how many of 20 characters are left, like \`17 left\`. Before any typing it says \`20 left\`.
+Make a character counter: an \`input\` with \`id="message"\` and a paragraph with \`id="left"\`. As you type, \`#left\` should say how many of 20 characters are left, like \`17 left\`. Before any typing it says \`20 left\`.
 --- starter
 <input id="message">
 <p id="left">20 left</p>
@@ -1857,6 +1582,8 @@ Pages are usually built from data. Loop over an array and create an element for 
   }
 <\/script>
 \`\`\`
+
+\`['Ada', 'Lin', 'Sam']\` is an **array**: several values in order, inside square brackets. \`for (const name of crew) { … }\` is a **\`for…of\` loop**: it runs the block once for each item, with \`name\` holding the current one — \`'Ada'\`, then \`'Lin'\`, then \`'Sam'\`.
 
 \`createElement\` makes a new element, \`textContent\` fills it, and \`appendChild\` puts it on the page. This is, underneath, what every front-end framework does.
 --- task
@@ -2070,6 +1797,15 @@ if (temperature > 30) {
 \`\`\`
 
 Compare with \`===\` and \`!==\` (strict: \`1 === '1'\` is false). Avoid \`==\`, which converts types first and surprises people. Combine with \`&&\` (and), \`||\` (or), \`!\` (not).
+
+When you only need to choose between two **values**, the **ternary** operator does it in one expression — \`condition ? valueIfTrue : valueIfFalse\`:
+
+\`\`\`js
+const temperature = 31
+const label = temperature > 30 ? 'hot' : 'not hot'   // 'hot'
+\`\`\`
+
+Use it for a simple either-or; for three or more outcomes, \`if\` / \`else if\` reads better.
 --- task
 Write a function \`grade(score)\` that returns \`'pass'\` for 70 or more, \`'close'\` for 60 to 69, and \`'fail'\` otherwise.
 --- starter
@@ -2121,7 +1857,7 @@ for (let i = 1; i <= 5; i++) {
 console.log(total)   // 15
 \`\`\`
 
-\`while (condition) { … }\` repeats while the condition is true.
+\`while (condition) { … }\` repeats while the condition is true — make sure something inside changes, or it never stops. Inside any loop, \`break\` leaves the loop early and \`continue\` skips straight to the next pass.
 --- task
 Print the numbers 1 to 15, one per line, printing \`Fizz\` for multiples of 3, \`Buzz\` for multiples of 5, and \`FizzBuzz\` for multiples of both. Use a loop.
 --- starter
@@ -2167,7 +1903,11 @@ function add(a, b) {
 const multiply = (a, b) => a * b    // an arrow function
 \`\`\`
 
+\`a\` and \`b\` are the function's **parameters** — the names it gives its inputs. The values you pass when you call it, like \`2\` and \`3\` in \`add(2, 3)\`, are the **arguments**. \`return\` hands a value back to whoever called the function.
+
 Parameters can have defaults: \`function greet(name, mark = '!') { … }\`. A function with no \`return\` gives back \`undefined\`. Functions are values: you can pass them to other functions, which is how most of JavaScript works.
+
+\`split\` cuts a string into an array of pieces. \`/\\s+/\` is a **pattern** (a regular expression) meaning "one or more whitespace characters", so \`'a  b c'.split(/\\s+/)\` is \`['a', 'b', 'c']\` however many spaces sit between the words.
 --- task
 Write:
 
@@ -2215,6 +1955,17 @@ planets.includes('Venus')   // true
 \`\`\`
 
 \`const\` stops you reassigning the variable, but you can still change the array's contents.
+
+To give back several named results at once, return an **object** — named values in braces (the next lesson covers objects properly):
+
+\`\`\`js
+function range(values) {
+  return { low: Math.min(...values), high: Math.max(...values) }
+}
+range([4, 9, 2]).high   // 9
+\`\`\`
+
+\`...values\` **spreads** the array into separate arguments, so \`Math.min(...[4, 9, 2])\` is \`Math.min(4, 9, 2)\`.
 --- task
 Write \`stats(latencies)\` that returns an object \`{ fastest, slowest, average }\` for an array of numbers. (\`Math.min(...arr)\` spreads the array into arguments.)
 --- starter
@@ -2255,6 +2006,8 @@ Object.keys(user)      // ['name', 'plan', 'credits']
 const { name, plan } = user    // destructuring: pull properties into variables
 const copy = { ...user, plan: 'free' }   // spread: a new object with one change
 \`\`\`
+
+Reading a property that is not there gives \`undefined\`. The \`??\` operator supplies a fallback for that: \`a ?? b\` is \`a\`, unless \`a\` is \`null\` or \`undefined\`, in which case it is \`b\`. So \`user.nickname ?? user.name\` is the name when there is no nickname — and \`(counts[word] ?? 0) + 1\` starts a missing count at 0.
 
 Objects are how JavaScript represents almost everything — a request, a row, a config.
 --- task
@@ -2726,7 +2479,7 @@ for n in range(1, 6):
 print(total)               # 15
 \`\`\`
 
-A \`while\` loop repeats as long as its condition is true — make sure something inside changes, or it never stops.
+A \`while\` loop repeats as long as its condition is true — make sure something inside changes, or it never stops. Inside any loop, \`break\` leaves the loop early and \`continue\` skips straight to the next pass.
 --- task
 Print the numbers from 1 to 15, one per line, but print \`Fizz\` instead of multiples of 3, \`Buzz\` instead of multiples of 5, and \`FizzBuzz\` instead of multiples of both. Use a loop.
 --- starter
@@ -2777,7 +2530,9 @@ greet("Ada")         # "Hello, Ada!"
 greet("Lin", "?")    # "Hello, Lin?"
 \`\`\`
 
-\`def\` starts the definition; the names in brackets are **parameters**; \`return\` hands a value back to whoever called it. A parameter with \`=\` has a default. A function without \`return\` returns \`None\`.
+\`def\` starts the definition; the names in brackets are **parameters**; the values you pass when you call it (\`"Lin"\` and \`"?"\` above) are the **arguments**. \`return\` hands a value back to whoever called it. A parameter with \`=\` has a default. A function without \`return\` returns \`None\` — Python's value for "nothing".
+
+\`pass\` is a statement that does nothing. It holds the place of a body you have not written yet, since a \`def\` cannot be left empty — you will see it in starters.
 --- task
 Write a function \`word_count(text)\` that returns how many words are in \`text\` (words are separated by spaces — \`text.split()\` gives you the list of words).
 
@@ -3247,12 +3002,12 @@ Return **every** user's email with how many requests they have made — includin
 SELECT u.email, COUNT(*)
 FROM users u
 JOIN requests r ON r.user_id = u.id
-GROUP BY u.id;
+GROUP BY u.id, u.email;
 --- solution
 SELECT u.email, COUNT(r.id) AS requests
 FROM users u
 LEFT JOIN requests r ON r.user_id = u.id
-GROUP BY u.id;
+GROUP BY u.id, u.email;
 --- hint
 Change \`JOIN\` to \`LEFT JOIN\` so sam is kept.
 --- hint
@@ -3341,11 +3096,13 @@ CREATE TABLE invoices (
 
 - \`PRIMARY KEY\` — uniquely identifies each row
 - \`NOT NULL\` — a value is required
-- \`REFERENCES users(id)\` — a **foreign key**: must point at a real user
+- \`REFERENCES users(id)\` — a **foreign key**: each \`user_id\` is meant to point at a real row in \`users\`
 - \`DEFAULT 0\` — the value when an insert leaves it out
 - \`UNIQUE\` — no two rows may share the value
 
 Constraints are rules the database enforces for every writer, forever — cheaper than remembering them in every piece of code.
+
+One catch in SQLite, the database these lessons run on: it records a foreign key but only **enforces** it once the connection has run \`PRAGMA foreign_keys = ON;\`. Until then, an \`api_keys\` row pointing at user 99 is accepted. Most other databases (PostgreSQL, MySQL) always enforce it; in SQLite, turn it on first.
 --- task
 Create a table \`api_keys\` with: \`id\` (integer primary key), \`user_id\` (integer, required, referencing \`users(id)\`), \`label\` (text, required), and \`revoked\` (integer, required, default \`0\`). Then insert one key: id \`1\`, user \`1\`, label \`laptop\` — leaving \`revoked\` to its default.
 --- starter
@@ -3803,6 +3560,8 @@ first(['a', 'b'])       // string | undefined
 \`\`\`
 
 \`T\` is filled in from the arguments, so the result keeps its real type instead of collapsing to \`any\`. Arrays themselves are generic: \`number[]\` is shorthand for \`Array<number>\`, and \`Promise<string>\` is a promise of a string.
+
+Two more pieces the task uses. \`Record<string, number>\` is a generic type too: an object whose keys are strings and whose values are numbers — the type of a counts object like \`{ a: 2, l: 1 }\`. And a parameter can be a function: \`key: (item: T) => string\` means "a function that takes one \`T\` and returns a string".
 --- task
 Write a generic \`lastN<T>(items: T[], n: number): T[]\` that returns the last \`n\` items (all of them if there are fewer), and a generic \`groupCount<T>(items: T[], key: (item: T) => string): Record<string, number>\` that counts items per key.
 --- starter
@@ -3860,7 +3619,7 @@ function isUser(x: unknown): x is User {
 }
 \`\`\`
 
-This is "parse, don't assert": \`JSON.parse(text) as User\` compiles and lies; a guard checks. (In a real project a library such as Zod writes these for you — M3.)
+This is "parse, don't assert": \`JSON.parse(text) as User\` compiles and lies; a guard checks. The one \`as\` inside the guard is different from the ones lesson 6 ruled out: \`x as Record<string, unknown>\` claims only "an object with some properties", and every property is still \`unknown\` until its own \`typeof\` check proves what it is. (In a real project a library such as Zod writes these for you — M3.)
 --- task
 Write \`isPoint(x: unknown): x is Point\` for \`interface Point { x: number; y: number }\`, then \`parsePoint(text: string): Point | null\` that parses JSON and returns the point only if it really is one.
 --- starter

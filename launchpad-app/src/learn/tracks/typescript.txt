@@ -384,6 +384,8 @@ first(['a', 'b'])       // string | undefined
 ```
 
 `T` is filled in from the arguments, so the result keeps its real type instead of collapsing to `any`. Arrays themselves are generic: `number[]` is shorthand for `Array<number>`, and `Promise<string>` is a promise of a string.
+
+Two more pieces the task uses. `Record<string, number>` is a generic type too: an object whose keys are strings and whose values are numbers — the type of a counts object like `{ a: 2, l: 1 }`. And a parameter can be a function: `key: (item: T) => string` means "a function that takes one `T` and returns a string".
 --- task
 Write a generic `lastN<T>(items: T[], n: number): T[]` that returns the last `n` items (all of them if there are fewer), and a generic `groupCount<T>(items: T[], key: (item: T) => string): Record<string, number>` that counts items per key.
 --- starter
@@ -441,7 +443,7 @@ function isUser(x: unknown): x is User {
 }
 ```
 
-This is "parse, don't assert": `JSON.parse(text) as User` compiles and lies; a guard checks. (In a real project a library such as Zod writes these for you — M3.)
+This is "parse, don't assert": `JSON.parse(text) as User` compiles and lies; a guard checks. The one `as` inside the guard is different from the ones lesson 6 ruled out: `x as Record<string, unknown>` claims only "an object with some properties", and every property is still `unknown` until its own `typeof` check proves what it is. (In a real project a library such as Zod writes these for you — M3.)
 --- task
 Write `isPoint(x: unknown): x is Point` for `interface Point { x: number; y: number }`, then `parsePoint(text: string): Point | null` that parses JSON and returns the point only if it really is one.
 --- starter

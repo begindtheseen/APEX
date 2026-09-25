@@ -1,0 +1,479 @@
+# Curriculum map: what each course teaches
+
+The continuity reference for every course in `tracks/`. For each language: what
+each lesson teaches (by id), the words it uses for those ideas, the conventions
+it sets, and what a learner can be assumed to know when the next course
+starts. A later lesson may use a concept only if it is listed here for an
+earlier course in the same ladder, or it teaches it itself.
+
+Rules and format: `AUTHORING.md`, `parse.ts`, `grade.ts`. Course order and
+roadmaps: `platform.ts` (`ROADMAPS`) and `index.ts` (`MASTERY`).
+
+---
+
+## Across every language
+
+### The ladder
+
+Each language: basics (`<lang>.txt`) → intermediate → advanced → expert →
+projects. The per-language **MASTERY** roadmap (`master-<lang>`) walks all of
+them in that order and nothing else, so each ladder must be self-sufficient
+except for the dependencies named under *Between languages* below.
+
+### What the basics do and do not do
+
+The basics are **concept lessons only**: an idea, a worked example, one task.
+No basics course has a debugging lesson with a bug report, a problem-solving
+lesson, a design/refactor lesson or a multi-lesson build. (Near misses: `ts-02`
+and `ts-06` fix code that does not type-check; `sql-08` fixes a wrong join;
+`js-12` rewrites sequential awaits as parallel.) So in every language:
+
+- The **first debugging lesson** of the ladder must teach the method
+  (reproduce, read the error, check assumptions, narrow down, print/inspect,
+  fix the cause) — later ones can refer back to it.
+- The **first problem-solving lesson** must teach the approach (restate,
+  examples, brute force, find the pattern, improve) and what "a big input
+  that only an efficient solution finishes" means. Big-O has not been taught
+  anywhere in the basics.
+- The **first design lesson** must say what "refactor" means (same behaviour,
+  better shape) and why the checks still pass.
+- The **first build sequence** must say that each lesson's starter carries on
+  from the last solution.
+
+### Shared exercises in the basics (do not repeat them later)
+
+Python, JavaScript, TypeScript and C++ basics deliberately share exercises, so
+a learner doing two languages meets them again. Later courses should not reuse
+these as "new" tasks (building on them is fine):
+
+| Exercise                                   | Python  | JavaScript | TypeScript | C++     |
+| ------------------------------------------ | ------- | ---------- | ---------- | ------- |
+| Hello, world + "… running in your browser" | py-01   | js-01      | —          | cpp-01  |
+| city / population (Houston, 2300000)       | py-02   | js-02      | ts-01      | cpp-02  |
+| token cost 1250 × 0.000003 + 380 × 0.000015 | py-03  | js-03      | —          | —       |
+| messy name → `user: ada lovelace (12 characters)` | py-04 | js-04 | —         | —       |
+| `grade(score)` pass / close / fail         | py-05   | js-05      | —          | cpp-05  |
+| FizzBuzz 1–15                              | py-07   | js-06      | —          | cpp-06  |
+| word count + is-even                       | py-08   | js-07      | ts-03      | cpp-07 (is_even) |
+| latency stats (fastest/slowest/average)    | py-06   | js-08      | ts-04 (minMax) | cpp-08 |
+| count words → map                          | py-09   | js-09      | ts-09 (groupCount) | cpp-12 |
+| `parse_port` 1–65535 (None/null vs error)  | py-11   | js-11      | —          | —       |
+| `Counter` class (start, increment, reset)  | py-12   | —          | —          | cpp-11  |
+
+### Shared world and tone
+
+- The running world is a **space mission** (launch logs, fuel, orbit, rocket,
+  engine, stage two) and an **AI product** (users, requests, tokens, models
+  `sonnet` / `haiku`, plans `free` / `pro`, `cost_usd`). Names: `ada`, `lin`,
+  `sam`, `kai`, `mo`; emails `…@example.com`; city Houston.
+- Lessons sometimes point at LAUNCHPAD modules: M1 (terminal/git), M3
+  (TypeScript, the trust boundary, Zod, "sequential when you meant parallel"),
+  M24 (Python models).
+- Second person ("you"), short plain sentences, the why and the common
+  mistake. Lesson text never calls the learner "she"/"her" (AUTHORING and
+  grade.ts do, internally; lessons do not).
+- Tasks: "Write `name(params)` that returns …", "Make the program print
+  exactly:" followed by a code block, "Create/Declare … called `x`". Every
+  name the checks use is spelled out in the task in backticks.
+- Hints: one to three, nudge first, never the full answer.
+
+### Shared terminology (keep these the same everywhere)
+
+| Idea | Word used | Where set |
+| --- | --- | --- |
+| named reusable code | **function** | py-08, js-07, ts-03, cpp-07 |
+| function attached to a value/object | **method** ("a function attached to the value") | py-04, js-04 |
+| names in a definition | **parameters** | py-08, js-07, cpp-03 (each defines both words) |
+| values passed in a call | **arguments** | py-08, js-07, cpp-03; also js-08 (spread into arguments), cpp-10 (pass by value) |
+| what a function gives back | **returns** / "hands a value back" | py-08 |
+| Python failure | **raises an exception** (`raise`, `try`/`except`) | py-11 |
+| JS/TS failure | **throws an error** (`throw`, `try`/`catch`/`finally`) | js-11 |
+| C++ failure | no exceptions: return `std::optional`, a code, `std::variant` or an error struct (not yet taught — see C++) | AUTHORING |
+| SQL failure | the database **refuses** the write (a constraint) | sql-09, sql-11 |
+| TS compile failure | **type error** (the compiler's error; nothing runs) | ts-01, ts-02 |
+| C++ compile failure | the **compiler's first error** / clang **warnings** | cpp-01, cpp-05 |
+| ordered collection | Python **list**, JS/TS **array**, C++ **`std::vector`** | py-06, js-08, ts-04, cpp-08 |
+| key → value | Python **dict/dictionary**, JS **object**, TS `Record<K, V>` / interface, C++ **`std::map`** | py-09, js-09, ts-09/11, cpp-12 |
+| "no value" | `None`, `null`/`undefined`, `NULL`, `nullptr` — each language's own, explained on first use | py-08, js-02, sql-08, cpp-13 |
+| text | **string** everywhere (`str` as Python's type name) | py-01, js-01 |
+| the grader | "the **checks**", "the **checker**", button **Run & check** | cpp-03, ts-02 |
+| filesystem container | **folder** (with "directory" explained once) | term-02 |
+| option after a command (`-p`, `-r`) | **flag** | term-04 (defined), term-09 |
+| inline unnamed function | **arrow function** (JS/TS/Web), **lambda** (C++; Python `lambda` not yet taught) | js-07, web-10, cpp-10 |
+| program input | C++/Python: the **Input** box (stdin) | cpp-04 |
+| web output | the **Preview** tab | web-01 |
+
+---
+
+## Between languages
+
+### Goal roadmaps (`ROADMAPS` in platform.ts)
+
+A goal roadmap step is a **language id**, which resolves (`trackFor`) to that
+language's **basics** course only.
+
+| Goal | Order |
+| --- | --- |
+| ai-product | bash → git → javascript → typescript → html → sql → python |
+| software | python → bash → git → sql → cpp |
+| frontend | html → javascript → typescript → bash → git |
+| backend | bash → git → javascript → typescript → sql |
+| data | python → sql → bash → git |
+| systems | bash → git → python → cpp |
+
+### Real dependencies
+
+- **Git basics assume Terminal basics.** `git-01` uses `ls -a` and hidden
+  files (term-09); `git-02` uses `touch`; `git-05` uses `echo … >>` (term-03,
+  term-08); `git-09` uses `echo … >` and `ls`. Every goal puts bash before git.
+- **TypeScript assumes JavaScript.** TS basics never teach `console.log`,
+  `let`/`const`, template literals, arrow functions, `slice`, `split`, object
+  spread, `??`, `Math.min(...arr)`, `JSON.parse` or `Promise` — they come from
+  js-01…js-12. `ts-03` is `js-07` retyped; `ts-04` reuses `js-08`'s spread;
+  `ts-11` reuses `js-09`'s spread; `ts-10` uses `JSON.parse` (js-11). Every
+  goal with TypeScript puts JavaScript (basics) first. Nothing guarantees
+  more: goal roadmaps reach only basics courses, and master-typescript holds
+  no JavaScript course. So a TS course may assume **JavaScript basics** and
+  any JavaScript idea the TS ladder itself has taught; a JavaScript idea from
+  a later JavaScript course (classes, `Map`/`Set`, modules, closures…) must be
+  bridged in the TS lesson's `teach` — briefly, in the words the JavaScript
+  course uses for it.
+- **Web's JavaScript** is self-contained at basics: `web-10` bridges
+  `const`/`let`, variables, arrow functions and strings; `web-11` string `+`
+  and `.length`; `web-12` arrays and `for…of`; the DOM is taught there too.
+  (In **frontend** html comes *before* javascript; in **ai-product** after.)
+  That is **all** the JavaScript a Web course may assume. Later Web courses
+  must bridge (a short paragraph, in the JavaScript course's words) anything
+  more — functions with `return` and parameters, `if`, objects,
+  `map`/`filter`, template literals, `try`/`catch`, `async`/`await` — since
+  master-html has no JavaScript course in it.
+- **C++ follows Python** in software and systems; the C++ basics mirror the
+  Python exercises, so C++ lessons may compare with Python ("like a Python
+  list") but must not require Python.
+- **SQL** comes after Python (software, data) or TypeScript (backend,
+  ai-product); SQL courses must not require either.
+- **Python** is first in software and data, so Python basics assume nothing.
+
+---
+
+## Terminal (`bash`) — course `bash`, prefix `term-`, 10 lessons
+
+The practice shell (`lib/shell.ts`) at the time of the basics: `pwd ls[-a -l]
+cd mkdir[-p] touch echo cat head/tail -n wc -l grep[-i] cp[-r] mv rm[-r] rmdir
+history clear whoami date help` and the `git` subset below; `&&`, `>`, `>>`.
+**No pipes** (`|` prints "not part of this practice terminal yet"), no
+variables, no scripts, no globbing, no `||`, no exit status, no `chmod`.
+Start folder `/home/you/project` (prompt `~/project $`). Checks are `shell`
+facts (`ran`, `used`, `printed`, `printed-line`, `file … == / contains`,
+`dir`, `missing`, `cwd`, `git …`).
+
+| Lesson | Teaches |
+| --- | --- |
+| term-01 | terminal, **command**, **prompt**, home `~`; `pwd`, `ls` (folders shown with `/`); this is a practice terminal |
+| term-02 | `mkdir` (makes a **directory** = folder), `cd`, `cd ..`, bare `cd` goes home |
+| term-03 | `touch`, `echo`, **redirect** `>` (replaces the file), `cat`; double quotes keep text together and stop `>`/`&` being read as the command |
+| term-04 | **path**: **relative**, `..`, `../..`, `~`, **absolute** (`/…`); **flag** (an option starting with `-`); `mkdir -p` |
+| term-05 | `cp`, `mv` (move = rename), moving into a folder, `cp -r` (**recursive**) |
+| term-06 | `rm`, `rm -r`, `rmdir` (empty only); no bin — read before Enter |
+| term-07 | `head -n`, `tail -n`, `wc -l`, `grep` (`-i`, `-n`); grep for digging through logs |
+| term-08 | `&&` (second runs only if the first worked), `>>` appends |
+| term-09 | **hidden** dot-files (`.env`, `.gitignore`), `ls -a` (`.` and `..`), `ls -l` long listing (`d` / `-`, size), **flags** combine (`-la`) |
+| term-10 | `cd ~`, `cd -`, absolute paths from anywhere; `pwd` to confirm |
+
+Conventions: task names exact file/folder names; solutions are the commands,
+one per line; text written with `echo "…" > file` in double quotes; files
+`launch.log`, `todo.txt`, `plan.txt`, `README.md`, `main.py`.
+
+**Assumed at Terminal · Intermediate:** navigate and manage files and folders
+by relative/absolute path; create/read/copy/move/delete files; write and
+append with `>`/`>>`; inspect with `head`/`tail`/`wc -l`/`grep -i -n`; chain
+with `&&`; see hidden files and the long listing. **Not yet:** pipes, `sort`,
+`uniq`, `cut`, `find`, wildcards/globbing, quoting rules beyond "put text in
+double quotes", variables and `$VAR`, environment variables, exit status and
+`||`, `2>` / stderr, permissions and `chmod`, scripts and `#!`, `if`/loops in
+the shell, `man`/`--help`, processes.
+
+---
+
+## Git (`git`) — course `git`, prefix `git-`, 11 lessons
+
+Practice shell git: `init status add commit -m log [--oneline] diff [--staged]
+restore [--staged] branch switch [-c] checkout [-b] merge`. **No remotes**
+(clone/push/pull/fetch), no stash, reset, revert, rebase, tag, `.gitignore`
+behaviour, or conflict resolution (a conflicting merge stops and changes
+nothing). Default branch `main`.
+
+| Lesson | Teaches |
+| --- | --- |
+| git-01 | what git is (history of a project), **repository**/repo, `git init`, the hidden `.git` folder (never edit it) |
+| git-02 | `git status`; **untracked**, **modified**, **staged**; status only reads |
+| git-03 | **stage** with `git add <file>` / `git add .`; "Changes to be committed"; choosing lets related changes go together |
+| git-04 | `git commit -m`; **commit** = snapshot + message; message finishes "This commit will…" (imperative: *Add…*, *Fix…*); `git log --oneline` (newest first, short id) |
+| git-05 | `git diff` (`+` added, `-` removed, space unchanged); `git diff --staged`; read your diff before committing |
+| git-06 | a tracked file goes through add → commit each time; **commit small and often**, one idea per commit |
+| git-07 | `git restore <file>` (throws changes away for good), `git restore --staged` (un-stage, keep changes) |
+| git-08 | **branch**, `git switch -c`, `git branch` (`*` = current), `git checkout -b` = older spelling; `main` always works |
+| git-09 | commits stay on their branch; switching swaps the files in the folder |
+| git-10 | `git merge <branch>` from `main`; **fast-forward** |
+| git-11 | **merge commit** (two parents, "Merge branch '…'"); automatic when different files; **conflict** when both change the same lines (concept only) |
+
+**Assumed at Git · Intermediate:** the full local loop (init, status, add,
+commit, log, diff, restore), branches, fast-forward and merge commits, what a
+conflict is. **Not yet:** resolving a conflict, `.gitignore`, `git show`,
+`git log` options beyond `--oneline`, amending, reset/revert, stash, tags,
+remotes and push/pull/PRs, rebase, `HEAD`, hashes as references, blame,
+bisect.
+
+---
+
+## Web (`html`) — course `html`, prefix `web-`, 12 lessons
+
+Pages are **fragments** (no `<!DOCTYPE>`, `<html>`, `<head>`, `<body>` taught
+or required). Checks are `dom` steps; computed styles come back as
+`rgb(…)`/`px`. No network, no `localStorage`.
+
+| Lesson | Teaches |
+| --- | --- |
+| web-01 | HTML, **tags** (open/close), `h1`, `p`; the Preview tab |
+| web-02 | `h1`–`h6`, one `h1` per page, outline for screen readers/search; `strong`, `em` |
+| web-03 | `a href`; **attributes** `name="value"`; `img src alt` (no closing tag); always write `alt` |
+| web-04 | `ul`, `ol`, `li`; indenting for readability |
+| web-05 | `form` wraps related fields, `label for` ↔ `input id`, `input type` (text/email/password/number/checkbox), `placeholder`, `button type="submit"` (submitting is not taught) |
+| web-06 | CSS in `<style>`; **selector**, **declarations**; `color` (name, hex, `rgb()`), `font-size`, `font-family` |
+| web-07 | **class** (`.name`), several classes per element, **id** (`#name`) for exactly one element; `font-weight`, `text-decoration` |
+| web-08 | **box model**: content, padding, border, margin; `border-radius`; `div` as a plain box (a "card") |
+| web-09 | **flexbox**: `display: flex`, `gap`, `justify-content`, `align-items`, `flex-direction: column` |
+| web-10 | `<script>`, the **DOM** ("the page as objects"), `document.querySelector` (CSS selectors), `addEventListener('click', …)`, `textContent`; script after the elements. JS bridge: **variable**, `const` vs `let`, reassigning `n = n + 1`, **arrow function** as code saved to run later, **string** |
+| web-11 | the `input` event, `.value`; live counters/search boxes. JS bridge: string `+` (numbers become text), `.length` (no brackets), brackets for arithmetic first |
+| web-12 | build elements from data: `createElement`, `textContent`, `appendChild`. JS bridge: **array** in `[ ]`, **`for…of` loop** |
+
+Conventions: kebab/lowercase class names (`.card`, `.row`, `.tile`, `.done`);
+ids for script targets (`#add`, `#count`); 2-space indent; CSS in one
+`<style>` at the top; JS in the same style as the JavaScript course (no
+semicolons, single quotes, `const`, arrow functions).
+
+**Assumed at Web · Intermediate:** structure a page with headings, text,
+links, images, lists and a labelled form; style with type/class/id selectors,
+colours, sizes, the box model and flexbox; wire a click or input event to
+change text; build a list from an array. **Not yet:** the page skeleton
+(`<!DOCTYPE html>`, `head`, `meta`), semantic layout elements (`header`,
+`nav`, `main`, `section`, `article`, `footer`), tables, the cascade and
+specificity, descendant/pseudo-class selectors as a topic (`:hover`,
+`:not`, `:first-child` appear only in checks), units other than `px`, CSS
+grid, positioning, responsive design and media queries, CSS variables,
+transitions, form submission and `preventDefault`, validation attributes, the
+event object, `classList`, removing elements, `innerHTML` (and why not),
+ARIA, keyboard accessibility beyond labels, any JavaScript beyond the list
+under *Between languages*.
+
+---
+
+## JavaScript (`javascript`) — course `javascript`, prefix `js-`, 12 lessons
+
+Runtime: body of an async function in a worker; top-level `await`; no DOM, no
+Node. `console.log` of objects prints like `{ a: 1 }`.
+
+| Lesson | Teaches |
+| --- | --- |
+| js-01 | statements run top to bottom; `console.log` (several values, spaces between); **string** in `'…'`/`"…"`; `//` comments |
+| js-02 | **variable**; `const` (prefer it) vs `let`; reassigning a const is a TypeError; types string, number (one number type), boolean, `null`, `undefined`; `typeof` |
+| js-03 | `+ - * / % **`; `Math.round/floor/max`; float approximation `0.1 + 0.2`; `toFixed` gives a string → `Number(…)` |
+| js-04 | string **methods** (`trim`, `toLowerCase`, `toUpperCase`, `includes`), `.length` property (no brackets); **template literals** `` `${…}` `` |
+| js-05 | `if` / `else if` / `else` with braces; `===` / `!==` (strict), avoid `==`; `&&`, `\|\|`, `!`; **ternary** `cond ? a : b` for a two-way value |
+| js-06 | `for…of`, counting `for (let i…; i++)`, `while` (something must change), `+=`, `break`, `continue` |
+| js-07 | `function` declarations, **arrow functions**, **parameters** vs **arguments**, default parameters, `return`, no `return` → `undefined`, functions are values; `split` and the pattern `/\s+/` ("one or more whitespace characters"); the empty-string edge case |
+| js-08 | **arrays**: index, `.at(-1)`, `length`, `push`, `slice`, `includes`; const array contents can change; **spread** into arguments `Math.min(...arr)`; returning several results as an object literal (preview of js-09) |
+| js-09 | **objects**: dot and bracket access, missing property → `undefined`, `Object.keys`, **destructuring** `const { a } = obj`, **spread** `{ ...obj, k: v }`; `??` (fallback when the left is `null`/`undefined`) |
+| js-10 | `map`, `filter`, `reduce` (initial value), they return new arrays, chaining |
+| js-11 | errors are **thrown**; `try` / `catch (err)` / `finally`; `err.message`; `throw new RangeError(…)`; `JSON.parse`; convention: `null` for "not a value at all", throw for "a value, but unusable" |
+| js-12 | **Promise**, `async`/`await`, `new Promise((resolve) => setTimeout(resolve, ms))`, `Promise.all` for parallel; awaiting one by one is sequential (M3) |
+
+Conventions: **no semicolons**, **single quotes**, 2-space indent,
+**camelCase** (`wordCount`, `parsePort`, `totalTokens`), `const` unless
+reassigned, arrow params always in brackets `(n) => …`, `===` only. Checks use
+`case` (deep equality), `test`, `throws(fn)`, `output`.
+
+**Assumed at JavaScript · Intermediate:** everything above. **Not yet:**
+classes, `this`, `new` for your own types, getters/setters, prototypes;
+modules (`import`/`export`); `Map`, `Set`; array `find`, `some`, `every`,
+`sort` (and its comparator and in-place mutation), `join`, `forEach`,
+`flatMap`, `indexOf`; array destructuring and rest parameters `...args`;
+`Object.entries` / `Object.values` / `Object.fromEntries`; optional chaining
+`?.` (taught only in TS, ts-06); `JSON.stringify`; closures and scope as a
+topic; higher-order functions you write yourself; regular expressions beyond
+`/\s+/`; `Date`; `switch`; errors in async code (`try`/`catch` around `await`,
+rejected promises), `Promise.allSettled` / `race`; custom `Error` subclasses;
+generators and iterators; value vs reference / mutation as a topic;
+immutability; recursion.
+
+---
+
+## TypeScript (`typescript`) — course `typescript`, prefix `ts-`, 11 lessons
+
+Runtime: `strict`, ES2022, libs es2022 + webworker. A type error stops the
+run. **No basics lesson uses a `type-error` check** — the first one a learner
+meets must explain that the check proves the compiler *rejects* some code.
+
+| Lesson | Teaches |
+| --- | --- |
+| ts-01 | **type annotations** `: string/number/boolean`; strict mode; type errors stop the run (like `tsc` in CI); **inference**; annotate parameters and what the compiler cannot see |
+| ts-02 | reading a type error: `main.ts(line,col): error TS2322 …`; error codes; fix the value, never silence the checker |
+| ts-03 | typed parameters and **return types**; `: void`; TS7006 implicit `any` in strict mode |
+| ts-04 | array types `T[]`; **tuples** `[string, number]` and destructuring them |
+| ts-05 | **interface** (≈ `type` alias for objects); **union of literal types** `'free' \| 'pro'`; misspelled/missing properties caught |
+| ts-06 | optional property `?` → `T \| undefined`; **narrowing** with `!== undefined`; `??`; optional chaining `?.`; rule: no `!` and no `as` — narrow instead |
+| ts-07 | **union** types; narrowing with `typeof`; mentions `Array.isArray`, `in`, `instanceof` |
+| ts-08 | **discriminated union** on a `kind` field; `switch` on it; exhaustiveness with `const unhandled: never = x` in `default` |
+| ts-09 | **generics** `<T>`; `Array<T>` = `T[]`, `Promise<T>`; `Record<string, number>` (string keys, number values); a function-typed parameter `(item: T) => string` |
+| ts-10 | **`unknown`** for outside data; **type guard** `x is T`; "parse, don't assert" (`as` lies, a guard checks); the one allowed cast `x as Record<string, unknown>` inside a guard, and why it is safe; Zod mentioned (M3) |
+| ts-11 | utility types `Partial`, `Readonly`, `Pick`, `Omit`, `Record<'a' \| 'b', T>`; a patch is `Partial<T>`; new object via spread |
+
+Conventions: as JavaScript (no semicolons, single quotes, camelCase);
+**interfaces for object shapes, `type` for unions**; discriminant field
+named **`kind`**; union members written one per line with a leading `|`;
+parameters and return types always annotated; no `any`, no `!`, no `as`
+except `x as Record<string, unknown>` inside a guard (ts-10).
+
+**Assumed at TypeScript · Intermediate:** everything above plus the whole
+JavaScript basics course. **Not yet:** classes (not taught in JS either —
+access modifiers, `implements`, `readonly` properties), `readonly` modifier
+and `ReadonlyArray`, `as const`, `keyof`, `typeof` in type position, indexed
+access types `T['k']`, generic constraints `<T extends …>`, default type
+parameters, mapped and conditional types, template literal types,
+`satisfies`, function overloads, enums, index signatures, typed
+`Map`/`Set`, typing async functions (`Promise<T>` return types in practice),
+typed errors / `Result` types, branded types (`type-error` example
+`UserId` in parse.ts is not a lesson), modules, declaration files, `never`
+beyond exhaustiveness.
+
+---
+
+## Python (`python`) — course `python`, prefix `py-`, 12 lessons
+
+Runtime: CPython 3.13 in Pyodide, stdlib only; `input()` reads the lesson's
+`stdin`; `open()` works within one run.
+
+| Lesson | Teaches |
+| --- | --- |
+| py-01 | programs run top to bottom; `print` (several values, spaces between); **string**; `#` comments |
+| py-02 | **variable**, `=`, types `str`/`int`/`float`/`bool`, `type(x)`; reassignment; **snake_case** names |
+| py-03 | `+ - * / // % **`, `/` always float, brackets, `round(x, n)` |
+| py-04 | string **methods** `strip`, `lower`, `upper`; `len`; `in`; **f-strings** with any expression inside `{}`; chaining methods |
+| py-05 | `if` / `elif` / `else`; indentation (4 spaces) as blocks; comparisons; `and`/`or`/`not`; `=` vs `==` |
+| py-06 | **list**: index from 0, negative index, `len`, `append`, **slice** `[1:3]`; `sum`, `min`, `max`, `sorted` (mentioned) |
+| py-07 | `for … in`, `range(n)` / `range(a, b)`, `+=`, `while` (must change something), `break`, `continue` |
+| py-08 | **function**: `def`, **parameters** vs **arguments**, defaults, `return`, no return → `None` ("nothing"); `pass` as a placeholder body; `str.split()` |
+| py-09 | **dict**: lookup, assign, `in`, `.get(key, default)`, `.items()` with `for key, value in …` |
+| py-10 | **list comprehension** with optional `if`; dict comprehension |
+| py-11 | **exceptions**: `try`/`except SpecificError`, `raise ValueError(…)`; catch the specific error, never bare `except:`; convention: `None` for "not a number at all", raise for "a number, but out of range" |
+| py-12 | **class**, `__init__`, `self`, attributes `self.x`, methods, default constructor argument; objects each have their own data |
+
+Conventions: **double quotes**, 4-space indent, snake_case functions and
+variables, PascalCase classes, f-strings for building text, two blank lines
+between top-level functions. Checks use `case` (with `True`/`False`/`None`
+compared by identity), `test`, `raises(Error, fn)`, `output`.
+
+**Assumed at Python · Intermediate:** everything above. **Not yet:**
+`input()` and reading stdin (never used in basics), tuples as a topic (only
+the `key, value` unpacking in py-09), sets, `str.join`, `str.replace`,
+`str.split(sep)`, `enumerate`, `zip`, `sorted(key=…)` and `lambda`
+(`lambda` appears only inside checks), `is` / `is None`,
+truthiness, mutability and aliasing, modules and `import` (no stdlib module
+has been imported yet), `with` and files, type hints, docstrings,
+`__str__`/`__repr__`, inheritance, `@dataclass`, `collections`
+(`Counter`, `defaultdict`), generators/`yield`, decorators, recursion,
+`*args`/`**kwargs`, `assert`, custom exception classes.
+
+---
+
+## SQL (`sql`) — course `sql`, prefix `sql-`, 12 lessons
+
+Engine: SQLite (sql.js), fresh database per run. Course schema: `users(id,
+email UNIQUE, plan 'free'|'pro', created TEXT 'YYYY-MM-DD')` (4 rows: ada,
+lin, sam, kai — sam has no requests) and `requests(id, user_id → users,
+model 'sonnet'|'haiku', input_tokens, output_tokens, cost_usd REAL)` (6 rows).
+SQLite enforces `REFERENCES` only after `PRAGMA foreign_keys = ON;` — sql-11
+says so. A later lesson that relies on enforcement must run the pragma (in
+its schema or her code) and the check must prove the refusal.
+
+| Lesson | Teaches |
+| --- | --- |
+| sql-01 | **tables**, rows, **columns**; `SELECT * FROM`; keywords in capitals by convention; end with `;` |
+| sql-02 | choosing columns; computed column; `AS` alias; select only what you need |
+| sql-03 | `WHERE`; text in single quotes; `= <> < <= > >=`; `AND`/`OR`/`NOT`, brackets; `IN (…)`; `LIKE 'x%'` |
+| sql-04 | `ORDER BY` (several columns, ties), `DESC`, `LIMIT`; no order unless asked; top-n pattern |
+| sql-05 | **aggregate functions** `COUNT(*)`, `SUM`, `AVG`, `MIN`, `MAX`; with `WHERE`; `ROUND(x, n)` |
+| sql-06 | `GROUP BY`; every selected column grouped or aggregated; `HAVING` (filters groups) vs `WHERE` (filters rows) |
+| sql-07 | **JOIN … ON**; table-qualified columns; short aliases (`requests r`, `users u`); inner join keeps matches only |
+| sql-08 | **LEFT JOIN**; **NULL** ("no value", not 0 or ''); `IS NULL`, never `= NULL`; `COUNT(col)` skips NULL vs `COUNT(*)`; `COALESCE`; groups by `u.id, u.email` (keeps sql-06's rule) |
+| sql-09 | `INSERT INTO t (cols) VALUES (…)`, several rows; constraints still apply (`UNIQUE` refusal protects data) |
+| sql-10 | `UPDATE … SET … WHERE`, `DELETE FROM … WHERE`; forgetting `WHERE` changes every row; write the `SELECT` first |
+| sql-11 | `CREATE TABLE`; `INTEGER`/`TEXT`/`REAL`; `PRIMARY KEY`, `NOT NULL`, `REFERENCES` (**foreign key**), `DEFAULT`, `UNIQUE`; constraints protect every writer; SQLite enforces foreign keys only after `PRAGMA foreign_keys = ON` (mentioned, not practised); booleans as `INTEGER` 0/1; money as integer cents (`amount_cents`) in the example |
+| sql-12 | **subquery** as a value; **CTE** with `WITH name AS (…)`; each step runnable on its own |
+
+Conventions: keywords in CAPITALS, lower snake_case tables and columns,
+plural table names, `id INTEGER PRIMARY KEY`, `<table>_id` foreign keys,
+one-letter aliases, clauses on their own lines for anything past one line.
+Checks: `result` (unordered unless `ordered`), `query` after hers.
+
+**Assumed at SQL · Intermediate:** everything above. **Not yet:**
+`DISTINCT`, `BETWEEN`, `CASE WHEN`, string functions and `||`, date
+functions, `CAST`, `EXISTS` / `NOT EXISTS`, correlated subqueries, `IN
+(subquery)`, `UNION`, self-joins, many-to-many link tables, multi-table joins
+beyond two tables, window functions, recursive CTEs, `ALTER TABLE`, `DROP`,
+`CHECK` constraints, `ON DELETE`, using `PRAGMA foreign_keys` in practice, indexes and `EXPLAIN
+QUERY PLAN`, transactions (`BEGIN`/`COMMIT`/`ROLLBACK`), UPSERT (`ON
+CONFLICT`), `RETURNING`, views, triggers, JSON functions, generated columns,
+normalisation as a design topic.
+
+---
+
+## C++ (`cpp`) — course `cpp`, prefix `cpp-`, 13 lessons
+
+Runtime: clang C++20, `-Wall -Wextra`, **exceptions OFF**. From `cpp-03` on,
+function lessons have **no `main`** — the checker supplies it (tasks end with
+"No `main`."); whole-program lessons (`cpp-01`, `02`, `04`, `06`) use
+`output` with `stdin`.
+
+| Lesson | Teaches |
+| --- | --- |
+| cpp-01 | `main`, `#include <iostream>`, `std::cout <<` chaining, `"\n"`, `;`, `{ }`, `return 0`; compile first — read the first error |
+| cpp-02 | **statically typed**: `int`, `double`, `bool`, `char` (single quotes), `std::string` (`<string>`), `auto`, `const` (assigning is a compile error) |
+| cpp-03 | writing functions (return type, name, typed **parameters**; **arguments** are the values passed); the checker supplies `main`; integer division, `%`, `static_cast<double>` |
+| cpp-04 | `std::cin >>`, `while (std::cin >> n)` until input runs out; `std::getline` (mentioned); the Input box |
+| cpp-05 | `if`/`else if`/`else`; comparisons, `&&` `\|\|` `!`; `=` vs `==` and reading clang warnings |
+| cpp-06 | counting `for`, `while`, `break`, `continue` |
+| cpp-07 | functions declared before use; `void`; `int` vs `long long` range; recursion (mentioned only, not practised) |
+| cpp-08 | `std::vector`: `push_back`, `size`, `[]`, range-for; pass as `const std::vector<int>&` (no copy, read-only) |
+| cpp-09 | `std::string`: `size`, `[]` → `char`, `+`, `find` / `std::string::npos`, `substr`; `<cctype>` `toupper`/`isspace`/`isdigit` take and return `int`; cast in via `unsigned char` (why) and out via `char` |
+| cpp-10 | pass **by value** (a copy) vs **reference** `&`; in-place changes; `for (int& x : v)`; the three ways to take an argument; how to *read* a check written as a **lambda** `[] { …; return …; }()` |
+| cpp-11 | `struct`, brace init `Point{3, 4}`; `class` with `public`/`private`; `explicit` constructor; **member initialiser list**; `const` member functions; private members end in `_` |
+| cpp-12 | `std::map`: `m[k]` (inserts a default if missing), `count`, `find`, sorted by key, structured bindings `const auto& [k, v]`; `std::istringstream` to split words |
+| cpp-13 | **pointer**: `&x`, `*p`, `nullptr` (never follow it); **smart pointer** `std::unique_ptr`, `std::make_unique`; raw pointers to look, `unique_ptr` to own; no raw `new`/`delete` |
+
+Conventions: **`std::` always** (no `using namespace std`), `"\n"` not
+`std::endl`, 4-space indent, braces on the same line, **snake_case**
+functions and variables (`max_value`, `count_char`), **PascalCase** types
+(`Point`, `Counter`), private members with a trailing `_`, `i++`, `const &`
+for anything bigger than a number. Checks use `case` (compared with `==`) and
+`test`, often an immediately-called lambda `[] { …; return …; }()` — cpp-10
+explains how to read one; writing lambdas (captures, parameters, passing
+them to algorithms) has not been taught.
+
+**Error signalling:** exceptions do not compile. The basics never signal an
+error at all (`max_value` "assume v is not empty"; `set_to_zero` does nothing
+on `nullptr`). The first lesson that needs to report failure must teach the
+chosen mechanism (`std::optional` / `std::nullopt`, return codes,
+`std::variant`, or an error struct) — none has been taught.
+
+**Assumed at C++ · Intermediate:** everything above. **Not yet:**
+`std::optional` / `std::variant` / any error-reporting pattern, writing
+lambdas,
+`<algorithm>` (`std::sort`, `std::find`, `std::count_if`…), iterators and
+`begin()/end()`, `std::set`, `std::unordered_map`, `std::array`, `std::pair`
+/ `std::tuple`, `size_t` and signed/unsigned comparison warnings, templates,
+operator overloading, destructors and RAII as a topic, copy vs move,
+`std::move`, `std::shared_ptr`, inheritance and `virtual`, `enum class`,
+namespaces, header files, `<iomanip>` formatting (`std::setprecision`,
+`std::fixed`), `std::string_view`, `std::span`, `<ranges>`, recursion in
+practice.

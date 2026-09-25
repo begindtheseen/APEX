@@ -179,6 +179,15 @@ if (temperature > 30) {
 ```
 
 Compare with `===` and `!==` (strict: `1 === '1'` is false). Avoid `==`, which converts types first and surprises people. Combine with `&&` (and), `||` (or), `!` (not).
+
+When you only need to choose between two **values**, the **ternary** operator does it in one expression — `condition ? valueIfTrue : valueIfFalse`:
+
+```js
+const temperature = 31
+const label = temperature > 30 ? 'hot' : 'not hot'   // 'hot'
+```
+
+Use it for a simple either-or; for three or more outcomes, `if` / `else if` reads better.
 --- task
 Write a function `grade(score)` that returns `'pass'` for 70 or more, `'close'` for 60 to 69, and `'fail'` otherwise.
 --- starter
@@ -230,7 +239,7 @@ for (let i = 1; i <= 5; i++) {
 console.log(total)   // 15
 ```
 
-`while (condition) { … }` repeats while the condition is true.
+`while (condition) { … }` repeats while the condition is true — make sure something inside changes, or it never stops. Inside any loop, `break` leaves the loop early and `continue` skips straight to the next pass.
 --- task
 Print the numbers 1 to 15, one per line, printing `Fizz` for multiples of 3, `Buzz` for multiples of 5, and `FizzBuzz` for multiples of both. Use a loop.
 --- starter
@@ -276,7 +285,11 @@ function add(a, b) {
 const multiply = (a, b) => a * b    // an arrow function
 ```
 
+`a` and `b` are the function's **parameters** — the names it gives its inputs. The values you pass when you call it, like `2` and `3` in `add(2, 3)`, are the **arguments**. `return` hands a value back to whoever called the function.
+
 Parameters can have defaults: `function greet(name, mark = '!') { … }`. A function with no `return` gives back `undefined`. Functions are values: you can pass them to other functions, which is how most of JavaScript works.
+
+`split` cuts a string into an array of pieces. `/\s+/` is a **pattern** (a regular expression) meaning "one or more whitespace characters", so `'a  b c'.split(/\s+/)` is `['a', 'b', 'c']` however many spaces sit between the words.
 --- task
 Write:
 
@@ -324,6 +337,17 @@ planets.includes('Venus')   // true
 ```
 
 `const` stops you reassigning the variable, but you can still change the array's contents.
+
+To give back several named results at once, return an **object** — named values in braces (the next lesson covers objects properly):
+
+```js
+function range(values) {
+  return { low: Math.min(...values), high: Math.max(...values) }
+}
+range([4, 9, 2]).high   // 9
+```
+
+`...values` **spreads** the array into separate arguments, so `Math.min(...[4, 9, 2])` is `Math.min(4, 9, 2)`.
 --- task
 Write `stats(latencies)` that returns an object `{ fastest, slowest, average }` for an array of numbers. (`Math.min(...arr)` spreads the array into arguments.)
 --- starter
@@ -364,6 +388,8 @@ Object.keys(user)      // ['name', 'plan', 'credits']
 const { name, plan } = user    // destructuring: pull properties into variables
 const copy = { ...user, plan: 'free' }   // spread: a new object with one change
 ```
+
+Reading a property that is not there gives `undefined`. The `??` operator supplies a fallback for that: `a ?? b` is `a`, unless `a` is `null` or `undefined`, in which case it is `b`. So `user.nickname ?? user.name` is the name when there is no nickname — and `(counts[word] ?? 0) + 1` starts a missing count at 0.
 
 Objects are how JavaScript represents almost everything — a request, a row, a config.
 --- task

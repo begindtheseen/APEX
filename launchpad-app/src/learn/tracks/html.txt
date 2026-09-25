@@ -143,12 +143,14 @@ ol li count == 3
 Forms collect input. A `label` names a field; its `for` matches the field's `id`, so clicking the label focuses the field (and screen readers read them together):
 
 ```html
-<label for="email">Email</label>
-<input id="email" type="email" placeholder="you@example.com">
-<button type="submit">Sign up</button>
+<form>
+  <label for="email">Email</label>
+  <input id="email" type="email" placeholder="you@example.com">
+  <button type="submit">Sign up</button>
+</form>
 ```
 
-`type` changes the field: `text`, `email`, `password`, `number`, `checkbox`… A `button` is what people press.
+A `form` wraps the fields that belong together. `type` changes the field: `text`, `email`, `password`, `number`, `checkbox`… `placeholder` is grey example text that disappears when you type. A `button` is what people press.
 --- task
 Build a small sign-in form: a label `Username` joined to an `input` with `id="username"`, a label `Password` joined to a password `input` with `id="password"`, and a button that says `Sign in`.
 --- starter
@@ -377,6 +379,12 @@ A `<script>` tag runs JavaScript in the page. It can find elements and change th
 ```
 
 `querySelector` takes the same selectors as CSS. `addEventListener('click', …)` runs a function every time the button is clicked. Put the script after the elements it uses.
+
+The JavaScript in that example, piece by piece:
+
+- `const button = …` makes a **variable**: a name for a value, here the element found on the page. Use `const` for a name that will always mean the same thing, and `let` for one you will change later: `let n = 0`, then `n = n + 1`.
+- `() => { … }` is an **arrow function**: a block of code saved to run later. Handing it to `addEventListener` means "run this every time the button is clicked", not "run it now".
+- `'Lift off!'` is a **string** — text in quotes, single or double.
 --- task
 Make a counter: a button with `id="add"` and a paragraph with `id="count"` that starts at `0`. Each click adds one to the number shown.
 --- starter
@@ -430,8 +438,10 @@ An `input` fires an `input` event every time its text changes, and `.value` is w
 ```
 
 This is the loop behind every live search box and character counter.
+
+Two string tools do the work here. `+` joins strings together: `'Hello, ' + 'Ada'` is `'Hello, Ada'`, and a number joined to a string becomes text, so `18 + ' left'` is `'18 left'`. `.length` is how many characters a string holds: `'rocket'.length` is `6` (no brackets — it is a value, not a call). Use brackets to do the arithmetic first: `(20 - 6) + ' left'`.
 --- task
-Make a character counter: an `input` with `id="message"` and a paragraph with `id="left"`. As she types, `#left` should say how many of 20 characters are left, like `17 left`. Before any typing it says `20 left`.
+Make a character counter: an `input` with `id="message"` and a paragraph with `id="left"`. As you type, `#left` should say how many of 20 characters are left, like `17 left`. Before any typing it says `20 left`.
 --- starter
 <input id="message">
 <p id="left">20 left</p>
@@ -479,6 +489,8 @@ Pages are usually built from data. Loop over an array and create an element for 
   }
 </script>
 ```
+
+`['Ada', 'Lin', 'Sam']` is an **array**: several values in order, inside square brackets. `for (const name of crew) { … }` is a **`for…of` loop**: it runs the block once for each item, with `name` holding the current one — `'Ada'`, then `'Lin'`, then `'Sam'`.
 
 `createElement` makes a new element, `textContent` fills it, and `appendChild` puts it on the page. This is, underneath, what every front-end framework does.
 --- task
