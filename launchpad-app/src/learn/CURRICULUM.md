@@ -426,6 +426,112 @@ QUERY PLAN`, transactions (`BEGIN`/`COMMIT`/`ROLLBACK`), UPSERT (`ON
 CONFLICT`), `RETURNING`, views, triggers, JSON functions, generated columns,
 normalisation as a design topic.
 
+
+### SQL · Intermediate — `sql-intermediate`, prefix `sql2-`, 17 lessons
+
+Course schema: an online shop — `customers` (with self-referencing
+`referred_by`, messy emails, NULL cities), `products`, `orders` (`placed`
+timestamp, `status` paid/shipped/cancelled/refunded, `coupon` NULL or `''`),
+`order_items` (`unit_price` charged), `payments` (several per order, refunds
+negative), `newsletter`. sql2-15 brings its own `employees`.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| sql2-01 | concept | joining three+ tables as a chain along foreign keys; alias and prefix every column; start from the table you want one row per |
+| sql2-02 | debug-ish | LEFT JOIN + `WHERE` on the right table undoes the LEFT JOIN; right-table conditions go in `ON` |
+| sql2-03 | concept | **self-join** (two aliases of one table); LEFT self-join keeps rows with no parent |
+| sql2-04 | concept | logical order FROM → WHERE → GROUP BY → aggregates → HAVING → SELECT → ORDER BY; `COUNT(DISTINCT x)`; grouping by an expression; NULLs form one group; **primary-key rule**: grouping by a table's PK lets you select its other columns; never rely on SQLite's looser rule |
+| sql2-05 | concept | **scalar subquery**; list subquery with `IN`; why `IN` beats a join that multiplies |
+| sql2-06 | concept | **correlated subquery**; `EXISTS (SELECT 1 …)`; EXISTS as a 1/0 column |
+| sql2-07 | concept | `CASE WHEN … THEN … ELSE … END` (searched and simple forms); first true WHEN wins; always write ELSE; boundaries |
+| sql2-08 | concept | text functions `lower upper trim ltrim rtrim length substr instr replace` and `\|\|`; clean before compare/group; LIKE ignores case, `=` does not |
+| sql2-09 | concept | ISO text dates; `date`, modifiers (`'+10 days'`, `'start of month'`), `strftime` (`%Y %m %d %H %W %w`), `julianday` differences, `date('now')`; monthly grouping; half-open ranges on the bare column |
+| sql2-10 | **debugging** (method taught) | reproduce and count, look at what went missing, check assumptions; **three-valued logic**; `IS NULL OR <>`, `IS NOT`, `COALESCE(a, b, …)`, `NULLIF`; empty string vs NULL |
+| sql2-11 | concept | `SELECT DISTINCT` (all columns), `UNION` vs `UNION ALL`, one ORDER BY at the end; normalise before deduplicating |
+| sql2-12 | concept | `LIMIT … OFFSET`; tie-breakers for stable pages; **keyset pagination** |
+| sql2-13 | concept | UPDATE/DELETE with subqueries; `SET x = expr`; `INSERT … SELECT`; the safe-change routine |
+| sql2-14 | **debugging** | **fan-out** (two one-to-many joins multiply); shrink, look at raw rows, count per key; pre-aggregate each child in its own CTE step (several `WITH` steps separated by commas) |
+| sql2-15 | **problem** (approach taught) | second-highest distinct value per group via "max below the max"; subquery in `FROM` as a table (needs an alias); driving the query from the group list |
+| sql2-16 | **problem** | **anti-join**: `NOT EXISTS` (preferred), LEFT JOIN … IS NULL, and the `NOT IN` + NULL trap |
+| sql2-17 | **design** | choosing join types from requirements (inner, LEFT, FULL OUTER and CROSS mentioned); where filters go; what "nothing" looks like (`COUNT` 0, `MAX`/`SUM` NULL) |
+
+Conventions added: scalar text/date functions in lower case (`lower`,
+`substr`, `strftime`, `date`), aggregates and `ROUND`/`COALESCE`/`CASE` in
+capitals; columns always prefixed with an alias once there is a join;
+explicit `AS` names for every computed column.
+
+### SQL · Advanced — `sql-advanced`, prefix `sql3-`, 19 lessons
+
+Course schema: `employees` (a manager tree), `daily_sales` (gaps on some
+days, PK `(day, region)`), `categories` (a tree). Lessons from sql3-09 on
+bring their own tables.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| sql3-01 | concept | several CTE steps, each using earlier ones; `CROSS JOIN` to a one-row result; **integer division** (`100.0 *`) |
+| sql3-02 | concept | `WITH RECURSIVE`: anchor, `UNION ALL`, step, stopping condition; a calendar series + LEFT JOIN + COALESCE |
+| sql3-03 | concept | walking a tree down (and up) with a depth counter; cycle guard |
+| sql3-04 | concept | carrying a path string and level through recursion; ordering by path |
+| sql3-18 | **problem** | one recursive walk for all roots at once by carrying the root (`(boss_id, emp_id)` pairs), then grouping |
+| sql3-05 | concept | **window functions** `OVER (PARTITION BY … ORDER BY …)`; `ROW_NUMBER`, `RANK`, `DENSE_RANK` and ties; cannot filter on a window in the same WHERE |
+| sql3-06 | concept | aggregates as windows: running totals, share of partition total; peers under the default frame |
+| sql3-07 | concept | `LAG`/`LEAD` (offset, default), previous *row* vs previous *day*; named `WINDOW w AS (…)` |
+| sql3-08 | concept | **frames**: `ROWS BETWEEN n PRECEDING AND CURRENT ROW` (moving average), `UNBOUNDED`, `FOLLOWING`; `ROWS` vs `RANGE`; the default `RANGE … CURRENT ROW` |
+| sql3-19 | **debugging** | running balance repeats on tied days: default RANGE frame takes peers; fix with a unique order (`day, id`) and `ROWS` |
+| sql3-09 | concept | constraints `CHECK`, table-level `UNIQUE (a, b)`; `INSERT OR IGNORE` / `OR REPLACE`; `INTEGER PRIMARY KEY` auto id; type affinity |
+| sql3-10 | concept | foreign keys in practice: `PRAGMA foreign_keys = ON`, orphans, `ON DELETE CASCADE / RESTRICT / SET NULL` |
+| sql3-11 | **design** | normalisation (update/insert/delete anomalies), "what is this a fact about?", composite PK, filling tables with `INSERT … SELECT DISTINCT`, joining back on the natural key |
+| sql3-12 | concept | **index**, `CREATE INDEX`, `EXPLAIN QUERY PLAN` (`SCAN`, `SEARCH … USING INDEX`, `USE TEMP B-TREE`), composite index column order, index cost |
+| sql3-13 | concept | **transactions** `BEGIN` / `COMMIT` / `ROLLBACK`, atomic + isolated (ACID), `changes()`, batching speed |
+| sql3-14 | concept | **UPSERT** `ON CONFLICT (…) DO UPDATE SET … excluded.x` / `DO NOTHING`; the `WHERE true` parsing quirk; vs `INSERT OR REPLACE` |
+| sql3-15 | concept | **views**: one definition of a number, re-run each time, `DROP VIEW` |
+| sql3-16 | concept | **triggers** `BEFORE/AFTER INSERT/UPDATE [OF col]/DELETE`, `NEW`/`OLD`, `WHEN`, `RAISE(ABORT, …)`; use sparingly |
+| sql3-17 | concept | `RETURNING` on INSERT/UPDATE/DELETE |
+
+### SQL · Expert — `sql-expert`, prefix `sql4-`, 14 lessons
+
+Every lesson brings its own tables (several with thousands of generated rows
+for plan checks).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| sql4-01 | concept | **sargable** predicates (bare indexed column, half-open ranges); expression indexes; a view's plan |
+| sql4-02 | concept | **covering index**; column order: equality → group/sort → read-only |
+| sql4-03 | problem | **top N per group**: rank in a CTE, filter outside; choosing the ranking function; NULLs sort low in DESC |
+| sql4-04 | problem | **gaps and islands**: day minus `ROW_NUMBER` as an island key; deduplicate first |
+| sql4-05 | problem | **sessionising**: LAG gap → start flag → running SUM of flags; `unixepoch` for exact seconds |
+| sql4-06 | concept | dedup keeping the latest (`ROW_NUMBER` + deterministic tie-breaker), then a **unique expression index** |
+| sql4-07 | concept | **pivot** with `SUM(CASE …)`; `ELSE 0`; `FILTER (WHERE …)` mentioned |
+| sql4-08 | concept | JSON: `json_extract`, `->>` / `->`, paths, `json_array_length`, `json_each` (comma = CROSS JOIN with a table-valued function); generated columns mentioned |
+| sql4-09 | **design** | many-to-many with a join table; migrating a CSV column with a recursive split; `CREATE TEMP TABLE … AS`; `ALTER TABLE … DROP COLUMN` |
+| sql4-10 | design | audit trail triggers with `json_object`; `IS NOT` for NULL-safe change detection; append-only log |
+| sql4-11 | **debugging** | data bugs: find duplicates (`group_concat`) and orphans, re-point children before deleting, `PRAGMA foreign_key_check`, fix in a transaction, prevent with a unique index |
+| sql4-12 | problem | **cohort retention**: month numbers via `CAST(strftime(…) AS INTEGER)`; users drive the query; `SUM(EXISTS …)` |
+| sql4-13 | problem | ordered **funnel**: one CTE per step (first event after the previous step), `UNION ALL` of counts, `LAG` for step conversion |
+| sql4-14 | debugging/problem | find and fix a slow query: read the plan (`SCAN`, `AUTOMATIC INDEX`), question every function, index the join + range columns, prove rows unchanged; index naming `idx_<table>_<cols>` |
+
+### SQL · Projects — `sql-projects`, prefix `sqlp-`, 15 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| sqlp-01…04 | **Store**: schema (cents, CHECK lists, composite PK, cascade vs restrict) → load a messy export (`lower(trim())`, `CAST(ROUND(CAST(price AS REAL) * 100) AS INTEGER)`, `MIN()` to pick a grouped name, parents before children, reconcile) → revenue by month and category with window share → customer report (LEFT JOIN, pre-aggregation, COALESCE, CASE segment) | sql2-02/04/07/08/14, sql3-06/09/10/11 |
+| sqlp-05…08 | **Analytics**: ingest raw JSON events (`json_valid`, `INSERT OR IGNORE` on an event id, `typeof`, `datetime()`) → DAU with a calendar → funnel with a 72-hour deadline (`unixepoch`, `FIRST_VALUE`) → day-N retention with eligibility | sql3-02/05, sql4-05/08/12/13 |
+| sqlp-09…12 | **Library**: book vs copy schema, CHECKs, **partial unique index** → availability view → overdue fines (scalar `MIN(a, b)`, fixed "as of" date) → trigger that records fines on return | sql3-09/10/15/16, sql2-09 |
+| sqlp-13 | **Capstone**: ticketing (composite UNIQUE, cascade, sales view) | spec + behaviour checks only |
+| sqlp-14 | **Capstone**: expense splitting (two one-to-many totals without fan-out, HAVING view) | |
+| sqlp-15 | **Capstone**: clinic bookings (case-insensitive unique email, overlap self-join, minutes from `unixepoch`, index for time order) | |
+
+**Where the SQL ladder leaves a learner:** writes multi-table reports that
+survive NULLs, duplicates and fan-out; uses CTEs, recursion and window
+functions; designs normalised schemas with constraints, foreign keys,
+indexes, transactions, upserts, views and triggers; reads query plans and
+makes queries sargable; cleans and migrates data; and turns a written spec
+into a working schema plus views. Not covered: `EXCEPT`/`INTERSECT` as
+lessons (EXCEPT appears in a sql3-11 check only), `COLLATE` (offered as an
+alternative in a sqlp-15 hint), isolation levels, locking, `VACUUM`/`ANALYZE`,
+any database other than SQLite. Build lessons live in the projects course;
+the three earlier courses have none.
+
 ---
 
 ## C++ (`cpp`) — course `cpp`, prefix `cpp-`, 13 lessons
