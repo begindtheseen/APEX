@@ -456,6 +456,12 @@ export function gradeRun(lesson: LearnLesson, code: string, run: LearnRun): Lear
       case 'query': {
         const rows = queryTables.get(i)
         if (!rows) return res(false, { input: c.sql, detail: 'This check never ran.' })
+        // A query plan's other columns are SQLite's internal ids and costs,
+        // which change between versions; what the plan does is its detail.
+        if (/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(c.sql)) {
+          const detail = (rs: Cell[][]) => rs.map((r) => [r[r.length - 1] ?? null])
+          return res(sameRows(detail(c.rows), detail(rows), true), { input: c.sql, expected: showRows(detail(c.rows)), actual: showRows(detail(rows)) })
+        }
         return res(sameRows(c.rows, rows, true), { input: c.sql, expected: showRows(c.rows), actual: showRows(rows) })
       }
     }
