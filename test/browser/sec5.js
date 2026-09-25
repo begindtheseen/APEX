@@ -1,4 +1,5 @@
 var ENV = require('./_env');
+var LP = require('./_launchpad');
 // Re-runs the wave-5 security findings against the fixes.
 const { chromium } = require('playwright');
 const U = ENV.BASE + '/index.html';
@@ -85,30 +86,59 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     await ctx.close();
   }
 
+  // ---- C1c: LAUNCHPAD — a hostile record from the old realm ----
+  // The old realm's key is still read once, on the first launch of the app,
+  // and it can hold anything a hand edit or another site on the origin wrote.
+  {
+    const { ctx, p, hits, errs } = await fresh();
+    await LP.reset(p);
+    await p.evaluate(XSRC => {
+      const X = new Function('return ' + XSRC)();
+      localStorage.setItem('apex_launchpad_v1', JSON.stringify({
+        ids: 2, flagship: { name: X('FLAGNAME'), [X('FLAGKEY')]: X('FLAGVAL') },
+        setup: { runwayMonths: X('RUNWAY'), weeklyHours: 12 },
+        mods: { M0: { delta: true, artifact: true, gate: true, cp: { [X('CPKEY')]: true } },
+                [X('MODKEY')]: { delta: X('DELTA'), gate: true } }
+      }));
+    }, X.toString());
+    for (const r of ['/', '/learning', '/plan', '/tracks', '/module/M0?step=build', '/module/M1?step=build', '/settings']) {
+      if (r === '/') await LP.open(p, r); else await LP.go(p, r);
+    }
+    await p.waitForTimeout(400);
+    const live = await p.evaluate(() => document.querySelectorAll('[onerror],[onload],[onmouseover]').length);
+    ok('LAUNCHPAD: no hostile value executes', hits.length === 0, JSON.stringify(hits));
+    ok('LAUNCHPAD: no injected handler in the DOM', live === 0, 'count=' + live);
+    const rec = await LP.record(p);
+    ok('LAUNCHPAD: the honest part of the record survives', !!(rec && rec.mods.M0 && rec.mods.M0.gate === true), JSON.stringify(rec && rec.mods.M0));
+    ok('LAUNCHPAD: no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
+    await ctx.close();
+  }
+
   // ---- H1: a missing curriculum must not erase progress ----
+  // The curriculum ships inside the app now, in its own chunk. If that chunk
+  // will not load, the app cannot draw — and it must not have touched the
+  // record on the way down.
   {
     const { ctx, p, errs } = await fresh();
-    await p.goto(U);
+    await LP.reset(p);
     await p.evaluate(() => localStorage.setItem('apex_launchpad_v1', JSON.stringify({
       ids: 2, flagship: {}, setup: {},
       mods: { M0: { delta: true, artifact: true, gate: true }, M1: { delta: true, artifact: true, gate: true } }
     })));
-    // now block the curriculum script and reload
-    await p.route('**/curriculum-ai.js', r => r.abort());
-    await p.goto(U).catch(() => {});
-    await p.waitForTimeout(1200);
-    await p.evaluate(() => { try { enterLaunchpad(); } catch (e) {} });
-    await p.waitForTimeout(600);
+    await p.route('**/launchpad/assets/curriculum-*.js', r => r.abort());
+    await p.goto(LP.URL + '#/').catch(() => {});
+    await p.waitForTimeout(1500);
     const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('apex_launchpad_v1') || '{}'));
     ok('a failed curriculum load does not erase progress',
-      stored.mods && stored.mods.M0 && stored.mods.M0.gate === true && stored.mods.M1,
+      !!(stored.mods && stored.mods.M0 && stored.mods.M0.gate === true && stored.mods.M1),
       JSON.stringify(stored.mods));
-    // and it comes back when the script does
-    await p.unroute('**/curriculum-ai.js');
-    await p.goto(U);
-    await p.waitForTimeout(800);
-    const back = await p.evaluate(() => { enterLaunchpad(); return lpApi().progressSummary(lpProgress()).modulesDone; });
-    ok('progress is intact once the script loads again', back === 2, 'done=' + back);
+    // and it comes back when the chunk does
+    await p.unroute('**/launchpad/assets/curriculum-*.js');
+    await p.goto(ENV.BASE + '/index.html');
+    await LP.open(p, '/learning');
+    const locked = await p.$$eval('.mcard[data-locked="true"]', e => e.length);
+    const rec = await LP.record(p);
+    ok('progress is intact once the curriculum loads again', rec.passed === 2 && locked < 32, 'passed=' + rec.passed + ' locked=' + locked);
     await ctx.close();
   }
 
@@ -159,18 +189,38 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     await p.evaluate(() => navigator.serviceWorker.ready);
     await p.waitForTimeout(1200);
     const poisoned = await p.evaluate(async () => {
-      const keys = await caches.keys();
+      const keys = (await caches.keys()).filter(k => k.indexOf('apex-shell-') === 0);
       const c = await caches.open(keys[0]);
-      await c.put('/curriculum-ai.js', new Response('window.__POISONED = true;',
+      await c.put('/curriculum.js', new Response('window.__POISONED = true;',
         { status: 200, headers: { 'Content-Type': 'application/javascript' } }));
-      const back = await c.match('/curriculum-ai.js');
+      const back = await c.match('/curriculum.js');
       return (await back.text()).indexOf('__POISONED') >= 0;
     });
     ok('the poison is in the cache (the attack is real)', poisoned === true);
     await p.goto(U, { waitUntil: 'networkidle' });
     await p.waitForTimeout(1000);
-    const ran = await p.evaluate(() => ({ poisoned: !!window.__POISONED, modules: (typeof AI_CURRICULUM !== 'undefined') ? AI_CURRICULUM.length : 0 }));
-    ok('an online load ignores the poisoned cache entry', ran.poisoned === false && ran.modules === 33, JSON.stringify(ran));
+    const ran = await p.evaluate(() => ({ poisoned: !!window.__POISONED, app: typeof window.goTab === 'function' }));
+    ok('an online load ignores the poisoned cache entry', ran.poisoned === false && ran.app, JSON.stringify(ran));
+
+    // LAUNCHPAD's worker: poison its own entry script in its own cache, and a
+    // cache nobody owns, then load it online.
+    await LP.open(p, '/');
+    await p.evaluate(() => navigator.serviceWorker.getRegistration(location.href).then(r => r && r.active));
+    await p.waitForTimeout(800);
+    const lpPoison = await p.evaluate(async () => {
+      const src = document.querySelector('script[type=module][src]').src;
+      const keys = await caches.keys();
+      const body = 'window.__LP_POISONED = true;';
+      for (const k of keys.filter(k => k.indexOf('launchpad-') === 0).concat(['someone-else'])) {
+        const c = await caches.open(k);
+        await c.put(src, new Response(body, { status: 200, headers: { 'Content-Type': 'application/javascript' } }));
+      }
+      return { src, keys };
+    });
+    await p.reload({ waitUntil: 'networkidle' });
+    await p.waitForTimeout(800);
+    const lpRan = await p.evaluate(() => ({ poisoned: !!window.__LP_POISONED, drawn: !!document.querySelector('.shell .route') }));
+    ok('LAUNCHPAD: an online load ignores a poisoned script entry', lpRan.poisoned === false && lpRan.drawn, JSON.stringify({ ...lpRan, keys: lpPoison.keys }));
     await ctx.close();
   }
 

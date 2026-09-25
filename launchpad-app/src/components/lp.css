@@ -1,0 +1,575 @@
+/* ============================================================================
+   LAUNCHPAD — the realm's furniture, in ORBIT's tokens
+   ========================================================================== */
+
+/* ── Glossary row ────────────────────────────────────────────────────────── */
+.gloss {
+  padding: 10px 0;
+}
+
+.gloss + .gloss {
+  border-top: 1px solid var(--line-soft);
+}
+
+.gloss__term {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.gloss__text {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.lp-rules {
+  list-style: decimal;
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.lp-rules li {
+  margin: 0 0 7px;
+  padding-left: 2px;
+}
+
+.lp-rules li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Fact row ────────────────────────────────────────────────────────────── */
+.fact {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 12px;
+}
+
+.fact + .fact {
+  border-top: 1px solid var(--line-soft);
+}
+
+.fact__k {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.fact__v {
+  margin-left: auto;
+  color: var(--ink);
+  font-weight: 500;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ── Notice band ─────────────────────────────────────────────────────────── */
+.lp-notice {
+  border: 1px solid var(--line-blue);
+  background: linear-gradient(180deg, rgba(77, 155, 255, 0.07), rgba(77, 155, 255, 0.02));
+  border-radius: var(--r-card, 12px);
+  padding: 13px 16px;
+}
+
+.lp-notice[data-tone='warn'] {
+  border-color: rgba(240, 168, 72, 0.3);
+  background: linear-gradient(180deg, rgba(240, 168, 72, 0.07), rgba(240, 168, 72, 0.015));
+}
+
+.lp-notice[data-tone='bad'] {
+  border-color: rgba(244, 97, 78, 0.32);
+  background: linear-gradient(180deg, rgba(244, 97, 78, 0.07), rgba(244, 97, 78, 0.015));
+}
+
+.lp-notice__label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.lp-notice[data-tone='warn'] .lp-notice__label {
+  color: var(--warn);
+}
+
+.lp-notice[data-tone='bad'] .lp-notice__label {
+  color: var(--bad);
+}
+
+.lp-notice__body {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+/* ── Paragraphs inside a card ────────────────────────────────────────────── */
+.lp-para {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  margin: 0 0 9px;
+}
+
+.lp-para--dim {
+  color: var(--ink-4);
+  font-size: 11.5px;
+}
+
+.lp-body {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+}
+
+/* ── The three-step claim track ──────────────────────────────────────────── */
+.claimtrack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 9px;
+}
+
+.claimtrack__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+
+.claimtrack__step[data-on='true'] {
+  color: var(--ink);
+}
+
+.claimtrack__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.4px solid var(--line-strong);
+  flex-shrink: 0;
+}
+
+.claimtrack__step[data-on='true'] .claimtrack__dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(86, 150, 248, 0.55);
+}
+
+.claimtrack__rule {
+  width: 22px;
+  height: 1px;
+  background: var(--line-strong);
+  margin: 0 12px;
+}
+
+/* ── Tickable claim row ──────────────────────────────────────────────────── */
+.tick {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  border-radius: 6px;
+}
+
+.tick + .tick {
+  border-top: 1px solid var(--line-soft);
+}
+
+.tick:hover .tick__box {
+  border-color: var(--accent);
+}
+
+.tick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tick[data-locked='true'] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tick[data-locked='true']:hover .tick__box {
+  border-color: var(--line-strong);
+}
+
+.tick[data-on='true'] {
+  color: var(--ink);
+}
+
+.tick__box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.4px solid var(--line-strong);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-4);
+  margin-top: -1px;
+  transition:
+    background var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.tick[data-on='true'] .tick__box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #02101f;
+}
+
+.tick__label {
+  display: block;
+}
+
+.tick__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+
+.lp-refusal {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--warn);
+}
+
+/* ── Checkpoint progress bar ─────────────────────────────────────────────── */
+.cpbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 6px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Gate table ──────────────────────────────────────────────────────────── */
+.gate-row {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 12px;
+  padding: 11px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.gate-row + .gate-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.gate-row__k {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-top: 3px;
+}
+
+.gate-row[data-fail='true'] .gate-row__k {
+  color: var(--bad);
+}
+
+.gate-row__v {
+  color: var(--ink-2);
+}
+
+/* ── Numbered and warning lists ──────────────────────────────────────────── */
+.lp-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-list li {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.lp-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+
+.lp-list__mark {
+  flex: none;
+  width: 16px;
+  margin-top: 1px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 11px;
+  text-align: center;
+}
+
+.lp-list[data-kind='bad'] .lp-list__mark {
+  color: var(--bad);
+}
+
+/* ── Words, laid out as a definition list ────────────────────────────────── */
+.words {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) 1fr;
+  gap: 0 16px;
+}
+
+.words dt,
+.words dd {
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.words dt:first-of-type,
+.words dt:first-of-type + dd {
+  border-top: 0;
+}
+
+.words dt {
+  color: var(--accent-hi);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.words dd {
+  color: var(--ink-3);
+}
+
+@media (max-width: 560px) {
+  .words {
+    grid-template-columns: 1fr;
+  }
+  .words dd {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+/* ── Mechanism figure ────────────────────────────────────────────────────── */
+.lp-figure {
+  padding: 8px 4px 2px;
+}
+
+.lp-figure svg {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+}
+
+
+/* ── Plan fields ─────────────────────────────────────────────────────────── */
+.lp-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-field--wide {
+  grid-column: 1 / -1;
+}
+
+.lp-field label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.lp-field input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--raise);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-field input:focus {
+  outline: none;
+  border-color: var(--line-blue-strong);
+  box-shadow: 0 0 0 3px rgba(77, 155, 255, 0.14);
+}
+
+@media (max-width: 560px) {
+  .lp-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.lp-path {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 13px 14px;
+  background: var(--raise-grad);
+}
+
+.lp-path[data-on='true'] {
+  border-color: var(--line-blue-strong);
+  box-shadow: inset 0 0 0 1px rgba(77, 155, 255, 0.12);
+}
+
+.lp-path__name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.lp-path__value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-path__over {
+  display: block;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--bad);
+}
+
+.lp-path__sub {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-4);
+}
+
+@media (max-width: 560px) {
+  .lp-paths {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-verdict {
+  margin-top: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.lp-verdict[data-tone='warn'] {
+  color: var(--warn);
+}
+
+.lp-why {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.lp-why[data-tone='bad'] {
+  color: #ff9a8a;
+}
+
+.lp-why[data-tone='dim'] {
+  color: var(--ink-4);
+}
+
+/* ── Ladder rows on the Learning page ────────────────────────────────────── */
+.ladder-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 26px 0 11px;
+}
+
+.ladder-head__n {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.ladder-head__t {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ladder-head__r {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.ladder-head__h {
+  font-size: 11px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-steps {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.lp-steps span {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.lp-steps span[data-on='true'] {
+  background: var(--accent);
+}
+
+/* The ORBIT track colour sits too close to the card for a 3:1 boundary, so the
+   checkpoint bar carries a hairline border — the realm's own a11y fix. */
+.cpbar .bar {
+  border: 1px solid var(--line-strong);
+}
