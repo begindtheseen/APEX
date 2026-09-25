@@ -158,6 +158,14 @@ describe('the lesson format', () => {
     expect(sh).toEqual({ kind: 'shell', name: 'made it', facts: ['dir notes', 'cwd notes'] })
   })
 
+  it('reads a type-error check (a kind with a hyphen)', () => {
+    const t = parseTrack(
+      '@track typescript\n@title TypeScript\n\n=== t-1 | One\n--- teach\nx\n--- task\nt\n--- solution\ntype Id = string & { __id: true }\n' +
+        "--- check type-error | a plain string is not an Id\nconst id: Id = 'abc'\n?? brand it\n",
+    )
+    expect(t.lessons[0]!.checks[0]).toEqual({ kind: 'type-error', name: 'a plain string is not an Id', code: "const id: Id = 'abc'", hint: 'brand it' })
+  })
+
   it('names the lesson at fault when a file is malformed', () => {
     expect(() => parseTrack(head + '=== p-9 | Bad\n--- teach\nx\n--- task\nt\n--- solution\ny\n')).toThrow(/p-9.*check/)
     expect(() => parseTrack(head + '=== p-9 | Bad\n--- teach\nx\n--- task\nt\n--- solution\ny\n--- check nope | n\nz\n')).toThrow(

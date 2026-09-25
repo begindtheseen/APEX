@@ -105,7 +105,7 @@ function rows(text: string, where: string): Cell[][] {
 }
 
 function parseCheck(header: string, body: string[], where: string): LearnCheck {
-  const m = /^check\s+(\w+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(header)
+  const m = /^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(header)
   if (!m) fail(where, `a check needs "--- check <kind> | <name>", got "--- ${header}"`)
   const [, kind, flag, name] = m
   const hint = body.filter((l) => l.startsWith('?? ')).map((l) => l.slice(3).trim()).join(' ') || undefined

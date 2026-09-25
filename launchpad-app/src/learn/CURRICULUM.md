@@ -146,7 +146,13 @@ language's **basics** course only.
   must bridge (a short paragraph, in the JavaScript course's words) anything
   more — functions with `return` and parameters, `if`, objects,
   `map`/`filter`, template literals, `try`/`catch`, `async`/`await` — since
-  master-html has no JavaScript course in it.
+  master-html has no JavaScript course in it. **As built:** Web ·
+  Intermediate bridges what it uses (objects, `===`, `filter`, template
+  literals, `!`, ternary, `function`); from Web · Advanced on (web3-01 says
+  so) the Web ladder assumes the **JavaScript basics** and bridges only what
+  goes beyond them (classes, `this`, closures, `Map`/`Set`, `switch`, rest
+  parameters, `find`, destructuring…). So Web · Advanced and later
+  effectively depend on JavaScript basics — see the roadmap notes.
 - **C++ follows Python** in software and systems; the C++ basics mirror the
   Python exercises, so C++ lessons may compare with Python ("like a Python
   list") but must not require Python.
@@ -266,6 +272,83 @@ event object, `classList`, removing elements, `innerHTML` (and why not),
 ARIA, keyboard accessibility beyond labels, any JavaScript beyond the list
 under *Between languages*.
 
+### Web · Intermediate — `html-intermediate`, prefix `web2-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| web2-01 | concept | landmarks `header nav main article section aside footer`; `div` only for layout |
+| web2-02 | concept | accessible forms: labels, `type` (email, number + `min`/`max`/`step`), `required`, `fieldset`/`legend`, radios sharing `name`, `:invalid`/`:valid` |
+| web2-03 | concept | alt text (descriptive vs `alt=""`), heading outline, link text that stands alone |
+| web2-04 | **debugging** (method taught) | keyboard reproduction, inspect role, `div` → `button`, resetting button styles |
+| web2-05 | concept/debug | specificity scores, order, child `>` vs descendant, Computed panel, no `!important` |
+| web2-06 | concept | `box-sizing: border-box` universal rule, margin collapse, inline vs block; `offsetWidth` (in a given script) |
+| web2-07 | concept | flexbox: `justify-content`, `align-items`, `flex-wrap`, `flex: 1`, `margin-left: auto` |
+| web2-08 | concept | CSS grid: `grid-template-columns`, `fr`, `repeat`, `grid-template-areas` / `grid-area` |
+| web2-09 | concept | custom properties on `:root`, `var(--x, fallback)`, override the variable not the property, `setProperty` |
+| web2-10 | concept | media queries (`max-width`/`min-width`), mobile vs desktop first, breakpoints, viewport meta; preview is 800px wide |
+| web2-11 | concept | DOM: `createElement`, `classList`, `dataset`, `setAttribute`, `append`, `remove`; `textContent` vs `innerHTML` (XSS). JS bridge: objects and `.prop`, `===`, `filter`, `.length`, template literals |
+| web2-12 | concept | the event object (`target`, `currentTarget`), `click` / `input` / `change` / `submit`, `preventDefault`. JS bridge: `.trim()`, `!`, early `return`, `cond ? a : b` |
+| web2-13 | **design** | refactoring markup: meaning first, inline styles into classes, class per idea |
+| web2-14 | **problem** (approach taught) | filter-as-you-type with `hidden`, one update function. JS bridge: `function` declarations, `querySelectorAll` + `for…of`, `++` |
+
+### Web · Advanced — `html-advanced`, prefix `web3-`, 14 lessons
+
+Opening rule (web3-01): from here the Web courses assume the **JavaScript
+basics course** (functions, objects, arrays with `map`/`filter`/`reduce`,
+template literals, `async`/`await`) and explain anything newer at first use.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| web3-01 | concept/debug | bubbling, **event delegation**, `closest`, `contains` |
+| web3-02 | concept | **state + one `render()`**, handlers only change state; `replaceChildren(...)`; bridge: spread into a call, `map` index |
+| web3-03 | concept | an `h()` element helper and **components** (data → element); bridge: rest parameters, `Object.entries` + array destructuring, closure named |
+| web3-04 | concept | custom validation: `novalidate`, `validity.*`, `aria-invalid`, `aria-describedby`, focus first error, `minlength` trap; bridge: `find`, `||` default |
+| web3-05 | concept | disclosure: `button`, `aria-expanded`, `aria-controls`, `hidden`; ARIA's first rule; `details`/`summary` |
+| web3-06 | concept | `setTimeout`/`clearTimeout`, sleep promise, `async` handlers, UI states, `role="status"`, the stale clear-timer bug |
+| web3-07 | **debugging** | reading the console; script runs before elements exist; end of body / `DOMContentLoaded` / `defer` |
+| web3-08 | **debugging** | classes (bridged), how `this` is decided, arrow / `bind` / class-field fixes |
+| web3-09 | **debugging** | **closures** properly: `var` vs `let` in loops, stale snapshots |
+| web3-10 | build | tabs: `role` tablist/tab/tabpanel, `aria-selected`, roving `tabindex`, arrow/Home/End keys; bridge: `[...nodeList]`, `forEach` index, `in` |
+| web3-11 | build | `<dialog>`, `showModal`, `method="dialog"`, `returnValue` reset, restoring focus |
+| web3-12 | concept | sort + filter a table as derived view, comparator (`a - b`, `localeCompare`), sort a copy, `aria-sort` |
+| web3-13 | **design** | "the page is the database" → data / render / events, delegation |
+| web3-14 | **problem** | keyboard combobox: `suggestions` + `active` state, `aria-activedescendant`, `role="option"` |
+
+### Web · Expert — `html-expert`, prefix `web4-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| web4-01 | concept | **store**: actions, pure reducers, subscribe/unsubscribe; bridge: `Set`, method shorthand, closure, `switch` |
+| web4-02 | **design** | derive, don't store: selectors |
+| web4-03 | concept | **keyed rendering** with a `Map` (bridged), `insertBefore` moves |
+| web4-04 | concept | undo/redo with past/present/future; Ctrl/Cmd+Z; `event.ctrlKey`/`metaKey`/`shiftKey` |
+| web4-05 | concept | `<template>`, `content`, `cloneNode(true)`, DocumentFragment |
+| web4-06 | concept | **custom elements**: `extends HTMLElement`, lifecycle callbacks, `observedAttributes`, getters/setters, `CustomEvent` (class features bridged) |
+| web4-07 | concept | batching with fragments / `replaceChildren`, layout thrashing, **debounce** (throttle named), `MutationObserver` meter |
+| web4-08 | **debugging** | race conditions: request ids, `AbortController` named |
+| web4-09 | **design** | design tokens, themes by swapping tokens, BEM, flat specificity; `dataset` on `html`, `delete` |
+| web4-10 | **debugging** | accessibility audit: `lang`, alt, headings, labels, names, focus outlines, positive tabindex, contrast 4.5:1 |
+| web4-11 | concept | focus management after removal, `tabindex="-1"`, `aria-live`; bridge: `splice`, `[x] =` destructuring |
+| web4-12 | build | hash router, `hashchange`, route params, intercepting links, `aria-current` |
+| web4-13 | build | form wizard as a **finite state machine** with guards |
+| web4-14 | **problem finding** | a bundled bug report: split, reproduce, hypothesise, fix at source (strings from inputs, ids not positions, special cases, validation) |
+
+### Web · Projects — `html-projects`, prefix `webp-`, 15 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| webp-01…04 | **To-do app**: state + render + submit → delegated toggle/delete with named controls → derived filters with `aria-pressed` and empty state → bulk actions (`every`/`some`) | web2-12, web3-01/02, web4-02 |
+| webp-05…08 | **Quiz**: data vs state, choice buttons → answers array with derived score and locked feedback (`role="status"`) → results screen from `index === length` → restart and best score updated at the transition (`??`) | web3-02/13 |
+| webp-09…12 | **Shopping cart**: integer cents + `toFixed`, cart as quantities by id → cart lines (`Object.entries`, `delete`) → totals chain with discount code and shipping rule → checkout with progressive disclosure, validation, read-then-clear | web3-03/04, web2-12 |
+| webp-13 | **Capstone**: tip calculator (rounding up per person, `aria-pressed` derived) | spec + behaviour checks only |
+| webp-14 | **Capstone**: unit converter through a base unit | |
+| webp-15 | **Capstone**: sortable, searchable contact list with validation and ids | web3-12 |
+
+Not covered by the Web ladder: CSS positioning (`position`, `z-index`) and
+transitions/animations as lessons, `fetch` and real networking (the sandbox has
+none), `localStorage` (it throws here), `history.pushState` beyond a mention,
+shadow DOM beyond a mention, build tools and frameworks.
+
 ---
 
 ## JavaScript (`javascript`) — course `javascript`, prefix `js-`, 12 lessons
@@ -383,6 +466,77 @@ has been imported yet), `with` and files, type hints, docstrings,
 `__str__`/`__repr__`, inheritance, `@dataclass`, `collections`
 (`Counter`, `defaultdict`), generators/`yield`, decorators, recursion,
 `*args`/`**kwargs`, `assert`, custom exception classes.
+
+### Python · Intermediate — `python-intermediate`, prefix `py2-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| py2-01 | concept | list / set / dict comprehensions, nested `for`, `a if c else b` (**conditional expression**, anywhere), **truthiness** (empty/zero/None are false), `set()` vs `{}` |
+| py2-02 | concept | **tuples**, unpacking, swap, star unpacking `first, *rest`, returning several values, `enumerate(start=)`, `zip` (`strict=True`), `(5,)` |
+| py2-03 | concept | string toolkit (`split(sep)`, `"-".join`, `endswith`, `replace`, `title`, `isalnum`, `isdigit`, `partition`), immutability, **format specs** (`:.2f`, `:,`, width/align `<>^`, `03d`, `%`); `join` over a generator expression (named, explained in py3-02) |
+| py2-04 | concept | **`import` / `from … import`** and the standard library; `get`, `setdefault`, `collections.defaultdict`, `Counter` + `most_common` |
+| py2-05 | concept | `sorted` vs `.sort()`, `key=`, **`lambda`**, tuple keys, negation for descending, stability, `min`/`max` with `key` |
+| py2-06 | concept | `*args`, `**kwargs`, spreading with `*`/`**` in calls, keyword-only parameters after `*`, defaults evaluated once |
+| py2-07 | **debugging** (method taught) | reproduce, expected vs got, check assumptions, inspect (`id`, `is`), fix the cause; the **mutable default argument**; `is None` vs falsy |
+| py2-08 | concept | full `try` / `except … as err` / `else` / `finally`; **custom exceptions**, **subclass / inherits**, `super().__init__`, docstring; specific `except` first |
+| py2-09 | **debugging** | reading a **traceback** bottom-up; crash site vs bug site; `repr`; fix at the source |
+| py2-10 | concept | `__repr__`, `__eq__` + `NotImplemented`, `isinstance`, `@property` and setters, `_private` backing attribute |
+| py2-11 | concept | `math` (`ceil`, `floor`, `sqrt`, `gcd`, `prod`, `inf`), `itertools` (`accumulate`, `chain`, `combinations`, `islice`, `count`, `groupby`), `namedtuple`, `deque` |
+| py2-12 | concept | `splitlines`, the strip-skip-parse loop, `io.StringIO`, `csv.DictReader` / `csv.writer` (`lineterminator`) |
+| py2-13 | **problem** (approach taught) | restate, examples, brute force, find the repeat, trade memory for time with a dict; big input (100,000) |
+| py2-14 | **design** (refactor method taught) | pin behaviour, find the jobs, extract one at a time, name by meaning, one job per function that returns |
+
+### Python · Advanced — `python-advanced`, prefix `py3-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| py3-01 | concept | iterable vs iterator, `__iter__`/`__next__`, `StopIteration`, `iter()`/`next()`, what `for` really does |
+| py3-02 | concept | generator functions, `yield`, laziness, pipelines, **generator expressions** |
+| py3-03 | **debugging** | one-shot iterators (generators, `zip`, `map`…) running dry; heisenbugs; materialise once |
+| py3-04 | concept | **closures** (introduced here), decorators, `@` as shorthand, `functools.wraps`, decorators with arguments, bare `raise` |
+| py3-05 | concept | context managers: `__enter__`/`__exit__` (return True swallows), `contextlib.contextmanager` with `try`/`finally`; `open` in `with`; `del d[k]` |
+| py3-06 | concept | **type annotations** (not enforced), `@dataclass` (`field(default_factory=…)`, `frozen`, `order`), hashable, `Enum` |
+| py3-07 | concept | special methods table (`__len__`, `__getitem__`, `__add__`, `__rmul__`, `__hash__`, `__bool__`…), the hash rule, slices; `any` / `all` |
+| py3-08 | concept | `functools.partial`, `reduce` (with a start value), `lru_cache`, pure functions |
+| py3-09 | **debugging** | names vs objects, **aliasing**, `[[0]*3]*2`, `dict.fromkeys`, shallow vs `copy.deepcopy` |
+| py3-10 | **design** | composition over inheritance, **strategy pattern**, duck typing; refactor an `if` chain on a mode string |
+| py3-11 | problem | recursion (base/recursive case), memoisation, **dynamic programming** top-down vs bottom-up (coins) |
+| py3-12 | concept/problem | **Big-O** table, hidden loops (`in` on a list, `pop(0)`), sets beside lists, prefix sums |
+| py3-13 | **problem** | **BFS** on a grid with `deque`, mark on enqueue, bounds before indexing |
+| py3-14 | **problem** | **binary search** with an invariant (`first_at_least`), binary search on the answer (`int_sqrt`) |
+
+### Python · Expert — `python-expert`, prefix `py4-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| py4-01 | **debugging** | late binding in closures (loop lambdas), default-argument and factory fixes, `nonlocal`, `__closure__` |
+| py4-02 | concept | **descriptors** (`__get__`, `__set__`, `__set_name__`), data vs non-data, how `property` / `cached_property` work |
+| py4-03 | concept | `__init_subclass__`, self-registering **plugins**, validation at definition time, `type(name, bases, ns)` |
+| py4-04 | concept | generator `send`, priming, `yield from`, generator return values |
+| py4-05 | concept | `asyncio`: `async def`, `await`, `gather`, `Queue` + workers, `create_task`, `task_done`/`join`, cancel (timing checks < 0.55 s and < 0.8 s) |
+| py4-06 | concept | `heapq` (min-heap, negation for max, running median with two heaps), `bisect` |
+| py4-07 | concept | type hints, `Protocol` + `runtime_checkable`, `TypeVar`/`Generic`, `get_type_hints` |
+| py4-08 | concept | **testing**: arrange/act/assert, `assert`, choosing cases that break implementations, mutation testing |
+| py4-09 | **design** | functional core / imperative shell, **dependency injection**, **standard input** (`input()`, `sys.stdin.read()`), `if __name__ == "__main__":` |
+| py4-10 | **debugging** | floating point: `repr`/many digits, `math.isclose` (`abs_tol`), `Decimal` from strings, `Fraction`, splitting cents with `divmod` |
+| py4-11 | **problem** | edit distance DP bottom-up keeping one row |
+| py4-12 | **problem** | Dijkstra with a heap, stale entries, path via `previous` |
+| py4-13 | problem/build | a **tokenizer** (index loop, maximal munch, positioned errors) |
+| py4-14 | problem/build | a **recursive-descent** parser from a grammar (precedence, associativity, errors, no `eval`) |
+
+### Python · Projects — `python-projects`, prefix `pyp-`, 16 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| pyp-01…04 | **Expense tracker**: parse commands (cents, `partition`, `ValueError` policy) → `Ledger` dataclass model, `format_cents` → sorted fixed-width report → `run(lines)` error boundary + `sys.stdin` entry point | py2-03/05/08, py3-06, py4-09 |
+| pyp-05…08 | **Markdown converter**: **regular expressions** (`re.sub`, `re.split`, `re.compile`, lazy vs greedy — taught in pyp-05) and HTML escaping → headings and paragraphs with a flush buffer (closure) → lists as a state machine (`nonlocal`) → fenced code blocks with an index loop, CLI | py4-01, py4-13 |
+| pyp-09…12 | **Library**: domain model with dataclasses, `LibraryError`, `dataclasses.replace` → loans, rules, `datetime.date`/`timedelta`, today injected → JSON persistence (`json`, `asdict`, `@classmethod` from_json, `raise … from`) → overdue and fines | py2-08, py3-06/09, py4-09 |
+| pyp-13 | **Capstone**: to-do list with undo (snapshots or commands) | spec + behaviour checks only |
+| pyp-14 | **Capstone**: calculator language with variables and functions | py4-13/14, pyp-05 |
+| pyp-15 | **Capstone**: bank ledger with strict validation, atomic transfers, statements | py4-10, pyp-05 |
+| pyp-16 | **Capstone**: text-adventure state machine for any world | py3-09 |
+
+Kind spread is healthy in every course: intermediate 2 debugging + 1 problem + 1 design, advanced 2 debugging + 4 problem + 1 design, expert 2 debugging + 4–6 problem + 1 design (+ testing). `input()` is described in py4-09 but no lesson reads input with it; programs use `sys.stdin.read()`. Not covered: files on disk beyond one `open` example, `pathlib`, `argparse`, logging, threads/processes, packaging, third-party libraries (the checker has only the standard library).
 
 ---
 
