@@ -1,34 +1,32 @@
 /* ============================================================================
-   LAUNCHPAD — language runtimes (ORBIT's, plus JavaScript)
+   LAUNCHPAD — language runtimes
    ----------------------------------------------------------------------------
-   What can and cannot actually run in a browser, stated plainly rather than
-   papered over:
+   The playground carries five languages — JavaScript, TypeScript, Python,
+   SQL and C++ — and every one of them really executes, inside this tab:
 
-     JS      real execution, the browser's own engine in a throwaway worker
-     Python  real execution, Pyodide in a module worker, full scientific stack
-     SQL     real execution, SQLite compiled to WebAssembly
-     C, C++  no browser compiler is worth tens of megabytes of download, but
-             the desktop shell has the machine underneath it: clang or gcc is
-             used when installed, and the exercise really compiles and runs
-     Rust    no rustc-in-WASM exists at all; rustc is used the same way
-     Shell   run by the machine's own bash
-     MATLAB  proprietary, but Octave runs the same language and is free, so
-             Octave is used when installed; the NumPy bridge stays for when
-             it is not
-     JS      run by the shell's own Node
+     JavaScript  the browser's own engine, in a throwaway worker (M1–M3)
+     TypeScript  the real TypeScript compiler, strict, type-checks first and
+                 then runs the emitted JavaScript (M4 onward — BET 1)
+     Python      CPython compiled to WebAssembly by Pyodide (M24)
+     SQL         SQLite compiled to WebAssembly (the Postgres modules' queries)
+     C++         clang++ and lld compiled to WebAssembly: a real compile to a
+                 WASI program, run in a throwaway worker with stdin/stdout
 
-   Everything but Python and SQL therefore depends on the desktop shell and on
-   what is installed. `capabilityOf` answers that per language at the moment
-   she presses run, and the UI states the answer rather than guessing.
+   Nothing is uploaded. The compilers come to the browser, once, from a CDN,
+   and the browser caches them. MATLAB, Simulink, Rust and the shell are not
+   offered: none of them could run here, and a playground entry that cannot
+   run is worse than none. The terminal work of M1 happens in a real terminal
+   on your own machine — that is the point of it.
+
+   Learn mode (src/learn) teaches the basics of all five through these same
+   runtimes.
 
    The rule underneath all of it: never show a green tick that does not mean
-   what it appears to mean. An exercise that was string-compared says so, and
-   a missing compiler says which one and how to install it.
+   what it appears to mean.
    ========================================================================== */
 import type { Lang } from '@/curriculum/types'
-import { getOrbit, hasNativeRunner, isDesktop, type RunRequest, type RunResult, type ToolchainInfo } from './desktop'
 
-export type RunMode = 'execute' | 'check' | 'reference'
+export type RunMode = 'execute' | 'reference'
 
 export interface LangInfo {
   id: Lang
@@ -45,211 +43,51 @@ export const LANGS: Record<Lang, LangInfo> = {
     mode: 'execute',
     note: 'Runs for real in this browser’s own JavaScript engine, in a worker thrown away after each run. Top-level await works and timers are waited for. It is not Node: there is no require, fs or process.',
   },
+  typescript: {
+    id: 'typescript',
+    label: 'TypeScript',
+    mode: 'execute',
+    note: 'Type-checked for real by the TypeScript compiler in strict mode, then run as JavaScript. A type error stops the run, the way `tsc --noEmit` stops CI. The compiler is a one-time ~9 MB download.',
+  },
   python: {
     id: 'python',
     label: 'Python',
     mode: 'execute',
-    note: 'Runs for real — CPython 3.14 compiled to WebAssembly, with NumPy, SciPy, SymPy, pandas and Matplotlib available on demand.',
+    note: 'Runs for real — CPython compiled to WebAssembly, with NumPy, pandas and Matplotlib available on demand.',
   },
   sql: {
     id: 'sql',
     label: 'SQL',
     mode: 'execute',
-    note: 'Runs for real against SQLite compiled to WebAssembly. Each exercise gets a fresh in-memory database seeded from its own schema.',
+    note: 'Runs for real against SQLite compiled to WebAssembly. Each run gets a fresh in-memory database seeded with a users and requests table. SQLite, not Postgres: joins, aggregates and window functions carry over; Postgres-only syntax does not.',
   },
   cpp: {
     id: 'cpp',
     label: 'C++',
-    mode: 'check',
-    note: 'Compiled and run for real by the compiler on this Mac. Without one installed, your output is compared against the expected result instead.',
-  },
-  rust: {
-    id: 'rust',
-    label: 'Rust',
-    mode: 'check',
-    note: 'Compiled and run for real by rustc on this Mac. Without it installed, your output is compared against the expected result instead.',
-  },
-  matlab: {
-    id: 'matlab',
-    label: 'MATLAB',
-    mode: 'reference',
-    note: 'Run for real by GNU Octave when it is installed — same language, no licence. Otherwise every MATLAB exercise ships a NumPy equivalent you can run side by side.',
-  },
-  simulink: {
-    id: 'simulink',
-    label: 'Simulink',
-    mode: 'reference',
-    note: 'Model-based design work happens in Simulink itself. What is here is the block diagram, the solver settings and what to verify.',
-  },
-  bash: {
-    id: 'bash',
-    label: 'Shell',
-    mode: 'check',
-    note: 'Run for real by this machine\u2019s own bash, in a scratch directory that is thrown away afterwards.',
+    mode: 'execute',
+    note: 'Compiled for real by clang++ (C++20, -Wall) and run in this browser, with the input box as standard input. Exceptions are off in this toolchain, so throw and try do not compile. The compiler is a one-time download of about 105 MB before compression.',
   },
   text: {
     id: 'text',
     label: 'Notes',
     mode: 'reference',
-    note: 'Free-form notes — nothing here is executed or checked. Use it for derivations, working and anything you want to keep with the module.',
+    note: 'Free-form notes — nothing here is executed or checked. Use it for deltas, derivations and anything you want to keep with the module.',
   },
 }
 
-/* ── What can actually run, right now ────────────────────────────────────── */
-
-/**
- * Which language ids the desktop runner knows how to build and execute. The
- * key is the app's `Lang`; `simulink` and `text` are absent because neither is
- * a thing you execute.
- */
-export const NATIVE_LANGS: Partial<Record<Lang, string>> = {
-  cpp: 'cpp',
-  rust: 'rust',
-  bash: 'bash',
-  matlab: 'matlab',
-}
+/** The languages the playground offers, in the order the curriculum meets them. */
+export const RUNNABLE: Lang[] = ['javascript', 'typescript', 'python', 'sql', 'cpp']
 
 export interface Capability {
   mode: RunMode
   /** Shown under the run button. Always true of what just happened. */
   note: string
-  /** The compiler that will be used, when there is one. */
-  toolchain?: string
-  /** Set when execution is possible in principle but the tool is missing. */
-  missing?: { label: string; install: string }
 }
 
-/**
- * What this language can do at this moment, on this machine.
- *
- * Python and SQL are settled: they execute in the renderer and always have.
- * The rest depend on the shell being present and a compiler being installed,
- * so the answer is computed rather than declared, and it changes the moment
- * she installs something and presses refresh.
- */
-export function capabilityOf(
-  lang: Lang,
-  toolchains: Record<string, ToolchainInfo> | null,
-  desktop: boolean = isDesktop,
-  runner: boolean = hasNativeRunner,
-): Capability {
+/** What a language does when Run is pressed. Every runnable one executes. */
+export function capabilityOf(lang: Lang): Capability {
   const info = LANGS[lang]
-  if (info.mode === 'execute') return { mode: 'execute', note: info.note }
-
-  const key = NATIVE_LANGS[lang]
-  if (!key) return { mode: info.mode, note: info.note }
-
-  if (!desktop) {
-    return {
-      mode: info.mode,
-      note: `${info.label} needs a compiler, and a browser has nowhere to run one, so your output is compared against the expected result.`,
-    }
-  }
-
-  // In the app, but in a shell older than the curriculum it is showing. Saying
-  // "this needs the desktop app" to someone who is looking at the desktop app
-  // is the least useful thing we could tell her.
-  if (!runner) {
-    return {
-      mode: info.mode,
-      note: `This copy of the LAUNCHPAD app is older than the lessons inside it, so it cannot reach a compiler and your output is compared against the expected result instead. Settings has the new app; installing it keeps your progress.`,
-      missing: {
-        label: 'a newer LAUNCHPAD app',
-        install: 'Open Settings and install the new LAUNCHPAD app. Your progress stays exactly where it is.',
-      },
-    }
-  }
-
-  const tool = toolchains?.[key]
-  if (tool?.available) {
-    return {
-      mode: 'execute',
-      note: `Runs for real — compiled and executed by ${tool.version ?? tool.bin} on this machine, in a scratch directory that is thrown away afterwards.`,
-      toolchain: tool.version ?? tool.bin,
-    }
-  }
-
-  // Undetected is not the same as missing: detection may not have run yet.
-  if (!toolchains) return { mode: info.mode, note: 'Checking what is installed…' }
-
-  return {
-    mode: info.mode,
-    note: `${tool?.label ?? info.label} is not installed yet, so your output is compared against the expected result rather than actually run.`,
-    missing: {
-      label: tool?.label ?? info.label,
-      install: tool?.install ?? `Install ${info.label} to run these exercises for real.`,
-    },
-  }
-}
-
-/**
- * Asks the shell what is installed. Returns null in a browser, where the
- * question has no answer, so callers can tell "not applicable" apart from
- * "nothing installed".
- */
-export async function detectToolchains(refresh = false): Promise<Record<string, ToolchainInfo> | null> {
-  const orbit = getOrbit()
-  if (!orbit?.run) return null
-  try {
-    return await orbit.run.detect(refresh)
-  } catch {
-    return null
-  }
-}
-
-/**
- * Compiles and runs through the shell, and reshapes the result into the same
- * `RunOutput` the Python runtime produces so the playground has one shape to
- * render regardless of language.
- */
-export async function runNative(lang: Lang, source: string, stdin?: string): Promise<RunOutput> {
-  const started = Date.now()
-  const empty = (error: string): RunOutput => ({
-    stdout: '',
-    stderr: '',
-    plots: [],
-    result: null,
-    error,
-    ms: Date.now() - started,
-  })
-
-  const key = NATIVE_LANGS[lang]
-  const orbit = getOrbit()
-  if (!key) return empty(`${LANGS[lang].label} cannot be executed.`)
-  if (!orbit?.run) {
-    return empty(
-      isDesktop
-        ? 'This copy of the LAUNCHPAD app is older than the lessons inside it, so it cannot compile code. Install the new app from Settings — your progress stays where it is.'
-        : `A browser cannot run ${LANGS[lang].label}.`,
-    )
-  }
-
-  let res: RunResult | null
-  try {
-    const request: RunRequest = { lang: key, source, ...(stdin === undefined ? {} : { stdin }) }
-    res = await orbit.run.exec(request)
-  } catch (err) {
-    return empty(err instanceof Error ? err.message : String(err))
-  }
-  if (!res) return empty('The shell did not answer the run request.')
-
-  // A compile error belongs in the error slot rather than buried in stderr:
-  // it is the thing she needs to read, and the playground highlights it.
-  const error =
-    res.ok || res.stage === 'run'
-      ? res.timedOut
-        ? (res.reason ?? 'It was still running and was stopped.')
-        : null
-      : (res.reason ?? 'It did not run.')
-
-  return {
-    stdout: res.stdout,
-    stderr: res.stderr,
-    plots: [],
-    result: null,
-    error,
-    ms: res.ms,
-  }
+  return { mode: info.mode, note: info.note }
 }
 
 export interface SolutionCheck {
@@ -262,31 +100,16 @@ export interface SolutionCheck {
 }
 
 /**
- * Grades a whole-program exercise by running it against the reference.
- *
- * The compiled-language exercises are complete programs that print a result,
- * and they ship a reference solution. So the grade does not need an expected
- * string authored alongside them and kept in sync: compile and run both, and
- * compare what they actually printed. Both really execute, so a pass means
- * her program produced that output on this machine — not that its text
- * resembled something.
- *
- * A reference that will not build is reported as such rather than failing her:
- * that is the curriculum's bug, and telling her she is wrong for it would be
- * the worst possible outcome.
+ * Grades a whole-program C++ exercise by running it against the reference.
+ * Both really compile and execute, so a pass means her program printed that
+ * output — not that its text resembled something. A reference that will not
+ * build is reported as the exercise's fault, never as hers.
  */
-export async function runAgainstSolution(
-  lang: Lang,
-  code: string,
-  solution: string,
-  stdin?: string,
-): Promise<SolutionCheck> {
-  const yours = await runNative(lang, code, stdin)
-  if (yours.error) {
-    return { pass: false, detail: yours.error, yours }
-  }
+export async function runAgainstSolution(code: string, solution: string, stdin?: string): Promise<SolutionCheck> {
+  const yours = await runCpp(code, { stdin })
+  if (yours.error) return { pass: false, detail: yours.error, yours }
 
-  const reference = await runNative(lang, solution, stdin)
+  const reference = await runCpp(solution, { stdin })
   if (reference.error) {
     return {
       pass: false,
@@ -304,6 +127,194 @@ export async function runAgainstSolution(
     yours,
     reference,
   }
+}
+
+/* ── Compilers that live in a worker ─────────────────────────────────────────
+   The C++ and TypeScript compilers are large, so each lives in one worker
+   that is created on first use and kept: loading it is the expensive part,
+   and a compile always finishes. What they produce is run elsewhere, in a
+   worker thrown away after each run, so a program that never ends can be
+   stopped without throwing the compiler away with it. */
+
+interface CompileReply {
+  type: 'compiled' | 'failed'
+  stage?: 'load' | 'compile' | 'check'
+  diagnostics: string
+  wasm?: ArrayBuffer
+  js?: string
+}
+
+class CompilerWorker {
+  private worker: Worker | null = null
+  private nextId = 1
+  private waiting = new Map<number, { resolve: (r: CompileReply) => void; onStatus?: StatusFn }>()
+
+  private readonly create: () => Worker
+  private readonly verb: string
+  private readonly crashed: string
+
+  constructor(create: () => Worker, verb: string, crashed: string) {
+    this.create = create
+    this.verb = verb
+    this.crashed = crashed
+  }
+
+  private ensure(): Worker {
+    if (this.worker) return this.worker
+    const w = this.create()
+    w.onmessage = (e: MessageEvent) => {
+      const msg = e.data as Omit<CompileReply, 'type'> & { type: CompileReply['type'] | 'status'; id: number; text?: string }
+      const entry = this.waiting.get(msg.id)
+      if (!entry) return
+      if (msg.type === 'status') {
+        entry.onStatus?.(msg.text ?? '')
+        return
+      }
+      this.waiting.delete(msg.id)
+      entry.resolve({ ...msg, type: msg.type })
+    }
+    w.onerror = (e) => {
+      e.preventDefault()
+      this.reset(this.crashed)
+    }
+    this.worker = w
+    return w
+  }
+
+  /** Throws the worker away and fails whatever was waiting on it. */
+  private reset(message: string): void {
+    this.worker?.terminate()
+    this.worker = null
+    for (const [, entry] of this.waiting) entry.resolve({ type: 'failed', stage: 'load', diagnostics: message })
+    this.waiting.clear()
+  }
+
+  /** Starts downloading the compiler without compiling anything. */
+  preload(): void {
+    this.ensure().postMessage({ cmd: 'preload' })
+  }
+
+  compile(source: string, onStatus?: StatusFn): Promise<CompileReply> {
+    const w = this.ensure()
+    const id = this.nextId++
+    return new Promise<CompileReply>((resolve) => {
+      this.waiting.set(id, { resolve, onStatus })
+      w.postMessage({ cmd: this.verb, id, source })
+    })
+  }
+}
+
+export const cppCompiler = new CompilerWorker(
+  () => new Worker(new URL('../workers/cpp.worker.ts', import.meta.url), { type: 'module' }),
+  'compile',
+  'The C++ compiler stopped unexpectedly (most often the tab ran short of memory). Press Run again to reload it.',
+)
+
+export const tsCompiler = new CompilerWorker(
+  () => new Worker(new URL('../workers/typescript.worker.ts', import.meta.url), { type: 'module' }),
+  'check',
+  'The TypeScript compiler stopped unexpectedly. Press Run again to reload it.',
+)
+
+/* ── C++ ─────────────────────────────────────────────────────────────────── */
+
+export const CPP_TIME_LIMIT_MS = 10_000
+
+/**
+ * Compiles with clang++ in the browser, then runs the program in a fresh
+ * worker with `stdin` as its standard input. A compile error comes back in
+ * `error`, exactly as clang printed it; warnings on a program that did build
+ * are shown with its output.
+ */
+export async function runCpp(
+  code: string,
+  opts: { stdin?: string; onStatus?: StatusFn; timeLimitMs?: number } = {},
+): Promise<RunOutput> {
+  const started = Date.now()
+  const out: RunOutput = { stdout: '', stderr: '', plots: [], result: null, error: null, ms: 0 }
+
+  const built = await cppCompiler.compile(code, opts.onStatus)
+  if (built.type === 'failed' || !built.wasm) {
+    out.error =
+      built.stage === 'compile'
+        ? `It did not compile:\n\n${built.diagnostics.trim()}`
+        : built.diagnostics.trim() || 'The C++ compiler could not be loaded.'
+    out.ms = Date.now() - started
+    return out
+  }
+  if (built.diagnostics.trim()) out.stderr += `${built.diagnostics.trim()}\n\n`
+  opts.onStatus?.('Running…')
+
+  const limit = opts.timeLimitMs ?? CPP_TIME_LIMIT_MS
+  return new Promise<RunOutput>((resolve) => {
+    let worker: Worker
+    try {
+      worker = new Worker(new URL('../workers/wasi.worker.ts', import.meta.url), { type: 'module' })
+    } catch (err) {
+      out.error = err instanceof Error ? err.message : String(err)
+      out.ms = Date.now() - started
+      resolve(out)
+      return
+    }
+    const finish = (error?: string) => {
+      clearTimeout(timer)
+      worker.terminate()
+      if (error) out.error = error
+      out.ms = Date.now() - started
+      resolve(out)
+    }
+    const timer = setTimeout(
+      () =>
+        finish(
+          `Still running after ${Math.round(limit / 1000)} seconds, so it was stopped. A loop that never ends, or a read from standard input that is waiting for more, does this.`,
+        ),
+      limit,
+    )
+    worker.onmessage = (e: MessageEvent) => {
+      const msg = e.data as { type: string; text?: string; code?: number; message?: string }
+      if (msg.type === 'stdout') out.stdout += msg.text ?? ''
+      else if (msg.type === 'stderr') out.stderr += msg.text ?? ''
+      else if (msg.type === 'exit') {
+        if (msg.code) out.result = `exit code ${msg.code}`
+        finish()
+      } else if (msg.type === 'trap') {
+        finish(
+          `The program crashed: ${msg.message}. abort(), a failed assert, an out-of-range .at(), dividing an integer by zero and reading memory the program does not own all end this way.`,
+        )
+      }
+    }
+    worker.onerror = (e) => {
+      e.preventDefault()
+      finish(e.message || 'The program runner failed to start.')
+    }
+    const wasm = built.wasm!
+    worker.postMessage({ cmd: 'run', id: 1, wasm, stdin: opts.stdin ?? '' }, [wasm])
+  })
+}
+
+/* ── TypeScript ──────────────────────────────────────────────────────────── */
+
+/**
+ * Type-checks with the real compiler (strict), and only when that is clean
+ * runs the emitted JavaScript in the JavaScript runtime. Type errors come
+ * back in `error`, formatted the way tsc prints them.
+ */
+export async function runTypeScript(code: string, opts: { onStatus?: StatusFn } = {}): Promise<RunOutput> {
+  const started = Date.now()
+  const checked = await tsCompiler.compile(code, opts.onStatus)
+  if (checked.type === 'failed' || checked.js === undefined) {
+    const out: RunOutput = { stdout: '', stderr: '', plots: [], result: null, error: null, ms: 0 }
+    out.error =
+      checked.stage === 'check'
+        ? `Type errors, so nothing ran — the same stop \`tsc --noEmit\` puts in front of CI:\n\n${checked.diagnostics.trim()}`
+        : checked.diagnostics.trim() || 'The TypeScript compiler could not be loaded.'
+    out.ms = Date.now() - started
+    return out
+  }
+  opts.onStatus?.('Running…')
+  const ran = await runJavaScript(checked.js)
+  ran.ms = Date.now() - started
+  return ran
 }
 
 /* ── Python ──────────────────────────────────────────────────────────────── */
@@ -625,7 +636,7 @@ export async function runSql(sql: string, schema?: string): Promise<SqlResult> {
   }
 }
 
-/* ── Output checking (C++, Rust, shell) ──────────────────────────────────── */
+/* ── Output checking (C++ exercises graded against a reference) ─────────── */
 
 export interface CheckResult {
   pass: boolean

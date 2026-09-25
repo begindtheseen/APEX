@@ -58,6 +58,21 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # The playground's C++ and TypeScript compilers are not in the build:
+      # the browser downloads them from a CDN on first use. The browser suite
+      # serves the same pinned packages locally, so this is the one check
+      # that the files a learner's browser will ask for are really there.
+      - name: The compilers the playground downloads are on the CDN
+        run: |
+          clang=$(sed -n "s/^const CLANG_VERSION = '\(.*\)'/\1/p" src/workers/cpp.worker.ts)
+          ts=$(sed -n "s/^const TS_VERSION = '\(.*\)'/\1/p" src/workers/typescript.worker.ts)
+          test -n "$clang" && test -n "$ts"
+          for f in gen/bundle.js gen/llvm.core.wasm gen/llvm.core2.wasm gen/llvm.core3.wasm gen/llvm.core4.wasm gen/llvm-resources.tar; do
+            curl -sfIL --retry 3 "https://cdn.jsdelivr.net/npm/@yowasp/clang@$clang/$f" > /dev/null || { echo "::error::jsDelivr does not serve @yowasp/clang@$clang/$f"; exit 1; }
+          done
+          for f in lib/typescript.js lib/lib.es2022.d.ts lib/lib.webworker.d.ts; do
+            curl -sfIL --retry 3 "https://cdn.jsdelivr.net/npm/typescript@$ts/$f" > /dev/null || { echo "::error::jsDelivr does not serve typescript@$ts/$f"; exit 1; }
+          done
       - name: The committed build matches the source
         run: |
           git status --porcelain -- ../launchpad

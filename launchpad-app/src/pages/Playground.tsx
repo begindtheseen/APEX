@@ -1,18 +1,20 @@
 /* ============================================================================
-   LAUNCHPAD — code playground (ORBIT's, plus JavaScript)
+   LAUNCHPAD — code playground (ORBIT's, carrying LAUNCHPAD's languages)
    ----------------------------------------------------------------------------
    Opens standalone, or on a specific exercise via `#/playground?ex=<id>`, in
    which case it loads the starter code, the tests and the reference solution.
 
-   The header always states which of the three run modes applies. A learner who
-   thinks their C++ compiled when it was actually string-compared has been
-   misled by the product, and a green tick that means nothing is worse than no
-   tick at all.
+   Every language offered here really executes, in this tab: JavaScript,
+   TypeScript (type-checked first), Python, SQL and C++ (compiled by clang in
+   the browser). The note under the editor says exactly what just happened,
+   because a green tick that means nothing is worse than no tick at all.
    ========================================================================== */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Editor } from '@/components/Editor'
 import {
+  IconArrowRight,
+  IconBulb,
   IconCheck,
   IconPause,
   IconPlay,
@@ -27,32 +29,65 @@ import type { Exercise, Lang, Module } from '@/curriculum/types'
 import { saveCode } from '@/engine/apply'
 import {
   LANGS,
+  RUNNABLE,
   buildTestProgram,
   capabilityOf,
-  detectToolchains,
   runAgainstSolution,
-  runNative,
   parseTestOutput,
   python,
+  runCpp,
   runJavaScript,
   runSql,
+  runTypeScript,
+  tsCompiler,
   type Capability,
   type RunOutput,
   type SqlResult,
   type TestOutcome,
 } from '@/lib/runtimes'
-import type { ToolchainInfo } from '@/lib/desktop'
 import { Markdown } from '@/lib/markdown'
 import { useLearner } from '@/hooks/useLearner'
 import { navigate, useRoute } from '@/lib/router'
+import { useNextLesson } from '@/pages/Learn'
 import './pages.css'
 
 /*
  * What each language opens on. Small, runnable, and about the work LAUNCHPAD
- * teaches: the event-loop ordering M3 opens with, a line count like M1's first
+ * teaches: the event-loop ordering M3 opens with, M3's discriminated unions
+ * with the compiler enforcing exhaustiveness, a line count like M1's first
  * program, and a per-user spend roll-up of the kind M5 and M20 ask for.
  */
 const SCRATCH: Record<string, string> = {
+  typescript: `// M3: a discriminated union, and the compiler holding you to every case.
+// Delete one of the cases below and run it again — the build stops before
+// anything runs, the way strict \`tsc\` stops CI.
+type Reply =
+  | { kind: 'text'; text: string }
+  | { kind: 'tool_call'; name: string; args: Record<string, unknown> }
+  | { kind: 'refusal'; reason: string }
+
+function describe(reply: Reply): string {
+  switch (reply.kind) {
+    case 'text':
+      return \`text (\${reply.text.length} chars)\`
+    case 'tool_call':
+      return \`tool \${reply.name}(\${Object.keys(reply.args).join(', ')})\`
+    case 'refusal':
+      return \`refused: \${reply.reason}\`
+    default: {
+      const unhandled: never = reply
+      return unhandled
+    }
+  }
+}
+
+const replies: Reply[] = [
+  { kind: 'text', text: 'Here is the summary you asked for.' },
+  { kind: 'tool_call', name: 'search_docs', args: { query: 'pgvector', limit: 5 } },
+  { kind: 'refusal', reason: 'outside the product scope' },
+]
+for (const r of replies) console.log(describe(r))
+`,
   javascript: `// Predict the order these lines print in, then run it.
 // This is M3's first checkpoint: sync code, then microtasks, then timers.
 console.log('1 sync')
@@ -94,31 +129,39 @@ LEFT JOIN requests r ON r.user_id = u.id
 GROUP BY u.id
 ORDER BY spend_usd DESC;
 `,
-  cpp: `#include <cstdio>
+  cpp: `// Reads the input box as standard input, one request per line
+// ("user tokens"), and prints each user's total — the same roll-up as
+// the SQL tab, in C++. Change the input, or the code, and run it again.
+#include <iostream>
+#include <map>
+#include <string>
 
 int main() {
-    std::printf("Hello from a C++ exercise\\n");
+    std::map<std::string, long> tokens;
+    std::string user;
+    long n = 0;
+    int lines = 0;
+    while (std::cin >> user >> n) {
+        tokens[user] += n;
+        ++lines;
+    }
+    std::cout << lines << " requests, " << tokens.size() << " users\\n";
+    for (const auto& [name, total] : tokens) {
+        std::cout << "  " << name << ": " << total << " tokens\\n";
+    }
     return 0;
 }
 `,
-  rust: `fn main() {
-    println!("Hello from a Rust exercise");
-}
-`,
-  matlab: `% MATLAB cannot execute here — the NumPy equivalent is one tab away.
-mu = 398600.4418;
-r  = [7000; 0; 0];
-v  = [0; 7.546; 0];
-h  = cross(r, v);
-disp(norm(h))
-`,
-  bash: `#!/usr/bin/env bash
-set -euo pipefail
-echo "Hello from a shell exercise"
-`,
-  simulink: '',
   text: '',
 }
+
+/** What the C++ tab's input box starts with: its standard input. */
+const CPP_STDIN = `ada 1200
+lin 15000
+ada 5400
+sam 300
+ada 800
+`
 
 /** Seed data for the standalone SQL scratchpad. */
 const SQL_SCHEMA = `
@@ -136,21 +179,22 @@ INSERT INTO requests (user_id, input_tokens, output_tokens, cost_usd) VALUES
   (2, 15000, 2100, 0.0765), (2, 300, 80, 0.0017);
 `
 
-const RUNNABLE: Lang[] = ['javascript', 'python', 'sql', 'cpp', 'rust', 'matlab', 'bash']
-
 export function Playground() {
   const route = useRoute()
   const { state, setState } = useLearner()
 
   const exerciseRef = useMemo(() => findExercise(route.query.ex), [route.query.ex])
-  const [lang, setLang] = useState<Lang>(exerciseRef?.exercise.lang ?? 'javascript')
+  const [lang, setLang] = useState<Lang>(
+    exerciseRef?.exercise.lang ?? (RUNNABLE.includes(route.query.lang as Lang) ? (route.query.lang as Lang) : 'javascript'),
+  )
+  const learn = useNextLesson(lang)
   const [code, setCode] = useState('')
   const [running, setRunning] = useState(false)
   const [status, setStatus] = useState('')
   const [pyOut, setPyOut] = useState<RunOutput | null>(null)
   const [sqlOut, setSqlOut] = useState<SqlResult | null>(null)
   const [outcomes, setOutcomes] = useState<TestOutcome[] | null>(null)
-  const [toolchains, setToolchains] = useState<Record<string, ToolchainInfo> | null>(null)
+  const [stdin, setStdin] = useState(CPP_STDIN)
   const [showSolution, setShowSolution] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -176,24 +220,15 @@ export function Playground() {
     if (lang === 'python' && !python.isBooted) python.preload(setStatus)
   }, [lang])
 
-  /* What the machine can compile. Asked once on open; `refresh` re-probes
-     after she installs something without needing a restart. */
+  /* The TypeScript compiler is ~9 MB: start it downloading when the tab is
+     opened. C++'s is ~105 MB, so it waits for Run, where the download shows
+     its progress, rather than starting on a tab click. */
   useEffect(() => {
-    let alive = true
-    void detectToolchains().then((t) => {
-      if (alive) setToolchains(t)
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
+    if (lang === 'typescript') tsCompiler.preload()
+  }, [lang])
 
-  const refreshToolchains = useCallback(async () => {
-    setToolchains(await detectToolchains(true))
-  }, [])
-
-  // What this language can do at this moment, on this machine.
-  const capability = useMemo(() => capabilityOf(lang, toolchains), [lang, toolchains])
+  // What this language does when Run is pressed.
+  const capability = useMemo(() => capabilityOf(lang), [lang])
 
   const onCodeChange = useCallback(
     (next: string) => {
@@ -241,14 +276,16 @@ export function Playground() {
         return
       }
 
-      // Everything else compiles and runs through the shell when the machine
-      // has the toolchain for it. When it does not, this stays a comparison
-      // against the expected output and the toolbar says so plainly.
-      if (capability.mode === 'execute') {
+      if (lang === 'typescript') {
+        setPyOut(await runTypeScript(code, { onStatus: setStatus }))
+        return
+      }
+
+      if (lang === 'cpp') {
         // With a reference solution to compare against, running it is a real
-        // grade: both programs actually execute and their output is compared.
+        // grade: both programs compile and execute and their output is compared.
         if (exercise?.solution) {
-          const graded = await runAgainstSolution(lang, code, exercise.solution)
+          const graded = await runAgainstSolution(code, exercise.solution, stdin)
           setPyOut(graded.yours)
           setOutcomes([
             {
@@ -259,23 +296,14 @@ export function Playground() {
           ])
           return
         }
-        setPyOut(await runNative(lang, code))
+        setPyOut(await runCpp(code, { stdin, onStatus: setStatus }))
         return
       }
-
-      setPyOut({
-        stdout: '',
-        stderr: '',
-        plots: [],
-        result: null,
-        error: null,
-        ms: 0,
-      })
     } finally {
       setRunning(false)
       setStatus('')
     }
-  }, [lang, code, exercise, capability.mode])
+  }, [lang, code, exercise, stdin])
 
   const reset = () => {
     const starter = exercise?.starter ?? SCRATCH[lang] ?? ''
@@ -300,7 +328,7 @@ export function Playground() {
           <p className="page-head__sub">
             {exercise
               ? 'Your work is saved to this device as you type.'
-              : 'A place to try things. JavaScript, Python and SQL execute for real, in your browser, with nothing sent anywhere.'}
+              : 'A place to try things. JavaScript, TypeScript, Python, SQL and C++ all execute for real, in your browser, with nothing sent anywhere.'}
           </p>
         </div>
         {exercise ? (
@@ -326,6 +354,24 @@ export function Playground() {
               setOutcomes(null)
             }}
           />
+        </div>
+      ) : null}
+
+      {!exercise && learn ? (
+        <div className="pg-learn">
+          <IconBulb size={16} />
+          <span className="grow">
+            <strong>Learn mode</strong> —{' '}
+            {learn.done === 0
+              ? `new to ${info.label}? Go through the basics lesson by lesson, in this editor, with every step checked.`
+              : learn.done === learn.total
+                ? `you have passed all ${learn.total} ${info.label} lessons.`
+                : `${learn.done} of ${learn.total} ${info.label} lessons passed. Next: ${learn.lesson.title}.`}
+          </span>
+          <Button variant="primary" size="sm" onClick={() => navigate(`/learn/${learn.lesson.id}`)}>
+            {learn.done === 0 ? 'Start the basics' : learn.done === learn.total ? 'Review' : 'Continue'}
+            <IconArrowRight size={13} />
+          </Button>
         </div>
       ) : null}
 
@@ -392,17 +438,16 @@ export function Playground() {
             {capability.note}
           </div>
 
-          {/* One missing compiler is the difference between a real test run
-              and a string comparison, so the fix is offered here rather than
-              left for her to go and find. */}
-          {capability.missing ? (
-            <div className="pg__install">
-              <p>
-                <strong>{capability.missing.label} is not installed.</strong> {capability.missing.install}
-              </p>
-              <button className="btn btn--quiet btn--sm" onClick={() => void refreshToolchains()} type="button">
-                Check again
-              </button>
+          {lang === 'cpp' ? (
+            <div className="pg__stdin">
+              <label htmlFor="pgStdin">Input — standard input for the program</label>
+              <textarea
+                id="pgStdin"
+                value={stdin}
+                onChange={(e) => setStdin(e.target.value)}
+                spellCheck={false}
+                rows={5}
+              />
             </div>
           ) : null}
         </Card>
@@ -466,8 +511,11 @@ export function Playground() {
 
       <p className="track-note">
         Everything here runs inside this browser tab. Nothing you write is uploaded, and nothing
-        leaves the device — which also means the Python runtime is a one-time ~7 MB download that
-        your browser then caches.
+        leaves the device — which also means each language brings its runtime to you the first time
+        you run it, and your browser then caches it: Python about 7 MB, TypeScript about 9 MB, and the
+        C++ compiler about 105 MB before compression. The terminal work of M1 is not here on purpose:
+        that happens in a real terminal on your own machine. New to a language? Learn to code walks
+        through its basics here, lesson by lesson.
       </p>
     </div>
   )
@@ -481,19 +529,7 @@ function PythonOutput({ out, capability }: { out: RunOutput; capability: Capabil
       <Card index={3}>
         <CardHead icon={<IconWarn size={15} />} title="Not executed" divided />
         <div className="sect" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.7 }}>
-          {/* The reason has to be the real one. This panel used to say the language
-              "does not run in a browser" whatever the actual cause was, which is the
-              wrong sentence inside the desktop app: it made a compiler she has not
-              installed yet look like a limitation of the app, and hid the one line that
-              says which compiler and how to get it. */}
           {capability.note}
-          {capability.missing ? (
-            <div style={{ marginTop: 10 }}>
-              <strong>{capability.missing.label} is not installed.</strong>{' '}
-              {capability.missing.install} Use the refresh button above once it is, so the app looks
-              again without a restart.
-            </div>
-          ) : null}
         </div>
       </Card>
     )

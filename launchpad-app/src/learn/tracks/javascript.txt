@@ -1,0 +1,524 @@
+@track javascript
+@title JavaScript
+@blurb The language of the web, from console.log to async/await — the ground M1 to M3 build on.
+
+=== js-01 | Printing
+--- teach
+A JavaScript program is a list of statements, run top to bottom. `console.log` writes a line to the output:
+
+```js
+console.log('Launch in T-minus 10')
+```
+
+Text in quotes is a **string** — single `'…'` or double `"…"` quotes both work. `console.log` takes several values and puts a space between them:
+
+```js
+console.log('Fuel:', 98, 'percent')   // Fuel: 98 percent
+```
+
+Anything after `//` is a **comment**, ignored by the computer and written for people.
+--- task
+Make the program print exactly:
+
+```
+Hello, world!
+JavaScript is running in your browser.
+```
+--- starter
+// Write your two console.log() calls below.
+
+--- solution
+console.log('Hello, world!')
+console.log('JavaScript is running in your browser.')
+--- hint
+One `console.log(...)` per line of output, with the text in quotes.
+--- check output | Prints both lines, exactly
+Hello, world!
+JavaScript is running in your browser.
+?? Punctuation and capitals count.
+
+=== js-02 | Variables: let and const
+--- teach
+A **variable** is a name for a value. Declare it with `const` when it will not be reassigned, and `let` when it will:
+
+```js
+const name = 'Ada'
+let score = 10
+score = score + 5      // fine: score is a let
+// name = 'Lin'        // TypeError: assignment to a const
+```
+
+Prefer `const`: it tells the reader "this never changes". JavaScript's basic types are **string**, **number** (whole or decimal — there is only one number type), **boolean** (`true` / `false`), `null`, and `undefined` (declared but no value yet). `typeof x` tells you which.
+--- task
+Declare:
+
+- a `const` named `city` holding `'Houston'`
+- a `let` named `visitors` starting at `100`
+
+then add `25` to `visitors` (reassign it), and print `city` and `visitors` on one line: `Houston 125`.
+--- starter
+// Declare city and visitors, update visitors, print both.
+
+--- solution
+const city = 'Houston'
+let visitors = 100
+visitors = visitors + 25
+console.log(city, visitors)
+--- hint
+`visitors = visitors + 25` (or `visitors += 25`) updates a let.
+--- check test | city is 'Houston'
+city === 'Houston'
+--- check test | visitors ended at 125
+visitors === 125
+--- check source | city is declared with const
+\bconst\s+city\b
+--- check source | visitors is declared with let
+\blet\s+visitors\b
+--- check output | Prints: Houston 125
+Houston 125
+
+=== js-03 | Numbers and math
+--- teach
+Arithmetic uses `+ - * /`, `%` for the remainder, and `**` for powers. Division always gives a decimal when it needs to: `7 / 2` is `3.5`.
+
+```js
+Math.round(2.6)      // 3
+Math.floor(2.6)      // 2
+Math.max(3, 9, 4)    // 9
+(0.1 + 0.2)          // 0.30000000000000004 — decimals are approximate
+Number((0.1 + 0.2).toFixed(2))   // 0.3
+```
+
+`toFixed(n)` gives a **string** with n decimals; wrap it in `Number(...)` to get a number back.
+--- task
+A request used `1250` input tokens and `380` output tokens; input costs `0.000003` dollars a token and output `0.000015`. Set `const cost` to the total, rounded to 6 decimals as a number (`Number(x.toFixed(6))`), and print it.
+--- starter
+const inputTokens = 1250
+const outputTokens = 380
+const cost = 0
+console.log(cost)
+--- solution
+const inputTokens = 1250
+const outputTokens = 380
+const cost = Number((inputTokens * 0.000003 + outputTokens * 0.000015).toFixed(6))
+console.log(cost)
+--- hint
+Multiply each count by its price, add them, then `Number(total.toFixed(6))`.
+--- check test | cost is the total in dollars
+Math.abs(cost - 0.00945) < 1e-12
+--- check source | Computes it with *
+\*
+--- check output | Prints the cost
+0.00945
+
+=== js-04 | Strings and template literals
+--- teach
+Strings have methods — functions attached to the value:
+
+```js
+const s = '  Hello World  '
+s.trim()          // 'Hello World'
+s.toLowerCase()   // '  hello world  '
+s.length          // 15
+s.includes('World')   // true
+```
+
+To build a string from values, use a **template literal**: backticks, with values inside `${…}`:
+
+```js
+const name = 'Ada'
+const count = 3
+console.log(`${name} has ${count} new messages`)
+```
+
+Any expression works inside `${}`: `${count * 2}`, `${name.toUpperCase()}`.
+--- task
+`raw` holds a messy user name. Make `const clean` the trimmed, lowercased version, then print exactly:
+
+```
+user: ada lovelace (12 characters)
+```
+
+with a template literal that takes the name and its length from `clean`.
+--- starter
+const raw = '   Ada Lovelace  '
+const clean = raw
+console.log(clean)
+--- solution
+const raw = '   Ada Lovelace  '
+const clean = raw.trim().toLowerCase()
+console.log(`user: ${clean} (${clean.length} characters)`)
+--- hint
+Chain the methods: `raw.trim().toLowerCase()`.
+--- hint
+`.length` is a property, not a method — no brackets.
+--- check test | clean is trimmed and lowercased
+clean === 'ada lovelace'
+--- check source | Uses a template literal
+`[^`]*\$\{
+--- check output | Prints the sentence
+user: ada lovelace (12 characters)
+
+=== js-05 | Making decisions
+--- teach
+`if` runs a block only when its condition is true. Blocks go in braces:
+
+```js
+const temperature = 31
+if (temperature > 30) {
+  console.log('hot')
+} else if (temperature > 15) {
+  console.log('mild')
+} else {
+  console.log('cold')
+}
+```
+
+Compare with `===` and `!==` (strict: `1 === '1'` is false). Avoid `==`, which converts types first and surprises people. Combine with `&&` (and), `||` (or), `!` (not).
+--- task
+Write a function `grade(score)` that returns `'pass'` for 70 or more, `'close'` for 60 to 69, and `'fail'` otherwise.
+--- starter
+function grade(score) {
+  return ''
+}
+--- solution
+function grade(score) {
+  if (score >= 70) {
+    return 'pass'
+  } else if (score >= 60) {
+    return 'close'
+  } else {
+    return 'fail'
+  }
+}
+--- hint
+Test the highest band first: `if (score >= 70) return 'pass'`.
+--- check test | 85 is a pass
+grade(85) === 'pass'
+--- check test | 70 is a pass (the boundary)
+grade(70) === 'pass'
+--- check test | 64 is close
+grade(64) === 'close'
+--- check test | 12 is a fail
+grade(12) === 'fail'
+
+=== js-06 | Loops
+--- teach
+A `for…of` loop runs once for each item in an array:
+
+```js
+for (const name of ['ada', 'lin', 'sam']) {
+  console.log('hello', name)
+}
+```
+
+The classic counting loop has three parts — start; keep going while; step:
+
+```js
+let total = 0
+for (let i = 1; i <= 5; i++) {
+  total += i
+}
+console.log(total)   // 15
+```
+
+`while (condition) { … }` repeats while the condition is true.
+--- task
+Print the numbers 1 to 15, one per line, printing `Fizz` for multiples of 3, `Buzz` for multiples of 5, and `FizzBuzz` for multiples of both. Use a loop.
+--- starter
+// FizzBuzz, 1 to 15.
+
+--- solution
+for (let n = 1; n <= 15; n++) {
+  if (n % 15 === 0) console.log('FizzBuzz')
+  else if (n % 3 === 0) console.log('Fizz')
+  else if (n % 5 === 0) console.log('Buzz')
+  else console.log(n)
+}
+--- hint
+`n % 3 === 0` means n is a multiple of 3. Check 15 first.
+--- check output | Prints FizzBuzz from 1 to 15
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+--- check source | Uses a loop
+\b(for|while)\b
+
+=== js-07 | Functions
+--- teach
+A function packages code under a name. Two common ways to write one:
+
+```js
+function add(a, b) {
+  return a + b
+}
+
+const multiply = (a, b) => a * b    // an arrow function
+```
+
+Parameters can have defaults: `function greet(name, mark = '!') { … }`. A function with no `return` gives back `undefined`. Functions are values: you can pass them to other functions, which is how most of JavaScript works.
+--- task
+Write:
+
+- `wordCount(text)` — how many words are in `text`, split on whitespace, ignoring extra spaces (`text.trim().split(/\s+/)` gives the words; be careful with the empty string).
+- `isEven(n)` — `true` when n is even.
+--- starter
+function wordCount(text) {
+}
+
+function isEven(n) {
+}
+--- solution
+function wordCount(text) {
+  const trimmed = text.trim()
+  return trimmed === '' ? 0 : trimmed.split(/\s+/).length
+}
+
+const isEven = (n) => n % 2 === 0
+--- hint
+`''.split(/\s+/)` is `['']` — one empty word — so handle the empty string first.
+--- check test | wordCount('the quick brown fox') is 4
+wordCount('the quick brown fox') === 4
+--- check test | Extra spaces do not count as words
+wordCount('  spaced   out  ') === 2
+--- check test | The empty string has 0 words
+wordCount('') === 0
+--- check test | isEven works both ways
+isEven(10) === true && isEven(7) === false
+
+=== js-08 | Arrays
+--- teach
+An **array** holds values in order:
+
+```js
+const planets = ['Mercury', 'Venus', 'Earth']
+planets[0]            // 'Mercury'
+planets.at(-1)        // 'Earth'
+planets.length        // 3
+planets.push('Mars')  // adds to the end
+planets.slice(1, 3)   // ['Venus', 'Earth']
+planets.includes('Venus')   // true
+```
+
+`const` stops you reassigning the variable, but you can still change the array's contents.
+--- task
+Write `stats(latencies)` that returns an object `{ fastest, slowest, average }` for an array of numbers. (`Math.min(...arr)` spreads the array into arguments.)
+--- starter
+function stats(latencies) {
+  return { fastest: 0, slowest: 0, average: 0 }
+}
+--- solution
+function stats(latencies) {
+  let sum = 0
+  for (const ms of latencies) sum += ms
+  return {
+    fastest: Math.min(...latencies),
+    slowest: Math.max(...latencies),
+    average: sum / latencies.length,
+  }
+}
+--- hint
+Sum with a loop, then divide by `latencies.length`.
+--- check test | fastest and slowest
+stats([120, 95, 210, 143, 180]).fastest === 95 && stats([120, 95, 210, 143, 180]).slowest === 210
+--- check test | average
+stats([120, 95, 210, 143, 180]).average === 149.6
+--- check test | Works for a single value
+JSON.stringify(stats([7])) === '{"fastest":7,"slowest":7,"average":7}'
+
+=== js-09 | Objects
+--- teach
+An **object** groups named values (properties):
+
+```js
+const user = { name: 'Ada', plan: 'pro', credits: 120 }
+user.name              // 'Ada'
+user['plan']           // 'pro' — brackets take any string, even a variable
+user.credits -= 20
+Object.keys(user)      // ['name', 'plan', 'credits']
+const { name, plan } = user    // destructuring: pull properties into variables
+const copy = { ...user, plan: 'free' }   // spread: a new object with one change
+```
+
+Objects are how JavaScript represents almost everything — a request, a row, a config.
+--- task
+Write `countWords(text)` returning an object that maps each lowercase word to how many times it appears. For example, `countWords('the The cat')` is `{ the: 2, cat: 1 }`.
+--- starter
+function countWords(text) {
+  const counts = {}
+  return counts
+}
+--- solution
+function countWords(text) {
+  const counts = {}
+  for (const word of text.toLowerCase().split(/\s+/)) {
+    if (word === '') continue
+    counts[word] = (counts[word] ?? 0) + 1
+  }
+  return counts
+}
+--- hint
+`counts[word] = (counts[word] ?? 0) + 1` — `??` supplies 0 the first time.
+--- check test | Counts repeated words
+JSON.stringify(countWords('to be or not to be')) === '{"to":2,"be":2,"or":1,"not":1}'
+--- check test | Ignores case
+countWords('The the THE').the === 3
+--- check test | The empty string gives {}
+Object.keys(countWords('')).length === 0
+
+=== js-10 | map, filter and reduce
+--- teach
+Arrays have methods that take a function and apply it to every item:
+
+```js
+const nums = [1, 2, 3, 4, 5, 6]
+nums.map((n) => n * n)              // [1, 4, 9, 16, 25, 36]
+nums.filter((n) => n % 2 === 0)     // [2, 4, 6]
+nums.reduce((sum, n) => sum + n, 0) // 21
+```
+
+`map` transforms each item, `filter` keeps the ones that pass, `reduce` folds them into one value (the second argument is the starting value). They return new arrays — the original is untouched — and they chain: `nums.filter(...).map(...)`.
+--- task
+`requests` is an array of `{ user, tokens }`. Write:
+
+- `heavyUsers(requests)` — the `user` names of requests over 1000 tokens, in order (filter, then map).
+- `totalTokens(requests)` — the sum of all tokens (reduce).
+--- starter
+function heavyUsers(requests) {
+  return []
+}
+
+function totalTokens(requests) {
+  return 0
+}
+--- solution
+function heavyUsers(requests) {
+  return requests.filter((r) => r.tokens > 1000).map((r) => r.user)
+}
+
+function totalTokens(requests) {
+  return requests.reduce((sum, r) => sum + r.tokens, 0)
+}
+--- hint
+`requests.filter((r) => r.tokens > 1000).map((r) => r.user)`
+--- check test | heavyUsers keeps the big requests' users
+JSON.stringify(heavyUsers([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }, { user: 'sam', tokens: 15000 }])) === '["ada","sam"]'
+--- check test | totalTokens adds them up
+totalTokens([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }]) === 1500
+--- check test | totalTokens of nothing is 0
+totalTokens([]) === 0
+--- check source | Uses reduce
+\.reduce\(
+
+=== js-11 | Errors
+--- teach
+When something goes wrong, JavaScript **throws** an error. Unhandled, it stops the program. `try` / `catch` handles it:
+
+```js
+try {
+  JSON.parse('{ not json')
+} catch (err) {
+  console.log('bad input:', err.message)
+}
+```
+
+Throw your own when a function is given something it cannot work with:
+
+```js
+function percent(part, whole) {
+  if (whole === 0) throw new RangeError('whole must not be zero')
+  return (part / whole) * 100
+}
+```
+
+`finally { … }` runs whether or not something was thrown.
+--- task
+Write `parsePort(text)`:
+
+- return the number if `text` is a whole number from 1 to 65535
+- return `null` if it is not a whole number at all (`Number.isInteger(Number(text))` is false)
+- **throw** a `RangeError` if it is a whole number outside 1–65535
+--- starter
+function parsePort(text) {
+  return Number(text)
+}
+--- solution
+function parsePort(text) {
+  const port = Number(text)
+  if (text.trim() === '' || !Number.isInteger(port)) return null
+  if (port < 1 || port > 65535) throw new RangeError(`port out of range: ${port}`)
+  return port
+}
+--- hint
+Convert with `Number(text)` and check `Number.isInteger` first; return null if it fails.
+--- hint
+`throw new RangeError('…')` for numbers outside the range.
+--- check test | '8080' gives 8080
+parsePort('8080') === 8080
+--- check test | 'http' gives null
+parsePort('http') === null
+--- check test | '70000' throws
+throws(() => parsePort('70000'))
+--- check test | '0' throws
+throws(() => parsePort('0'))
+
+=== js-12 | Promises and async/await
+--- teach
+Some work finishes later — a network request, a timer. JavaScript does not wait for it; it gets a **Promise**, a placeholder for the value that arrives later. `await` pauses an `async` function until the promise settles:
+
+```js
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function main() {
+  console.log('start')
+  await wait(100)
+  console.log('100ms later')
+}
+main()
+```
+
+Run things at the same time with `Promise.all`: it starts them all and waits for every one. `await`ing them one by one runs them in sequence — slower, and the most common async mistake (M3 calls it "sequential when you meant parallel").
+--- task
+`fetchScore(id)` below pretends to be a network call. Write `async function totalScore(ids)` that fetches every id **in parallel** with `Promise.all` and returns the sum of the scores. Then print `await totalScore([1, 2, 3])` (top-level await works here).
+--- starter
+const fetchScore = (id) => new Promise((resolve) => setTimeout(() => resolve(id * 10), 50))
+
+async function totalScore(ids) {
+  let total = 0
+  for (const id of ids) {
+    total += await fetchScore(id)
+  }
+  return total
+}
+
+console.log(await totalScore([1, 2, 3]))
+--- solution
+const fetchScore = (id) => new Promise((resolve) => setTimeout(() => resolve(id * 10), 50))
+
+async function totalScore(ids) {
+  const scores = await Promise.all(ids.map((id) => fetchScore(id)))
+  return scores.reduce((sum, s) => sum + s, 0)
+}
+
+console.log(await totalScore([1, 2, 3]))
+--- hint
+`ids.map((id) => fetchScore(id))` starts every call and gives an array of promises.
+--- hint
+`await Promise.all(promises)` waits for all of them and gives an array of results.
+--- check output | Prints the total
+60
+--- check source | Uses Promise.all
+Promise\.all\(
+?? Awaiting inside the loop runs the calls one after another. Promise.all runs them together.

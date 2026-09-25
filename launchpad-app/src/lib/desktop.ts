@@ -64,44 +64,6 @@ export interface OrbitVersions {
   electron: string
 }
 
-export interface ToolchainInfo {
-  lang: string
-  label: string
-  available: boolean
-  /** The executable that will be used, e.g. `clang++`. */
-  bin?: string
-  /** First line of its `--version` output. */
-  version?: string
-  /** Shown when it is missing: the one command that installs it. */
-  install?: string
-}
-
-export interface RunRequest {
-  lang: string
-  source: string
-  /** Fed to the program on stdin. */
-  stdin?: string
-}
-
-export interface RunResult {
-  ok: boolean
-  /** Where it got to: `request`, `toolchain`, `setup`, `compile` or `run`. */
-  stage: string
-  stdout: string
-  stderr: string
-  exitCode: number | null
-  timedOut: boolean
-  /** Output was cut off at the cap. */
-  truncated: boolean
-  ms: number
-  /** The compiler that was used, for the record shown under the output. */
-  toolchain?: string
-  /** Why it did not run, in a sentence, when `ok` is false. */
-  reason?: string
-  /** How to install the missing toolchain, when that is the reason. */
-  install?: string
-}
-
 export interface OrbitBridge {
   readonly platform: 'darwin' | 'win32' | 'linux'
   readonly versions: Readonly<OrbitVersions>
@@ -132,16 +94,6 @@ export interface OrbitBridge {
     write(json: string): Promise<boolean>
     /** The stored JSON, or null when there is no mirror yet. */
     read(): Promise<string | null>
-  }
-  /**
-   * Compiling and running code the browser cannot run — C, C++, Rust, shell,
-   * Octave, Node — using whatever toolchain the machine already has. See
-   * desktop/runner.js.
-   */
-  readonly run: {
-    /** What is installed. Pass true to re-probe after installing something. */
-    detect(refresh?: boolean): Promise<Record<string, ToolchainInfo>>
-    exec(request: RunRequest): Promise<RunResult | null>
   }
   /** https: and mailto: only; the shell drops anything else. */
   openExternal(url: string): Promise<void>
@@ -175,19 +127,6 @@ export function getOrbit(): OrbitBridge | undefined {
 }
 
 export const isDesktop = !!getOrbit()
-
-/**
- * Whether this shell can compile and run native code.
- *
- * A bundle updates itself; the app around it does not. Someone running a shell
- * from before the runner existed ends up with a current curriculum inside an
- * app whose bridge has no `run` on it, and every compiled language quietly
- * falls back to comparing strings. `orbit.minShell` in package.json is what
- * stops a bundle activating on a shell too old for it; this is what lets the
- * playground say why, rather than claiming she needs the desktop app while she
- * is sitting in it.
- */
-export const hasNativeRunner = !!getOrbit()?.run
 
 const STATUSES: ReadonlySet<string> = new Set<UpdateStatus>([
   'idle',

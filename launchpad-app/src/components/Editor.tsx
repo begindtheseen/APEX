@@ -1,5 +1,5 @@
 /* ============================================================================
-   ORBIT — code editor
+   LAUNCHPAD — code editor (ORBIT's)
    ----------------------------------------------------------------------------
    CodeMirror 6, bundled through Vite rather than pulled from a CDN.
 
@@ -8,11 +8,10 @@
    editor dies with "Unrecognized extension value". Letting the bundler resolve
    one copy of each package makes that class of failure impossible.
 
-   Monaco was the alternative and loses on three counts here: it is roughly ten
-   times the bundle on top of an already heavy Python runtime, it instantiates
-   expensively (a notebook wants many editors), and it ships no MATLAB or
-   Octave grammar at all — CodeMirror has Octave in its legacy modes, which is
-   a near-superset of MATLAB for teaching purposes.
+   Monaco was the alternative and loses on two counts here: it is roughly ten
+   times the bundle on top of already heavy language runtimes, and it
+   instantiates expensively (a notebook wants many editors). CodeMirror's
+   JavaScript grammar covers TypeScript too.
    ========================================================================== */
 import { useEffect, useMemo, useRef } from 'react'
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
@@ -23,18 +22,15 @@ import {
   indentWithTab,
 } from '@codemirror/commands'
 import { cpp } from '@codemirror/lang-cpp'
+import { javascript } from '@codemirror/lang-javascript'
 import { python as pythonLang } from '@codemirror/lang-python'
-import { rust } from '@codemirror/lang-rust'
 import { SQLite, sql } from '@codemirror/lang-sql'
 import {
   HighlightStyle,
-  StreamLanguage,
   bracketMatching,
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language'
-import { octave } from '@codemirror/legacy-modes/mode/octave'
-import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { EditorState, type Extension } from '@codemirror/state'
 import {
   EditorView,
@@ -131,15 +127,10 @@ function languageFor(lang: Lang): Extension[] {
       return [sql({ dialect: SQLite, upperCaseKeywords: true })]
     case 'cpp':
       return [cpp()]
-    case 'rust':
-      return [rust()]
-    case 'matlab':
-    case 'simulink':
-      // Octave's grammar covers MATLAB closely enough for highlighting, and is
-      // the reason CodeMirror won this decision over Monaco.
-      return [StreamLanguage.define(octave)]
-    case 'bash':
-      return [StreamLanguage.define(shell)]
+    case 'javascript':
+      return [javascript()]
+    case 'typescript':
+      return [javascript({ typescript: true })]
     default:
       return []
   }

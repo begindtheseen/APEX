@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   IconBars,
   IconBook,
+  IconBulb,
   IconCalendar,
   IconChevronLeft,
   IconClock,
@@ -55,6 +56,7 @@ export const NAV: NavDef[] = [
   ...TRACK_ORDER.map((id) => ({ id, label: TRACKS[id].title, path: `/${id}`, Icon: LAYER_ICON[id] })),
   { id: 'plan', label: 'The Plan', path: '/plan', Icon: IconCalendar },
   { id: 'tracks', label: 'Parallel tracks', path: '/tracks', Icon: IconRefresh },
+  { id: 'learn', label: 'Learn to code', path: '/learn', Icon: IconBulb },
   { id: 'playground', label: 'Playground', path: '/playground', Icon: IconTerminal },
   { id: 'progress', label: 'Progress', path: '/progress', Icon: IconBars },
   { id: 'resources', label: 'Reference', path: '/resources', Icon: IconDoc },

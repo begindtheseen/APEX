@@ -9,7 +9,9 @@
    otherwise produce a syntax error and report as a mysterious failure.
    ========================================================================== */
 import { describe, expect, it } from 'vitest'
-import { LANGS, buildTestProgram, capabilityOf, checkOutput, parseTestOutput } from './runtimes'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { LANGS, RUNNABLE, buildTestProgram, capabilityOf, checkOutput, parseTestOutput } from './runtimes'
 
 describe('checkOutput', () => {
   it('accepts an exact match', () => {
@@ -114,12 +116,12 @@ describe('parseTestOutput', () => {
 })
 
 describe('language modes', () => {
-  it('only claims real execution for JavaScript, Python and SQL', () => {
+  it('claims real execution for every offered language and nothing else', () => {
     const executing = Object.values(LANGS)
       .filter((l) => l.mode === 'execute')
       .map((l) => l.id)
       .sort()
-    expect(executing).toEqual(['javascript', 'python', 'sql'])
+    expect(executing).toEqual([...RUNNABLE].sort())
   })
 
   it('gives every language an honest note about what happens when you hit run', () => {
@@ -129,73 +131,56 @@ describe('language modes', () => {
   })
 })
 
-describe('capabilityOf', () => {
-  const clang = {
-    cpp: { lang: 'cpp', label: 'C++', available: true, bin: 'clang++', version: 'clang 18.1.3' },
-  }
-  const noClang = {
-    cpp: { lang: 'cpp', label: 'C++', available: false, install: 'Run `xcode-select --install`.' },
-  }
-
-  it('leaves Python and SQL executing regardless of the shell', () => {
-    expect(capabilityOf('python', null, false).mode).toBe('execute')
-    expect(capabilityOf('sql', null, false).mode).toBe('execute')
+describe('the playground languages', () => {
+  it('offers JavaScript, TypeScript, Python, SQL and C++', () => {
+    expect(RUNNABLE).toEqual(['javascript', 'typescript', 'python', 'sql', 'cpp'])
   })
 
-  it('executes C++ for real when a compiler is installed', () => {
-    const cap = capabilityOf('cpp', clang, true, true)
-    expect(cap.mode).toBe('execute')
-    expect(cap.toolchain).toBe('clang 18.1.3')
-    expect(cap.missing).toBeUndefined()
-    expect(cap.note).toContain('Runs for real')
-  })
-
-  it('falls back to comparison and names the fix when the compiler is missing', () => {
-    const cap = capabilityOf('cpp', noClang, true, true)
-    expect(cap.mode).toBe('check')
-    expect(cap.missing?.install).toContain('xcode-select')
-    // The note must not imply the code ran.
-    expect(cap.note).not.toContain('Runs for real')
-  })
-
-  it('says plainly why it cannot run when there is no shell at all', () => {
-    const cap = capabilityOf('cpp', null, false)
-    expect(cap.mode).toBe('check')
-    expect(cap.note).toContain('compared against the expected result')
-    expect(cap.note).not.toContain('Runs for real')
-    expect(cap.missing).toBeUndefined()
-  })
-
-  it('does not claim anything is missing before detection has answered', () => {
-    const cap = capabilityOf('cpp', null, true, true)
-    expect(cap.missing).toBeUndefined()
-    expect(cap.note).toContain('Checking')
-  })
-
-  it('blames the old app, not the missing desktop, inside an old app', () => {
-    // A bundle updates itself and the app around it does not, so a shell from
-    // before the runner existed shows a current curriculum it cannot compile.
-    // Telling her to go get the desktop app while she is looking at it is the
-    // one answer that leaves her with nowhere to go.
-    const cap = capabilityOf('cpp', null, true, false)
-    expect(cap.mode).toBe('check')
-    expect(cap.note).toContain('older than the lessons')
-    expect(cap.note).not.toContain('Checking')
-    expect(cap.missing?.install).toContain('Settings')
-  })
-
-  it('never says a language runs for real when the shell cannot reach a compiler', () => {
-    for (const lang of ['cpp', 'rust', 'matlab', 'bash'] as const) {
-      // Even handed a full set of toolchains: without the bridge, none of them
-      // are reachable, and a green "runs for real" would be a lie.
-      const cap = capabilityOf(lang, clang, true, false)
-      expect(cap.mode, lang).not.toBe('execute')
-      expect(cap.note, lang).not.toContain('Runs for real')
+  it('carries no language that cannot run here', () => {
+    for (const gone of ['matlab', 'simulink', 'rust', 'bash']) {
+      expect(Object.keys(LANGS)).not.toContain(gone)
     }
   })
 
-  it('leaves languages with nothing to execute alone', () => {
-    expect(capabilityOf('simulink', clang, true, true).mode).toBe('reference')
-    expect(capabilityOf('text', clang, true, true).mode).toBe('reference')
+  it('executes every language it offers — none is a string comparison', () => {
+    for (const lang of RUNNABLE) {
+      const cap = capabilityOf(lang)
+      expect(cap.mode, lang).toBe('execute')
+    }
+  })
+
+  it('says C++ is compiled for real, and states the exceptions limit', () => {
+    const cap = capabilityOf('cpp')
+    expect(cap.note).toContain('Compiled for real')
+    expect(cap.note).toContain('throw and try do not compile')
+  })
+
+  it('says a TypeScript type error stops the run', () => {
+    expect(capabilityOf('typescript').note).toContain('type error stops the run')
+  })
+
+  it('leaves notes alone: nothing to execute', () => {
+    expect(capabilityOf('text').mode).toBe('reference')
+  })
+})
+
+
+describe('the compilers the playground downloads', () => {
+  // The browser fetches these pinned versions from a CDN; the browser suite
+  // serves the same versions from the repository's node_modules. If the two
+  // drift, the tests would pass against a compiler nobody downloads.
+  const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
+  const rootPins = JSON.parse(read('../../../package.json')).devDependencies as Record<string, string>
+
+  it('pins clang to the version the tests serve', () => {
+    const pinned = /const CLANG_VERSION = '([^']+)'/.exec(read('../workers/cpp.worker.ts'))?.[1]
+    expect(pinned).toBeTruthy()
+    expect(rootPins['@yowasp/clang']).toBe(pinned)
+  })
+
+  it('pins TypeScript to the version the tests serve', () => {
+    const pinned = /const TS_VERSION = '([^']+)'/.exec(read('../workers/typescript.worker.ts'))?.[1]
+    expect(pinned).toBeTruthy()
+    expect(rootPins.typescript).toBe(pinned)
   })
 })
