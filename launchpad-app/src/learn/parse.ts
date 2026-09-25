@@ -60,7 +60,11 @@
    the known `--- ` headers above are structure; anything else is content, so
    a SQL comment or a markdown rule never breaks a lesson.
    ========================================================================== */
-import { LEVELS, type Cell, type LearnCheck, type LearnLang, type LearnLesson, type LearnLevel, type LearnTrack } from './types'
+import type { Cell, LearnCheck, LearnLang, LearnLesson, LearnLevel, LearnTrack } from './types'
+
+// Types only from ./types: this file is also loaded straight into Node by
+// the browser suite, where an extensionless runtime import cannot resolve.
+const LEVELS: readonly LearnLevel[] = ['basics', 'intermediate', 'advanced', 'expert', 'projects']
 
 const LANGS: readonly LearnLang[] = ['javascript', 'typescript', 'python', 'sql', 'cpp', 'html', 'bash', 'git']
 const SECTIONS = new Set(['teach', 'task', 'starter', 'solution', 'hint', 'stdin', 'schema', 'check'])
