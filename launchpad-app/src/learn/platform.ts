@@ -13,31 +13,36 @@
 import { python as py, runCpp, runJavaScript, runSql, runTypeScript, tsCompiler, type RunOutput, type StatusFn } from '@/lib/runtimes'
 import type { ShellState } from '@/lib/shell'
 import { runWebChecks } from '@/lib/web'
-import { domSteps } from './grade'
-import bash from './tracks/bash.txt?raw'
-import cpp from './tracks/cpp.txt?raw'
-import git from './tracks/git.txt?raw'
-import html from './tracks/html.txt?raw'
-import javascript from './tracks/javascript.txt?raw'
-import python from './tracks/python.txt?raw'
-import sql from './tracks/sql.txt?raw'
-import typescript from './tracks/typescript.txt?raw'
+import { domSteps, typeCheckFailures } from './grade'
 import type { Lang } from '@/curriculum/types'
 import type { LearnLang, LearnLesson, LearnRun, Roadmap } from './types'
 
-/** The tracks this app teaches, in the order a beginner should meet them. */
-export const LEARN_SOURCES: [LearnLang, string][] = [
-  ['bash', bash],
-  ['git', git],
-  ['html', html],
-  ['javascript', javascript],
-  ['typescript', typescript],
-  ['python', python],
-  ['sql', sql],
-  ['cpp', cpp],
-]
+/** The languages this app teaches, in the order a beginner should meet them. */
+const TAUGHT: LearnLang[] = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp']
 
-export const LEARN_LANGS: LearnLang[] = LEARN_SOURCES.map(([lang]) => lang)
+/*
+ * Every course file in tracks/: `<lang>.txt` is a language's basics, and
+ * `<lang>.<level>.txt` the courses after it. Adding a course is adding a file.
+ */
+const FILES = import.meta.glob('./tracks/*.txt', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+const LEVEL_ORDER = ['basics', 'intermediate', 'advanced', 'expert', 'projects']
+
+function sortKey(file: string): [number, number] {
+  const [lang = '', level = 'basics'] = file.replace(/\.txt$/, '').split('.')
+  return [TAUGHT.indexOf(lang as LearnLang), LEVEL_ORDER.indexOf(level)]
+}
+
+/** [file name, text] for every course this app teaches, language by language, basics first. */
+export const LEARN_SOURCES: [string, string][] = Object.entries(FILES)
+  .map(([path, text]): [string, string] => [path.split('/').pop()!, text])
+  .filter(([file]) => sortKey(file)[0] >= 0)
+  .sort((a, b) => {
+    const [la, va] = sortKey(a[0])
+    const [lb, vb] = sortKey(b[0])
+    return la - lb || va - vb
+  })
+
+export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_SOURCES.some(([f]) => f.split('.')[0] === l))
 
 /**
  * The goals Learn to code opens on, each in the order a mentor would teach
@@ -116,8 +121,14 @@ export async function runLearn(
     }
     case 'javascript':
       return fromOutput(await runJavaScript(program))
-    case 'typescript':
-      return fromOutput(await runTypeScript(program, { onStatus }))
+    case 'typescript': {
+      const out = await runTypeScript(program, { onStatus })
+      // Type-error checks the compiler accepted stop the build; run the rest
+      // without them so every other check is still graded.
+      const t = typeCheckFailures(program, out.error)
+      if (!t) return fromOutput(out)
+      return { ...fromOutput(await runTypeScript(t.program, { onStatus })), typeFails: t.fails }
+    }
     case 'python': {
       const stdin = lesson.stdin?.replace(/\n$/, '').split('\n')
       return fromOutput(await py.run(program, { onStatus, ...(stdin ? { stdin } : {}) }))

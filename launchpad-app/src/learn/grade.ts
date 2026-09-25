@@ -78,8 +78,11 @@ function harness(lesson: LearnLesson): string {
   switch (lesson.lang) {
     case 'javascript':
     case 'typescript': {
-      if (!tests.length && !cases.length) return ''
       const ts = lesson.lang === 'typescript'
+      // Code the compiler must reject: each behind a @ts-expect-error that is
+      // itself an error when the code type-checks. The arrow never runs.
+      const typeErrs = ts ? ofKind(lesson, 'type-error').map((t) => `  // @ts-expect-error ${TYPE_MARK} ${t.i}\n  ;(() => { ${oneLine(t.c.code)} })`) : []
+      if (!tests.length && !cases.length) return typeErrs.length ? `\n;{\n${typeErrs.join('\n')}\n}\n` : ''
       // Each call sits behind @ts-ignore, so a check that names something she
       // has not written yet fails when it runs (saying what is missing)
       // rather than as a type error in code she cannot see.
@@ -90,7 +93,7 @@ function harness(lesson: LearnLesson): string {
       ]
         .sort((a, b) => a.i - b.i)
         .map((x) => x.line)
-      return `\n;{\n  ${ts ? TS_HELPERS : JS_HELPERS}\n${calls.join('\n')}\n}\n`
+      return `\n;{\n  ${ts ? TS_HELPERS : JS_HELPERS}\n${calls.join('\n')}\n${typeErrs.join('\n')}\n}\n`
     }
     case 'python': {
       if (!tests.length && !cases.length) return ''
@@ -158,6 +161,31 @@ function harness(lesson: LearnLesson): string {
     case 'git':
       return ''
   }
+}
+
+const TYPE_MARK = 'learn-type-check'
+
+/**
+ * A TypeScript run stopped only because some type-error checks type-checked
+ * (their @ts-expect-error went unused): which checks, and the program with
+ * those directives taken out so everything else can still run and be graded.
+ * Null when the stop was anything else — including her own type errors.
+ */
+export function typeCheckFailures(program: string, error: string | null): { fails: number[]; program: string } | null {
+  if (!error) return null
+  const found = [...error.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)]
+  if (!found.length) return null
+  const lines = program.split('\n')
+  const fails: number[] = []
+  const drop = new Set<number>()
+  for (const [, line, code] of found) {
+    const at = Number(line) - 1
+    const m = new RegExp(`// @ts-expect-error ${TYPE_MARK} (\\d+)`).exec(lines[at] ?? '')
+    if (code !== 'TS2578' || !m) return null
+    fails.push(Number(m[1]))
+    drop.add(at)
+  }
+  return { fails, program: lines.map((l, i) => (drop.has(i) ? '' : l)).join('\n') }
 }
 
 /** Her code with the checks appended — what actually runs. */
@@ -381,6 +409,16 @@ export function gradeRun(lesson: LearnLesson, code: string, run: LearnRun): Lear
       if (didNotRun) return res(false, { input: c.steps.join('\n'), detail: didNotRun })
       if (!r) return res(false, { input: c.steps.join('\n'), detail: 'The page did not finish loading, so this was not checked.' })
       return res(r.pass, { input: c.steps.join('\n'), ...(r.detail ? { actual: r.detail } : {}) })
+    }
+    if (c.kind === 'type-error') {
+      if (didNotRun) return res(false, { input: c.code, detail: didNotRun })
+      const accepted = run.typeFails?.includes(i)
+      return res(!accepted, {
+        input: c.code,
+        expected: 'a type error',
+        actual: accepted ? 'it type-checks' : 'a type error',
+        ...(accepted ? { detail: 'The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.' } : {}),
+      })
     }
     if (didNotRun) {
       const input = c.kind === 'case' ? c.call : c.kind === 'test' ? oneLine(c.expr) : c.kind === 'query' ? c.sql : lesson.stdin?.trim()

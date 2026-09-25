@@ -75,7 +75,13 @@ async function typeCommands(p, text) {
   const src = path.join(ENV.REPO, 'launchpad-app', 'src', 'learn');
   const { parseTrack } = await import(pathToFileURL(path.join(src, 'parse.ts')).href);
   const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
-  const tracks = langs.map((l) => parseTrack(fs.readFileSync(path.join(src, 'tracks', l + '.txt'), 'utf8'), l + '.txt'));
+  const LEVELS = ['basics', 'intermediate', 'advanced', 'expert', 'projects'];
+  const files = fs.readdirSync(path.join(src, 'tracks')).filter((f) => f.endsWith('.txt'));
+  const key = (f) => { const [l, v = 'basics'] = f.replace(/\.txt$/, '').split('.'); return [langs.indexOf(l), LEVELS.indexOf(v)]; };
+  const tracks = files
+    .filter((f) => key(f)[0] >= 0)
+    .sort((a, b) => key(a)[0] - key(b)[0] || key(a)[1] - key(b)[1])
+    .map((f) => parseTrack(fs.readFileSync(path.join(src, 'tracks', f), 'utf8'), f));
 
   const b = await chromium.launch(ENV.launchOpts);
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' });
@@ -106,16 +112,22 @@ async function typeCommands(p, text) {
   ok('View every step opens the goal course by course', /#\/learn\/roadmap-data/.test(p.url()) && detail === 5, p.url() + ' ' + detail);
   await LP.go(p, '/learn');
   const courses = await p.$$eval('.lm-course', (e) => e.length);
-  ok('every course is listed too', courses === langs.length, String(courses));
+  ok('every course is listed too, grouped by language', courses === tracks.length && (await p.$$eval('.lm-lang', (e) => e.length)) === langs.length, courses + ' of ' + tracks.length);
+  const mastery = await p.$$eval('.rm-goals__row:last-child .rm-goals__pill', (e) => e.length);
+  ok('each language with several courses has a beginner-to-expert roadmap', mastery === langs.filter((l) => tracks.filter((t) => t.lang === l).length > 1).length, String(mastery));
   const navLearn = await p.$$eval('.side .nav-item', (e) => e.some((a) => /Learn to code/.test(a.textContent)));
   ok('Learn to code is in the sidebar', navLearn);
 
+  // Every basics lesson goes through the UI here; past the basics, the first
+  // and last lesson of each course do (the Node checker, src/learn/verify.test.ts,
+  // runs every lesson of every course through the same runtimes).
   const only = process.env.LEARN_ONLY ? process.env.LEARN_ONLY.split(',') : null;
   for (const track of tracks) {
-    if (only && !only.includes(track.lang)) continue;
+    if (only && !only.includes(track.id) && !only.includes(track.lang)) continue;
     const bad = [];
     const t0 = Date.now();
-    for (const lesson of track.lessons) {
+    const sample = track.level === 'basics' || process.env.LEARN_ALL ? track.lessons : [track.lessons[0], track.lessons[track.lessons.length - 1]];
+    for (const lesson of sample) {
       await LP.go(p, '/learn/' + lesson.id);
       if (track.lang === 'bash' || track.lang === 'git') {
         await p.waitForSelector('#termInput');
@@ -132,13 +144,13 @@ async function typeCommands(p, text) {
       const r = await check(p);
       if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
     }
-    ok(track.title + ': every starter needs work and every solution passes (' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
+    ok(track.title + ': every starter needs work and every solution passes (' + sample.length + ' of ' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
   }
 
   // Progress shows on the roadmap and the courses, and the playground points into it.
   await LP.go(p, '/learn');
-  const metas = await p.$$eval('.lm-course__meta', (e) => e.map((c) => c.textContent.trim()));
-  ok('every course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
+  const metas = await p.$$eval('.lm-course', (e) => e.filter((c) => /Basics/.test((c.querySelector('.lm-course__level') || {}).textContent || '')).map((c) => c.querySelector('.lm-course__meta').textContent.trim()));
+  ok('every basics course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
   const end = await p.$eval('.rm-tile--end', (e) => e.dataset.lit).catch(() => '');
   const lit = await p.$$eval('.rm-tile:not(.rm-tile--end)', (e) => e.every((t) => t.dataset.lit === 'true'));
   ok('and every step lights up, through to the certificate', only ? true : end === 'true' && lit, end);

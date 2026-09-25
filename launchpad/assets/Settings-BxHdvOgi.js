@@ -1,4 +1,4 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{$ as n,E as r,F as i,R as a,Y as o,a as s,at as c,g as l,i as u,it as d,nt as f,r as p,s as m,st as h}from"./ui-5JSjpmHC.js";import{S as g}from"./curriculum-rLod3J6P.js";import{B as _,K as v,c as y,d as b,i as x,r as S,s as C}from"./engine-BhleXMOO.js";import{t as w}from"./markdown-Bq9geJ2y.js";/* empty css              */import{i as T,t as E}from"./format-DO6x-haJ.js";var D=e(),O=`# Changelog
+import{r as e,t}from"./react-D6Jy4RLT.js";import{$ as n,E as r,F as i,R as a,Y as o,a as s,at as c,g as l,i as u,it as d,nt as f,r as p,s as m,st as h}from"./ui-5JSjpmHC.js";import{S as g}from"./curriculum-rLod3J6P.js";import{B as _,K as v,c as y,d as b,i as x,r as S,s as C}from"./engine-BhleXMOO.js";import{t as w}from"./markdown-o0JKebpU.js";/* empty css              */import{i as T,t as E}from"./format-DO6x-haJ.js";var D=e(),O=`# Changelog
 
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
@@ -8,6 +8,14 @@ the version it is running under Settings → What's new.
 **Learn to code** — roadmaps of guided lessons, connected to the playground — and a playground
 rebuilt around four modes, where every language really runs.
 
+- **The playground comes to the lesson.** Every coding module's lessons end with **Try it here**:
+  the playground, embedded under the text, in the languages that module works in (JavaScript and
+  TypeScript for the runtime modules, SQL for Postgres, Python from M24, the terminal for M1 and
+  git), and the Build step works on the artifact in the same window — the code is kept with the
+  module, and one click takes it to the full playground. In Learn to code, a lesson is one flow: the
+  explanation, its examples runnable where they stand (a console-style example shows each line's
+  value), then your turn, coded right there, and on to the next lesson. The playground is still its
+  own page for anything else.
 - **The playground has four modes: Code, SQL, Web and Terminal.** Code writes Python, JavaScript,
   TypeScript or C++ (pick it from the file pill); SQL runs on a seeded database and shows its rows as
   a table; Web renders HTML, CSS and JavaScript in a live preview with its console; Terminal is a

@@ -4,6 +4,8 @@
    One file per language. Plain text, so code is written exactly as it runs:
 
      @track python
+     @course python-advanced             (optional: the course id; default the language)
+     @level advanced                     (optional: basics, intermediate, advanced, expert, projects)
      @title Python
      @name Python, a first language      (optional: the course's full name)
      @blurb One line on what this track covers.
@@ -51,12 +53,14 @@
      --- check query | The row is really gone
      SELECT COUNT(*) FROM users WHERE id = 3
      => [[0]]
+     --- check type-error | A string is not a UserId      (TypeScript)
+     const id: UserId = 'abc'
 
    Inside a check, a line starting `?? ` is that check's hint. Only `=== ` and
    the known `--- ` headers above are structure; anything else is content, so
    a SQL comment or a markdown rule never breaks a lesson.
    ========================================================================== */
-import type { Cell, LearnCheck, LearnLang, LearnLesson, LearnTrack } from './types'
+import { LEVELS, type Cell, type LearnCheck, type LearnLang, type LearnLesson, type LearnLevel, type LearnTrack } from './types'
 
 const LANGS: readonly LearnLang[] = ['javascript', 'typescript', 'python', 'sql', 'cpp', 'html', 'bash', 'git']
 const SECTIONS = new Set(['teach', 'task', 'starter', 'solution', 'hint', 'stdin', 'schema', 'check'])
@@ -148,6 +152,9 @@ function parseCheck(header: string, body: string[], where: string): LearnCheck {
       const json = (ordered ? ls.slice(1) : ls).join('\n').trim()
       return { ...base, kind: 'result', rows: rows(json, at), ordered }
     }
+    case 'type-error':
+      if (!text) fail(at, 'a type-error check needs the code that must not type-check')
+      return { ...base, kind: 'type-error', code: text }
     case 'query': {
       const i = lines.findIndex((l) => l.startsWith('=> '))
       if (i < 0) fail(at, 'a query check needs a "=> [[...]]" line with the expected rows')
@@ -238,5 +245,9 @@ export function parseTrack(source: string, file = 'track'): LearnTrack {
     ids.add(l.id)
   }
   if (!lessons.length) fail(file, 'no lessons')
-  return { lang, title: meta.title!, name: meta.name ?? meta.title!, blurb: meta.blurb ?? '', lessons }
+  const level = (meta.level ?? 'basics') as LearnLevel
+  if (!LEVELS.includes(level)) fail(file, `"@level" must be one of ${LEVELS.join(', ')}`)
+  const id = meta.course ?? (level === 'basics' ? lang : `${lang}-${level}`)
+  if (lessons.some((l) => l.checks.some((c) => c.kind === 'type-error')) && lang !== 'typescript') fail(file, 'type-error checks are for TypeScript tracks')
+  return { id, lang, level, title: meta.title!, name: meta.name ?? meta.title!, blurb: meta.blurb ?? '', lessons }
 }
