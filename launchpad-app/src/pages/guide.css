@@ -59,7 +59,7 @@
 /* Jump targets sit under the sticky top bar, so they need to stop short of it.
    Focus lands on the section for keyboard users; the ring is not wanted there. */
 .guide-sect {
-  scroll-margin-top: calc(var(--topbar-h) + 12px);
+  scroll-margin-top: calc(var(--chrome-top) + 12px);
 }
 
 .guide-sect:focus {

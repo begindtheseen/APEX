@@ -125,7 +125,7 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 26px var(--gutter) 60px;
-  min-height: calc(100vh - var(--topbar-h));
+  min-height: calc(100dvh - var(--chrome-top));
   display: flex;
   flex-direction: column;
 }

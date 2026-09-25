@@ -42,10 +42,10 @@
 }
 
 .side__brand {
-  height: var(--topbar-h);
+  height: var(--chrome-top);
   display: flex;
   align-items: center;
-  padding: 0 24px;
+  padding: var(--safe-top) 24px 0 calc(24px + var(--safe-left));
   flex-shrink: 0;
   color: var(--ink);
 }
@@ -160,7 +160,7 @@
 
 .side__foot {
   flex-shrink: 0;
-  padding: 20px 24px 26px;
+  padding: 20px 24px calc(26px + var(--safe-bottom)) calc(24px + var(--safe-left));
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -201,13 +201,16 @@
 /* ── Top bar ─────────────────────────────────────────────────────────────────
    Floats over the hero plate rather than sitting on its own band, which is why
    it has no background of its own — only a blur once the page scrolls. */
+/* On a phone the bar starts below the status bar and the notch: it grows by
+   the top inset and pads its controls down by the same amount, so the menu
+   button and search are never under the clock. */
 .topbar {
-  height: var(--topbar-h);
+  height: var(--chrome-top);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 var(--gutter);
+  padding: var(--safe-top) calc(var(--gutter) + var(--safe-right)) 0 calc(var(--gutter) + var(--safe-left));
   position: sticky;
   top: 0;
   z-index: 20;
@@ -302,7 +305,7 @@
 
 /* ── Page container ──────────────────────────────────────────────────────── */
 .page {
-  padding: 0 var(--gutter) 40px;
+  padding: 0 calc(var(--gutter) + var(--safe-right)) calc(40px + var(--safe-bottom)) calc(var(--gutter) + var(--safe-left));
   max-width: var(--content-max);
   margin: 0 auto;
   width: 100%;
@@ -480,7 +483,7 @@
 
 @media (max-width: 560px) {
   .page {
-    padding-bottom: 28px;
+    padding-bottom: calc(28px + var(--safe-bottom));
   }
 
   .phases {

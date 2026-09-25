@@ -24,6 +24,15 @@ body,
   height: 100%;
 }
 
+/* The app scrolls inside its own container, under a sticky bar. If the
+   document were taller than the screen — iOS Safari sizes 100% to the viewport
+   with its toolbars retracted — the document itself would scroll and take the
+   bar, menu button and search with it. The dynamic viewport is what is
+   actually visible. */
+#root {
+  height: 100dvh;
+}
+
 body {
   background: var(--void);
   color: var(--ink);
