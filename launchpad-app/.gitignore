@@ -1,0 +1,10 @@
+node_modules
+dist
+.vite
+*.local
+coverage
+# Generated from the curriculum files at the repository root by
+# scripts/launchpad-curriculum.ts and scripts/lessons-manifest.ts.
+src/curriculum/generated/*.js
+src/curriculum/lessons/M*/
+src/curriculum/lessons/manifest.ts
