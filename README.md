@@ -109,6 +109,11 @@ exactly as written.
   terminal (an in-page shell with enough git to learn the loop,
   `src/lib/shell.ts`). The compilers are downloaded from a CDN on first use;
   the browser suite serves the same pinned versions from `node_modules`.
+- **The playground, embedded.** `components/ide/Embed.tsx` is the playground's
+  window as a component: module lessons end with it (Try it here, languages
+  per module in `src/lib/practice.ts`), runnable code in any lesson or Learn
+  text becomes it, and Learn challenges are done in it. `src/lib/run.ts` is
+  the one place that says how each language runs.
 - **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
   as a numbered path of course tiles ending at a certificate — over eight
   courses of basics (the command line, Git, HTML and CSS, JavaScript,

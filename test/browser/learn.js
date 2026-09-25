@@ -32,24 +32,28 @@ async function serveCdn(ctx) {
   });
 }
 
+// A lesson carries runnable examples in its text as well as the challenge;
+// everything here works on the challenge's playground.
+const WORK = '.lm-work';
+
 async function setCode(p, code) {
-  await p.click('.cm-content');
+  await p.click(WORK + ' .cm-content');
   await p.keyboard.press('Control+A');
-  await p.evaluate((c) => {
+  await p.evaluate(([w, c]) => {
     const dt = new DataTransfer();
     dt.setData('text/plain', c);
-    document.querySelector('.cm-content').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
-  }, code);
+    document.querySelector(w + ' .cm-content').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, [WORK, code]);
   await p.waitForTimeout(80);
 }
 
 /** Runs & checks; returns { passed, results: [status name], output } */
 async function check(p) {
   await p.evaluate(() => { const t = document.querySelector('.tcases'); if (t) t.setAttribute('data-stale', '1'); });
-  await p.click('.ide__run .ide-run, .lm-termbar .ide-run');
+  await p.click('.lm-work .ide__run .ide-run, .lm-work .lm-termbar .ide-run');
   await p.waitForFunction(() => {
-    const b = document.querySelector('.ide__run .ide-run, .lm-termbar .ide-run');
-    return b && !b.disabled && document.querySelector('.tcases:not([data-stale])');
+    const b = document.querySelector('.lm-work .ide__run .ide-run, .lm-work .lm-termbar .ide-run');
+    return b && !b.disabled && document.querySelector('.lm-work .tcases:not([data-stale])');
   }, null, { timeout: 180000 });
   return p.evaluate(() => ({
     passed: !!document.querySelector('.lm-win'),
@@ -99,7 +103,7 @@ async function typeCommands(p, text) {
   await p.click('.rm__see');
   await p.waitForTimeout(400);
   const detail = await p.$$eval('.rmv-step', (e) => e.length);
-  ok('See the roadmap opens the goal step by step', /#\/learn\/roadmap-data/.test(p.url()) && detail === 5, p.url() + ' ' + detail);
+  ok('View every step opens the goal course by course', /#\/learn\/roadmap-data/.test(p.url()) && detail === 5, p.url() + ' ' + detail);
   await LP.go(p, '/learn');
   const courses = await p.$$eval('.lm-course', (e) => e.length);
   ok('every course is listed too', courses === langs.length, String(courses));
@@ -119,7 +123,7 @@ async function typeCommands(p, text) {
         if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
         await typeCommands(p, lesson.solution);
       } else {
-        await p.waitForSelector('.cm-content');
+        await p.waitForSelector(WORK + ' .cm-content');
         await setCode(p, lesson.starter);
         const s = await check(p);
         if (s.passed) bad.push(lesson.id + ': the starter already passes');
@@ -147,10 +151,33 @@ async function typeCommands(p, text) {
   const file = await p.$eval('.ide__file', (e) => e.textContent.trim()).catch(() => '');
   ok('?lang= opens the playground on that language', /main\.cpp/.test(file), file);
 
+  // The examples in a lesson's explanation run where they stand, console-style.
+  await LP.go(p, '/learn/js-03');
+  await p.waitForSelector('.lm-teach .embed');
+  await p.click('.lm-teach .ide__run .ide-run');
+  await p.waitForFunction(() => /0\.30000000000000004/.test((document.querySelector('.lm-teach .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
+  const example = await p.$eval('.lm-teach .ide-console', (e) => e.innerText).catch(() => '');
+  ok('an example in the lesson text runs in place and shows each value', /^3\n2\n9\n0\.30000000000000004\n0\.3/.test(example.trim()), example.replace(/\n/g, ' | '));
+
+  // Every module lesson carries the playground in its module's languages.
+  await LP.go(p, '/module/M3?lesson=m3-the-module');
+  await p.waitForSelector('.tryit');
+  // The label is the button's own text, after the language's logo.
+  const langsOffered = await p.$$eval('.tryit__lang', (e) => e.map((b) => b.lastChild.textContent.trim()));
+  ok('a module lesson ends with Try it here, in the languages the module works in', langsOffered.join(',') === 'JavaScript,TypeScript', langsOffered.join(','));
+  await p.$eval('.tryit', (e) => e.scrollIntoView());
+  await p.waitForTimeout(400);
+  await p.click('.tryit .ide__run .ide-run');
+  await p.waitForFunction(() => /7 sync, last line/.test((document.querySelector('.tryit .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
+  const tried = await p.$eval('.tryit .ide-console', (e) => e.innerText).catch(() => '');
+  ok('and it runs right there in the lesson', /1 sync[\s\S]*7 sync, last line[\s\S]*2 timeout/.test(tried), tried.replace(/\n/g, ' | ').slice(0, 120));
+  await LP.go(p, '/module/M3?step=build');
+  ok('the Build step works on the artifact in the same embedded playground', !!(await p.$('.tryit .ide')));
+
   // Code carries from a lesson into the playground.
   await LP.go(p, '/learn/py-01');
   await setCode(p, 'print("carried over")\n');
-  await p.click('.ide__tool:has-text("Playground")');
+  await p.click(WORK + ' .ide__tool:has-text("Playground")');
   await p.waitForTimeout(600);
   const carried = await p.$$eval('.cm-content .cm-line', (ls) => ls.map((l) => l.textContent).join('\n')).catch(() => '');
   ok('Open in playground carries the code over', /carried over/.test(carried) && /#\/playground\?lang=python/.test(p.url()), carried.slice(0, 60));

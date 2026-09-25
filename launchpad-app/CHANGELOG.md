@@ -8,6 +8,14 @@ the version it is running under Settings → What's new.
 **Learn to code** — roadmaps of guided lessons, connected to the playground — and a playground
 rebuilt around four modes, where every language really runs.
 
+- **The playground comes to the lesson.** Every coding module's lessons end with **Try it here**:
+  the playground, embedded under the text, in the languages that module works in (JavaScript and
+  TypeScript for the runtime modules, SQL for Postgres, Python from M24, the terminal for M1 and
+  git), and the Build step works on the artifact in the same window — the code is kept with the
+  module, and one click takes it to the full playground. In Learn to code, a lesson is one flow: the
+  explanation, its examples runnable where they stand (a console-style example shows each line's
+  value), then your turn, coded right there, and on to the next lesson. The playground is still its
+  own page for anything else.
 - **The playground has four modes: Code, SQL, Web and Terminal.** Code writes Python, JavaScript,
   TypeScript or C++ (pick it from the file pill); SQL runs on a seeded database and shows its rows as
   a table; Web renders HTML, CSS and JavaScript in a live preview with its console; Terminal is a
@@ -16,7 +24,7 @@ rebuilt around four modes, where every language really runs.
 - **Learn to code.** It opens on roadmaps: pick a goal — AI Product Engineer, Software Engineer,
   Frontend, Backend, Data & ML, Systems & C++ — and its courses are laid out in the order a mentor
   would teach them, as a numbered path of course tiles ending at a certificate, lit up as you go.
-  See the roadmap walks a goal step by step. Eight courses, 93 lessons: Linux and the command line,
+  View every step walks a goal course by course. Eight courses, 93 lessons: Linux and the command line,
   Git and version control, HTML and CSS, JavaScript, TypeScript, Python, SQL and C++. Each lesson is a short explanation and a challenge, done in the
   same IDE window; Run Code really runs your code and shows every check as a test case — the input,
   what was expected, and what your code produced. Hints come one at a time, the solution when you

@@ -91,6 +91,9 @@ import { useReadingPlace } from '@/hooks/useReadingPlace'
 import { useLearner } from '@/hooks/useLearner'
 import { formatDate } from '@/lib/format'
 import { Markdown } from '@/lib/markdown'
+import { practiceLangs } from '@/lib/practice'
+import { TryItHere } from '@/components/ide/TryItHere'
+import { useLessonCode } from '@/components/ide/lessonCode'
 import { navigate, useRoute } from '@/lib/router'
 import './pages.css'
 
@@ -732,12 +735,21 @@ function Build({ module, lp, status }: { module: Module; lp: LpModule; status: S
             One buildable thing. If you cannot explain it out loud, it does not count as built.
           </p>
           <div className="lp-body">{lp.artifact}</div>
-          <div style={{ display: 'flex', gap: 9, marginTop: 15, flexWrap: 'wrap' }}>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/playground')}>
-              <IconTerminal size={14} />
-              Open the playground
-            </Button>
-          </div>
+          {practiceLangs(module).length ? (
+            <TryItHere
+              langs={practiceLangs(module)}
+              saveKey={`try:${module.id}`}
+              title="Work on it here"
+              intro="Build and test pieces of the artifact without leaving the module. Everything runs in this page; the code is kept with the module."
+            />
+          ) : (
+            <div style={{ display: 'flex', gap: 9, marginTop: 15, flexWrap: 'wrap' }}>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/playground')}>
+                <IconTerminal size={14} />
+                Open the playground
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -1181,6 +1193,7 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
   const done = !!state.read[lessonKey(module.id, lesson.id)]
   const [body, setBody] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const renderCode = useLessonCode(`lesson:${module.id}:${lesson.id}`, body)
 
   useEffect(() => {
     let alive = true
@@ -1279,10 +1292,14 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
           ) : body === null ? (
             <div className="reader__loading">Loading lesson…</div>
           ) : (
-            <Markdown className="reader__md">{body}</Markdown>
+            <Markdown className="reader__md" renderCode={renderCode}>
+              {body}
+            </Markdown>
           )}
         </div>
       </Card>
+
+      {body !== null && practiceLangs(module).length ? <TryItHere langs={practiceLangs(module)} saveKey={`try:${module.id}`} /> : null}
 
       <div className="reader__nav">
         <Button variant="ghost" size="md" onClick={() => go(prev)} disabled={!prev}>
