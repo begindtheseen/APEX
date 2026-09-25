@@ -389,6 +389,80 @@ rejected promises), `Promise.allSettled` / `race`; custom `Error` subclasses;
 generators and iterators; value vs reference / mutation as a topic;
 immutability; recursion.
 
+### JavaScript · Intermediate — `javascript-intermediate`, prefix `js2-`, 15 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| js2-01 | concept | callbacks get (item, index, array); `reduce` into an object; always pass a start value; `forEach` vs `map` |
+| js2-02 | concept | `find` / `findIndex`, `some`, `every` (empty-array results), `flatMap`; `?? null` |
+| js2-03 | **debugging** (method taught) | default `sort` is string order, comparators, `localeCompare`, sorting mutates (`[...a].sort`, `toSorted`), tie-break with `\|\|` |
+| js2-04 | concept | object/array **destructuring** with defaults and nesting, **rest** parameters, **spread** in arrays and objects, later keys win |
+| js2-05 | **debugging** | references and shallow copies, **immutable updates**, `structuredClone` named |
+| js2-06 | concept | **regular expressions**: classes, quantifiers, anchors, flags `g`/`i`, named groups, `exec`, `matchAll`, `replace` |
+| js2-07 | concept | **closures**, private state, `var` vs `let` in loops; object **method shorthand** |
+| js2-08 | concept | higher-order functions: returning and wrapping functions, `(...args) => fn(...args)`, comparator builders |
+| js2-09 | concept | `try`/`catch`/`finally`, **custom error subclasses** (`class … extends Error`, `super`, bridged ahead of js2-12), `instanceof`, re-throw |
+| js2-10 | concept | `JSON.stringify` (indent, what is lost), `JSON.parse` + reviver, validate shape (`Array.isArray`, `in`, `typeof`), Invalid Date |
+| js2-11 | concept | **`Map`** and **`Set`**, insertion order, speed vs `includes` in a loop |
+| js2-12 | concept | **classes**: constructor, methods, getters/setters, **`#private`** fields, **`static`** members |
+| js2-13 | **debugging** | truthiness, `\|\|` vs `??`, `==` vs `===`, explicit conversion, `typeof` when debugging |
+| js2-14 | **problem** (approach taught) | counting and grouping in one pass with a `Map`, top-k with tie-break; `??=`; the **leading-`;` rule** for lines starting `(` or `[`; 300,000-word input |
+| js2-15 | **design** | pure functions, no top-level state, no input mutation, compose a pipeline |
+
+### JavaScript · Advanced — `javascript-advanced`, prefix `js3-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| js3-01 | concept | the four `this` rules, `call`/`apply`/`bind`, arrows have no `this`, chaining by returning `this`; **optional chaining `?.`** (bridged) |
+| js3-02 | **debugging** | detached methods; arrow / `thisArg` / bind-in-constructor / class-field fixes |
+| js3-03 | concept | **prototypes**, `Object.create`, constructor functions + `new`, inheritance by hand |
+| js3-04 | concept | promises: states, `new Promise`, `.then` chaining rules, `.catch`, forgetting to return |
+| js3-05 | concept | `async`/`await` + `try`/`catch`; `Promise.all` / `allSettled` / `race` / `any`; timeouts with cleanup |
+| js3-06 | concept | **event loop**: sync, microtasks, tasks; `queueMicrotask`; order by `await`, not timing; IIFE |
+| js3-07 | **debugging** | floating promises (`forEach(async …)`), lost updates across `await` |
+| js3-08 | concept | iterables, `Symbol.iterator`, **generators** `function*`, lazy/infinite sequences, one-shot generators; swap by destructuring |
+| js3-09 | concept | **debounce** and **throttle** from closures and timers |
+| js3-10 | concept | **memoisation** (`Map` cache, `JSON.stringify` keys, recursive calls through the memo, `has` not truthiness) |
+| js3-11 | **problem** | LRU cache with an insertion-ordered `Map`; 300,000 operations |
+| js3-12 | concept | `pipe`/`compose` with `reduce`/`reduceRight`, **currying** with `fn.length` |
+| js3-13 | **design** | factory functions and **dependency injection** (clock, ids, send), defaults, returning copies |
+| js3-14 | **problem** | binary search (lower bound, invariants), two pointers; a million numbers |
+
+### JavaScript · Expert — `javascript-expert`, prefix `js4-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| js4-01 | concept | **`Proxy`** traps and **`Reflect`**, validation and observation; `Object.is`, `Object.hasOwn` (bridged) |
+| js4-02 | concept | **`WeakMap`**: private data, caches that do not leak |
+| js4-03 | build | an event emitter: off functions, `once`, copy-on-emit, unheard `'error'` throws |
+| js4-04 | **design** | **middleware** onion: `compose(dispatch(i))`, errors as rejections, `next()` twice |
+| js4-05 | concept | a promise pool: tasks as functions, worker loops, results by index |
+| js4-06 | concept | reactive store: pure reducers returning the same object when unchanged, subscribe, `select` |
+| js4-07 | concept | deep equality (NaN, Dates, key order) and deep cloning with a `seen` Map (cycles, shared refs); `structuredClone` limits |
+| js4-08 | **debugging** | floating-point money, `MAX_SAFE_INTEGER`, **`BigInt`** cents, round half up, splitting remainders |
+| js4-09 | build/problem | a tokenizer (index loop, typed tokens, end token, positioned `SyntaxError`) |
+| js4-10 | build/problem | recursive-descent parser + evaluator (precedence, associativity, variables, calls, errors) |
+| js4-11 | build | a mini test runner: `describe`/`it`/`expect`, async tests, `toBe`/`toEqual`/`toThrow` |
+| js4-12 | **problem** | **Big-O**, hidden loops in array methods, Set/Map to go O(n²) → O(n), `performance.now()`; 200,000 items |
+| js4-13 | **debugging** | out-of-order responses: request counter, loading/error per latest request, `AbortController` named |
+| js4-14 | concept | generators as coroutines: `next(value)`, priming, `throw`, a co-style runner |
+
+### JavaScript · Projects — `javascript-projects`, prefix `jsp-`, 16 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| jsp-01…04 | **To-do store**: factory with invariants and copies → command pattern with `execute` + history → undo/redo stacks → rename command, `save`/load with shape validation (`corrupt save`) | js2-05/07/10, js3-13 |
+| jsp-05…08 | **Adventure engine**: finite state machine as data with config validation (`Object.hasOwn`) → context, guards, actions, `enter` hooks, normalising transitions (`?.()`) → game layer on the machine (parser, world copy, `look`) → locked doors as guards, winning, `status` | js2-04/11, js4-01 |
+| jsp-09…12 | **Report pipeline**: CSV state-machine parser → schema-driven typed records with collected errors → grouping in integer cents with deterministic order → aligned text table (`padStart`/`padEnd`) and `csvReport` | js2-06/14, js4-08 |
+| jsp-13 | **Capstone**: spreadsheet engine (formulas, ranges, errors as values, cycles, memo per `get`) | js4-09/10 |
+| jsp-14 | **Capstone**: rate-limited priority job queue with retries and `onIdle` | js3-05/06, js4-05 |
+| jsp-15 | **Capstone**: template engine (scan, tree with a stack, scoped render, escaping) | js4-09 |
+| jsp-16 | **Capstone**: bank with `BankError` codes, atomic transfers, statements | js2-09 |
+
+Not covered by the JavaScript ladder: modules (`import`/`export`), the DOM
+(that is the Web ladder), Node APIs, `fetch`/networking, `Intl` formatting,
+`Date` arithmetic beyond validation, typed arrays, workers.
+
 ---
 
 ## TypeScript (`typescript`) — course `typescript`, prefix `ts-`, 11 lessons

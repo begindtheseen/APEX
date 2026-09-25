@@ -1,0 +1,1823 @@
+@track html
+@level advanced
+@title Web · Advanced
+@name Web, advanced: interactive widgets, state and accessible behaviour
+@blurb Build interfaces the way professionals do: one state object and a render function, components, delegated events, real validation, keyboard-accessible widgets (disclosures, tabs, dialogs), timers — and debug the classic front-end bugs.
+
+=== web3-01 | Event delegation
+--- teach
+The intermediate course drew pages from data and events. This course is about interfaces that stay correct as they grow: one listener for many elements, state and render, components, your own validation, keyboard and ARIA patterns, timers, and the debugging that goes with them.
+
+From here on, the Web courses use the JavaScript that the JavaScript course's basics teach — functions, objects, arrays with `map`, `filter` and `reduce`, template literals, `async`/`await` — without stopping to explain it. Anything beyond that is explained where it first appears.
+
+Attaching a listener to every item has two problems. It is wasteful on a long list, and — worse — items added later have no listener at all, because the loop that attached them ran once, at the start.
+
+**Event delegation** uses the fact that events *bubble*: a click on a button inside an `li` inside a `ul` fires on the button, then the `li`, then the `ul`, and so on up to `document`. So one listener on the container sees every click inside it, including clicks on elements that did not exist when the listener was added:
+
+```js
+list.addEventListener('click', (event) => {
+  const del = event.target.closest('.delete')
+  if (del) {
+    del.closest('li').remove()
+    return
+  }
+  const text = event.target.closest('.text')
+  if (text) text.closest('li').classList.toggle('done')
+})
+```
+
+`event.target` is the innermost element clicked — maybe a `span` or an icon *inside* your button — so don't compare it directly. `target.closest(selector)` walks up from the target to the nearest ancestor (or itself) that matches, and returns `null` if there is none. That one call makes delegation robust.
+
+Two more tools that pair with it: put what the handler needs on the element (`data-id="42"`, read as `el.dataset.id`), and check the match is inside your container (`list.contains(el)`) when containers are nested.
+--- task
+Bug report: *"Tasks I add can't be deleted or ticked off — only the two original ones work."*
+
+Replace the per-element listeners with **one** click listener on `#todos` that handles both jobs, for old and new items alike: a click on a `.delete` button removes its `li`, and a click on a `.text` span toggles the class `done` on its `li`. Keep the Add button as it is.
+--- starter
+<button id="add">Add task</button>
+<ul id="todos">
+  <li><span class="text">Fuel up</span> <button class="delete">Delete</button></li>
+  <li><span class="text">Check comms</span> <button class="delete">Delete</button></li>
+</ul>
+
+<script>
+  const list = document.querySelector('#todos')
+  let n = 0
+
+  document.querySelector('#add').addEventListener('click', () => {
+    n += 1
+    const li = document.createElement('li')
+    li.innerHTML = '<span class="text"></span> <button class="delete">Delete</button>'
+    li.querySelector('.text').textContent = `New task ${n}`
+    list.append(li)
+  })
+
+  for (const button of document.querySelectorAll('.delete')) {
+    button.addEventListener('click', () => button.closest('li').remove())
+  }
+  for (const text of document.querySelectorAll('.text')) {
+    text.addEventListener('click', () => text.closest('li').classList.toggle('done'))
+  }
+</script>
+--- solution
+<button id="add">Add task</button>
+<ul id="todos">
+  <li><span class="text">Fuel up</span> <button class="delete">Delete</button></li>
+  <li><span class="text">Check comms</span> <button class="delete">Delete</button></li>
+</ul>
+
+<script>
+  const list = document.querySelector('#todos')
+  let n = 0
+
+  document.querySelector('#add').addEventListener('click', () => {
+    n += 1
+    const li = document.createElement('li')
+    li.innerHTML = '<span class="text"></span> <button class="delete">Delete</button>'
+    li.querySelector('.text').textContent = `New task ${n}`
+    list.append(li)
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (del) {
+      del.closest('li').remove()
+      return
+    }
+    const text = event.target.closest('.text')
+    if (text) text.closest('li').classList.toggle('done')
+  })
+</script>
+--- hint
+Delete both `for` loops. Add `list.addEventListener('click', (event) => { … })`.
+--- hint
+Inside it, `event.target.closest('.delete')` is the delete button that was clicked (or `null`); do the same for `.text`.
+--- check dom | Original items can still be deleted
+click #todos li:first-child .delete
+#todos li count == 1
+#todos li .text text == Check comms
+--- check dom | A new item can be deleted
+click #add
+click #todos li:last-child .delete
+#todos li count == 2
+--- check dom | A new item can be ticked off
+click #add
+click #todos li:last-child .text
+#todos li:last-child class done
+--- check dom | Ticking toggles on and off
+click #todos li:first-child .text
+#todos li:first-child class done
+click #todos li:first-child .text
+#todos li:first-child:not(.done) exists
+--- check source absent | No listener per delete button
+querySelectorAll\(\s*['"`]\.delete
+
+=== web3-02 | State and render
+--- teach
+Once a page does more than one thing, "change the DOM whenever something happens" falls apart. The Play button's text, the status line, the highlighted song and the disabled buttons all depend on the same two facts — which song, and whether it is playing — and every handler has to remember to update all of them.
+
+The pattern every modern framework is built on:
+
+1. **One state object** holds the facts. Only the facts: `{ current: 0, playing: false }`. Not "the text of the button" — that is derived.
+2. **One `render()` function** makes the whole view match the state. It never reads the page to decide anything; it only writes.
+3. **Handlers only change state, then call `render()`.**
+
+```js
+const state = { count: 0 }
+
+function render() {
+  countEl.textContent = state.count
+  minus.disabled = state.count === 0
+}
+
+plus.addEventListener('click', () => { state.count += 1; render() })
+minus.addEventListener('click', () => { state.count -= 1; render() })
+
+render()   // draw the starting state once
+```
+
+Now "is the minus button disabled at zero?" has exactly one answer, in one place. Adding a feature means adding state and a line in `render()`, not hunting through every handler. And bugs become reproducible: the same state always draws the same page.
+
+Rebuilding a small list inside `render()` each time is fine: `list.replaceChildren(...items)` swaps all the children in one go. (`...items` spreads the array into separate arguments, like `Math.min(...numbers)`. And `map` hands your function each item's position as a second argument: `songs.map((title, i) => …)`.) (For big lists, the expert course shows how to update in place.)
+--- task
+The state and the handlers are written. Write `render()` so the page always matches `state`:
+
+- `#now` shows the current song's title
+- `#play` says `Pause` while playing and `Play` otherwise; `#status` says `Playing` or `Paused`
+- `#prev` is disabled on the first song, `#next` on the last
+- `#playlist` has one `li` per song, with its title as text and `data-index` set to its position; only the current one has the class `current`
+--- starter
+<p>Now: <strong id="now"></strong> — <span id="status"></span></p>
+<button id="prev">Previous</button>
+<button id="play">Play</button>
+<button id="next">Next</button>
+<ol id="playlist"></ol>
+
+<script>
+  const songs = ['Starman', 'Space Oddity', 'Rocket Man', 'Across the Universe']
+  const state = { current: 0, playing: false }
+
+  const now = document.querySelector('#now')
+  const statusText = document.querySelector('#status')
+  const prev = document.querySelector('#prev')
+  const play = document.querySelector('#play')
+  const next = document.querySelector('#next')
+  const playlist = document.querySelector('#playlist')
+
+  function render() {
+    // Make the page match state.
+  }
+
+  prev.addEventListener('click', () => { state.current -= 1; render() })
+  next.addEventListener('click', () => { state.current += 1; render() })
+  play.addEventListener('click', () => { state.playing = !state.playing; render() })
+  playlist.addEventListener('click', (event) => {
+    const li = event.target.closest('li')
+    if (!li) return
+    state.current = Number(li.dataset.index)
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<p>Now: <strong id="now"></strong> — <span id="status"></span></p>
+<button id="prev">Previous</button>
+<button id="play">Play</button>
+<button id="next">Next</button>
+<ol id="playlist"></ol>
+
+<script>
+  const songs = ['Starman', 'Space Oddity', 'Rocket Man', 'Across the Universe']
+  const state = { current: 0, playing: false }
+
+  const now = document.querySelector('#now')
+  const statusText = document.querySelector('#status')
+  const prev = document.querySelector('#prev')
+  const play = document.querySelector('#play')
+  const next = document.querySelector('#next')
+  const playlist = document.querySelector('#playlist')
+
+  function render() {
+    now.textContent = songs[state.current]
+    play.textContent = state.playing ? 'Pause' : 'Play'
+    statusText.textContent = state.playing ? 'Playing' : 'Paused'
+    prev.disabled = state.current === 0
+    next.disabled = state.current === songs.length - 1
+    playlist.replaceChildren(
+      ...songs.map((title, i) => {
+        const li = document.createElement('li')
+        li.textContent = title
+        li.dataset.index = i
+        li.classList.toggle('current', i === state.current)
+        return li
+      }),
+    )
+  }
+
+  prev.addEventListener('click', () => { state.current -= 1; render() })
+  next.addEventListener('click', () => { state.current += 1; render() })
+  play.addEventListener('click', () => { state.playing = !state.playing; render() })
+  playlist.addEventListener('click', (event) => {
+    const li = event.target.closest('li')
+    if (!li) return
+    state.current = Number(li.dataset.index)
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Everything in `render()` reads `state` and writes the page: `now.textContent = songs[state.current]`, `prev.disabled = state.current === 0`, and so on.
+--- hint
+For the list, `playlist.replaceChildren(...songs.map((title, i) => { … return li }))` — set `textContent`, `dataset.index` and `classList.toggle('current', i === state.current)`.
+--- check dom | The starting state is drawn
+#now text == Starman
+#play text == Play
+#status text == Paused
+#playlist li count == 4
+#playlist li.current count == 1
+#playlist li:first-child class current
+--- check dom | Previous is disabled on the first song, Next is not
+#prev[disabled] exists
+#next:not([disabled]) exists
+--- check dom | Next moves on and redraws everything
+click #next
+#now text == Space Oddity
+#playlist li:nth-child(2) class current
+#playlist li.current count == 1
+#prev:not([disabled]) exists
+--- check dom | Play and pause
+click #play
+#play text == Pause
+#status text == Playing
+click #play
+#play text == Play
+--- check dom | Next is disabled on the last song
+click #next
+click #next
+click #next
+#now text == Across the Universe
+#next[disabled] exists
+--- check dom | Clicking a song plays that one
+click #playlist li:nth-child(3)
+#now text == Rocket Man
+#playlist li:nth-child(3) class current
+
+=== web3-03 | Components: functions that return elements
+--- teach
+Building elements by hand — `createElement`, set this, append that — gets long fast. Two small ideas tidy it up.
+
+**A helper that builds an element in one call:**
+
+```js
+function h(tag, attrs = {}, ...children) {
+  const el = document.createElement(tag)
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === 'class') el.className = value
+    else if (key.startsWith('on')) el.addEventListener(key.slice(2), value)
+    else el.setAttribute(key, value)
+  }
+  el.append(...children.flat())   // strings become text, safely
+  return el
+}
+
+h('p', { class: 'note' }, 'Hello')             // <p class="note">Hello</p>
+h('button', { onclick: () => alarm() }, 'Go')   // a button with a click listener
+```
+
+`append` accepts strings and inserts them as text (never HTML), and `children.flat()` lets you pass an array of children, such as the result of `map`. Two newer pieces of JavaScript here: `...children` in the parameter list is a **rest parameter**, which collects every argument after the first two into an array; and `Object.entries(attrs)` gives the object's `[key, value]` pairs, which `for (const [key, value] of …)` unpacks into two variables.
+
+**Components: functions from data to elements.**
+
+```js
+function Badge(label) {
+  return h('span', { class: 'badge' }, label)
+}
+function Mission(m) {
+  return h('li', { 'data-id': m.id }, m.name, ' ', Badge(m.status))
+}
+list.append(...missions.map(Mission))
+```
+
+Each component takes data and returns an element; bigger components are built from smaller ones. The shape of the page is now readable in the code, and a component can be reused anywhere. This is exactly what React's JSX turns into: `<Badge label="x" />` compiles to a call much like `h(Badge, …)`.
+
+Behaviour can live inside a component too: an `onclick` in the attributes remembers that component's own variables (a **closure** — the stale-closures lesson looks at them closely), so each card handles its own button.
+--- task
+Write `h(tag, attrs, ...children)` as above, and a component `ProfileCard(person)` that returns:
+
+- an `article` with the class `card` and a `data-id` of the person's `id`
+- inside it an `h3` with the name, a `p` with the class `role` holding the role, a `ul` with the class `skills` with one `li` per skill
+- and a `button` with the class `follow` saying `Follow`, which changes its own text to `Following` when clicked
+
+Render one card per person into `#team`.
+--- starter
+<section id="team"></section>
+
+<script>
+  const people = [
+    { id: 'ada', name: 'Ada Lovelace', role: 'Navigator', skills: ['Maths', 'Engines', 'Notes'] },
+    { id: 'mae', name: 'Mae Jemison', role: 'Science officer', skills: ['Medicine', 'Dance'] },
+    { id: 'yuri', name: 'Yuri Gagarin', role: 'Pilot', skills: ['Flying'] },
+  ]
+
+  // Write h(), then ProfileCard(person), then render the team.
+</script>
+--- solution
+<section id="team"></section>
+
+<script>
+  const people = [
+    { id: 'ada', name: 'Ada Lovelace', role: 'Navigator', skills: ['Maths', 'Engines', 'Notes'] },
+    { id: 'mae', name: 'Mae Jemison', role: 'Science officer', skills: ['Medicine', 'Dance'] },
+    { id: 'yuri', name: 'Yuri Gagarin', role: 'Pilot', skills: ['Flying'] },
+  ]
+
+  function h(tag, attrs = {}, ...children) {
+    const el = document.createElement(tag)
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key === 'class') el.className = value
+      else if (key.startsWith('on')) el.addEventListener(key.slice(2), value)
+      else el.setAttribute(key, value)
+    }
+    el.append(...children.flat())
+    return el
+  }
+
+  function ProfileCard(person) {
+    const follow = h('button', { class: 'follow', type: 'button', onclick: () => { follow.textContent = 'Following' } }, 'Follow')
+    return h(
+      'article',
+      { class: 'card', 'data-id': person.id },
+      h('h3', {}, person.name),
+      h('p', { class: 'role' }, person.role),
+      h('ul', { class: 'skills' }, person.skills.map((skill) => h('li', {}, skill))),
+      follow,
+    )
+  }
+
+  document.querySelector('#team').append(...people.map(ProfileCard))
+</script>
+--- hint
+Start with `h` exactly as in the lesson, and try `h('p', {}, 'hi')` on its own before building the card.
+--- hint
+Create the follow button first (`const follow = h('button', { class: 'follow', onclick: … }, 'Follow')`) so its click handler can change `follow.textContent`; then return the `article` with it as the last child.
+--- check dom | One card per person
+#team article.card count == 3
+--- check dom | A card shows name, role and skills
+#team .card:first-child h3 text == Ada Lovelace
+#team .card:first-child .role text == Navigator
+#team .card:first-child .skills li count == 3
+#team .card:nth-child(2) .skills li count == 2
+#team .card:nth-child(3) .skills li text == Flying
+--- check dom | Each card carries its id
+#team .card:first-child attr data-id == ada
+#team .card:last-child attr data-id == yuri
+--- check dom | Follow changes only its own card
+click #team .card:nth-child(2) .follow
+#team .card:nth-child(2) .follow text == Following
+#team .card:first-child .follow text == Follow
+
+=== web3-04 | Form validation with your own messages
+--- teach
+The browser's built-in validation is a good floor, but its bubbles differ in every browser and can't be styled. To show your own messages, keep the rules in HTML (`required`, `type="email"`) and take over the reporting:
+
+```html
+<form id="signup" novalidate>          <!-- novalidate: "I'll report errors" -->
+  <label for="email">Email</label>
+  <input id="email" type="email" required aria-describedby="email-error">
+  <p id="email-error" class="error"></p>
+</form>
+```
+
+Every field has a `validity` object telling you exactly what is wrong:
+
+```js
+email.validity.valueMissing   // required, but empty
+email.validity.typeMismatch   // not shaped like an email
+email.validity.valid          // no problems at all
+```
+
+On submit, work out each field's message, show it, and mark the field:
+
+- `aria-invalid="true"` tells assistive technology the field is in error, and `aria-describedby` points at the message element, so the message is read out along with the field.
+- Move focus to the **first** invalid field, so keyboard and screen reader users land where the problem is.
+- Only when there are no errors, do the real work.
+
+One trap: `minlength` only reports `validity.tooShort` after a **person** has edited the field. A value set by script — autofill, a test, your own code — is never "too short" as far as `validity` is concerned. For lengths, check `value.length` yourself.
+
+And a design point: say how to fix it. "Invalid input" is useless; "Use at least 8 characters." is an instruction.
+
+Two pieces of JavaScript that help: `array.find(fn)` returns the first item for which `fn` returns true (or `undefined` if none does), and `a || b` gives `b` when `a` is empty or missing, as in `errors[name] || ''`.
+--- task
+On submit of `#signup` (it has `novalidate`), check the fields and show these messages in `#email-error`, `#password-error` and `#confirm-error` (empty when a field is fine):
+
+- email empty → `Enter your email.`; email badly shaped → `That email doesn't look right.`
+- password shorter than 8 characters → `Use at least 8 characters.`
+- confirm different from password → `Passwords don't match.`
+
+Set `aria-invalid` on each of the three inputs to `true` or `false`. If anything is wrong, focus the first invalid field and leave `#result` empty; otherwise set `#result` to `Welcome aboard!`.
+--- starter
+<form id="signup" novalidate>
+  <label for="email">Email</label>
+  <input id="email" type="email" required aria-describedby="email-error">
+  <p id="email-error" class="error"></p>
+
+  <label for="password">Password</label>
+  <input id="password" type="password" required minlength="8" aria-describedby="password-error">
+  <p id="password-error" class="error"></p>
+
+  <label for="confirm">Confirm password</label>
+  <input id="confirm" type="password" aria-describedby="confirm-error">
+  <p id="confirm-error" class="error"></p>
+
+  <button id="submit">Create account</button>
+</form>
+<p id="result"></p>
+
+<script>
+  const form = document.querySelector('#signup')
+  const fields = {
+    email: document.querySelector('#email'),
+    password: document.querySelector('#password'),
+    confirm: document.querySelector('#confirm'),
+  }
+  const result = document.querySelector('#result')
+</script>
+--- solution
+<form id="signup" novalidate>
+  <label for="email">Email</label>
+  <input id="email" type="email" required aria-describedby="email-error">
+  <p id="email-error" class="error"></p>
+
+  <label for="password">Password</label>
+  <input id="password" type="password" required minlength="8" aria-describedby="password-error">
+  <p id="password-error" class="error"></p>
+
+  <label for="confirm">Confirm password</label>
+  <input id="confirm" type="password" aria-describedby="confirm-error">
+  <p id="confirm-error" class="error"></p>
+
+  <button id="submit">Create account</button>
+</form>
+<p id="result"></p>
+
+<script>
+  const form = document.querySelector('#signup')
+  const fields = {
+    email: document.querySelector('#email'),
+    password: document.querySelector('#password'),
+    confirm: document.querySelector('#confirm'),
+  }
+  const result = document.querySelector('#result')
+
+  function errorsFor() {
+    const errors = {}
+    if (fields.email.validity.valueMissing) errors.email = 'Enter your email.'
+    else if (fields.email.validity.typeMismatch) errors.email = "That email doesn't look right."
+    if (fields.password.value.length < 8) errors.password = 'Use at least 8 characters.'
+    if (fields.confirm.value !== fields.password.value) errors.confirm = "Passwords don't match."
+    return errors
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const errors = errorsFor()
+    for (const [name, input] of Object.entries(fields)) {
+      const message = errors[name] || ''
+      document.querySelector(`#${name}-error`).textContent = message
+      input.setAttribute('aria-invalid', message ? 'true' : 'false')
+    }
+    const first = Object.keys(fields).find((name) => errors[name])
+    if (first) {
+      fields[first].focus()
+      result.textContent = ''
+      return
+    }
+    result.textContent = 'Welcome aboard!'
+  })
+</script>
+--- hint
+Write one function that returns an object of messages, like `{ email: 'Enter your email.' }`, from `validity` and the values. Then the submit handler only has to display it.
+--- hint
+Loop over the three fields: set each error element's `textContent` (or `''`) and `input.setAttribute('aria-invalid', message ? 'true' : 'false')`. Then focus the first field that has a message.
+--- check dom | An empty email is reported, and marked invalid
+click #submit
+#email-error text == Enter your email.
+#email attr aria-invalid == true
+#result text ==
+--- check dom | Focus goes to the first problem
+type #email ada@example.com
+click #submit
+#password focused
+--- check dom | A badly shaped email gets its own message
+type #email not-an-email
+click #submit
+#email-error text == That email doesn't look right.
+--- check dom | A short password is reported, a fixed email is cleared
+type #email ada@example.com
+type #password short
+click #submit
+#email-error text ==
+#email attr aria-invalid == false
+#password-error text == Use at least 8 characters.
+#password attr aria-invalid == true
+--- check dom | Mismatched passwords are reported
+type #email ada@example.com
+type #password rocketship
+type #confirm rocketsheep
+click #submit
+#password-error text ==
+#confirm-error text == Passwords don't match.
+--- check dom | A good form is welcomed, with nothing marked invalid
+type #email ada@example.com
+type #password rocketship
+type #confirm rocketship
+click #submit
+#result text == Welcome aboard!
+[aria-invalid=true] missing
+
+=== web3-05 | Keyboard access and ARIA: a disclosure
+--- teach
+A **disclosure** is a control that shows and hides a section: an FAQ answer, a "More details" panel. Getting it right takes three things.
+
+**1. The control is a `button`.** It is focusable, and Enter and Space press it, with no extra code.
+
+**2. It says whether it is open.** `aria-expanded="true"` or `"false"` on the button is announced as "expanded" or "collapsed". `aria-controls` names the id of the panel it opens.
+
+**3. The panel is really hidden when closed.** The `hidden` attribute removes it from the page *and* from the accessibility tree, so a screen reader doesn't read hidden answers.
+
+```html
+<h3>
+  <button id="q1" aria-expanded="false" aria-controls="a1">How long is the flight?</button>
+</h3>
+<div id="a1" hidden>About three days.</div>
+```
+
+```js
+button.addEventListener('click', () => {
+  const open = button.getAttribute('aria-expanded') === 'true'
+  button.setAttribute('aria-expanded', String(!open))
+  panel.hidden = open
+})
+```
+
+Notice the source of truth: the button's `aria-expanded` *is* the state, and the panel follows it. Keep them changing together, in one function, or they will disagree.
+
+**ARIA's first rule:** if a native element does the job, use it. ARIA only changes what is *announced*; it adds no behaviour. `role="button"` on a `div` makes a screen reader say "button", but the div still can't be focused or pressed with Enter. (For a zero-JavaScript version, `<details><summary>` is a native disclosure — worth knowing, though it is harder to style and control.)
+--- task
+The FAQ works with a mouse only, and says nothing to a screen reader. Rebuild it: each question becomes a `button` with ids `q1`, `q2`, `q3`, with `aria-expanded` (starting `false`) and `aria-controls` naming its answer (`a1`, `a2`, `a3`). The answers use the `hidden` attribute instead of inline styles. Clicking (or pressing Enter or Space on) a question toggles its own answer and its `aria-expanded`.
+--- starter
+<h2>Flight FAQ</h2>
+<div class="q" id="q1">How long is the flight?</div>
+<div class="a" id="a1" style="display: none">About three days to the Moon.</div>
+<div class="q" id="q2">Can I bring a pet?</div>
+<div class="a" id="a2" style="display: none">Only fish, in a sealed tank.</div>
+<div class="q" id="q3">Is there Wi-Fi?</div>
+<div class="a" id="a3" style="display: none">Yes, with a 1.3 second delay.</div>
+
+<script>
+  for (const q of document.querySelectorAll('.q')) {
+    q.addEventListener('click', () => {
+      const a = q.nextElementSibling
+      a.style.display = a.style.display === 'none' ? 'block' : 'none'
+    })
+  }
+</script>
+--- solution
+<h2>Flight FAQ</h2>
+<h3><button class="q" id="q1" aria-expanded="false" aria-controls="a1">How long is the flight?</button></h3>
+<div class="a" id="a1" hidden>About three days to the Moon.</div>
+<h3><button class="q" id="q2" aria-expanded="false" aria-controls="a2">Can I bring a pet?</button></h3>
+<div class="a" id="a2" hidden>Only fish, in a sealed tank.</div>
+<h3><button class="q" id="q3" aria-expanded="false" aria-controls="a3">Is there Wi-Fi?</button></h3>
+<div class="a" id="a3" hidden>Yes, with a 1.3 second delay.</div>
+
+<script>
+  for (const button of document.querySelectorAll('.q')) {
+    button.addEventListener('click', () => {
+      const panel = document.getElementById(button.getAttribute('aria-controls'))
+      const open = button.getAttribute('aria-expanded') === 'true'
+      button.setAttribute('aria-expanded', String(!open))
+      panel.hidden = open
+    })
+  }
+</script>
+--- hint
+Change each question `div` to a `button` and add `aria-expanded="false" aria-controls="a1"` (and so on). Replace `style="display: none"` with `hidden`.
+--- hint
+In the click handler, find the panel with `document.getElementById(button.getAttribute('aria-controls'))`, flip `aria-expanded`, and set `panel.hidden` to match.
+--- check dom | Questions are buttons that say they are collapsed
+button#q1 exists
+#q1 attr aria-expanded == false
+#q1 attr aria-controls == a1
+#a1[hidden] exists
+--- check dom | Clicking opens its own answer only
+click #q1
+#q1 attr aria-expanded == true
+#a1:not([hidden]) exists
+#a2[hidden] exists
+--- check dom | Clicking again closes it
+click #q1
+click #q1
+#q1 attr aria-expanded == false
+#a1[hidden] exists
+--- check dom | Enter and Space work from the keyboard
+press #q2 Enter
+#a2:not([hidden]) exists
+press #q3 Space
+#a3:not([hidden]) exists
+#q3 attr aria-expanded == true
+--- check dom | No inline styles left
+[style] missing
+
+=== web3-06 | Timers and asynchronous UI
+--- teach
+Real interfaces wait: for a save, a network reply, an animation. `setTimeout(fn, ms)` runs `fn` once, later, and returns an id you can cancel with `clearTimeout(id)`. `setInterval` repeats until `clearInterval`.
+
+```js
+const id = setTimeout(() => console.log('later'), 500)
+clearTimeout(id)   // changed my mind: it never runs
+```
+
+Wrapped in a promise, a delay reads like ordinary code with `async`/`await`:
+
+```js
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function save() {
+  button.disabled = true
+  show('Saving...')
+  await sleep(300)          // stand-in for a request to a server
+  show('Saved')
+  button.disabled = false
+}
+```
+
+Design the **states**, not just the happy path: idle → saving → saved → idle. While saving, disable the button so a second click can't start a second save. Put the message in an element with `role="status"` so screen readers announce it without moving focus.
+
+**The classic timer bug:** a message that clears itself "after one second" — using a timer scheduled for an *earlier* message. Save, then save again 800ms later: the first save's clear-timer fires and wipes the second save's "Saved" early. The fix is to keep the timer's id and cancel the old one before scheduling a new one:
+
+```js
+let clearTimer = null
+function flash(text) {
+  show(text)
+  clearTimeout(clearTimer)                       // cancel any pending clear
+  clearTimer = setTimeout(() => show(''), 1000)
+}
+```
+--- task
+Make the Save button work:
+
+- on click: disable `#save` and set `#status` to `Saving...`
+- 300ms later: set `#status` to `Saved` and enable the button again
+- 1 second after showing `Saved`, clear `#status` — but if another save has happened since, its message must not be cleared early
+--- starter
+<label for="note">Mission notes</label>
+<textarea id="note">Check the heat shield.</textarea>
+<button id="save">Save</button>
+<p id="status" role="status"></p>
+
+<script>
+  const saveButton = document.querySelector('#save')
+  const statusLine = document.querySelector('#status')
+</script>
+--- solution
+<label for="note">Mission notes</label>
+<textarea id="note">Check the heat shield.</textarea>
+<button id="save">Save</button>
+<p id="status" role="status"></p>
+
+<script>
+  const saveButton = document.querySelector('#save')
+  const statusLine = document.querySelector('#status')
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  let clearTimer = null
+
+  saveButton.addEventListener('click', async () => {
+    saveButton.disabled = true
+    clearTimeout(clearTimer)
+    statusLine.textContent = 'Saving...'
+    await sleep(300)
+    statusLine.textContent = 'Saved'
+    saveButton.disabled = false
+    clearTimer = setTimeout(() => {
+      statusLine.textContent = ''
+    }, 1000)
+  })
+</script>
+--- hint
+An `async` click handler with `await sleep(300)` between "Saving..." and "Saved" keeps the steps in order.
+--- hint
+Keep the clearing timer's id in a variable outside the handler, and `clearTimeout` it at the start of every save.
+--- check dom | Clicking shows Saving... and disables the button
+click #save
+#status text == Saving...
+#save[disabled] exists
+--- check dom | After a moment: Saved, and the button works again
+click #save
+wait 450
+#status text == Saved
+#save:not([disabled]) exists
+--- check dom | The message clears itself
+click #save
+wait 1500
+#status text ==
+--- check dom | A second save's message is not cleared early
+click #save
+wait 800
+click #save
+wait 700
+#status text == Saved
+
+=== web3-07 | Debugging: the listener that never fires
+--- teach
+"I click the button and nothing happens" has a short list of causes, and a method finds the right one in a minute.
+
+**1. Look at the console first.** Nothing happening often means an error happened — earlier, when the page loaded, not when you clicked. Here it would say:
+
+```
+TypeError: Cannot read properties of null (reading 'addEventListener')
+```
+
+**2. Read the error literally.** Something is `null`, and the code tried to call `.addEventListener` on it. Which line? The error gives one. What on that line could be `null`? The result of `document.querySelector('#launch')`.
+
+**3. Check the assumption.** `querySelector` returns `null` when nothing matches *at the moment it runs*. Is there a typo in the selector? Or does the element not exist *yet*? The browser runs a `<script>` as soon as it reaches it while reading the page top to bottom — so a script in the `head` runs before any of the `body` has been built.
+
+**4. Fix the cause.** Any of these works; know all three:
+
+- Put the script at the **end of the `body`**, after the elements it uses.
+- Wait for the page: `document.addEventListener('DOMContentLoaded', () => { … })`.
+- For an external file, `<script src="app.js" defer>`. (Note: `defer` is **ignored** on inline scripts, a common false fix.)
+
+Don't "fix" it by wrapping the call in `if (button)` — that silences the error and the button still doesn't work.
+--- task
+Bug report: *"The Launch button does nothing. No errors that I can see on the page."*
+
+Open the console, read the error, and fix the cause so that clicking `#launch` changes `#message` to `Lift off!`.
+--- starter
+<!doctype html>
+<html>
+<head>
+  <title>Launch</title>
+  <script>
+    const launchButton = document.querySelector('#launch')
+    const message = document.querySelector('#message')
+
+    launchButton.addEventListener('click', () => {
+      message.textContent = 'Lift off!'
+    })
+  </script>
+</head>
+<body>
+  <h1>Pad 39A</h1>
+  <button id="launch">Launch</button>
+  <p id="message">Waiting for go</p>
+</body>
+</html>
+--- solution
+<!doctype html>
+<html>
+<head>
+  <title>Launch</title>
+</head>
+<body>
+  <h1>Pad 39A</h1>
+  <button id="launch">Launch</button>
+  <p id="message">Waiting for go</p>
+
+  <script>
+    const launchButton = document.querySelector('#launch')
+    const message = document.querySelector('#message')
+
+    launchButton.addEventListener('click', () => {
+      message.textContent = 'Lift off!'
+    })
+  </script>
+</body>
+</html>
+--- hint
+The console names the line and says something is `null`. When does that script run, compared with when the button is created?
+--- hint
+Move the whole `<script>` from the `head` to the end of the `body` (or wrap its code in a `DOMContentLoaded` listener).
+--- check dom | The page starts waiting
+#message text == Waiting for go
+--- check dom | Clicking Launch says Lift off!
+click #launch
+#message text == Lift off!
+
+=== web3-08 | Debugging: the lost `this`
+--- teach
+Classes are a tidy way to build widgets: each instance keeps its own state and its own elements. They also bring the most common JavaScript surprise.
+
+If classes are new to you: a `class` is a blueprint for objects. `new Counter(root)` makes a new object and runs its `constructor`; methods such as `increment()` are shared by every counter; and inside them `this` is meant to be the object the method belongs to, so `this.count` is that counter's own number. (The JavaScript course covers classes in depth.)
+
+```js
+class Counter {
+  constructor(root) {
+    this.count = 0
+    root.querySelector('.inc').addEventListener('click', this.increment)
+  }
+  increment() {
+    this.count += 1   // TypeError, or NaN — what is `this` here?
+  }
+}
+```
+
+**`this` is decided by how a function is *called*, not where it was written.** `counter.increment()` sets `this` to `counter`. But passing `this.increment` to `addEventListener` hands over the bare function; later the browser calls it with `this` set to the element the listener is on — the button. `this.count` is then the button's `count` (undefined), and `this.render()` fails with *"this.render is not a function"*.
+
+**Method:** when a method misbehaves only as a callback, log `this` at the top of it: `console.log(this)`. If you see `<button>`, you have found it.
+
+**Fixes**, all common in real code:
+
+```js
+// 1. An arrow function: arrows have no `this` of their own and use the surrounding one
+button.addEventListener('click', () => this.increment())
+
+// 2. Bind once in the constructor
+this.increment = this.increment.bind(this)
+
+// 3. A class field holding an arrow function
+increment = () => { this.count += 1; this.render() }
+```
+
+Knowing *why* matters more than the fix: the same bug appears with `setTimeout(this.tick, 1000)` and `array.map(this.format)`.
+--- task
+Bug report: *"The + buttons don't count. Reset doesn't work either. There are errors in the console."*
+
+Find why, and fix the `Counter` class so both counters work independently: each `+` adds one to its own counter, and each `Reset` sets its own counter back to 0.
+--- starter
+<div class="counter" id="a">
+  <span class="count">0</span>
+  <button class="inc">+</button>
+  <button class="reset">Reset</button>
+</div>
+<div class="counter" id="b">
+  <span class="count">0</span>
+  <button class="inc">+</button>
+  <button class="reset">Reset</button>
+</div>
+
+<script>
+  class Counter {
+    constructor(root) {
+      this.count = 0
+      this.output = root.querySelector('.count')
+      root.querySelector('.inc').addEventListener('click', this.increment)
+      root.querySelector('.reset').addEventListener('click', this.reset)
+    }
+    increment() {
+      this.count += 1
+      this.render()
+    }
+    reset() {
+      this.count = 0
+      this.render()
+    }
+    render() {
+      this.output.textContent = this.count
+    }
+  }
+
+  new Counter(document.querySelector('#a'))
+  new Counter(document.querySelector('#b'))
+</script>
+--- solution
+<div class="counter" id="a">
+  <span class="count">0</span>
+  <button class="inc">+</button>
+  <button class="reset">Reset</button>
+</div>
+<div class="counter" id="b">
+  <span class="count">0</span>
+  <button class="inc">+</button>
+  <button class="reset">Reset</button>
+</div>
+
+<script>
+  class Counter {
+    constructor(root) {
+      this.count = 0
+      this.output = root.querySelector('.count')
+      root.querySelector('.inc').addEventListener('click', () => this.increment())
+      root.querySelector('.reset').addEventListener('click', () => this.reset())
+    }
+    increment() {
+      this.count += 1
+      this.render()
+    }
+    reset() {
+      this.count = 0
+      this.render()
+    }
+    render() {
+      this.output.textContent = this.count
+    }
+  }
+
+  new Counter(document.querySelector('#a'))
+  new Counter(document.querySelector('#b'))
+</script>
+--- hint
+Add `console.log(this)` as the first line of `increment` and click +. What is `this`?
+--- hint
+Wrap each method in an arrow function when you pass it: `() => this.increment()`.
+--- check dom | + counts
+click #a .inc
+click #a .inc
+#a .count text == 2
+--- check dom | The counters are independent
+click #a .inc
+click #b .inc
+click #b .inc
+click #b .inc
+#a .count text == 1
+#b .count text == 3
+--- check dom | Reset goes back to 0, for its own counter only
+click #a .inc
+click #b .inc
+click #a .reset
+#a .count text == 0
+#b .count text == 1
+
+=== web3-09 | Debugging: stale closures
+--- teach
+A function remembers the variables around it where it was created — that is a **closure**. It remembers the *variable*, not the value it had at the time, and that difference causes two famous bugs.
+
+**Bug 1: one shared loop variable.** `var` is scoped to the whole function (or script), so every handler created in this loop shares *one* `i`:
+
+```js
+for (var i = 0; i < buttons.length; i++) {
+  buttons[i].addEventListener('click', () => pick(sizes[i]))
+}
+```
+
+By the time anyone clicks, the loop has finished and `i` is `3`, so `sizes[3]` is `undefined` for every button. With `let`, each iteration gets a fresh `i`, and each handler remembers its own. (`buttons.forEach((b, i) => …)` also gives each its own.)
+
+**Bug 2: a snapshot that goes stale.** A value copied into a variable once, at setup, never changes when the thing it came from does:
+
+```js
+let selected = 'S'
+const price = prices[selected]    // computed once, now, for 'S'
+function showPrice() {
+  priceEl.textContent = '$' + price   // always the price of S
+}
+```
+
+The fix is to compute from the current state at the moment you need it: `prices[selected]` inside `showPrice`.
+
+**Method:** log inside the handler, at click time — `console.log(i, selected, price)`. Stale-closure bugs are obvious once you see the values *when the code runs* rather than imagining them from when it was written.
+--- task
+Bug report: *"Clicking S, M or L always says 'Selected: undefined', and the price is stuck at $10."*
+
+Fix both bugs so clicking a size shows `Selected: M` (etc.) in `#picked` and that size's price, like `$12`, in `#price`.
+--- starter
+<div id="sizes">
+  <button>S</button>
+  <button>M</button>
+  <button>L</button>
+</div>
+<p id="picked">Selected: S</p>
+<p id="price">$10</p>
+
+<script>
+  var sizes = ['S', 'M', 'L']
+  var prices = { S: 10, M: 12, L: 15 }
+  var selected = 'S'
+  var price = prices[selected]
+
+  function showPrice() {
+    document.querySelector('#price').textContent = '$' + price
+  }
+
+  var buttons = document.querySelectorAll('#sizes button')
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function () {
+      selected = sizes[i]
+      document.querySelector('#picked').textContent = 'Selected: ' + selected
+      showPrice()
+    })
+  }
+</script>
+--- solution
+<div id="sizes">
+  <button>S</button>
+  <button>M</button>
+  <button>L</button>
+</div>
+<p id="picked">Selected: S</p>
+<p id="price">$10</p>
+
+<script>
+  const sizes = ['S', 'M', 'L']
+  const prices = { S: 10, M: 12, L: 15 }
+  let selected = 'S'
+
+  function showPrice() {
+    document.querySelector('#price').textContent = '$' + prices[selected]
+  }
+
+  const buttons = document.querySelectorAll('#sizes button')
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function () {
+      selected = sizes[i]
+      document.querySelector('#picked').textContent = 'Selected: ' + selected
+      showPrice()
+    })
+  }
+</script>
+--- hint
+Log `i` inside the click handler. Why is it the same number for every button?
+--- hint
+Two changes: `let` instead of `var` for the loop counter, and look the price up (`prices[selected]`) inside `showPrice` instead of using the value saved at the start.
+--- check dom | M shows M and its price
+click #sizes button:nth-child(2)
+#picked text == Selected: M
+#price text == $12
+--- check dom | L shows L and its price
+click #sizes button:nth-child(3)
+#picked text == Selected: L
+#price text == $15
+--- check dom | Going back to S works too
+click #sizes button:nth-child(3)
+click #sizes button:nth-child(1)
+#picked text == Selected: S
+#price text == $10
+
+=== web3-10 | A tabs widget
+--- teach
+Tabs are a widget with a precise, well-known contract, so screen reader users know how to drive them. The roles:
+
+```html
+<div role="tablist" aria-label="Mission">
+  <button role="tab" id="tab-1" aria-controls="panel-1" aria-selected="true" tabindex="0">Crew</button>
+  <button role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false" tabindex="-1">Rocket</button>
+</div>
+<div role="tabpanel" id="panel-1" aria-labelledby="tab-1">…</div>
+<div role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden>…</div>
+```
+
+- The selected tab has `aria-selected="true"`, the others `"false"`; only the selected tab's panel is visible.
+- **Roving tabindex:** only the selected tab has `tabindex="0"`; the others have `-1`. So Tab moves *into* the tab list once and then on to the panel, rather than through every tab.
+- **Arrow keys** move between tabs: Right to the next, Left to the previous, wrapping around; Home to the first, End to the last. Moving also selects, and moves focus.
+
+Write it as one function that selects a tab by index and updates *everything* — that is the state-and-render idea on a small scale:
+
+```js
+function select(index) {
+  tabs.forEach((tab, i) => {
+    const on = i === index
+    tab.setAttribute('aria-selected', String(on))
+    tab.tabIndex = on ? 0 : -1
+    panels[i].hidden = !on
+  })
+}
+```
+
+Three pieces of JavaScript in the solution: `[...document.querySelectorAll('[role=tab]')]` copies the page's list into a real array, so `map` works on it; `forEach((tab, i) => …)` runs once per item, with its index; and `key in object` is true when the object has that key.
+
+Keys arrive as `keydown` events; `event.key` is `'ArrowRight'`, `'ArrowLeft'`, `'Home'`, `'End'`. Wrapping is modular arithmetic: `(i + 1) % n` for next, `(i - 1 + n) % n` for previous.
+--- task
+Finish the tabs:
+
+- `select(index)` sets `aria-selected`, the roving `tabindex` (0 on the selected tab, -1 on the others) and `hidden` on the panels; select the first tab when the page loads
+- clicking a tab selects it
+- on a tab, ArrowRight / ArrowLeft select the next / previous tab (wrapping around), Home the first and End the last — and move focus to the newly selected tab
+--- starter
+<div role="tablist" aria-label="Mission">
+  <button role="tab" id="tab-1" aria-controls="panel-1">Crew</button>
+  <button role="tab" id="tab-2" aria-controls="panel-2">Rocket</button>
+  <button role="tab" id="tab-3" aria-controls="panel-3">Route</button>
+</div>
+<div role="tabpanel" id="panel-1" aria-labelledby="tab-1">Four astronauts, one cat.</div>
+<div role="tabpanel" id="panel-2" aria-labelledby="tab-2">Two stages, nine engines.</div>
+<div role="tabpanel" id="panel-3" aria-labelledby="tab-3">Earth, then the Moon, then home.</div>
+
+<script>
+  const tabs = [...document.querySelectorAll('[role=tab]')]
+  const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')))
+</script>
+--- solution
+<div role="tablist" aria-label="Mission">
+  <button role="tab" id="tab-1" aria-controls="panel-1">Crew</button>
+  <button role="tab" id="tab-2" aria-controls="panel-2">Rocket</button>
+  <button role="tab" id="tab-3" aria-controls="panel-3">Route</button>
+</div>
+<div role="tabpanel" id="panel-1" aria-labelledby="tab-1">Four astronauts, one cat.</div>
+<div role="tabpanel" id="panel-2" aria-labelledby="tab-2">Two stages, nine engines.</div>
+<div role="tabpanel" id="panel-3" aria-labelledby="tab-3">Earth, then the Moon, then home.</div>
+
+<script>
+  const tabs = [...document.querySelectorAll('[role=tab]')]
+  const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')))
+
+  function select(index, focus = false) {
+    tabs.forEach((tab, i) => {
+      const on = i === index
+      tab.setAttribute('aria-selected', String(on))
+      tab.tabIndex = on ? 0 : -1
+      panels[i].hidden = !on
+    })
+    if (focus) tabs[index].focus()
+  }
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(i))
+    tab.addEventListener('keydown', (event) => {
+      const n = tabs.length
+      const moves = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }
+      if (!(event.key in moves)) return
+      event.preventDefault()
+      select(moves[event.key], true)
+    })
+  })
+
+  select(0)
+</script>
+--- hint
+Write `select(index, focus)` first and call `select(0)` at the end; check the first panel shows and the others are hidden.
+--- hint
+In each tab's `keydown` handler, map the key to a new index — `{ ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }` — then `select(newIndex, true)`.
+--- check dom | The first tab starts selected, with only its panel showing
+#tab-1 attr aria-selected == true
+#tab-2 attr aria-selected == false
+#panel-1:not([hidden]) exists
+#panel-2[hidden] exists
+#panel-3[hidden] exists
+--- check dom | Clicking a tab selects it and shows its panel
+click #tab-2
+#tab-2 attr aria-selected == true
+#tab-1 attr aria-selected == false
+#panel-2:not([hidden]) exists
+#panel-1[hidden] exists
+--- check dom | Roving tabindex follows the selection
+#tab-1 attr tabindex == 0
+#tab-2 attr tabindex == -1
+click #tab-3
+#tab-3 attr tabindex == 0
+#tab-1 attr tabindex == -1
+--- check dom | ArrowRight selects and focuses the next tab
+press #tab-1 ArrowRight
+#tab-2 attr aria-selected == true
+#tab-2 focused
+#panel-2:not([hidden]) exists
+--- check dom | Arrows wrap around at both ends
+press #tab-1 ArrowLeft
+#tab-3 attr aria-selected == true
+#tab-3 focused
+press #tab-3 ArrowRight
+#tab-1 attr aria-selected == true
+--- check dom | Home and End jump to the ends
+press #tab-1 End
+#tab-3 attr aria-selected == true
+press #tab-3 Home
+#tab-1 attr aria-selected == true
+#tab-1 focused
+
+=== web3-11 | A modal dialog
+--- teach
+A **modal** dialog blocks the rest of the page until it is answered. Building one from `div`s means trapping focus, handling Escape, hiding the rest of the page from screen readers and restoring focus afterwards — easy to get subtly wrong. The `<dialog>` element does most of it for you:
+
+```html
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">Delete this mission?</h2>
+  <form method="dialog">
+    <button value="cancel">Cancel</button>
+    <button value="delete">Delete</button>
+  </form>
+</dialog>
+```
+
+- `dialog.showModal()` opens it as a modal: the rest of the page becomes inert, focus moves inside, and Escape closes it.
+- A `<form method="dialog">` inside closes the dialog when submitted, and sets `dialog.returnValue` to the `value` of the button that was pressed. No JavaScript needed for the buttons.
+- `dialog.close(value)` closes it from code; the dialog fires a `close` event however it was closed.
+- When it is open it has the `open` attribute, which CSS and tests can see.
+
+So the logic lives in one place — the `close` handler reads `returnValue` and acts.
+
+**Two things to get right yourself.**
+
+1. `returnValue` **keeps its old value**. If one opening ended with "delete" and the next is dismissed without a button (Escape, or your own × button calling `close()`), `returnValue` still says "delete". Reset it to `''` each time you open.
+2. **Put focus back** on the control that opened the dialog when it closes, so keyboard users continue where they were.
+
+The `close` event is fired just after the dialog closes (as a separate task), so code in the handler runs a moment later, not inside the button's click.
+--- task
+Wire up the confirmation dialog:
+
+- `#delete` opens `#confirm` as a modal, with its `returnValue` reset to `''`
+- the dialog's Cancel and Delete buttons already close it through `method="dialog"`; the `#x` button must close it too, without a choice
+- when the dialog closes, set `#result` to `Deleted` if its `returnValue` is `delete`, otherwise `Kept` — and move focus back to `#delete`
+--- starter
+<button id="delete">Delete mission</button>
+<p id="result"></p>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <button id="x" type="button" aria-label="Close">×</button>
+  <h2 id="confirm-title">Delete this mission?</h2>
+  <p>This can't be undone.</p>
+  <form method="dialog">
+    <button id="no" value="cancel">Cancel</button>
+    <button id="yes" value="delete">Delete</button>
+  </form>
+</dialog>
+
+<script>
+  const openButton = document.querySelector('#delete')
+  const dialog = document.querySelector('#confirm')
+  const result = document.querySelector('#result')
+</script>
+--- solution
+<button id="delete">Delete mission</button>
+<p id="result"></p>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <button id="x" type="button" aria-label="Close">×</button>
+  <h2 id="confirm-title">Delete this mission?</h2>
+  <p>This can't be undone.</p>
+  <form method="dialog">
+    <button id="no" value="cancel">Cancel</button>
+    <button id="yes" value="delete">Delete</button>
+  </form>
+</dialog>
+
+<script>
+  const openButton = document.querySelector('#delete')
+  const dialog = document.querySelector('#confirm')
+  const result = document.querySelector('#result')
+
+  openButton.addEventListener('click', () => {
+    dialog.returnValue = ''
+    dialog.showModal()
+  })
+
+  document.querySelector('#x').addEventListener('click', () => dialog.close())
+
+  dialog.addEventListener('close', () => {
+    result.textContent = dialog.returnValue === 'delete' ? 'Deleted' : 'Kept'
+    openButton.focus()
+  })
+</script>
+--- hint
+`openButton.addEventListener('click', () => { dialog.returnValue = ''; dialog.showModal() })`.
+--- hint
+Listen for the dialog's `close` event: read `dialog.returnValue`, set the result, then `openButton.focus()`.
+--- check dom | The dialog starts closed and opens as asked
+#confirm[open] missing
+click #delete
+#confirm[open] exists
+--- check dom | Delete closes it and reports Deleted
+click #delete
+click #yes
+wait 250
+#confirm[open] missing
+#result text == Deleted
+--- check dom | Cancel reports Kept
+click #delete
+click #no
+wait 250
+#result text == Kept
+--- check dom | The × closes it, and an old answer is not reused
+click #delete
+click #yes
+wait 250
+click #delete
+click #x
+wait 250
+#confirm[open] missing
+#result text == Kept
+--- check dom | Focus returns to the Delete mission button
+click #delete
+click #no
+wait 250
+#delete focused
+
+=== web3-12 | Sorting and filtering a table
+--- teach
+A sortable, filterable table is a small data app: some rows, and a view of them that depends on choices the user makes. Keep those apart.
+
+```js
+const state = { sortKey: null, dir: 'asc', query: '' }
+
+function visibleRows() {
+  const q = state.query.trim().toLowerCase()
+  const rows = planets.filter((p) => p.name.toLowerCase().includes(q))
+  if (!state.sortKey) return rows
+  const sign = state.dir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => compare(a[state.sortKey], b[state.sortKey]) * sign)
+}
+```
+
+The data never changes; `visibleRows()` *derives* what to show from the data plus the state, and `render()` draws it. Filtering and sorting then combine for free.
+
+**Comparing correctly.** `array.sort()` with no comparator compares as **strings**: `[1, 146, 16, 2].sort()` gives `[1, 146, 16, 2]` — "146" comes before "16" alphabetically. For numbers use `a - b`. For text use `a.localeCompare(b)`, which handles case and accents properly. A small helper covers both:
+
+```js
+const compare = (a, b) => (typeof a === 'number' ? a - b : String(a).localeCompare(String(b)))
+```
+
+`sort` also changes the array in place, which is why the code above sorts a copy (`[...rows]`).
+
+**Accessible sorting.** Put a `button` inside each sortable header, and set `aria-sort="ascending"`, `"descending"` or `"none"` on the `th`, so a screen reader announces how the table is sorted.
+
+**The interaction:** clicking a new column sorts it ascending; clicking the same column again flips the direction.
+--- task
+Make the planets table sortable and filterable:
+
+- clicking `#sort-name` or `#sort-moons` sorts by that column, ascending; clicking the same one again flips to descending
+- the sorted column's `th` gets `aria-sort` `ascending` or `descending`; the other gets `none`
+- typing in `#filter` shows only planets whose name contains the text (ignoring case), still in the chosen order
+- `#shown` says `Showing 2 of 6` (etc.)
+--- starter
+<label for="filter">Filter</label>
+<input id="filter" autocomplete="off">
+<p id="shown"></p>
+<table>
+  <thead>
+    <tr>
+      <th id="th-name" aria-sort="none"><button id="sort-name">Planet</button></th>
+      <th id="th-moons" aria-sort="none"><button id="sort-moons">Moons</button></th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script>
+  const planets = [
+    { name: 'Mars', moons: 2 },
+    { name: 'Jupiter', moons: 95 },
+    { name: 'Earth', moons: 1 },
+    { name: 'Saturn', moons: 146 },
+    { name: 'Neptune', moons: 16 },
+    { name: 'Uranus', moons: 28 },
+  ]
+  const tbody = document.querySelector('#rows')
+
+  function render() {
+    tbody.replaceChildren(
+      ...planets.map((p) => {
+        const tr = document.createElement('tr')
+        for (const value of [p.name, p.moons]) {
+          const td = document.createElement('td')
+          td.textContent = value
+          tr.append(td)
+        }
+        return tr
+      }),
+    )
+  }
+
+  render()
+</script>
+--- solution
+<label for="filter">Filter</label>
+<input id="filter" autocomplete="off">
+<p id="shown"></p>
+<table>
+  <thead>
+    <tr>
+      <th id="th-name" aria-sort="none"><button id="sort-name">Planet</button></th>
+      <th id="th-moons" aria-sort="none"><button id="sort-moons">Moons</button></th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script>
+  const planets = [
+    { name: 'Mars', moons: 2 },
+    { name: 'Jupiter', moons: 95 },
+    { name: 'Earth', moons: 1 },
+    { name: 'Saturn', moons: 146 },
+    { name: 'Neptune', moons: 16 },
+    { name: 'Uranus', moons: 28 },
+  ]
+  const tbody = document.querySelector('#rows')
+  const state = { sortKey: null, dir: 'asc', query: '' }
+
+  const compare = (a, b) => (typeof a === 'number' ? a - b : String(a).localeCompare(String(b)))
+
+  function visibleRows() {
+    const q = state.query.trim().toLowerCase()
+    const rows = planets.filter((p) => p.name.toLowerCase().includes(q))
+    if (!state.sortKey) return rows
+    const sign = state.dir === 'asc' ? 1 : -1
+    return [...rows].sort((a, b) => compare(a[state.sortKey], b[state.sortKey]) * sign)
+  }
+
+  function render() {
+    const rows = visibleRows()
+    tbody.replaceChildren(
+      ...rows.map((p) => {
+        const tr = document.createElement('tr')
+        for (const value of [p.name, p.moons]) {
+          const td = document.createElement('td')
+          td.textContent = value
+          tr.append(td)
+        }
+        return tr
+      }),
+    )
+    for (const key of ['name', 'moons']) {
+      const sort = state.sortKey === key ? (state.dir === 'asc' ? 'ascending' : 'descending') : 'none'
+      document.querySelector(`#th-${key}`).setAttribute('aria-sort', sort)
+    }
+    document.querySelector('#shown').textContent = `Showing ${rows.length} of ${planets.length}`
+  }
+
+  function sortBy(key) {
+    if (state.sortKey === key) state.dir = state.dir === 'asc' ? 'desc' : 'asc'
+    else {
+      state.sortKey = key
+      state.dir = 'asc'
+    }
+    render()
+  }
+
+  document.querySelector('#sort-name').addEventListener('click', () => sortBy('name'))
+  document.querySelector('#sort-moons').addEventListener('click', () => sortBy('moons'))
+  document.querySelector('#filter').addEventListener('input', (event) => {
+    state.query = event.target.value
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add `const state = { sortKey: null, dir: 'asc', query: '' }` and a `visibleRows()` that filters then sorts a copy; make `render()` draw `visibleRows()` instead of `planets`.
+--- hint
+Sort numbers with `a - b`, not the default sort. In the click handler: same key → flip `dir`; new key → set it and `dir = 'asc'`.
+--- check dom | Starts unsorted, all six showing
+#rows tr count == 6
+#rows tr:first-child td:first-child text == Mars
+#shown text == Showing 6 of 6
+--- check dom | Moons sort as numbers, ascending
+click #sort-moons
+#rows tr:nth-child(1) td:first-child text == Earth
+#rows tr:nth-child(2) td:first-child text == Mars
+#rows tr:nth-child(3) td:first-child text == Neptune
+#rows tr:last-child td:first-child text == Saturn
+#th-moons attr aria-sort == ascending
+--- check dom | A second click flips to descending
+click #sort-moons
+click #sort-moons
+#rows tr:first-child td:first-child text == Saturn
+#th-moons attr aria-sort == descending
+--- check dom | Another column starts ascending and resets the first header
+click #sort-moons
+click #sort-name
+#rows tr:first-child td:first-child text == Earth
+#rows tr:last-child td:first-child text == Uranus
+#th-name attr aria-sort == ascending
+#th-moons attr aria-sort == none
+--- check dom | The filter ignores case and updates the count
+type #filter UR
+#rows tr count == 2
+#shown text == Showing 2 of 6
+--- check dom | Filtering and sorting combine
+type #filter ur
+click #sort-moons
+#rows tr:first-child td:first-child text == Uranus
+#rows tr:last-child td:first-child text == Saturn
+
+=== web3-13 | Design: separate data, rendering and events
+--- teach
+Here is a smell you will meet in almost every older codebase: **the page is the database.** A handler reads a number out of a `span` with `parseInt`, adds one, writes it back, then loops over the whole page to recompute a total from the text of other spans. It works — until someone changes the markup, or formats the number as `1,024`, or you need the same number somewhere else.
+
+The shape that scales has three separate parts:
+
+1. **Data** — a state object, the single source of truth. Plain values: `{ options: [{ id: 'mars', name: 'Mars', votes: 0 }, …] }`.
+2. **Rendering** — `render()` draws everything from the state. Totals and "who's leading" are *computed* from the state inside it, never stored separately and never read back from the page.
+3. **Events** — handlers translate what the user did into a change of state (`vote('mars')`), then call `render()`. With delegation, one listener covers the whole list.
+
+```js
+function vote(id) {
+  state.options.find((o) => o.id === id).votes += 1
+  render()
+}
+
+list.addEventListener('click', (event) => {
+  const li = event.target.closest('li')
+  if (event.target.closest('.vote') && li) vote(li.dataset.id)
+})
+```
+
+You know the refactor worked when a new feature is small. A "Reset" button in the old version means another block of DOM-poking; in the new one it is two lines: set every `votes` to 0, call `render()`.
+
+Refactor safely: the page must behave exactly as before at every step. Keep the checks in mind — same ids, same classes, same text.
+--- task
+Refactor the voting widget, keeping its behaviour:
+
+- a `const state` holds the options and their votes; nothing reads numbers back out of the page (`parseInt` and friends must go)
+- a `function render()` builds `#options` from the state (each `li` with `data-id`, a `.name`, a `.votes` count and a `.vote` button), and sets `#total` (`Total: 3`) and `#leader` (`Leader: Moon`, or `Leader: none` with no votes; on a tie the option listed first leads); the leading `li` gets the class `leading`
+- one delegated click listener on `#options`
+
+Then add a `#reset` button (text `Reset`) that sets every vote back to 0.
+--- starter
+<ul id="options">
+  <li data-id="mars"><span class="name">Mars</span> <span class="votes">0</span> <button class="vote">Vote</button></li>
+  <li data-id="moon"><span class="name">Moon</span> <span class="votes">0</span> <button class="vote">Vote</button></li>
+  <li data-id="europa"><span class="name">Europa</span> <span class="votes">0</span> <button class="vote">Vote</button></li>
+</ul>
+<p id="total">Total: 0</p>
+<p id="leader">Leader: none</p>
+
+<script>
+  document.querySelectorAll('.vote').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var span = btn.parentNode.querySelector('.votes')
+      span.textContent = parseInt(span.textContent) + 1
+
+      var total = 0
+      document.querySelectorAll('.votes').forEach(function (s) {
+        total += parseInt(s.textContent)
+      })
+      document.getElementById('total').textContent = 'Total: ' + total
+
+      var best = null
+      var bestVotes = 0
+      document.querySelectorAll('#options li').forEach(function (li) {
+        var v = parseInt(li.querySelector('.votes').textContent)
+        li.classList.remove('leading')
+        if (v > bestVotes) {
+          best = li
+          bestVotes = v
+        }
+      })
+      if (best) {
+        best.classList.add('leading')
+        document.getElementById('leader').textContent = 'Leader: ' + best.querySelector('.name').textContent
+      }
+    })
+  })
+</script>
+--- solution
+<ul id="options"></ul>
+<p id="total"></p>
+<p id="leader"></p>
+<button id="reset">Reset</button>
+
+<script>
+  const state = {
+    options: [
+      { id: 'mars', name: 'Mars', votes: 0 },
+      { id: 'moon', name: 'Moon', votes: 0 },
+      { id: 'europa', name: 'Europa', votes: 0 },
+    ],
+  }
+
+  const list = document.querySelector('#options')
+
+  function leader() {
+    let best = null
+    for (const option of state.options) {
+      if (option.votes > 0 && (!best || option.votes > best.votes)) best = option
+    }
+    return best
+  }
+
+  function render() {
+    const top = leader()
+    list.replaceChildren(
+      ...state.options.map((option) => {
+        const li = document.createElement('li')
+        li.dataset.id = option.id
+        li.classList.toggle('leading', option === top)
+        const name = document.createElement('span')
+        name.className = 'name'
+        name.textContent = option.name
+        const votes = document.createElement('span')
+        votes.className = 'votes'
+        votes.textContent = option.votes
+        const button = document.createElement('button')
+        button.className = 'vote'
+        button.textContent = 'Vote'
+        li.append(name, ' ', votes, ' ', button)
+        return li
+      }),
+    )
+    const total = state.options.reduce((sum, option) => sum + option.votes, 0)
+    document.querySelector('#total').textContent = `Total: ${total}`
+    document.querySelector('#leader').textContent = `Leader: ${top ? top.name : 'none'}`
+  }
+
+  function vote(id) {
+    state.options.find((option) => option.id === id).votes += 1
+    render()
+  }
+
+  function reset() {
+    for (const option of state.options) option.votes = 0
+    render()
+  }
+
+  list.addEventListener('click', (event) => {
+    const li = event.target.closest('li')
+    if (li && event.target.closest('.vote')) vote(li.dataset.id)
+  })
+  document.querySelector('#reset').addEventListener('click', reset)
+
+  render()
+</script>
+--- hint
+Start with the data: `const state = { options: [{ id: 'mars', name: 'Mars', votes: 0 }, …] }`. Then write `render()` so that, with no votes, it draws exactly what the starter's HTML shows.
+--- hint
+Compute the total with `reduce` and the leader with a loop over `state.options` — only a strictly greater count takes the lead, so the first of a tie wins. Handlers call `vote(id)` or `reset()`, and both end with `render()`.
+--- check dom | Three options are drawn from the state
+#options li count == 3
+#options li:first-child .name text == Mars
+#options li:first-child attr data-id == mars
+#total text == Total: 0
+#leader text == Leader: none
+--- check dom | Votes count, and the leader is computed
+click #options li:nth-child(2) .vote
+click #options li:nth-child(2) .vote
+click #options li:nth-child(1) .vote
+#options li:nth-child(2) .votes text == 2
+#total text == Total: 3
+#leader text == Leader: Moon
+#options li:nth-child(2) class leading
+#options li.leading count == 1
+--- check dom | On a tie the first listed leads
+click #options li:nth-child(3) .vote
+click #options li:nth-child(1) .vote
+#leader text == Leader: Mars
+--- check dom | Reset clears everything
+click #options li:nth-child(3) .vote
+click #reset
+#options li:nth-child(3) .votes text == 0
+#total text == Total: 0
+#leader text == Leader: none
+#options li.leading missing
+--- check source | The data lives in one state object
+const state\s*=
+--- check source | One render function draws the page
+function render\s*\(
+--- check source absent | Numbers are never read back out of the page
+parseInt|parseFloat|Number\(
+--- check source absent | No listener per button (two listeners at most)
+addEventListener[\s\S]*addEventListener[\s\S]*addEventListener
+
+=== web3-14 | Problem: an autocomplete you can drive with the keyboard
+--- teach
+An autocomplete (a *combobox*, in ARIA terms) is a text field with a list of suggestions. It is a good test of everything in this course, because the hard part is not the matching — it is the state.
+
+**Restate.** As you type, suggest up to five cities that *start with* the text. The arrow keys move a highlight through the suggestions; Enter picks the highlighted one; Escape closes the list; clicking a suggestion picks it too.
+
+**Find the state.** Only two facts: the current `suggestions` (an array) and the `active` index (`-1` for none). Everything on screen — which `li` is highlighted, the field's ARIA attributes — is drawn from those two by `render()`.
+
+**The keys, as state changes:**
+
+| Key       | Change                                                     |
+| --------- | ---------------------------------------------------------- |
+| ArrowDown | `active = (active + 1) % n` (from -1 this gives 0)         |
+| ArrowUp   | `active = active <= 0 ? n - 1 : active - 1`                |
+| Enter     | if `active >= 0`: put that city in the field, clear the list |
+| Escape    | clear the list                                             |
+
+Call `event.preventDefault()` for the keys you handle, so ArrowUp doesn't also move the text cursor.
+
+**The ARIA contract.** Focus stays in the text field the whole time; the highlight is *virtual*. So the field tells assistive technology which option is highlighted with `aria-activedescendant="opt-2"` (the highlighted `li`'s id), and whether the list is open with `aria-expanded`. Each `li` has `role="option"` and `aria-selected="true"` when highlighted.
+
+**Edge cases:** an empty field suggests nothing; no match means no list (and `aria-expanded="false"`); arrows do nothing with an empty list; a new keystroke resets the highlight.
+--- task
+Build the autocomplete on `#city` and `#suggestions`:
+
+- on input: up to 5 cities starting with the trimmed text (ignoring case), in list order, as `li`s with `role="option"` and ids `opt-0`, `opt-1`, …; nothing for an empty field; the highlight resets
+- `#city` has `aria-expanded` `true` when there are suggestions, `false` otherwise
+- ArrowDown / ArrowUp move the highlight, wrapping around: the highlighted `li` has the class `active` and `aria-selected="true"`, and `#city`'s `aria-activedescendant` is its id
+- Enter picks the highlighted city (it goes in the field and the list empties); Escape empties the list; clicking a suggestion picks it
+--- starter
+<label for="city">Destination city</label>
+<input id="city" role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" autocomplete="off">
+<ul id="suggestions" role="listbox"></ul>
+
+<script>
+  const cities = [
+    'Madrid', 'Manchester', 'Marseille', 'Melbourne', 'Mumbai', 'Munich',
+    'Lagos', 'Lima', 'Lisbon', 'London', 'Los Angeles', 'Osaka', 'Oslo', 'Ottawa',
+  ]
+  const input = document.querySelector('#city')
+  const list = document.querySelector('#suggestions')
+</script>
+--- solution
+<label for="city">Destination city</label>
+<input id="city" role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false" autocomplete="off">
+<ul id="suggestions" role="listbox"></ul>
+
+<script>
+  const cities = [
+    'Madrid', 'Manchester', 'Marseille', 'Melbourne', 'Mumbai', 'Munich',
+    'Lagos', 'Lima', 'Lisbon', 'London', 'Los Angeles', 'Osaka', 'Oslo', 'Ottawa',
+  ]
+  const input = document.querySelector('#city')
+  const list = document.querySelector('#suggestions')
+  let suggestions = []
+  let active = -1
+
+  function render() {
+    list.replaceChildren(
+      ...suggestions.map((city, i) => {
+        const li = document.createElement('li')
+        li.id = `opt-${i}`
+        li.setAttribute('role', 'option')
+        li.textContent = city
+        li.classList.toggle('active', i === active)
+        li.setAttribute('aria-selected', String(i === active))
+        return li
+      }),
+    )
+    input.setAttribute('aria-expanded', String(suggestions.length > 0))
+    if (active >= 0) input.setAttribute('aria-activedescendant', `opt-${active}`)
+    else input.removeAttribute('aria-activedescendant')
+  }
+
+  function pick(city) {
+    input.value = city
+    suggestions = []
+    active = -1
+    render()
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase()
+    suggestions = q ? cities.filter((c) => c.toLowerCase().startsWith(q)).slice(0, 5) : []
+    active = -1
+    render()
+  })
+
+  input.addEventListener('keydown', (event) => {
+    const n = suggestions.length
+    if (event.key === 'Escape') {
+      suggestions = []
+      active = -1
+    } else if (event.key === 'ArrowDown' && n) {
+      active = (active + 1) % n
+    } else if (event.key === 'ArrowUp' && n) {
+      active = active <= 0 ? n - 1 : active - 1
+    } else if (event.key === 'Enter' && active >= 0) {
+      pick(suggestions[active])
+    } else {
+      return
+    }
+    event.preventDefault()
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const li = event.target.closest('li')
+    if (li) pick(li.textContent)
+  })
+</script>
+--- hint
+Keep two variables, `suggestions` and `active`, and one `render()` that draws the list and sets the field's `aria-expanded` and `aria-activedescendant` from them.
+--- hint
+The input handler recomputes `suggestions` with `filter(… startsWith …).slice(0, 5)` and sets `active = -1`. The keydown handler only changes `active` (or picks, or clears) and calls `render()`.
+--- check dom | Suggestions start with the text, at most five
+type #city m
+#suggestions li count == 5
+#suggestions li:first-child text == Madrid
+#city attr aria-expanded == true
+--- check dom | Case does not matter
+type #city LO
+#suggestions li count == 2
+#suggestions li:last-child text == Los Angeles
+--- check dom | ArrowDown highlights, and the field points at it
+type #city ma
+press #city ArrowDown
+#suggestions li:first-child class active
+#suggestions li:first-child attr aria-selected == true
+#city attr aria-activedescendant == opt-0
+--- check dom | The highlight moves and wraps around
+type #city ma
+press #city ArrowDown
+press #city ArrowDown
+press #city ArrowDown
+#suggestions li:nth-child(3) class active
+#suggestions li.active count == 1
+press #city ArrowDown
+#suggestions li:first-child class active
+--- check dom | ArrowUp from nothing goes to the last
+type #city ma
+press #city ArrowUp
+#suggestions li:last-child class active
+#city attr aria-activedescendant == opt-2
+--- check dom | Enter picks the highlighted city
+type #city ma
+press #city ArrowDown
+press #city ArrowDown
+press #city Enter
+#city value == Manchester
+#suggestions li count == 0
+#city attr aria-expanded == false
+--- check dom | Escape closes the list
+type #city lo
+press #city Escape
+#suggestions li count == 0
+--- check dom | Clicking a suggestion picks it
+type #city os
+click #suggestions li:nth-child(2)
+#city value == Oslo
+--- check dom | No match, no list
+type #city zz
+#suggestions li count == 0
+#city attr aria-expanded == false

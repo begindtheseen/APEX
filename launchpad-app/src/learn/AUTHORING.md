@@ -121,10 +121,20 @@ Both must be green before a course is done.
 - **Web** — her HTML (with `<style>` and `<script>`) in a sandboxed iframe
   800×600, no network, no `localStorage` (it throws), no `alert` flows. Each
   `dom` check gets a freshly loaded page. Steps: `click <sel>`, `type <sel>
-  <text>`, `<sel> exists|missing|count <op> N|text <op> v|value <op> v|attr
-  <name> <op> v|style <prop> <op> v|class <name>` (ops `==`, `!=`, `contains`,
-  `>=`, `<=`, `>`, `<`). Computed styles come back as the browser reports them
-  (`rgb(…)`, `px`).
+  <text>`, `press <sel> <Key>` (focuses it and sends the key: `Enter`,
+  `Escape`, `Tab`, `ArrowDown`, `Space`, `Ctrl+k`…; Enter/Space activate buttons and links
+  the way a real keyboard does), `wait <ms>` (up to 3000; the steps after it
+  run once the time has passed — for timers, debounce, `fetch`-free async
+  code), and assertions `<sel> exists|missing|focused|count <op> N|text <op>
+  v|value <op> v|attr <name> <op> v|style <prop> <op> v|class <name>` (ops
+  `==`, `!=`, `contains`, `>=`, `<=`, `>`, `<`). Computed styles come back as
+  the browser reports them (`rgb(…)`, `px`).
+  **Forms:** a sandboxed page cannot really submit, so the checker stands in:
+  a click on a submit button (or Enter in a text field) runs the browser's
+  validation (`required`, `pattern`, `type=email`… — an invalid form does not
+  submit) and then fires a cancelable `submit` event on the form, which her
+  script handles (`event.preventDefault()` and all). A `method="dialog"` form
+  closes its `<dialog>`. Nothing navigates.
 - **Terminal / Git** — the practice shell in `lib/shell.ts` (read `HELP` and
   the command list). The `starter` of a shell lesson is setup commands run
   silently before she starts; the `solution` is the commands she would type,

@@ -1,0 +1,1360 @@
+@track html
+@level intermediate
+@title Web · Intermediate
+@name Web, intermediate: real layouts, accessible forms and a page that responds
+@blurb Semantic, accessible HTML; CSS you can reason about (specificity, the box model, flexbox, grid, variables, media queries); and JavaScript that builds and updates the page from data and events.
+
+=== web2-01 | Semantic HTML and landmarks
+--- teach
+The basics built pages from headings, lists, a form, some CSS and a few lines of JavaScript. This course makes them real pages: markup that means something to everyone who uses it, CSS you can reason about instead of guess at, and JavaScript that builds and updates the page from data.
+
+A page built only from `div`s looks fine to someone who can see it and means nothing to everyone else. HTML has elements that say what a region *is*:
+
+| Element   | What it is                                              |
+| --------- | ------------------------------------------------------- |
+| `header`  | the introduction: logo, site name, often the navigation |
+| `nav`     | a block of main navigation links                         |
+| `main`    | the page's own content (exactly one per page)            |
+| `article` | a self-contained piece: a post, a card, a product        |
+| `section` | a themed part of something, usually with a heading       |
+| `aside`   | related but secondary: a sidebar, a note                 |
+| `footer`  | closing information: copyright, contact, small links     |
+
+```html
+<header>
+  <h1>Orbit News</h1>
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/launches">Launches</a></li>
+    </ul>
+  </nav>
+</header>
+<main>
+  <article>
+    <h2>Rocket lands upright</h2>
+    <p>The booster came back on its own.</p>
+  </article>
+</main>
+<footer>© Orbit News</footer>
+```
+
+These are called **landmarks**. A screen reader lists them, so someone can jump straight to "main" or "navigation" instead of listening to the whole page. Search engines use them to find the real content, and your CSS gets easier too: `nav a` says far more than `.div3 .inner a`.
+
+They look exactly like a `div` until you style them, so switching costs you nothing visually. Keep `div` for boxes that exist only for layout.
+--- task
+The starter is "div soup". Rewrite it with landmarks, keeping the text:
+
+- a `header` holding the `h1` and a `nav` (its three links in a `ul`)
+- one `main` holding the two stories, each an `article` with its `h2` and `p`
+- a `footer` for the copyright line
+
+When you are done there should be no `div` left on the page.
+--- starter
+<div class="header">
+  <h1>Orbit News</h1>
+  <div class="nav">
+    <a href="/">Home</a>
+    <a href="/launches">Launches</a>
+    <a href="/about">About</a>
+  </div>
+</div>
+<div class="content">
+  <div class="story">
+    <h2>Rocket lands upright</h2>
+    <p>The booster came back on its own.</p>
+  </div>
+  <div class="story">
+    <h2>New telescope opens its eyes</h2>
+    <p>First pictures arrive next week.</p>
+  </div>
+</div>
+<div class="footer">© Orbit News</div>
+--- solution
+<header>
+  <h1>Orbit News</h1>
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/launches">Launches</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+</header>
+<main>
+  <article>
+    <h2>Rocket lands upright</h2>
+    <p>The booster came back on its own.</p>
+  </article>
+  <article>
+    <h2>New telescope opens its eyes</h2>
+    <p>First pictures arrive next week.</p>
+  </article>
+</main>
+<footer>© Orbit News</footer>
+--- hint
+Each `div` maps to one landmark: the header div becomes `header`, the nav div `nav`, the content div `main`, each story an `article`.
+--- hint
+Inside `nav`, wrap the links as `<ul><li><a …>…</a></li>…</ul>`.
+--- check dom | The header holds the title and the navigation
+header h1 text == Orbit News
+header nav ul li a count == 3
+--- check dom | One main, with two articles
+main count == 1
+main article count == 2
+main article h2 count == 2
+--- check dom | A footer with the copyright
+footer text contains Orbit News
+--- check dom | No divs left
+div count == 0
+
+=== web2-02 | Accessible forms
+--- teach
+A form is only as good as its labels and its types. Four habits make one work for everybody:
+
+**1. Every field has a label.** `label for="x"` joined to `id="x"`. The label is read out with the field, and clicking it focuses the field (a bigger target on a phone). A `placeholder` is not a label: it vanishes as soon as someone types.
+
+**2. The right `type`.** `type="email"` brings up the @ keyboard on phones and checks the shape of the address; `type="number"` gives a numeric keypad and accepts `min`, `max` and `step`.
+
+**3. Say what is required.** `required` makes the browser refuse to submit an empty field.
+
+**4. Group related choices.** Radio buttons that answer one question share a `name` and sit in a `fieldset`, whose `legend` is the question:
+
+```html
+<fieldset>
+  <legend>Seat</legend>
+  <input type="radio" id="window" name="seat" value="window">
+  <label for="window">Window</label>
+  <input type="radio" id="aisle" name="seat" value="aisle">
+  <label for="aisle">Aisle</label>
+</fieldset>
+```
+
+The browser tracks whether each field is currently valid, and CSS can see it: `input:invalid` matches a required field that is empty, an email field holding `not-an-email`, or a number below its `min`. That same state is what stops the form submitting — you get validation without writing any JavaScript.
+--- task
+Build a "Join the crew" form:
+
+- a label `Email` joined to an `input` with `id="email"`, `type="email"`, required
+- a label `Age` joined to an `input` with `id="age"`, `type="number"`, `min="16"` and `max="99"`
+- a `fieldset` with the legend `Role` and three radio buttons named `role` (Pilot, Engineer, Medic), each with its own label
+- a button that says `Apply`
+--- starter
+<h1>Join the crew</h1>
+<form>
+  <input placeholder="Email">
+  <input placeholder="Age">
+  <button>Apply</button>
+</form>
+--- solution
+<h1>Join the crew</h1>
+<form>
+  <label for="email">Email</label>
+  <input id="email" type="email" required>
+
+  <label for="age">Age</label>
+  <input id="age" type="number" min="16" max="99">
+
+  <fieldset>
+    <legend>Role</legend>
+    <input type="radio" id="pilot" name="role" value="pilot">
+    <label for="pilot">Pilot</label>
+    <input type="radio" id="engineer" name="role" value="engineer">
+    <label for="engineer">Engineer</label>
+    <input type="radio" id="medic" name="role" value="medic">
+    <label for="medic">Medic</label>
+  </fieldset>
+
+  <button>Apply</button>
+</form>
+--- hint
+Each field is a pair: `<label for="email">Email</label>` then `<input id="email" …>`.
+--- hint
+The radios all get `name="role"`, each its own `id`, and each a `label for` that id — all inside `<fieldset><legend>Role</legend> … </fieldset>`.
+--- check dom | Email has a label and is an email field
+label[for=email] text == Email
+#email attr type == email
+--- check dom | An empty email is invalid (it is required)
+#email:invalid exists
+--- check dom | A badly shaped email is invalid, a good one valid
+type #email not-an-email
+#email:invalid exists
+type #email ada@example.com
+#email:valid exists
+--- check dom | Age is a number from 16 to 99
+label[for=age] text == Age
+type #age 12
+#age:invalid exists
+type #age 30
+#age:valid exists
+--- check dom | A Role fieldset with three labelled radios
+fieldset legend text == Role
+fieldset input[type=radio][name=role] count == 3
+fieldset label count == 3
+--- check dom | An Apply button
+button text == Apply
+
+=== web2-03 | Accessibility: images, headings and links
+--- teach
+Three quick wins cover a large share of real accessibility problems.
+
+**Alt text says what an image is *for*.** A logo's alt is the name it shows (`alt="Orbit News"`). A photo's alt describes what matters in it. A purely decorative image — a divider, a flourish — gets an *empty* alt, `alt=""`, which tells a screen reader to skip it. A *missing* alt is the worst case: many readers then read out the file name, "divider underscore final dot png".
+
+**Headings are an outline, not a font size.** One `h1`, then `h2` for sections, `h3` inside those. Never skip a level to get smaller text — screen reader users navigate by heading, and a jump from `h1` to `h4` looks like missing sections. If you want smaller text, that is CSS's job.
+
+**Link text makes sense on its own.** People skim a list of a page's links. Five links all saying "click here" are useless; `Read the launch report` says where it goes.
+
+```html
+<img src="logo.png" alt="Orbit News">
+<img src="swirl.png" alt="">                 <!-- decorative: skip it -->
+<h1>Launch week</h1>
+<h2>Monday</h2>                              <!-- not h4 -->
+<a href="/report">Read the launch report</a> <!-- not "click here" -->
+```
+--- task
+Fix the page's three problems:
+
+1. The logo (`img.logo`) needs alt text naming it: `Orbit News`. The divider (`img.divider`) is decorative: give it an empty alt.
+2. The two section headings are `h4`s under the `h1`. Make them `h2`s (keep their text).
+3. The link says `click here`. Change its text to `Read the launch report`.
+--- starter
+<img class="logo" src="logo.png">
+<h1>Launch week</h1>
+<img class="divider" src="divider.png">
+<h4>Monday</h4>
+<p>Fuelling starts at dawn.</p>
+<h4>Tuesday</h4>
+<p>Lift-off, weather permitting. For the details, <a id="report" href="/report">click here</a>.</p>
+--- solution
+<img class="logo" src="logo.png" alt="Orbit News">
+<h1>Launch week</h1>
+<img class="divider" src="divider.png" alt="">
+<h2>Monday</h2>
+<p>Fuelling starts at dawn.</p>
+<h2>Tuesday</h2>
+<p>Lift-off, weather permitting. <a id="report" href="/report">Read the launch report</a>.</p>
+--- hint
+`alt=""` (empty, but present) is different from no `alt` at all.
+--- hint
+Change `<h4>…</h4>` to `<h2>…</h2>` — the opening and the closing tag.
+--- check dom | The logo is named
+img.logo attr alt == Orbit News
+--- check dom | The divider is marked decorative
+img.divider attr alt ==
+--- check dom | No image without alt
+img:not([alt]) missing
+--- check dom | Headings go h1 then h2, none skipped
+h1 count == 1
+h2 count == 2
+h4 missing
+--- check dom | The link says where it goes
+#report text == Read the launch report
+
+=== web2-04 | Debugging: the button that isn't a button
+--- teach
+Bug reports about accessibility usually arrive as "it doesn't work for me", so debug them the way you debug anything:
+
+1. **Reproduce it the way they use it.** Put the mouse away. Press Tab to move through the page and Enter or Space to press things. Does focus ever land on the control? Does Enter do anything?
+2. **Inspect what the element really is.** In the browser's developer tools, look at the element and its accessibility panel. What role does it have? A `div` has none, so assistive technology announces it as plain text.
+3. **Check your assumptions.** "It looks like a button" is an assumption about CSS, not a fact about behaviour.
+4. **Fix the cause, not the symptom.** You *could* bolt `tabindex="0"`, `role="button"` and a `keydown` handler for Enter and Space onto the `div`. Or you could use the element that already does all of that: `<button>`. A real button is focusable, is announced as a button, and turns Enter and Space into a `click` — for free.
+
+```html
+<!-- looks like a button, is a div: no focus, no keyboard, no role -->
+<div class="btn" onclick="save()">Save</div>
+
+<!-- is a button -->
+<button class="btn" type="button" onclick="save()">Save</button>
+```
+
+When you swap, check the styling still holds: buttons come with a default border and font, which your class may need to reset.
+--- task
+Bug report: *"I can't save with the keyboard. Tab skips the Save button, and Enter does nothing. My screen reader just says 'Save'."*
+
+Reproduce it, then fix the cause: `#save` must be a real `button` that keyboard users can reach and press. Clicking must still show `Saved` in `#status`, and it must still look the same (the blue background from `.btn`).
+--- starter
+<style>
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #1e90ff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+</style>
+
+<h1>Settings</h1>
+<div id="save" class="btn">Save</div>
+<p id="status"></p>
+
+<script>
+  document.querySelector('#save').addEventListener('click', () => {
+    document.querySelector('#status').textContent = 'Saved'
+  })
+</script>
+--- solution
+<style>
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #1e90ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font: inherit;
+    cursor: pointer;
+  }
+</style>
+
+<h1>Settings</h1>
+<button id="save" class="btn" type="button">Save</button>
+<p id="status"></p>
+
+<script>
+  document.querySelector('#save').addEventListener('click', () => {
+    document.querySelector('#status').textContent = 'Saved'
+  })
+</script>
+--- hint
+Try it yourself first: which elements can receive keyboard focus without any extra attributes?
+--- hint
+Change the `div` to a `button` (keep its `id` and `class`). The script doesn't need to change at all.
+--- check dom | Save is a real button
+button#save exists
+--- check dom | Keyboard focus can reach it
+press #save Enter
+#save focused
+--- check dom | Enter saves
+press #save Enter
+#status text == Saved
+--- check dom | Space saves too
+press #save Space
+#status text == Saved
+--- check dom | A click still saves, and it still looks the same
+click #save
+#status text == Saved
+#save style background-color == rgb(30, 144, 255)
+
+=== web2-05 | Selectors and specificity
+--- teach
+When two rules set the same property on one element, the browser picks a winner. Knowing how is the difference between guessing and fixing.
+
+**1. Specificity.** Each selector scores three numbers — (ids, classes/attributes/pseudo-classes, elements) — compared left to right:
+
+| Selector           | Score     |
+| ------------------ | --------- |
+| `a`                | (0, 0, 1) |
+| `.active`          | (0, 1, 0) |
+| `nav a.active`     | (0, 1, 2) |
+| `#menu a`          | (1, 0, 1) |
+| `#menu a.active`   | (1, 1, 1) |
+
+One id beats any number of classes. So `#menu a { color: grey }` beats `.active { color: tomato }`, even though `.active` looks more specific *to you*.
+
+**2. Order.** With equal scores, the rule that comes later wins.
+
+**3. Selectors that simply don't match.** `.card > p` means a `p` that is a *direct child* of `.card`; a `p` inside a `div` inside the card is not matched. `.card p` (a space) matches any depth.
+
+**The method.** In developer tools, select the element and open *Computed*: it shows the winning value and, crossed out, the rules that lost. Then fix the cause: make the selector you want at least as specific as the one beating it (`#menu a.active`), or make the loser less specific. `!important` also "works", and it starts an arms race you will lose later — every future override then needs `!important` too.
+--- task
+Bug report: *"The active menu link should be tomato red, but it's grey like the others. And the card's note should be italic, but it isn't."*
+
+Find why each rule loses or fails to match, and fix the CSS — without `!important`, and without changing the HTML. The other links must stay grey.
+--- starter
+<style>
+  #menu a {
+    color: grey;
+    text-decoration: none;
+  }
+  .active {
+    color: tomato;
+  }
+  .card > .note {
+    font-style: italic;
+  }
+</style>
+
+<nav id="menu">
+  <a href="/">Home</a>
+  <a class="active" href="/launches">Launches</a>
+  <a href="/about">About</a>
+</nav>
+
+<article class="card">
+  <h2>Falcon</h2>
+  <div class="body">
+    <p class="note">Reusable first stage.</p>
+  </div>
+</article>
+--- solution
+<style>
+  #menu a {
+    color: grey;
+    text-decoration: none;
+  }
+  #menu a.active {
+    color: tomato;
+  }
+  .card .note {
+    font-style: italic;
+  }
+</style>
+
+<nav id="menu">
+  <a href="/">Home</a>
+  <a class="active" href="/launches">Launches</a>
+  <a href="/about">About</a>
+</nav>
+
+<article class="card">
+  <h2>Falcon</h2>
+  <div class="body">
+    <p class="note">Reusable first stage.</p>
+  </div>
+</article>
+--- hint
+Score both colour rules: `#menu a` has an id in it. What does `.active` need to beat it?
+--- hint
+`>` means "direct child". Look at where the `.note` actually sits inside `.card`.
+--- check dom | The active link is tomato
+#menu a.active style color == rgb(255, 99, 71)
+--- check dom | The other links stay grey
+#menu a:not(.active) style color == rgb(128, 128, 128)
+--- check dom | The note is italic
+.card .note style font-style == italic
+--- check source absent | No !important
+!important
+
+=== web2-06 | The box model and box-sizing
+--- teach
+Every box is content, then padding, then border, then margin. The surprise is what `width` means. By default (`box-sizing: content-box`) it is the width of the **content only**, and padding and border are added on top:
+
+```css
+.box {
+  width: 240px;
+  padding: 20px;
+  border: 4px solid #1e90ff;
+}
+/* drawn 240 + 20 + 20 + 4 + 4 = 288px wide */
+```
+
+So a layout that "should" fit two 240px boxes in 500px overflows, and every time you change padding, the box grows. The fix almost every modern site uses:
+
+```css
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+```
+
+With `border-box`, `width` is the width of the **whole box, border included**: padding and border are taken out of the inside. A 240px box stays 240px whatever padding you give it.
+
+Two more box facts worth knowing:
+
+- **Vertical margins collapse.** A `margin-bottom: 24px` above a `margin-top: 16px` gives a 24px gap, not 40px — the larger wins.
+- **Inline elements** (`span`, `a`) ignore `width`, `height` and vertical margins. Give them `display: inline-block` or `block` if you need those.
+
+The script at the bottom of this lesson's page is a ruler: it measures the real, drawn width of the first box and writes it on the page.
+--- task
+`.box` is declared `240px` wide with `20px` padding and a `4px` border, but the ruler says it is drawn 288px wide. Make it draw exactly **240px** wide — padding and border included — without changing its `width`, `padding` or `border`. Apply the fix to every element with the universal rule shown above. Leave the ruler script alone.
+--- starter
+<style>
+  .box {
+    width: 240px;
+    padding: 20px;
+    border: 4px solid #1e90ff;
+    margin-bottom: 12px;
+  }
+</style>
+
+<div class="box">Fuel</div>
+<div class="box">Oxygen</div>
+<p>Drawn width: <span id="ruler"></span>px</p>
+
+<script>
+  // The ruler: measures the first box as drawn, whenever its size changes. Don't change this.
+  const box = document.querySelector('.box')
+  new ResizeObserver(() => {
+    document.querySelector('#ruler').textContent = box.offsetWidth
+  }).observe(box)
+</script>
+--- solution
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  .box {
+    width: 240px;
+    padding: 20px;
+    border: 4px solid #1e90ff;
+    margin-bottom: 12px;
+  }
+</style>
+
+<div class="box">Fuel</div>
+<div class="box">Oxygen</div>
+<p>Drawn width: <span id="ruler"></span>px</p>
+
+<script>
+  // The ruler: measures the first box as drawn, whenever its size changes. Don't change this.
+  const box = document.querySelector('.box')
+  new ResizeObserver(() => {
+    document.querySelector('#ruler').textContent = box.offsetWidth
+  }).observe(box)
+</script>
+--- hint
+`box-sizing` decides whether `width` counts the padding and border.
+--- hint
+Add a rule at the top of the style: `*, *::before, *::after { box-sizing: border-box; }`.
+--- check dom | The box is drawn 240px wide
+wait 100
+#ruler text == 240
+--- check dom | Width, padding and border are unchanged
+.box style width == 240px
+.box style padding-left == 20px
+.box style border-left-width == 4px
+--- check dom | Every element uses border-box
+.box style box-sizing == border-box
+p style box-sizing == border-box
+
+=== web2-07 | Flexbox layouts
+--- teach
+You have used `display: flex` and `gap`. Real layouts need a few more pieces. On the **container**:
+
+- `justify-content` spreads children along the main axis: `flex-start`, `center`, `space-between` (first and last at the edges, the rest spread out), `space-around`.
+- `align-items` lines them up across it: `stretch` (the default), `center`, `flex-start`, `baseline`.
+- `flex-wrap: wrap` lets children move onto a new line instead of squashing.
+
+On a **child**:
+
+- `flex: 1` lets it grow to share spare space equally with other `flex: 1` siblings. (`flex: 2` takes twice as much.)
+- `margin-left: auto` on one child pushes it, and everything after it, to the far end.
+
+The two layouts nearly every site has:
+
+```css
+/* A top bar: logo on the left, links on the right, vertically centred */
+.bar   { display: flex; justify-content: space-between; align-items: center; }
+.links { display: flex; gap: 16px; }
+
+/* A row of equal cards that wrap on small screens */
+.cards { display: flex; flex-wrap: wrap; gap: 12px; }
+.card  { flex: 1; min-width: 120px; }
+```
+
+Flexbox is one-dimensional: it lays things out in a row *or* a column. For rows and columns at once, the next lesson has grid.
+--- task
+Lay out the page with flexbox:
+
+- `.bar`: a flex container with the logo at one end and `.links` at the other (`space-between`), vertically centred.
+- `.links`: a flex container with a `16px` gap.
+- `.cards`: a flex container that wraps, with a `12px` gap.
+- `.card`: grows to share the row equally (`flex: 1`).
+--- starter
+<style>
+  .card {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+</style>
+
+<div class="bar">
+  <strong class="logo">Orbit</strong>
+  <nav class="links">
+    <a href="/">Home</a>
+    <a href="/launches">Launches</a>
+    <a href="/about">About</a>
+  </nav>
+</div>
+
+<div class="cards">
+  <div class="card">Falcon</div>
+  <div class="card">Starship</div>
+  <div class="card">Electron</div>
+</div>
+--- solution
+<style>
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .links {
+    display: flex;
+    gap: 16px;
+  }
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .card {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+</style>
+
+<div class="bar">
+  <strong class="logo">Orbit</strong>
+  <nav class="links">
+    <a href="/">Home</a>
+    <a href="/launches">Launches</a>
+    <a href="/about">About</a>
+  </nav>
+</div>
+
+<div class="cards">
+  <div class="card">Falcon</div>
+  <div class="card">Starship</div>
+  <div class="card">Electron</div>
+</div>
+--- hint
+Three containers need `display: flex`: `.bar`, `.links` and `.cards`.
+--- hint
+`.bar` also needs `justify-content: space-between` and `align-items: center`; `.cards` needs `flex-wrap: wrap`.
+--- check dom | The bar pushes logo and links apart, centred
+.bar style display == flex
+.bar style justify-content == space-between
+.bar style align-items == center
+--- check dom | The links sit in a row 16px apart
+.links style display == flex
+.links style column-gap == 16px
+--- check dom | The cards wrap, 12px apart
+.cards style display == flex
+.cards style flex-wrap == wrap
+.cards style column-gap == 12px
+--- check dom | Each card grows to share the row
+.card style flex-grow == 1
+
+=== web2-08 | CSS grid
+--- teach
+Grid lays things out in rows **and** columns at once, which makes it the tool for whole-page layouts.
+
+```css
+.page {
+  display: grid;
+  grid-template-columns: 200px 1fr;   /* a 200px column, then the rest */
+  gap: 16px;
+}
+```
+
+`fr` is "a fraction of the free space": `1fr 2fr` splits it a third and two thirds, and `repeat(3, 1fr)` makes three equal columns.
+
+The most readable way to place regions is to **name** them and draw the layout as text:
+
+```css
+.page {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-areas:
+    "header header"
+    "side   main"
+    "footer footer";
+}
+.page > header { grid-area: header; }
+.page > aside  { grid-area: side; }
+.page > main   { grid-area: main; }
+.page > footer { grid-area: footer; }
+```
+
+Each string is a row, each word a cell. Repeating a name makes that region span cells — the header spans both columns. Every row must have the same number of cells, and each area must be a rectangle.
+
+The HTML order stays the logical reading order (header, sidebar, content, footer); CSS decides where things *appear*. That is a big win for accessibility: screen readers follow the source, not the picture.
+--- task
+Make `.page` a grid with two columns (`200px` and `1fr`), a `16px` gap, and these named areas:
+
+```
+header header
+side   main
+footer footer
+```
+
+Then place the `header`, `aside`, `main` and `footer` in the areas `header`, `side`, `main` and `footer`.
+--- starter
+<style>
+  .page > * {
+    padding: 12px;
+    background: #eef4ff;
+    border-radius: 6px;
+  }
+</style>
+
+<div class="page">
+  <header>Orbit Dashboard</header>
+  <aside>Filters</aside>
+  <main>Launches this week</main>
+  <footer>Updated hourly</footer>
+</div>
+--- solution
+<style>
+  .page {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-areas:
+      "header header"
+      "side main"
+      "footer footer";
+    gap: 16px;
+  }
+  .page > * {
+    padding: 12px;
+    background: #eef4ff;
+    border-radius: 6px;
+  }
+  .page > header { grid-area: header; }
+  .page > aside { grid-area: side; }
+  .page > main { grid-area: main; }
+  .page > footer { grid-area: footer; }
+</style>
+
+<div class="page">
+  <header>Orbit Dashboard</header>
+  <aside>Filters</aside>
+  <main>Launches this week</main>
+  <footer>Updated hourly</footer>
+</div>
+--- hint
+`grid-template-areas` takes one quoted string per row: `"header header" "side main" "footer footer"`.
+--- hint
+Then `.page > aside { grid-area: side; }` and the same for the other three.
+--- check dom | The page is a grid, 16px gaps
+.page style display == grid
+.page style row-gap == 16px
+.page style column-gap == 16px
+--- check dom | The first column is 200px
+.page style grid-template-columns contains 200px
+--- check dom | The areas are drawn as asked
+.page style grid-template-areas == "header header" "side main" "footer footer"
+--- check dom | Each region is placed in its area
+.page > header style grid-column-start == header
+.page > aside style grid-column-start == side
+.page > main style grid-column-start == main
+.page > footer style grid-column-start == footer
+
+=== web2-09 | CSS custom properties
+--- teach
+A **custom property** (often called a CSS variable) is a value you name once and use everywhere:
+
+```css
+:root {
+  --brand: #1e90ff;
+  --space: 16px;
+}
+.button {
+  background: var(--brand);
+  padding: calc(var(--space) / 2) var(--space);
+}
+```
+
+Names start with `--`. `:root` is the `html` element, so a property set there is available to the whole page. `var(--name, fallback)` uses the fallback if the property is not set.
+
+The feature that makes them more than find-and-replace: **they inherit and can be overridden per element**, like any other CSS property. Change the variable on a class and everything inside picks it up:
+
+```css
+.danger { --brand: #dc143c; }   /* every var(--brand) inside turns red */
+```
+
+That is how themes work: one set of rules, and a class (or attribute) higher up that swaps the values. JavaScript can change them too — `document.documentElement.style.setProperty('--brand', 'purple')` — and the whole page updates.
+
+The mistake to avoid: overriding the *property* (`.danger { background: red }`) instead of the *variable*. It works for that one rule, and every other place that uses `--brand` (a border, a focus ring) stays blue.
+--- task
+Put the design's values into variables:
+
+- On `:root`, define `--brand` as `#1e90ff` and `--space` as `16px`.
+- `.button` uses `var(--brand)` for its background and `var(--space)` for its left and right padding.
+- `.danger` changes the colour by overriding **`--brand`** to `#dc143c` — not by setting `background` itself.
+--- starter
+<style>
+  .button {
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    background: #1e90ff;
+  }
+</style>
+
+<button class="button">Launch</button>
+<button class="button danger">Abort</button>
+--- solution
+<style>
+  :root {
+    --brand: #1e90ff;
+    --space: 16px;
+  }
+  .button {
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px var(--space);
+    background: var(--brand);
+  }
+  .danger {
+    --brand: #dc143c;
+  }
+</style>
+
+<button class="button">Launch</button>
+<button class="button danger">Abort</button>
+--- hint
+`:root { --brand: #1e90ff; --space: 16px; }`, then `background: var(--brand)` in `.button`.
+--- hint
+`.danger` needs just one line: it sets `--brand`, and the `.button` rule does the rest.
+--- check dom | The variables are defined on :root
+:root style --brand == #1e90ff
+:root style --space == 16px
+--- check dom | The button uses them
+.button:not(.danger) style background-color == rgb(30, 144, 255)
+.button style padding-left == 16px
+--- check dom | Danger overrides the variable, and turns crimson
+.danger style --brand == #dc143c
+.danger style background-color == rgb(220, 20, 60)
+--- check source | The button's background comes from the variable
+background(-color)?:\s*var\(--brand
+
+=== web2-10 | Responsive design with media queries
+--- teach
+One page, every screen. A **media query** wraps rules that apply only when a condition about the screen is true:
+
+```css
+.cards { display: flex; gap: 12px; }        /* always */
+
+@media (max-width: 900px) {                 /* only 900px wide or less */
+  .cards { flex-direction: column; }
+  h1 { font-size: 28px; }
+}
+```
+
+Rules inside the query override the ones outside because they come later with the same specificity — so put your queries **after** the rules they change.
+
+Two ways to organise it:
+
+- **Desktop first**: write the wide layout, then `max-width` queries that simplify it for smaller screens.
+- **Mobile first**: write the narrow layout, then `min-width` queries that add columns as room appears. Many teams prefer this — the phone gets the least CSS to undo.
+
+Pick **breakpoints** where *your* layout breaks, not at particular phone models. And for a real site, put `<meta name="viewport" content="width=device-width, initial-scale=1">` in the `head`, or phones pretend to be a 980px desktop and shrink everything.
+
+The preview here is **800px wide**, so a `max-width: 900px` query is on, and a `min-width: 1000px` query is off. That is what you will design against.
+--- task
+This desktop layout crams three cards in a row. Add a media query for screens **900px wide or less** (`max-width: 900px`) that:
+
+- stacks `.cards` in a column (`flex-direction: column`)
+- shrinks the `h1` to `28px`
+
+Keep the desktop rules as they are, outside the query.
+--- starter
+<style>
+  h1 {
+    font-size: 40px;
+  }
+  .cards {
+    display: flex;
+    gap: 12px;
+  }
+  .card {
+    flex: 1;
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+</style>
+
+<h1>Launch schedule</h1>
+<div class="cards">
+  <div class="card">Monday — Falcon</div>
+  <div class="card">Wednesday — Electron</div>
+  <div class="card">Friday — Starship</div>
+</div>
+--- solution
+<style>
+  h1 {
+    font-size: 40px;
+  }
+  .cards {
+    display: flex;
+    gap: 12px;
+  }
+  .card {
+    flex: 1;
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 900px) {
+    h1 {
+      font-size: 28px;
+    }
+    .cards {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<h1>Launch schedule</h1>
+<div class="cards">
+  <div class="card">Monday — Falcon</div>
+  <div class="card">Wednesday — Electron</div>
+  <div class="card">Friday — Starship</div>
+</div>
+--- hint
+`@media (max-width: 900px) { … }` wraps ordinary rules. Put it at the end of the style.
+--- hint
+Inside it: `.cards { flex-direction: column; }` and `h1 { font-size: 28px; }`.
+--- check dom | On this screen the cards stack
+.cards style display == flex
+.cards style flex-direction == column
+--- check dom | On this screen the heading is 28px
+h1 style font-size == 28px
+--- check source | It is done with a max-width: 900px media query
+@media\s*(screen\s+and\s*)?\(\s*max-width:\s*900px\s*\)
+--- check source | The desktop size is still there for wide screens
+font-size:\s*40px
+
+=== web2-11 | Building and changing elements
+--- teach
+The DOM is a tree of objects you can create, fill and change. The tools you will use every day:
+
+```js
+const li = document.createElement('li')   // a new element, not on the page yet
+li.textContent = 'Europa Clipper'          // its text — always safe
+li.classList.add('done')                   // add / remove / toggle / contains
+li.dataset.id = 'm3'                       // becomes the attribute data-id="m3"
+li.setAttribute('title', 'Launched 2024')  // any attribute
+list.append(li)                            // now it is on the page
+li.remove()                                // and now it isn't
+```
+
+The task's script uses a few more pieces of JavaScript than the basics did. If any is new, the JavaScript course teaches it properly; the short version:
+
+- An **object** groups named values: `{ id: 'm1', name: 'Apollo 11' }`, and `mission.name` reads one. An array of objects is the usual shape of a list of data.
+- `===` compares, strictly: `mission.status === 'done'` is `true` or `false`.
+- `array.filter((m) => m.status === 'done')` makes a new array of the items for which the arrow function returns `true`; `.length` counts them.
+- A **template literal** uses backticks and puts values inside `${…}`: `` `${done} of ${missions.length} done` ``.
+
+**`textContent`, not `innerHTML`, for data.** `innerHTML` parses its string as HTML, so a name like `<img src=x onerror=…>` becomes a real element — and runs code. That is the classic XSS hole. `textContent` puts the string in as plain text, whatever it contains. Use `innerHTML` only for markup you wrote yourself.
+
+**`dataset`** is how elements carry your own data: `data-id="m3"` in HTML is `el.dataset.id` in JavaScript (and `data-launch-date` is `el.dataset.launchDate`). Later, when someone clicks an item, you read its id straight off the element.
+
+**`classList`** beats assigning `className` because it changes one class without wiping the others: `el.classList.toggle('done', isDone)` adds it when `isDone` is true and removes it when false.
+--- task
+Render `missions` into `ul#missions`, in order. For each mission create an `li` that:
+
+- shows the mission's `name` as its text (use `textContent` — one name contains HTML-looking text that must appear literally)
+- has the attribute `data-id` set to the mission's `id`
+- has the class `done` when its `status` is `'done'`
+
+Then set `#summary` to `2 of 4 done` — computed from the data, not typed in.
+--- starter
+<ul id="missions"></ul>
+<p id="summary"></p>
+
+<script>
+  const missions = [
+    { id: 'm1', name: 'Apollo 11', status: 'done' },
+    { id: 'm2', name: 'Artemis II', status: 'planned' },
+    { id: 'm3', name: '<em>Hubble</em> servicing', status: 'done' },
+    { id: 'm4', name: 'Europa Clipper', status: 'active' },
+  ]
+</script>
+--- solution
+<ul id="missions"></ul>
+<p id="summary"></p>
+
+<script>
+  const missions = [
+    { id: 'm1', name: 'Apollo 11', status: 'done' },
+    { id: 'm2', name: 'Artemis II', status: 'planned' },
+    { id: 'm3', name: '<em>Hubble</em> servicing', status: 'done' },
+    { id: 'm4', name: 'Europa Clipper', status: 'active' },
+  ]
+
+  const list = document.querySelector('#missions')
+  for (const mission of missions) {
+    const li = document.createElement('li')
+    li.textContent = mission.name
+    li.dataset.id = mission.id
+    li.classList.toggle('done', mission.status === 'done')
+    list.append(li)
+  }
+
+  const done = missions.filter((m) => m.status === 'done').length
+  document.querySelector('#summary').textContent = `${done} of ${missions.length} done`
+</script>
+--- hint
+In the loop: `createElement('li')`, then `textContent`, `dataset.id` and `classList`, then `append` it to the list.
+--- hint
+For the summary, `missions.filter((m) => m.status === 'done').length` counts the finished ones.
+--- check dom | Four missions, in order
+#missions li count == 4
+#missions li:first-child text == Apollo 11
+#missions li:last-child text == Europa Clipper
+--- check dom | Each carries its id
+#missions li:first-child attr data-id == m1
+#missions li:nth-child(3) attr data-id == m3
+--- check dom | The finished ones have the class done
+#missions li.done count == 2
+#missions li:nth-child(3) class done
+--- check dom | Names are text, never markup
+#missions li:nth-child(3) text == <em>Hubble</em> servicing
+#missions em missing
+--- check dom | The summary counts from the data
+#summary text == 2 of 4 done
+
+=== web2-12 | Events: click, input and submit
+--- teach
+Every listener receives an **event object** describing what happened:
+
+```js
+button.addEventListener('click', (event) => {
+  event.target        // the element that was actually clicked
+  event.currentTarget // the element the listener is on
+})
+```
+
+Which event to listen for matters:
+
+- `click` — a button was pressed (by mouse, or by Enter/Space on a focused button).
+- `input` — a field's value changed, on every keystroke.
+- `change` — a field's value was committed: a checkbox ticked, a select changed, a text field left.
+- `submit` — a **form** was submitted: by clicking its submit button *or* by pressing Enter in one of its fields.
+
+For forms, listen for `submit` on the form, not `click` on the button. You get Enter-to-submit and the browser's built-in validation for free. The one thing you must do: stop the browser's default action, which is to send the form to a server and load a new page:
+
+```js
+form.addEventListener('submit', (event) => {
+  event.preventDefault()          // stay on this page
+  const text = input.value.trim()
+  if (!text) return               // ignore empty submissions
+  // … use it …
+  input.value = ''                // ready for the next one
+})
+```
+
+`preventDefault()` cancels the browser's default for any event — following a link, ticking a box, submitting a form.
+
+In that handler, `.trim()` removes spaces from both ends of the text; `!text` means "not text", which is true for an empty string; and `return` leaves the function early, so nothing after it runs. To pick between two values in one expression, use `condition ? a : b`: `` n === 1 ? '1 item' : `${n} items` ``.
+--- task
+Make the shopping list work. On the form's `submit` (so both the Add button and Enter in the field work):
+
+- stop the page from reloading
+- if the trimmed text in `#item` is not empty, add an `li` with that text to `#list`
+- clear `#item`
+- set `#count` to the number of items, like `2 items` (and `1 item` for one)
+--- starter
+<form id="add-form">
+  <label for="item">Item</label>
+  <input id="item" autocomplete="off">
+  <button id="add">Add</button>
+</form>
+<ul id="list"></ul>
+<p id="count">0 items</p>
+
+<script>
+  const form = document.querySelector('#add-form')
+  const input = document.querySelector('#item')
+  const list = document.querySelector('#list')
+  const count = document.querySelector('#count')
+</script>
+--- solution
+<form id="add-form">
+  <label for="item">Item</label>
+  <input id="item" autocomplete="off">
+  <button id="add">Add</button>
+</form>
+<ul id="list"></ul>
+<p id="count">0 items</p>
+
+<script>
+  const form = document.querySelector('#add-form')
+  const input = document.querySelector('#item')
+  const list = document.querySelector('#list')
+  const count = document.querySelector('#count')
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    const li = document.createElement('li')
+    li.textContent = text
+    list.append(li)
+    input.value = ''
+    const n = list.children.length
+    count.textContent = n === 1 ? '1 item' : `${n} items`
+  })
+</script>
+--- hint
+`form.addEventListener('submit', (event) => { event.preventDefault(); … })`.
+--- hint
+After appending, `list.children.length` is the number of items. Choose `item` or `items` with `n === 1 ? … : …`.
+--- check dom | Clicking Add adds the item
+type #item Milk
+click #add
+#list li count == 1
+#list li text == Milk
+--- check dom | Enter in the field adds it too
+type #item Eggs
+press #item Enter
+#list li text == Eggs
+--- check dom | The field is cleared after adding
+type #item Bread
+click #add
+#item value ==
+--- check dom | The count keeps up, singular and plural
+type #item Milk
+click #add
+#count text == 1 item
+type #item Tea
+click #add
+#count text == 2 items
+--- check dom | Nothing is added for an empty field
+click #add
+#list li count == 0
+
+=== web2-13 | Design: untangling messy markup
+--- teach
+Pages rot the same way code does: a style pasted onto one element, then copied to the next, a `<br>` for spacing, a `<b>` because it looked like a heading. Each shortcut worked. Together they make a page nobody can change safely — to make prices green you would have to find every copy.
+
+Refactoring a page follows the same rule as refactoring code: **change the structure, keep the behaviour** (here: the look). Work in small steps and look at the result after each:
+
+1. **Name what things are.** A title is a heading (`h2`), a list is a `ul`, a card is an `article` with a class. Replace `<br><br>` spacing with elements and margins.
+2. **Pull repeated styles into classes.** Three identical `style="…"` attributes become one rule. Inline `style` attributes also have the highest specificity, which is part of why they spread.
+3. **One class per idea**, named for what it is (`.price`, `.plan`), not for how it looks (`.big-blue-text`) — the look will change, the meaning won't.
+
+Before and after, for one card:
+
+```html
+<div style="border:1px solid #ccc;padding:16px">
+  <b style="font-size:20px">Basic</b><br><br>
+  <span style="color:#1e90ff;font-weight:bold">$5</span><br>
+  - 1 launch<br>- Email support
+</div>
+
+<article class="plan">
+  <h2>Basic</h2>
+  <p class="price">$5</p>
+  <ul><li>1 launch</li><li>Email support</li></ul>
+</article>
+```
+--- task
+Restructure the three pricing cards, keeping how they look:
+
+- each card is an `article` with the class `plan`, its name an `h2`, its price a `p` with the class `price`, and its features a `ul` of `li`s
+- no `style="…"` attributes and no `<br>` anywhere: the styles move into the `<style>` block
+- `.plan` keeps its `1px solid #ccc` border and `16px` padding; `.price` stays `#1e90ff` and bold
+--- starter
+<h1>Plans</h1>
+<div style="display:flex;gap:12px">
+  <div style="border:1px solid #ccc;padding:16px;border-radius:8px">
+    <b style="font-size:20px">Basic</b><br><br>
+    <span style="color:#1e90ff;font-weight:bold">$5</span><br>
+    - 1 launch<br>
+    - Email support
+  </div>
+  <div style="border:1px solid #ccc;padding:16px;border-radius:8px">
+    <b style="font-size:20px">Crew</b><br><br>
+    <span style="color:#1e90ff;font-weight:bold">$20</span><br>
+    - 10 launches<br>
+    - Chat support
+  </div>
+  <div style="border:1px solid #ccc;padding:16px;border-radius:8px">
+    <b style="font-size:20px">Fleet</b><br><br>
+    <span style="color:#1e90ff;font-weight:bold">$90</span><br>
+    - Unlimited launches<br>
+    - A named engineer
+  </div>
+</div>
+--- solution
+<style>
+  .plans {
+    display: flex;
+    gap: 12px;
+  }
+  .plan {
+    border: 1px solid #ccc;
+    padding: 16px;
+    border-radius: 8px;
+  }
+  .plan h2 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .price {
+    color: #1e90ff;
+    font-weight: bold;
+    margin: 0;
+  }
+</style>
+
+<h1>Plans</h1>
+<div class="plans">
+  <article class="plan">
+    <h2>Basic</h2>
+    <p class="price">$5</p>
+    <ul>
+      <li>1 launch</li>
+      <li>Email support</li>
+    </ul>
+  </article>
+  <article class="plan">
+    <h2>Crew</h2>
+    <p class="price">$20</p>
+    <ul>
+      <li>10 launches</li>
+      <li>Chat support</li>
+    </ul>
+  </article>
+  <article class="plan">
+    <h2>Fleet</h2>
+    <p class="price">$90</p>
+    <ul>
+      <li>Unlimited launches</li>
+      <li>A named engineer</li>
+    </ul>
+  </article>
+</div>
+--- hint
+Write the three rules first (`.plan`, `.plan h2`, `.price`) from the inline styles, then rewrite one card and copy its shape.
+--- hint
+The outer flex row needs a class too (say `.plans`) — its inline style has to go as well.
+--- check dom | Three plans, each with a heading, price and feature list
+article.plan count == 3
+.plan h2 count == 3
+.plan p.price count == 3
+.plan ul li count == 6
+--- check dom | The content is kept
+.plan:nth-child(2) h2 text == Crew
+.plan:nth-child(2) .price text == $20
+--- check dom | No inline styles, no line breaks
+[style] missing
+br missing
+--- check dom | Cards keep their border and padding
+.plan style border-top-width == 1px
+.plan style border-top-style == solid
+.plan style padding-top == 16px
+--- check dom | Prices stay blue and bold
+.price style color == rgb(30, 144, 255)
+.price style font-weight == 700
+
+=== web2-14 | Problem: filter a list as you type
+--- teach
+A filter box looks simple and hides several decisions. Work through it like any problem:
+
+**1. Restate it.** As you type, show only the names that contain the text, and say how many are showing.
+
+**2. Examples, including the awkward ones.**
+
+- `an` → Anika, Dana, Ivan, Joanna (anywhere in the name, not just the start)
+- `ADA` → Ada (case must not matter)
+- `zzz` → nothing, so say "No matches" instead of showing an empty list
+- an empty box → everyone
+
+**3. Choose an approach.** Two options: rebuild the list from the data each time, or keep the elements and hide the ones that don't match. With a fixed list, hiding is simpler and keeps anything else on those elements intact. The `hidden` attribute hides an element and is easy to test:
+
+```js
+li.hidden = !matches   // true adds hidden="", false removes it
+```
+
+**4. Write one function that updates everything from the current input**, and call it from the `input` event. Don't update the count in one place and the list in another — they will drift apart. `function applyFilter() { … }` declares a named function; hand it to `addEventListener` by name, without brackets, so the browser calls it on each event. `document.querySelectorAll('#people li')` returns every match, and `for…of` walks through them; `shown++` adds one to `shown`.
+
+```js
+function applyFilter() {
+  const q = input.value.trim().toLowerCase()
+  let shown = 0
+  for (const li of items) {
+    const match = li.textContent.toLowerCase().includes(q)
+    li.hidden = !match
+    if (match) shown++
+  }
+  // … count and empty message from `shown` …
+}
+```
+--- task
+Make `#search` filter the list `#people` as you type:
+
+- an `li` stays visible when its name contains the typed text, ignoring case; the others get the `hidden` attribute
+- `#count` says how many are shown, like `3 shown`
+- `#empty` (which starts hidden) is shown only when nothing matches
+--- starter
+<label for="search">Search crew</label>
+<input id="search" autocomplete="off">
+<p id="count">8 shown</p>
+<ul id="people">
+  <li>Ada</li>
+  <li>Anika</li>
+  <li>Bo</li>
+  <li>Dana</li>
+  <li>Ivan</li>
+  <li>Joanna</li>
+  <li>Lin</li>
+  <li>Sam</li>
+</ul>
+<p id="empty" hidden>No matches</p>
+
+<script>
+</script>
+--- solution
+<label for="search">Search crew</label>
+<input id="search" autocomplete="off">
+<p id="count">8 shown</p>
+<ul id="people">
+  <li>Ada</li>
+  <li>Anika</li>
+  <li>Bo</li>
+  <li>Dana</li>
+  <li>Ivan</li>
+  <li>Joanna</li>
+  <li>Lin</li>
+  <li>Sam</li>
+</ul>
+<p id="empty" hidden>No matches</p>
+
+<script>
+  const input = document.querySelector('#search')
+  const items = document.querySelectorAll('#people li')
+  const count = document.querySelector('#count')
+  const empty = document.querySelector('#empty')
+
+  function applyFilter() {
+    const q = input.value.trim().toLowerCase()
+    let shown = 0
+    for (const li of items) {
+      const match = li.textContent.toLowerCase().includes(q)
+      li.hidden = !match
+      if (match) shown++
+    }
+    count.textContent = `${shown} shown`
+    empty.hidden = shown > 0
+  }
+
+  input.addEventListener('input', applyFilter)
+</script>
+--- hint
+Listen for `input` on `#search`. Lower-case both the query and each name before comparing with `includes`.
+--- hint
+Count the matches as you loop, then set `#count` and `empty.hidden = shown > 0` after the loop.
+--- check dom | Everyone shows at first
+#people li:not([hidden]) count == 8
+#count text == 8 shown
+#empty[hidden] exists
+--- check dom | "an" matches anywhere in the name
+type #search an
+#people li:not([hidden]) count == 4
+#count text == 4 shown
+--- check dom | Case does not matter
+type #search ADA
+#people li:not([hidden]) count == 1
+#people li:not([hidden]) text == Ada
+--- check dom | No matches says so
+type #search zzz
+#people li:not([hidden]) count == 0
+#count text == 0 shown
+#empty:not([hidden]) exists
+--- check dom | Matches hide the message again
+type #search zzz
+type #search o
+#empty[hidden] exists
+#count text == 2 shown

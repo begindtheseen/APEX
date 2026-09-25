@@ -1,0 +1,3080 @@
+@track html
+@level projects
+@title Web · Projects
+@name Web projects: three apps, then capstones you design yourself
+@blurb Build a to-do app, a quiz and a shopping cart step by step, each lesson picking up where the last left off. Then three capstones: a written spec, an empty page, and only the behaviour checked — you design the markup, the state and the code.
+
+=== webp-01 | To-do app, part 1: adding tasks
+--- teach
+This course puts the three Web courses to work: three apps built step by step — a to-do list, a quiz and a shopping cart — then three capstones you design yourself from a specification.
+
+Over the next four lessons you will build a complete to-do app. Each lesson's starter is the previous lesson's solution, so the app grows the way real ones do: a feature at a time, without breaking what already works.
+
+Start every app by deciding its **state** — the facts it has to remember. For a to-do list:
+
+```js
+const state = {
+  todos: [],     // { id: 1, text: 'Buy fuel', done: false }
+  nextId: 1,     // ids are never reused, even after a delete
+}
+```
+
+Why give every task an id? Because later you will delete, tick off and filter tasks, and you need a way to say *which* task that isn't its position in a list that keeps changing.
+
+Then the loop you know: a `render()` that draws everything from `state`, and handlers that change `state` and call `render()`. The form's `submit` event gives you the Add button and the Enter key in one listener:
+
+```js
+form.addEventListener('submit', (event) => {
+  event.preventDefault()
+  const text = input.value.trim()
+  if (!text) return
+  state.todos.push({ id: state.nextId++, text, done: false })
+  input.value = ''
+  render()
+})
+```
+
+The "items left" line is computed inside `render()` from the todos — never kept as a separate number.
+--- task
+Make the form add tasks:
+
+- keep the tasks in `state.todos` as objects with an `id`, `text` and `done: false`
+- `render()` draws one `li` per task into `#todos`, with `data-id` set to its id and the text in a `span` with the class `text`
+- submitting the form (button or Enter) adds the trimmed text, ignores an empty field, and clears the field
+- `#left` shows how many tasks are not done: `1 item left`, `2 items left`
+--- starter
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<ul id="todos"></ul>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+</script>
+--- solution
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<ul id="todos"></ul>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1 }
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    li.append(text)
+    return li
+  }
+
+  function render() {
+    list.replaceChildren(...state.todos.map(todoItem))
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+  }
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Declare `const state = { todos: [], nextId: 1 }`, then write `render()` before the submit handler, and call `render()` once at the end.
+--- hint
+In `render()`, map each todo to an `li` (with `li.dataset.id = todo.id` and a `span.text`), then `list.replaceChildren(...items)`. Count with `state.todos.filter((t) => !t.done).length`.
+--- check dom | Add puts the task on the list
+type #todo-text Buy fuel
+click #add-todo
+#todos li count == 1
+#todos li .text text == Buy fuel
+#todos li attr data-id == 1
+--- check dom | Enter adds too, and each task gets its own id
+type #todo-text Buy fuel
+press #todo-text Enter
+type #todo-text Pack suits
+press #todo-text Enter
+#todos li count == 2
+#todos li:last-child attr data-id == 2
+--- check dom | The field clears, and empty input is ignored
+type #todo-text Buy fuel
+click #add-todo
+#todo-text value ==
+click #add-todo
+#todos li count == 1
+--- check dom | The count of items left keeps up
+type #todo-text Buy fuel
+click #add-todo
+#left text == 1 item left
+type #todo-text Pack suits
+click #add-todo
+#left text == 2 items left
+
+=== webp-02 | To-do app, part 2: completing and deleting
+--- teach
+Each task now needs two controls: a checkbox to tick it off and a button to delete it. Two decisions make this clean.
+
+**Listen once, on the list.** Tasks come and go, so per-item listeners would need re-attaching after every render. One delegated listener on `#todos` handles every item, now and later. A checkbox fires `change` when ticked; a button fires `click`. Both bubble.
+
+```js
+list.addEventListener('change', (event) => {
+  if (!event.target.matches('.toggle')) return
+  const id = Number(event.target.closest('li').dataset.id)
+  state.todos.find((todo) => todo.id === id).done = event.target.checked
+  render()
+})
+```
+
+`dataset` values are always strings, so `Number(...)` before comparing with the numeric id.
+
+**Name the controls for assistive technology.** Ten checkboxes and ten buttons all called "Delete" are indistinguishable in a screen reader's list of controls. Give each a name that includes its task:
+
+```js
+toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+del.setAttribute('aria-label', `Delete ${todo.text}`)
+```
+
+And draw the task's state from the data: the checkbox's `checked` and the `li`'s `done` class both come from `todo.done` — never from what the page looked like before.
+--- task
+Give each task a checkbox and a delete button:
+
+- in each `li`: an `input type="checkbox"` with the class `toggle` (checked when done, `aria-label` like `Done: Buy fuel`), the `.text` span, and a `button` with the class `delete` saying `Delete` (`aria-label` like `Delete Buy fuel`)
+- a done task's `li` has the class `done`
+- ticking or unticking updates the task; Delete removes it; `#left` stays right
+--- starter
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<ul id="todos"></ul>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1 }
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    li.append(text)
+    return li
+  }
+
+  function render() {
+    list.replaceChildren(...state.todos.map(todoItem))
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+  }
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<ul id="todos"></ul>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1 }
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    li.classList.toggle('done', todo.done)
+    const toggle = document.createElement('input')
+    toggle.type = 'checkbox'
+    toggle.className = 'toggle'
+    toggle.checked = todo.done
+    toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    const del = document.createElement('button')
+    del.type = 'button'
+    del.className = 'delete'
+    del.textContent = 'Delete'
+    del.setAttribute('aria-label', `Delete ${todo.text}`)
+    li.append(toggle, ' ', text, ' ', del)
+    return li
+  }
+
+  function render() {
+    list.replaceChildren(...state.todos.map(todoItem))
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+  }
+
+  const idOf = (el) => Number(el.closest('li').dataset.id)
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  list.addEventListener('change', (event) => {
+    if (!event.target.matches('.toggle')) return
+    state.todos.find((todo) => todo.id === idOf(event.target)).done = event.target.checked
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (!del) return
+    state.todos = state.todos.filter((todo) => todo.id !== idOf(del))
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Build the checkbox and the button inside `todoItem`, setting `checked`, the classes and the `aria-label`s from the todo. Then `li.append(toggle, ' ', text, ' ', del)`.
+--- hint
+Two delegated listeners on `list`: `change` for `.toggle` (set `done` from `event.target.checked`) and `click` for `.delete` (filter the todo out). Both finish with `render()`.
+--- check dom | Each task has a named checkbox and delete button
+type #todo-text Buy fuel
+click #add-todo
+#todos li .toggle attr type == checkbox
+#todos li .toggle attr aria-label == Done: Buy fuel
+#todos li .delete text == Delete
+#todos li .delete attr aria-label == Delete Buy fuel
+--- check dom | Ticking marks the task done and updates the count
+type #todo-text Buy fuel
+click #add-todo
+type #todo-text Pack suits
+click #add-todo
+click #todos li:first-child .toggle
+#todos li:first-child class done
+#todos li:first-child .toggle:checked exists
+#left text == 1 item left
+--- check dom | Unticking undoes it
+type #todo-text Buy fuel
+click #add-todo
+click #todos li .toggle
+click #todos li .toggle
+#todos li.done missing
+#left text == 1 item left
+--- check dom | Delete removes just that task
+type #todo-text Buy fuel
+click #add-todo
+type #todo-text Pack suits
+click #add-todo
+click #todos li:first-child .delete
+#todos li count == 1
+#todos li .text text == Pack suits
+#left text == 1 item left
+
+=== webp-03 | To-do app, part 3: filters
+--- teach
+Filters are the moment many apps go wrong, by keeping a second, filtered copy of the list in state that then drifts out of step with the real one. You already know the fix: the filter is a small piece of state (`'all'`, `'active'` or `'completed'`), and the visible list is **derived** from it every render.
+
+```js
+function visibleTodos() {
+  if (state.filter === 'active') return state.todos.filter((t) => !t.done)
+  if (state.filter === 'completed') return state.todos.filter((t) => t.done)
+  return state.todos
+}
+```
+
+`render()` draws `visibleTodos()`, but "items left" still counts *all* tasks — the filter changes what you see, not what exists.
+
+Filter buttons are **toggle buttons**: `aria-pressed="true"` on the chosen one tells a screen reader which filter is on, and makes a handy styling hook (`[aria-pressed="true"] { font-weight: bold }`).
+
+A filtered view can be empty even when tasks exist ("no completed tasks yet"). An empty message beats a blank space: show `#empty` only when the visible list has nothing in it.
+
+Notice what you *don't* have to do: ticking a task while the Active filter is on makes it disappear from the view automatically, because the next render derives the view again.
+--- task
+Add filters:
+
+- add three buttons after the form (outside it): `#filter-all` (`All`), `#filter-active` (`Active`) and `#filter-completed` (`Completed`); the chosen one has `aria-pressed="true"`, the others `false`; All is chosen at the start
+- the list shows only the matching tasks; `#left` still counts every task that isn't done
+- add `<p id="empty" hidden>Nothing here.</p>` after the list, visible only when the filtered list is empty
+--- starter
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<ul id="todos"></ul>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1 }
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    li.classList.toggle('done', todo.done)
+    const toggle = document.createElement('input')
+    toggle.type = 'checkbox'
+    toggle.className = 'toggle'
+    toggle.checked = todo.done
+    toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    const del = document.createElement('button')
+    del.type = 'button'
+    del.className = 'delete'
+    del.textContent = 'Delete'
+    del.setAttribute('aria-label', `Delete ${todo.text}`)
+    li.append(toggle, ' ', text, ' ', del)
+    return li
+  }
+
+  function render() {
+    list.replaceChildren(...state.todos.map(todoItem))
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+  }
+
+  const idOf = (el) => Number(el.closest('li').dataset.id)
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  list.addEventListener('change', (event) => {
+    if (!event.target.matches('.toggle')) return
+    state.todos.find((todo) => todo.id === idOf(event.target)).done = event.target.checked
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (!del) return
+    state.todos = state.todos.filter((todo) => todo.id !== idOf(del))
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<div class="filters">
+  <button id="filter-all" aria-pressed="true">All</button>
+  <button id="filter-active" aria-pressed="false">Active</button>
+  <button id="filter-completed" aria-pressed="false">Completed</button>
+</div>
+<ul id="todos"></ul>
+<p id="empty" hidden>Nothing here.</p>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1, filter: 'all' }
+  const FILTERS = ['all', 'active', 'completed']
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    li.classList.toggle('done', todo.done)
+    const toggle = document.createElement('input')
+    toggle.type = 'checkbox'
+    toggle.className = 'toggle'
+    toggle.checked = todo.done
+    toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    const del = document.createElement('button')
+    del.type = 'button'
+    del.className = 'delete'
+    del.textContent = 'Delete'
+    del.setAttribute('aria-label', `Delete ${todo.text}`)
+    li.append(toggle, ' ', text, ' ', del)
+    return li
+  }
+
+  function visibleTodos() {
+    if (state.filter === 'active') return state.todos.filter((todo) => !todo.done)
+    if (state.filter === 'completed') return state.todos.filter((todo) => todo.done)
+    return state.todos
+  }
+
+  function render() {
+    const visible = visibleTodos()
+    list.replaceChildren(...visible.map(todoItem))
+    document.querySelector('#empty').hidden = visible.length > 0
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+    for (const f of FILTERS) {
+      document.querySelector(`#filter-${f}`).setAttribute('aria-pressed', String(state.filter === f))
+    }
+  }
+
+  const idOf = (el) => Number(el.closest('li').dataset.id)
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  list.addEventListener('change', (event) => {
+    if (!event.target.matches('.toggle')) return
+    state.todos.find((todo) => todo.id === idOf(event.target)).done = event.target.checked
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (!del) return
+    state.todos = state.todos.filter((todo) => todo.id !== idOf(del))
+    render()
+  })
+
+  for (const f of FILTERS) {
+    document.querySelector(`#filter-${f}`).addEventListener('click', () => {
+      state.filter = f
+      render()
+    })
+  }
+
+  render()
+</script>
+--- hint
+Add `filter: 'all'` to `state` and a `visibleTodos()` selector; `render()` draws `visibleTodos()` instead of `state.todos`.
+--- hint
+Each filter button's click sets `state.filter` and calls `render()`; `render()` sets every button's `aria-pressed` and `#empty`'s `hidden` from the state.
+--- check dom | Three filter buttons, All chosen
+#filter-all attr aria-pressed == true
+#filter-active attr aria-pressed == false
+#filter-completed attr aria-pressed == false
+--- check dom | Completed shows only finished tasks, but the count covers all
+type #todo-text Fuel
+click #add-todo
+type #todo-text Suits
+click #add-todo
+type #todo-text Comms
+click #add-todo
+click #todos li:first-child .toggle
+click #filter-completed
+#todos li count == 1
+#todos li .text text == Fuel
+#filter-completed attr aria-pressed == true
+#filter-all attr aria-pressed == false
+#left text == 2 items left
+--- check dom | Active hides finished tasks, and All shows everything
+type #todo-text Fuel
+click #add-todo
+type #todo-text Suits
+click #add-todo
+click #todos li:first-child .toggle
+click #filter-active
+#todos li count == 1
+#todos li .text text == Suits
+click #filter-all
+#todos li count == 2
+--- check dom | Ticking a task in the Active view removes it from view
+type #todo-text Fuel
+click #add-todo
+click #filter-active
+click #todos li:first-child .toggle
+#todos li count == 0
+--- check dom | The empty message shows only when nothing matches
+type #todo-text Fuel
+click #add-todo
+#empty[hidden] exists
+click #filter-completed
+#empty:not([hidden]) exists
+
+=== webp-04 | To-do app, part 4: bulk actions
+--- teach
+The last features act on many tasks at once: **Clear completed** and **Toggle all**. With state and render in place, a bulk action is a small function over `state.todos` followed by `render()`:
+
+```js
+function clearCompleted() {
+  state.todos = state.todos.filter((todo) => !todo.done)
+  render()
+}
+```
+
+**Toggle all** needs one decision: what does it do when some tasks are done and some aren't? The convention: if every task is already done, un-tick them all; otherwise tick them all. `every` answers the question directly:
+
+```js
+const allDone = state.todos.length > 0 && state.todos.every((todo) => todo.done)
+for (const todo of state.todos) todo.done = !allDone
+```
+
+(Check the empty case: `[].every(...)` is `true`, which is why the length test is there. Its partner `some` is true when at least one item passes.)
+
+**Controls that can't do anything shouldn't be offered.** Clear completed with nothing completed is a button that does nothing when pressed. Hide it (`hidden`) until at least one task is done. That decision lives in `render()` too, derived from the todos like everything else.
+
+Take a moment when you finish to look at the whole program. Every feature added in this project touched three places — state, `render()` and one handler — and none of them had to know about the others. That is the payoff of the structure you have been practising.
+--- task
+Finish the app:
+
+- add `#toggle-all` (`Toggle all`): if every task is done, un-tick them all; otherwise tick them all
+- add `#clear-completed` (`Clear completed`): removes every done task; it is hidden (`hidden` attribute) whenever no task is done
+--- starter
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<div class="filters">
+  <button id="filter-all" aria-pressed="true">All</button>
+  <button id="filter-active" aria-pressed="false">Active</button>
+  <button id="filter-completed" aria-pressed="false">Completed</button>
+</div>
+<ul id="todos"></ul>
+<p id="empty" hidden>Nothing here.</p>
+<p id="left">0 items left</p>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1, filter: 'all' }
+  const FILTERS = ['all', 'active', 'completed']
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    li.classList.toggle('done', todo.done)
+    const toggle = document.createElement('input')
+    toggle.type = 'checkbox'
+    toggle.className = 'toggle'
+    toggle.checked = todo.done
+    toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    const del = document.createElement('button')
+    del.type = 'button'
+    del.className = 'delete'
+    del.textContent = 'Delete'
+    del.setAttribute('aria-label', `Delete ${todo.text}`)
+    li.append(toggle, ' ', text, ' ', del)
+    return li
+  }
+
+  function visibleTodos() {
+    if (state.filter === 'active') return state.todos.filter((todo) => !todo.done)
+    if (state.filter === 'completed') return state.todos.filter((todo) => todo.done)
+    return state.todos
+  }
+
+  function render() {
+    const visible = visibleTodos()
+    list.replaceChildren(...visible.map(todoItem))
+    document.querySelector('#empty').hidden = visible.length > 0
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+    for (const f of FILTERS) {
+      document.querySelector(`#filter-${f}`).setAttribute('aria-pressed', String(state.filter === f))
+    }
+  }
+
+  const idOf = (el) => Number(el.closest('li').dataset.id)
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  list.addEventListener('change', (event) => {
+    if (!event.target.matches('.toggle')) return
+    state.todos.find((todo) => todo.id === idOf(event.target)).done = event.target.checked
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (!del) return
+    state.todos = state.todos.filter((todo) => todo.id !== idOf(del))
+    render()
+  })
+
+  for (const f of FILTERS) {
+    document.querySelector(`#filter-${f}`).addEventListener('click', () => {
+      state.filter = f
+      render()
+    })
+  }
+
+  render()
+</script>
+--- solution
+<h1>To-do</h1>
+<form id="new-todo">
+  <label for="todo-text">New task</label>
+  <input id="todo-text" autocomplete="off">
+  <button id="add-todo">Add</button>
+</form>
+<div class="filters">
+  <button id="filter-all" aria-pressed="true">All</button>
+  <button id="filter-active" aria-pressed="false">Active</button>
+  <button id="filter-completed" aria-pressed="false">Completed</button>
+</div>
+<ul id="todos"></ul>
+<p id="empty" hidden>Nothing here.</p>
+<p id="left">0 items left</p>
+<button id="toggle-all">Toggle all</button>
+<button id="clear-completed" hidden>Clear completed</button>
+
+<script>
+  const list = document.querySelector('#todos')
+  const input = document.querySelector('#todo-text')
+  const state = { todos: [], nextId: 1, filter: 'all' }
+  const FILTERS = ['all', 'active', 'completed']
+
+  function todoItem(todo) {
+    const li = document.createElement('li')
+    li.dataset.id = todo.id
+    li.classList.toggle('done', todo.done)
+    const toggle = document.createElement('input')
+    toggle.type = 'checkbox'
+    toggle.className = 'toggle'
+    toggle.checked = todo.done
+    toggle.setAttribute('aria-label', `Done: ${todo.text}`)
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = todo.text
+    const del = document.createElement('button')
+    del.type = 'button'
+    del.className = 'delete'
+    del.textContent = 'Delete'
+    del.setAttribute('aria-label', `Delete ${todo.text}`)
+    li.append(toggle, ' ', text, ' ', del)
+    return li
+  }
+
+  function visibleTodos() {
+    if (state.filter === 'active') return state.todos.filter((todo) => !todo.done)
+    if (state.filter === 'completed') return state.todos.filter((todo) => todo.done)
+    return state.todos
+  }
+
+  function render() {
+    const visible = visibleTodos()
+    list.replaceChildren(...visible.map(todoItem))
+    document.querySelector('#empty').hidden = visible.length > 0
+    const left = state.todos.filter((todo) => !todo.done).length
+    document.querySelector('#left').textContent = `${left} ${left === 1 ? 'item' : 'items'} left`
+    for (const f of FILTERS) {
+      document.querySelector(`#filter-${f}`).setAttribute('aria-pressed', String(state.filter === f))
+    }
+    document.querySelector('#clear-completed').hidden = !state.todos.some((todo) => todo.done)
+  }
+
+  const idOf = (el) => Number(el.closest('li').dataset.id)
+
+  document.querySelector('#new-todo').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const text = input.value.trim()
+    if (!text) return
+    state.todos.push({ id: state.nextId++, text, done: false })
+    input.value = ''
+    render()
+  })
+
+  list.addEventListener('change', (event) => {
+    if (!event.target.matches('.toggle')) return
+    state.todos.find((todo) => todo.id === idOf(event.target)).done = event.target.checked
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const del = event.target.closest('.delete')
+    if (!del) return
+    state.todos = state.todos.filter((todo) => todo.id !== idOf(del))
+    render()
+  })
+
+  for (const f of FILTERS) {
+    document.querySelector(`#filter-${f}`).addEventListener('click', () => {
+      state.filter = f
+      render()
+    })
+  }
+
+  document.querySelector('#toggle-all').addEventListener('click', () => {
+    const allDone = state.todos.length > 0 && state.todos.every((todo) => todo.done)
+    for (const todo of state.todos) todo.done = !allDone
+    render()
+  })
+
+  document.querySelector('#clear-completed').addEventListener('click', () => {
+    state.todos = state.todos.filter((todo) => !todo.done)
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add the two buttons to the HTML (Clear completed starting `hidden`), and in `render()` set `hidden` on it from `state.todos.some((t) => t.done)`.
+--- hint
+Toggle all: work out `allDone` with `every` (and a length check), then set every todo's `done` to `!allDone`. Clear completed: keep only the todos that aren't done.
+--- check dom | Clear completed is hidden until something is done
+type #todo-text Fuel
+click #add-todo
+#clear-completed[hidden] exists
+click #todos li .toggle
+#clear-completed:not([hidden]) exists
+--- check dom | Clear completed removes only the finished tasks
+type #todo-text Fuel
+click #add-todo
+type #todo-text Suits
+click #add-todo
+type #todo-text Comms
+click #add-todo
+click #todos li:nth-child(1) .toggle
+click #todos li:nth-child(3) .toggle
+click #clear-completed
+#todos li count == 1
+#todos li .text text == Suits
+#clear-completed[hidden] exists
+--- check dom | Toggle all ticks everything when some are open
+type #todo-text Fuel
+click #add-todo
+type #todo-text Suits
+click #add-todo
+click #todos li:first-child .toggle
+click #toggle-all
+#todos li.done count == 2
+#left text == 0 items left
+--- check dom | Toggle all un-ticks everything when all are done
+type #todo-text Fuel
+click #add-todo
+type #todo-text Suits
+click #add-todo
+click #toggle-all
+click #toggle-all
+#todos li.done count == 0
+#left text == 2 items left
+
+=== webp-05 | Quiz app, part 1: showing a question
+--- teach
+The second project is a quiz: questions, answers, a score and a results screen. As before, begin with the data and the state, and keep them apart.
+
+The **data** is the quiz itself and never changes while it runs:
+
+```js
+const questions = [
+  { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+  // …
+]
+```
+
+`answer` is the *index* of the right choice, so checking an answer is `chosen === question.answer`.
+
+The **state** is where the player is: for now, just `{ index: 0 }`, the question on screen. Everything visible — the progress line, the question, the choice buttons — is drawn from `questions[state.index]`.
+
+Choices are **buttons**, not links or clickable `div`s: they perform an action on this page, and buttons come with keyboard support. Mark each with its index, `data-index="1"`, so a click handler can tell which was chosen without comparing text.
+
+Rebuild the choices on each render with `replaceChildren` — there are only three or four of them, so it is simple and cheap.
+
+And keep an eye on edges: a "Next" button on the last question has nowhere to go, so disable it there. (In a later part it will lead to the results.)
+--- task
+Show the quiz one question at a time:
+
+- `#progress` says like `Question 1 of 4`; `#question` shows the question's text
+- `#choices` holds one `button` per choice, with the class `choice`, the choice as its text and `data-index` set to its position
+- `#next` moves to the next question, and is disabled on the last one
+--- starter
+<section id="quiz">
+  <p id="progress"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <button id="next">Next</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+</script>
+--- solution
+<section id="quiz">
+  <p id="progress"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <button id="next">Next</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0 }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  function render() {
+    const q = questions[state.index]
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        return button
+      }),
+    )
+    nextButton.disabled = state.index === questions.length - 1
+  }
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- hint
+`const state = { index: 0 }`, and a `render()` that reads `questions[state.index]`. Call it once at the end.
+--- hint
+Map the choices to buttons (`className = 'choice'`, `dataset.index = i`) and `replaceChildren` them into `#choices`. Next adds one to `state.index` and re-renders.
+--- check dom | The first question is shown
+#progress text == Question 1 of 4
+#question text == Which planet is closest to the Sun?
+--- check dom | Its choices are buttons with their index
+#choices button.choice count == 3
+#choices .choice:nth-child(2) text == Mercury
+#choices .choice:nth-child(2) attr data-index == 1
+--- check dom | Next moves on
+click #next
+#progress text == Question 2 of 4
+#question text == How many moons does Mars have?
+#choices .choice:last-child text == 2
+--- check dom | Next is disabled on the last question
+click #next
+click #next
+click #next
+#progress text == Question 4 of 4
+#next[disabled] exists
+
+=== webp-06 | Quiz app, part 2: answering and scoring
+--- teach
+Now choices do something. The question is what to remember. Tempting: `score` as a number you add to. Better: remember **which choice the player picked for each question**, and derive the score:
+
+```js
+const state = { index: 0, answers: [] }   // answers[2] === 0 means "for question 3, the player chose choice 0"
+
+const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+```
+
+That one decision makes everything else easy. Whether the current question has been answered is `state.answers[state.index] !== undefined`. What to highlight, what feedback to show, whether Next is allowed — all derive from it. And the results screen in the next part can list the player's mistakes, because the answers are still there.
+
+Once answered, a question is **locked**: disable the choice buttons so a second click can't change the answer. Show the outcome in two ways: colour (classes `correct` and `wrong`) and text (`Correct!`, or which answer was right). Never rely on colour alone — some people can't tell red from green, and screen readers don't announce colours. Putting the feedback in a `role="status"` element gets it read out.
+
+With the handler written as "record the answer, render", there is no way for the score, the highlights and the feedback to disagree.
+--- task
+Make answering work, keeping part 1's behaviour:
+
+- clicking a choice records it for the current question; then every choice is disabled, the right choice gets the class `correct`, and a wrong pick gets the class `wrong`
+- `#feedback` (add it, with `role="status"`) says `Correct!` or like `Not quite: it's Mercury.`; empty before answering
+- `#score` (add it) says like `Score: 1`, derived from the recorded answers
+- `#next` is disabled until the current question is answered (and still on the last question)
+--- starter
+<section id="quiz">
+  <p id="progress"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <button id="next">Next</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0 }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  function render() {
+    const q = questions[state.index]
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        return button
+      }),
+    )
+    nextButton.disabled = state.index === questions.length - 1
+  }
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<section id="quiz">
+  <p id="progress"></p>
+  <p id="score"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <p id="feedback" role="status"></p>
+  <button id="next">Next</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0, answers: [] }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+
+  function render() {
+    const q = questions[state.index]
+    const chosen = state.answers[state.index]
+    const answered = chosen !== undefined
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#score').textContent = `Score: ${score()}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        button.disabled = answered
+        button.classList.toggle('correct', answered && i === q.answer)
+        button.classList.toggle('wrong', answered && i === chosen && chosen !== q.answer)
+        return button
+      }),
+    )
+    document.querySelector('#feedback').textContent = !answered ? '' : chosen === q.answer ? 'Correct!' : `Not quite: it's ${q.choices[q.answer]}.`
+    nextButton.disabled = !answered || state.index === questions.length - 1
+  }
+
+  choicesEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.choice')
+    if (!button || state.answers[state.index] !== undefined) return
+    state.answers[state.index] = Number(button.dataset.index)
+    render()
+  })
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add `answers: []` to the state and a `score()` function that counts the answers matching `questions[i].answer`. In `render()`, `const chosen = state.answers[state.index]` tells you everything about the current question.
+--- hint
+One delegated click listener on `#choices`: if the question isn't answered yet, store `Number(button.dataset.index)` in `state.answers[state.index]` and render. Set `disabled` and the two classes on each button inside `render()`.
+--- check dom | Before answering: no feedback, and Next waits
+#feedback text ==
+#score text == Score: 0
+#next[disabled] exists
+--- check dom | A right answer is marked, scored and locked
+click #choices .choice:nth-child(2)
+#choices .choice:nth-child(2) class correct
+#feedback text == Correct!
+#score text == Score: 1
+#choices .choice:not([disabled]) missing
+#next:not([disabled]) exists
+--- check dom | A wrong answer shows which was right
+click #choices .choice:nth-child(1)
+#choices .choice:nth-child(1) class wrong
+#choices .choice:nth-child(2) class correct
+#feedback text == Not quite: it's Mercury.
+#score text == Score: 0
+--- check dom | The score carries over to the next question
+click #choices .choice:nth-child(2)
+click #next
+#next[disabled] exists
+#feedback text ==
+click #choices .choice:nth-child(3)
+#score text == Score: 2
+
+=== webp-07 | Quiz app, part 3: the results screen
+--- teach
+A quiz needs an ending. The neat way to model "finished" is not a new boolean but one more value of the index you already have: when `state.index === questions.length`, the player is past the last question.
+
+```js
+const finished = () => state.index === questions.length
+```
+
+`render()` then has two branches: draw the current question, or draw the results — and it hides the section that doesn't apply with the `hidden` attribute. Nothing else in the state changes, so going back to question 1 later (a restart) will be a matter of setting two values.
+
+The results are derived, like the score:
+
+- the final line, `You scored 3 out of 4`
+- a review of the mistakes: for each question where `answers[i] !== questions[i].answer`, say what the player chose and what was right
+
+Build the review from the data you have been keeping all along — this is the moment the decision in part 2 to store every answer (not just a running score) pays for itself.
+
+Small touches matter at the end of a flow: the Next button on the last question should say where it goes (`See results`), rather than a generic "Next" that seems to lead nowhere.
+--- task
+Add the results screen, keeping parts 1 and 2 working:
+
+- after answering the last question, `#next` says `See results` and is enabled; on other questions it says `Next`
+- clicking it hides `#quiz` and shows a new `<section id="results" hidden>` (hidden until then)
+- in it: `#final` says like `You scored 3 out of 4`, and `#review` lists one `li` per wrong answer, like `Q2: you said 1, the answer is 2`
+--- starter
+<section id="quiz">
+  <p id="progress"></p>
+  <p id="score"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <p id="feedback" role="status"></p>
+  <button id="next">Next</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0, answers: [] }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+
+  function render() {
+    const q = questions[state.index]
+    const chosen = state.answers[state.index]
+    const answered = chosen !== undefined
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#score').textContent = `Score: ${score()}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        button.disabled = answered
+        button.classList.toggle('correct', answered && i === q.answer)
+        button.classList.toggle('wrong', answered && i === chosen && chosen !== q.answer)
+        return button
+      }),
+    )
+    document.querySelector('#feedback').textContent = !answered ? '' : chosen === q.answer ? 'Correct!' : `Not quite: it's ${q.choices[q.answer]}.`
+    nextButton.disabled = !answered || state.index === questions.length - 1
+  }
+
+  choicesEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.choice')
+    if (!button || state.answers[state.index] !== undefined) return
+    state.answers[state.index] = Number(button.dataset.index)
+    render()
+  })
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<section id="quiz">
+  <p id="progress"></p>
+  <p id="score"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <p id="feedback" role="status"></p>
+  <button id="next">Next</button>
+</section>
+
+<section id="results" hidden>
+  <h2>Results</h2>
+  <p id="final"></p>
+  <ul id="review"></ul>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0, answers: [] }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+  const finished = () => state.index === questions.length
+
+  function renderResults() {
+    document.querySelector('#final').textContent = `You scored ${score()} out of ${questions.length}`
+    const mistakes = questions
+      .map((q, i) => ({ q, i, chosen: state.answers[i] }))
+      .filter(({ q, chosen }) => chosen !== q.answer)
+      .map(({ q, i, chosen }) => {
+        const li = document.createElement('li')
+        li.textContent = `Q${i + 1}: you said ${q.choices[chosen]}, the answer is ${q.choices[q.answer]}`
+        return li
+      })
+    document.querySelector('#review').replaceChildren(...mistakes)
+  }
+
+  function renderQuestion() {
+    const q = questions[state.index]
+    const chosen = state.answers[state.index]
+    const answered = chosen !== undefined
+    const last = state.index === questions.length - 1
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#score').textContent = `Score: ${score()}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        button.disabled = answered
+        button.classList.toggle('correct', answered && i === q.answer)
+        button.classList.toggle('wrong', answered && i === chosen && chosen !== q.answer)
+        return button
+      }),
+    )
+    document.querySelector('#feedback').textContent = !answered ? '' : chosen === q.answer ? 'Correct!' : `Not quite: it's ${q.choices[q.answer]}.`
+    nextButton.disabled = !answered
+    nextButton.textContent = last ? 'See results' : 'Next'
+  }
+
+  function render() {
+    document.querySelector('#quiz').hidden = finished()
+    document.querySelector('#results').hidden = !finished()
+    if (finished()) renderResults()
+    else renderQuestion()
+  }
+
+  choicesEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.choice')
+    if (!button || state.answers[state.index] !== undefined) return
+    state.answers[state.index] = Number(button.dataset.index)
+    render()
+  })
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add `const finished = () => state.index === questions.length`, and split `render()` into a question part and a results part, hiding whichever section doesn't apply.
+--- hint
+Next is now simply "enabled once answered" — the last question no longer blocks it. For the review, `filter` the questions to the ones answered wrongly and map each to an `li`.
+--- check dom | The last question offers See results
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(3)
+click #next
+click #choices .choice:nth-child(2)
+#next text == Next
+click #next
+click #choices .choice:nth-child(1)
+#next text == See results
+#next:not([disabled]) exists
+--- check dom | The results replace the quiz
+#results[hidden] exists
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(3)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+#quiz[hidden] exists
+#results:not([hidden]) exists
+#final text == You scored 4 out of 4
+#review li count == 0
+--- check dom | Mistakes are listed
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+#final text == You scored 3 out of 4
+#review li count == 1
+#review li text == Q2: you said 1, the answer is 2
+
+=== webp-08 | Quiz app, part 4: restart and best score
+--- teach
+Two last features: play again, and remember the best score across rounds.
+
+**Restart** is the test of your state design. If the whole quiz is `{ index, answers }`, restarting is two assignments and a render:
+
+```js
+state.index = 0
+state.answers = []
+render()
+```
+
+If restarting feels hard — "I have to reset this flag, and clear that list, and re-enable those buttons" — the state has leaked into the page. Here it hasn't: `render()` redraws every button from the state, so there is nothing else to reset.
+
+**The best score** is state that deliberately *survives* a restart, so it sits beside the per-round state rather than inside it (`state.best`, starting `null`). The subtle part is *when* to update it. Not inside `render()`: rendering should only ever read state, never change it, or drawing the page twice could change what it shows. Update it at the **transition** — in the handler that moves the player from the last question to the results:
+
+```js
+nextButton.addEventListener('click', () => {
+  state.index += 1
+  if (finished()) state.best = Math.max(state.best ?? 0, score())
+  render()
+})
+```
+
+`??` gives `0` when `best` is still `null`. Keep your event handlers as the only places that change state, and `render()` as the only place that changes the page.
+--- task
+Finish the quiz, keeping parts 1–3 working:
+
+- add a `#restart` button (`Play again`) to the results; it starts a fresh round at question 1 with no answers and the quiz showing
+- add `#best` to the results, saying like `Best: 3 of 4` — the best score of any round finished so far, updated when a round finishes, and kept across restarts
+--- starter
+<section id="quiz">
+  <p id="progress"></p>
+  <p id="score"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <p id="feedback" role="status"></p>
+  <button id="next">Next</button>
+</section>
+
+<section id="results" hidden>
+  <h2>Results</h2>
+  <p id="final"></p>
+  <ul id="review"></ul>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0, answers: [] }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+  const finished = () => state.index === questions.length
+
+  function renderResults() {
+    document.querySelector('#final').textContent = `You scored ${score()} out of ${questions.length}`
+    const mistakes = questions
+      .map((q, i) => ({ q, i, chosen: state.answers[i] }))
+      .filter(({ q, chosen }) => chosen !== q.answer)
+      .map(({ q, i, chosen }) => {
+        const li = document.createElement('li')
+        li.textContent = `Q${i + 1}: you said ${q.choices[chosen]}, the answer is ${q.choices[q.answer]}`
+        return li
+      })
+    document.querySelector('#review').replaceChildren(...mistakes)
+  }
+
+  function renderQuestion() {
+    const q = questions[state.index]
+    const chosen = state.answers[state.index]
+    const answered = chosen !== undefined
+    const last = state.index === questions.length - 1
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#score').textContent = `Score: ${score()}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        button.disabled = answered
+        button.classList.toggle('correct', answered && i === q.answer)
+        button.classList.toggle('wrong', answered && i === chosen && chosen !== q.answer)
+        return button
+      }),
+    )
+    document.querySelector('#feedback').textContent = !answered ? '' : chosen === q.answer ? 'Correct!' : `Not quite: it's ${q.choices[q.answer]}.`
+    nextButton.disabled = !answered
+    nextButton.textContent = last ? 'See results' : 'Next'
+  }
+
+  function render() {
+    document.querySelector('#quiz').hidden = finished()
+    document.querySelector('#results').hidden = !finished()
+    if (finished()) renderResults()
+    else renderQuestion()
+  }
+
+  choicesEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.choice')
+    if (!button || state.answers[state.index] !== undefined) return
+    state.answers[state.index] = Number(button.dataset.index)
+    render()
+  })
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<section id="quiz">
+  <p id="progress"></p>
+  <p id="score"></p>
+  <h2 id="question"></h2>
+  <div id="choices"></div>
+  <p id="feedback" role="status"></p>
+  <button id="next">Next</button>
+</section>
+
+<section id="results" hidden>
+  <h2>Results</h2>
+  <p id="final"></p>
+  <p id="best"></p>
+  <ul id="review"></ul>
+  <button id="restart">Play again</button>
+</section>
+
+<script>
+  const questions = [
+    { text: 'Which planet is closest to the Sun?', choices: ['Venus', 'Mercury', 'Mars'], answer: 1 },
+    { text: 'How many moons does Mars have?', choices: ['0', '1', '2'], answer: 2 },
+    { text: 'What is the largest planet?', choices: ['Saturn', 'Jupiter', 'Neptune'], answer: 1 },
+    { text: 'Which planet spins on its side?', choices: ['Uranus', 'Earth', 'Venus'], answer: 0 },
+  ]
+  const state = { index: 0, answers: [], best: null }
+  const choicesEl = document.querySelector('#choices')
+  const nextButton = document.querySelector('#next')
+
+  const score = () => state.answers.filter((chosen, i) => chosen === questions[i].answer).length
+  const finished = () => state.index === questions.length
+
+  function renderResults() {
+    document.querySelector('#final').textContent = `You scored ${score()} out of ${questions.length}`
+    document.querySelector('#best').textContent = `Best: ${state.best} of ${questions.length}`
+    const mistakes = questions
+      .map((q, i) => ({ q, i, chosen: state.answers[i] }))
+      .filter(({ q, chosen }) => chosen !== q.answer)
+      .map(({ q, i, chosen }) => {
+        const li = document.createElement('li')
+        li.textContent = `Q${i + 1}: you said ${q.choices[chosen]}, the answer is ${q.choices[q.answer]}`
+        return li
+      })
+    document.querySelector('#review').replaceChildren(...mistakes)
+  }
+
+  function renderQuestion() {
+    const q = questions[state.index]
+    const chosen = state.answers[state.index]
+    const answered = chosen !== undefined
+    const last = state.index === questions.length - 1
+    document.querySelector('#progress').textContent = `Question ${state.index + 1} of ${questions.length}`
+    document.querySelector('#score').textContent = `Score: ${score()}`
+    document.querySelector('#question').textContent = q.text
+    choicesEl.replaceChildren(
+      ...q.choices.map((choice, i) => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'choice'
+        button.dataset.index = i
+        button.textContent = choice
+        button.disabled = answered
+        button.classList.toggle('correct', answered && i === q.answer)
+        button.classList.toggle('wrong', answered && i === chosen && chosen !== q.answer)
+        return button
+      }),
+    )
+    document.querySelector('#feedback').textContent = !answered ? '' : chosen === q.answer ? 'Correct!' : `Not quite: it's ${q.choices[q.answer]}.`
+    nextButton.disabled = !answered
+    nextButton.textContent = last ? 'See results' : 'Next'
+  }
+
+  function render() {
+    document.querySelector('#quiz').hidden = finished()
+    document.querySelector('#results').hidden = !finished()
+    if (finished()) renderResults()
+    else renderQuestion()
+  }
+
+  choicesEl.addEventListener('click', (event) => {
+    const button = event.target.closest('.choice')
+    if (!button || state.answers[state.index] !== undefined) return
+    state.answers[state.index] = Number(button.dataset.index)
+    render()
+  })
+
+  nextButton.addEventListener('click', () => {
+    state.index += 1
+    if (finished()) state.best = Math.max(state.best ?? 0, score())
+    render()
+  })
+
+  document.querySelector('#restart').addEventListener('click', () => {
+    state.index = 0
+    state.answers = []
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add `best: null` to the state, and update it in the Next handler right after the index moves past the last question.
+--- hint
+Restart sets `index` back to 0 and `answers` to `[]`, then renders. `renderResults()` writes `#best` from `state.best`.
+--- check dom | Play again starts a fresh round
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #restart
+#results[hidden] exists
+#quiz:not([hidden]) exists
+#progress text == Question 1 of 4
+#score text == Score: 0
+#feedback text ==
+#choices .choice:not([disabled]) count == 3
+--- check dom | The best score is shown at the end
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+#best text == Best: 3 of 4
+--- check dom | A worse round keeps the best
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #restart
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+#final text == You scored 0 out of 4
+#best text == Best: 3 of 4
+--- check dom | A better round raises it
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #restart
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(3)
+click #next
+click #choices .choice:nth-child(2)
+click #next
+click #choices .choice:nth-child(1)
+click #next
+#best text == Best: 4 of 4
+
+=== webp-09 | Shopping cart, part 1: products and money
+--- teach
+The third project is a shop: products, a cart, totals with a discount and shipping, and a checkout. It is mostly arithmetic, which makes it a good place to learn the one rule about money in code:
+
+**Never use floating-point numbers for money.** JavaScript's numbers are binary fractions, and most decimal amounts can't be stored exactly:
+
+```js
+0.1 + 0.2          // 0.30000000000000004
+4.35 * 100         // 434.99999999999994
+```
+
+The errors are tiny, and then they are rounded the wrong way on a receipt. The standard fix is to store **whole cents** — integers are exact — and only turn them into dollars when you *display* them:
+
+```js
+const products = [{ id: 'tea', name: 'Moon tea', price: 450 }]   // $4.50
+
+const money = (cents) => `$${(cents / 100).toFixed(2)}`
+money(450)    // '$4.50'
+money(2100)   // '$21.00'
+```
+
+`toFixed(2)` always shows two decimals, so `$21.00`, never `$21`.
+
+The cart's state is just **quantities by product id**: `{ tea: 2, mug: 1 }`. Everything else — how many items, line totals, the subtotal — is derived from that and the product list.
+
+The product list itself never changes, so it can be drawn once. Each product gets a button whose accessible name says which product it adds (`Add Moon tea to cart`); a page full of identical "Add to cart" buttons is a puzzle for a screen reader user.
+--- task
+Show the products and count what's added:
+
+- render each product into `#products` as an `article` with the class `product` and `data-id`, containing an `h3` with the name, a `p` with the class `price` like `$4.50`, and a `button` with the class `add` saying `Add to cart` (its `aria-label` like `Add Moon tea to cart`)
+- keep the cart as quantities by id; clicking Add adds one of that product
+- `#cart-count` says like `Cart: 3 items` (`Cart: 1 item` for one)
+--- starter
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+</script>
+--- solution
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {} }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Write `money(cents)` and a `ProductCard(product)` component, and append `products.map(ProductCard)` to `#products` once.
+--- hint
+`state.cart[id] = (state.cart[id] || 0) + 1` in a delegated click listener on `#products`. The count is the sum of `Object.values(state.cart)`.
+--- check dom | One card per product
+#products article.product count == 4
+#products .product:first-child h3 text == Moon tea
+#products .product:first-child attr data-id == tea
+--- check dom | Prices are shown as dollars and cents
+#products .product:first-child .price text == $4.50
+#products .product:nth-child(2) .price text == $12.00
+--- check dom | Add buttons say which product they add
+#products .product:nth-child(3) .add text == Add to cart
+#products .product:nth-child(3) .add attr aria-label == Add Star map to cart
+--- check dom | Adding counts items
+click #products [data-id=tea] .add
+#cart-count text == Cart: 1 item
+click #products [data-id=tea] .add
+click #products [data-id=mug] .add
+#cart-count text == Cart: 3 items
+
+=== webp-10 | Shopping cart, part 2: the cart
+--- teach
+Now draw the cart itself. Each line is derived from one entry of `state.cart`, joined with its product:
+
+```js
+const lines = () =>
+  Object.entries(state.cart).map(([id, qty]) => {
+    const product = products.find((p) => p.id === id)
+    return { product, qty, total: product.price * qty }
+  })
+```
+
+`Object.entries` keeps the order keys were added in, so lines appear in the order the shopper added things.
+
+**Quantity controls** are a pair of buttons around the number. Give them names a screen reader can use: `One more Moon tea`, `One fewer Moon tea` — the visible `+` and `−` mean nothing read aloud.
+
+**Removing at zero.** When a quantity drops to 0, delete the key (`delete state.cart[id]`) rather than keeping `tea: 0`; otherwise every derived value has to remember to skip zeros, and one of them will forget.
+
+**The empty state.** An empty cart should say so. Keep the message in the HTML and toggle its `hidden` attribute from `render()`. Test your render for three cases every time you touch it: empty, one line, several lines.
+--- task
+Draw the cart, keeping part 1 working:
+
+- add a cart section with `<p id="cart-empty">Your cart is empty.</p>` and `<ul id="cart"></ul>`; the message is hidden whenever the cart has something in it
+- each cart entry is an `li` with the class `line` and `data-id`, holding a `.name`, a `.dec` button (`−`, `aria-label` like `One fewer Moon tea`), a `.qty`, an `.inc` button (`+`, `aria-label` like `One more Moon tea`) and a `.line-total` like `$9.00`
+- `+` and `−` change the quantity; reaching 0 removes the line
+--- starter
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {} }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<section aria-labelledby="cart-heading">
+  <h2 id="cart-heading">Your cart</h2>
+  <p id="cart-empty">Your cart is empty.</p>
+  <ul id="cart"></ul>
+</section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {} }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+  const lines = () =>
+    Object.entries(state.cart).map(([id, qty]) => {
+      const product = products.find((p) => p.id === id)
+      return { product, qty, total: product.price * qty }
+    })
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag)
+    node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function CartLine({ product, qty, total }) {
+    const li = el('li', 'line')
+    li.dataset.id = product.id
+    const dec = el('button', 'dec', '−')
+    dec.type = 'button'
+    dec.setAttribute('aria-label', `One fewer ${product.name}`)
+    const inc = el('button', 'inc', '+')
+    inc.type = 'button'
+    inc.setAttribute('aria-label', `One more ${product.name}`)
+    li.append(el('span', 'name', product.name), ' ', dec, ' ', el('span', 'qty', qty), ' ', inc, ' ', el('span', 'line-total', money(total)))
+    return li
+  }
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+    document.querySelector('#cart').replaceChildren(...lines().map(CartLine))
+    document.querySelector('#cart-empty').hidden = n > 0
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  document.querySelector('#cart').addEventListener('click', (event) => {
+    const button = event.target.closest('.inc, .dec')
+    if (!button) return
+    const id = button.closest('.line').dataset.id
+    state.cart[id] += button.classList.contains('inc') ? 1 : -1
+    if (state.cart[id] <= 0) delete state.cart[id]
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add a `lines()` function that turns `state.cart` into `{ product, qty, total }` objects, and a `CartLine` component; `render()` draws `lines().map(CartLine)` into `#cart`.
+--- hint
+One delegated listener on `#cart` for `.inc` and `.dec`: change the quantity, `delete state.cart[id]` if it reaches 0, and render. Toggle `#cart-empty`'s `hidden` from the item count.
+--- check dom | An empty cart says so
+#cart-empty:not([hidden]) exists
+#cart li missing
+--- check dom | Each product added gets one line, in order
+click #products [data-id=tea] .add
+click #products [data-id=tea] .add
+click #products [data-id=mug] .add
+#cart li.line count == 2
+#cart .line:first-child attr data-id == tea
+#cart .line:first-child .name text == Moon tea
+#cart .line:first-child .qty text == 2
+#cart .line:first-child .line-total text == $9.00
+#cart-empty[hidden] exists
+--- check dom | The quantity buttons are named for their product
+click #products [data-id=mug] .add
+#cart .line .inc attr aria-label == One more Rocket mug
+#cart .line .dec attr aria-label == One fewer Rocket mug
+--- check dom | + adds one
+click #products [data-id=mug] .add
+click #cart [data-id=mug] .inc
+#cart [data-id=mug] .qty text == 2
+#cart [data-id=mug] .line-total text == $24.00
+#cart-count text == Cart: 2 items
+--- check dom | − down to zero removes the line
+click #products [data-id=tea] .add
+click #products [data-id=tea] .add
+click #cart [data-id=tea] .dec
+#cart [data-id=tea] .qty text == 1
+click #cart [data-id=tea] .dec
+#cart li missing
+#cart-empty:not([hidden]) exists
+
+=== webp-11 | Shopping cart, part 3: totals, discounts and shipping
+--- teach
+Totals are a chain of derived values, and the order of the chain is a business rule, so write it down before you code it:
+
+1. **subtotal** = the sum of the line totals
+2. **discount** = 10% of the subtotal with a valid code, else 0 — rounded to a whole cent (`Math.round`)
+3. **shipping** = free when *subtotal minus discount* is at least $50.00; otherwise $5.00; and nothing at all for an empty cart
+4. **total** = subtotal − discount + shipping
+
+Is free shipping decided before or after the discount? Shops differ; the point is to decide, and to test the edge where it matters — an order just over $50 that drops under it with the code.
+
+```js
+function totals() {
+  const subtotal = lines().reduce((sum, line) => sum + line.total, 0)
+  const discount = state.code ? Math.round(subtotal / 10) : 0
+  const afterDiscount = subtotal - discount
+  const shipping = subtotal === 0 || afterDiscount >= 5000 ? 0 : 500
+  return { subtotal, discount, shipping, total: afterDiscount + shipping }
+}
+```
+
+Everything stays in cents until `money()` formats it. One function computes all four, and `render()` displays them — so the numbers on screen can never disagree with each other.
+
+**Codes** arrive as typed text: trim it and compare case-insensitively (`save10` should work). Say what happened either way — a code that silently does nothing is a support ticket.
+--- task
+Add totals, keeping parts 1 and 2 working:
+
+- a form `#code-form` with a labelled input `#code` and a button `#apply`; `SAVE10` (any case, spaces trimmed) gives 10% off the subtotal and `#code-message` says `SAVE10 applied: 10% off.`; any other code removes the discount and says `That code isn't valid.`
+- show `#subtotal`, `#discount` (like `-$2.10`, or `$0.00` with no discount), `#shipping` and `#total`
+- shipping is `$5.00`, or `Free` when the subtotal after discount is at least $50.00; an empty cart has shipping `$0.00`
+--- starter
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<section aria-labelledby="cart-heading">
+  <h2 id="cart-heading">Your cart</h2>
+  <p id="cart-empty">Your cart is empty.</p>
+  <ul id="cart"></ul>
+</section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {} }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+  const lines = () =>
+    Object.entries(state.cart).map(([id, qty]) => {
+      const product = products.find((p) => p.id === id)
+      return { product, qty, total: product.price * qty }
+    })
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag)
+    node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function CartLine({ product, qty, total }) {
+    const li = el('li', 'line')
+    li.dataset.id = product.id
+    const dec = el('button', 'dec', '−')
+    dec.type = 'button'
+    dec.setAttribute('aria-label', `One fewer ${product.name}`)
+    const inc = el('button', 'inc', '+')
+    inc.type = 'button'
+    inc.setAttribute('aria-label', `One more ${product.name}`)
+    li.append(el('span', 'name', product.name), ' ', dec, ' ', el('span', 'qty', qty), ' ', inc, ' ', el('span', 'line-total', money(total)))
+    return li
+  }
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+    document.querySelector('#cart').replaceChildren(...lines().map(CartLine))
+    document.querySelector('#cart-empty').hidden = n > 0
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  document.querySelector('#cart').addEventListener('click', (event) => {
+    const button = event.target.closest('.inc, .dec')
+    if (!button) return
+    const id = button.closest('.line').dataset.id
+    state.cart[id] += button.classList.contains('inc') ? 1 : -1
+    if (state.cart[id] <= 0) delete state.cart[id]
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<section aria-labelledby="cart-heading">
+  <h2 id="cart-heading">Your cart</h2>
+  <p id="cart-empty">Your cart is empty.</p>
+  <ul id="cart"></ul>
+
+  <form id="code-form">
+    <label for="code">Discount code</label>
+    <input id="code" autocomplete="off">
+    <button id="apply">Apply</button>
+  </form>
+  <p id="code-message" role="status"></p>
+
+  <dl>
+    <dt>Subtotal</dt><dd id="subtotal"></dd>
+    <dt>Discount</dt><dd id="discount"></dd>
+    <dt>Shipping</dt><dd id="shipping"></dd>
+    <dt>Total</dt><dd id="total"></dd>
+  </dl>
+</section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {}, code: null }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+  const lines = () =>
+    Object.entries(state.cart).map(([id, qty]) => {
+      const product = products.find((p) => p.id === id)
+      return { product, qty, total: product.price * qty }
+    })
+
+  function totals() {
+    const subtotal = lines().reduce((sum, line) => sum + line.total, 0)
+    const discount = state.code ? Math.round(subtotal / 10) : 0
+    const afterDiscount = subtotal - discount
+    const shipping = subtotal === 0 || afterDiscount >= 5000 ? 0 : 500
+    return { subtotal, discount, shipping, total: afterDiscount + shipping }
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag)
+    node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function CartLine({ product, qty, total }) {
+    const li = el('li', 'line')
+    li.dataset.id = product.id
+    const dec = el('button', 'dec', '−')
+    dec.type = 'button'
+    dec.setAttribute('aria-label', `One fewer ${product.name}`)
+    const inc = el('button', 'inc', '+')
+    inc.type = 'button'
+    inc.setAttribute('aria-label', `One more ${product.name}`)
+    li.append(el('span', 'name', product.name), ' ', dec, ' ', el('span', 'qty', qty), ' ', inc, ' ', el('span', 'line-total', money(total)))
+    return li
+  }
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+    document.querySelector('#cart').replaceChildren(...lines().map(CartLine))
+    document.querySelector('#cart-empty').hidden = n > 0
+    const t = totals()
+    document.querySelector('#subtotal').textContent = money(t.subtotal)
+    document.querySelector('#discount').textContent = t.discount ? `-${money(t.discount)}` : money(0)
+    document.querySelector('#shipping').textContent = n > 0 && t.shipping === 0 ? 'Free' : money(t.shipping)
+    document.querySelector('#total').textContent = money(t.total)
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  document.querySelector('#cart').addEventListener('click', (event) => {
+    const button = event.target.closest('.inc, .dec')
+    if (!button) return
+    const id = button.closest('.line').dataset.id
+    state.cart[id] += button.classList.contains('inc') ? 1 : -1
+    if (state.cart[id] <= 0) delete state.cart[id]
+    render()
+  })
+
+  document.querySelector('#code-form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const code = document.querySelector('#code').value.trim().toUpperCase()
+    state.code = code === 'SAVE10' ? 'SAVE10' : null
+    document.querySelector('#code-message').textContent = state.code ? 'SAVE10 applied: 10% off.' : "That code isn't valid."
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add `code: null` to the state and a `totals()` function returning `{ subtotal, discount, shipping, total }` in cents, following the four rules in order. `render()` only formats and displays them.
+--- hint
+Shipping: `subtotal === 0 || afterDiscount >= 5000 ? 0 : 500`. When displaying, show `Free` for 0 only when the cart isn't empty.
+--- check dom | An empty cart totals nothing
+#subtotal text == $0.00
+#shipping text == $0.00
+#total text == $0.00
+--- check dom | Subtotal, shipping and total
+click #products [data-id=tea] .add
+click #products [data-id=tea] .add
+click #products [data-id=mug] .add
+#subtotal text == $21.00
+#discount text == $0.00
+#shipping text == $5.00
+#total text == $26.00
+--- check dom | SAVE10 takes 10% off, in any case
+click #products [data-id=tea] .add
+click #products [data-id=tea] .add
+click #products [data-id=mug] .add
+type #code save10
+click #apply
+#code-message text == SAVE10 applied: 10% off.
+#discount text == -$2.10
+#total text == $23.90
+--- check dom | A bad code is refused
+click #products [data-id=mug] .add
+type #code FREESTUFF
+click #apply
+#code-message text == That code isn't valid.
+#discount text == $0.00
+#total text == $17.00
+--- check dom | Shipping is free from $50, after the discount
+click #products [data-id=map] .add
+click #products [data-id=map] .add
+click #products [data-id=mug] .add
+#shipping text == Free
+#total text == $52.00
+type #code SAVE10
+click #apply
+#discount text == -$5.20
+#shipping text == $5.00
+#total text == $51.80
+
+=== webp-12 | Shopping cart, part 4: checkout
+--- teach
+The last step takes the shopper's money — so it takes the most care, even in a practice shop.
+
+**Progressive disclosure.** The checkout form stays hidden until the shopper asks for it, and the Checkout button is disabled while the cart is empty (there is nothing to buy). When the form appears, move focus to its first field: they pressed a button to start typing, so put the cursor there.
+
+**Validate at the boundary.** You know this from earlier: `novalidate` on the form, check the fields yourself, and one clear message saying what to fix. The email check can lean on the browser — `input.validity.typeMismatch` is true for a badly shaped address in a `type="email"` field.
+
+**Finish the transaction completely.** After a successful order:
+
+1. show a confirmation that restates what was bought (the number of items and the amount charged) — computed *before* you empty the cart
+2. empty the cart and forget the discount code
+3. hide and reset the form (`form.reset()` clears its fields)
+
+```js
+const t = totals()
+const count = itemCount()
+confirmation.textContent = `Thanks, ${name}! Your ${count} items (${money(t.total)}) are on their way.`
+state.cart = {}
+state.code = null
+```
+
+The order of those lines matters: read the totals first, then clear. It's the kind of bug that shows "$0.00" on every receipt.
+
+Look back at the shop when you're done: products, cart, totals and checkout are four features on one state object — `{ cart, code }` plus whether the form is open — and one `render()`.
+--- task
+Add checkout, keeping parts 1–3 working:
+
+- a `#checkout` button (`Checkout`), disabled while the cart is empty; clicking it shows `#checkout-form` (hidden at first, `novalidate`) and focuses `#buyer-name`
+- the form has labelled `#buyer-name` and `#buyer-email` (`type="email"`) fields, `#checkout-error` and a `#place-order` button
+- placing an order with an empty name or a missing or badly shaped email shows `Enter your name and a valid email.` in `#checkout-error`
+- a good order sets `#confirmation` to like `Thanks, Ada! Your 3 items ($26.00) are on their way.`, empties the cart, clears the code, and hides and resets the form
+--- starter
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<section aria-labelledby="cart-heading">
+  <h2 id="cart-heading">Your cart</h2>
+  <p id="cart-empty">Your cart is empty.</p>
+  <ul id="cart"></ul>
+
+  <form id="code-form">
+    <label for="code">Discount code</label>
+    <input id="code" autocomplete="off">
+    <button id="apply">Apply</button>
+  </form>
+  <p id="code-message" role="status"></p>
+
+  <dl>
+    <dt>Subtotal</dt><dd id="subtotal"></dd>
+    <dt>Discount</dt><dd id="discount"></dd>
+    <dt>Shipping</dt><dd id="shipping"></dd>
+    <dt>Total</dt><dd id="total"></dd>
+  </dl>
+</section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {}, code: null }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+  const lines = () =>
+    Object.entries(state.cart).map(([id, qty]) => {
+      const product = products.find((p) => p.id === id)
+      return { product, qty, total: product.price * qty }
+    })
+
+  function totals() {
+    const subtotal = lines().reduce((sum, line) => sum + line.total, 0)
+    const discount = state.code ? Math.round(subtotal / 10) : 0
+    const afterDiscount = subtotal - discount
+    const shipping = subtotal === 0 || afterDiscount >= 5000 ? 0 : 500
+    return { subtotal, discount, shipping, total: afterDiscount + shipping }
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag)
+    node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function CartLine({ product, qty, total }) {
+    const li = el('li', 'line')
+    li.dataset.id = product.id
+    const dec = el('button', 'dec', '−')
+    dec.type = 'button'
+    dec.setAttribute('aria-label', `One fewer ${product.name}`)
+    const inc = el('button', 'inc', '+')
+    inc.type = 'button'
+    inc.setAttribute('aria-label', `One more ${product.name}`)
+    li.append(el('span', 'name', product.name), ' ', dec, ' ', el('span', 'qty', qty), ' ', inc, ' ', el('span', 'line-total', money(total)))
+    return li
+  }
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+    document.querySelector('#cart').replaceChildren(...lines().map(CartLine))
+    document.querySelector('#cart-empty').hidden = n > 0
+    const t = totals()
+    document.querySelector('#subtotal').textContent = money(t.subtotal)
+    document.querySelector('#discount').textContent = t.discount ? `-${money(t.discount)}` : money(0)
+    document.querySelector('#shipping').textContent = n > 0 && t.shipping === 0 ? 'Free' : money(t.shipping)
+    document.querySelector('#total').textContent = money(t.total)
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  document.querySelector('#cart').addEventListener('click', (event) => {
+    const button = event.target.closest('.inc, .dec')
+    if (!button) return
+    const id = button.closest('.line').dataset.id
+    state.cart[id] += button.classList.contains('inc') ? 1 : -1
+    if (state.cart[id] <= 0) delete state.cart[id]
+    render()
+  })
+
+  document.querySelector('#code-form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const code = document.querySelector('#code').value.trim().toUpperCase()
+    state.code = code === 'SAVE10' ? 'SAVE10' : null
+    document.querySelector('#code-message').textContent = state.code ? 'SAVE10 applied: 10% off.' : "That code isn't valid."
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h1>Space shop</h1>
+<p id="cart-count">Cart: 0 items</p>
+<section id="products"></section>
+
+<section aria-labelledby="cart-heading">
+  <h2 id="cart-heading">Your cart</h2>
+  <p id="cart-empty">Your cart is empty.</p>
+  <ul id="cart"></ul>
+
+  <form id="code-form">
+    <label for="code">Discount code</label>
+    <input id="code" autocomplete="off">
+    <button id="apply">Apply</button>
+  </form>
+  <p id="code-message" role="status"></p>
+
+  <dl>
+    <dt>Subtotal</dt><dd id="subtotal"></dd>
+    <dt>Discount</dt><dd id="discount"></dd>
+    <dt>Shipping</dt><dd id="shipping"></dd>
+    <dt>Total</dt><dd id="total"></dd>
+  </dl>
+
+  <button id="checkout">Checkout</button>
+  <form id="checkout-form" hidden novalidate>
+    <label for="buyer-name">Name</label>
+    <input id="buyer-name" autocomplete="name">
+    <label for="buyer-email">Email</label>
+    <input id="buyer-email" type="email" autocomplete="email">
+    <p id="checkout-error" role="alert"></p>
+    <button id="place-order">Place order</button>
+  </form>
+  <p id="confirmation" role="status"></p>
+</section>
+
+<script>
+  const products = [
+    { id: 'tea', name: 'Moon tea', price: 450 },
+    { id: 'mug', name: 'Rocket mug', price: 1200 },
+    { id: 'map', name: 'Star map', price: 2000 },
+    { id: 'suit', name: 'Tiny space suit', price: 3500 },
+  ]
+  const state = { cart: {}, code: null, checkingOut: false }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function ProductCard(product) {
+    const article = document.createElement('article')
+    article.className = 'product'
+    article.dataset.id = product.id
+    const name = document.createElement('h3')
+    name.textContent = product.name
+    const price = document.createElement('p')
+    price.className = 'price'
+    price.textContent = money(product.price)
+    const add = document.createElement('button')
+    add.type = 'button'
+    add.className = 'add'
+    add.textContent = 'Add to cart'
+    add.setAttribute('aria-label', `Add ${product.name} to cart`)
+    article.append(name, price, add)
+    return article
+  }
+
+  const itemCount = () => Object.values(state.cart).reduce((sum, qty) => sum + qty, 0)
+  const lines = () =>
+    Object.entries(state.cart).map(([id, qty]) => {
+      const product = products.find((p) => p.id === id)
+      return { product, qty, total: product.price * qty }
+    })
+
+  function totals() {
+    const subtotal = lines().reduce((sum, line) => sum + line.total, 0)
+    const discount = state.code ? Math.round(subtotal / 10) : 0
+    const afterDiscount = subtotal - discount
+    const shipping = subtotal === 0 || afterDiscount >= 5000 ? 0 : 500
+    return { subtotal, discount, shipping, total: afterDiscount + shipping }
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag)
+    node.className = className
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function CartLine({ product, qty, total }) {
+    const li = el('li', 'line')
+    li.dataset.id = product.id
+    const dec = el('button', 'dec', '−')
+    dec.type = 'button'
+    dec.setAttribute('aria-label', `One fewer ${product.name}`)
+    const inc = el('button', 'inc', '+')
+    inc.type = 'button'
+    inc.setAttribute('aria-label', `One more ${product.name}`)
+    li.append(el('span', 'name', product.name), ' ', dec, ' ', el('span', 'qty', qty), ' ', inc, ' ', el('span', 'line-total', money(total)))
+    return li
+  }
+
+  const checkoutForm = document.querySelector('#checkout-form')
+
+  function render() {
+    const n = itemCount()
+    document.querySelector('#cart-count').textContent = `Cart: ${n} ${n === 1 ? 'item' : 'items'}`
+    document.querySelector('#cart').replaceChildren(...lines().map(CartLine))
+    document.querySelector('#cart-empty').hidden = n > 0
+    const t = totals()
+    document.querySelector('#subtotal').textContent = money(t.subtotal)
+    document.querySelector('#discount').textContent = t.discount ? `-${money(t.discount)}` : money(0)
+    document.querySelector('#shipping').textContent = n > 0 && t.shipping === 0 ? 'Free' : money(t.shipping)
+    document.querySelector('#total').textContent = money(t.total)
+    document.querySelector('#checkout').disabled = n === 0
+    checkoutForm.hidden = !state.checkingOut
+  }
+
+  const productsEl = document.querySelector('#products')
+  productsEl.append(...products.map(ProductCard))
+  productsEl.addEventListener('click', (event) => {
+    const add = event.target.closest('.add')
+    if (!add) return
+    const id = add.closest('.product').dataset.id
+    state.cart[id] = (state.cart[id] || 0) + 1
+    render()
+  })
+
+  document.querySelector('#cart').addEventListener('click', (event) => {
+    const button = event.target.closest('.inc, .dec')
+    if (!button) return
+    const id = button.closest('.line').dataset.id
+    state.cart[id] += button.classList.contains('inc') ? 1 : -1
+    if (state.cart[id] <= 0) delete state.cart[id]
+    render()
+  })
+
+  document.querySelector('#code-form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const code = document.querySelector('#code').value.trim().toUpperCase()
+    state.code = code === 'SAVE10' ? 'SAVE10' : null
+    document.querySelector('#code-message').textContent = state.code ? 'SAVE10 applied: 10% off.' : "That code isn't valid."
+    render()
+  })
+
+  document.querySelector('#checkout').addEventListener('click', () => {
+    state.checkingOut = true
+    render()
+    document.querySelector('#buyer-name').focus()
+  })
+
+  checkoutForm.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const name = document.querySelector('#buyer-name').value.trim()
+    const email = document.querySelector('#buyer-email')
+    if (!name || !email.value.trim() || email.validity.typeMismatch) {
+      document.querySelector('#checkout-error').textContent = 'Enter your name and a valid email.'
+      return
+    }
+    const count = itemCount()
+    const t = totals()
+    document.querySelector('#confirmation').textContent = `Thanks, ${name}! Your ${count} ${count === 1 ? 'item' : 'items'} (${money(t.total)}) are on their way.`
+    state.cart = {}
+    state.code = null
+    state.checkingOut = false
+    checkoutForm.reset()
+    document.querySelector('#checkout-error').textContent = ''
+    document.querySelector('#code').value = ''
+    document.querySelector('#code-message').textContent = ''
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Add the button and the form to the HTML, and a `checkingOut` flag to the state; `render()` sets the button's `disabled` from the item count and the form's `hidden` from the flag.
+--- hint
+In the form's submit handler: validate first; then build the confirmation from `itemCount()` and `totals()` *before* setting `state.cart = {}` and `state.code = null`; then reset and hide the form and render.
+--- check dom | Checkout is disabled for an empty cart
+#checkout[disabled] exists
+#checkout-form[hidden] exists
+--- check dom | Checkout opens the form and puts you in it
+click #products [data-id=tea] .add
+click #checkout
+#checkout-form:not([hidden]) exists
+#buyer-name focused
+--- check dom | A missing name or bad email is refused
+click #products [data-id=tea] .add
+click #checkout
+type #buyer-email ada@example.com
+click #place-order
+#checkout-error text == Enter your name and a valid email.
+type #buyer-name Ada
+type #buyer-email not-an-email
+click #place-order
+#checkout-error text == Enter your name and a valid email.
+#confirmation text ==
+--- check dom | A good order is confirmed with what was bought
+click #products [data-id=tea] .add
+click #products [data-id=tea] .add
+click #products [data-id=mug] .add
+click #checkout
+type #buyer-name Ada
+type #buyer-email ada@example.com
+click #place-order
+#confirmation text == Thanks, Ada! Your 3 items ($26.00) are on their way.
+--- check dom | After ordering, the cart, code and form are cleared
+click #products [data-id=mug] .add
+type #code SAVE10
+click #apply
+click #checkout
+type #buyer-name Ada
+type #buyer-email ada@example.com
+click #place-order
+#cart-empty:not([hidden]) exists
+#cart-count text == Cart: 0 items
+#total text == $0.00
+#checkout-form[hidden] exists
+#buyer-name value ==
+click #products [data-id=mug] .add
+#discount text == $0.00
+
+=== webp-13 | Capstone: tip calculator
+--- teach
+From here on there is no starter code to extend, and no hints about structure: a specification, an empty page, and checks on behaviour only. You decide the markup, the state and the code. This is the real test of the course.
+
+A way in that works for any spec:
+
+1. **Read it twice and list the facts.** Every id the spec names, every rule, every message and number format. The checks will use those ids and exact texts.
+2. **Find the state.** What does the app need to remember that it can't compute? Here: the bill, the tip percentage (from a button or the custom field), and the number of people. Everything shown on screen is derived from those three.
+3. **Write the arithmetic as a function first**, apart from the page, and try it in the console with the spec's examples. In cents, with the rounding the spec asks for.
+4. **Then the markup, then `render()`, then the events.** Every input and click updates the state and calls `render()`.
+5. **Try the edges yourself** before running the checks: an empty field, zero, a decimal where a whole number is expected.
+
+On rounding: splitting a bill three ways rarely divides evenly. The spec says each person pays the amount *rounded up to the next cent* (`Math.ceil`), so the bill is always covered.
+--- task
+Build a tip calculator:
+
+- `#bill`: a labelled number input for the bill in dollars (empty means 0)
+- three buttons with the class `tip` and the ids `tip-10`, `tip-15` and `tip-20`, for 10, 15 and 20 percent (text like `15%`), each with `aria-pressed`; 15% is chosen at the start. Choosing one presses it, un-presses the others and clears the custom field
+- `#custom-tip`: a labelled number input for any other percentage; typing a number there un-presses all three buttons and uses it
+- `#people`: a labelled number input, starting at `1`
+- `#tip-amount` and `#total` show the tip and the bill plus tip, like `$7.50` and `$57.50` (the tip is rounded to the nearest cent)
+- `#per-person` shows the total divided by the number of people, rounded **up** to the next cent, like `$19.17`
+- if the number of people is less than 1 or not a whole number, `#error` says `Enter at least 1 person.` and `#per-person` shows `—`; otherwise `#error` is empty
+--- starter
+<h1>Tip calculator</h1>
+
+<!-- Your markup here. -->
+
+<script>
+  // Your code here.
+</script>
+--- solution
+<h1>Tip calculator</h1>
+
+<label for="bill">Bill ($)</label>
+<input id="bill" type="number" min="0" step="0.01">
+
+<fieldset>
+  <legend>Tip</legend>
+  <button class="tip" id="tip-10" type="button" data-tip="10" aria-pressed="false">10%</button>
+  <button class="tip" id="tip-15" type="button" data-tip="15" aria-pressed="true">15%</button>
+  <button class="tip" id="tip-20" type="button" data-tip="20" aria-pressed="false">20%</button>
+  <label for="custom-tip">Custom %</label>
+  <input id="custom-tip" type="number" min="0">
+</fieldset>
+
+<label for="people">People</label>
+<input id="people" type="number" min="1" step="1" value="1">
+
+<p>Tip: <strong id="tip-amount"></strong></p>
+<p>Total: <strong id="total"></strong></p>
+<p>Each: <strong id="per-person"></strong></p>
+<p id="error" role="alert"></p>
+
+<script>
+  const state = { bill: '', tip: 15, custom: '', people: '1' }
+  const money = (cents) => `$${(cents / 100).toFixed(2)}`
+
+  function calculate() {
+    const billCents = Math.round((Number(state.bill) || 0) * 100)
+    const percent = state.custom !== '' ? Number(state.custom) || 0 : state.tip
+    const tipCents = Math.round((billCents * percent) / 100)
+    const totalCents = billCents + tipCents
+    const people = Number(state.people)
+    const validPeople = state.people !== '' && Number.isInteger(people) && people >= 1
+    return { tipCents, totalCents, perPerson: validPeople ? Math.ceil(totalCents / people) : null }
+  }
+
+  function render() {
+    const r = calculate()
+    document.querySelector('#tip-amount').textContent = money(r.tipCents)
+    document.querySelector('#total').textContent = money(r.totalCents)
+    document.querySelector('#per-person').textContent = r.perPerson === null ? '—' : money(r.perPerson)
+    document.querySelector('#error').textContent = r.perPerson === null ? 'Enter at least 1 person.' : ''
+    for (const button of document.querySelectorAll('.tip')) {
+      const on = state.custom === '' && Number(button.dataset.tip) === state.tip
+      button.setAttribute('aria-pressed', String(on))
+    }
+  }
+
+  document.querySelector('#bill').addEventListener('input', (event) => {
+    state.bill = event.target.value
+    render()
+  })
+  document.querySelector('#custom-tip').addEventListener('input', (event) => {
+    state.custom = event.target.value
+    render()
+  })
+  document.querySelector('#people').addEventListener('input', (event) => {
+    state.people = event.target.value
+    render()
+  })
+  for (const button of document.querySelectorAll('.tip')) {
+    button.addEventListener('click', () => {
+      state.tip = Number(button.dataset.tip)
+      state.custom = ''
+      document.querySelector('#custom-tip').value = ''
+      render()
+    })
+  }
+
+  render()
+</script>
+--- hint
+Keep the four inputs' values in one state object, and write a `calculate()` that returns the tip, total and per-person amounts in cents (or `null` per person when the people count is invalid).
+--- hint
+Rounding: the tip with `Math.round`, the share with `Math.ceil(totalCents / people)`. The pressed button is derived: pressed when there's no custom value and its percentage is the chosen one.
+--- check dom | Starts with 15% chosen, 1 person and nothing to pay
+.tip count == 3
+.tip[aria-pressed=true] text == 15%
+#people value == 1
+#total text == $0.00
+--- check dom | 15% of $50, split two ways
+type #bill 50
+type #people 2
+#tip-amount text == $7.50
+#total text == $57.50
+#per-person text == $28.75
+--- check dom | Shares are rounded up to the cent
+type #bill 50
+type #people 3
+#per-person text == $19.17
+--- check dom | Choosing 20% presses only that button
+type #bill 50
+click #tip-20
+#tip-amount text == $10.00
+.tip[aria-pressed=true] count == 1
+.tip[aria-pressed=true] text == 20%
+--- check dom | A custom tip overrides the buttons
+type #bill 80
+type #custom-tip 18
+#tip-amount text == $14.40
+#total text == $94.40
+.tip[aria-pressed=true] missing
+--- check dom | Choosing a button again clears the custom tip
+type #bill 80
+type #custom-tip 18
+click #tip-10
+#custom-tip value ==
+#tip-amount text == $8.00
+--- check dom | Too few people is an error
+type #bill 50
+type #people 0
+#error text == Enter at least 1 person.
+#per-person text == —
+type #people 2.5
+#error text == Enter at least 1 person.
+type #people 4
+#error text ==
+#per-person text == $14.38
+
+=== webp-14 | Capstone: unit converter
+--- teach
+Another spec, another empty page. This one is about designing a small piece of logic well.
+
+Converting between four units could mean twelve formulas (km→mi, mi→km, km→ft, …). A better design goes through **one base unit**: convert the amount *into* metres, then *out of* metres into the target unit. Each unit then needs only one number — how many metres it is:
+
+```js
+const METRES = { m: 1, km: 1000 }        // add a unit: add one entry
+const convert = (value, from, to) => (value * METRES[from]) / METRES[to]
+```
+
+Adding a fifth unit is one line, and no pair of units can be forgotten. When you find yourself writing a formula for every combination of things, look for a hub like this.
+
+The display rule in the spec — at most two decimals, with no trailing zeros — has a neat idiom: `Number(x.toFixed(2))` rounds to two places and converting back to a number drops the zeros (`String(Number((6.2137).toFixed(2)))` is `'6.21'`, `String(Number((1000).toFixed(2)))` is `'1000'`).
+
+A `type="number"` input gives you an empty string for anything that isn't a number, so "not a number" and "empty" arrive as the same case. Handle it with a message instead of `NaN km`.
+
+A **swap** button is a small feature that shows whether your state is right: if the units live in state, swapping is exchanging two values and rendering.
+--- task
+Build a length converter:
+
+- `#amount`: a labelled number input
+- `#from` and `#to`: labelled selects, each offering the units with the values `m`, `km`, `ft` and `mi` (1 ft = 0.3048 m, 1 mi = 1609.344 m); `#from` starts on `km` and `#to` on `mi`
+- `#result` shows like `10 km = 6.21 mi` — the amount as entered, the converted value rounded to at most two decimals with no trailing zeros
+- with no valid number in `#amount`, `#result` says `Enter a number`
+- `#swap` exchanges the two units and updates the result
+--- starter
+<h1>Length converter</h1>
+
+<!-- Your markup here. -->
+
+<script>
+  // Your code here.
+</script>
+--- solution
+<h1>Length converter</h1>
+
+<label for="amount">Amount</label>
+<input id="amount" type="number">
+
+<label for="from">From</label>
+<select id="from">
+  <option value="m">metres (m)</option>
+  <option value="km" selected>kilometres (km)</option>
+  <option value="ft">feet (ft)</option>
+  <option value="mi">miles (mi)</option>
+</select>
+
+<button id="swap" type="button" aria-label="Swap units">⇄</button>
+
+<label for="to">To</label>
+<select id="to">
+  <option value="m">metres (m)</option>
+  <option value="km">kilometres (km)</option>
+  <option value="ft">feet (ft)</option>
+  <option value="mi" selected>miles (mi)</option>
+</select>
+
+<p id="result" role="status"></p>
+
+<script>
+  const METRES = { m: 1, km: 1000, ft: 0.3048, mi: 1609.344 }
+  const amountInput = document.querySelector('#amount')
+  const fromSelect = document.querySelector('#from')
+  const toSelect = document.querySelector('#to')
+
+  const convert = (value, from, to) => (value * METRES[from]) / METRES[to]
+  const tidy = (x) => String(Number(x.toFixed(2)))
+
+  function render() {
+    const raw = amountInput.value
+    const value = Number(raw)
+    const result = document.querySelector('#result')
+    if (raw.trim() === '' || !Number.isFinite(value)) {
+      result.textContent = 'Enter a number'
+      return
+    }
+    result.textContent = `${raw} ${fromSelect.value} = ${tidy(convert(value, fromSelect.value, toSelect.value))} ${toSelect.value}`
+  }
+
+  amountInput.addEventListener('input', render)
+  fromSelect.addEventListener('change', render)
+  toSelect.addEventListener('change', render)
+  document.querySelector('#swap').addEventListener('click', () => {
+    const from = fromSelect.value
+    fromSelect.value = toSelect.value
+    toSelect.value = from
+    render()
+  })
+
+  render()
+</script>
+--- hint
+One table of metres per unit, and `convert(value, from, to)` goes through metres. Try it in the console with the examples before building the page.
+--- hint
+`render()` reads the three controls, handles the empty case first, then writes `${raw} ${from} = ${tidy(converted)} ${to}` with `tidy = (x) => String(Number(x.toFixed(2)))`.
+--- check dom | Starts from km to mi, asking for a number
+#from value == km
+#to value == mi
+#result text == Enter a number
+--- check dom | Kilometres to miles
+type #amount 10
+#result text == 10 km = 6.21 mi
+--- check dom | Whole results have no trailing zeros
+type #amount 1
+type #to m
+#result text == 1 km = 1000 m
+type #from ft
+type #to mi
+type #amount 5280
+#result text == 5280 ft = 1 mi
+--- check dom | Swap exchanges the units
+type #amount 10
+click #swap
+#from value == mi
+#to value == km
+#result text == 10 mi = 16.09 km
+--- check dom | Not a number is caught
+type #amount abc
+#result text == Enter a number
+
+=== webp-15 | Capstone: a sortable, searchable contact list
+--- teach
+The last capstone combines most of what these courses covered: rendering a list from data, deriving a filtered and sorted view, a form with validation, delegated events and an empty state. The spec fixes what the page must do and the ids it uses; the structure is yours.
+
+Some decisions worth making on purpose before you write code:
+
+- **What is state, and what is derived?** The contacts, the search text, the sort field and the direction are state. The visible list and the count are derived — compute them in one function and draw them in `render()`.
+- **How does a contact know which one it is?** Removing "the third one" breaks as soon as the list is sorted or filtered. Give each contact a stable id when the page starts (and when one is added) and put it on its element.
+- **Sort with care.** `localeCompare` for text. A tie (two contacts at the same company) needs a rule, or the order will look random: the spec says ties go by name.
+- **Where does validation live?** At the form's submit, before anything touches the state.
+
+Then build in small steps, checking the page after each: render the list; add search; add sorting; add the count and empty message; add the form; add removal. Each step is a small change to state, the derived view, or a handler — if a step feels big, the structure needs another look.
+--- task
+Build a contact list from the `contacts` data in the starter:
+
+- `#contacts` holds one element with the class `contact` per contact shown (and nothing else), each containing elements with the classes `name`, `email` and `company`, and a `.remove` button that deletes that contact
+- `#search` (labelled) shows only contacts whose name, email or company contains the text, ignoring case
+- `#sort` (a labelled select with the values `name` and `company`) sorts by that field, A to Z by default; ties are ordered by name, A to Z. `#direction` is a button saying `Ascending` or `Descending` that flips the order of the sort field (ties stay by name A to Z)
+- `#count` says like `Showing 3 of 8 contacts`; `#empty` (with the `hidden` attribute unless nothing matches) says `No contacts match.`
+- a form `#add-form` with labelled `#new-name`, `#new-email` and `#new-company` adds a contact; a missing name, or an email without `@`, shows `Name and a valid email are required.` in `#form-error` and adds nothing. After adding, the fields clear and the error is empty
+--- starter
+<h1>Contacts</h1>
+
+<!-- Your markup here. -->
+
+<script>
+  const contacts = [
+    { name: 'Mae Jemison', email: 'mae@nasa.example', company: 'NASA' },
+    { name: 'Ada Lovelace', email: 'ada@engines.example', company: 'Analytical Engines' },
+    { name: 'Yuri Gagarin', email: 'yuri@vostok.example', company: 'Vostok' },
+    { name: 'Sally Ride', email: 'sally@nasa.example', company: 'NASA' },
+    { name: 'Chris Hadfield', email: 'chris@csa.example', company: 'CSA' },
+    { name: 'Valentina Tereshkova', email: 'valentina@vostok.example', company: 'Vostok' },
+    { name: 'Katherine Johnson', email: 'katherine@nasa.example', company: 'NASA' },
+    { name: 'Tim Peake', email: 'tim@esa.example', company: 'ESA' },
+  ]
+
+  // Your code here.
+</script>
+--- solution
+<h1>Contacts</h1>
+
+<label for="search">Search</label>
+<input id="search" autocomplete="off">
+
+<label for="sort">Sort by</label>
+<select id="sort">
+  <option value="name">Name</option>
+  <option value="company">Company</option>
+</select>
+<button id="direction" type="button">Ascending</button>
+
+<p id="count" role="status"></p>
+<ul id="contacts"></ul>
+<p id="empty" hidden>No contacts match.</p>
+
+<h2>Add a contact</h2>
+<form id="add-form" novalidate>
+  <label for="new-name">Name</label>
+  <input id="new-name">
+  <label for="new-email">Email</label>
+  <input id="new-email" type="email">
+  <label for="new-company">Company</label>
+  <input id="new-company">
+  <button id="add">Add</button>
+  <p id="form-error" role="alert"></p>
+</form>
+
+<script>
+  const contacts = [
+    { name: 'Mae Jemison', email: 'mae@nasa.example', company: 'NASA' },
+    { name: 'Ada Lovelace', email: 'ada@engines.example', company: 'Analytical Engines' },
+    { name: 'Yuri Gagarin', email: 'yuri@vostok.example', company: 'Vostok' },
+    { name: 'Sally Ride', email: 'sally@nasa.example', company: 'NASA' },
+    { name: 'Chris Hadfield', email: 'chris@csa.example', company: 'CSA' },
+    { name: 'Valentina Tereshkova', email: 'valentina@vostok.example', company: 'Vostok' },
+    { name: 'Katherine Johnson', email: 'katherine@nasa.example', company: 'NASA' },
+    { name: 'Tim Peake', email: 'tim@esa.example', company: 'ESA' },
+  ]
+
+  let nextId = 1
+  const state = {
+    contacts: contacts.map((c) => ({ ...c, id: nextId++ })),
+    query: '',
+    sortKey: 'name',
+    dir: 1,
+  }
+  const list = document.querySelector('#contacts')
+
+  function visibleContacts() {
+    const q = state.query.trim().toLowerCase()
+    const matches = state.contacts.filter((c) => [c.name, c.email, c.company].some((field) => field.toLowerCase().includes(q)))
+    return matches.sort((a, b) => a[state.sortKey].localeCompare(b[state.sortKey]) * state.dir || a.name.localeCompare(b.name))
+  }
+
+  function ContactItem(contact) {
+    const li = document.createElement('li')
+    li.className = 'contact'
+    li.dataset.id = contact.id
+    for (const field of ['name', 'email', 'company']) {
+      const span = document.createElement('span')
+      span.className = field
+      span.textContent = contact[field]
+      li.append(span, ' ')
+    }
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'remove'
+    remove.textContent = 'Remove'
+    remove.setAttribute('aria-label', `Remove ${contact.name}`)
+    li.append(remove)
+    return li
+  }
+
+  function render() {
+    const shown = visibleContacts()
+    list.replaceChildren(...shown.map(ContactItem))
+    document.querySelector('#count').textContent = `Showing ${shown.length} of ${state.contacts.length} contacts`
+    document.querySelector('#empty').hidden = shown.length > 0
+    document.querySelector('#direction').textContent = state.dir === 1 ? 'Ascending' : 'Descending'
+  }
+
+  document.querySelector('#search').addEventListener('input', (event) => {
+    state.query = event.target.value
+    render()
+  })
+  document.querySelector('#sort').addEventListener('change', (event) => {
+    state.sortKey = event.target.value
+    render()
+  })
+  document.querySelector('#direction').addEventListener('click', () => {
+    state.dir = -state.dir
+    render()
+  })
+  list.addEventListener('click', (event) => {
+    const remove = event.target.closest('.remove')
+    if (!remove) return
+    const id = Number(remove.closest('.contact').dataset.id)
+    state.contacts = state.contacts.filter((c) => c.id !== id)
+    render()
+  })
+
+  const form = document.querySelector('#add-form')
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const name = document.querySelector('#new-name').value.trim()
+    const email = document.querySelector('#new-email').value.trim()
+    const company = document.querySelector('#new-company').value.trim()
+    const error = document.querySelector('#form-error')
+    if (!name || !email.includes('@')) {
+      error.textContent = 'Name and a valid email are required.'
+      return
+    }
+    state.contacts.push({ id: nextId++, name, email, company })
+    form.reset()
+    error.textContent = ''
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Give every contact an id when the page starts, and keep `{ contacts, query, sortKey, dir }` as the state. One `visibleContacts()` filters, then sorts with `localeCompare`, falling back to the name for ties.
+--- hint
+The sort comparator can be `a[key].localeCompare(b[key]) * dir || a.name.localeCompare(b.name)` — when the first part is 0 (a tie), `||` moves on to the name.
+--- check dom | All eight, sorted by name
+#contacts .contact count == 8
+#contacts .contact:first-child .name text == Ada Lovelace
+#contacts .contact:last-child .name text == Yuri Gagarin
+#count text == Showing 8 of 8 contacts
+#empty[hidden] exists
+--- check dom | Each contact shows its email and company
+#contacts .contact:first-child .email text == ada@engines.example
+#contacts .contact:first-child .company text == Analytical Engines
+--- check dom | Search looks at names, emails and companies, ignoring case
+type #search NASA
+#contacts .contact count == 3
+#contacts .contact:first-child .name text == Katherine Johnson
+#count text == Showing 3 of 8 contacts
+type #search tereshkova
+#contacts .contact count == 1
+type #search esa.example
+#contacts .contact .name text == Tim Peake
+--- check dom | No matches says so
+type #search zzz
+#contacts .contact count == 0
+#empty:not([hidden]) exists
+--- check dom | Sorting by company, ties by name
+type #sort company
+#contacts .contact:first-child .name text == Ada Lovelace
+#contacts .contact:nth-child(4) .name text == Katherine Johnson
+#contacts .contact:last-child .name text == Yuri Gagarin
+--- check dom | The direction button flips the order
+click #direction
+#direction text == Descending
+#contacts .contact:first-child .name text == Yuri Gagarin
+type #sort company
+#contacts .contact:first-child .name text == Valentina Tereshkova
+click #direction
+#direction text == Ascending
+#contacts .contact:first-child .name text == Ada Lovelace
+--- check dom | Adding a contact puts it in order
+type #new-name Buzz Aldrin
+type #new-email buzz@nasa.example
+type #new-company NASA
+click #add
+#contacts .contact count == 9
+#contacts .contact:nth-child(2) .name text == Buzz Aldrin
+#count text == Showing 9 of 9 contacts
+#new-name value ==
+--- check dom | A contact needs a name and a real email
+type #new-name Nobody
+type #new-email nope
+click #add
+#form-error text == Name and a valid email are required.
+#contacts .contact count == 8
+--- check dom | Remove deletes that contact, even when sorted differently
+type #sort company
+click #contacts .contact:nth-child(2) .remove
+#contacts .contact count == 7
+#count text == Showing 7 of 7 contacts
+type #search chris
+#contacts .contact count == 0

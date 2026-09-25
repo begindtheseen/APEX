@@ -237,6 +237,8 @@ export async function runWeb(html: string, checks: string[][]): Promise<{ logs: 
           new Promise<{ logs: string[]; result: { pass: boolean; detail?: string } | null }>((resolve) => {
             const frame = document.createElement('iframe')
             frame.setAttribute('sandbox', 'allow-scripts allow-modals')
+            // The same box the app checks in (lib/web.ts), so layout, focus and timing behave alike.
+            frame.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:600px;border:0;opacity:0.01;pointer-events:none;z-index:-1'
             const logs: string[] = []
             const done = (result: { pass: boolean; detail?: string } | null) => {
               removeEventListener('message', onMsg)
