@@ -132,14 +132,19 @@ describe('language modes', () => {
 })
 
 describe('the playground languages', () => {
-  it('offers JavaScript, TypeScript, Python, SQL and C++', () => {
-    expect(RUNNABLE).toEqual(['javascript', 'typescript', 'python', 'sql', 'cpp'])
+  it('offers JavaScript, TypeScript, Python, SQL, C++, the web and a practice terminal', () => {
+    expect(RUNNABLE).toEqual(['javascript', 'typescript', 'python', 'sql', 'cpp', 'html', 'bash'])
   })
 
   it('carries no language that cannot run here', () => {
-    for (const gone of ['matlab', 'simulink', 'rust', 'bash']) {
+    for (const gone of ['matlab', 'simulink', 'rust']) {
       expect(Object.keys(LANGS)).not.toContain(gone)
     }
+  })
+
+  it('says plainly that the terminal is a practice one, not the machine', () => {
+    expect(LANGS.bash.note).toMatch(/practice terminal/)
+    expect(LANGS.bash.note).toMatch(/Nothing typed here touches your real machine/)
   })
 
   it('executes every language it offers — none is a string comparison', () => {

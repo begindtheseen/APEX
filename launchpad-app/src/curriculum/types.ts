@@ -35,6 +35,8 @@ export type Lang =
   | 'python'
   | 'sql'
   | 'cpp'
+  | 'html'
+  | 'bash'
   | 'text'
 
 export type ResourceKind = 'book' | 'course' | 'video' | 'paper' | 'docs' | 'tool' | 'site'

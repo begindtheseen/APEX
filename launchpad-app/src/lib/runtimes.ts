@@ -1,8 +1,8 @@
 /* ============================================================================
    LAUNCHPAD — language runtimes
    ----------------------------------------------------------------------------
-   The playground carries five languages — JavaScript, TypeScript, Python,
-   SQL and C++ — and every one of them really executes, inside this tab:
+   The playground carries JavaScript, TypeScript, Python, SQL, C++, the web
+   and a practice terminal, and every one of them really runs, in this tab:
 
      JavaScript  the browser's own engine, in a throwaway worker (M1–M3)
      TypeScript  the real TypeScript compiler, strict, type-checks first and
@@ -12,14 +12,18 @@
      C++         clang++ and lld compiled to WebAssembly: a real compile to a
                  WASI program, run in a throwaway worker with stdin/stdout
 
-   Nothing is uploaded. The compilers come to the browser, once, from a CDN,
-   and the browser caches them. MATLAB, Simulink, Rust and the shell are not
-   offered: none of them could run here, and a playground entry that cannot
-   run is worse than none. The terminal work of M1 happens in a real terminal
-   on your own machine — that is the point of it.
+     Web         HTML, CSS and JavaScript rendered in a sandboxed frame
+     Terminal    a practice shell that lives in the page (lib/shell.ts): a
+                 pretend filesystem and enough git to learn the loop — and
+                 it says so, because it is not the machine's shell
 
-   Learn mode (src/learn) teaches the basics of all five through these same
-   runtimes.
+   Nothing is uploaded. The compilers come to the browser, once, from a CDN,
+   and the browser caches them. MATLAB, Simulink and Rust are not offered:
+   none of them could run here, and a playground entry that cannot run is
+   worse than none. The real terminal work of M1 happens on your own machine.
+
+   Learn mode (src/learn) teaches the basics of all of them through these
+   same runtimes.
 
    The rule underneath all of it: never show a green tick that does not mean
    what it appears to mean.
@@ -67,6 +71,18 @@ export const LANGS: Record<Lang, LangInfo> = {
     mode: 'execute',
     note: 'Compiled for real by clang++ (C++20, -Wall) and run in this browser, with the input box as standard input. Exceptions are off in this toolchain, so throw and try do not compile. The compiler is a one-time download of about 105 MB before compression.',
   },
+  html: {
+    id: 'html',
+    label: 'Web',
+    mode: 'execute',
+    note: 'HTML, CSS and JavaScript rendered live in a sandboxed frame: scripts run, but the page cannot reach this app, its storage or the network beyond what a normal page could load. console.log shows in the Console tab.',
+  },
+  bash: {
+    id: 'bash',
+    label: 'Terminal',
+    mode: 'execute',
+    note: 'A practice terminal that lives in this page: a pretend filesystem with the everyday commands and enough git to practise the loop. Nothing typed here touches your real machine — for that, use a real terminal.',
+  },
   text: {
     id: 'text',
     label: 'Notes',
@@ -76,7 +92,7 @@ export const LANGS: Record<Lang, LangInfo> = {
 }
 
 /** The languages the playground offers, in the order the curriculum meets them. */
-export const RUNNABLE: Lang[] = ['javascript', 'typescript', 'python', 'sql', 'cpp']
+export const RUNNABLE: Lang[] = ['javascript', 'typescript', 'python', 'sql', 'cpp', 'html', 'bash']
 
 export interface Capability {
   mode: RunMode

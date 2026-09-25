@@ -100,17 +100,23 @@ exactly as written.
   the launcher's count and any old realm backup keep working. Progress from the
   old in-page realm is adopted automatically on first launch. Settings has its
   own Export / Restore / Reset.
-- **The playground** runs every language it offers, for real, in the browser:
+- **The playground** has four modes — Code, SQL, Web and Terminal — in one IDE
+  window, and runs every language it offers, for real, in the browser:
   JavaScript (a throwaway worker), TypeScript (the real compiler, strict —
-  a type error stops the run), Python (Pyodide), SQL (sql.js) and C++ (clang++
-  compiled to WebAssembly, with a standard-input box; no exceptions in this
-  toolchain). The compilers are downloaded from a CDN on first use; the
-  browser suite serves the same pinned versions from `node_modules`.
-- **Learn to code** (`#/learn`) is a guided course through the basics of all
-  five languages, in the playground's editor, every step really run and
-  checked. Lessons are plain text in `launchpad-app/src/learn/tracks/*.txt`
-  (the format is described in `src/learn/parse.ts`); `test/browser/learn.js`
-  proves every lesson's solution passes and every starter does not.
+  a type error stops the run), Python (Pyodide), SQL (sql.js), C++ (clang++
+  compiled to WebAssembly, with an Input tab for stdin; no exceptions in this
+  toolchain), web pages (a sandboxed frame, `src/lib/web.ts`) and a practice
+  terminal (an in-page shell with enough git to learn the loop,
+  `src/lib/shell.ts`). The compilers are downloaded from a CDN on first use;
+  the browser suite serves the same pinned versions from `node_modules`.
+- **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
+  as a numbered path — over seven courses of basics (Terminal, Web,
+  JavaScript, TypeScript, Python, SQL, C++), each lesson done in the same IDE
+  window and graded as test cases. Lessons are plain text in
+  `launchpad-app/src/learn/tracks/*.txt` (the format is described in
+  `src/learn/parse.ts`); the roadmaps are in `src/learn/platform.ts`;
+  `test/browser/learn.js` proves every lesson's solution passes and every
+  starter does not.
 
 ### Changing LAUNCHPAD
 

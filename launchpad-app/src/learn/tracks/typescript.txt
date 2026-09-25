@@ -110,8 +110,9 @@ wordCount\s*\(\s*text\s*:\s*string\s*\)\s*:\s*number
 isEven\s*\(\s*n\s*:\s*number\s*\)\s*:\s*boolean
 --- check test | wordCount counts words
 wordCount('the quick brown fox') === 4 && wordCount('  spaced   out ') === 2
---- check test | wordCount('') is 0
-wordCount('') === 0
+--- check case | wordCount('') is 0
+wordCount('')
+=> 0
 --- check test | isEven works both ways
 isEven(10) && !isEven(7)
 
@@ -145,10 +146,12 @@ function minMax(values: number[]): [number, number] {
 `Math.min(...values)` spreads the array into arguments.
 --- check source | Takes number[] and returns a [number, number] tuple
 minMax\s*\(\s*values\s*:\s*number\[\]\s*\)\s*:\s*\[\s*number\s*,\s*number\s*\]
---- check test | Finds both ends
-JSON.stringify(minMax([120, 95, 210, 143])) === '[95,210]'
---- check test | Works for one value
-JSON.stringify(minMax([7])) === '[7,7]'
+--- check case | Finds both ends
+minMax([120, 95, 210, 143])
+=> [95, 210]
+--- check case | Works for one value
+minMax([7])
+=> [7, 7]
 
 === ts-05 | Object types and interfaces
 --- teach
@@ -188,8 +191,9 @@ function summarize(req: Request): string {
 interface\s+Request\s*\{
 --- check source | summarize takes a Request
 summarize\s*\(\s*req\s*:\s*Request\s*\)\s*:\s*string
---- check test | Builds the sentence
-summarize({ user: 'ada', model: 'sonnet', tokens: 1200 }) === 'ada used 1200 tokens on sonnet'
+--- check case | Builds the sentence
+summarize({ user: 'ada', model: 'sonnet', tokens: 1200 })
+=> 'ada used 1200 tokens on sonnet'
 
 === ts-06 | Optional values and null
 --- teach
@@ -236,10 +240,12 @@ function displayName(p: Profile): string {
 }
 --- hint
 `p.nickname?.toUpperCase()` is undefined when there is no nickname; `?? p.name` fills that in.
---- check test | Uses the nickname when there is one
-displayName({ name: 'Ada Lovelace', nickname: 'ada' }) === 'ADA'
---- check test | Falls back to the name
-displayName({ name: 'Lin' }) === 'Lin'
+--- check case | Uses the nickname when there is one
+displayName({ name: 'Ada Lovelace', nickname: 'ada' })
+=> 'ADA'
+--- check case | Falls back to the name
+displayName({ name: 'Lin' })
+=> 'Lin'
 --- check source absent | No non-null assertion or cast
 nickname!|\bas\s+string\b
 ?? `!` and `as` tell the checker to trust you. Narrowing proves it.
@@ -275,12 +281,15 @@ function toCents(amount: number | string): number {
 `if (typeof amount === 'number') { … }` — below that, amount is a string.
 --- hint
 `'$2.25'.replace('$', '')` is `'2.25'`; `Number(...)` turns it into 2.25.
---- check test | A number of dollars
-toCents(1.5) === 150
---- check test | A dollar string
-toCents('$2.25') === 225
---- check test | Rounds away float error
-toCents(0.29) === 29
+--- check case | A number of dollars
+toCents(1.5)
+=> 150
+--- check case | A dollar string
+toCents('$2.25')
+=> 225
+--- check case | Rounds away float error
+toCents(0.29)
+=> 29
 --- check source | Narrows with typeof
 typeof\s+amount
 
@@ -348,12 +357,15 @@ function describe(e: Event): string {
 }
 --- hint
 Run it first: the error on the `never` line tells you which kinds are still unhandled.
---- check test | start
-describe({ kind: 'start', model: 'sonnet' }) === 'started sonnet'
---- check test | delta
-describe({ kind: 'delta', text: 'hello' }) === '+5 chars'
---- check test | stop
-describe({ kind: 'stop', reason: 'end_turn' }) === 'stopped: end_turn'
+--- check case | start
+describe({ kind: 'start', model: 'sonnet' })
+=> 'started sonnet'
+--- check case | delta
+describe({ kind: 'delta', text: 'hello' })
+=> '+5 chars'
+--- check case | stop
+describe({ kind: 'stop', reason: 'end_turn' })
+=> 'stopped: end_turn'
 --- check source | Keeps the exhaustiveness check
 :\s*never\s*=
 
@@ -400,12 +412,15 @@ function groupCount<T>(items: T[], key: (item: T) => string): Record<string, num
 lastN\s*<\s*T\s*>
 --- check source | groupCount is generic
 groupCount\s*<\s*T\s*>
---- check test | lastN(…, 2)
-JSON.stringify(lastN([1, 2, 3, 4], 2)) === '[3,4]'
---- check test | lastN with fewer items than n
-JSON.stringify(lastN(['a'], 5)) === '["a"]'
---- check test | groupCount counts by key
-JSON.stringify(groupCount(['ada', 'lin', 'al'], (s) => s[0])) === '{"a":2,"l":1}'
+--- check case | lastN(…, 2)
+lastN([1, 2, 3, 4], 2)
+=> [3, 4]
+--- check case | lastN with fewer items than n
+lastN(['a'], 5)
+=> ["a"]
+--- check case | groupCount counts by key
+groupCount(['ada', 'lin', 'al'], (s) => s[0])
+=> {"a": 2, "l": 1}
 
 === ts-10 | unknown and type guards
 --- teach
@@ -457,14 +472,18 @@ function parsePoint(text: string): Point | null {
 Check `typeof x === 'object' && x !== null` first, then each property's type.
 --- hint
 `const value: unknown = JSON.parse(text)` — then `isPoint(value) ? value : null`.
---- check test | A real point passes
-JSON.stringify(parsePoint('{"x": 1, "y": 2}')) === '{"x":1,"y":2}'
---- check test | Wrong types are rejected
-parsePoint('{"x": "1", "y": 2}') === null
---- check test | Missing fields are rejected
-parsePoint('{"x": 1}') === null
---- check test | null is rejected
-parsePoint('null') === null
+--- check case | A real point passes
+parsePoint('{"x": 1, "y": 2}')
+=> {"x": 1, "y": 2}
+--- check case | Wrong types are rejected
+parsePoint('{"x": "1", "y": 2}')
+=> null
+--- check case | Missing fields are rejected
+parsePoint('{"x": 1}')
+=> null
+--- check case | null is rejected
+parsePoint('null')
+=> null
 --- check source | Has a type guard
 x\s+is\s+Point
 --- check source absent | Does not cast the parsed JSON
@@ -510,8 +529,9 @@ const LIMITS: Record<'free' | 'pro', number> = { free: 100, pro: 1000 }
 Object spread: `{ ...current, ...patch }` — later properties win.
 --- check source | The patch is a Partial<Settings>
 patch\s*:\s*Partial\s*<\s*Settings\s*>
---- check test | Applies the patch
-applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontSize === 15
+--- check case | Applies the patch
+applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontSize
+=> 15
 --- check test | Keeps the rest, leaves the original alone
 (() => { const s = { theme: 'dark', fontSize: 13, beta: false }; const t = applyPatch(s, { beta: true }); return t.theme === 'dark' && t.beta && s.beta === false && t !== s })()
 --- check test | LIMITS has both plans

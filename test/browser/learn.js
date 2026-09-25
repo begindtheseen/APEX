@@ -45,33 +45,56 @@ async function setCode(p, code) {
 
 /** Runs & checks; returns { passed, results: [status name], output } */
 async function check(p) {
-  await p.click('.pg__toolbar .btn--primary');
+  await p.evaluate(() => { const t = document.querySelector('.tcases'); if (t) t.setAttribute('data-stale', '1'); });
+  await p.click('.ide__run .ide-run, .lm-termbar .ide-run');
   await p.waitForFunction(() => {
-    const b = document.querySelector('.pg__toolbar .btn--primary');
-    return b && !b.disabled && document.querySelector('.test[data-status]');
+    const b = document.querySelector('.ide__run .ide-run, .lm-termbar .ide-run');
+    return b && !b.disabled && document.querySelector('.tcases:not([data-stale])');
   }, null, { timeout: 180000 });
   return p.evaluate(() => ({
-    passed: !!document.querySelector('.lm-passed'),
-    results: Array.from(document.querySelectorAll('.test[data-status]')).map((t) => t.dataset.status + ' ' + t.querySelector('.test__name').textContent + (t.querySelector('.lm-detail') ? ' :: ' + t.querySelector('.lm-detail').textContent.slice(0, 160) : '')),
-    output: (document.querySelector('.console') || {}).innerText || '',
+    passed: !!document.querySelector('.lm-win'),
+    results: Array.from(document.querySelectorAll('.tcases__tab')).map((t) => t.dataset.status + ' ' + t.textContent.trim()),
+    output: (document.querySelector('.tcase') || {}).innerText || '',
   }));
+}
+
+/** Types command lines into the practice terminal, one Enter each. */
+async function typeCommands(p, text) {
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    await p.fill('#termInput', line);
+    await p.keyboard.press('Enter');
+  }
 }
 
 (async () => {
   const src = path.join(ENV.REPO, 'launchpad-app', 'src', 'learn');
   const { parseTrack } = await import(pathToFileURL(path.join(src, 'parse.ts')).href);
-  const tracks = ['javascript', 'typescript', 'python', 'sql', 'cpp'].map((l) => parseTrack(fs.readFileSync(path.join(src, 'tracks', l + '.txt'), 'utf8'), l + '.txt'));
+  const langs = ['bash', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
+  const tracks = langs.map((l) => parseTrack(fs.readFileSync(path.join(src, 'tracks', l + '.txt'), 'utf8'), l + '.txt'));
 
   const b = await chromium.launch(ENV.launchOpts);
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' });
   await serveCdn(ctx);
   const p = await ctx.newPage();
-  const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
+  // Playwright's service-worker block reaches into the sandboxed preview
+  // frames, where reading navigator.serviceWorker throws: its noise, not ours.
+  const errs = []; p.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e))) errs.push(String(e)); });
   await LP.reset(p);
   await LP.open(p, '/learn');
 
-  const cards = await p.$$eval('.lm-track', (e) => e.map((c) => c.dataset.lang));
-  ok('the course lists a track per language', cards.join(',') === 'javascript,typescript,python,sql,cpp', cards.join(','));
+  const goals = await p.$$eval('.ide-modes [role=tab]', (e) => e.map((c) => c.textContent.trim()));
+  ok('Learn to code opens on roadmaps: a pill per goal', goals.length >= 4 && goals[0] === 'AI Product Engineer', goals.join(', '));
+  const tiles = await p.$$eval('.rm-tile', (e) => e.map((t) => (t.querySelector('.rm-tile__title') || {}).textContent));
+  ok('the goal shows its courses in order, ending at a finish line', tiles.join(',') === 'Terminal,JavaScript,TypeScript,Web,SQL,Python,Finish line', tiles.join(','));
+  const links = await p.$$eval('.rm-tile[data-link]', (e) => e.map((t) => t.dataset.link));
+  ok('the path snakes: along a row, down, and back', links.includes('right') && links.includes('down') && links.includes('left'), links.join(','));
+  await p.click('.ide-modes [role=tab]:has-text("Data & ML")');
+  await p.waitForTimeout(300);
+  const dataTiles = await p.$$eval('.rm-tile .rm-tile__title', (e) => e.map((t) => t.textContent));
+  ok('picking another goal shows its roadmap', dataTiles.join(',') === 'Terminal,Python,SQL,Finish line' && /goal=data/.test(p.url()), dataTiles.join(','));
+  const courses = await p.$$eval('.lm-course', (e) => e.length);
+  ok('every course is listed too', courses === langs.length, String(courses));
   const navLearn = await p.$$eval('.side .nav-item', (e) => e.some((a) => /Learn to code/.test(a.textContent)));
   ok('Learn to code is in the sidebar', navLearn);
 
@@ -82,31 +105,43 @@ async function check(p) {
     const t0 = Date.now();
     for (const lesson of track.lessons) {
       await LP.go(p, '/learn/' + lesson.id);
-      await p.waitForSelector('.cm-content');
-      await setCode(p, lesson.starter);
-      const s = await check(p);
-      if (s.passed) bad.push(lesson.id + ': the starter already passes');
-      await setCode(p, lesson.solution);
+      if (track.lang === 'bash') {
+        await p.waitForSelector('#termInput');
+        const s = await check(p);
+        if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
+        await typeCommands(p, lesson.solution);
+      } else {
+        await p.waitForSelector('.cm-content');
+        await setCode(p, lesson.starter);
+        const s = await check(p);
+        if (s.passed) bad.push(lesson.id + ': the starter already passes');
+        await setCode(p, lesson.solution);
+      }
       const r = await check(p);
-      if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || output: ' + r.output.slice(0, 200).replace(/\n/g, '⏎'));
+      if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
     }
     ok(track.title + ': every starter needs work and every solution passes (' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
   }
 
-  // Progress shows on the course page, and the playground points into it.
+  // Progress shows on the roadmap and the courses, and the playground points into it.
   await LP.go(p, '/learn');
-  const chips = await p.$$eval('.lm-track .chip', (e) => e.map((c) => c.textContent.trim()));
-  ok('the course shows what was passed', only ? true : chips.every((c) => /^(\d+)\/\1$/.test(c)), chips.join(' '));
+  const metas = await p.$$eval('.lm-course__meta', (e) => e.map((c) => c.textContent.trim()));
+  ok('every course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
+  const end = await p.$eval('.rm-tile--end', (e) => e.dataset.state).catch(() => '');
+  ok('and the goal reaches its finish line', only ? true : end === 'done', end);
+  await LP.go(p, '/learn/javascript');
+  const outline = await p.$$eval('.lm-outline li', (e) => e.map((li) => li.dataset.done));
+  ok('a course page lists its lessons with what was passed', outline.length === 12 && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
   await LP.go(p, '/playground?lang=cpp');
-  const callout = await p.$eval('.pg-learn', (e) => e.textContent).catch(() => '');
-  ok('the playground offers Learn mode for its language', /Learn mode/.test(callout) && /C\+\+/.test(callout), callout.slice(0, 120));
-  const tab = await p.$eval('.seg [role=tab][aria-selected=true]', (e) => e.textContent.trim()).catch(() => '');
-  ok('?lang= opens the playground on that language', tab === 'C++', tab);
+  const callout = await p.$eval('.pgx-learn', (e) => e.textContent).catch(() => '');
+  ok('the playground offers Learn to code for its language', /C\+\+/.test(callout), callout.slice(0, 120));
+  const file = await p.$eval('.ide__file', (e) => e.textContent.trim()).catch(() => '');
+  ok('?lang= opens the playground on that language', /main\.cpp/.test(file), file);
 
   // Code carries from a lesson into the playground.
   await LP.go(p, '/learn/py-01');
   await setCode(p, 'print("carried over")\n');
-  await p.click('button:has-text("Open in playground")');
+  await p.click('.ide__tool:has-text("Playground")');
   await p.waitForTimeout(600);
   const carried = await p.$$eval('.cm-content .cm-line', (ls) => ls.map((l) => l.textContent).join('\n')).catch(() => '');
   ok('Open in playground carries the code over', /carried over/.test(carried) && /#\/playground\?lang=python/.test(p.url()), carried.slice(0, 60));

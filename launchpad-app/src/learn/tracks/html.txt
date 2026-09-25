@@ -1,0 +1,512 @@
+@track html
+@title Web
+@blurb HTML, CSS and a little JavaScript, with a live preview: from your first heading to a page that reacts to clicks.
+
+=== web-01 | Your first page
+--- teach
+A web page is written in **HTML**: text wrapped in **tags** that say what each piece is. A tag opens with `<name>` and closes with `</name>`:
+
+```html
+<h1>Mission Control</h1>
+<p>All systems are go.</p>
+```
+
+`h1` is the main heading, `p` a paragraph. The browser reads the tags and draws the page — the **Preview** tab shows it as you run your code.
+--- task
+Make a page with a main heading that says `Hello, web!` and a paragraph underneath it (any text).
+--- starter
+<!-- Write your heading and paragraph here -->
+
+--- solution
+<h1>Hello, web!</h1>
+<p>This is my first page.</p>
+--- hint
+A heading is `<h1>…</h1>`; a paragraph is `<p>…</p>`.
+--- check dom | The main heading says Hello, web!
+h1 text == Hello, web!
+--- check dom | There is a paragraph
+p exists
+
+=== web-02 | Headings and text
+--- teach
+HTML has six heading levels, `h1` (most important) to `h6`. Use one `h1` per page, then `h2` for sections — screen readers and search engines read this outline.
+
+Inside text, `<strong>` marks something important (bold) and `<em>` adds emphasis (italic):
+
+```html
+<h2>Launch checklist</h2>
+<p>Check the <strong>fuel level</strong> <em>before</em> ignition.</p>
+```
+--- task
+Under an `h1` of `Space Log`, add two sections, each with an `h2` heading and a paragraph. Make at least one word in a paragraph **strong**.
+--- starter
+<h1>Space Log</h1>
+
+--- solution
+<h1>Space Log</h1>
+<h2>Day one</h2>
+<p>We reached <strong>orbit</strong> at noon.</p>
+<h2>Day two</h2>
+<p>The view is <em>incredible</em>.</p>
+--- hint
+Each section is an `<h2>` followed by a `<p>`.
+--- check dom | One main heading: Space Log
+h1 count == 1
+h1 text == Space Log
+--- check dom | Two section headings
+h2 count >= 2
+--- check dom | Paragraphs under them
+p count >= 2
+--- check dom | Something is strong
+p strong exists
+
+=== web-03 | Links and images
+--- teach
+A **link** is an `a` tag; its `href` **attribute** says where it goes. Attributes sit inside the opening tag as `name="value"`:
+
+```html
+<a href="https://www.nasa.gov">Visit NASA</a>
+```
+
+An **image** is `img` — it has no closing tag. `src` is the picture's address and `alt` describes it for anyone who cannot see it:
+
+```html
+<img src="rocket.png" alt="A rocket on the launch pad">
+```
+
+Always write `alt`: it is what a screen reader says, and what shows if the image fails to load.
+--- task
+Add a link with the text `Read the docs` that goes to `https://developer.mozilla.org`, and an image with `src="logo.png"` and a meaningful `alt`.
+--- starter
+<h1>Resources</h1>
+
+--- solution
+<h1>Resources</h1>
+<a href="https://developer.mozilla.org">Read the docs</a>
+<img src="logo.png" alt="The MDN logo">
+--- hint
+`<a href="…">text</a>` for the link.
+--- hint
+`<img src="logo.png" alt="…">` — no closing tag.
+--- check dom | The link goes to MDN
+a attr href == https://developer.mozilla.org
+--- check dom | The link says Read the docs
+a text == Read the docs
+--- check dom | The image has a source and a description
+img attr src == logo.png
+img attr alt !=
+
+=== web-04 | Lists
+--- teach
+Two kinds of list:
+
+```html
+<ul>            <!-- unordered: bullet points -->
+  <li>Fuel</li>
+  <li>Oxygen</li>
+</ul>
+
+<ol>            <!-- ordered: numbered steps -->
+  <li>Ignite</li>
+  <li>Lift off</li>
+</ol>
+```
+
+Each item is an `li` (list item), inside a `ul` or an `ol`. Indenting the items is optional but makes the structure easy to see.
+--- task
+Make an unordered list of three planets, and an ordered list of three launch steps.
+--- starter
+<h1>Mission</h1>
+
+--- solution
+<h1>Mission</h1>
+<ul>
+  <li>Mercury</li>
+  <li>Venus</li>
+  <li>Earth</li>
+</ul>
+<ol>
+  <li>Fuel up</li>
+  <li>Count down</li>
+  <li>Lift off</li>
+</ol>
+--- hint
+Each item is `<li>…</li>`, inside `<ul>…</ul>` or `<ol>…</ol>`.
+--- check dom | A bullet list with three planets
+ul li count == 3
+--- check dom | A numbered list with three steps
+ol li count == 3
+
+=== web-05 | Forms and buttons
+--- teach
+Forms collect input. A `label` names a field; its `for` matches the field's `id`, so clicking the label focuses the field (and screen readers read them together):
+
+```html
+<label for="email">Email</label>
+<input id="email" type="email" placeholder="you@example.com">
+<button type="submit">Sign up</button>
+```
+
+`type` changes the field: `text`, `email`, `password`, `number`, `checkbox`… A `button` is what people press.
+--- task
+Build a small sign-in form: a label `Username` joined to an `input` with `id="username"`, a label `Password` joined to a password `input` with `id="password"`, and a button that says `Sign in`.
+--- starter
+<h1>Sign in</h1>
+
+--- solution
+<h1>Sign in</h1>
+<form>
+  <label for="username">Username</label>
+  <input id="username" type="text">
+  <label for="password">Password</label>
+  <input id="password" type="password">
+  <button type="submit">Sign in</button>
+</form>
+--- hint
+`<label for="username">Username</label>` then `<input id="username">`.
+--- hint
+The password field needs `type="password"`.
+--- check dom | Username has a label joined to its field
+label[for=username] text == Username
+#username exists
+--- check dom | Password is a password field, with a label
+#password attr type == password
+label[for=password] exists
+--- check dom | A Sign in button
+button text == Sign in
+
+=== web-06 | CSS: colour and type
+--- teach
+**CSS** styles HTML. Put rules in a `<style>` tag: a **selector** says which elements, and **declarations** say how they look:
+
+```html
+<style>
+  h1 {
+    color: tomato;
+    font-size: 40px;
+  }
+  p {
+    color: #444444;
+  }
+</style>
+```
+
+`color` is the text colour — a name (`tomato`), a hex code (`#1e90ff`) or `rgb(30, 144, 255)`. `font-size` sets the size, and `font-family` the typeface.
+--- task
+Style the page: make the `h1` the colour `rgb(30, 144, 255)` (that is `#1e90ff`, "dodger blue") and `32px` tall, and make paragraphs `18px`.
+--- starter
+<h1>Styled</h1>
+<p>Some text to style.</p>
+--- solution
+<style>
+  h1 {
+    color: #1e90ff;
+    font-size: 32px;
+  }
+  p {
+    font-size: 18px;
+  }
+</style>
+<h1>Styled</h1>
+<p>Some text to style.</p>
+--- hint
+Rules go inside `<style>…</style>`: `h1 { color: #1e90ff; font-size: 32px; }`.
+--- check dom | The heading is dodger blue
+h1 style color == rgb(30, 144, 255)
+--- check dom | The heading is 32px
+h1 style font-size == 32px
+--- check dom | Paragraphs are 18px
+p style font-size == 18px
+
+=== web-07 | Classes
+--- teach
+To style some elements and not others, give them a **class** and select it with a dot:
+
+```html
+<style>
+  .warning { color: darkorange; font-weight: bold; }
+</style>
+
+<p class="warning">Low fuel</p>
+<p>All other systems nominal</p>
+```
+
+An element can have several classes (`class="card featured"`), and a class can be used on as many elements as you like. An `id` (`#name`) is for exactly one element.
+--- task
+Give two of the three paragraphs the class `done`, and style `.done` so its text is `grey` (the colour `rgb(128, 128, 128)`) with a line through it (`text-decoration: line-through`).
+--- starter
+<h1>Checklist</h1>
+<p>Fuel loaded</p>
+<p>Crew aboard</p>
+<p>Hatch sealed</p>
+--- solution
+<style>
+  .done {
+    color: grey;
+    text-decoration: line-through;
+  }
+</style>
+<h1>Checklist</h1>
+<p class="done">Fuel loaded</p>
+<p class="done">Crew aboard</p>
+<p>Hatch sealed</p>
+--- hint
+`<p class="done">…</p>` on two of them, and `.done { … }` in the style.
+--- check dom | Two paragraphs are done
+p.done count == 2
+--- check dom | Done items are grey
+.done style color == rgb(128, 128, 128)
+--- check dom | Done items are crossed out
+.done style text-decoration-line == line-through
+--- check dom | The third is left alone
+p:not(.done) style text-decoration-line == none
+
+=== web-08 | The box model
+--- teach
+Every element is a box. From the inside out:
+
+- **content** — the text or image
+- **padding** — space inside the border
+- **border** — the edge (`border: 2px solid #333`)
+- **margin** — space outside, between this box and its neighbours
+
+```css
+.card {
+  padding: 16px;
+  border: 2px solid #1e90ff;
+  margin: 24px;
+  border-radius: 8px;   /* rounded corners */
+}
+```
+
+A `div` is a plain box with no meaning of its own — the usual thing to style as a card.
+--- task
+Make a `div` with the class `card` containing an `h2` and a `p`. Give `.card` `20px` of padding, a `2px solid` border, and `12px` rounded corners.
+--- starter
+<!-- A card: a div with class="card" -->
+
+--- solution
+<style>
+  .card {
+    padding: 20px;
+    border: 2px solid #1e90ff;
+    border-radius: 12px;
+  }
+</style>
+<div class="card">
+  <h2>Falcon</h2>
+  <p>Reusable first stage.</p>
+</div>
+--- hint
+`<div class="card"><h2>…</h2><p>…</p></div>` and a `.card { … }` rule.
+--- check dom | A card with a heading and text
+.card h2 exists
+.card p exists
+--- check dom | 20px of padding
+.card style padding-top == 20px
+.card style padding-left == 20px
+--- check dom | A 2px solid border
+.card style border-top-width == 2px
+.card style border-top-style == solid
+--- check dom | Rounded corners
+.card style border-top-left-radius == 12px
+
+=== web-09 | Flexbox layout
+--- teach
+By default boxes stack top to bottom. **Flexbox** lines children up in a row (or a column) and spaces them:
+
+```css
+.row {
+  display: flex;
+  gap: 12px;                 /* space between the children */
+  justify-content: center;   /* along the row */
+  align-items: center;       /* across it */
+}
+```
+
+`flex-direction: column` stacks them instead. Flexbox is how most layouts — navigation bars, card rows, centred content — are built.
+--- task
+Put three `div`s with the class `tile` inside a `div` with the class `row`. Make `.row` a flex container with a `12px` gap.
+--- starter
+<div class="row">
+  <div class="tile">A</div>
+</div>
+--- solution
+<style>
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+  .tile {
+    padding: 12px;
+    background: #1e90ff;
+    color: white;
+  }
+</style>
+<div class="row">
+  <div class="tile">A</div>
+  <div class="tile">B</div>
+  <div class="tile">C</div>
+</div>
+--- hint
+`.row { display: flex; gap: 12px; }`
+--- check dom | Three tiles in the row
+.row .tile count == 3
+--- check dom | The row is a flex container
+.row style display == flex
+--- check dom | 12px between the tiles
+.row style column-gap == 12px
+
+=== web-10 | JavaScript: reacting to a click
+--- teach
+A `<script>` tag runs JavaScript in the page. It can find elements and change them — that is the **DOM** (the page as objects):
+
+```html
+<button id="launch">Launch</button>
+<p id="status">Waiting</p>
+
+<script>
+  const button = document.querySelector('#launch')
+  const status = document.querySelector('#status')
+
+  button.addEventListener('click', () => {
+    status.textContent = 'Lift off!'
+  })
+</script>
+```
+
+`querySelector` takes the same selectors as CSS. `addEventListener('click', …)` runs a function every time the button is clicked. Put the script after the elements it uses.
+--- task
+Make a counter: a button with `id="add"` and a paragraph with `id="count"` that starts at `0`. Each click adds one to the number shown.
+--- starter
+<button id="add">+1</button>
+<p id="count">0</p>
+
+<script>
+  // Find the button and the paragraph, then listen for clicks.
+</script>
+--- solution
+<button id="add">+1</button>
+<p id="count">0</p>
+
+<script>
+  const button = document.querySelector('#add')
+  const count = document.querySelector('#count')
+  let n = 0
+
+  button.addEventListener('click', () => {
+    n = n + 1
+    count.textContent = n
+  })
+</script>
+--- hint
+Keep the number in a variable (`let n = 0`) and set `count.textContent = n` after adding one.
+--- check dom | Starts at 0
+#count text == 0
+--- check dom | One click shows 1
+click #add
+#count text == 1
+--- check dom | Three clicks show 3
+click #add
+click #add
+click #add
+#count text == 3
+
+=== web-11 | Reading what people type
+--- teach
+An `input` fires an `input` event every time its text changes, and `.value` is what is in it:
+
+```html
+<input id="name">
+<p id="hello"></p>
+
+<script>
+  const name = document.querySelector('#name')
+  name.addEventListener('input', () => {
+    document.querySelector('#hello').textContent = 'Hello, ' + name.value
+  })
+</script>
+```
+
+This is the loop behind every live search box and character counter.
+--- task
+Make a character counter: an `input` with `id="message"` and a paragraph with `id="left"`. As she types, `#left` should say how many of 20 characters are left, like `17 left`. Before any typing it says `20 left`.
+--- starter
+<input id="message">
+<p id="left">20 left</p>
+
+<script>
+</script>
+--- solution
+<input id="message">
+<p id="left">20 left</p>
+
+<script>
+  const message = document.querySelector('#message')
+  const left = document.querySelector('#left')
+
+  message.addEventListener('input', () => {
+    left.textContent = (20 - message.value.length) + ' left'
+  })
+</script>
+--- hint
+Listen for `input` on `#message` and use `message.value.length`.
+--- check dom | Starts at 20 left
+#left text == 20 left
+--- check dom | Typing "hi" leaves 18
+type #message hi
+#left text == 18 left
+--- check dom | Typing a longer word counts it
+type #message rocket
+#left text == 14 left
+
+=== web-12 | Building a list from data
+--- teach
+Pages are usually built from data. Loop over an array and create an element for each item:
+
+```html
+<ul id="crew"></ul>
+
+<script>
+  const crew = ['Ada', 'Lin', 'Sam']
+  const list = document.querySelector('#crew')
+
+  for (const name of crew) {
+    const li = document.createElement('li')
+    li.textContent = name
+    list.appendChild(li)
+  }
+</script>
+```
+
+`createElement` makes a new element, `textContent` fills it, and `appendChild` puts it on the page. This is, underneath, what every front-end framework does.
+--- task
+`planets` holds four names. Fill the `ul` with `id="planets"` with one `li` per planet, in order, using a loop.
+--- starter
+<ul id="planets"></ul>
+
+<script>
+  const planets = ['Mercury', 'Venus', 'Earth', 'Mars']
+</script>
+--- solution
+<ul id="planets"></ul>
+
+<script>
+  const planets = ['Mercury', 'Venus', 'Earth', 'Mars']
+  const list = document.querySelector('#planets')
+
+  for (const planet of planets) {
+    const li = document.createElement('li')
+    li.textContent = planet
+    list.appendChild(li)
+  }
+</script>
+--- hint
+`document.createElement('li')`, set its `textContent`, then `list.appendChild(li)`.
+--- check dom | Four planets listed
+#planets li count == 4
+--- check dom | In order, starting with Mercury
+#planets li:first-child text == Mercury
+#planets li:last-child text == Mars
+--- check source | Built with a loop
+\b(for|forEach|map)\b

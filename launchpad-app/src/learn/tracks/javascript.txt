@@ -66,10 +66,12 @@ visitors = visitors + 25
 console.log(city, visitors)
 --- hint
 `visitors = visitors + 25` (or `visitors += 25`) updates a let.
---- check test | city is 'Houston'
-city === 'Houston'
---- check test | visitors ended at 125
-visitors === 125
+--- check case | city is 'Houston'
+city
+=> 'Houston'
+--- check case | visitors ended at 125
+visitors
+=> 125
 --- check source | city is declared with const
 \bconst\s+city\b
 --- check source | visitors is declared with let
@@ -152,8 +154,9 @@ console.log(`user: ${clean} (${clean.length} characters)`)
 Chain the methods: `raw.trim().toLowerCase()`.
 --- hint
 `.length` is a property, not a method — no brackets.
---- check test | clean is trimmed and lowercased
-clean === 'ada lovelace'
+--- check case | clean is trimmed and lowercased
+clean
+=> 'ada lovelace'
 --- check source | Uses a template literal
 `[^`]*\$\{
 --- check output | Prints the sentence
@@ -193,14 +196,18 @@ function grade(score) {
 }
 --- hint
 Test the highest band first: `if (score >= 70) return 'pass'`.
---- check test | 85 is a pass
-grade(85) === 'pass'
---- check test | 70 is a pass (the boundary)
-grade(70) === 'pass'
---- check test | 64 is close
-grade(64) === 'close'
---- check test | 12 is a fail
-grade(12) === 'fail'
+--- check case | 85 is a pass
+grade(85)
+=> 'pass'
+--- check case | 70 is a pass (the boundary)
+grade(70)
+=> 'pass'
+--- check case | 64 is close
+grade(64)
+=> 'close'
+--- check case | 12 is a fail
+grade(12)
+=> 'fail'
 
 === js-06 | Loops
 --- teach
@@ -289,12 +296,15 @@ function wordCount(text) {
 const isEven = (n) => n % 2 === 0
 --- hint
 `''.split(/\s+/)` is `['']` — one empty word — so handle the empty string first.
---- check test | wordCount('the quick brown fox') is 4
-wordCount('the quick brown fox') === 4
---- check test | Extra spaces do not count as words
-wordCount('  spaced   out  ') === 2
---- check test | The empty string has 0 words
-wordCount('') === 0
+--- check case | wordCount('the quick brown fox') is 4
+wordCount('the quick brown fox')
+=> 4
+--- check case | Extra spaces do not count as words
+wordCount('  spaced   out  ')
+=> 2
+--- check case | The empty string has 0 words
+wordCount('')
+=> 0
 --- check test | isEven works both ways
 isEven(10) === true && isEven(7) === false
 
@@ -333,10 +343,12 @@ function stats(latencies) {
 Sum with a loop, then divide by `latencies.length`.
 --- check test | fastest and slowest
 stats([120, 95, 210, 143, 180]).fastest === 95 && stats([120, 95, 210, 143, 180]).slowest === 210
---- check test | average
-stats([120, 95, 210, 143, 180]).average === 149.6
---- check test | Works for a single value
-JSON.stringify(stats([7])) === '{"fastest":7,"slowest":7,"average":7}'
+--- check case | average
+stats([120, 95, 210, 143, 180]).average
+=> 149.6
+--- check case | Works for a single value
+stats([7])
+=> {"fastest": 7, "slowest": 7, "average": 7}
 
 === js-09 | Objects
 --- teach
@@ -371,12 +383,15 @@ function countWords(text) {
 }
 --- hint
 `counts[word] = (counts[word] ?? 0) + 1` — `??` supplies 0 the first time.
---- check test | Counts repeated words
-JSON.stringify(countWords('to be or not to be')) === '{"to":2,"be":2,"or":1,"not":1}'
---- check test | Ignores case
-countWords('The the THE').the === 3
---- check test | The empty string gives {}
-Object.keys(countWords('')).length === 0
+--- check case | Counts repeated words
+countWords('to be or not to be')
+=> {"to": 2, "be": 2, "or": 1, "not": 1}
+--- check case | Ignores case
+countWords('The the THE').the
+=> 3
+--- check case | The empty string gives {}
+countWords('')
+=> {}
 
 === js-10 | map, filter and reduce
 --- teach
@@ -413,12 +428,15 @@ function totalTokens(requests) {
 }
 --- hint
 `requests.filter((r) => r.tokens > 1000).map((r) => r.user)`
---- check test | heavyUsers keeps the big requests' users
-JSON.stringify(heavyUsers([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }, { user: 'sam', tokens: 15000 }])) === '["ada","sam"]'
---- check test | totalTokens adds them up
-totalTokens([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }]) === 1500
---- check test | totalTokens of nothing is 0
-totalTokens([]) === 0
+--- check case | heavyUsers keeps the big requests' users
+heavyUsers([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }, { user: 'sam', tokens: 15000 }])
+=> ["ada", "sam"]
+--- check case | totalTokens adds them up
+totalTokens([{ user: 'ada', tokens: 1200 }, { user: 'lin', tokens: 300 }])
+=> 1500
+--- check case | totalTokens of nothing is 0
+totalTokens([])
+=> 0
 --- check source | Uses reduce
 \.reduce\(
 
@@ -465,10 +483,12 @@ function parsePort(text) {
 Convert with `Number(text)` and check `Number.isInteger` first; return null if it fails.
 --- hint
 `throw new RangeError('…')` for numbers outside the range.
---- check test | '8080' gives 8080
-parsePort('8080') === 8080
---- check test | 'http' gives null
-parsePort('http') === null
+--- check case | '8080' gives 8080
+parsePort('8080')
+=> 8080
+--- check case | 'http' gives null
+parsePort('http')
+=> null
 --- check test | '70000' throws
 throws(() => parsePort('70000'))
 --- check test | '0' throws
