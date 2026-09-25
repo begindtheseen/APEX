@@ -113,7 +113,8 @@ async function typeCommands(p, text) {
   await LP.go(p, '/learn');
   const courses = await p.$$eval('.lm-course', (e) => e.length);
   ok('every course is listed too, grouped by language', courses === tracks.length && (await p.$$eval('.lm-lang', (e) => e.length)) === langs.length, courses + ' of ' + tracks.length);
-  const mastery = await p.$$eval('.rm-goals__row:last-child .rm-goals__pill', (e) => e.length);
+  // Only the per-language roadmaps carry a language logo on their pill.
+  const mastery = await p.$$eval('.rm-goals__pill .lang-mark', (e) => e.length);
   ok('each language with several courses has a beginner-to-expert roadmap', mastery === langs.filter((l) => tracks.filter((t) => t.lang === l).length > 1).length, String(mastery));
   const navLearn = await p.$$eval('.side .nav-item', (e) => e.some((a) => /Learn to code/.test(a.textContent)));
   ok('Learn to code is in the sidebar', navLearn);
