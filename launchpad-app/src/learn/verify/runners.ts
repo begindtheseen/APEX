@@ -180,7 +180,10 @@ let clang: Promise<RunClang> | null = null
 const CXX_FLAGS = ['-std=c++20', '-O1', '-Wall', '-Wextra', '-fno-exceptions', '-fno-color-diagnostics']
 
 export async function runCppNode(code: string, stdin = ''): Promise<Out> {
-  clang ??= import('@yowasp/clang').then((m) => (m as unknown as { runClang: RunClang }).runClang)
+  // Named through a variable: the compiler package is a root devDependency the
+  // app's own typecheck does not install, and only this Node-side checker uses it.
+  const pkg: string = '@yowasp/clang'
+  clang ??= import(/* @vite-ignore */ pkg).then((m) => (m as { runClang: RunClang }).runClang)
   const runClang = await clang
   let diag = ''
   const dec = new TextDecoder()
