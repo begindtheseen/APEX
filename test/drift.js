@@ -157,6 +157,16 @@ if (cut && app) {
   }
 }
 
+// ----------------------------------------- 8. the launcher's fallback count
+// The APEX launcher shows LAUNCHPAD's "passed" count without loading the
+// curriculum. The app writes the real total into the record it mirrors; this
+// constant is only for a device that has no record yet, and it must still be
+// the curriculum's own number.
+var INDEX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+var lpCount = /var LP_MODULE_COUNT = (\d+);/.exec(INDEX);
+if (!lpCount) fail('index.html no longer declares LP_MODULE_COUNT');
+else eq('launcher module count (index.html) vs JS', lpCount[1], C.AI_CURRICULUM.length);
+
 // ------------------------------------------------------------------- report
 if (errors.length) {
   console.error('DRIFT: ' + errors.length + ' disagreement' + (errors.length > 1 ? 's' : '') +

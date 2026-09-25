@@ -35,3 +35,30 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+
+  # LAUNCHPAD is its own app (ORBIT's platform carrying the LAUNCHPAD
+  # curriculum). Its source is launchpad-app/; the build is committed at
+  # launchpad/ so the site stays a static folder with no deploy-time build.
+  # This job proves the source is sound and that the committed build is exactly
+  # what the source produces — a stale launchpad/ fails here, not in a browser.
+  launchpad:
+    name: LAUNCHPAD builds from its source
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: launchpad-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: launchpad-app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: The committed build matches the source
+        run: |
+          git status --porcelain -- ../launchpad
+          test -z "$(git status --porcelain -- ../launchpad)"

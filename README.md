@@ -6,7 +6,8 @@ Habits unlock one phase at a time so you are never asked to do more than you
 can handle in a day.
 
 The entire app is a single `index.html` — no build step, no backend, no
-accounts. **Your progress is saved automatically on the device you use it on.**
+accounts. (LAUNCHPAD, one of its realms, is its own app and ships prebuilt in
+`launchpad/`; see below.) **Your progress is saved automatically on the device you use it on.**
 
 ## How progress is saved
 
@@ -57,6 +58,9 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | File | Purpose |
 | --- | --- |
 | `index.html` | The entire app — UI, logic, and `localStorage` persistence. |
+| `launchpad/` | LAUNCHPAD — the built app (committed; served as-is). |
+| `launchpad-app/` | LAUNCHPAD's source: ORBIT's learning platform carrying the LAUNCHPAD curriculum. |
+| `curriculum-ai.js` / `AI_ENGINEERING_CURRICULUM.md` / `launchpadviz.js` | The LAUNCHPAD curriculum: data, prose, and mechanism figures. The app is generated from these. |
 | `obsidian.js` / `obsviz.js` | Obsidian curriculum data + its animated mechanism diagrams. |
 | `redline.js` / `redlineviz.js` | REDLINE social-media operator curriculum + mechanism diagrams. |
 | `REDLINE_RESEARCH.md` | REDLINE source map, update policy, and curriculum coverage. |
@@ -64,15 +68,53 @@ it on: repo **Settings → Pages → Build and deployment → Source: GitHub Act
 | `sw.js` | Service worker — caches the app shell for offline use. |
 | `icon.svg` | App icon used by the manifest and home screen. |
 | `.github/workflows/deploy.yml` | Publishes the app to GitHub Pages. |
+| `.github/workflows/ci.yml` | The drift check, the browser suites, and the LAUNCHPAD build check. |
 | `RESEARCH.md` | The evidence base — every science claim, threshold, and Navy fact mapped to its source. |
 
-## The realm launcher — three curricula, one engine
+## The realm launcher — four curricula
 
-The app opens on a **realm-select start page**: three side-by-side panels —
-**APEX** (blue ■, the protocol above), **OBSIDIAN** (white ◆), and
-**REDLINE** (red ▲). Tapping a panel plays a full-screen warp transition in
+The app opens on a **realm-select start page**: side-by-side panels —
+**APEX** (blue ■, the protocol above), **LAUNCHPAD**, **OBSIDIAN** (white ◆),
+and **REDLINE** (red ▲). Tapping a panel plays a full-screen warp transition in
 that realm's color and drops you in. The ❖ button (or ← REALMS) returns to
 the launcher. Each realm keeps fully separate progress.
+
+## LAUNCHPAD — AI engineering, from zero to employed
+
+**LAUNCHPAD** is a 33-module AI-engineering curriculum (nine layers, ten
+parallel tracks, a hard gate before the AI layers). It runs as its own app at
+**`launchpad/`**: the ORBIT learning platform — the same layout, navigation,
+module pages (Learn → Build → Recall), spaced-repetition review, focus
+sessions, search, and coding playground — carrying the LAUNCHPAD curriculum
+exactly as written.
+
+- **The curriculum is the source of truth.** `curriculum-ai.js` (data),
+  `AI_ENGINEERING_CURRICULUM.md` (prose) and `launchpadviz.js` (figures) are
+  read at build time; the module lessons are the document's own text, split at
+  each module's gate. Edit those files, rebuild, and the app follows.
+- **Claims work the way they always did:** delta written → every checkpoint
+  ticked → artifact built → gate passed, with the hard gate before layers 4–6.
+  Mastery, the review queue and the readiness ring are driven by those claims.
+- **Progress** lives in the app's own IndexedDB store (`launchpad`), with a
+  mirror in `localStorage` under the old realm's key, `apex_launchpad_v1`, so
+  the launcher's count and any old realm backup keep working. Progress from the
+  old in-page realm is adopted automatically on first launch. Settings has its
+  own Export / Restore / Reset.
+- **The playground** runs JavaScript (in a throwaway worker), Python
+  (Pyodide) and SQL (sql.js) in the browser.
+
+### Changing LAUNCHPAD
+
+```bash
+cd launchpad-app
+npm ci
+npm run dev        # http://localhost:5173 — regenerates the curriculum first
+npm test           # unit tests
+npm run build      # writes the app to ../launchpad — commit the result
+```
+
+The build is deterministic, and CI rebuilds it and fails if the committed
+`launchpad/` differs from what the source produces.
 
 ## Obsidian — the second curriculum (black side)
 

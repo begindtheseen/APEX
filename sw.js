@@ -2,7 +2,7 @@
 // Caches the app shell so the tracker works offline and installs as a PWA.
 // User progress is NOT stored here; it lives in localStorage (see index.html).
 // Bump CACHE when the app shell changes to roll out the update.
-var CACHE = 'apex-shell-v53';
+var CACHE = 'apex-shell-v54';
 var SHELL = [
   './',
   './index.html',
@@ -13,8 +13,6 @@ var SHELL = [
   './obsviz.js',
   './redline.js',
   './redlineviz.js',
-  './curriculum-ai.js',
-  './launchpadviz.js',
   './manifest.json',
   './icon.svg'
 ];
@@ -63,11 +61,15 @@ self.addEventListener('install', function(e) {
   );
 });
 
+// Only this worker's own older caches are deleted. Cache storage is shared by
+// the whole origin, and LAUNCHPAD's app at ./launchpad/ runs its own worker
+// with its own caches beside these; deleting everything that is not CACHE
+// took its offline copy with it on every APEX update.
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(keys.map(function(k) {
-        if (k !== CACHE) return caches.delete(k);
+        if (k !== CACHE && k.indexOf('apex-shell-') === 0) return caches.delete(k);
       }));
     }).then(function() { return self.clients.claim(); })
   );

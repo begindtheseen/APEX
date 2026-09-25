@@ -13,12 +13,16 @@ var TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
   '.css': 'text/css; charset=utf-8', '.png': 'image/png',
-  '.webmanifest': 'application/manifest+json'
+  '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2',
+  '.woff': 'font/woff', '.ttf': 'font/ttf', '.md': 'text/markdown; charset=utf-8'
 };
 
 http.createServer(function (req, res) {
   var rel = decodeURIComponent(req.url.split('?')[0]);
   if (rel === '/' || rel === '') rel = '/index.html';
+  // A directory is served by its index, as any static host does — LAUNCHPAD
+  // lives at /launchpad/.
+  else if (rel.charAt(rel.length - 1) === '/') rel += 'index.html';
   // Confine every read to the repo root; a test server is still a server.
   var file = path.resolve(ROOT, '.' + path.posix.normalize(rel));
   if (file !== ROOT && file.indexOf(ROOT + path.sep) !== 0) {
