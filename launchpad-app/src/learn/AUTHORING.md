@@ -97,7 +97,7 @@ Both must be green before a course is done.
 
 ## What the runtimes can and cannot do
 
-- **Python** — CPython 3.13 (Pyodide), standard library only (NumPy exists in
+- **Python** — CPython 3.14 (Pyodide 314), standard library only (NumPy exists in
   the app but not in the checker: do not use it). `input()` reads `stdin`.
   Each run starts from an empty namespace. `asyncio` works (top-level `await`
   too). Files: an in-memory filesystem — `open()` works within one run.
