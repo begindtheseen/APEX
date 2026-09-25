@@ -116,6 +116,16 @@
   --sidebar-w: 188px;
   --rail-w: 72px; /* collapsed sidebar on medium screens */
   --topbar-h: 62px;
+  /* The page is drawn edge to edge (viewport-fit=cover, and a translucent
+     status bar when installed on iOS), so on a phone the top of the screen
+     belongs to the status bar and the notch. These are the device's own
+     insets, zero everywhere else; --chrome-top is the bar plus what sits
+     above it, and is what anything tucked under the bar must clear. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --chrome-top: calc(var(--topbar-h) + var(--safe-top));
   --gutter: 14px;
   --gap: 14px;
   --content-max: 1120px;

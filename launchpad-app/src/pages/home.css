@@ -12,8 +12,8 @@
    while the greeting still clears the chrome. */
 .hero {
   position: relative;
-  margin-top: calc(var(--topbar-h) * -1);
-  padding-top: var(--topbar-h);
+  margin-top: calc(var(--chrome-top) * -1);
+  padding-top: var(--chrome-top);
   min-height: 242px;
   display: flex;
   align-items: flex-end;

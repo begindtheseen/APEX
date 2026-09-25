@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 18px;
+  padding: 10px calc(18px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(18px + var(--safe-left));
   background: linear-gradient(180deg, rgba(4, 16, 31, 0.97) 0%, rgba(1, 9, 19, 0.99) 100%);
   border-top: 1px solid var(--line-blue);
   /* Lifts the strip off the page without a drop shadow pointing the wrong way. */
@@ -36,7 +36,7 @@
    the page. The scroll container gives back exactly its height while a block
    is running, and nothing at all when one is not. */
 .shell[data-focus='true'] .scroll {
-  padding-bottom: 76px;
+  padding-bottom: calc(76px + var(--safe-bottom));
 }
 
 @media (max-width: 760px) {

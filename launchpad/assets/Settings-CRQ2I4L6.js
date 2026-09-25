@@ -1,4 +1,4 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,I as r,N as i,Z as a,a as o,at as s,et as c,g as l,i as u,nt as d,q as f,r as p,rt as m,s as h}from"./ui-C8AkMsMc.js";import{S as g}from"./curriculum-rLod3J6P.js";import{G as _,c as v,d as y,i as b,r as x,s as S,z as C}from"./engine-DUBqSpGn.js";import{t as w}from"./markdown-BnbSJNn6.js";/* empty css              */import{i as T,t as E}from"./format-DO6x-haJ.js";var D=e(),O=`# Changelog
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,I as r,N as i,Z as a,a as o,at as s,et as c,g as l,i as u,nt as d,q as f,r as p,rt as m,s as h}from"./ui-C8AkMsMc.js";import{S as g}from"./curriculum-rLod3J6P.js";import{G as _,c as v,d as y,i as b,r as x,s as S,z as C}from"./engine-DUBqSpGn.js";import{t as w}from"./markdown-mbkHsC2n.js";/* empty css              */import{i as T,t as E}from"./format-DO6x-haJ.js";var D=e(),O=`# Changelog
 
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
