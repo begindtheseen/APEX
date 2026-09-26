@@ -27,9 +27,11 @@ const TAUGHT: LearnLang[] = ['bash', 'git', 'html', 'javascript', 'typescript', 
 const FILES = import.meta.glob('./tracks/*.txt', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 const LEVEL_ORDER = ['basics', 'intermediate', 'advanced', 'expert', 'projects']
 
+/** Language, then level; a specialty course (`<lang>.<topic>.txt`) comes after the ladder. */
 function sortKey(file: string): [number, number] {
   const [lang = '', level = 'basics'] = file.replace(/\.txt$/, '').split('.')
-  return [TAUGHT.indexOf(lang as LearnLang), LEVEL_ORDER.indexOf(level)]
+  const at = LEVEL_ORDER.indexOf(level)
+  return [TAUGHT.indexOf(lang as LearnLang), at >= 0 ? at : LEVEL_ORDER.length]
 }
 
 /** [file name, text] for every course this app teaches, language by language, basics first. */
@@ -86,6 +88,36 @@ export const ROADMAPS: Roadmap[] = [
     title: 'Systems & C++',
     blurb: 'Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.',
     steps: ['bash', 'git', 'python', 'cpp'],
+  },
+  {
+    id: 'web',
+    title: 'Web Developer',
+    blurb: 'Whole websites and web apps, front to back: HTML, CSS and JavaScript taken all the way to accessible, fast, well-built pages, TypeScript to keep them correct, SQL for the data behind them, and three real sites built at the end.',
+    steps: ['bash', 'git', 'html', 'javascript', 'html-intermediate', 'javascript-intermediate', 'typescript', 'html-advanced', 'javascript-advanced', 'sql', 'html-expert', 'html-projects'],
+  },
+  {
+    id: 'ai-research',
+    title: 'AI Research Engineer',
+    blurb: 'The people who build and improve the models themselves: Python taken to expert, then neural networks, autograd, tokenizers, attention and a transformer built from scratch and trained, then C++ for the code that has to be fast.',
+    steps: ['bash', 'git', 'python', 'python-intermediate', 'python-advanced', 'python-expert', 'python-projects', 'python-ai', 'cpp', 'cpp-intermediate', 'cpp-advanced'],
+  },
+  {
+    id: 'data-eng',
+    title: 'Data Engineer',
+    blurb: 'The pipelines every analysis and model is fed by: SQL from the first SELECT to window functions, query plans and schemas that hold up, Python to move and clean the data, and the command line to run it all.',
+    steps: ['python', 'sql', 'bash', 'git', 'sql-intermediate', 'python-intermediate', 'sql-advanced', 'bash-intermediate', 'sql-expert', 'python-advanced', 'sql-projects'],
+  },
+  {
+    id: 'devops',
+    title: 'DevOps & Platform Engineer',
+    blurb: 'The ground other engineers build on: the command line to scripts that check their own input, git from first commit to rebase, bisect and a team workflow, and Python for the tools you write for everyone else.',
+    steps: ['bash', 'git', 'bash-intermediate', 'git-intermediate', 'bash-advanced', 'git-advanced', 'python', 'python-intermediate', 'sql'],
+  },
+  {
+    id: 'performance',
+    title: 'Game & Performance Engineer',
+    blurb: 'Code where every millisecond and byte counts — game engines, simulations, trading, embedded: C++ from the basics to move semantics, templates, containers built from raw memory and undefined behaviour, then three real programs.',
+    steps: ['bash', 'git', 'cpp', 'python', 'cpp-intermediate', 'cpp-advanced', 'cpp-expert', 'cpp-projects'],
   },
 ]
 

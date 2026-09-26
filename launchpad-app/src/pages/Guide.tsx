@@ -667,6 +667,12 @@ export function Guide() {
               language; <strong>Reset</strong> restores the starter, and <Kbd>Ctrl</Kbd>+<Kbd>Enter</Kbd>{' '}
               runs.
             </p>
+            <p>
+              <strong>Read aloud</strong> uses a natural voice that is made on your device: Kokoro, an open
+              neural voice. The first time, it downloads once (about 92 MB) from Hugging Face, where its
+              authors publish it, and then works offline. Your device's own voices are in the same picker
+              if you would rather not download it.
+            </p>
           </div>
         </Section>
 

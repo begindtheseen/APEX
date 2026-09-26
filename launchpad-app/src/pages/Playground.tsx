@@ -16,6 +16,7 @@
    Everything runs in this tab. The note under the window says exactly what
    just happened, because a green tick that means nothing is worse than none.
    ========================================================================== */
+import { inTabCppUnavailable } from '@/lib/cppRemote'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Editor } from '@/components/Editor'
 import { IconArrowRight, IconBulb, IconPause, IconRefresh } from '@/components/icons'
@@ -429,10 +430,21 @@ export function Playground() {
       ) : null}
 
       <p className="track-note">
-        Everything here runs inside this browser tab. Nothing you write is uploaded — which also means each language
-        brings its runtime to you the first time you run it, and your browser then caches it: Python about 7 MB,
-        TypeScript about 9 MB, and the C++ compiler about 105 MB before compression. The Terminal is a practice one;
-        the real terminal work of M1 happens on your own machine.
+        {inTabCppUnavailable() ? (
+          <>
+            Everything here runs inside this browser tab except C++: an iPhone or iPad cannot run the C++ compiler in
+            a browser, so C++ is compiled and run on Compiler Explorer (godbolt.org), and that code is sent there.
+            Nothing else you write is uploaded, and each other language brings its runtime to you the first time you
+            run it: Python about 7 MB, TypeScript about 9 MB.
+          </>
+        ) : (
+          <>
+            Everything here runs inside this browser tab. Nothing you write is uploaded — which also means each
+            language brings its runtime to you the first time you run it, and your browser then caches it: Python
+            about 7 MB, TypeScript about 9 MB, and the C++ compiler about 105 MB before compression.
+          </>
+        )}{' '}
+        The Terminal is a practice one; the real terminal work of M1 happens on your own machine.
       </p>
     </div>
   )

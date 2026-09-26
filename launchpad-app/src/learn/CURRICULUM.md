@@ -817,6 +817,28 @@ Kind spread is healthy in every course: intermediate 2 debugging + 1 problem + 1
 
 ---
 
+### Python · AI from scratch — `python-ai` (specialty), prefix `ai-`, 16 lessons
+
+After the ladder, for engineers who build and train models. Standard library only: every piece is built by hand, and each lesson names what it is called in PyTorch.
+
+| Lessons | What | Kind | Builds on |
+| --- | --- | --- | --- |
+| ai-01 | vectors, matrices and shapes as lists; `random.Random(seed)` | concept | py2-02 |
+| ai-02 | derivatives by finite differences, gradient descent fitting a line | concept | — |
+| ai-03 | logistic regression: sigmoid, binary cross-entropy | concept | ai-02 |
+| ai-04…05 | **autograd**: a `Value` that records its graph, then backward through a topological sort (taught here) | build | py3-04 closures, py3-07 special methods |
+| ai-06 | gradient checking finds three planted backward bugs | debugging | ai-05 |
+| ai-07 | neurons, layers, an MLP and its training loop (XOR) | build | ai-05 |
+| ai-08 | a loop that does not learn: grads never zeroed, sign flipped, losses kept as `Value`s | debugging | ai-07 |
+| ai-09 | optimizers behind one interface: SGD, momentum, Adam | design | py3-10 strategy |
+| ai-10 | softmax overflow and the log-sum-exp trick | debugging | py4-10 floating point |
+| ai-11 | byte-pair encoding (UTF-8 and `bytes` taught here); 200,000 tokens | problem solving | py2-13 |
+| ai-12 | a bigram language model: counts, sampling, NLL | concept | ai-10 |
+| ai-13 | embeddings and causal self-attention | concept | ai-01, ai-10 |
+| ai-14 | a transformer block, forward pass: layer norm, attention, MLP, residuals | build | ai-13 |
+| ai-15 | leakage, overfitting and early stopping | debugging | ai-12 |
+| ai-16 | **capstone**: a language model that beats a held-out loss threshold | capstone | the course |
+
 ## SQL (`sql`) — course `sql`, prefix `sql-`, 12 lessons
 
 Engine: SQLite (sql.js), fresh database per run. Course schema: `users(id,

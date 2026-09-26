@@ -1,9 +1,9 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-Bzls0vvt.js";import{t as p}from"./markdown-DQZE1_yx.js";/* empty css              */import{A as m,C as h,F as g,I as _,M as v,N as ee,P as te,S as y,T as ne,_ as b,b as x,c as re,d as S,g as C,i as w,l as T,m as ie,p as ae,r as oe,s as se,t as ce,v as E,w as le,x as ue,y as de}from"./lessonCode-2uvhmUsY.js";var D=e(),O=`@@LEARN`,fe=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var pe=`const throws = (f) => { try { f(); return false } catch { return true } }
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-DbNtKR83.js";import{t as p}from"./markdown-CXW39hHa.js";/* empty css              */import{A as m,C as h,F as g,I as _,M as v,N as ee,P as te,S as y,T as ne,_ as b,b as x,c as S,d as C,g as w,i as T,l as E,m as re,p as ie,r as ae,s as oe,t as se,v as D,w as ce,x as le,y as ue}from"./lessonCode-D9qnp1s4.js";var O=e(),k=`@@LEARN`,de=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function A(e){return e.replace(/\s*\n\s*/g,` `).trim()}function j(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var fe=`const throws = (f) => { try { f(); return false } catch { return true } }
   const __eq = (a, b) => { if (Object.is(a, b)) return true; if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => __eq(a[k], b[k])) }
   const __show = (v) => { if (v === undefined) return 'undefined'; if (typeof v === 'function') return '[Function]'; if (typeof v === 'bigint') return v + 'n'; try { const j = JSON.stringify(v); return j === undefined ? String(v) : j } catch { return String(v) } }
   const __err = (e) => (e instanceof Error ? e.name + ': ' + e.message : String(e))
-  const __learn = (i, f) => { try { const r = f(); console.log('${O} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }
-  const __case = (i, f, w) => { try { const got = f(); console.log('${O} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }`,me=pe.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),he=`#include <cmath>
+  const __learn = (i, f) => { try { const r = f(); console.log('${k} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }
+  const __case = (i, f, w) => { try { const got = f(); console.log('${k} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }`,pe=fe.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),me=`#include <cmath>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -17,38 +17,38 @@ inline std::string __learn_show(bool v) { return v ? "true" : "false"; }
 inline std::string __learn_show(char v) { return std::string("'") + v + "'"; }
 template <class T> std::string __learn_show(const std::vector<T>& v) { std::string o = "{"; for (std::size_t i = 0; i < v.size(); ++i) o += (i ? ", " : "") + __learn_show(v[i]); return o + "}"; }
 template <class K, class V> std::string __learn_show(const std::map<K, V>& m) { std::string o = "{"; bool first = true; for (const auto& [k, x] : m) { o += (first ? "" : ", ") + std::string("{") + __learn_show(k) + ", " + __learn_show(x) + "}"; first = false; } return o + "}"; }
-template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function ge(e){let t=A(e,`test`),n=A(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?A(e,`type-error`).map(e=>`  // @ts-expect-error ${_e} ${e.i}\n  ;(() => { ${k(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
+template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function he(e){let t=j(e,`test`),n=j(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?j(e,`type-error`).map(e=>`  // @ts-expect-error ${ge} ${e.i}\n  ;(() => { ${A(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
 `)}\n}\n`:``;let a=r?`  // @ts-ignore
-`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?me:pe}\n${o.join(`
+`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?pe:fe}\n${o.join(`
 `)}\n${i.join(`
-`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${O} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${O} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
-`)}case`cpp`:return!t.length&&!n.length?``:`\n${he}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${k(e.c.expr)}); std::cout << "${O} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${k(e.c.expect)})); std::cout << "${O} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
-`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${O}' AS __learn;\n${A(e,`query`).map(e=>`SELECT '${O} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
-`)}\n`;case`html`:case`bash`:case`git`:return``}}var _e=`learn-type-check`;function ve(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
-`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${_e} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
-`)}}function ye(e,t){let n=ge(e);return n?t.endsWith(`
-`)?t+n.replace(/^\n/,``):t+n:t}function be(e){return A(e,`dom`).map(e=>e.c.steps)}function j(e){return e.replace(/\r\n?/g,`
+`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${k} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${k} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
+`)}case`cpp`:return!t.length&&!n.length?``:`\n${me}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${A(e.c.expr)}); std::cout << "${k} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${A(e.c.expect)})); std::cout << "${k} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
+`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${k}' AS __learn;\n${j(e,`query`).map(e=>`SELECT '${k} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
+`)}\n`;case`html`:case`bash`:case`git`:return``}}var ge=`learn-type-check`;function _e(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
+`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${ge} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
+`)}}function ve(e,t){let n=he(e);return n?t.endsWith(`
+`)?t+n.replace(/^\n/,``):t+n:t}function ye(e){return j(e,`dom`).map(e=>e.c.steps)}function M(e){return e.replace(/\r\n?/g,`
 `).split(`
 `).map(e=>e.trimEnd()).join(`
-`).replace(/^\n+|\n+$/g,``)}function xe(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
+`).replace(/^\n+|\n+$/g,``)}function be(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
 `).split(`
-`)){let e=fe.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
-`),marks:t}}function Se(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function M(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>Se(e,a[t][n])))}function N(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
-`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function P(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var F=e=>le(b,e),Ce=e=>e.replace(/^\/home\/you/,`~`);function we(e){let t=h();for(let n of e.starter.split(`
-`))n.trim()&&(t=ne(t,n).state);return{...t,history:[],transcript:[]}}function Te(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(1).join(` `),o=t.trim().replace(/^\S+\s*/,``),s=t.trim().replace(/^\S+\s+\S+\s*/,``),c=e.transcript[e.transcript.length-1]?.out??``;switch(r){case`cwd`:return e.cwd===F(i)?null:`you are in ${Ce(e.cwd)}, not ${Ce(F(i))}`;case`dir`:{let t=y(e,F(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return y(e,F(i))?`${i} should not exist any more`:null;case`file`:{let n=y(e,F(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!s)return null;let r=n.content.replace(/\n$/,``);if(s===`empty`)return n.content===``?null:`${i} is not empty: it contains ${JSON.stringify(P(r,80))}`;if(s===`exec`)return n.exec?null:`${i} is not executable yet (chmod +x ${i})`;let a=/^lines\s+(.*)$/.exec(s);if(a){let e=r===``&&n.content===``?0:r.split(`
-`).length;return I(e,a[1].split(/\s+/))?null:`${i} has ${e} line${e===1?``:`s`}`}let o=/^(==|~=|contains|excludes)\s(.*)$/.exec(s);return o?o[1]===`~=`?R(r)===R(L(o[2]))?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(L(o[2]))}`:o[1]===`==`?r===o[2]?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(o[2])}`:o[1]===`excludes`?r.includes(o[2])?`${i} still contains ${JSON.stringify(o[2])}`:null:r.includes(o[2])?null:`${i} does not contain ${JSON.stringify(o[2])}`:`the check "${t}" could not be read`}case`count`:{let t=ue(e,b,i);return I(t,n.slice(2))?null:`${t} path${t===1?``:`s`} match ${i}`}case`ran`:return e.history.flatMap(e=>e.split(/&&|\|\||;|\|/).map(e=>e.trim().replace(/\s+/g,` `).replace(/^(?:(?:do|then|else|!)\s+)+/,``))).some(e=>e===a||e.startsWith(`${a} `))?null:`you have not run ${a} yet`;case`used`:return e.history.some(e=>e.includes(o))?null:`you have not used ${o} in a command yet`;case`printed-line`:return e.transcript.some(e=>e.out.split(`
-`).includes(o))?null:`nothing has printed the line ${JSON.stringify(o)} yet`;case`printed`:return e.transcript.some(e=>e.out.includes(o))?null:`nothing has printed ${JSON.stringify(o)} yet`;case`printed-exactly`:{let t=R(L(o));return e.transcript.some(e=>R(e.out)===t)?null:`no command printed exactly ${JSON.stringify(t)}`}case`not-printed`:return e.transcript.some(e=>e.out.includes(o))?`something printed ${JSON.stringify(o)}`:null;case`last-printed`:return c.includes(o)?null:`the last command printed ${JSON.stringify(P(c,200))}, without ${JSON.stringify(o)}`;case`last-not-printed`:return c.includes(o)?`the last command still printed ${JSON.stringify(o)}`:null;case`last-printed-exactly`:{let e=R(L(o));return R(c)===e?null:`the last command printed ${JSON.stringify(P(c,200))}, not ${JSON.stringify(e)}`}case`status`:return I(e.status,n.slice(1))?null:`the last command finished with status ${e.status}`;case`var`:case`env`:{let n=e.vars?.[i];if(n===void 0)return`the variable ${i} is not set`;if(r===`env`&&!e.exported?.includes(i))return`${i} is set but not exported (export ${i})`;let a=/^==\s?(.*)$/.exec(s);return s&&!a?`the check "${t}" could not be read`:!a||n===a[1]?null:`${i} is ${JSON.stringify(n)}, not ${JSON.stringify(a[1])}`}case`git`:return Ee(e,t,n);default:return`the check "${t}" could not be read`}}function I(e,t){let[n=``,r=n]=t,i=Number(r);return n===`>=`?e>=i:n===`<=`?e<=i:e===i}var L=e=>e.replace(/\\n/g,`
-`),R=e=>e.split(`
+`)){let e=de.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
+`),marks:t}}function xe(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function N(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>xe(e,a[t][n])))}function P(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
+`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function F(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var I=e=>ce(b,e),Se=e=>e.replace(/^\/home\/you/,`~`);function Ce(e){let t=h();for(let n of e.starter.split(`
+`))n.trim()&&(t=ne(t,n).state);return{...t,history:[],transcript:[]}}function we(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(1).join(` `),o=t.trim().replace(/^\S+\s*/,``),s=t.trim().replace(/^\S+\s+\S+\s*/,``),c=e.transcript[e.transcript.length-1]?.out??``;switch(r){case`cwd`:return e.cwd===I(i)?null:`you are in ${Se(e.cwd)}, not ${Se(I(i))}`;case`dir`:{let t=y(e,I(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return y(e,I(i))?`${i} should not exist any more`:null;case`file`:{let n=y(e,I(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!s)return null;let r=n.content.replace(/\n$/,``);if(s===`empty`)return n.content===``?null:`${i} is not empty: it contains ${JSON.stringify(F(r,80))}`;if(s===`exec`)return n.exec?null:`${i} is not executable yet (chmod +x ${i})`;let a=/^lines\s+(.*)$/.exec(s);if(a){let e=r===``&&n.content===``?0:r.split(`
+`).length;return L(e,a[1].split(/\s+/))?null:`${i} has ${e} line${e===1?``:`s`}`}let o=/^(==|~=|contains|excludes)\s(.*)$/.exec(s);return o?o[1]===`~=`?z(r)===z(R(o[2]))?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(R(o[2]))}`:o[1]===`==`?r===o[2]?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(o[2])}`:o[1]===`excludes`?r.includes(o[2])?`${i} still contains ${JSON.stringify(o[2])}`:null:r.includes(o[2])?null:`${i} does not contain ${JSON.stringify(o[2])}`:`the check "${t}" could not be read`}case`count`:{let t=le(e,b,i);return L(t,n.slice(2))?null:`${t} path${t===1?``:`s`} match ${i}`}case`ran`:return e.history.flatMap(e=>e.split(/&&|\|\||;|\|/).map(e=>e.trim().replace(/\s+/g,` `).replace(/^(?:(?:do|then|else|!)\s+)+/,``))).some(e=>e===a||e.startsWith(`${a} `))?null:`you have not run ${a} yet`;case`used`:return e.history.some(e=>e.includes(o))?null:`you have not used ${o} in a command yet`;case`printed-line`:return e.transcript.some(e=>e.out.split(`
+`).includes(o))?null:`nothing has printed the line ${JSON.stringify(o)} yet`;case`printed`:return e.transcript.some(e=>e.out.includes(o))?null:`nothing has printed ${JSON.stringify(o)} yet`;case`printed-exactly`:{let t=z(R(o));return e.transcript.some(e=>z(e.out)===t)?null:`no command printed exactly ${JSON.stringify(t)}`}case`not-printed`:return e.transcript.some(e=>e.out.includes(o))?`something printed ${JSON.stringify(o)}`:null;case`last-printed`:return c.includes(o)?null:`the last command printed ${JSON.stringify(F(c,200))}, without ${JSON.stringify(o)}`;case`last-not-printed`:return c.includes(o)?`the last command still printed ${JSON.stringify(o)}`:null;case`last-printed-exactly`:{let e=z(R(o));return z(c)===e?null:`the last command printed ${JSON.stringify(F(c,200))}, not ${JSON.stringify(e)}`}case`status`:return L(e.status,n.slice(1))?null:`the last command finished with status ${e.status}`;case`var`:case`env`:{let n=e.vars?.[i];if(n===void 0)return`the variable ${i} is not set`;if(r===`env`&&!e.exported?.includes(i))return`${i} is set but not exported (export ${i})`;let a=/^==\s?(.*)$/.exec(s);return s&&!a?`the check "${t}" could not be read`:!a||n===a[1]?null:`${i} is ${JSON.stringify(n)}, not ${JSON.stringify(a[1])}`}case`git`:return Te(e,t,n);default:return`the check "${t}" could not be read`}}function L(e,t){let[n=``,r=n]=t,i=Number(r);return n===`>=`?e>=i:n===`<=`?e<=i:e===i}var R=e=>e.replace(/\\n/g,`
+`),z=e=>e.split(`
 `).map(e=>e.trim().replace(/\s+/g,` `)).join(`
-`).replace(/^\n+|\n+$/g,``);function Ee(e,t,n){let[,r=``,i,...a]=n,o=F(r),s=de(e,o),c=r===`.`?`~/project`:r;if(!s)return`${c} is not a git repository yet`;let l=(e,t)=>`${e} ${t}${e===1?``:`s`}`;switch(i){case`repo`:return null;case`commits`:return I(s.commits,a)?null:`the history has ${l(s.commits,`commit`)}`;case`branch`:return s.detached?`HEAD is detached (not on any branch), not on ${a[0]}`:s.branch===a[0]?null:`you are on ${s.branch}, not ${a[0]}`;case`has-branch`:return s.branches.includes(a[0])?null:`there is no branch ${a[0]}`;case`no-branch`:return s.branches.includes(a[0])?`the branch ${a[0]} still exists`:null;case`tag`:return s.tags.includes(a[0])?null:`there is no tag ${a[0]}`;case`remote`:return s.remotes.includes(a[0])?null:`there is no remote called ${a[0]}`;case`tracks`:return s.upstream[a[0]]===a[1]?null:`${a[0]} ${s.upstream[a[0]]?`tracks ${s.upstream[a[0]]}`:`tracks nothing`}, not ${a[1]}`;case`staged`:return s.staged.includes(a[0])?null:`${a[0]} is not staged`;case`untracked`:return s.untracked.includes(a[0])?null:`${a[0]} is not an untracked file`;case`modified`:return s.modified.includes(a[0])?null:`${a[0]} has no unstaged changes`;case`tracked`:return s.tracked.includes(a[0])?null:`git is not tracking ${a[0]}`;case`ignored`:return s.tracked.includes(a[0])?`${a[0]} is still tracked, so .gitignore does not apply to it (git rm --cached ${a[0]})`:s.ignored.includes(a[0])?null:`${a[0]} is not ignored`;case`commits-on`:{let e=s.branchCommits[a[0]];return e===void 0?`there is no branch ${a[0]}`:I(e,a.slice(1))?null:`${a[0]} has ${l(e,`commit`)}`}case`merges`:return I(s.merges,a)?null:`the history has ${l(s.merges,`merge commit`)}`;case`stashes`:return I(s.stashes,a)?null:`there ${s.stashes===1?`is`:`are`} ${l(s.stashes,`stash entry`).replace(`entrys`,`entries`)}`;case`conflicts`:return I(s.conflicts.length,a)?null:`still in conflict: ${s.conflicts.join(`, `)||`nothing`}`;case`log`:case`log-of`:{let e=i===`log`?s.messages:s.branchMessages[a.shift()];if(!e)return`there is no branch ${n[3]}`;let[t=``,...r]=a,o=r.join(` `),c=e.some(e=>e.includes(o));return t===`excludes`?c?`a commit message still contains ${JSON.stringify(o)}`:null:c?null:`no commit message contains ${JSON.stringify(o)}`}case`clean`:return s.staged.length?`still staged: ${s.staged.join(`, `)}`:null;case`idle`:return s.pending?`a ${s.pending} is still in progress`:s.bisecting?`a bisect is still in progress (git bisect reset ends it)`:null;case`detached`:return s.detached?null:`HEAD is on the branch ${s.branch}, not detached`;case`bisecting`:return s.bisecting?null:`no bisect is in progress`;case`same`:case`ancestor`:case`not-ancestor`:{let[t=``,n=``]=a,r=E(e,o,t),s=E(e,o,n);if(!r)return`${t} does not name a commit`;if(!s)return`${n} does not name a commit`;if(i===`same`)return r.id===s.id?null:`${t} is ${r.id} but ${n} is ${s.id}`;let c=x(e,o,t,n);return c===(i===`ancestor`)?null:`${t} is ${c?``:`not `}in the history of ${n}`}case`at`:{let[n=``,r,...i]=a,s=E(e,o,n);if(!s)return`${n} does not name a commit`;if(r===`parents`)return I(s.parents.length,i)?null:`${n} has ${l(s.parents.length,`parent`)}`;if(r===`author`)return s.author===i.slice(1).join(` `)?null:`${n} was written by ${s.author}`;if(r===`missing`)return i[0]in s.tree?`${i[0]} is in ${n}`:null;if(r===`message`){let[e,...t]=i,r=t.join(` `),a=s.message;return e===`==`?a===r||a.split(`
-`)[0]===r?null:`the message of ${n} is ${JSON.stringify(a)}`:a.includes(r)?null:`the message of ${n} is ${JSON.stringify(a)}`}if(r===`file`){let[e=``,t,...r]=i,a=s.tree[e];if(a===void 0)return`${n} has no file ${e}`;let o=a.replace(/\n$/,``),c=r.join(` `);return t?t===`==`?o===c?null:`${e} in ${n} is ${JSON.stringify(o)}, not ${JSON.stringify(c)}`:t===`excludes`?o.includes(c)?`${e} in ${n} still contains ${JSON.stringify(c)}`:null:o.includes(c)?null:`${e} in ${n} does not contain ${JSON.stringify(c)}`:null}return`the check "${t}" could not be read`}default:return`the check "${t}" could not be read`}}function De(e,t,n){let{clean:r,marks:i}=xe(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(A(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=j(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>Te(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
+`).replace(/^\n+|\n+$/g,``);function Te(e,t,n){let[,r=``,i,...a]=n,o=I(r),s=ue(e,o),c=r===`.`?`~/project`:r;if(!s)return`${c} is not a git repository yet`;let l=(e,t)=>`${e} ${t}${e===1?``:`s`}`;switch(i){case`repo`:return null;case`commits`:return L(s.commits,a)?null:`the history has ${l(s.commits,`commit`)}`;case`branch`:return s.detached?`HEAD is detached (not on any branch), not on ${a[0]}`:s.branch===a[0]?null:`you are on ${s.branch}, not ${a[0]}`;case`has-branch`:return s.branches.includes(a[0])?null:`there is no branch ${a[0]}`;case`no-branch`:return s.branches.includes(a[0])?`the branch ${a[0]} still exists`:null;case`tag`:return s.tags.includes(a[0])?null:`there is no tag ${a[0]}`;case`remote`:return s.remotes.includes(a[0])?null:`there is no remote called ${a[0]}`;case`tracks`:return s.upstream[a[0]]===a[1]?null:`${a[0]} ${s.upstream[a[0]]?`tracks ${s.upstream[a[0]]}`:`tracks nothing`}, not ${a[1]}`;case`staged`:return s.staged.includes(a[0])?null:`${a[0]} is not staged`;case`untracked`:return s.untracked.includes(a[0])?null:`${a[0]} is not an untracked file`;case`modified`:return s.modified.includes(a[0])?null:`${a[0]} has no unstaged changes`;case`tracked`:return s.tracked.includes(a[0])?null:`git is not tracking ${a[0]}`;case`ignored`:return s.tracked.includes(a[0])?`${a[0]} is still tracked, so .gitignore does not apply to it (git rm --cached ${a[0]})`:s.ignored.includes(a[0])?null:`${a[0]} is not ignored`;case`commits-on`:{let e=s.branchCommits[a[0]];return e===void 0?`there is no branch ${a[0]}`:L(e,a.slice(1))?null:`${a[0]} has ${l(e,`commit`)}`}case`merges`:return L(s.merges,a)?null:`the history has ${l(s.merges,`merge commit`)}`;case`stashes`:return L(s.stashes,a)?null:`there ${s.stashes===1?`is`:`are`} ${l(s.stashes,`stash entry`).replace(`entrys`,`entries`)}`;case`conflicts`:return L(s.conflicts.length,a)?null:`still in conflict: ${s.conflicts.join(`, `)||`nothing`}`;case`log`:case`log-of`:{let e=i===`log`?s.messages:s.branchMessages[a.shift()];if(!e)return`there is no branch ${n[3]}`;let[t=``,...r]=a,o=r.join(` `),c=e.some(e=>e.includes(o));return t===`excludes`?c?`a commit message still contains ${JSON.stringify(o)}`:null:c?null:`no commit message contains ${JSON.stringify(o)}`}case`clean`:return s.staged.length?`still staged: ${s.staged.join(`, `)}`:null;case`idle`:return s.pending?`a ${s.pending} is still in progress`:s.bisecting?`a bisect is still in progress (git bisect reset ends it)`:null;case`detached`:return s.detached?null:`HEAD is on the branch ${s.branch}, not detached`;case`bisecting`:return s.bisecting?null:`no bisect is in progress`;case`same`:case`ancestor`:case`not-ancestor`:{let[t=``,n=``]=a,r=D(e,o,t),s=D(e,o,n);if(!r)return`${t} does not name a commit`;if(!s)return`${n} does not name a commit`;if(i===`same`)return r.id===s.id?null:`${t} is ${r.id} but ${n} is ${s.id}`;let c=x(e,o,t,n);return c===(i===`ancestor`)?null:`${t} is ${c?``:`not `}in the history of ${n}`}case`at`:{let[n=``,r,...i]=a,s=D(e,o,n);if(!s)return`${n} does not name a commit`;if(r===`parents`)return L(s.parents.length,i)?null:`${n} has ${l(s.parents.length,`parent`)}`;if(r===`author`)return s.author===i.slice(1).join(` `)?null:`${n} was written by ${s.author}`;if(r===`missing`)return i[0]in s.tree?`${i[0]} is in ${n}`:null;if(r===`message`){let[e,...t]=i,r=t.join(` `),a=s.message;return e===`==`?a===r||a.split(`
+`)[0]===r?null:`the message of ${n} is ${JSON.stringify(a)}`:a.includes(r)?null:`the message of ${n} is ${JSON.stringify(a)}`}if(r===`file`){let[e=``,t,...r]=i,a=s.tree[e];if(a===void 0)return`${n} has no file ${e}`;let o=a.replace(/\n$/,``),c=r.join(` `);return t?t===`==`?o===c?null:`${e} in ${n} is ${JSON.stringify(o)}, not ${JSON.stringify(c)}`:t===`excludes`?o.includes(c)?`${e} in ${n} still contains ${JSON.stringify(c)}`:null:o.includes(c)?null:`${e} in ${n} does not contain ${JSON.stringify(c)}`:null}return`the check "${t}" could not be read`}default:return`the check "${t}" could not be read`}}function Ee(e,t,n){let{clean:r,marks:i}=be(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(j(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=M(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>we(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
 `),...e?{actual:e}:{}})}if(r.kind===`dom`){let e=n.dom?.[s.get(u)??-1];return c?f(!1,{input:r.steps.join(`
 `),detail:c}):e?f(e.pass,{input:r.steps.join(`
 `),...e.detail?{actual:e.detail}:{}}):f(!1,{input:r.steps.join(`
-`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?k(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=j(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:P(t),actual:P(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(j(e)));return f(!e.length,{expected:r.expect.join(`
-`),actual:P(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:k(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=N(r.rows)+(r.ordered?`
-(in this order)`:``);return e?f(M(r.rows,e.rows,r.ordered),{expected:t,actual:N(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(M(t(r.rows),t(e),!0),{input:r.sql,expected:N(t(r.rows)),actual:N(t(e))})}return f(M(r.rows,e,!0),{input:r.sql,expected:N(r.rows),actual:N(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
-`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Oe='@track bash\n@level advanced\n@title Terminal · Advanced\n@name The command line, advanced: variables, scripts and automation\n@blurb Store values in variables, make decisions with exit codes, loop over files, write scripts that take arguments and check their input, and debug a script that misbehaves.\n\n=== term3-01 | Variables\n--- teach\nThe intermediate course taught you to combine commands into pipelines. This course turns commands into programs: values kept in variables, decisions made from exit codes, loops over files, and scripts that take arguments and check them.\n\nA **variable** gives a name to a piece of text so you can reuse it:\n\n```\n~/project $ planet=mars\n~/project $ echo "Next stop: $planet"\nNext stop: mars\n~/project $ mkdir "${planet}-base"\n```\n\n- Set it with `name=value` — and **no spaces around `=`**. `planet = mars` does not set anything: the shell runs a command called `planet` with the arguments `=` and `mars`, and answers `planet: command not found`.\n- Read it with `$name`. Write `${name}` when letters follow straight after, as in `${planet}s` — `$planets` would look up a different variable.\n- **Double quotes** expand variables: `"Next stop: $planet"`. **Single quotes** keep everything exactly as typed: `\'$planet\'` prints `$planet`.\n- Names are case-sensitive, and a variable that was never set is simply empty — no error, which is why typos in variable names are sneaky.\n\nVariables are how scripts avoid repeating themselves: set a version number or a folder name once at the top, use it everywhere below.\n--- task\nSet a variable `project` to `launchpad` and a variable `version` to `2`. Then, using only the variables (without typing `launchpad` or `2` again), print `launchpad v2 is ready` and make a folder called `launchpad-v2`.\n--- starter\n--- solution\nproject=launchpad\nversion=2\necho "$project v$version is ready"\nmkdir "$project-v$version"\n--- hint\n`project=launchpad` — no spaces around the `=`.\n--- hint\n`echo "$project v$version is ready"`: double quotes let the variables expand.\n--- hint\n`mkdir "$project-v$version"` builds the folder name from both.\n--- check shell | Both variables are set\nvar project == launchpad\nvar version == 2\n--- check shell | You printed the message from the variables\nprinted-line launchpad v2 is ready\nused $project\n--- check shell | The folder is named from the variables\ndir launchpad-v2\nused $version\n\n=== term3-02 | Exporting variables to the programs you run\n--- teach\nEvery command you start — a script, `node`, `git` — runs as a separate **child process**. It gets a copy of your **environment**: the variables you have **exported**. Plain variables stay behind in your shell.\n\n```\n~/project $ NAME=Ada          # set in this shell only\n~/project $ bash greet.sh     # the script cannot see NAME\nHello,\n~/project $ export NAME       # now it goes to every child\n~/project $ bash greet.sh\nHello, Ada\n```\n\n- `export NAME=value` sets and exports in one go.\n- `env` lists everything that is exported.\n- `NAME=value command` sets a variable for that one command only: `DEBUG=1 bash build.sh`.\n- The copy only travels one way. A script that changes a variable changes its own copy; your shell never sees it.\n\n`bash greet.sh` runs the commands saved in the file `greet.sh` in a new shell. Scripts get a full lesson later in this course; here the script is ready-made.\n\nThis is how real configuration reaches programs: API keys, `NODE_ENV=production`, and `PATH`, the list of folders the shell searches for commands.\n--- task\n`greet.sh` prints `Hello, ` followed by `$NAME`. `NAME` is already set to `Ada` in this shell, yet the script does not see it. Run the script with `bash greet.sh` to see the problem, fix it by **exporting** `NAME`, and run the script again so it prints `Hello, Ada`.\n--- starter\necho \'echo "Hello, $NAME"\' > greet.sh\nNAME=Ada\n--- solution\nbash greet.sh\nexport NAME\nbash greet.sh\n--- hint\n`echo $NAME` shows the variable is set; the script still cannot see it, because it was never exported.\n--- hint\n`export NAME`, then `bash greet.sh` again.\n--- check shell | NAME is exported\nenv NAME == Ada\n--- check shell | The script saw it\nprinted-line Hello, Ada\nran bash greet.sh\n\n=== term3-03 | Command substitution: $(…)\n--- teach\n`$(command)` runs a command and puts its output **right there** in the line, as if you had typed it. Trailing new lines are dropped.\n\n```\n~/project $ count=$(ls *.txt | wc -l)\n~/project $ echo "There are $count notes"\nThere are 3 notes\n~/project $ echo "Report for $(whoami)"\nReport for you\n```\n\nIt works anywhere a word could go: in a variable, in an `echo`, in the argument of another command. Put it in double quotes, `"$(…)"`, when the output might contain spaces — otherwise the shell splits it into separate words.\n\nYou will also meet the old spelling with backticks, `` `ls | wc -l` ``. It does the same thing, but `$(…)` is easier to read and can be nested.\n\nTwo mistakes: `count=ls | wc -l` never runs `ls` at all — it prints `0` and leaves `count` unset — and `count=(ls)` is a different feature altogether. The dollar and the brackets go together: `$(ls)`.\n--- task\nStore the number of `.txt` files in this folder in a variable called `count`, using `$(…)`. Then write the sentence `There are 3 notes` into `summary.txt`, using `$count` rather than typing the 3.\n--- starter\ntouch a.txt b.txt c.txt picture.png\n--- solution\ncount=$(ls *.txt | wc -l)\necho "There are $count notes" > summary.txt\n--- hint\n`ls *.txt | wc -l` counts the files; wrap it: `count=$(ls *.txt | wc -l)`.\n--- hint\n`echo "There are $count notes" > summary.txt`.\n--- check shell | count holds the number of notes\nvar count == 3\nused $(\n--- check shell | summary.txt was written from the variable\nfile summary.txt == There are 3 notes\nused $count\n\n=== term3-04 | Exit codes: && and ||\n--- teach\nEvery command finishes with an **exit status** (also called an **exit code**), a number that says how it went: `0` means success, anything else means some kind of failure. Nothing is printed; `echo $?` shows the status of the last command.\n\n```\n~/project $ grep -q ERROR deploy.log\n~/project $ echo $?\n0\n```\n\n`grep` is a good example: `0` when it found a match, `1` when it found none, `2` when something went wrong (like a missing file). `-q` makes it quiet — it prints nothing and just sets the status.\n\n- `a && b` runs `b` only if `a` succeeded.\n- `a || b` runs `b` only if `a` failed.\n\nTogether they make a compact either/or:\n\n```\ngrep -q ERROR deploy.log && echo "failed" || echo "ok"\n```\n\nOne caution: this is not a true if/else. If the middle command fails, the `||` part runs as well. `echo` never fails, so here it is fine; for anything bigger, use `if` (two lessons from now).\n\nExit codes are what scripts, build tools and CI systems use to decide whether to carry on. A failing test runner exits with a non-zero status, and that is how the pipeline knows to stop.\n--- task\nThere are two deploy logs. For each one, write **one line** using `grep -q`, `&&` and `||` that prints `deploy-mon: failed` if `deploy-mon.log` contains `ERROR` and `deploy-mon: ok` if it does not — and the same for `deploy-tue.log` with `deploy-tue`.\n--- starter\necho "build ok" > deploy-mon.log\necho "upload ok" >> deploy-mon.log\necho "ERROR: health check failed" >> deploy-mon.log\necho "build ok" > deploy-tue.log\necho "upload ok" >> deploy-tue.log\necho "health ok" >> deploy-tue.log\n--- solution\ngrep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"\ngrep -q ERROR deploy-tue.log && echo "deploy-tue: failed" || echo "deploy-tue: ok"\n--- hint\n`grep -q ERROR deploy-mon.log` prints nothing; check `echo $?` straight after to see its answer.\n--- hint\n`grep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"`.\n--- check shell | Monday\'s deploy is reported as failed\nprinted-line deploy-mon: failed\nnot-printed deploy-mon: ok\n--- check shell | Tuesday\'s deploy is reported as ok\nprinted-line deploy-tue: ok\nnot-printed deploy-tue: failed\n--- check shell | One line each, driven by grep\'s exit status\nused grep -q\nused &&\nused ||\n\n=== term3-05 | Loops: for\n--- teach\nA `for` loop runs the same commands once for each item in a list:\n\n```\nfor planet in mercury venus earth; do mkdir "$planet"; done\nfor f in *.txt; do echo "checking $f"; done\n```\n\nEach time round, the variable (`planet`, `f`) holds the next item. The list can be plain words, a wildcard, or `$(…)`. It fits on one line, with `;` before `do` and before `done`, or spread over several lines in a script. The `;` separates commands on one line and runs them one after another, whether or not the first worked (unlike `&&`).\n\n**Quote the variable**: `"$f"`. A file called `old boat.jpeg` is one name, but unquoted `$f` is split at the space into two words, `old` and `boat.jpeg`, and `mv` goes looking for two files that do not exist.\n\nTwo tools make renaming easy. `${f%.jpeg}` is `f` with `.jpeg` cut off the **end**; `${f#IMG_}` cuts `IMG_` off the **start**:\n\n```\nf=beach.jpeg\necho "${f%.jpeg}.jpg"     # beach.jpg\n```\n\nBefore a loop changes anything, do a **dry run**: put `echo` in front of the real command, read the commands it prints, and only then run it for real.\n\n```\nfor f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done\n```\n--- task\nRename every `.jpeg` file in this folder so it ends in `.jpg` instead (`beach.jpeg` becomes `beach.jpg`), with **one** `for` loop. One of the files has a space in its name, and the files\' contents must survive.\n--- starter\necho "pixels" > beach.jpeg\ntouch sunset.jpeg "old boat.jpeg" readme.txt\n--- solution\nfor f in *.jpeg; do mv "$f" "${f%.jpeg}.jpg"; done\n--- hint\nTry a dry run first: `for f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done`.\n--- hint\nWhen the printed commands look right, run it again without the `echo`. Keep the quotes around `"$f"`.\n--- check shell | No .jpeg files are left\ncount *.jpeg == 0\n--- check shell | Every photo is now a .jpg, contents and all\ncount *.jpg == 3\nfile beach.jpg == pixels\nfile readme.txt\n--- check shell | Done with a loop\nused for\nused do\nused done\n\n=== term3-06 | Decisions: if and test\n--- teach\n`if` runs a command and looks at its exit status: `0` takes the `then` branch, anything else the `else` branch.\n\n```\nif grep -q ERROR app.log; then echo "look at the log"; else echo "all quiet"; fi\n```\n\nThe command you will put after `if` most often is `[ … ]`, a command (also called `test`) that checks something and exits with 0 for true:\n\n- `[ -f notes.txt ]` — is there a file called that? `-d` asks about a folder, `-e` about either.\n- `[ "$mode" = "prod" ]` — are two strings equal? (`!=` for not equal.)\n- `[ -z "$name" ]` — is the string empty?\n- `[ "$count" -gt 10 ]` — number comparisons: `-eq -ne -lt -le -gt -ge`.\n- `!` in front negates: `[ ! -f config.txt ]`.\n\nThe spaces matter. `[` is a command, so `[-f x]` is an attempt to run a command called `[-f` (command not found), and the closing `]` must be its own word too.\n\nQuote variables inside the brackets. If `$mode` is empty, `[ $mode = prod ]` becomes `[ = prod ]` and fails with `unary operator expected`; `[ "$mode" = prod ]` stays a valid comparison.\n\n`elif` adds more branches, and everything ends with `fi` ("if" backwards).\n--- task\nWrite a one-line `if` that prints `config found` when `config.txt` exists, and otherwise creates it containing `mode=dev` and prints `config created`. Run the same line **twice**: the first run creates the file, the second finds it.\n--- starter\n--- solution\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\n--- hint\nThe shape is `if [ -f config.txt ]; then …; else …; fi`.\n--- hint\nThe `else` branch has two commands: `echo "mode=dev" > config.txt; echo "config created"`.\n--- hint\nPress the Up arrow to bring the line back, then Enter to run it again.\n--- check shell | The first run created the file\nprinted-line config created\nfile config.txt == mode=dev\n--- check shell | The second run found it\nprinted-line config found\nused if [ -f\n\n=== term3-07 | Scripts: commands saved in a file\n--- teach\nA **script** is a text file of commands, one per line. Running it runs them in order, so a task you do often becomes one command.\n\n```\n~/project $ bash backup.sh notes.txt\n```\n\nInside the script, `$1` is the first argument, `$2` the second, `$#` how many there are, and `"$@"` all of them. Scripts run in a **child** shell, so a `cd` inside one does not move you.\n\nTo run a script by its name, like a real program:\n\n1. start it with a **shebang** line, `#!/bin/bash`, which says which program runs it;\n2. make it executable: `chmod +x backup.sh`;\n3. run it as `./backup.sh`. The `./` says "the one in this folder" — the shell does not look in the current folder for commands, so plain `backup.sh` gives `command not found`.\n\nThis practice terminal has no text editor, so build files with `echo`. Use **single quotes** around each line: they stop `$1` from being expanded now, when you write the file, so it is expanded later, when the script runs.\n\n```\necho \'#!/bin/bash\' > hello.sh\necho \'echo "Hello, $1"\' >> hello.sh\n```\n--- task\nCreate `backup.sh`, a script that copies the file named in its first argument to the same name with `.bak` added, then prints `backed up <name>`. Run it on `notes.txt` with `bash`. Then make it executable and run it as `./backup.sh todo.txt`.\n--- starter\necho "remember the fuel" > notes.txt\necho "launch" > todo.txt\n--- solution\necho \'#!/bin/bash\' > backup.sh\necho \'cp "$1" "$1.bak"\' >> backup.sh\necho \'echo "backed up $1"\' >> backup.sh\nbash backup.sh notes.txt\nchmod +x backup.sh\n./backup.sh todo.txt\n--- hint\nThree lines, each with `echo \'…\'`: the shebang (`>`), then `cp "$1" "$1.bak"` and `echo "backed up $1"` (`>>`).\n--- hint\n`bash backup.sh notes.txt` runs it. `cat backup.sh` shows what you wrote.\n--- hint\n`chmod +x backup.sh`, then `./backup.sh todo.txt`.\n--- check shell | backup.sh works when run with bash\nfile notes.txt.bak == remember the fuel\nprinted-line backed up notes.txt\n--- check shell | …and on its own, once it is executable\nfile backup.sh exec\nfile todo.txt.bak == launch\nran ./backup.sh todo.txt\n\n=== term3-08 | Find and replace: sed\n--- teach\n`sed` (the **s**tream **ed**itor) changes text as it flows through. Its most used command is `s`, substitute:\n\n```\nsed \'s/localhost/db.internal/\' settings.conf\n```\n\n- That **prints** the changed text. The file itself is unchanged until you add `-i` (in place): `sed -i \'s/a/b/\' file`.\n- `s` changes only the **first** match on each line. Add `g` at the end to change every match: `s/a/b/g`.\n- The pattern is a regular expression: `.` is any character, `^` the start of a line, `$` the end.\n- When the text contains slashes, pick another separator: `s|/usr/local|/opt|`.\n- `/pattern/d` deletes matching lines; `sed -n \'/pattern/p\'` prints only matching lines.\n\nThe two classic surprises are forgetting `g` (only the first match changes) and forgetting `-i` (the output looks right, but the file never changed). Because `-i` really rewrites the file, check the command without `-i` first.\n--- task\nIn `settings.conf`, change **every** `localhost` to `db.internal` — one line has it twice — in the file itself. Then, also with `sed -i`, delete the line that starts with `debug`.\n--- starter\necho "host=localhost" > settings.conf\necho "url=http://localhost:5432/localhost" >> settings.conf\necho "debug=true" >> settings.conf\necho "port=5432" >> settings.conf\n--- solution\nsed -i \'s/localhost/db.internal/g\' settings.conf\nsed -i \'/^debug/d\' settings.conf\n--- hint\nTry it without `-i` first: `sed \'s/localhost/db.internal/g\' settings.conf`. The `g` catches the second match on the url line.\n--- hint\nWhen it looks right, add `-i`. Then `sed -i \'/^debug/d\' settings.conf` removes the debug line.\n--- check shell | Every localhost is now db.internal, and the debug line is gone\nfile settings.conf ~= host=db.internal\\nurl=http://db.internal:5432/db.internal\\nport=5432\n--- check shell | Edited in place with sed\nused sed -i\nused /g\n\n=== term3-09 | Lists into arguments: xargs\n--- teach\nSome commands read their input: `grep`, `sort`, `wc`. Others only take **arguments**: `rm`, `mkdir`, `touch`, `mv`. Piping a list into `rm` does nothing, because `rm` never reads the pipe.\n\n`xargs` bridges the gap. It reads words from the pipe and puts them on the end of a command:\n\n```\nfind . -name "*.tmp" | xargs rm          # rm ./a.tmp ./b/c.tmp …\ncat folders.txt | xargs mkdir -p         # one mkdir, every name\n```\n\n- `-n 1` runs the command once per item instead of once for all of them.\n- `-I {}` puts each item wherever `{}` appears: `ls *.log | xargs -I {} mv {} old/`.\n- `-t` prints each command before running it — handy while you are checking.\n\n`xargs` splits on spaces, so a file called `my notes.tmp` arrives as two words. For names that may contain spaces, `find … -exec rm {} \\;` is the safer tool.\n--- task\nDelete every `.tmp` file anywhere under `build` — they are at several depths — using `find` and `xargs rm`. Then create every folder listed in `dirs.txt` with `xargs mkdir -p`.\n--- starter\nmkdir -p build/css build/js/vendor\ntouch build/a.tmp build/css/b.tmp build/js/vendor/c.tmp build/js/app.js build/css/site.css\necho "assets" > dirs.txt\necho "assets/img" >> dirs.txt\necho "logs" >> dirs.txt\n--- solution\nfind build -name "*.tmp" | xargs rm\ncat dirs.txt | xargs mkdir -p\n--- hint\nCheck the list first: `find build -name "*.tmp"`.\n--- hint\nThen pipe it into `xargs rm`. For the folders, `cat dirs.txt | xargs mkdir -p`.\n--- check shell | Every .tmp file is gone, and nothing else\nmissing build/a.tmp\nmissing build/css/b.tmp\nmissing build/js/vendor/c.tmp\nfile build/js/app.js\nfile build/css/site.css\nused xargs rm\n--- check shell | The folders from dirs.txt exist\ndir assets/img\ndir logs\nused xargs mkdir\n\n=== term3-10 | Debugging a script\n--- teach\nA script that "just doesn\'t work" usually has one small mistake that set off a chain of others. Work through it methodically:\n\n1. **Reproduce**: run it and read the errors **from the top**. The first error is often the cause; the ones after it are knock-on effects.\n2. **Trace it**: `bash -x script.sh` prints every command, with a `+` in front, **after** variables have been filled in — exactly what really ran. This is where hidden problems show up:\n   ```\n   + mkdir -p\n   mkdir: missing operand\n   ```\n   The variable after `-p` was empty.\n3. **Check your assumptions**: is every variable spelled the same everywhere it is used? Is every `"$var"` quoted, so names with spaces stay whole?\n4. **Fix the cause**, then **run it again** and check the result — not just that the errors stopped, but that the files are where they should be.\n\n`set -u` at the top of a script turns a misspelled variable into an immediate error (`unbound variable`) instead of a silent empty string.\n\nThe bug report:\n\n> `archive.sh` should move every `.txt` note into `archive/`. Running `bash archive.sh` prints errors, and the notes stay where they are.\n--- task\nRun the script to see it fail, then trace it with `bash -x archive.sh`. Fix **both** bugs by rewriting `archive.sh` (three lines, built with `echo`, like the original) and run it again: all three notes must end up in `archive`, with no errors.\n--- starter\ntouch "meeting notes.txt" ideas.txt todo.txt\necho \'dest=archive\' > archive.sh\necho \'mkdir -p $dets\' >> archive.sh\necho \'for f in *.txt; do mv $f $dest/; done\' >> archive.sh\n--- solution\nbash archive.sh\nbash -x archive.sh\necho \'dest=archive\' > archive.sh\necho \'mkdir -p "$dest"\' >> archive.sh\necho \'for f in *.txt; do mv "$f" "$dest/"; done\' >> archive.sh\nbash archive.sh\n--- hint\n`cat archive.sh` shows the script. In the `bash -x` trace, look at the line that begins `+ mkdir -p`: what came after `-p`?\n--- hint\nThe variable on line 2 is misspelled. And `mv $f` splits `meeting notes.txt` into two words — quote it: `"$f"`.\n--- hint\nRewrite it: `echo \'dest=archive\' > archive.sh`, then `>>` the fixed `mkdir -p "$dest"` line and the loop with `mv "$f" "$dest/"`.\n--- check shell | You traced the script\nran bash -x archive.sh\nprinted-line + mkdir -p\n--- check shell | Every note is in archive, and none are left behind\ncount archive/*.txt == 3\ncount *.txt == 0\n--- check shell | The script is fixed, and ran cleanly\nfile archive.sh excludes $dets\nfile archive.sh contains "$f"\nstatus 0\n\n=== term3-11 | Problem solving: tidying a downloads folder\n--- teach\nA problem worth automating: a downloads folder with dozens of files of every kind. The goal is one folder per file type.\n\nWork it out in steps before typing a loop:\n\n1. **Restate it**: every file with an extension goes into a folder named after that extension — `photo-1.jpg` into `jpg/`, `invoice-3.pdf` into `pdf/`.\n2. **Survey the data**: `ls | head`, and count the types with `ls | sed \'s/.*\\.//\' | sort | uniq -c`. Are there files **without** an extension? Names with spaces?\n3. **Solve one case by hand** and write down the commands:\n   ```\n   f=photo-1.jpg\n   ext="${f##*.}"        # everything after the last dot: jpg\n   mkdir -p "$ext"\n   mv "$f" "$ext/"\n   ```\n   `${f##*.}` cuts the longest match of `*.` from the start — everything up to and including the last dot. (In the survey command, `\\.` is a backslash before a dot: in a regular expression it means a real dot, not "any character".)\n4. **Generalise** into a loop over the right list. `*.*` matches only names containing a dot, so files without an extension are left alone.\n5. **Dry run** with `echo` in front of `mv`, then run it, then **verify** with a count per folder.\n\n`mkdir -p` is what makes the loop safe to repeat: it does nothing when the folder already exists.\n--- task\nInside `downloads`, move every file **that has an extension** into a folder named after its extension (`photo-1.jpg` goes to `downloads/jpg/`), with one loop. Leave `README`, which has no extension, where it is.\n--- starter\nmkdir downloads\nfor i in $(seq 1 12); do touch "downloads/photo-$i.jpg"; done\nfor i in $(seq 1 9); do touch "downloads/invoice-$i.pdf"; done\nfor i in $(seq 1 5); do touch "downloads/notes-$i.txt"; done\ntouch "downloads/notes final.txt" downloads/backup.zip downloads/fonts.zip downloads/README\n--- solution\ncd downloads\nfor f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done\n--- hint\nWork inside the folder: `cd downloads`. `echo "${f##*.}"` with `f=photo-1.jpg` shows how to get the extension.\n--- hint\nThe loop: `for f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done` — try it with `echo mv` first.\n--- check shell | Every file with an extension is in its folder\ncount downloads/jpg/*.jpg == 12\ncount downloads/pdf/*.pdf == 9\ncount downloads/txt/*.txt == 6\ncount downloads/zip/*.zip == 2\n--- check shell | Nothing with an extension is left loose, and README stayed\ncount downloads/*.* == 0\nfile downloads/README\n--- check shell | Done with a loop\nused for\nused mkdir -p\n\n=== term3-12 | Build a tool: a script that checks its input\n--- teach\nA script other people will run has to cope with being run wrongly. Good command-line tools follow three habits:\n\n- **Check the input first** ("guard clauses"): no argument, a file that does not exist — say what is wrong and stop, before doing any work.\n- **Exit with a meaningful status**: `exit 0` for success; a non-zero code for each kind of failure, so other scripts can react. By convention, `2` means "you used it wrong".\n- **Write errors to standard error** with `>&2`, so they do not end up mixed into output someone is piping or saving.\n\n```\nif [ $# -eq 0 ]; then echo "usage: count.sh FILE" >&2; exit 2; fi\nif [ ! -f "$1" ]; then echo "no such file: $1" >&2; exit 1; fi\nwc -l < "$1"\n```\n\n`$#` is the number of arguments. `exit` stops the script there with that status. `< "$1"` is the opposite of `>`: it feeds the file into the command\'s input, so `wc -l` prints just the number, without the file name after it.\n\nThen **test every path**, not just the happy one: run it with no argument, with a bad argument and with a good one, and check `echo $?` after each.\n--- task\nWrite `errors.sh`, which takes the name of a log file:\n\n- with **no argument**, it prints `usage: errors.sh LOGFILE` (to standard error) and exits with status `2`;\n- if the file **does not exist**, it prints `no such log: <name>` (to standard error) and exits with status `1`;\n- otherwise it prints the **number of lines** containing `ERROR`.\n\nThen test it: run it with no argument, with `missing.log`, and with `app.log`, and after each of the first two runs print its status with `echo $?`.\n--- starter\necho "INFO start" > app.log\necho "ERROR disk" >> app.log\necho "INFO retry" >> app.log\necho "ERROR disk" >> app.log\necho "ERROR network" >> app.log\n--- solution\necho \'if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi\' > errors.sh\necho \'if [ ! -f "$1" ]; then echo "no such log: $1" >&2; exit 1; fi\' >> errors.sh\necho \'grep -c ERROR "$1"\' >> errors.sh\nbash errors.sh\necho $?\nbash errors.sh missing.log\necho $?\nbash errors.sh app.log\n--- hint\nLine 1 checks `$#`: `if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi`. Write it with `echo \'…\' > errors.sh`.\n--- hint\nLine 2 checks the file: `if [ ! -f "$1" ]; then …; exit 1; fi`. Line 3 is `grep -c ERROR "$1"`.\n--- hint\nTest with `bash errors.sh`, then `echo $?`, and so on for the other two cases.\n--- check shell | With no argument: usage, and status 2\nprinted-line usage: errors.sh LOGFILE\nprinted-exactly 2\n--- check shell | With a missing file: a clear error, and status 1\nprinted-line no such log: missing.log\nprinted-exactly 1\n--- check shell | With a real log: the number of ERROR lines\nprinted-exactly 3\nfile errors.sh contains exit 2\nfile errors.sh contains >&2\n',ke='@track bash\n@level intermediate\n@title Terminal · Intermediate\n@name The command line, intermediate: pipes, patterns and finding things\n@blurb Match many files with one pattern, chain small tools into pipelines that answer real questions, search whole projects, and work out why a command gave the wrong answer.\n\n=== term2-01 | Wildcards: many files, one pattern\n--- teach\nThe basics course had you handling files one at a time and reading them with `head`, `tail`, `wc` and `grep`. This course is about many files and lots of text at once: patterns that match many names, pipes that chain small tools together, and ways to search a whole project.\n\nTyping every file name gets old fast. Instead, you can describe the names you mean with a **pattern**, using **wildcards**:\n\n- `*` matches any run of characters, even none: `*.txt` is every name ending in `.txt`.\n- `?` matches exactly one character: `day?.log` matches `day1.log` and `day9.log`, but not `day10.log`.\n- `[abc]` matches one character from the set: `report-[12].pdf` is `report-1.pdf` and `report-2.pdf`.\n\nThe shell turns the pattern into the list of matching names **before** the command runs. `mv` never sees the `*`: it receives `beach.jpg boat.jpg sunset.jpg`, exactly as if you had typed them. That is why `echo` is the safe way to test a pattern — it just prints what the pattern turned into:\n\n```\n~/project $ echo *.txt\nnotes.txt todo.txt\n~/project $ mv *.txt archive/\n```\n\nThree things catch people out:\n\n- Names starting with a dot are skipped: `*` does not match `.env`.\n- A pattern that matches nothing is passed along unchanged, so with no logs around, `ls *.log` complains `cannot access \'*.log\'`.\n- One stray space changes everything. `rm * .txt` is not "remove the .txt files": it is `rm *` (every file) plus a file called `.txt`. Run `echo` with the same pattern first.\n--- task\nThis folder is a mix of photos and notes. Make a folder called `photos` and move **all** the `.jpg` files into it with a single `mv` and a wildcard. Then list only the single-digit photos (`trip-1.jpg`, `trip-2.jpg`, but not `trip-10.jpg`) with `ls photos/trip-?.jpg`.\n--- starter\ntouch trip-1.jpg trip-2.jpg trip-10.jpg notes.txt todo.txt\n--- solution\nmkdir photos\nmv *.jpg photos\nls photos/trip-?.jpg\n--- hint\n`echo *.jpg` shows which names the pattern matches, without moving anything.\n--- hint\n`mv *.jpg photos` moves every match into the folder in one go.\n--- hint\n`?` stands for exactly one character, so `photos/trip-?.jpg` leaves out `trip-10.jpg`.\n--- check shell | Every photo moved, with one wildcard\ncount *.jpg == 0\ncount photos/*.jpg == 3\nran mv *.jpg\n--- check shell | The notes stayed where they were\nfile notes.txt\nfile todo.txt\n--- check shell | ? matched the single-digit photos\nran ls photos/trip-?.jpg\nprinted photos/trip-1.jpg\nprinted photos/trip-2.jpg\n\n=== term2-02 | Pipes: plugging commands together\n--- teach\nThe **pipe**, `|`, sends everything one command prints straight into the next command, instead of to the screen. Each tool does one small job well, and pipes let you chain them into something bigger:\n\n```\ngrep ERROR server.log | wc -l\n```\n\n`grep` keeps only the error lines; `wc -l` counts whatever lines it is given. When a command like `wc`, `head`, `sort` or `grep` gets no file name, it reads from the pipe instead.\n\nBuild a pipeline **one stage at a time**. Run the first command on its own and look at what it prints, then add `| next-command` and look again. It is the fastest way to write one, and later, when an answer looks wrong, it is how you find which stage is wrong.\n\nTwo classic mistakes:\n\n- Giving the later command a file name as well: `grep ERROR server.log | wc -l server.log` counts every line of the file and ignores the pipe completely.\n- Piping into a command that does not read input: `ls | echo` prints an empty line, because `echo` only ever prints its own arguments.\n--- task\n`server.log` holds a morning of messages. With **one pipeline**, count how many lines contain `ERROR`, using `grep` and `wc -l`. Then, with a second pipeline, show only the **first two** error lines, using `grep` and `head`.\n--- starter\necho "08:00 INFO server started" > server.log\necho "08:01 INFO user ada logged in" >> server.log\necho "08:02 ERROR disk almost full" >> server.log\necho "08:03 WARN slow response" >> server.log\necho "08:05 ERROR payment timeout" >> server.log\necho "08:06 INFO user lin logged in" >> server.log\necho "08:09 ERROR payment timeout" >> server.log\necho "08:12 ERROR disk full" >> server.log\n--- solution\ngrep ERROR server.log | wc -l\ngrep ERROR server.log | head -n 2\n--- hint\nFirst run `grep ERROR server.log` on its own and look at the lines it keeps.\n--- hint\nAdd `| wc -l` to count them. For the second job, `| head -n 2` keeps the first two.\n--- check shell | You counted the errors with a pipeline\nran grep ERROR server.log\nran wc -l\nprinted-exactly 4\n--- check shell | You showed just the first two errors\nran head\nprinted-exactly 08:02 ERROR disk almost full\\n08:05 ERROR payment timeout\n\n=== term2-03 | Sorting and counting: sort and uniq\n--- teach\n`sort` puts lines in order. Three flags you will reach for constantly:\n\n- `-n` sorts **numbers** as numbers. Without it, `10` sorts before `9`, because text is compared one character at a time and `1` comes before `9`.\n- `-r` reverses the order, biggest (or last) first. Flags combine: `sort -rn`.\n- `-u` keeps a single copy of each line.\n\n`uniq` squeezes repeated lines into one, and `uniq -c` writes how many there were in front:\n\n```\n~/project $ sort colours.txt | uniq -c\n      2 blue\n      3 red\n```\n\nThe catch: `uniq` only compares each line with **the one just above it**. Repeats that are not next to each other are not merged — which is why `uniq` nearly always comes straight after `sort`.\n\nRemember this line, because it answers "what is the most common thing in here?" for almost any list:\n\n```\nsort | uniq -c | sort -rn\n```\n\nSort so that repeats sit together, count each run, then sort by the counts, biggest first.\n--- task\n`visitors.txt` has one city per line, one line per visit. Print each city **once**, with its number of visits, **most visits first** — `4 lagos` on the first line — using `sort`, `uniq -c` and `sort -rn` in one pipeline.\n--- starter\necho "lima" > visitors.txt\necho "lagos" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "pune" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "lima" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\n--- solution\nsort visitors.txt | uniq -c | sort -rn\n--- hint\nStart with `sort visitors.txt` and notice the repeats now sit together.\n--- hint\nAdd `| uniq -c` to count each run of repeats, then `| sort -rn` to put the biggest count first.\n--- check shell | Each city once, with its count, most visits first\nprinted-exactly 4 lagos\\n3 oslo\\n2 lima\\n1 pune\n--- check shell | Counted with uniq -c\nused uniq -c\n\n=== term2-04 | The top and the bottom: head, tail and numeric sorts\n--- teach\n`head` and `tail` are at their best at the end of a pipeline: sort, then keep the first few lines.\n\n```\nsort -rn sizes.txt | head -n 3     # the three biggest\nsort -n sizes.txt | head -n 1      # the smallest\n```\n\nReal data often starts with a **header line** naming the column. `tail -n +2` means "start from line 2", which drops the header:\n\n```\ntail -n +2 sizes.txt | sort -n | head -n 1\n```\n\nWhy bother? Because `sort -n` treats a line that is not a number as `0`. A header like `bytes` then sorts as the smallest "number" of all, and `head -n 1` hands you the word `bytes` instead of an answer. Whenever a result looks odd, look at the first lines of your data with `head` — headers, blank lines and stray text are the usual suspects.\n--- task\n`sizes.txt` lists file sizes in bytes, under a header line `bytes`. Print the **three largest** sizes, largest first. Then print the **smallest** size — without the header sneaking in.\n--- starter\necho "bytes" > sizes.txt\necho "640" >> sizes.txt\necho "12" >> sizes.txt\necho "9200" >> sizes.txt\necho "87" >> sizes.txt\necho "870" >> sizes.txt\necho "150" >> sizes.txt\n--- solution\ntail -n +2 sizes.txt | sort -rn | head -n 3\ntail -n +2 sizes.txt | sort -n | head -n 1\n--- hint\nSort as numbers, biggest first, with `sort -rn`, and keep three lines with `head -n 3`.\n--- hint\nFor the smallest, `sort -n` puts `bytes` first. `tail -n +2 sizes.txt` hands the pipeline everything except the header.\n--- check shell | The three largest sizes, largest first\nprinted-exactly 9200\\n870\\n640\n--- check shell | The smallest size, not the header\nprinted-exactly 12\n--- check shell | You used head on a sorted list\nran sort\nran head\n\n=== term2-05 | Columns: cut\n--- teach\nA lot of data comes as **columns**: CSV files, logs, exports from spreadsheets. `cut` picks columns out of every line.\n\n- `-d ,` says what separates the columns (here a comma).\n- `-f 2` says which column (**f**ield) to keep, counting from 1. Several at once: `-f 1,3`. A range: `-f 2-4`.\n\n```\n~/project $ cut -d , -f 2 people.csv\nname\nada\nlin\n```\n\nThe usual mistake is leaving out `-d`. Then `cut` splits on the **tab** character, finds none, and prints every line whole — it looks as if `cut` did nothing.\n\n`cut` shines inside a pipeline. To list the distinct values of one column, drop the header, cut the column, then sort and de-duplicate:\n\n```\ntail -n +2 people.csv | cut -d , -f 3 | sort -u\n```\n--- task\n`orders.csv` has a header and then one order per line: `id,customer,item,qty`. Print the **distinct items** that were ordered, alphabetically, one per line, without the header.\n--- starter\necho "id,customer,item,qty" > orders.csv\necho "1,ada,keyboard,1" >> orders.csv\necho "2,lin,mouse,2" >> orders.csv\necho "3,ada,monitor,1" >> orders.csv\necho "4,sam,mouse,1" >> orders.csv\necho "5,lin,keyboard,3" >> orders.csv\necho "6,kai,cable,4" >> orders.csv\n--- solution\ntail -n +2 orders.csv | cut -d , -f 3 | sort -u\n--- hint\nThe item is the third column: `cut -d , -f 3 orders.csv`.\n--- hint\nPut `tail -n +2` in front to drop the header, and `sort -u` after to sort and keep one of each.\n--- check shell | The distinct items, alphabetically, without the header\nprinted-exactly cable\\nkeyboard\\nmonitor\\nmouse\n--- check shell | You cut the column with -d\nused cut -d\n\n=== term2-06 | Finding files: find\n--- teach\n`ls` shows one folder. `find` searches a folder **and everything inside it**:\n\n```\nfind . -name "*.md"            # every .md file below here\nfind src -name config.json     # every config.json below src\nfind . -type d -name tests     # only folders called tests\nfind . -type f -iname "*.JPG"  # files, ignoring upper/lower case\n```\n\nThe first argument is where to start (`.` is "here"); the rest describe what you want. Tests combine: `-type d -name tests` means both.\n\n**Quote the pattern.** Without quotes, the shell expands `*.md` itself before `find` runs. If this folder happens to contain `a.md` and `b.md`, `find` receives `-name a.md b.md` and stops with `paths must precede expression`. With quotes, the pattern reaches `find` intact and it matches at every depth.\n--- task\nSomewhere in this project there are three files called `config.json`, at different depths. List them all with `find`. Then list every **folder** called `tests` — there is also a *file* called `tests`, which must not appear.\n--- starter\nmkdir -p api/v1/tests web/tests docs\ntouch config.json api/config.json api/v1/config.json web/app.js docs/tests\n--- solution\nfind . -name config.json\nfind . -type d -name tests\n--- hint\n`find . -name config.json` starts here and looks in every folder below.\n--- hint\nAdd `-type d` so that only folders count.\n--- check shell | You found all three config files\nran find\nprinted ./config.json\nprinted ./api/config.json\nprinted ./api/v1/config.json\n--- check shell | You found the tests folders, and only folders\nprinted-exactly ./api/v1/tests\\n./web/tests\nused -type d\n\n=== term2-07 | Searching inside files: grep\'s everyday flags\n--- teach\nYou have used `grep PATTERN file`. A handful of flags turns it into the tool you use to find your way around any codebase:\n\n- `-r` searches a folder and everything in it. Each hit starts with the file it is in.\n- `-n` adds the line number: `src/api.js:3:// TODO`.\n- `-i` ignores upper and lower case.\n- `-v` inverts: keep the lines that do **not** match.\n- `-c` prints how many lines matched instead of the lines themselves.\n- `-l` prints only the names of files that match.\n\nFlags combine: `grep -rn TODO src` lists every TODO in `src` with its file and line.\n\nThe pattern is a **regular expression**, so a few characters are special: `.` matches any character, `^` means "start of line" and `$` "end of line". `grep "^ERROR" app.log` finds lines that begin with ERROR, not lines that mention it.\n\nTwo mistakes: forgetting `-r` on a folder (grep answers `Is a directory`), and expecting `-c` to count words — it counts **lines**.\n--- task\nTwo jobs. First, find every `TODO` in the `src` folder, showing file names and line numbers, with one `grep`. Second, `app.log` is full of `DEBUG` noise: count the lines that are **not** DEBUG lines.\n--- starter\nmkdir -p src/lib\necho "import db" > src/api.js\necho "" >> src/api.js\necho "// TODO: retry on failure" >> src/api.js\necho "export run" >> src/api.js\necho "// helpers" > src/lib/util.js\necho "// TODO: cache results" >> src/lib/util.js\necho "const x = 1" > src/main.js\necho "DEBUG start" > app.log\necho "INFO ready" >> app.log\necho "DEBUG tick" >> app.log\necho "WARN slow" >> app.log\necho "DEBUG tick" >> app.log\necho "ERROR crash" >> app.log\necho "INFO restart" >> app.log\n--- solution\ngrep -rn TODO src\ngrep -vc DEBUG app.log\n--- hint\n`-r` searches the whole folder and `-n` adds line numbers: `grep -rn TODO src`.\n--- hint\n`-v` keeps the lines that do not match; add `-c` to count them (or pipe into `wc -l`).\n--- check shell | Every TODO, with its file and line number\nprinted-line src/api.js:3:// TODO: retry on failure\nprinted-line src/lib/util.js:2:// TODO: cache results\n--- check shell | You counted the lines that are not DEBUG\nused -v\nprinted-exactly 4\n\n=== term2-08 | Two kinds of output: redirecting errors\n--- teach\nEvery command has two separate outputs:\n\n- **standard output** (number 1) for results,\n- **standard error** (number 2) for problems.\n\nBoth appear on your screen, so they look the same — until you redirect. `>` only catches standard output. Errors still land on the screen, and the file does not get them:\n\n```\n~/project $ ls reports missing > out.txt\nls: cannot access \'missing\': No such file or directory\n```\n\nTo send the errors somewhere, name stream 2:\n\n- `2> errors.txt` — errors to a file.\n- `2> /dev/null` — throw errors away (`/dev/null` swallows whatever is written to it).\n- `> all.txt 2>&1` — results to the file, then "send 2 wherever 1 is going", so both end up in `all.txt`. The order matters: `2>&1 > all.txt` points errors at the screen first, then moves only the results. `&> all.txt` is a shorter spelling of the right version.\n\nPipes carry only standard output too, which is why `broken-command | grep x` still shows the error on screen.\n--- task\n`ls reports missing` lists a real folder and a folder that does not exist, so it prints a listing **and** an error. In one command, save the listing in `found.txt` and the error in `errors.txt`. Then, in a second command, save **both** into `all.txt`.\n--- starter\nmkdir reports\ntouch reports/q1.txt reports/q2.txt\n--- solution\nls reports missing > found.txt 2> errors.txt\nls reports missing > all.txt 2>&1\n--- hint\n`>` sends the listing to a file and `2>` sends the error to another, in the same command.\n--- hint\nFor both at once, add `2>&1` after `> all.txt`.\n--- check shell | The listing went to found.txt, and the error did not\nfile found.txt contains q1.txt\nfile found.txt excludes cannot access\n--- check shell | The error went to errors.txt\nfile errors.txt contains cannot access \'missing\'\nused 2>\n--- check shell | all.txt has both\nfile all.txt contains q2.txt\nfile all.txt contains No such file or directory\n\n=== term2-09 | Keeping results: >>, and tee\n--- teach\nYou already know the two ways to save output: `>` replaces a file, `>>` adds to its end. Picking the wrong one is how logs lose their history — each `>` throws away everything that was there.\n\nSometimes you want to **see** a result and **save** it. `tee` does both: it writes what it receives into a file and passes the same text on, to the screen or the next command.\n\n```\nsort -u names.txt | tee unique.txt          # see the list and save it\nsort -u names.txt | tee unique.txt | wc -l  # save it, and count it\necho "run finished" >> run.log              # add a line, keep the rest\n```\n\n`tee -a file` appends instead of replacing, just like `>>`.\n--- task\nPut each name from `logins.txt` once, sorted, into `users.txt` — and see the list on screen at the same time, using `tee`. Then add the line `checked by you` to the **end** of `users.txt` without losing the names.\n--- starter\necho "sam" > logins.txt\necho "ada" >> logins.txt\necho "sam" >> logins.txt\necho "lin" >> logins.txt\necho "ada" >> logins.txt\n--- solution\nsort -u logins.txt | tee users.txt\necho "checked by you" >> users.txt\n--- hint\n`sort -u logins.txt` gives each name once. Pipe it into `tee users.txt` to save it and see it.\n--- hint\n`>>` adds a line to the end; `>` would wipe the names.\n--- check shell | users.txt has each name once, sorted, then your line\nfile users.txt ~= ada\\nlin\\nsam\\nchecked by you\n--- check shell | You saw the names as they were saved\nused tee\nprinted-exactly ada\\nlin\\nsam\n\n=== term2-10 | Problem solving: the busiest visitors\n--- teach\nHere is a real question from a real job: *which addresses are hammering our server?* You have every tool you need. What matters is the approach.\n\n1. **Restate the problem.** "Count requests per IP address; show the three biggest counts."\n2. **Look at the data** before writing anything: `head -n 3 access.log`. Every line starts with the address, then a space:\n   ```\n   10.0.0.7 - - [25/Sep/2026:09:10:00] "GET /home" 200\n   ```\n3. **Solve it stage by stage**, checking the output each time:\n   - get just the addresses: `cut -d \' \' -f 1 access.log` (**single quotes** keep text together just as double quotes do, so `\' \'` is one space character given to `-d`)\n   - bring equal ones together: `| sort`\n   - count each: `| uniq -c`\n   - biggest first: `| sort -rn`\n   - keep three: `| head -n 3`\n4. **Check the answer** against something you can verify another way, like `grep -c "^10.0.0.7 " access.log`.\n\nThink about edge cases too. What if the same address appears in different places in the file — does your pipeline still merge them? (Only if you sort before `uniq`.) What if two addresses tie? Then `sort -rn` puts them next to each other and `head` takes whichever comes first, so say so if it matters.\n--- task\n`access.log` has one line per request, a few hundred of them. Print the **three addresses with the most requests**, with their counts, busiest first. Then save the same three lines into `top3.txt`.\n--- starter\nfor i in $(seq 1 12); do echo "192.168.1.9 - - [25/Sep/2026:09:00:0$((i % 10))] \\"GET /login\\" 401" >> access.log; echo "10.0.0.7 - - [25/Sep/2026:09:10:00] \\"GET /home\\" 200" >> access.log; echo "10.0.0.3 - - [25/Sep/2026:09:11:00] \\"GET /api\\" 200" >> access.log; done\nfor i in $(seq 1 5); do echo "172.16.0.2 - - [25/Sep/2026:09:20:00] \\"GET /about\\" 200" >> access.log; done\nfor i in $(seq 1 28); do echo "10.0.0.7 - - [25/Sep/2026:09:30:00] \\"GET /home\\" 200" >> access.log; done\nfor i in $(seq 1 3); do echo "10.0.0.9 - - [25/Sep/2026:09:40:00] \\"GET /api\\" 500" >> access.log; done\nfor i in $(seq 1 13); do echo "10.0.0.3 - - [25/Sep/2026:09:50:00] \\"GET /api\\" 200" >> access.log; done\n--- solution\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3 > top3.txt\n--- hint\nStart with `cut -d \' \' -f 1 access.log`: the address is the first column, and columns are separated by spaces.\n--- hint\nThen the counting pattern from before: `| sort | uniq -c | sort -rn`.\n--- hint\nFinish with `| head -n 3`, and run the same pipeline again ending in `> top3.txt`.\n--- check shell | The three busiest addresses, busiest first\nprinted-exactly 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Saved in top3.txt\nfile top3.txt ~= 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Counted with a pipeline\nused uniq -c\nused |\n\n=== term2-11 | Debugging: the count that lied\n--- teach\nWhen a pipeline gives a wrong answer, do not stare at the whole line hoping to spot it. Debug it the way you would any program:\n\n1. **Reproduce** it: run the exact command and look at the output.\n2. **Inspect each stage.** Cut the pipeline back to its first command, then add one stage at a time. The stage where the output stops making sense is the stage with the bug.\n3. **Check your assumptions** about what each tool does. Most pipeline bugs are a tool doing exactly what it was designed to do, which is not what you thought.\n4. **Fix the cause, not the symptom.** Adding up the duplicate lines by hand makes this answer right and leaves the pipeline broken for next time.\n5. **Verify** with a number you can check another way, such as `grep -c north sales.csv`.\n\nHere is the report from a colleague:\n\n> I count sales per region with `cut -d , -f 2 sales.csv | uniq -c`. It says `north` 1 time, then `north` 1 time again, then 2 times… and there is a line for a region called `region`. There are only three regions.\n--- task\nRun the broken pipeline to see the problem for yourself. Then write a correct one that saves each region **once**, with its number of sales, **most sales first**, and **without** the header\'s `region` line, into `region-counts.txt`.\n--- starter\necho "id,region,amount" > sales.csv\necho "1,north,20" >> sales.csv\necho "2,south,15" >> sales.csv\necho "3,north,40" >> sales.csv\necho "4,east,5" >> sales.csv\necho "5,south,10" >> sales.csv\necho "6,north,25" >> sales.csv\necho "7,north,30" >> sales.csv\necho "8,east,12" >> sales.csv\necho "9,south,8" >> sales.csv\n--- solution\ncut -d , -f 2 sales.csv | uniq -c\ntail -n +2 sales.csv | cut -d , -f 2 | sort | uniq -c | sort -rn > region-counts.txt\n--- hint\nRun `cut -d , -f 2 sales.csv` alone. Are all the `north` lines next to each other? What does `uniq` compare each line with?\n--- hint\n`uniq` only merges neighbours, so it needs `sort` in front of it. The `region` line is the header: drop it with `tail -n +2`.\n--- hint\nFinish with `| sort -rn > region-counts.txt`.\n--- check shell | You reproduced the bug first\nprinted 1 region\n--- check shell | Each region once, with its total, most sales first\nfile region-counts.txt ~= 4 north\\n3 south\\n2 east\n\n=== term2-12 | Debugging: the file that emptied itself\n--- teach\nHere is a bug report you will one day write yourself:\n\n> I sorted my list with `sort names.txt > names.txt`. Now `names.txt` is empty.\n\nNothing is wrong with `sort`. The cause is the **order** things happen in. Before running a command, the shell sets up its redirections, and `>` means "empty this file, then send the output here". So the file is already empty by the time `sort` opens it to read. Sorting nothing gives nothing, and nothing is what gets saved.\n\nThe same rule is behind a cousin of this bug: a log written with `>` in each step keeps only its last line, because every `>` wipes what the previous one wrote. That is a job for `>>`.\n\nThe safe pattern for changing a file with a command: write the result to a **new** file, check it, then move it into place:\n\n```\nsort names.txt > names.sorted\ncat names.sorted\nmv names.sorted names.txt\n```\n\nAnd a debugging habit worth keeping: when you are not sure what a command will do to your data, try it on a **copy** first.\n--- task\n`names.txt` has just been emptied by that exact command, but there is a backup in `names.bak`. Put the names back into `names.txt`, **sorted**, safely: through a temporary file and `mv`. Then add the name `zara` to the **end** of `names.txt` without losing the others.\n--- starter\necho "cy" > names.bak\necho "ada" >> names.bak\necho "bo" >> names.bak\ncp names.bak names.txt\nsort names.txt > names.txt\n--- solution\nsort names.bak > sorted.tmp\nmv sorted.tmp names.txt\necho "zara" >> names.txt\n--- hint\n`cat names.txt` shows it is empty and `cat names.bak` shows what you can recover.\n--- hint\nSort the backup into a new file, `sort names.bak > sorted.tmp`, then `mv sorted.tmp names.txt`.\n--- hint\nUse `>>` for `zara`: `>` would empty the file again.\n--- check shell | names.txt is sorted and complete, with zara at the end\nfile names.txt ~= ada\\nbo\\ncy\\nzara\n--- check shell | You moved a finished file into place and appended with >>\nused mv\nused >>\n--- check shell | The backup is untouched\nfile names.bak ~= cy\\nada\\nbo\n',Ae='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',je=`@track cpp
+`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?A(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=M(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:F(t),actual:F(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(M(e)));return f(!e.length,{expected:r.expect.join(`
+`),actual:F(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:A(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=P(r.rows)+(r.ordered?`
+(in this order)`:``);return e?f(N(r.rows,e.rows,r.ordered),{expected:t,actual:P(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(N(t(r.rows),t(e),!0),{input:r.sql,expected:P(t(r.rows)),actual:P(t(e))})}return f(N(r.rows,e,!0),{input:r.sql,expected:P(r.rows),actual:P(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
+`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var De='@track bash\n@level advanced\n@title Terminal · Advanced\n@name The command line, advanced: variables, scripts and automation\n@blurb Store values in variables, make decisions with exit codes, loop over files, write scripts that take arguments and check their input, and debug a script that misbehaves.\n\n=== term3-01 | Variables\n--- teach\nThe intermediate course taught you to combine commands into pipelines. This course turns commands into programs: values kept in variables, decisions made from exit codes, loops over files, and scripts that take arguments and check them.\n\nA **variable** gives a name to a piece of text so you can reuse it:\n\n```\n~/project $ planet=mars\n~/project $ echo "Next stop: $planet"\nNext stop: mars\n~/project $ mkdir "${planet}-base"\n```\n\n- Set it with `name=value` — and **no spaces around `=`**. `planet = mars` does not set anything: the shell runs a command called `planet` with the arguments `=` and `mars`, and answers `planet: command not found`.\n- Read it with `$name`. Write `${name}` when letters follow straight after, as in `${planet}s` — `$planets` would look up a different variable.\n- **Double quotes** expand variables: `"Next stop: $planet"`. **Single quotes** keep everything exactly as typed: `\'$planet\'` prints `$planet`.\n- Names are case-sensitive, and a variable that was never set is simply empty — no error, which is why typos in variable names are sneaky.\n\nVariables are how scripts avoid repeating themselves: set a version number or a folder name once at the top, use it everywhere below.\n--- task\nSet a variable `project` to `launchpad` and a variable `version` to `2`. Then, using only the variables (without typing `launchpad` or `2` again), print `launchpad v2 is ready` and make a folder called `launchpad-v2`.\n--- starter\n--- solution\nproject=launchpad\nversion=2\necho "$project v$version is ready"\nmkdir "$project-v$version"\n--- hint\n`project=launchpad` — no spaces around the `=`.\n--- hint\n`echo "$project v$version is ready"`: double quotes let the variables expand.\n--- hint\n`mkdir "$project-v$version"` builds the folder name from both.\n--- check shell | Both variables are set\nvar project == launchpad\nvar version == 2\n--- check shell | You printed the message from the variables\nprinted-line launchpad v2 is ready\nused $project\n--- check shell | The folder is named from the variables\ndir launchpad-v2\nused $version\n\n=== term3-02 | Exporting variables to the programs you run\n--- teach\nEvery command you start — a script, `node`, `git` — runs as a separate **child process**. It gets a copy of your **environment**: the variables you have **exported**. Plain variables stay behind in your shell.\n\n```\n~/project $ NAME=Ada          # set in this shell only\n~/project $ bash greet.sh     # the script cannot see NAME\nHello,\n~/project $ export NAME       # now it goes to every child\n~/project $ bash greet.sh\nHello, Ada\n```\n\n- `export NAME=value` sets and exports in one go.\n- `env` lists everything that is exported.\n- `NAME=value command` sets a variable for that one command only: `DEBUG=1 bash build.sh`.\n- The copy only travels one way. A script that changes a variable changes its own copy; your shell never sees it.\n\n`bash greet.sh` runs the commands saved in the file `greet.sh` in a new shell. Scripts get a full lesson later in this course; here the script is ready-made.\n\nThis is how real configuration reaches programs: API keys, `NODE_ENV=production`, and `PATH`, the list of folders the shell searches for commands.\n--- task\n`greet.sh` prints `Hello, ` followed by `$NAME`. `NAME` is already set to `Ada` in this shell, yet the script does not see it. Run the script with `bash greet.sh` to see the problem, fix it by **exporting** `NAME`, and run the script again so it prints `Hello, Ada`.\n--- starter\necho \'echo "Hello, $NAME"\' > greet.sh\nNAME=Ada\n--- solution\nbash greet.sh\nexport NAME\nbash greet.sh\n--- hint\n`echo $NAME` shows the variable is set; the script still cannot see it, because it was never exported.\n--- hint\n`export NAME`, then `bash greet.sh` again.\n--- check shell | NAME is exported\nenv NAME == Ada\n--- check shell | The script saw it\nprinted-line Hello, Ada\nran bash greet.sh\n\n=== term3-03 | Command substitution: $(…)\n--- teach\n`$(command)` runs a command and puts its output **right there** in the line, as if you had typed it. Trailing new lines are dropped.\n\n```\n~/project $ count=$(ls *.txt | wc -l)\n~/project $ echo "There are $count notes"\nThere are 3 notes\n~/project $ echo "Report for $(whoami)"\nReport for you\n```\n\nIt works anywhere a word could go: in a variable, in an `echo`, in the argument of another command. Put it in double quotes, `"$(…)"`, when the output might contain spaces — otherwise the shell splits it into separate words.\n\nYou will also meet the old spelling with backticks, `` `ls | wc -l` ``. It does the same thing, but `$(…)` is easier to read and can be nested.\n\nTwo mistakes: `count=ls | wc -l` never runs `ls` at all — it prints `0` and leaves `count` unset — and `count=(ls)` is a different feature altogether. The dollar and the brackets go together: `$(ls)`.\n--- task\nStore the number of `.txt` files in this folder in a variable called `count`, using `$(…)`. Then write the sentence `There are 3 notes` into `summary.txt`, using `$count` rather than typing the 3.\n--- starter\ntouch a.txt b.txt c.txt picture.png\n--- solution\ncount=$(ls *.txt | wc -l)\necho "There are $count notes" > summary.txt\n--- hint\n`ls *.txt | wc -l` counts the files; wrap it: `count=$(ls *.txt | wc -l)`.\n--- hint\n`echo "There are $count notes" > summary.txt`.\n--- check shell | count holds the number of notes\nvar count == 3\nused $(\n--- check shell | summary.txt was written from the variable\nfile summary.txt == There are 3 notes\nused $count\n\n=== term3-04 | Exit codes: && and ||\n--- teach\nEvery command finishes with an **exit status** (also called an **exit code**), a number that says how it went: `0` means success, anything else means some kind of failure. Nothing is printed; `echo $?` shows the status of the last command.\n\n```\n~/project $ grep -q ERROR deploy.log\n~/project $ echo $?\n0\n```\n\n`grep` is a good example: `0` when it found a match, `1` when it found none, `2` when something went wrong (like a missing file). `-q` makes it quiet — it prints nothing and just sets the status.\n\n- `a && b` runs `b` only if `a` succeeded.\n- `a || b` runs `b` only if `a` failed.\n\nTogether they make a compact either/or:\n\n```\ngrep -q ERROR deploy.log && echo "failed" || echo "ok"\n```\n\nOne caution: this is not a true if/else. If the middle command fails, the `||` part runs as well. `echo` never fails, so here it is fine; for anything bigger, use `if` (two lessons from now).\n\nExit codes are what scripts, build tools and CI systems use to decide whether to carry on. A failing test runner exits with a non-zero status, and that is how the pipeline knows to stop.\n--- task\nThere are two deploy logs. For each one, write **one line** using `grep -q`, `&&` and `||` that prints `deploy-mon: failed` if `deploy-mon.log` contains `ERROR` and `deploy-mon: ok` if it does not — and the same for `deploy-tue.log` with `deploy-tue`.\n--- starter\necho "build ok" > deploy-mon.log\necho "upload ok" >> deploy-mon.log\necho "ERROR: health check failed" >> deploy-mon.log\necho "build ok" > deploy-tue.log\necho "upload ok" >> deploy-tue.log\necho "health ok" >> deploy-tue.log\n--- solution\ngrep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"\ngrep -q ERROR deploy-tue.log && echo "deploy-tue: failed" || echo "deploy-tue: ok"\n--- hint\n`grep -q ERROR deploy-mon.log` prints nothing; check `echo $?` straight after to see its answer.\n--- hint\n`grep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"`.\n--- check shell | Monday\'s deploy is reported as failed\nprinted-line deploy-mon: failed\nnot-printed deploy-mon: ok\n--- check shell | Tuesday\'s deploy is reported as ok\nprinted-line deploy-tue: ok\nnot-printed deploy-tue: failed\n--- check shell | One line each, driven by grep\'s exit status\nused grep -q\nused &&\nused ||\n\n=== term3-05 | Loops: for\n--- teach\nA `for` loop runs the same commands once for each item in a list:\n\n```\nfor planet in mercury venus earth; do mkdir "$planet"; done\nfor f in *.txt; do echo "checking $f"; done\n```\n\nEach time round, the variable (`planet`, `f`) holds the next item. The list can be plain words, a wildcard, or `$(…)`. It fits on one line, with `;` before `do` and before `done`, or spread over several lines in a script. The `;` separates commands on one line and runs them one after another, whether or not the first worked (unlike `&&`).\n\n**Quote the variable**: `"$f"`. A file called `old boat.jpeg` is one name, but unquoted `$f` is split at the space into two words, `old` and `boat.jpeg`, and `mv` goes looking for two files that do not exist.\n\nTwo tools make renaming easy. `${f%.jpeg}` is `f` with `.jpeg` cut off the **end**; `${f#IMG_}` cuts `IMG_` off the **start**:\n\n```\nf=beach.jpeg\necho "${f%.jpeg}.jpg"     # beach.jpg\n```\n\nBefore a loop changes anything, do a **dry run**: put `echo` in front of the real command, read the commands it prints, and only then run it for real.\n\n```\nfor f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done\n```\n--- task\nRename every `.jpeg` file in this folder so it ends in `.jpg` instead (`beach.jpeg` becomes `beach.jpg`), with **one** `for` loop. One of the files has a space in its name, and the files\' contents must survive.\n--- starter\necho "pixels" > beach.jpeg\ntouch sunset.jpeg "old boat.jpeg" readme.txt\n--- solution\nfor f in *.jpeg; do mv "$f" "${f%.jpeg}.jpg"; done\n--- hint\nTry a dry run first: `for f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done`.\n--- hint\nWhen the printed commands look right, run it again without the `echo`. Keep the quotes around `"$f"`.\n--- check shell | No .jpeg files are left\ncount *.jpeg == 0\n--- check shell | Every photo is now a .jpg, contents and all\ncount *.jpg == 3\nfile beach.jpg == pixels\nfile readme.txt\n--- check shell | Done with a loop\nused for\nused do\nused done\n\n=== term3-06 | Decisions: if and test\n--- teach\n`if` runs a command and looks at its exit status: `0` takes the `then` branch, anything else the `else` branch.\n\n```\nif grep -q ERROR app.log; then echo "look at the log"; else echo "all quiet"; fi\n```\n\nThe command you will put after `if` most often is `[ … ]`, a command (also called `test`) that checks something and exits with 0 for true:\n\n- `[ -f notes.txt ]` — is there a file called that? `-d` asks about a folder, `-e` about either.\n- `[ "$mode" = "prod" ]` — are two strings equal? (`!=` for not equal.)\n- `[ -z "$name" ]` — is the string empty?\n- `[ "$count" -gt 10 ]` — number comparisons: `-eq -ne -lt -le -gt -ge`.\n- `!` in front negates: `[ ! -f config.txt ]`.\n\nThe spaces matter. `[` is a command, so `[-f x]` is an attempt to run a command called `[-f` (command not found), and the closing `]` must be its own word too.\n\nQuote variables inside the brackets. If `$mode` is empty, `[ $mode = prod ]` becomes `[ = prod ]` and fails with `unary operator expected`; `[ "$mode" = prod ]` stays a valid comparison.\n\n`elif` adds more branches, and everything ends with `fi` ("if" backwards).\n--- task\nWrite a one-line `if` that prints `config found` when `config.txt` exists, and otherwise creates it containing `mode=dev` and prints `config created`. Run the same line **twice**: the first run creates the file, the second finds it.\n--- starter\n--- solution\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\n--- hint\nThe shape is `if [ -f config.txt ]; then …; else …; fi`.\n--- hint\nThe `else` branch has two commands: `echo "mode=dev" > config.txt; echo "config created"`.\n--- hint\nPress the Up arrow to bring the line back, then Enter to run it again.\n--- check shell | The first run created the file\nprinted-line config created\nfile config.txt == mode=dev\n--- check shell | The second run found it\nprinted-line config found\nused if [ -f\n\n=== term3-07 | Scripts: commands saved in a file\n--- teach\nA **script** is a text file of commands, one per line. Running it runs them in order, so a task you do often becomes one command.\n\n```\n~/project $ bash backup.sh notes.txt\n```\n\nInside the script, `$1` is the first argument, `$2` the second, `$#` how many there are, and `"$@"` all of them. Scripts run in a **child** shell, so a `cd` inside one does not move you.\n\nTo run a script by its name, like a real program:\n\n1. start it with a **shebang** line, `#!/bin/bash`, which says which program runs it;\n2. make it executable: `chmod +x backup.sh`;\n3. run it as `./backup.sh`. The `./` says "the one in this folder" — the shell does not look in the current folder for commands, so plain `backup.sh` gives `command not found`.\n\nThis practice terminal has no text editor, so build files with `echo`. Use **single quotes** around each line: they stop `$1` from being expanded now, when you write the file, so it is expanded later, when the script runs.\n\n```\necho \'#!/bin/bash\' > hello.sh\necho \'echo "Hello, $1"\' >> hello.sh\n```\n--- task\nCreate `backup.sh`, a script that copies the file named in its first argument to the same name with `.bak` added, then prints `backed up <name>`. Run it on `notes.txt` with `bash`. Then make it executable and run it as `./backup.sh todo.txt`.\n--- starter\necho "remember the fuel" > notes.txt\necho "launch" > todo.txt\n--- solution\necho \'#!/bin/bash\' > backup.sh\necho \'cp "$1" "$1.bak"\' >> backup.sh\necho \'echo "backed up $1"\' >> backup.sh\nbash backup.sh notes.txt\nchmod +x backup.sh\n./backup.sh todo.txt\n--- hint\nThree lines, each with `echo \'…\'`: the shebang (`>`), then `cp "$1" "$1.bak"` and `echo "backed up $1"` (`>>`).\n--- hint\n`bash backup.sh notes.txt` runs it. `cat backup.sh` shows what you wrote.\n--- hint\n`chmod +x backup.sh`, then `./backup.sh todo.txt`.\n--- check shell | backup.sh works when run with bash\nfile notes.txt.bak == remember the fuel\nprinted-line backed up notes.txt\n--- check shell | …and on its own, once it is executable\nfile backup.sh exec\nfile todo.txt.bak == launch\nran ./backup.sh todo.txt\n\n=== term3-08 | Find and replace: sed\n--- teach\n`sed` (the **s**tream **ed**itor) changes text as it flows through. Its most used command is `s`, substitute:\n\n```\nsed \'s/localhost/db.internal/\' settings.conf\n```\n\n- That **prints** the changed text. The file itself is unchanged until you add `-i` (in place): `sed -i \'s/a/b/\' file`.\n- `s` changes only the **first** match on each line. Add `g` at the end to change every match: `s/a/b/g`.\n- The pattern is a regular expression: `.` is any character, `^` the start of a line, `$` the end.\n- When the text contains slashes, pick another separator: `s|/usr/local|/opt|`.\n- `/pattern/d` deletes matching lines; `sed -n \'/pattern/p\'` prints only matching lines.\n\nThe two classic surprises are forgetting `g` (only the first match changes) and forgetting `-i` (the output looks right, but the file never changed). Because `-i` really rewrites the file, check the command without `-i` first.\n--- task\nIn `settings.conf`, change **every** `localhost` to `db.internal` — one line has it twice — in the file itself. Then, also with `sed -i`, delete the line that starts with `debug`.\n--- starter\necho "host=localhost" > settings.conf\necho "url=http://localhost:5432/localhost" >> settings.conf\necho "debug=true" >> settings.conf\necho "port=5432" >> settings.conf\n--- solution\nsed -i \'s/localhost/db.internal/g\' settings.conf\nsed -i \'/^debug/d\' settings.conf\n--- hint\nTry it without `-i` first: `sed \'s/localhost/db.internal/g\' settings.conf`. The `g` catches the second match on the url line.\n--- hint\nWhen it looks right, add `-i`. Then `sed -i \'/^debug/d\' settings.conf` removes the debug line.\n--- check shell | Every localhost is now db.internal, and the debug line is gone\nfile settings.conf ~= host=db.internal\\nurl=http://db.internal:5432/db.internal\\nport=5432\n--- check shell | Edited in place with sed\nused sed -i\nused /g\n\n=== term3-09 | Lists into arguments: xargs\n--- teach\nSome commands read their input: `grep`, `sort`, `wc`. Others only take **arguments**: `rm`, `mkdir`, `touch`, `mv`. Piping a list into `rm` does nothing, because `rm` never reads the pipe.\n\n`xargs` bridges the gap. It reads words from the pipe and puts them on the end of a command:\n\n```\nfind . -name "*.tmp" | xargs rm          # rm ./a.tmp ./b/c.tmp …\ncat folders.txt | xargs mkdir -p         # one mkdir, every name\n```\n\n- `-n 1` runs the command once per item instead of once for all of them.\n- `-I {}` puts each item wherever `{}` appears: `ls *.log | xargs -I {} mv {} old/`.\n- `-t` prints each command before running it — handy while you are checking.\n\n`xargs` splits on spaces, so a file called `my notes.tmp` arrives as two words. For names that may contain spaces, `find … -exec rm {} \\;` is the safer tool.\n--- task\nDelete every `.tmp` file anywhere under `build` — they are at several depths — using `find` and `xargs rm`. Then create every folder listed in `dirs.txt` with `xargs mkdir -p`.\n--- starter\nmkdir -p build/css build/js/vendor\ntouch build/a.tmp build/css/b.tmp build/js/vendor/c.tmp build/js/app.js build/css/site.css\necho "assets" > dirs.txt\necho "assets/img" >> dirs.txt\necho "logs" >> dirs.txt\n--- solution\nfind build -name "*.tmp" | xargs rm\ncat dirs.txt | xargs mkdir -p\n--- hint\nCheck the list first: `find build -name "*.tmp"`.\n--- hint\nThen pipe it into `xargs rm`. For the folders, `cat dirs.txt | xargs mkdir -p`.\n--- check shell | Every .tmp file is gone, and nothing else\nmissing build/a.tmp\nmissing build/css/b.tmp\nmissing build/js/vendor/c.tmp\nfile build/js/app.js\nfile build/css/site.css\nused xargs rm\n--- check shell | The folders from dirs.txt exist\ndir assets/img\ndir logs\nused xargs mkdir\n\n=== term3-10 | Debugging a script\n--- teach\nA script that "just doesn\'t work" usually has one small mistake that set off a chain of others. Work through it methodically:\n\n1. **Reproduce**: run it and read the errors **from the top**. The first error is often the cause; the ones after it are knock-on effects.\n2. **Trace it**: `bash -x script.sh` prints every command, with a `+` in front, **after** variables have been filled in — exactly what really ran. This is where hidden problems show up:\n   ```\n   + mkdir -p\n   mkdir: missing operand\n   ```\n   The variable after `-p` was empty.\n3. **Check your assumptions**: is every variable spelled the same everywhere it is used? Is every `"$var"` quoted, so names with spaces stay whole?\n4. **Fix the cause**, then **run it again** and check the result — not just that the errors stopped, but that the files are where they should be.\n\n`set -u` at the top of a script turns a misspelled variable into an immediate error (`unbound variable`) instead of a silent empty string.\n\nThe bug report:\n\n> `archive.sh` should move every `.txt` note into `archive/`. Running `bash archive.sh` prints errors, and the notes stay where they are.\n--- task\nRun the script to see it fail, then trace it with `bash -x archive.sh`. Fix **both** bugs by rewriting `archive.sh` (three lines, built with `echo`, like the original) and run it again: all three notes must end up in `archive`, with no errors.\n--- starter\ntouch "meeting notes.txt" ideas.txt todo.txt\necho \'dest=archive\' > archive.sh\necho \'mkdir -p $dets\' >> archive.sh\necho \'for f in *.txt; do mv $f $dest/; done\' >> archive.sh\n--- solution\nbash archive.sh\nbash -x archive.sh\necho \'dest=archive\' > archive.sh\necho \'mkdir -p "$dest"\' >> archive.sh\necho \'for f in *.txt; do mv "$f" "$dest/"; done\' >> archive.sh\nbash archive.sh\n--- hint\n`cat archive.sh` shows the script. In the `bash -x` trace, look at the line that begins `+ mkdir -p`: what came after `-p`?\n--- hint\nThe variable on line 2 is misspelled. And `mv $f` splits `meeting notes.txt` into two words — quote it: `"$f"`.\n--- hint\nRewrite it: `echo \'dest=archive\' > archive.sh`, then `>>` the fixed `mkdir -p "$dest"` line and the loop with `mv "$f" "$dest/"`.\n--- check shell | You traced the script\nran bash -x archive.sh\nprinted-line + mkdir -p\n--- check shell | Every note is in archive, and none are left behind\ncount archive/*.txt == 3\ncount *.txt == 0\n--- check shell | The script is fixed, and ran cleanly\nfile archive.sh excludes $dets\nfile archive.sh contains "$f"\nstatus 0\n\n=== term3-11 | Problem solving: tidying a downloads folder\n--- teach\nA problem worth automating: a downloads folder with dozens of files of every kind. The goal is one folder per file type.\n\nWork it out in steps before typing a loop:\n\n1. **Restate it**: every file with an extension goes into a folder named after that extension — `photo-1.jpg` into `jpg/`, `invoice-3.pdf` into `pdf/`.\n2. **Survey the data**: `ls | head`, and count the types with `ls | sed \'s/.*\\.//\' | sort | uniq -c`. Are there files **without** an extension? Names with spaces?\n3. **Solve one case by hand** and write down the commands:\n   ```\n   f=photo-1.jpg\n   ext="${f##*.}"        # everything after the last dot: jpg\n   mkdir -p "$ext"\n   mv "$f" "$ext/"\n   ```\n   `${f##*.}` cuts the longest match of `*.` from the start — everything up to and including the last dot. (In the survey command, `\\.` is a backslash before a dot: in a regular expression it means a real dot, not "any character".)\n4. **Generalise** into a loop over the right list. `*.*` matches only names containing a dot, so files without an extension are left alone.\n5. **Dry run** with `echo` in front of `mv`, then run it, then **verify** with a count per folder.\n\n`mkdir -p` is what makes the loop safe to repeat: it does nothing when the folder already exists.\n--- task\nInside `downloads`, move every file **that has an extension** into a folder named after its extension (`photo-1.jpg` goes to `downloads/jpg/`), with one loop. Leave `README`, which has no extension, where it is.\n--- starter\nmkdir downloads\nfor i in $(seq 1 12); do touch "downloads/photo-$i.jpg"; done\nfor i in $(seq 1 9); do touch "downloads/invoice-$i.pdf"; done\nfor i in $(seq 1 5); do touch "downloads/notes-$i.txt"; done\ntouch "downloads/notes final.txt" downloads/backup.zip downloads/fonts.zip downloads/README\n--- solution\ncd downloads\nfor f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done\n--- hint\nWork inside the folder: `cd downloads`. `echo "${f##*.}"` with `f=photo-1.jpg` shows how to get the extension.\n--- hint\nThe loop: `for f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done` — try it with `echo mv` first.\n--- check shell | Every file with an extension is in its folder\ncount downloads/jpg/*.jpg == 12\ncount downloads/pdf/*.pdf == 9\ncount downloads/txt/*.txt == 6\ncount downloads/zip/*.zip == 2\n--- check shell | Nothing with an extension is left loose, and README stayed\ncount downloads/*.* == 0\nfile downloads/README\n--- check shell | Done with a loop\nused for\nused mkdir -p\n\n=== term3-12 | Build a tool: a script that checks its input\n--- teach\nA script other people will run has to cope with being run wrongly. Good command-line tools follow three habits:\n\n- **Check the input first** ("guard clauses"): no argument, a file that does not exist — say what is wrong and stop, before doing any work.\n- **Exit with a meaningful status**: `exit 0` for success; a non-zero code for each kind of failure, so other scripts can react. By convention, `2` means "you used it wrong".\n- **Write errors to standard error** with `>&2`, so they do not end up mixed into output someone is piping or saving.\n\n```\nif [ $# -eq 0 ]; then echo "usage: count.sh FILE" >&2; exit 2; fi\nif [ ! -f "$1" ]; then echo "no such file: $1" >&2; exit 1; fi\nwc -l < "$1"\n```\n\n`$#` is the number of arguments. `exit` stops the script there with that status. `< "$1"` is the opposite of `>`: it feeds the file into the command\'s input, so `wc -l` prints just the number, without the file name after it.\n\nThen **test every path**, not just the happy one: run it with no argument, with a bad argument and with a good one, and check `echo $?` after each.\n--- task\nWrite `errors.sh`, which takes the name of a log file:\n\n- with **no argument**, it prints `usage: errors.sh LOGFILE` (to standard error) and exits with status `2`;\n- if the file **does not exist**, it prints `no such log: <name>` (to standard error) and exits with status `1`;\n- otherwise it prints the **number of lines** containing `ERROR`.\n\nThen test it: run it with no argument, with `missing.log`, and with `app.log`, and after each of the first two runs print its status with `echo $?`.\n--- starter\necho "INFO start" > app.log\necho "ERROR disk" >> app.log\necho "INFO retry" >> app.log\necho "ERROR disk" >> app.log\necho "ERROR network" >> app.log\n--- solution\necho \'if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi\' > errors.sh\necho \'if [ ! -f "$1" ]; then echo "no such log: $1" >&2; exit 1; fi\' >> errors.sh\necho \'grep -c ERROR "$1"\' >> errors.sh\nbash errors.sh\necho $?\nbash errors.sh missing.log\necho $?\nbash errors.sh app.log\n--- hint\nLine 1 checks `$#`: `if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi`. Write it with `echo \'…\' > errors.sh`.\n--- hint\nLine 2 checks the file: `if [ ! -f "$1" ]; then …; exit 1; fi`. Line 3 is `grep -c ERROR "$1"`.\n--- hint\nTest with `bash errors.sh`, then `echo $?`, and so on for the other two cases.\n--- check shell | With no argument: usage, and status 2\nprinted-line usage: errors.sh LOGFILE\nprinted-exactly 2\n--- check shell | With a missing file: a clear error, and status 1\nprinted-line no such log: missing.log\nprinted-exactly 1\n--- check shell | With a real log: the number of ERROR lines\nprinted-exactly 3\nfile errors.sh contains exit 2\nfile errors.sh contains >&2\n',Oe='@track bash\n@level intermediate\n@title Terminal · Intermediate\n@name The command line, intermediate: pipes, patterns and finding things\n@blurb Match many files with one pattern, chain small tools into pipelines that answer real questions, search whole projects, and work out why a command gave the wrong answer.\n\n=== term2-01 | Wildcards: many files, one pattern\n--- teach\nThe basics course had you handling files one at a time and reading them with `head`, `tail`, `wc` and `grep`. This course is about many files and lots of text at once: patterns that match many names, pipes that chain small tools together, and ways to search a whole project.\n\nTyping every file name gets old fast. Instead, you can describe the names you mean with a **pattern**, using **wildcards**:\n\n- `*` matches any run of characters, even none: `*.txt` is every name ending in `.txt`.\n- `?` matches exactly one character: `day?.log` matches `day1.log` and `day9.log`, but not `day10.log`.\n- `[abc]` matches one character from the set: `report-[12].pdf` is `report-1.pdf` and `report-2.pdf`.\n\nThe shell turns the pattern into the list of matching names **before** the command runs. `mv` never sees the `*`: it receives `beach.jpg boat.jpg sunset.jpg`, exactly as if you had typed them. That is why `echo` is the safe way to test a pattern — it just prints what the pattern turned into:\n\n```\n~/project $ echo *.txt\nnotes.txt todo.txt\n~/project $ mv *.txt archive/\n```\n\nThree things catch people out:\n\n- Names starting with a dot are skipped: `*` does not match `.env`.\n- A pattern that matches nothing is passed along unchanged, so with no logs around, `ls *.log` complains `cannot access \'*.log\'`.\n- One stray space changes everything. `rm * .txt` is not "remove the .txt files": it is `rm *` (every file) plus a file called `.txt`. Run `echo` with the same pattern first.\n--- task\nThis folder is a mix of photos and notes. Make a folder called `photos` and move **all** the `.jpg` files into it with a single `mv` and a wildcard. Then list only the single-digit photos (`trip-1.jpg`, `trip-2.jpg`, but not `trip-10.jpg`) with `ls photos/trip-?.jpg`.\n--- starter\ntouch trip-1.jpg trip-2.jpg trip-10.jpg notes.txt todo.txt\n--- solution\nmkdir photos\nmv *.jpg photos\nls photos/trip-?.jpg\n--- hint\n`echo *.jpg` shows which names the pattern matches, without moving anything.\n--- hint\n`mv *.jpg photos` moves every match into the folder in one go.\n--- hint\n`?` stands for exactly one character, so `photos/trip-?.jpg` leaves out `trip-10.jpg`.\n--- check shell | Every photo moved, with one wildcard\ncount *.jpg == 0\ncount photos/*.jpg == 3\nran mv *.jpg\n--- check shell | The notes stayed where they were\nfile notes.txt\nfile todo.txt\n--- check shell | ? matched the single-digit photos\nran ls photos/trip-?.jpg\nprinted photos/trip-1.jpg\nprinted photos/trip-2.jpg\n\n=== term2-02 | Pipes: plugging commands together\n--- teach\nThe **pipe**, `|`, sends everything one command prints straight into the next command, instead of to the screen. Each tool does one small job well, and pipes let you chain them into something bigger:\n\n```\ngrep ERROR server.log | wc -l\n```\n\n`grep` keeps only the error lines; `wc -l` counts whatever lines it is given. When a command like `wc`, `head`, `sort` or `grep` gets no file name, it reads from the pipe instead.\n\nBuild a pipeline **one stage at a time**. Run the first command on its own and look at what it prints, then add `| next-command` and look again. It is the fastest way to write one, and later, when an answer looks wrong, it is how you find which stage is wrong.\n\nTwo classic mistakes:\n\n- Giving the later command a file name as well: `grep ERROR server.log | wc -l server.log` counts every line of the file and ignores the pipe completely.\n- Piping into a command that does not read input: `ls | echo` prints an empty line, because `echo` only ever prints its own arguments.\n--- task\n`server.log` holds a morning of messages. With **one pipeline**, count how many lines contain `ERROR`, using `grep` and `wc -l`. Then, with a second pipeline, show only the **first two** error lines, using `grep` and `head`.\n--- starter\necho "08:00 INFO server started" > server.log\necho "08:01 INFO user ada logged in" >> server.log\necho "08:02 ERROR disk almost full" >> server.log\necho "08:03 WARN slow response" >> server.log\necho "08:05 ERROR payment timeout" >> server.log\necho "08:06 INFO user lin logged in" >> server.log\necho "08:09 ERROR payment timeout" >> server.log\necho "08:12 ERROR disk full" >> server.log\n--- solution\ngrep ERROR server.log | wc -l\ngrep ERROR server.log | head -n 2\n--- hint\nFirst run `grep ERROR server.log` on its own and look at the lines it keeps.\n--- hint\nAdd `| wc -l` to count them. For the second job, `| head -n 2` keeps the first two.\n--- check shell | You counted the errors with a pipeline\nran grep ERROR server.log\nran wc -l\nprinted-exactly 4\n--- check shell | You showed just the first two errors\nran head\nprinted-exactly 08:02 ERROR disk almost full\\n08:05 ERROR payment timeout\n\n=== term2-03 | Sorting and counting: sort and uniq\n--- teach\n`sort` puts lines in order. Three flags you will reach for constantly:\n\n- `-n` sorts **numbers** as numbers. Without it, `10` sorts before `9`, because text is compared one character at a time and `1` comes before `9`.\n- `-r` reverses the order, biggest (or last) first. Flags combine: `sort -rn`.\n- `-u` keeps a single copy of each line.\n\n`uniq` squeezes repeated lines into one, and `uniq -c` writes how many there were in front:\n\n```\n~/project $ sort colours.txt | uniq -c\n      2 blue\n      3 red\n```\n\nThe catch: `uniq` only compares each line with **the one just above it**. Repeats that are not next to each other are not merged — which is why `uniq` nearly always comes straight after `sort`.\n\nRemember this line, because it answers "what is the most common thing in here?" for almost any list:\n\n```\nsort | uniq -c | sort -rn\n```\n\nSort so that repeats sit together, count each run, then sort by the counts, biggest first.\n--- task\n`visitors.txt` has one city per line, one line per visit. Print each city **once**, with its number of visits, **most visits first** — `4 lagos` on the first line — using `sort`, `uniq -c` and `sort -rn` in one pipeline.\n--- starter\necho "lima" > visitors.txt\necho "lagos" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "pune" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "lima" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\n--- solution\nsort visitors.txt | uniq -c | sort -rn\n--- hint\nStart with `sort visitors.txt` and notice the repeats now sit together.\n--- hint\nAdd `| uniq -c` to count each run of repeats, then `| sort -rn` to put the biggest count first.\n--- check shell | Each city once, with its count, most visits first\nprinted-exactly 4 lagos\\n3 oslo\\n2 lima\\n1 pune\n--- check shell | Counted with uniq -c\nused uniq -c\n\n=== term2-04 | The top and the bottom: head, tail and numeric sorts\n--- teach\n`head` and `tail` are at their best at the end of a pipeline: sort, then keep the first few lines.\n\n```\nsort -rn sizes.txt | head -n 3     # the three biggest\nsort -n sizes.txt | head -n 1      # the smallest\n```\n\nReal data often starts with a **header line** naming the column. `tail -n +2` means "start from line 2", which drops the header:\n\n```\ntail -n +2 sizes.txt | sort -n | head -n 1\n```\n\nWhy bother? Because `sort -n` treats a line that is not a number as `0`. A header like `bytes` then sorts as the smallest "number" of all, and `head -n 1` hands you the word `bytes` instead of an answer. Whenever a result looks odd, look at the first lines of your data with `head` — headers, blank lines and stray text are the usual suspects.\n--- task\n`sizes.txt` lists file sizes in bytes, under a header line `bytes`. Print the **three largest** sizes, largest first. Then print the **smallest** size — without the header sneaking in.\n--- starter\necho "bytes" > sizes.txt\necho "640" >> sizes.txt\necho "12" >> sizes.txt\necho "9200" >> sizes.txt\necho "87" >> sizes.txt\necho "870" >> sizes.txt\necho "150" >> sizes.txt\n--- solution\ntail -n +2 sizes.txt | sort -rn | head -n 3\ntail -n +2 sizes.txt | sort -n | head -n 1\n--- hint\nSort as numbers, biggest first, with `sort -rn`, and keep three lines with `head -n 3`.\n--- hint\nFor the smallest, `sort -n` puts `bytes` first. `tail -n +2 sizes.txt` hands the pipeline everything except the header.\n--- check shell | The three largest sizes, largest first\nprinted-exactly 9200\\n870\\n640\n--- check shell | The smallest size, not the header\nprinted-exactly 12\n--- check shell | You used head on a sorted list\nran sort\nran head\n\n=== term2-05 | Columns: cut\n--- teach\nA lot of data comes as **columns**: CSV files, logs, exports from spreadsheets. `cut` picks columns out of every line.\n\n- `-d ,` says what separates the columns (here a comma).\n- `-f 2` says which column (**f**ield) to keep, counting from 1. Several at once: `-f 1,3`. A range: `-f 2-4`.\n\n```\n~/project $ cut -d , -f 2 people.csv\nname\nada\nlin\n```\n\nThe usual mistake is leaving out `-d`. Then `cut` splits on the **tab** character, finds none, and prints every line whole — it looks as if `cut` did nothing.\n\n`cut` shines inside a pipeline. To list the distinct values of one column, drop the header, cut the column, then sort and de-duplicate:\n\n```\ntail -n +2 people.csv | cut -d , -f 3 | sort -u\n```\n--- task\n`orders.csv` has a header and then one order per line: `id,customer,item,qty`. Print the **distinct items** that were ordered, alphabetically, one per line, without the header.\n--- starter\necho "id,customer,item,qty" > orders.csv\necho "1,ada,keyboard,1" >> orders.csv\necho "2,lin,mouse,2" >> orders.csv\necho "3,ada,monitor,1" >> orders.csv\necho "4,sam,mouse,1" >> orders.csv\necho "5,lin,keyboard,3" >> orders.csv\necho "6,kai,cable,4" >> orders.csv\n--- solution\ntail -n +2 orders.csv | cut -d , -f 3 | sort -u\n--- hint\nThe item is the third column: `cut -d , -f 3 orders.csv`.\n--- hint\nPut `tail -n +2` in front to drop the header, and `sort -u` after to sort and keep one of each.\n--- check shell | The distinct items, alphabetically, without the header\nprinted-exactly cable\\nkeyboard\\nmonitor\\nmouse\n--- check shell | You cut the column with -d\nused cut -d\n\n=== term2-06 | Finding files: find\n--- teach\n`ls` shows one folder. `find` searches a folder **and everything inside it**:\n\n```\nfind . -name "*.md"            # every .md file below here\nfind src -name config.json     # every config.json below src\nfind . -type d -name tests     # only folders called tests\nfind . -type f -iname "*.JPG"  # files, ignoring upper/lower case\n```\n\nThe first argument is where to start (`.` is "here"); the rest describe what you want. Tests combine: `-type d -name tests` means both.\n\n**Quote the pattern.** Without quotes, the shell expands `*.md` itself before `find` runs. If this folder happens to contain `a.md` and `b.md`, `find` receives `-name a.md b.md` and stops with `paths must precede expression`. With quotes, the pattern reaches `find` intact and it matches at every depth.\n--- task\nSomewhere in this project there are three files called `config.json`, at different depths. List them all with `find`. Then list every **folder** called `tests` — there is also a *file* called `tests`, which must not appear.\n--- starter\nmkdir -p api/v1/tests web/tests docs\ntouch config.json api/config.json api/v1/config.json web/app.js docs/tests\n--- solution\nfind . -name config.json\nfind . -type d -name tests\n--- hint\n`find . -name config.json` starts here and looks in every folder below.\n--- hint\nAdd `-type d` so that only folders count.\n--- check shell | You found all three config files\nran find\nprinted ./config.json\nprinted ./api/config.json\nprinted ./api/v1/config.json\n--- check shell | You found the tests folders, and only folders\nprinted-exactly ./api/v1/tests\\n./web/tests\nused -type d\n\n=== term2-07 | Searching inside files: grep\'s everyday flags\n--- teach\nYou have used `grep PATTERN file`. A handful of flags turns it into the tool you use to find your way around any codebase:\n\n- `-r` searches a folder and everything in it. Each hit starts with the file it is in.\n- `-n` adds the line number: `src/api.js:3:// TODO`.\n- `-i` ignores upper and lower case.\n- `-v` inverts: keep the lines that do **not** match.\n- `-c` prints how many lines matched instead of the lines themselves.\n- `-l` prints only the names of files that match.\n\nFlags combine: `grep -rn TODO src` lists every TODO in `src` with its file and line.\n\nThe pattern is a **regular expression**, so a few characters are special: `.` matches any character, `^` means "start of line" and `$` "end of line". `grep "^ERROR" app.log` finds lines that begin with ERROR, not lines that mention it.\n\nTwo mistakes: forgetting `-r` on a folder (grep answers `Is a directory`), and expecting `-c` to count words — it counts **lines**.\n--- task\nTwo jobs. First, find every `TODO` in the `src` folder, showing file names and line numbers, with one `grep`. Second, `app.log` is full of `DEBUG` noise: count the lines that are **not** DEBUG lines.\n--- starter\nmkdir -p src/lib\necho "import db" > src/api.js\necho "" >> src/api.js\necho "// TODO: retry on failure" >> src/api.js\necho "export run" >> src/api.js\necho "// helpers" > src/lib/util.js\necho "// TODO: cache results" >> src/lib/util.js\necho "const x = 1" > src/main.js\necho "DEBUG start" > app.log\necho "INFO ready" >> app.log\necho "DEBUG tick" >> app.log\necho "WARN slow" >> app.log\necho "DEBUG tick" >> app.log\necho "ERROR crash" >> app.log\necho "INFO restart" >> app.log\n--- solution\ngrep -rn TODO src\ngrep -vc DEBUG app.log\n--- hint\n`-r` searches the whole folder and `-n` adds line numbers: `grep -rn TODO src`.\n--- hint\n`-v` keeps the lines that do not match; add `-c` to count them (or pipe into `wc -l`).\n--- check shell | Every TODO, with its file and line number\nprinted-line src/api.js:3:// TODO: retry on failure\nprinted-line src/lib/util.js:2:// TODO: cache results\n--- check shell | You counted the lines that are not DEBUG\nused -v\nprinted-exactly 4\n\n=== term2-08 | Two kinds of output: redirecting errors\n--- teach\nEvery command has two separate outputs:\n\n- **standard output** (number 1) for results,\n- **standard error** (number 2) for problems.\n\nBoth appear on your screen, so they look the same — until you redirect. `>` only catches standard output. Errors still land on the screen, and the file does not get them:\n\n```\n~/project $ ls reports missing > out.txt\nls: cannot access \'missing\': No such file or directory\n```\n\nTo send the errors somewhere, name stream 2:\n\n- `2> errors.txt` — errors to a file.\n- `2> /dev/null` — throw errors away (`/dev/null` swallows whatever is written to it).\n- `> all.txt 2>&1` — results to the file, then "send 2 wherever 1 is going", so both end up in `all.txt`. The order matters: `2>&1 > all.txt` points errors at the screen first, then moves only the results. `&> all.txt` is a shorter spelling of the right version.\n\nPipes carry only standard output too, which is why `broken-command | grep x` still shows the error on screen.\n--- task\n`ls reports missing` lists a real folder and a folder that does not exist, so it prints a listing **and** an error. In one command, save the listing in `found.txt` and the error in `errors.txt`. Then, in a second command, save **both** into `all.txt`.\n--- starter\nmkdir reports\ntouch reports/q1.txt reports/q2.txt\n--- solution\nls reports missing > found.txt 2> errors.txt\nls reports missing > all.txt 2>&1\n--- hint\n`>` sends the listing to a file and `2>` sends the error to another, in the same command.\n--- hint\nFor both at once, add `2>&1` after `> all.txt`.\n--- check shell | The listing went to found.txt, and the error did not\nfile found.txt contains q1.txt\nfile found.txt excludes cannot access\n--- check shell | The error went to errors.txt\nfile errors.txt contains cannot access \'missing\'\nused 2>\n--- check shell | all.txt has both\nfile all.txt contains q2.txt\nfile all.txt contains No such file or directory\n\n=== term2-09 | Keeping results: >>, and tee\n--- teach\nYou already know the two ways to save output: `>` replaces a file, `>>` adds to its end. Picking the wrong one is how logs lose their history — each `>` throws away everything that was there.\n\nSometimes you want to **see** a result and **save** it. `tee` does both: it writes what it receives into a file and passes the same text on, to the screen or the next command.\n\n```\nsort -u names.txt | tee unique.txt          # see the list and save it\nsort -u names.txt | tee unique.txt | wc -l  # save it, and count it\necho "run finished" >> run.log              # add a line, keep the rest\n```\n\n`tee -a file` appends instead of replacing, just like `>>`.\n--- task\nPut each name from `logins.txt` once, sorted, into `users.txt` — and see the list on screen at the same time, using `tee`. Then add the line `checked by you` to the **end** of `users.txt` without losing the names.\n--- starter\necho "sam" > logins.txt\necho "ada" >> logins.txt\necho "sam" >> logins.txt\necho "lin" >> logins.txt\necho "ada" >> logins.txt\n--- solution\nsort -u logins.txt | tee users.txt\necho "checked by you" >> users.txt\n--- hint\n`sort -u logins.txt` gives each name once. Pipe it into `tee users.txt` to save it and see it.\n--- hint\n`>>` adds a line to the end; `>` would wipe the names.\n--- check shell | users.txt has each name once, sorted, then your line\nfile users.txt ~= ada\\nlin\\nsam\\nchecked by you\n--- check shell | You saw the names as they were saved\nused tee\nprinted-exactly ada\\nlin\\nsam\n\n=== term2-10 | Problem solving: the busiest visitors\n--- teach\nHere is a real question from a real job: *which addresses are hammering our server?* You have every tool you need. What matters is the approach.\n\n1. **Restate the problem.** "Count requests per IP address; show the three biggest counts."\n2. **Look at the data** before writing anything: `head -n 3 access.log`. Every line starts with the address, then a space:\n   ```\n   10.0.0.7 - - [25/Sep/2026:09:10:00] "GET /home" 200\n   ```\n3. **Solve it stage by stage**, checking the output each time:\n   - get just the addresses: `cut -d \' \' -f 1 access.log` (**single quotes** keep text together just as double quotes do, so `\' \'` is one space character given to `-d`)\n   - bring equal ones together: `| sort`\n   - count each: `| uniq -c`\n   - biggest first: `| sort -rn`\n   - keep three: `| head -n 3`\n4. **Check the answer** against something you can verify another way, like `grep -c "^10.0.0.7 " access.log`.\n\nThink about edge cases too. What if the same address appears in different places in the file — does your pipeline still merge them? (Only if you sort before `uniq`.) What if two addresses tie? Then `sort -rn` puts them next to each other and `head` takes whichever comes first, so say so if it matters.\n--- task\n`access.log` has one line per request, a few hundred of them. Print the **three addresses with the most requests**, with their counts, busiest first. Then save the same three lines into `top3.txt`.\n--- starter\nfor i in $(seq 1 12); do echo "192.168.1.9 - - [25/Sep/2026:09:00:0$((i % 10))] \\"GET /login\\" 401" >> access.log; echo "10.0.0.7 - - [25/Sep/2026:09:10:00] \\"GET /home\\" 200" >> access.log; echo "10.0.0.3 - - [25/Sep/2026:09:11:00] \\"GET /api\\" 200" >> access.log; done\nfor i in $(seq 1 5); do echo "172.16.0.2 - - [25/Sep/2026:09:20:00] \\"GET /about\\" 200" >> access.log; done\nfor i in $(seq 1 28); do echo "10.0.0.7 - - [25/Sep/2026:09:30:00] \\"GET /home\\" 200" >> access.log; done\nfor i in $(seq 1 3); do echo "10.0.0.9 - - [25/Sep/2026:09:40:00] \\"GET /api\\" 500" >> access.log; done\nfor i in $(seq 1 13); do echo "10.0.0.3 - - [25/Sep/2026:09:50:00] \\"GET /api\\" 200" >> access.log; done\n--- solution\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3 > top3.txt\n--- hint\nStart with `cut -d \' \' -f 1 access.log`: the address is the first column, and columns are separated by spaces.\n--- hint\nThen the counting pattern from before: `| sort | uniq -c | sort -rn`.\n--- hint\nFinish with `| head -n 3`, and run the same pipeline again ending in `> top3.txt`.\n--- check shell | The three busiest addresses, busiest first\nprinted-exactly 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Saved in top3.txt\nfile top3.txt ~= 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Counted with a pipeline\nused uniq -c\nused |\n\n=== term2-11 | Debugging: the count that lied\n--- teach\nWhen a pipeline gives a wrong answer, do not stare at the whole line hoping to spot it. Debug it the way you would any program:\n\n1. **Reproduce** it: run the exact command and look at the output.\n2. **Inspect each stage.** Cut the pipeline back to its first command, then add one stage at a time. The stage where the output stops making sense is the stage with the bug.\n3. **Check your assumptions** about what each tool does. Most pipeline bugs are a tool doing exactly what it was designed to do, which is not what you thought.\n4. **Fix the cause, not the symptom.** Adding up the duplicate lines by hand makes this answer right and leaves the pipeline broken for next time.\n5. **Verify** with a number you can check another way, such as `grep -c north sales.csv`.\n\nHere is the report from a colleague:\n\n> I count sales per region with `cut -d , -f 2 sales.csv | uniq -c`. It says `north` 1 time, then `north` 1 time again, then 2 times… and there is a line for a region called `region`. There are only three regions.\n--- task\nRun the broken pipeline to see the problem for yourself. Then write a correct one that saves each region **once**, with its number of sales, **most sales first**, and **without** the header\'s `region` line, into `region-counts.txt`.\n--- starter\necho "id,region,amount" > sales.csv\necho "1,north,20" >> sales.csv\necho "2,south,15" >> sales.csv\necho "3,north,40" >> sales.csv\necho "4,east,5" >> sales.csv\necho "5,south,10" >> sales.csv\necho "6,north,25" >> sales.csv\necho "7,north,30" >> sales.csv\necho "8,east,12" >> sales.csv\necho "9,south,8" >> sales.csv\n--- solution\ncut -d , -f 2 sales.csv | uniq -c\ntail -n +2 sales.csv | cut -d , -f 2 | sort | uniq -c | sort -rn > region-counts.txt\n--- hint\nRun `cut -d , -f 2 sales.csv` alone. Are all the `north` lines next to each other? What does `uniq` compare each line with?\n--- hint\n`uniq` only merges neighbours, so it needs `sort` in front of it. The `region` line is the header: drop it with `tail -n +2`.\n--- hint\nFinish with `| sort -rn > region-counts.txt`.\n--- check shell | You reproduced the bug first\nprinted 1 region\n--- check shell | Each region once, with its total, most sales first\nfile region-counts.txt ~= 4 north\\n3 south\\n2 east\n\n=== term2-12 | Debugging: the file that emptied itself\n--- teach\nHere is a bug report you will one day write yourself:\n\n> I sorted my list with `sort names.txt > names.txt`. Now `names.txt` is empty.\n\nNothing is wrong with `sort`. The cause is the **order** things happen in. Before running a command, the shell sets up its redirections, and `>` means "empty this file, then send the output here". So the file is already empty by the time `sort` opens it to read. Sorting nothing gives nothing, and nothing is what gets saved.\n\nThe same rule is behind a cousin of this bug: a log written with `>` in each step keeps only its last line, because every `>` wipes what the previous one wrote. That is a job for `>>`.\n\nThe safe pattern for changing a file with a command: write the result to a **new** file, check it, then move it into place:\n\n```\nsort names.txt > names.sorted\ncat names.sorted\nmv names.sorted names.txt\n```\n\nAnd a debugging habit worth keeping: when you are not sure what a command will do to your data, try it on a **copy** first.\n--- task\n`names.txt` has just been emptied by that exact command, but there is a backup in `names.bak`. Put the names back into `names.txt`, **sorted**, safely: through a temporary file and `mv`. Then add the name `zara` to the **end** of `names.txt` without losing the others.\n--- starter\necho "cy" > names.bak\necho "ada" >> names.bak\necho "bo" >> names.bak\ncp names.bak names.txt\nsort names.txt > names.txt\n--- solution\nsort names.bak > sorted.tmp\nmv sorted.tmp names.txt\necho "zara" >> names.txt\n--- hint\n`cat names.txt` shows it is empty and `cat names.bak` shows what you can recover.\n--- hint\nSort the backup into a new file, `sort names.bak > sorted.tmp`, then `mv sorted.tmp names.txt`.\n--- hint\nUse `>>` for `zara`: `>` would empty the file again.\n--- check shell | names.txt is sorted and complete, with zara at the end\nfile names.txt ~= ada\\nbo\\ncy\\nzara\n--- check shell | You moved a finished file into place and appended with >>\nused mv\nused >>\n--- check shell | The backup is untouched\nfile names.bak ~= cy\\nada\\nbo\n',ke='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',Ae=`@track cpp
 @level advanced
 @title C++ · Advanced
 @name C++, advanced: ownership, templates and polymorphism
@@ -2064,7 +2064,7 @@ Robot("Idle").act()
 [] { struct Dig : Ability { std::string verb() const override { return "digs"; } }; Robot r("Mole"); r.add(std::make_unique<Dig>()); return r.act() == "Mole: digs"; }()
 --- check source absent | Nothing derives from Robot
 \\b(class|struct)\\s+\\w+\\s*(final\\s*)?:[^{;]*\\bRobot\\b
-`,Me=`@track cpp
+`,je=`@track cpp
 @level expert
 @title C++ · Expert
 @name C++, expert: generic code, containers and performance
@@ -4344,7 +4344,7 @@ After \`expr()\` returns, check that the position reached the end of the tokens.
 [] { std::string s = "1"; for (int i = 1; i < 100000; ++i) s += "+1"; auto v = evaluate(s); return v && *v == 100000; }()
 --- check test | 100 levels of brackets
 [] { std::string s(100, '('); s += "6"; s += std::string(100, ')'); s += "/4"; auto v = evaluate(s); return v && *v == 1.5; }()
-`,Ne=`@track cpp
+`,Me=`@track cpp
 @level intermediate
 @title C++ · Intermediate
 @name C++, intermediate: the standard library, classes and careful code
@@ -5836,7 +5836,7 @@ report({2}, {}, {7, 8})
 format_line\\(\\s*"morning"
 --- check source absent | At most one loop in the file
 \\b(for|while)\\s*\\([\\s\\S]*\\b(for|while)\\s*\\(
-`,Pe=`@track cpp
+`,Ne=`@track cpp
 @level projects
 @title C++ · Projects
 @name C++ projects: build real programs, then prove it with capstones
@@ -8787,7 +8787,7 @@ In \`run\`, skip spaces, try to read a name, skip spaces again: if the next char
 [] { Calculator c; c.run("x = 5"); auto bad = c.run("x = 1 / 0"); auto bad2 = c.run("z = w + 1"); return !bad && !bad2 && c.get("x") == 5.0 && !c.get("z"); }()
 --- check test | Syntax errors
 [] { Calculator c; c.run("x = 1"); return !c.run("") && !c.run("1 +") && !c.run("(1") && !c.run("1)") && !c.run("2 3") && !c.run("1x = 3") && !c.run("= 3") && !c.run("x == 3") && !c.run("3.") && !c.run("x ="); }()
-`,Fe=`@track cpp
+`,Pe=`@track cpp
 @title C++
 @name C++, close to the machine
 @blurb Compiled for real by clang++ in your browser: from main() and std::cout to vectors, strings, references, classes and pointers.
@@ -9515,7 +9515,7 @@ Check \`if (p != nullptr)\` before \`*p = 0;\`.
 [] { auto p = make_counter(41); *p += 1; return *p == 42; }()
 --- check source absent | Does not use raw new
 \\bnew\\s+int\\b
-`,Ie=`@track git
+`,Fe=`@track git
 @level advanced
 @title Git · Advanced
 @name Git, advanced: rewriting history, hunting bugs and working with a team
@@ -10210,7 +10210,7 @@ file launch.sh ~= check fuel >= 25\\nlaunch
 git . at HEAD file launch.sh excludes =======
 --- check shell | main is untouched
 git . commits-on main == 3
-`,Le=`@track git
+`,Ie=`@track git
 @level intermediate
 @title Git · Intermediate
 @name Git, intermediate: reading history, undoing mistakes and resolving conflicts
@@ -10858,7 +10858,7 @@ git . log contains Add the parser
 --- check shell | The last commit has a real message
 git . at HEAD message == Add parser tests
 git . log excludes asdf
-`,Re=`@track git
+`,Le=`@track git
 @title Git
 @name Git and version control
 @blurb Save every version of your work, see exactly what changed, undo mistakes, and build on branches that merge back together.
@@ -11178,7 +11178,7 @@ git . merges == 1
 git . log contains Merge branch 'docs'
 --- check shell | You looked at the history
 ran git log
-`,ze=`@track html
+`,Re=`@track html
 @level advanced
 @title Web · Advanced
 @name Web, advanced: interactive widgets, state and accessible behaviour
@@ -13001,7 +13001,7 @@ click #suggestions li:nth-child(2)
 type #city zz
 #suggestions li count == 0
 #city attr aria-expanded == false
-`,Be=`@track html
+`,ze=`@track html
 @level expert
 @title Web · Expert
 @name Web, expert: architecture, performance and front-end debugging
@@ -15395,7 +15395,7 @@ type #amount 0
 click #add-btn
 #expenses li count == 2
 #total text == Total: $52
-`,Ve=`@track html
+`,Be=`@track html
 @level intermediate
 @title Web · Intermediate
 @name Web, intermediate: real layouts, accessible forms and a page that responds
@@ -16755,7 +16755,7 @@ type #search zzz
 type #search o
 #empty[hidden] exists
 #count text == 2 shown
-`,He=`@track html
+`,Ve=`@track html
 @level projects
 @title Web · Projects
 @name Web projects: three apps, then capstones you design yourself
@@ -19835,7 +19835,7 @@ click #contacts .contact:nth-child(2) .remove
 #count text == Showing 7 of 7 contacts
 type #search chris
 #contacts .contact count == 0
-`,Ue=`@track html
+`,He=`@track html
 @title Web
 @name HTML and CSS: building pages
 @blurb HTML, CSS and a little JavaScript, with a live preview: from your first heading to a page that reacts to clicks.
@@ -20360,7 +20360,7 @@ Pages are usually built from data. Loop over an array and create an element for 
 #planets li:last-child text == Mars
 --- check source | Built with a loop
 \\b(for|forEach|map)\\b
-`,We=`@track javascript
+`,Ue=`@track javascript
 @level advanced
 @title JavaScript · Advanced
 @name JavaScript, advanced: this, prototypes, async and algorithms
@@ -21963,7 +21963,7 @@ lowerBound([1, 3, 3, 7], 3)
 (() => { const a = Array.from({ length: 1000000 }, (_, i) => i * 2); return [hasPairWithSum(a, 1999999), hasPairWithSum(a, 3999994)] })()
 => [false, true]
 ?? Trying every pair is half a trillion checks. Walk in from both ends instead.
-`,Ge=`@track javascript
+`,We=`@track javascript
 @level expert
 @title JavaScript · Expert
 @name JavaScript, expert: metaprogramming, concurrency and building your own tools
@@ -23922,7 +23922,7 @@ results.early
 => 'rejected: early'
 --- check test | run returns a promise
 run(function* () { return 1 }) instanceof Promise
-`,Ke=`@track javascript
+`,Ge=`@track javascript
 @level intermediate
 @title JavaScript · Intermediate
 @name JavaScript, intermediate: idioms, data and clean functions
@@ -25354,7 +25354,7 @@ formatReport([])
 ^let\\s
 --- check source | report composes the three functions
 formatReport\\(\\s*totalsByCustomer\\(\\s*validOrders\\(
-`,qe=`@track javascript
+`,Ke=`@track javascript
 @level projects
 @title JavaScript · Projects
 @name JavaScript projects: three builds and four capstones
@@ -28776,7 +28776,7 @@ One \`record(account, type, cents, counterparty)\` helper can update the balance
 --- check case | 100,000 transactions, exact and fast
 (() => { const b = createBank(); const a = b.open('Ada'); for (let i = 0; i < 100000; i++) b.deposit(a, '0.01'); return [b.balance(a), b.statement(a).length] })()
 => ['1000.00', 100000]
-`,Je=`@track javascript
+`,qe=`@track javascript
 @title JavaScript
 @name JavaScript, the language of the web
 @blurb The language of the web, from console.log to async/await — the ground M1 to M3 build on.
@@ -29347,7 +29347,7 @@ console.log(await totalScore([1, 2, 3]))
 --- check source | Uses Promise.all
 Promise\\.all\\(
 ?? Awaiting inside the loop runs the calls one after another. Promise.all runs them together.
-`,Ye=`@track python
+`,Je=`@track python
 @level advanced
 @title Python · Advanced
 @name Python, advanced: iterators, decorators, data models and algorithms
@@ -30947,6 +30947,3739 @@ int_sqrt(10 ** 30) == 10 ** 15 and int_sqrt(10 ** 30 - 1) == 10 ** 15 - 1 and in
 ?? Floats have about 16 significant digits, so n ** 0.5 is wrong here. Search on whole numbers.
 --- check source absent | Does not use bisect or math.isqrt
 \\bbisect\\b|\\bisqrt\\s*\\(
+`,Ye=`@track python
+@level specialty
+@course python-ai
+@title Python · AI from scratch
+@name AI from scratch: neural networks and a tiny language model
+@blurb Build every piece of a modern language model yourself, in plain Python: gradient descent, an autograd engine, neural networks and optimizers, softmax and cross-entropy, a tokenizer, attention and a transformer block. Then debug them the way model developers do: gradient checks, loss curves, overflow and data leakage.
+
+=== ai-01 | Vectors, matrices and shapes
+--- teach
+The Python ladder taught you the language. This course teaches you how neural networks and language models work **from the inside**, by building every piece yourself: gradients, an automatic differentiation engine, layers, optimizers, softmax, a tokenizer, attention and a transformer block. It is the machinery people who build and train models (at an AI lab, for example) work on every day.
+
+**Why build it yourself?** Real work uses PyTorch or JAX. Those libraries do exactly the things you will write here, just on big arrays of numbers on GPUs. When a training run goes wrong (the loss explodes, the model learns nothing, a gradient is silently wrong), the people who can fix it are the ones who know what the library is doing underneath. So in this course nothing is magic: you use only the standard library, vectors are lists and matrices are lists of lists. Each lesson names the PyTorch piece it corresponds to, so you will recognise it later; you never need PyTorch to pass.
+
+Two habits for the whole course:
+
+- **Randomness is always seeded.** \`random.Random(0)\` is a random number generator with its own seed, so every run gives the same numbers. Training code in labs does the same, so experiments can be reproduced.
+- **Floats are compared with a tolerance**, never \`==\` (you saw why in the expert course's floating-point lesson).
+
+**Vectors.** A vector is a list of numbers: \`[1.0, 2.0, 3.0]\`. In a model, a vector might be one input example, one word's embedding, or one neuron's weights.
+
+The **dot product** of two vectors of the same length multiplies them element by element and adds the results:
+
+\`\`\`python
+a = [1, 2, 3]
+b = [4, 5, 6]
+sum(x * y for x, y in zip(a, b))      # 1*4 + 2*5 + 3*6 = 32
+\`\`\`
+
+Almost everything in a neural network is dot products. A neuron is a dot product of its weights with its input, plus a number. Attention (lesson 13) scores how well two words match with a dot product. A big dot product means the two vectors point the same way.
+
+**Matrices and shapes.** A matrix is a list of rows, all the same length. Its **shape** is \`(rows, columns)\`:
+
+\`\`\`python
+m = [[1, 2, 3],
+     [4, 5, 6]]
+(len(m), len(m[0]))                   # (2, 3)
+\`\`\`
+
+**Matrix times vector.** Dot each row with the vector. A \`(2, 3)\` matrix times a length-3 vector gives a length-2 vector: that is how one layer turns 3 inputs into 2 outputs.
+
+\`\`\`python
+m = [[1, 2, 3], [4, 5, 6]]
+v = [1, 0, -1]
+[sum(x * y for x, y in zip(row, v)) for row in m]    # [-2, -2]
+\`\`\`
+
+**Matrix times matrix.** A \`(m, n)\` matrix times a \`(n, p)\` matrix gives a \`(m, p)\` matrix. Entry \`[i][j]\` is row \`i\` of the first dotted with **column** \`j\` of the second. The inner sizes must match: \`(2, 3) @ (3, 4)\` works and gives \`(2, 4)\`; \`(2, 3) @ (2, 3)\` does not.
+
+Columns are awkward to get from a list of rows, so **transpose** first (swap rows and columns). \`zip(*m)\` does that: it hands \`zip\` every row, and \`zip\` walks them in step, producing the columns.
+
+\`\`\`python
+m = [[1, 2, 3], [4, 5, 6]]
+[list(col) for col in zip(*m)]        # [[1, 4], [2, 5], [3, 6]]
+\`\`\`
+
+**Shapes are where most bugs are.** Model developers check shapes constantly, because a wrong shape usually means a wrong idea. The trap in plain Python: \`zip\` stops at the shorter list, so a dot product of a length-2 and a length-3 vector quietly returns a number instead of failing. PyTorch refuses (\`mat1 and mat2 shapes cannot be multiplied (2x3 and 2x3)\`), and your functions should too: raise \`ValueError\` when shapes do not fit. Silent wrong answers are far worse than loud errors.
+
+In PyTorch: a \`torch.tensor\`, \`.shape\`, \`a @ b\` for products, \`.T\` for transpose.
+--- task
+Write these functions (lists only, no libraries):
+
+- \`shape(m)\` returns \`(rows, columns)\` for a matrix. An empty matrix \`[]\` has shape \`(0, 0)\`. If the rows have different lengths, raise \`ValueError\`.
+- \`dot(a, b)\` returns the dot product. If the lengths differ, raise \`ValueError\`. \`dot([], [])\` is \`0\`.
+- \`matvec(m, v)\` returns the matrix times the vector, as a list. Raise \`ValueError\` if the row length does not match the vector's length.
+- \`transpose(m)\` returns a new matrix with rows and columns swapped.
+- \`matmul(a, b)\` returns the product matrix. Raise \`ValueError\` if \`a\`'s column count differs from \`b\`'s row count.
+--- starter
+def shape(m):
+    pass
+
+
+def dot(a, b):
+    # zip stops at the shorter list: this quietly accepts mismatched vectors.
+    return sum(x * y for x, y in zip(a, b))
+
+
+def matvec(m, v):
+    pass
+
+
+def transpose(m):
+    pass
+
+
+def matmul(a, b):
+    pass
+--- solution
+def shape(m):
+    if not m:
+        return (0, 0)
+    cols = len(m[0])
+    for row in m:
+        if len(row) != cols:
+            raise ValueError("ragged matrix: rows have different lengths")
+    return (len(m), cols)
+
+
+def dot(a, b):
+    if len(a) != len(b):
+        raise ValueError(f"dot: lengths {len(a)} and {len(b)} differ")
+    return sum(x * y for x, y in zip(a, b))
+
+
+def matvec(m, v):
+    return [dot(row, v) for row in m]
+
+
+def transpose(m):
+    return [list(col) for col in zip(*m)]
+
+
+def matmul(a, b):
+    rows_a, cols_a = shape(a)
+    rows_b, cols_b = shape(b)
+    if cols_a != rows_b:
+        raise ValueError(f"matmul: ({rows_a}, {cols_a}) @ ({rows_b}, {cols_b}) do not fit")
+    columns = transpose(b)
+    return [[dot(row, col) for col in columns] for row in a]
+--- hint
+Check lengths before you \`zip\`: \`if len(a) != len(b): raise ValueError(...)\`.
+--- hint
+\`matvec\` is one dot product per row. \`matmul\` is one dot product per (row of \`a\`, column of \`b\`) pair, and the columns of \`b\` are the rows of \`transpose(b)\`.
+--- hint
+Use \`shape\` inside \`matmul\` to get both sizes and compare \`a\`'s columns with \`b\`'s rows before multiplying.
+--- check case | dot multiplies pairwise and adds
+dot([1, 2, 3], [4, 5, 6])
+=> 32
+--- check case | dot of empty vectors is 0
+dot([], [])
+=> 0
+--- check test | dot refuses vectors of different lengths
+raises(ValueError, lambda: dot([1, 2], [1, 2, 3])) and raises(ValueError, lambda: dot([1, 2, 3], [1]))
+--- check case | shape of a 2 x 3 matrix
+shape([[1, 2, 3], [4, 5, 6]])
+=> (2, 3)
+--- check test | shape of an empty matrix, and a ragged one raises
+shape([]) == (0, 0) and shape([[7]]) == (1, 1) and raises(ValueError, lambda: shape([[1, 2], [3]]))
+--- check case | matvec: a (3, 2) matrix times a length-2 vector
+matvec([[1, 2], [3, 4], [5, 6]], [1, -1])
+=> [-1, -1, -1]
+--- check test | matvec refuses a vector of the wrong length
+raises(ValueError, lambda: matvec([[1, 2], [3, 4]], [1, 2, 3]))
+--- check case | transpose swaps rows and columns
+transpose([[1, 2, 3], [4, 5, 6]])
+=> [[1, 4], [2, 5], [3, 6]]
+--- check case | matmul of two 2 x 2 matrices
+matmul([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+=> [[19, 22], [43, 50]]
+--- check case | matmul: (2, 3) @ (3, 1) gives (2, 1)
+matmul([[1, 0, 2], [0, 1, 1]], [[3], [4], [5]])
+=> [[13], [9]]
+--- check test | matmul refuses shapes that do not fit, even when zip would not notice
+raises(ValueError, lambda: matmul([[1, 2, 3], [4, 5, 6]], [[1, 2, 3], [4, 5, 6]])) and raises(ValueError, lambda: matmul([[1, 2]], [[1], [2], [3]]))
+--- check test | matmul by the identity changes nothing, and inputs are not modified
+(lambda a: matmul(a, [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) == a and a == [[2, 3, 4], [5, 6, 7]])([[2, 3, 4], [5, 6, 7]])
+
+=== ai-02 | Gradient descent: fitting a line
+--- teach
+Training a model means **adjusting numbers to make a loss smaller**. The loss is one number saying how wrong the model is. To make it smaller, you need to know which way to nudge each parameter, and that is exactly what a derivative tells you.
+
+**A derivative is a slope.** For a function \`f\`, the derivative at \`x\` says how much \`f\` changes when \`x\` changes a tiny bit. If it is positive, increasing \`x\` increases \`f\`; if negative, increasing \`x\` decreases \`f\`.
+
+You can measure it numerically with **finite differences**: move \`x\` a little each way and see how much \`f\` moves.
+
+\`\`\`python
+def f(x):
+    return x ** 2
+
+h = 1e-5
+x = 3.0
+forward = (f(x + h) - f(x)) / h                 # about 6.00001
+central = (f(x + h) - f(x - h)) / (2 * h)       # about 6.0000000000
+(forward, central)
+\`\`\`
+
+The true answer is 6 (the derivative of \`x²\` is \`2x\`). The **central difference** is much more accurate: its error shrinks with \`h²\` instead of \`h\`. Do not make \`h\` too small either: at \`1e-12\` the subtraction loses almost all its digits to floating-point rounding, and the answer gets worse again.
+
+**Gradient descent.** To find the \`x\` that makes \`f(x)\` smallest, start anywhere and repeat:
+
+\`\`\`text
+x = x - learning_rate * derivative_at(x)
+\`\`\`
+
+The minus sign is the whole idea: step **against** the slope, downhill. The **learning rate** decides how big each step is.
+
+\`\`\`python
+def df(x):
+    return 2 * (x - 3)          # derivative of (x - 3) ** 2, smallest at x = 3
+
+for lr in (0.1, 1.1):
+    x = 0.0
+    for _ in range(30):
+        x = x - lr * df(x)
+    print(lr, round(x, 4))
+\`\`\`
+
+With \`0.1\`, \`x\` walks to 3. With \`1.1\`, every step overshoots further than the last and \`x\` flies off. Too small a learning rate wastes time; too big and training **diverges**. You will see this again when a real training run's loss explodes.
+
+**Fitting a line.** Now a real model: predict \`y\` from \`x\` with \`y ≈ w * x + b\`. The two **parameters** are \`w\` and \`b\`. The loss is the **mean squared error** over the data:
+
+\`\`\`text
+MSE = mean over examples of (w * x + b - y) ** 2
+\`\`\`
+
+With two parameters you need two derivatives, one for each (together they are the **gradient**). The chain rule gives them. For one example with error \`e = w*x + b - y\`, the loss is \`e²\`, its derivative with respect to \`e\` is \`2e\`, and \`e\` changes by \`x\` when \`w\` changes by 1, and by 1 when \`b\` changes by 1. Average over the examples:
+
+\`\`\`text
+dMSE/dw = mean of 2 * e * x
+dMSE/db = mean of 2 * e
+\`\`\`
+
+Each training step computes **both** derivatives from the current \`w\` and \`b\`, and only then updates both. (Updating \`w\` first and then computing \`b\`'s derivative with the new \`w\` is a common slip; it is a different algorithm.)
+
+**Always check an analytic gradient numerically.** You worked those formulas out by hand, and hand-derived gradients are often wrong in ways that still "sort of" train. Compare them with the central difference at a random point: they should agree to many digits. Lesson 6 makes this a debugging tool.
+
+In PyTorch: \`nn.MSELoss()\` computes the loss, \`loss.backward()\` computes the gradient for you, and \`optimizer.step()\` does the update.
+--- task
+Write:
+
+- \`derivative(f, x, h=1e-5)\` returns the **central** difference estimate of \`f\`'s derivative at \`x\`.
+- \`mse(w, b, xs, ys)\` returns the mean squared error of the line \`w * x + b\` on the data.
+- \`mse_grads(w, b, xs, ys)\` returns the tuple \`(dw, db)\`: the derivatives of the MSE with respect to \`w\` and \`b\`, from the formulas above.
+- \`fit_line(xs, ys, lr=0.1, steps=1000)\` starts from \`w = 0.0\`, \`b = 0.0\`, does exactly \`steps\` gradient-descent updates (compute both gradients, then update both), and returns \`(w, b)\`.
+--- starter
+def derivative(f, x, h=1e-5):
+    pass
+
+
+def mse(w, b, xs, ys):
+    pass
+
+
+def mse_grads(w, b, xs, ys):
+    pass
+
+
+def fit_line(xs, ys, lr=0.1, steps=1000):
+    w, b = 0.0, 0.0
+    return w, b
+--- solution
+def derivative(f, x, h=1e-5):
+    return (f(x + h) - f(x - h)) / (2 * h)
+
+
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def mse_grads(w, b, xs, ys):
+    n = len(xs)
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    dw = sum(2 * e * x for e, x in zip(errors, xs)) / n
+    db = sum(2 * e for e in errors) / n
+    return dw, db
+
+
+def fit_line(xs, ys, lr=0.1, steps=1000):
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        dw, db = mse_grads(w, b, xs, ys)
+        w -= lr * dw
+        b -= lr * db
+    return w, b
+--- hint
+The central difference is \`(f(x + h) - f(x - h)) / (2 * h)\`.
+--- hint
+In \`mse_grads\`, compute each example's error \`w * x + b - y\` once, then average \`2 * e * x\` for \`dw\` and \`2 * e\` for \`db\`.
+--- hint
+In \`fit_line\`, get \`dw, db = mse_grads(w, b, xs, ys)\` first, then do \`w -= lr * dw\` and \`b -= lr * db\`.
+--- check test | derivative of x² at 3 is 6, to within 1e-7 (a forward difference is not accurate enough)
+abs(derivative(lambda x: x ** 2, 3.0) - 6.0) < 1e-7
+--- check test | derivative uses h: cube at 2 with h=1e-3 is 12 to within 1e-5
+abs(derivative(lambda x: x ** 3, 2.0, h=1e-3) - 12.0) < 1e-5
+--- check test | derivative of sin at 0 is 1
+abs(derivative(__import__("math").sin, 0.0) - 1.0) < 1e-8
+--- check test | mse is 0 for a perfect line and averages squared errors otherwise
+mse(2, 1, [0, 1, 2], [1, 3, 5]) == 0 and abs(mse(0, 0, [1, 2], [1, 3]) - 5.0) < 1e-12
+--- check test | mse_grads at w=0, b=0 on two points gives (-7, -4)
+(lambda g: abs(g[0] + 7) < 1e-12 and abs(g[1] + 4) < 1e-12)(mse_grads(0.0, 0.0, [1, 2], [1, 3]))
+--- check test | mse_grads agrees with the numerical derivative of mse
+(lambda xs, ys: (lambda g: abs(g[0] - derivative(lambda w: mse(w, -0.3, xs, ys), 0.7)) < 1e-6 and abs(g[1] - derivative(lambda b: mse(0.7, b, xs, ys), -0.3)) < 1e-6)(mse_grads(0.7, -0.3, xs, ys)))([0.5, -1.0, 2.0, 3.5], [1.0, 0.2, -2.0, 4.0])
+--- check test | One step from zero moves w and b against the gradient
+(lambda r: abs(r[0] - 0.7) < 1e-12 and abs(r[1] - 0.4) < 1e-12)(fit_line([1, 2], [1, 3], lr=0.1, steps=1))
+--- check test | Zero steps leaves w and b at 0
+fit_line([1, 2], [1, 3], steps=0) == (0, 0)
+--- check test | fit_line recovers y = 3x - 2
+(lambda xs: (lambda r: abs(r[0] - 3) < 1e-3 and abs(r[1] + 2) < 1e-3)(fit_line(xs, [3 * x - 2 for x in xs])))([i / 10 for i in range(-10, 11)])
+--- check test | A learning rate that is too big diverges
+(lambda xs: abs(fit_line(xs, [3 * x - 2 for x in xs], lr=2.0, steps=50)[1]) > 1e6)([i / 10 for i in range(-10, 11)])
+
+=== ai-03 | Logistic regression: a first classifier
+--- teach
+Fitting a line predicts a number. Many tasks instead ask **which class**: spam or not, cat or dog, which word comes next. The simplest classifier, **logistic regression**, is also the last layer of almost every neural network, so it is worth knowing exactly.
+
+**Score, then squash.** Given an input vector \`x\`, compute a score \`z = dot(w, x) + b\` (called the **logit**). It can be any number. The **sigmoid** turns it into a probability between 0 and 1:
+
+\`\`\`python
+import math
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+[round(sigmoid(z), 3) for z in (-4, -1, 0, 1, 4)]   # [0.018, 0.269, 0.5, 0.731, 0.982]
+\`\`\`
+
+Predict class 1 when the probability is at least 0.5, which is when \`z >= 0\`. The points where \`z = 0\` form the **decision boundary**: with two input features, \`w[0]*x0 + w[1]*x1 + b = 0\` is a straight line splitting the plane in two.
+
+**The loss: binary cross-entropy.** For one example with true label \`y\` (0 or 1) and predicted probability \`p\`:
+
+\`\`\`text
+loss = -(y * log(p) + (1 - y) * log(1 - p))
+\`\`\`
+
+It is the "surprise" of the right answer: if \`y = 1\` and \`p = 0.99\`, the loss is tiny (\`-log 0.99 ≈ 0.01\`); if \`p = 0.01\`, it is huge (\`-log 0.01 ≈ 4.6\`). Confident mistakes cost a lot. (Why not MSE? Through a sigmoid, MSE gives almost no gradient when the model is confidently wrong, exactly when it most needs to change.)
+
+**The gradient is beautifully simple.** Put the sigmoid and the cross-entropy together and differentiate with respect to the logit \`z\`, and almost everything cancels:
+
+\`\`\`text
+dloss/dz = p - y
+\`\`\`
+
+Predicted 0.8 but the answer was 0? The logit gets pushed down by 0.8. Then by the chain rule, since \`z = dot(w, x) + b\`, averaged over the examples:
+
+\`\`\`text
+dw[j] = mean of (p - y) * x[j]
+db    = mean of (p - y)
+\`\`\`
+
+The same \`p - y\` appears again with softmax over many classes (lesson 10), and it is the signal every language model trains on.
+
+**Numbers that break.** \`math.exp(1000)\` raises \`OverflowError\`, so \`sigmoid(-1000)\` written as above crashes. A stable sigmoid never calls \`exp\` on a large positive number:
+
+\`\`\`python
+import math
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)             # z < 0, so this is small: no overflow
+    return e / (1 + e)
+
+sigmoid(-1000), sigmoid(1000)   # (0.0, 1.0)
+\`\`\`
+
+The two branches are the same formula (multiply top and bottom by \`exp(z)\`). And \`math.log(0)\` raises \`ValueError\`, so a cross-entropy on a probability of exactly 0 or 1 must **clamp** it into \`[eps, 1 - eps]\` first.
+
+In PyTorch: \`torch.sigmoid\`, and \`nn.BCEWithLogitsLoss\`, which takes the logit rather than the probability precisely so it can do this arithmetic stably.
+--- task
+The starter gives you \`dot\` and \`make_data(n, seed)\`, which returns \`(X, Y)\`: \`n\` random 2-D points and their 0/1 labels. Write:
+
+- \`sigmoid(z)\`, stable for any float (no \`OverflowError\` at \`-1000\` or \`1000\`).
+- \`bce(p, y, eps=1e-12)\`: the binary cross-entropy of one prediction, with \`p\` clamped to \`[eps, 1 - eps]\` first.
+- \`predict_proba(w, b, x)\`: the sigmoid of \`dot(w, x) + b\`.
+- \`train_logistic(X, Y, lr=0.5, steps=500)\`: start from \`w\` all \`0.0\` (one per feature) and \`b = 0.0\`, do exactly \`steps\` full-batch gradient-descent updates using the gradients above, and return \`(w, b)\` with \`w\` a list.
+- \`accuracy(w, b, X, Y)\`: the fraction of examples where "probability at least 0.5" matches the label being 1.
+--- starter
+import math
+import random
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_data(n, seed=0):
+    """n points in the square [-1, 1] x [-1, 1]; label 1 when x0 + 2 * x1 > 0.2."""
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + 2 * x1 > 0.2 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+
+def bce(p, y, eps=1e-12):
+    pass
+
+
+def predict_proba(w, b, x):
+    pass
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    pass
+
+
+def accuracy(w, b, X, Y):
+    pass
+--- solution
+import math
+import random
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_data(n, seed=0):
+    """n points in the square [-1, 1] x [-1, 1]; label 1 when x0 + 2 * x1 > 0.2."""
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + 2 * x1 > 0.2 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def bce(p, y, eps=1e-12):
+    p = min(max(p, eps), 1 - eps)
+    return -(y * math.log(p) + (1 - y) * math.log(1 - p))
+
+
+def predict_proba(w, b, x):
+    return sigmoid(dot(w, x) + b)
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    n, d = len(X), len(X[0])
+    w, b = [0.0] * d, 0.0
+    for _ in range(steps):
+        dw, db = [0.0] * d, 0.0
+        for x, y in zip(X, Y):
+            err = predict_proba(w, b, x) - y
+            for j in range(d):
+                dw[j] += err * x[j] / n
+            db += err / n
+        w = [wj - lr * g for wj, g in zip(w, dw)]
+        b -= lr * db
+    return w, b
+
+
+def accuracy(w, b, X, Y):
+    right = sum(1 for x, y in zip(X, Y) if (predict_proba(w, b, x) >= 0.5) == (y == 1))
+    return right / len(X)
+--- hint
+Stable sigmoid: for \`z >= 0\` use \`1 / (1 + exp(-z))\`; otherwise compute \`e = exp(z)\` and return \`e / (1 + e)\`.
+--- hint
+In \`train_logistic\`, for each step add up \`(p - y) * x[j] / n\` into \`dw[j]\` and \`(p - y) / n\` into \`db\` over all examples, then update every weight and the bias.
+--- hint
+\`accuracy\` compares \`predict_proba(w, b, x) >= 0.5\` with \`y == 1\` for each example and divides the number of matches by \`len(X)\`.
+--- check test | sigmoid(0) is 0.5 and sigmoid(2) is about 0.8808
+sigmoid(0) == 0.5 and abs(sigmoid(2) - 0.8807970779778823) < 1e-12
+--- check test | sigmoid survives huge inputs without overflowing
+sigmoid(-1000) < 1e-300 and sigmoid(1000) == 1.0 and abs(sigmoid(-2) - (1 - sigmoid(2))) < 1e-12
+--- check test | bce is -log(p) when y is 1 and -log(1 - p) when y is 0
+abs(bce(0.9, 1) - 0.10536051565782628) < 1e-9 and abs(bce(0.9, 0) - 2.302585092994045) < 1e-9
+--- check test | bce clamps: p of exactly 0 or 1 gives a finite loss
+abs(bce(0.0, 1) - 27.631021115928547) < 1e-6 and bce(1.0, 1) < 1e-9 and bce(1.0, 0) > 27
+--- check test | predict_proba applies the sigmoid to the score
+predict_proba([1, -1], 0, [2, 2]) == 0.5 and abs(predict_proba([2.0, 0.0], -1.0, [1.0, 5.0]) - sigmoid(1.0)) < 1e-12
+--- check test | One training step from zeros moves w and b by lr * (y - p) * x
+(lambda r: all(abs(a - b) < 1e-12 for a, b in zip(r[0] + [r[1]], [0.25, 0.5, 0.25])))(train_logistic([[1.0, 2.0]], [1], lr=0.5, steps=1))
+--- check test | train_logistic returns w as a list with one weight per feature
+(lambda r: isinstance(r[0], list) and len(r[0]) == 2 and isinstance(r[1], float))(train_logistic(*make_data(10), steps=3))
+--- check test | After training, accuracy on the data is at least 95%
+(lambda X, Y: accuracy(*train_logistic(X, Y), X, Y) >= 0.95)(*make_data(60))
+--- check test | Training lowers the average loss well below log 2 (where it starts)
+(lambda X, Y: (lambda w, b: sum(bce(predict_proba(w, b, x), y) for x, y in zip(X, Y)) / len(X) < 0.3)(*train_logistic(X, Y)))(*make_data(60))
+--- check test | The learned boundary generalizes to fresh points
+(lambda X, Y: accuracy(*train_logistic(X, Y), *make_data(200, seed=7)) >= 0.9)(*make_data(60))
+
+=== ai-04 | Autograd 1: a Value that remembers
+--- teach
+For a line you worked out the gradient by hand. A neural network has thousands (in real models, billions) of parameters and a long chain of operations; nobody derives that by hand. Instead, every framework uses **automatic differentiation** ("autograd"): as you compute, it records how each number was made, and afterwards it walks that record backwards applying the chain rule. Over this lesson and the next you build one. It is small, and it is the same idea as PyTorch's autograd.
+
+**The computation graph.** Take \`d = a * b + c\`. As it runs, it builds a small graph: \`a\` and \`b\` feed a \`*\` node that makes \`e\`, then \`e\` and \`c\` feed a \`+\` node that makes \`d\`.
+
+\`\`\`text
+a ──┐
+    (*)── e ──┐
+b ──┘         (+)── d
+c ────────────┘
+\`\`\`
+
+**Local derivatives.** Each operation knows only its own little rule:
+
+- For \`out = x + y\`: nudging \`x\` by 1 nudges \`out\` by 1. Same for \`y\`. The local derivatives are \`1\` and \`1\`.
+- For \`out = x * y\`: nudging \`x\` by 1 nudges \`out\` by \`y\`. The local derivatives are \`y\` and \`x\`.
+
+**The chain rule, backwards.** Write \`grad\` for "how much the final result changes per unit change of this value". The final result's own \`grad\` is 1. Then each operation passes gradient to its inputs: **input grad = local derivative × output grad**. For \`d = a * b + c\` with \`a = 2, b = -3, c = 10\`: \`d.grad = 1\`; the \`+\` gives \`e.grad = 1\` and \`c.grad = 1\`; the \`*\` gives \`a.grad = b * e.grad = -3\` and \`b.grad = a * e.grad = 2\`. So increasing \`a\` a little decreases \`d\` three times as fast. That is backpropagation.
+
+**Why \`+=\` and never \`=\`.** If a value is used in two places, a change in it affects the result through both paths, and the effects add up. In \`a * a\`, \`a\` is both inputs, so it must receive \`a\` from the first and \`a\` from the second, \`2a\` in total. Every backward rule therefore **adds** into \`grad\`. Writing \`=\` silently keeps only the last path: one of the most common autograd bugs.
+
+**How a \`Value\` stores this.** Each \`Value\` keeps its number (\`data\`), its gradient (\`grad\`, starting at \`0.0\`), the values it was made from (\`_prev\`), a label for the operation (\`_op\`), and a function \`_backward\` that pushes its gradient into its inputs. \`_backward\` is a **closure** (the advanced course, py3-04): it is defined inside \`__add__\`, so it remembers \`self\`, \`other\` and \`out\`.
+
+\`\`\`python
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None     # a leaf has nobody to pass gradient to
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += 1.0 * out.grad
+            other.grad += 1.0 * out.grad
+
+        out._backward = _backward
+        return out
+
+a, b = Value(2.0), Value(5.0)
+c = a + b
+c.grad = 1.0          # start: dc/dc = 1
+c._backward()          # push it into a and b
+(c.data, a.grad, b.grad)      # (7.0, 1.0, 1.0)
+\`\`\`
+
+Three details matter:
+
+- **Plain numbers.** \`Value(2) * 3\` should work, so wrap a non-\`Value\` operand: \`other = other if isinstance(other, Value) else Value(other)\`.
+- **Numbers on the left.** \`3 * Value(2)\` first tries \`int.__mul__\`, which does not know \`Value\`, so Python then calls \`Value.__rmul__\` (the special-methods table, py3-07). \`__rmul__\` and \`__radd__\` can just call \`self * other\` and \`self + other\`.
+- **Do not define \`__eq__\`.** \`_prev\` is a set, and sets need hashable members. The default identity hash is exactly right here: two different values with the same number are still different nodes in the graph.
+
+In PyTorch: a tensor created with \`requires_grad=True\` records its graph the same way; \`t.grad\` is your \`grad\`, and \`t.grad_fn\` is your \`_backward\`.
+--- task
+Complete the \`Value\` class:
+
+- \`__add__\` must also accept a plain number (wrap it in a \`Value\`).
+- Add \`__mul__\` (accepting a \`Value\` or a number), with a \`_backward\` that adds \`other.data * out.grad\` to \`self.grad\` and \`self.data * out.grad\` to \`other.grad\`. Its result has \`_op\` \`"*"\`.
+- Add \`__radd__\` and \`__rmul__\` so \`1 + Value(2)\` and \`3 * Value(2)\` work.
+- Add \`__repr__\` returning, for example, \`Value(data=6.0, grad=0.0)\`.
+
+Every backward rule must add (\`+=\`) into \`grad\`.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+--- hint
+\`__mul__\` has the same shape as \`__add__\`: wrap \`other\`, build \`out\` with \`(self, other)\` and \`"*"\`, define \`_backward\`, attach it, return \`out\`.
+--- hint
+The local derivative of \`x * y\` with respect to \`x\` is \`y\`, so \`self.grad += other.data * out.grad\`, and the other way round for \`other\`.
+--- hint
+\`__rmul__(self, other)\` can simply \`return self * other\`; the same goes for \`__radd__\`.
+--- check test | Adding Values and plain numbers
+(Value(2.0) + Value(3.0)).data == 5.0 and (Value(2.0) + 3).data == 5.0 and (1 + Value(2.0)).data == 3.0
+--- check test | Multiplying Values and plain numbers
+(Value(2.0) * Value(-4.0)).data == -8.0 and (Value(2.0) * 3).data == 6.0 and (3 * Value(2.0)).data == 6.0
+--- check test | A product remembers its inputs and its operation
+(lambda a, b: (lambda c: c._prev == {a, b} and c._op == "*" and c.grad == 0.0)(a * b))(Value(2.0), Value(3.0))
+--- check test | Backward through *: a gets b, b gets a
+(lambda a, b: (lambda c: (setattr(c, "grad", 1.0), c._backward(), (a.grad, b.grad))[2] == (-3.0, 2.0))(a * b))(Value(2.0), Value(-3.0))
+--- check test | Backward through + with a number: the Value gets the whole gradient
+(lambda a: (lambda c: (setattr(c, "grad", 2.5), c._backward(), a.grad)[2] == 2.5)(a + 10))(Value(1.0))
+--- check test | a * a accumulates: the gradient is 2a, not a
+(lambda a: (lambda c: (setattr(c, "grad", 1.0), c._backward(), a.grad)[2] == 6.0)(a * a))(Value(3.0))
+--- check test | The chain rule by hand: d = a * b + c
+(lambda a, b, c: (lambda e: (lambda d: (setattr(d, "grad", 1.0), d._backward(), e._backward(), (a.grad, b.grad, c.grad))[3] == (-3.0, 2.0, 1.0))(e + c))(a * b))(Value(2.0), Value(-3.0), Value(10.0))
+--- check case | repr shows data and grad
+repr(Value(2.0) * 3)
+=> "Value(data=6.0, grad=0.0)"
+
+=== ai-05 | Autograd 2: backward through the whole graph
+--- teach
+Last lesson you called \`_backward()\` by hand, in the right order. Now \`backward()\` does it for the whole graph, and you add the operations a network needs.
+
+**Order matters.** A node may pass its gradient on only once its own \`grad\` is complete, that is, after **every** node that used it has passed gradient into it. In \`d = a * b + c\`, \`d\` must go before \`e\`. With shared values it gets subtle: if \`a\` feeds three different operations, all three must run their \`_backward\` before \`a\` is finished.
+
+**Topological order.** List the nodes so that every node comes after all the nodes it was made from. A depth-first search does it: visit a node's children first (recursion, as in py3-11), then append the node. A \`visited\` set makes sure each node is listed once, even when it is reachable along several paths.
+
+\`\`\`python
+def topo_order(root, children):
+    order, visited = [], set()
+
+    def visit(node):
+        if node not in visited:
+            visited.add(node)
+            for child in children[node]:
+                visit(child)
+            order.append(node)
+
+    visit(root)
+    return order
+
+graph = {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []}
+topo_order("d", graph)         # ['a', 'b', 'e', 'c', 'd']: inputs before outputs
+\`\`\`
+
+Reverse that list and every node comes **before** its inputs, which is exactly the order backpropagation needs. So \`backward()\`:
+
+1. builds the topological order from \`self\`,
+2. sets \`self.grad = 1.0\` (the result changes one-for-one with itself),
+3. calls \`_backward()\` on each node in **reversed** order.
+
+**More operations, few new rules.** You only need new backward rules for a handful of primitives. Everything else is built from them, and the gradients come for free:
+
+| Operation | Local derivative |
+| --- | --- |
+| \`x ** n\` (n a plain number) | \`n * x ** (n - 1)\` |
+| \`x.exp()\` | \`exp(x)\`, the output itself |
+| \`x.tanh()\` | \`1 - tanh(x) ** 2\` |
+| \`x.relu()\` (x if x > 0, else 0) | \`1\` if x > 0, else \`0\` |
+
+\`\`\`text
+-x      = x * -1
+x - y   = x + (-y)
+x / y   = x * y ** -1
+\`\`\`
+
+Right-hand versions (\`10 - x\`, \`2 / x\`) come from \`__rsub__\` and \`__rtruediv__\`: \`other + (-self)\` and \`other * self ** -1\`.
+
+**Gradients accumulate across calls.** Because every rule uses \`+=\`, calling \`backward()\` twice on the same graph doubles the leaves' gradients. PyTorch behaves the same way, which is why every training step starts by zeroing the gradients (\`optimizer.zero_grad()\`). You will meet the bug this causes in lesson 8.
+
+In PyTorch: \`loss.backward()\` is this method, and \`torch.tanh\`, \`torch.exp\`, \`torch.relu\` each carry a backward rule just like yours.
+--- task
+Add to your \`Value\` class:
+
+- \`backward()\`: build a topological order of the graph from \`self\` (each node once), set \`self.grad = 1.0\`, then call every node's \`_backward()\` in reverse order.
+- \`__pow__(n)\` for a plain int or float \`n\` (result \`_op\` of your choice), \`exp()\`, \`tanh()\` and \`relu()\`, each with its own \`_backward\` from the table.
+- \`__neg__\`, \`__sub__\`, \`__rsub__\`, \`__truediv__\` and \`__rtruediv__\`, built from the operations you already have.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- hint
+In \`backward\`, write a nested \`visit(node)\` that returns at once if the node is in \`visited\`, otherwise adds it, visits each of \`node._prev\`, and appends the node to a list.
+--- hint
+\`tanh\`: compute \`t = math.tanh(self.data)\` once, make \`out = Value(t, (self,), "tanh")\`, and in its \`_backward\` do \`self.grad += (1 - t * t) * out.grad\`.
+--- hint
+The rest need no backward of their own: \`__neg__\` is \`self * -1\`, \`__sub__\` is \`self + (-other)\`, \`__truediv__\` is \`self * other ** -1\`.
+--- check test | backward fills every gradient of d = a * b + c
+(lambda a, b, c: (lambda d: (d.backward(), (a.grad, b.grad, c.grad, d.grad))[1] == (-3.0, 2.0, 1.0, 1.0))(a * b + c))(Value(2.0), Value(-3.0), Value(10.0))
+--- check test | A value used twice gets both contributions: a * a + a at 3 gives 7
+(lambda a: ((a * a + a).backward(), a.grad)[1] == 7.0)(Value(3.0))
+--- check test | Each node runs once: b = 2a, c = b + b, d = c * c gives dd/da = 32a
+(lambda a: (lambda b: (lambda c: ((c * c).backward(), abs(a.grad - 32.0) < 1e-12)[1])(b + b))(a * 2))(Value(1.0))
+--- check test | Powers: x ** 3 at 2 has gradient 12, and x ** 0.5 at 4 has 0.25
+(lambda x, y: ((x ** 3).backward(), (y ** 0.5).backward(), abs(x.grad - 12) < 1e-12 and abs(y.grad - 0.25) < 1e-12)[2])(Value(2.0), Value(4.0))
+--- check test | Subtraction and negation, both ways round
+(lambda a, b: ((a - b).backward(), (a.grad, b.grad) == (1.0, -1.0) and (-a).data == -5.0 and (10 - b).data == 8.0)[1])(Value(5.0), Value(2.0))
+--- check test | Division: d(a / b) is 1/b for a and -a/b² for b
+(lambda a, b: ((a / b).backward(), abs(a.grad - 0.5) < 1e-12 and abs(b.grad + 1.25) < 1e-12)[1])(Value(5.0), Value(2.0))
+--- check test | A number divided by a Value: 2 / x at 4
+(lambda x: (lambda y: (y.backward(), abs(y.data - 0.5) < 1e-12 and abs(x.grad + 0.125) < 1e-12)[1])(2 / x))(Value(4.0))
+--- check test | exp and tanh have the right values and gradients
+(lambda a, b: (a.exp().backward(), b.tanh().backward(), abs(a.grad - __import__("math").e) < 1e-12 and abs(b.grad - (1 - __import__("math").tanh(0.5) ** 2)) < 1e-12)[2])(Value(1.0), Value(0.5))
+--- check test | relu passes gradient only where the input is positive
+(lambda a, b: (a.relu().backward(), b.relu().backward(), (a.relu().data, a.grad, b.grad))[2] == (0.0, 0.0, 1.0))(Value(-2.0), Value(3.0))
+--- check test | A bigger expression agrees with the numerical derivative
+(lambda f: (lambda a, b: (f(a, b).backward(), abs(a.grad - (f(Value(0.7 + 1e-6), Value(-1.3)).data - f(Value(0.7 - 1e-6), Value(-1.3)).data) / 2e-6) < 1e-6 and abs(b.grad - (f(Value(0.7), Value(-1.3 + 1e-6)).data - f(Value(0.7), Value(-1.3 - 1e-6)).data) / 2e-6) < 1e-6)[1])(Value(0.7), Value(-1.3)))(lambda a, b: ((a * b + b ** 2 / 4).tanh() * 3 - a / b + (a - 1).relu() + (b * 0.5).exp()) * 0.1)
+--- check test | A chain 100 operations deep backpropagates
+(lambda x: (__import__("functools").reduce(lambda acc, _: acc * 1.01, range(100), x).backward(), abs(x.grad - 1.01 ** 100) < 1e-9)[1])(Value(1.0))
+--- check test | Gradients accumulate: a second backward() doubles them
+(lambda a, b: (lambda d: (d.backward(), d.backward(), a.grad)[2] == -6.0)(a * b))(Value(2.0), Value(-3.0))
+
+=== ai-06 | Debugging: gradient checking
+--- teach
+A wrong backward rule is the nastiest bug in a model, because nothing crashes. The model still trains, just badly, and you can lose days blaming the data, the learning rate or the architecture. Model developers catch these bugs with one tool, the **gradient check**.
+
+**The debugging method, applied to gradients.** It is the method from the intermediate course (reproduce, check assumptions, narrow down, fix the cause):
+
+1. **Reproduce with something small.** Not the whole network: a function of two or three numbers.
+2. **Get a second opinion on the gradient.** You already know one that cannot be wrong in the same way: the **numerical** gradient from central differences (lesson 2). Nudge input \`i\` by \`+h\` and \`-h\`, run the function forwards both times, and divide the change by \`2h\`. It uses only the forward pass, so a bug in a \`_backward\` cannot fool it.
+3. **Compare with a relative error**, not an absolute one. A difference of 0.01 is huge if the gradient is 0.02 and nothing if it is 5000:
+
+\`\`\`text
+relative error = |analytic - numerical| / max(|analytic| + |numerical|, 1e-8)
+\`\`\`
+
+(The \`1e-8\` avoids dividing by zero when both are 0.) As a rule of thumb in double precision: below \`1e-7\` is correct; around \`1e-4\` is suspicious; above \`1e-2\` is a bug.
+
+4. **Narrow down.** If a composite function fails, check each operation on its own (\`x ** 3\`, \`x.tanh()\`, \`x * y\`...). The one that fails is where the bug is.
+5. **Read that rule and fix the cause.** Compare it with the maths, and ask what situation the checks so far never exercised (a value used twice, a negative input...).
+
+\`\`\`python
+import math
+
+def f(x):
+    return math.tanh(x) * x
+
+def claimed_grad(x):              # someone's hand-derived gradient
+    return (1 - math.tanh(x)) * x + math.tanh(x)
+
+x, h = 0.8, 1e-6
+numerical = (f(x + h) - f(x - h)) / (2 * h)
+analytic = claimed_grad(x)
+abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8)   # far above 1e-7: a bug
+\`\`\`
+
+The derivative of \`tanh\` is \`1 - tanh²\`, not \`1 - tanh\`: the check found it in one line.
+
+**Things that fool a gradient check.** Inputs exactly at a kink (\`relu\` at 0) give a wrong numerical gradient, so pick points away from them. An \`h\` that is too big or too small hurts accuracy; around \`1e-6\` suits double precision. And a check only tests the inputs you give it: an accumulation bug (\`=\` instead of \`+=\`) hides until some value is **used twice**, so include such a case.
+
+In PyTorch: \`torch.autograd.gradcheck\` does exactly this. Engineers run it whenever they write a custom operation or a GPU kernel with a hand-written backward pass.
+--- task
+**Bug report:** "Our tiny network trains much worse than the paper's. The code runs without errors. Someone suspects the autograd engine."
+
+1. Write \`grad_check(f, xs, h=1e-6)\`. \`f\` takes a list of \`Value\`s and returns a \`Value\`; \`xs\` is a list of floats. Run \`f\` on fresh \`Value\`s made from \`xs\` and call \`backward()\` to get the analytic gradients. For each input \`i\`, compute the central-difference numerical gradient (fresh \`Value\`s each time, only input \`i\` nudged). Return a list with the relative error for each input, using the formula above.
+2. Use it to find the bugs in the \`Value\` class (there are three) and fix their causes.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad = other.data * out.grad
+            other.grad = self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** n * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def grad_check(f, xs, h=1e-6):
+    pass
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def grad_check(f, xs, h=1e-6):
+    inputs = [Value(x) for x in xs]
+    f(inputs).backward()
+    errors = []
+    for i, v in enumerate(inputs):
+        plus = [Value(x + h if j == i else x) for j, x in enumerate(xs)]
+        minus = [Value(x - h if j == i else x) for j, x in enumerate(xs)]
+        numerical = (f(plus).data - f(minus).data) / (2 * h)
+        analytic = v.grad
+        errors.append(abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8))
+    return errors
+--- hint
+In \`grad_check\`, keep the list of \`Value\`s you passed to \`f\` so you can read each one's \`.grad\` after \`backward()\`. For the numerical gradient, build two new lists per input: one with \`xs[i] + h\`, one with \`xs[i] - h\`.
+--- hint
+Now check one operation at a time: \`grad_check(lambda v: v[0] ** 3, [2.0])\`, \`grad_check(lambda v: v[0].tanh(), [0.5])\`, \`grad_check(lambda v: v[0] * v[0], [3.0])\`. Which ones are far above \`1e-7\`?
+--- hint
+Compare each failing rule with the table from the last lesson: the power rule's exponent, tanh's derivative, and whether \`__mul__\` adds into \`grad\` or overwrites it.
+--- check test | grad_check returns one relative error per input, near 0 for a correct function
+(lambda r: len(r) == 2 and all(e < 1e-7 for e in r))(grad_check(lambda v: v[0] + v[1] * 2, [0.5, -1.5]))
+--- check test | A missing backward shows up as a relative error of 1
+(lambda r: all(abs(e - 1.0) < 1e-9 for e in r))(grad_check(lambda v: (lambda o: (setattr(o, "_backward", lambda: None), o)[1])(v[0] + v[1]), [1.0, 2.0]))
+--- check test | grad_check uses the relative error: analytic 1 against numerical 3 gives 0.5
+(lambda r: abs(r[0] - 0.5) < 1e-6)(grad_check(lambda v: (lambda o: (setattr(o, "_backward", lambda: setattr(v[0], "grad", v[0].grad + o.grad)), o)[1])(Value(v[0].data * 3, (v[0],))), [2.0]))
+--- check test | Fixed: the power rule (x ** 3 at 2 has gradient 12)
+(lambda x: ((x ** 3).backward(), abs(x.grad - 12.0) < 1e-9)[1])(Value(2.0)) and max(grad_check(lambda v: v[0] ** 3 + v[1] ** -2, [1.5, 0.7])) < 1e-6
+--- check test | Fixed: tanh's derivative is 1 - tanh²
+(lambda x: (x.tanh().backward(), abs(x.grad - (1 - __import__("math").tanh(0.5) ** 2)) < 1e-12)[1])(Value(0.5)) and max(grad_check(lambda v: v[0].tanh(), [-1.1])) < 1e-6
+--- check test | Fixed: a value used twice accumulates (x * x, and x * y + x * z)
+(lambda x: ((x * x).backward(), x.grad == 6.0)[1])(Value(3.0)) and max(grad_check(lambda v: v[0] * v[1] + v[0] * v[2], [0.5, 2.0, -3.0])) < 1e-6
+--- check test | A composite function passes the gradient check at several points
+all(max(grad_check(lambda v: ((v[0] * v[1]).tanh() + v[0] ** 2 * v[2]) * v[1] - v[2] / v[0], p)) < 1e-6 for p in ([0.3, -1.2, 0.8], [1.7, 0.4, -2.2], [-0.9, 1.1, 0.05]))
+
+=== ai-07 | Neurons, layers and a training loop
+--- teach
+You have an autograd engine. Now build a neural network on top of it and train it on a problem logistic regression cannot solve.
+
+**A neuron** is the logistic-regression score with a squashing function: a dot product of its weights with the input, plus a bias, passed through a **nonlinearity** such as \`tanh\`.
+
+\`\`\`python
+import math
+
+w, b = [0.5, -1.0], 0.1
+x = [2.0, 1.0]
+math.tanh(sum(wi * xi for wi, xi in zip(w, x)) + b)      # tanh(0.1) ≈ 0.0997
+\`\`\`
+
+**A layer** is several neurons reading the same input, each with its own weights; it turns a vector of \`n_in\` numbers into \`n_out\` numbers (the matrix–vector product from lesson 1, plus biases, then \`tanh\`). **A multi-layer perceptron (MLP)** feeds each layer's output into the next.
+
+**Why the nonlinearity matters.** Without it, a layer is a matrix product, and a matrix product of a matrix product is just another matrix: ten linear layers are no more powerful than one. \`tanh\` is what lets a network bend its decision boundary. The classic example is **XOR**: output 1 when exactly one of two inputs is 1.
+
+\`\`\`text
+x0 x1 | y
+ 0  0 | 0
+ 0  1 | 1
+ 1  0 | 1
+ 1  1 | 0
+\`\`\`
+
+No single straight line puts \`(0,1)\` and \`(1,0)\` on one side and \`(0,0)\` and \`(1,1)\` on the other, so logistic regression cannot learn it. One hidden layer of a few \`tanh\` neurons can. The **last** layer is usually left linear (no \`tanh\`), so the output can be any number; the loss decides what it means.
+
+**Initialisation.** Weights start as small random numbers, here uniform in \`[-1, 1]\`, from a seeded generator so runs repeat. They must not all start equal: identical neurons get identical gradients and stay identical forever. Biases can start at 0.
+
+**\`parameters()\`** returns every \`Value\` the optimiser should change, flattened into one list: each neuron's weights and bias, gathered from every layer.
+
+**The training loop.** Every step, in this order:
+
+1. **Forward:** run the model on the examples and compute the loss (a \`Value\`).
+2. **Zero the gradients** of every parameter (they accumulate, lesson 5).
+3. **Backward:** \`loss.backward()\`.
+4. **Update:** \`p.data -= lr * p.grad\` for every parameter.
+
+Record \`loss.data\` (a float) each step so you can watch the **loss curve**. This loop uses every example in each step (**full batch**). Real training samples a **mini-batch** of examples per step, because the dataset is far too big, and the noise even helps.
+
+In PyTorch: \`nn.Linear\` is your \`Layer\` without the \`tanh\`, \`nn.Sequential\` stacks layers, \`model.parameters()\` is the same idea, and the loop is \`optimizer.zero_grad()\`, \`loss.backward()\`, \`optimizer.step()\`, on a GPU, with millions or billions of parameters. It is the same loop.
+--- task
+The starter has your \`Value\` class and the XOR data. Write:
+
+- \`Neuron(n_in, rng, nonlin=True)\`: attributes \`w\` (a list of \`n_in\` \`Value\`s, each \`rng.uniform(-1, 1)\`, drawn in order), \`b\` (\`Value(0.0)\`) and \`nonlin\`. Calling it with a list \`x\` returns \`tanh(w·x + b)\`, or just \`w·x + b\` when \`nonlin\` is \`False\`. \`parameters()\` returns \`w + [b]\`.
+- \`Layer(n_in, n_out, rng, nonlin=True)\`: attribute \`neurons\` (a list of \`n_out\` neurons). Calling it returns the list of the neurons' outputs. \`parameters()\` returns all their parameters.
+- \`MLP(n_in, sizes, seed=0)\`: makes one \`random.Random(seed)\` and uses it for every layer; \`sizes\` lists each layer's output size (\`MLP(2, [4, 1])\` is 2 inputs, 4 hidden, 1 output). Every layer uses \`tanh\` except the last. Attribute \`layers\`; calling it returns the last layer's list of outputs; \`parameters()\` returns all parameters.
+- \`mse_loss(model, xs, ys)\`: the mean over examples of \`(model(x)[0] - y) ** 2\`, as a \`Value\`.
+- \`train(model, xs, ys, steps=200, lr=0.2)\`: the four-step loop above; returns the list of the loss (as a float) at each step, measured before that step's update.
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    pass
+
+
+class Layer:
+    pass
+
+
+class MLP:
+    pass
+
+
+def mse_loss(model, xs, ys):
+    pass
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    pass
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        for p in model.parameters():
+            p.grad = 0.0
+        loss.backward()
+        for p in model.parameters():
+            p.data -= lr * p.grad
+        losses.append(loss.data)
+    return losses
+--- hint
+In \`Neuron.__call__\`, \`sum((wi * xi for wi, xi in zip(self.w, x)), self.b)\` starts the sum at the bias, so the result is a \`Value\`.
+--- hint
+In \`MLP\`, list the sizes as \`[n_in] + sizes\`; layer \`i\` goes from \`dims[i]\` to \`dims[i + 1]\`, with \`nonlin=i < len(sizes) - 1\` so only the last layer is linear.
+--- hint
+In \`train\`, each step: \`loss = mse_loss(...)\`, set every \`p.grad = 0.0\`, \`loss.backward()\`, then \`p.data -= lr * p.grad\`, and append \`loss.data\`.
+--- check test | A neuron has n_in weights in [-1, 1], drawn in order, and a zero bias
+(lambda n: len(n.w) == 3 and n.b.data == 0.0 and n.w[0].data == __import__("random").Random(5).uniform(-1, 1) and all(-1 <= w.data <= 1 for w in n.w) and len(n.parameters()) == 4)(Neuron(3, __import__("random").Random(5)))
+--- check test | A neuron computes tanh(w·x + b), or the raw sum when nonlin is False
+(lambda n: (setattr(n.w[0], "data", 0.5), setattr(n.w[1], "data", -1.0), setattr(n.b, "data", 0.1), abs(n([2.0, 1.0]).data - __import__("math").tanh(0.1)) < 1e-12)[3])(Neuron(2, __import__("random").Random(0))) and (lambda n: (setattr(n.w[0], "data", 3.0), n([2.0]).data)[1] == 6.0)(Neuron(1, __import__("random").Random(0), nonlin=False))
+--- check test | A layer returns one output per neuron
+(lambda out: isinstance(out, list) and len(out) == 3 and all(isinstance(v, Value) for v in out))(Layer(2, 3, __import__("random").Random(0))([1.0, -1.0]))
+--- check test | MLP(2, [4, 1]) has 17 parameters, a tanh hidden layer and a linear output layer
+(lambda m: len(m.parameters()) == 17 and len(m.layers) == 2 and m.layers[0].neurons[0].nonlin and not m.layers[-1].neurons[0].nonlin and len(m([1, 0])) == 1)(MLP(2, [4, 1]))
+--- check test | The same seed gives the same network; a different seed a different one
+[p.data for p in MLP(2, [3, 1], seed=4).parameters()] == [p.data for p in MLP(2, [3, 1], seed=4).parameters()] != [p.data for p in MLP(2, [3, 1], seed=5).parameters()]
+--- check test | mse_loss is a Value holding the mean squared error
+(lambda m: (lambda loss: isinstance(loss, Value) and abs(loss.data - sum((m(x)[0].data - y) ** 2 for x, y in zip(XOR_X, XOR_Y)) / 4) < 1e-12)(mse_loss(m, XOR_X, XOR_Y)))(MLP(2, [4, 1]))
+--- check test | train returns one float loss per step
+(lambda losses: len(losses) == 5 and all(type(l) is float for l in losses))(train(MLP(2, [4, 1]), XOR_X, XOR_Y, steps=5))
+--- check test | The network learns XOR: loss falls below 0.02 and the outputs round to the right answers
+(lambda m: (lambda losses: losses[-1] < 0.02 and losses[0] > 0.3 and [round(m(x)[0].data) for x in XOR_X] == XOR_Y)(train(m, XOR_X, XOR_Y)))(MLP(2, [4, 1]))
+
+=== ai-08 | Debugging: a training loop that does not learn
+--- teach
+The most common report in machine learning is not a crash. It is "the loss is not going down". The code runs, the numbers print, and the model learns nothing, or gets worse. Here is how people who train models find the cause.
+
+**1. Look at the loss curve.** Print (or plot) the loss every step. Its shape is a diagnosis:
+
+| Curve | Usual suspects |
+| --- | --- |
+| Goes **up** steadily | the update has the wrong sign (climbing instead of descending) |
+| Falls, then swings wildly or shoots to \`inf\` / \`nan\` | learning rate too high; gradients never zeroed (they keep growing) |
+| Flat from the start | learning rate far too low; gradients not reaching the parameters; labels shuffled separately from inputs |
+| Falls, then flattens high | model too small, or a bug in the loss |
+
+**2. Overfit a tiny batch.** Train on 2 to 4 examples. Any working model and loop can memorise four examples and drive the loss to nearly 0. If yours cannot, the bug is in the code, not in the data or the model size. This is the first thing experienced people try.
+
+**3. Test one step.** Take a single step with a small learning rate and measure the loss again: it must go down. If it goes up, look at the sign of the update.
+
+**4. Test that gradients are fresh.** Compute the gradients twice without changing the parameters (learning rate 0). They must come out the same (up to rounding in the last digits: \`_prev\` is a set, so the order in which gradients are added up can differ between two graphs, and float addition is not exactly associative. GPUs have the same property). If the second set is double the first, nobody zeroed them, so each step's update is the sum of all previous gradients.
+
+You can watch that last bug happen on a single number. Minimise \`(x - 3) ** 2\`, but let the gradient pile up instead of starting from zero each step:
+
+\`\`\`python
+def df(x):
+    return 2 * (x - 3)
+
+for zero_each_step in (True, False):
+    x, grad, path = 0.0, 0.0, []
+    for _ in range(40):
+        if zero_each_step:
+            grad = 0.0
+        grad += df(x)
+        x -= 0.1 * grad
+        path.append(round(x, 2))
+    print(zero_each_step, path[-5:])
+\`\`\`
+
+With fresh gradients \`x\` settles at 3. With accumulated gradients it behaves like a ball with no friction: it keeps swinging from one side of 3 to the other (here between about 0 and 6) and never settles.
+
+**5. Watch what you keep.** Store the loss as a plain number (\`loss.data\`). Storing the \`Value\` itself keeps the **whole computation graph** of every step alive, and memory grows until the run dies. In PyTorch this is the famous \`losses.append(loss)\` bug; the fix is \`loss.item()\`.
+
+A good habit: when you find the bug, write the check that would have caught it (a one-step test, a fresh-gradient test) so it can never come back.
+--- task
+**Bug report:** "\`train(MLP(2, [4, 1]), XOR_X, XOR_Y)\` does not learn XOR: the loss goes up and swings around the longer it runs. Two calls of \`train_step\` with \`lr=0.0\` on an unchanged model give different gradients. And the list \`train\` returns holds \`Value\` objects, and the run's memory use keeps growing."
+
+The model and \`mse_loss\` are correct. Find and fix the causes in \`train_step\` (one step of full-batch gradient descent that returns the loss before the update, as a float) and \`train\`, keeping their signatures.
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train_step(model, xs, ys, lr):
+    loss = mse_loss(model, xs, ys)
+    loss.backward()
+    for p in model.parameters():
+        p.data += lr * p.grad
+    return loss
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        losses.append(train_step(model, xs, ys, lr))
+    return losses
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train_step(model, xs, ys, lr):
+    loss = mse_loss(model, xs, ys)
+    for p in model.parameters():
+        p.grad = 0.0
+    loss.backward()
+    for p in model.parameters():
+        p.data -= lr * p.grad
+    return loss.data
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        losses.append(train_step(model, xs, ys, lr))
+    return losses
+--- hint
+Reproduce each symptom with a check from the lesson: call \`train_step(m, XOR_X, XOR_Y, 0.0)\` twice and compare \`[p.grad for p in m.parameters()]\` after each call.
+--- hint
+Gradient descent steps against the gradient. And gradients from the previous step must be cleared before \`backward()\`.
+--- hint
+Three changes: set every \`p.grad = 0.0\` before \`loss.backward()\`, use \`p.data -= lr * p.grad\`, and return \`loss.data\` rather than \`loss\`.
+--- check test | train_step returns the loss as a plain float
+type(train_step(MLP(2, [4, 1]), XOR_X, XOR_Y, 0.1)) is float
+--- check test | Gradients are fresh: two lr=0 steps on the same model give identical gradients
+(lambda m: (lambda g1, g2: all(abs(a - b) < 1e-12 for a, b in zip(g1, g2)) and any(g != 0 for g in g1))((train_step(m, XOR_X, XOR_Y, 0.0), [p.grad for p in m.parameters()])[1], (train_step(m, XOR_X, XOR_Y, 0.0), [p.grad for p in m.parameters()])[1]))(MLP(2, [4, 1]))
+--- check test | One small step lowers the loss
+(lambda m: (lambda before: mse_loss(m, XOR_X, XOR_Y).data < before)(train_step(m, XOR_X, XOR_Y, 0.01)))(MLP(2, [4, 1], seed=3))
+--- check test | train returns floats, one per step
+(lambda losses: len(losses) == 7 and all(type(l) is float for l in losses))(train(MLP(2, [4, 1]), XOR_X, XOR_Y, steps=7))
+--- check test | The loop learns XOR: the final loss is below 0.02
+(lambda losses: losses[-1] < 0.02 and losses[-1] < losses[0] / 10)(train(MLP(2, [4, 1]), XOR_X, XOR_Y))
+
+=== ai-09 | Design: optimizers behind one interface
+--- teach
+So far the update rule \`p.data -= lr * p.grad\` has lived inside the training loop. Real training code keeps three things apart: the **model** (what computes), the **loss** (what "wrong" means) and the **optimizer** (how parameters move). Then you can swap the optimizer without touching the loop, which is how it looks in every framework:
+
+\`\`\`text
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+for batch in data:
+    loss = loss_fn(model(batch.x), batch.y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+\`\`\`
+
+This is a **design** lesson: a **refactor** (same behaviour, better shape; the checks keep working while the structure changes, as in the intermediate course's first design lesson). The starter's \`train\` handles three optimizers with an \`if\` chain on a string and a heap of unrelated state variables. It works, but every new optimizer means editing the loop. The fix is the strategy pattern from py3-10: one small interface, \`zero_grad()\` and \`step()\`, and a class per strategy that keeps its **own state**.
+
+**SGD with momentum.** Plain gradient descent zigzags across narrow valleys. Momentum keeps a running **velocity** per parameter, so steps in a consistent direction build up speed and zigzags cancel:
+
+\`\`\`text
+velocity = momentum * velocity + grad
+p.data  -= lr * velocity
+\`\`\`
+
+With \`momentum = 0\` this is plain SGD (the form PyTorch's \`SGD\` uses).
+
+**Adam** gives every parameter its own step size. It keeps two running averages per parameter: \`m\` of the gradient (like momentum) and \`v\` of the squared gradient (how large gradients usually are for this parameter). Dividing by \`sqrt(v)\` makes steps similar in size whether a parameter's gradients are tiny or huge. Both averages start at 0, which biases them towards 0 early on, so Adam corrects them using the step count \`t\` (starting at 1):
+
+\`\`\`text
+m = beta1 * m + (1 - beta1) * grad
+v = beta2 * v + (1 - beta2) * grad ** 2
+m_hat = m / (1 - beta1 ** t)
+v_hat = v / (1 - beta2 ** t)
+p.data -= lr * m_hat / (sqrt(v_hat) + eps)
+\`\`\`
+
+On the very first step \`m_hat\` is the gradient and \`sqrt(v_hat)\` is its size, so every parameter moves by about \`lr\`, whatever its gradient's scale.
+
+A small, runnable version of the idea, with a stand-in for a parameter:
+
+\`\`\`python
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+class SGD:
+    def __init__(self, params, lr):
+        self.params, self.lr = list(params), lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for p in self.params:
+            p.data -= self.lr * p.grad
+
+x = Param(0.0)
+opt = SGD([x], lr=0.1)
+for _ in range(50):
+    opt.zero_grad()
+    x.grad = 2 * (x.data - 3)      # the gradient of (x - 3) ** 2
+    opt.step()
+round(x.data, 4)                    # 3.0
+\`\`\`
+
+**Design notes.** Store per-parameter state in lists **aligned with** \`self.params\` (index \`i\` is parameter \`i\`), created once in \`__init__\`. Each optimizer instance owns its state, so two models trained side by side never share it. Put what every optimizer shares (\`params\`, \`lr\`, \`zero_grad\`) in a base class; each subclass writes only its own \`step\`.
+
+**At scale.** Large language models are trained with **AdamW** (Adam plus weight decay, which gently shrinks weights) and a **learning-rate schedule**: a short warm-up, then a slow decay. Adam's two extra numbers per parameter are a real cost: for a model with billions of parameters, optimizer state is a large share of GPU memory, which is one reason labs shard it across many GPUs.
+--- task
+Refactor the starter into:
+
+- A base class \`Optimizer(params, lr)\` that stores \`params\` (as a list) and \`lr\`, has \`zero_grad()\` (sets every parameter's \`grad\` to \`0.0\`), and a \`step()\` that raises \`NotImplementedError\`.
+- \`SGD(params, lr=0.1, momentum=0.0)\`, a subclass of \`Optimizer\`, whose \`step()\` applies the momentum rule above.
+- \`Adam(params, lr=0.01, betas=(0.9, 0.999), eps=1e-8)\`, a subclass of \`Optimizer\`, whose \`step()\` applies the Adam rule above with its own step counter.
+- \`train(model, xs, ys, optimizer, steps=200)\`: each step computes \`mse_loss\`, calls \`optimizer.zero_grad()\`, \`loss.backward()\`, \`optimizer.step()\`, and records \`loss.data\`. It returns the list of losses and knows nothing about which optimizer it has (no branching on a method name).
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, method="sgd", lr=0.1, steps=200, momentum=0.0, beta1=0.9, beta2=0.999, eps=1e-8):
+    params = model.parameters()
+    vel = [0.0] * len(params)
+    m = [0.0] * len(params)
+    v = [0.0] * len(params)
+    losses = []
+    for t in range(1, steps + 1):
+        loss = mse_loss(model, xs, ys)
+        for p in params:
+            p.grad = 0.0
+        loss.backward()
+        for i, p in enumerate(params):
+            if method == "sgd":
+                vel[i] = momentum * vel[i] + p.grad
+                p.data -= lr * vel[i]
+            elif method == "adam":
+                m[i] = beta1 * m[i] + (1 - beta1) * p.grad
+                v[i] = beta2 * v[i] + (1 - beta2) * p.grad ** 2
+                m_hat = m[i] / (1 - beta1 ** t)
+                v_hat = v[i] / (1 - beta2 ** t)
+                p.data -= lr * m_hat / (math.sqrt(v_hat) + eps)
+            else:
+                raise ValueError(f"unknown method: {method}")
+        losses.append(loss.data)
+    return losses
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class SGD(Optimizer):
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        super().__init__(params, lr)
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        super().__init__(params, lr)
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+def train(model, xs, ys, optimizer, steps=200):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        losses.append(loss.data)
+    return losses
+--- hint
+Start with the base class: \`__init__\` keeps \`list(params)\` and \`lr\`, \`zero_grad\` loops over \`self.params\`, and \`step\` just raises \`NotImplementedError\`.
+--- hint
+Each subclass calls \`super().__init__(params, lr)\` and then creates its own state lists, one entry per parameter: \`self.velocity\` for SGD, \`self.m\`, \`self.v\` and a counter \`self.t = 0\` for Adam.
+--- hint
+In \`Adam.step\`, add 1 to \`self.t\` once per call (not once per parameter), then update \`m[i]\`, \`v[i]\` and the parameter for each \`i\`, exactly as the old \`adam\` branch did.
+--- check test | Plain SGD moves a parameter by lr * grad
+(lambda p: (setattr(p, "grad", 2.0), SGD([p], lr=0.1).step(), abs(p.data - 0.8) < 1e-12)[2])(Value(1.0))
+--- check test | SGD with momentum builds up velocity over two steps
+(lambda p: (lambda o: (setattr(p, "grad", 2.0), o.step(), o.step(), abs(p.data - 0.42) < 1e-12)[3])(SGD([p], lr=0.1, momentum=0.9)))(Value(1.0))
+--- check test | zero_grad clears every parameter's gradient
+(lambda ps: (lambda o: ([setattr(p, "grad", 5.0) for p in ps], o.zero_grad(), all(p.grad == 0.0 for p in ps))[2])(Adam(ps)))([Value(1.0), Value(2.0), Value(3.0)])
+--- check test | Adam's first step moves every parameter by about lr, whatever the gradient's size
+(lambda a, b: (lambda o: (setattr(a, "grad", 2.0), setattr(b, "grad", -0.001), o.step(), abs(a.data - 0.99) < 1e-6 and abs(b.data - 1.01) < 1e-4)[3])(Adam([a, b])))(Value(1.0), Value(1.0))
+--- check test | Adam's second step uses bias correction with t = 2
+(lambda p: (lambda o: (setattr(p, "grad", 2.0), o.step(), setattr(p, "grad", -1.0), o.step(), abs(p.data - 0.9873366296702432) < 1e-9)[4])(Adam([p], lr=0.01)))(Value(1.0))
+--- check test | Each optimizer keeps its own state
+(lambda a, b: (lambda o1, o2: (setattr(a, "grad", 2.0), o1.step(), o1.step(), setattr(b, "grad", 2.0), o2.step(), abs(b.data - 0.99) < 1e-6)[5])(Adam([a]), Adam([b])))(Value(1.0), Value(1.0))
+--- check test | SGD and Adam share the Optimizer base, whose own step is not implemented
+issubclass(SGD, Optimizer) and issubclass(Adam, Optimizer) and raises(NotImplementedError, lambda: Optimizer([Value(1.0)], 0.1).step())
+--- check test | train calls zero_grad then step, once each per step, on any optimizer
+(lambda o: (train(MLP(2, [4, 1]), XOR_X, XOR_Y, o, steps=3), o.calls)[1] == ["zero_grad", "step"] * 3)(type("Recorder", (), {"calls": [], "zero_grad": lambda self: self.calls.append("zero_grad"), "step": lambda self: self.calls.append("step")})())
+--- check test | Plain SGD learns XOR (loss below 0.02)
+(lambda m: train(m, XOR_X, XOR_Y, SGD(m.parameters(), lr=0.2))[-1] < 0.02)(MLP(2, [4, 1]))
+--- check test | SGD with momentum learns XOR faster: below 0.02 within 100 steps
+(lambda m: train(m, XOR_X, XOR_Y, SGD(m.parameters(), lr=0.05, momentum=0.9), steps=100)[-1] < 0.02)(MLP(2, [4, 1]))
+--- check test | Adam learns XOR (loss below 0.02)
+(lambda m: train(m, XOR_X, XOR_Y, Adam(m.parameters(), lr=0.05), steps=150)[-1] < 0.02)(MLP(2, [4, 1]))
+--- check source absent | train no longer branches on a method name
+method\\s*==
+--- check source | SGD is a subclass of Optimizer
+class\\s+SGD\\s*\\(\\s*Optimizer\\s*\\)
+
+=== ai-10 | Debugging: softmax overflow and log-sum-exp
+--- teach
+A network that chooses between many classes (and a language model choosing the next token out of tens of thousands is exactly that) ends in **softmax**: it turns a list of scores (**logits**) into probabilities that are positive and add up to 1.
+
+\`\`\`python
+import math
+
+logits = [2.0, 1.0, 0.1]
+exps = [math.exp(z) for z in logits]
+[round(e / sum(exps), 3) for e in exps]      # [0.659, 0.242, 0.099]
+\`\`\`
+
+The loss is **cross-entropy**: minus the log of the probability given to the right class, \`-log(p[target])\`. It is the multi-class version of the binary cross-entropy from lesson 3, and its gradient with respect to the logits is the same beautiful shape:
+
+\`\`\`text
+dloss/dlogit[i] = p[i] - (1 if i == target else 0)
+\`\`\`
+
+Push down every wrong class by its probability, and push up the right one by how much probability it is missing.
+
+**Where it breaks.** The formula is right; the arithmetic is not. \`math.exp\` overflows for anything above about 709.78 (the largest float is about \`1.8e308\`), and underflows to exactly \`0.0\` below about -745. Logits in a real network drift into those ranges, especially early in training or with a learning rate a bit too high. Then:
+
+- a big logit makes \`math.exp\` raise \`OverflowError\` (NumPy or PyTorch return \`inf\`, and \`inf / inf\` is \`nan\`, which then silently spreads through every number it touches);
+- a right answer whose logit is far below the others gets probability exactly \`0.0\`, and \`log(0)\` raises \`ValueError\` (or gives \`-inf\` and then \`nan\` in a framework).
+
+In training this shows up as a loss that is fine for hours and then suddenly \`nan\`. With **mixed precision** (training in 16-bit floats to go faster, as every large model does), \`float16\` overflows at \`exp(11.1)\`, so this is not an edge case.
+
+**The fix: shift, then use logs.** Softmax does not change if you add the same number to every logit (the factor \`exp(c)\` cancels between top and bottom). So subtract the **maximum** first: the largest exponent is then \`exp(0) = 1\`, nothing overflows, and the sum is at least 1.
+
+For the loss, never take the log of a probability that may have rounded to 0. Work in logs throughout:
+
+\`\`\`text
+log p[i] = z[i] - log(sum_j exp(z[j]))
+\`\`\`
+
+and compute that last term, the **log-sum-exp**, with the same shift:
+
+\`\`\`python
+import math
+
+def logsumexp(xs):
+    m = max(xs)
+    return m + math.log(sum(math.exp(x - m) for x in xs))
+
+logsumexp([1000.0, 1000.0])       # 1000.6931..., where the naive version overflows
+\`\`\`
+
+So cross-entropy is simply \`logsumexp(logits) - logits[target]\`: no division, no \`log(0)\`, no overflow.
+
+**A sanity check worth memorising.** With all logits equal (a freshly initialised model knows nothing), cross-entropy is \`log(number of classes)\`. A character model with 27 symbols should start near \`log 27 ≈ 3.30\`. If your first loss is much bigger, the initialisation is too confident, and that is worth fixing before training for hours.
+
+**Debugging it.** Reproduce with the smallest failing input (\`[1000.0, 0.0]\`), read the traceback to the exact \`math.exp\` or \`math.log\` call, and fix the cause (the arithmetic) rather than the symptom. A \`try\`/\`except\` that returns \`0\` on overflow, or clamping logits into \`[-50, 50]\`, just hides wrong numbers.
+
+In PyTorch: \`F.softmax\`, \`F.log_softmax\`, \`torch.logsumexp\` and \`F.cross_entropy\` (which takes **logits**, not probabilities, for exactly this reason).
+--- task
+**Bug report:** "Training crashed after a few thousand steps with \`OverflowError: math range error\` inside \`softmax\` (the logits had reached about 800). Earlier, a run died with \`ValueError: math domain error\` in \`cross_entropy\` when the right answer's logit was about 800 below the rest."
+
+Fix the causes and complete the module:
+
+- \`softmax(logits)\`: stable for any finite logits.
+- \`logsumexp(xs)\`: stable, as above.
+- \`log_softmax(logits)\`: the list of \`log p[i]\`, computed without ever taking the log of a probability.
+- \`cross_entropy(logits, target)\`: \`-log p[target]\`, stable.
+- \`cross_entropy_grad(logits, target)\`: the list of derivatives of \`cross_entropy\` with respect to each logit.
+--- starter
+import math
+
+
+def softmax(logits):
+    exps = [math.exp(z) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def logsumexp(xs):
+    pass
+
+
+def log_softmax(logits):
+    pass
+
+
+def cross_entropy(logits, target):
+    return -math.log(softmax(logits)[target])
+
+
+def cross_entropy_grad(logits, target):
+    pass
+--- solution
+import math
+
+
+def softmax(logits):
+    m = max(logits)
+    exps = [math.exp(z - m) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def logsumexp(xs):
+    m = max(xs)
+    return m + math.log(sum(math.exp(x - m) for x in xs))
+
+
+def log_softmax(logits):
+    lse = logsumexp(logits)
+    return [z - lse for z in logits]
+
+
+def cross_entropy(logits, target):
+    return logsumexp(logits) - logits[target]
+
+
+def cross_entropy_grad(logits, target):
+    probs = softmax(logits)
+    return [p - (1.0 if i == target else 0.0) for i, p in enumerate(probs)]
+--- hint
+Reproduce it: \`softmax([800.0, 0.0])\` and \`cross_entropy([0.0, -800.0], 1)\`. Which call in each traceback fails?
+--- hint
+Subtract \`max(logits)\` from every logit before \`math.exp\`. For the loss, use \`logsumexp(logits) - logits[target]\` so you never take \`log\` of a probability.
+--- hint
+The gradient is \`softmax(logits)\` with 1 subtracted at the \`target\` position.
+--- check test | softmax gives the right probabilities, adding up to 1
+(lambda p: all(abs(a - b) < 1e-12 for a, b in zip(p, [0.09003057317038046, 0.24472847105479764, 0.6652409557748219])) and abs(sum(p) - 1) < 1e-12)(softmax([1.0, 2.0, 3.0]))
+--- check test | softmax survives huge logits: [1000, 1000] is [0.5, 0.5]
+softmax([1000.0, 1000.0]) == [0.5, 0.5] and abs(softmax([800.0, 0.0])[0] - 1.0) < 1e-12
+--- check test | softmax survives very negative logits too
+(lambda p: p[0] < 1e-300 and abs(p[1] - 1.0) < 1e-12)(softmax([-1000.0, 0.0]))
+--- check test | Adding a constant to every logit changes nothing
+all(abs(a - b) < 1e-12 for a, b in zip(softmax([1.0, 2.0, 3.0]), softmax([501.0, 502.0, 503.0])))
+--- check test | logsumexp is stable at both ends
+abs(logsumexp([1000.0, 1000.0]) - (1000 + __import__("math").log(2))) < 1e-9 and abs(logsumexp([-1000.0, -1000.0]) - (-1000 + __import__("math").log(2))) < 1e-9 and logsumexp([3.0]) == 3.0
+--- check test | log_softmax works where log(softmax) would hit log(0)
+(lambda ls: abs(ls[0]) < 1e-12 and abs(ls[1] + 800.0) < 1e-9)(log_softmax([0.0, -800.0]))
+--- check test | cross_entropy: known value, and a hopeless answer costs about 800 instead of crashing
+abs(cross_entropy([2.0, 1.0, 0.1], 0) - 0.41703001627783376) < 1e-12 and abs(cross_entropy([0.0, -800.0], 1) - 800.0) < 1e-9 and abs(cross_entropy([800.0, 0.0], 0)) < 1e-12
+--- check test | With equal logits the loss is log(number of classes)
+abs(cross_entropy([0.0] * 27, 5) - __import__("math").log(27)) < 1e-12
+--- check test | cross_entropy_grad is softmax minus one-hot, and adds up to 0
+(lambda g: all(abs(a - b) < 1e-12 for a, b in zip(g, [0.09003057317038046, -0.7552715289452024, 0.6652409557748219])) and abs(sum(g)) < 1e-12)(cross_entropy_grad([1.0, 2.0, 3.0], 1))
+--- check test | cross_entropy_grad agrees with the numerical derivative
+(lambda z, t: all(abs(g - (cross_entropy(z[:i] + [z[i] + 1e-6] + z[i + 1:], t) - cross_entropy(z[:i] + [z[i] - 1e-6] + z[i + 1:], t)) / 2e-6) < 1e-6 for i, g in enumerate(cross_entropy_grad(z, t))))([0.3, -1.2, 2.5, 0.0], 2)
+--- check test | cross_entropy_grad survives huge logits
+(lambda g: abs(g[0]) < 1e-12 and abs(g[1]) < 1e-12)(cross_entropy_grad([1000.0, 0.0], 0))
+
+=== ai-11 | Problem solving: byte-pair encoding
+--- teach
+A model reads numbers, not text, so text is first cut into **tokens** and each token gets an integer id. How you cut it matters a lot:
+
+- **Characters**: a tiny vocabulary, never an unknown word, but sequences are long, and attention (lesson 13) costs grow with the square of the length.
+- **Words**: short sequences, but a huge vocabulary, and any word not seen in training ("rocketship", a typo, a new name) has no id at all.
+
+**Byte-pair encoding (BPE)**, used by GPT-style models and most others, sits in between. Start from the **bytes** of the UTF-8 encoding: 256 possible values, so any text in any language (and any emoji) can be represented, and nothing is ever unknown. Then repeatedly find the **most frequent adjacent pair** of tokens and replace it everywhere with a **new token** (ids 256, 257, …). Common chunks ("the", "ing", " orbit") become single tokens; rare words stay as several pieces.
+
+\`\`\`python
+list("hi".encode("utf-8"))            # [104, 105]: one byte per ASCII letter
+list("é🚀".encode("utf-8"))            # [195, 169, 240, 159, 154, 128]: several bytes each
+bytes([104, 105]).decode("utf-8")      # 'hi'
+\`\`\`
+
+**Use the problem-solving approach** (from the intermediate course): restate, work examples by hand, get a simple version right, then make it fast.
+
+**Worked example.** Start from the letters of \`"banana band"\` (using letters instead of byte numbers to keep it readable):
+
+\`\`\`text
+b a n a n a _ b a n d      pairs: ba×2, an×3, na×2, a_, _b, nd
+merge (a, n) -> X:  b X X a _ b X d      pairs: bX×2, XX, Xa, a_, _b, Xd
+merge (b, X) -> Y:  Y X a _ Y d
+\`\`\`
+
+Eleven tokens became six, and the learned merges are \`{(a, n): 256, (b, X): 257}\`: the **order matters**, because the second merge uses the token the first one made.
+
+**Counting pairs** is one pass: \`zip(ids, ids[1:])\` walks every adjacent pair; count them in a dict. A dict remembers insertion order, so its keys come out in order of first appearance, which gives a deterministic way to break ties: \`max(counts, key=counts.get)\` returns the **first** of the tied pairs.
+
+**Merging** must go left to right and skip past a pair once it is replaced. In \`[5, 5, 5]\`, merging \`(5, 5)\` gives \`[X, 5]\`, not two overlapping \`X\`s. And it must be **one linear pass** building a new list. The tempting version, "find the pair, rebuild the list around it, search again from the start", is \`O(n)\` work per replacement, so \`O(n²)\` in total: on 200,000 tokens that is billions of steps, and real tokenizers train on gigabytes.
+
+**Encoding new text** applies the learned merges in the **order they were learned**: repeatedly look at the pairs present, pick the one that was learned **earliest** (the smallest new id), merge it, and stop when no present pair is in the merges. **Decoding** rebuilds each token's bytes: tokens below 256 are single bytes, and each new token is the bytes of its pair joined together. Decode with \`errors="replace"\`: an id sequence can end in the middle of a multi-byte character, and that must not crash.
+
+In practice: tokenizers like \`tiktoken\` or SentencePiece do exactly this with vocabularies of 50,000 to 200,000 tokens, plus rules that split text into words first and special tokens such as end-of-text.
+--- task
+Write:
+
+- \`pair_counts(ids)\`: a dict mapping each adjacent pair \`(a, b)\` to how many times it occurs, keys in order of first appearance.
+- \`merge(ids, pair, new_id)\`: a new list with every occurrence of \`pair\` replaced by \`new_id\`, left to right, non-overlapping. Do not change \`ids\`. It must be linear: it is tested on 200,000 tokens.
+- \`train_bpe(text, num_merges)\`: start from \`list(text.encode("utf-8"))\`; up to \`num_merges\` times, pick the most frequent pair (ties: the one that appears first), give it the next id (256, 257, …), and merge it. Stop early if the best pair occurs fewer than 2 times (or there are no pairs). Return the merges as a dict \`{pair: new_id}\` in the order they were learned.
+- \`encode(text, merges)\`: the token ids of \`text\`, applying merges earliest-learned first as described.
+- \`decode(ids, merges)\`: the text, decoding the bytes as UTF-8 with \`errors="replace"\`.
+--- starter
+def pair_counts(ids):
+    pass
+
+
+def merge(ids, pair, new_id):
+    pass
+
+
+def train_bpe(text, num_merges):
+    pass
+
+
+def encode(text, merges):
+    pass
+
+
+def decode(ids, merges):
+    pass
+--- solution
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def train_bpe(text, num_merges):
+    ids = list(text.encode("utf-8"))
+    merges = {}
+    for _ in range(num_merges):
+        counts = pair_counts(ids)
+        if not counts:
+            break
+        best = max(counts, key=counts.get)
+        if counts[best] < 2:
+            break
+        new_id = 256 + len(merges)
+        ids = merge(ids, best, new_id)
+        merges[best] = new_id
+    return merges
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def decode(ids, merges):
+    vocab = {i: bytes([i]) for i in range(256)}
+    for (a, b), new_id in sorted(merges.items(), key=lambda item: item[1]):
+        vocab[new_id] = vocab[a] + vocab[b]
+    return b"".join(vocab[i] for i in ids).decode("utf-8", errors="replace")
+--- hint
+\`merge\`: walk with an index \`i\`. If \`ids[i]\` and \`ids[i + 1]\` are the pair, append \`new_id\` and jump \`i\` by 2; otherwise append \`ids[i]\` and move by 1.
+--- hint
+\`train_bpe\`: each round, \`counts = pair_counts(ids)\`, \`best = max(counts, key=counts.get)\`, stop if \`counts[best] < 2\`, otherwise the new id is \`256 + len(merges)\`.
+--- hint
+\`encode\`: among the pairs present, the one to merge next is \`min(present, key=lambda p: merges.get(p, float("inf")))\`; if that pair is not in \`merges\`, you are done. \`decode\`: build a dict from id to \`bytes\`, filling new ids in increasing order.
+--- check case | pair_counts counts adjacent pairs
+pair_counts([1, 2, 3, 1, 2])
+=> {(1, 2): 2, (2, 3): 1, (3, 1): 1}
+--- check test | pair_counts keeps first-appearance order and handles tiny inputs
+list(pair_counts([7, 8, 9, 8, 9, 7, 8])) == [(7, 8), (8, 9), (9, 8), (9, 7)] and pair_counts([]) == {} and pair_counts([5]) == {}
+--- check case | merge replaces every occurrence
+merge([1, 2, 3, 1, 2], (1, 2), 99)
+=> [99, 3, 99]
+--- check test | merge goes left to right without overlapping, and leaves its input alone
+(lambda ids: merge(ids, (5, 5), 9) == [9, 5] and merge([5, 5, 5, 5], (5, 5), 9) == [9, 9] and ids == [5, 5, 5] and merge([], (1, 2), 3) == [])([5, 5, 5])
+--- check test | merge is linear: 200,000 tokens with 100,000 replacements
+merge([1, 2] * 100000, (1, 2), 256) == [256] * 100000
+--- check case | train_bpe on "banana band" learns (a, n) and then (b, an)
+train_bpe("banana band", 5)
+=> {(97, 110): 256, (98, 256): 257}
+--- check test | train_bpe stops when no pair repeats
+train_bpe("abcdef", 10) == {} and train_bpe("", 3) == {} and train_bpe("aaaaaaaa", 10) == {(97, 97): 256, (256, 256): 257} and train_bpe("aaaa", 10) == {(97, 97): 256}
+--- check test | Ties go to the pair that appears first
+list(train_bpe("xyab xyab abxy", 1)) == [(120, 121)]
+--- check test | encode applies merges in the order they were learned
+encode("abc", {(97, 98): 256, (256, 99): 257, (98, 99): 258}) == [257] and encode("abc", {}) == [97, 98, 99]
+--- check test | Encoding the training text compresses it, and decode gets it back
+(lambda t: (lambda m: (lambda ids: len(ids) < len(t) // 2 and decode(ids, m) == t)(encode(t, m)))(train_bpe(t, 40)))("the rocket and the lander left the launch pad; the lander landed and the rocket went on. " * 20)
+--- check test | Round trip on text never seen in training, with accents and emoji
+(lambda m: all(decode(encode(s, m), m) == s for s in ("héllo wörld 🚀", "naïve café", "", "the end")))(train_bpe("the rocket and the lander and the launch pad " * 5, 20))
+--- check test | decode of a cut-off character does not crash
+decode([0xE2, 0x82], {}) == "�" and decode([104, 105], {}) == "hi"
+--- check test | Big input: train 30 merges on about 40,000 characters
+(lambda t: (lambda m: len(m) == 30 and sorted(m.values()) == list(range(256, 286)) and decode(encode(t[:2000], m), m) == t[:2000])(train_bpe(t, 30)))((lambda r: " ".join(r.choice(["the", "rocket", "launch", "orbit", "fuel", "stage", "engine", "moon", "lander", "thrust"]) for _ in range(6000)))(__import__("random").Random(1)))
+
+=== ai-12 | A bigram language model
+--- teach
+A **language model** gives a probability to what comes next: given the text so far, how likely is each possible next token? Everything a chatbot does rests on that one ability, applied over and over. The simplest real language model looks at only the **previous character**: a **bigram** model.
+
+**Training is counting.** Mark the start and end of each word with a special token \`.\`, then count every adjacent pair:
+
+\`\`\`python
+from collections import Counter
+
+words = ["moon", "mars"]
+pairs = Counter()
+for w in words:
+    seq = ["."] + list(w) + ["."]
+    pairs.update(zip(seq, seq[1:]))
+pairs[(".", "m")], pairs[("o", "o")], pairs[("s", ".")]     # (2, 1, 1)
+\`\`\`
+
+\`.\` followed by \`m\` twice means both words start with \`m\`; \`s\` then \`.\` means a word ended after \`s\`.
+
+**Counts to probabilities.** For a previous character \`a\`, the counts in its row, divided by the row total, are the probabilities of each next character. They add up to 1.
+
+**Smoothing.** If \`z\` never followed \`q\` in training, the probability is 0, and a single unseen pair in new text makes the loss infinite (\`-log 0\`). **Add-k smoothing** pretends every pair was seen \`k\` extra times:
+
+\`\`\`text
+P(b | a) = (count(a, b) + k) / (row_total(a) + k * vocabulary_size)
+\`\`\`
+
+With \`k = 1\` nothing is impossible. Bigger \`k\` flattens the distribution towards uniform, trusting the data less.
+
+**How good is it? Negative log-likelihood.** Walk through some words, and for each character (including the final \`.\`) take \`-log\` of the probability the model gave it. The average is the **NLL**, in "nats per character". It is exactly the cross-entropy loss from lesson 10, which is why "loss" and "log-likelihood" mean the same thing in language modelling. Lower is better. \`exp(NLL)\` is the **perplexity**: a model with perplexity 8 is, on average, as unsure as if it were choosing uniformly among 8 characters. A model that knows nothing, over 27 symbols, has perplexity 27 (NLL \`log 27 ≈ 3.30\`).
+
+**Generating.** Start from \`.\`, pick the next character at random **in proportion to** the probabilities, append it, and repeat until you pick \`.\` again. \`rng.choices(options, weights=...)\` does the weighted pick, and a seeded \`random.Random\` makes it repeatable:
+
+\`\`\`python
+import random
+
+rng = random.Random(0)
+[rng.choices(["a", "b", "c"], weights=[1, 1, 8])[0] for _ in range(10)]   # mostly "c"
+\`\`\`
+
+Weights do not need to add up to 1: the counts plus \`k\` work directly.
+
+**Why this matters.** A neural network that takes the previous character as input and outputs 27 logits, trained with cross-entropy, ends up learning exactly these probabilities. The counting model is the target the network approaches, and a great baseline: if your fancy model cannot beat a bigram, something is wrong. Bigger models win by looking at much more context.
+
+In PyTorch: \`torch.multinomial(probs, 1, generator=g)\` samples, with \`g = torch.Generator().manual_seed(0)\`.
+--- task
+The starter has a list \`WORDS\`. Write a class \`BigramLM(words, k=1)\`:
+
+- \`chars\`: \`"."\` followed by the sorted distinct characters in \`words\`.
+- \`count(a, b)\`: how many times \`b\` followed \`a\` in training (with \`.\` at the start and end of every word).
+- \`prob(a, b)\`: the add-k smoothed probability from the formula above, with vocabulary size \`len(chars)\`.
+- \`nll(words)\`: the average of \`-log(prob)\` over every predicted character of the given words, including each final \`.\`.
+- \`perplexity(words)\`: \`exp\` of the NLL.
+- \`sample(rng, max_len=20)\`: start after \`.\`, and at each step pick \`rng.choices(self.chars, weights=[count(prev, c) + k for c in self.chars])[0]\`. Stop (without including it) at \`.\`, or when the word has \`max_len\` characters. Return the word.
+--- starter
+import math
+import random
+
+WORDS = [
+    "orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon",
+    "mars", "star", "space", "probe", "lander", "rover", "crater", "galaxy",
+    "nebula", "planet", "saturn", "venus", "meteor", "cosmos", "thrust", "booster",
+    "capsule", "module", "station", "solar", "lunar", "astro", "pilot", "hangar",
+]
+
+
+class BigramLM:
+    pass
+--- solution
+import math
+import random
+
+WORDS = [
+    "orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon",
+    "mars", "star", "space", "probe", "lander", "rover", "crater", "galaxy",
+    "nebula", "planet", "saturn", "venus", "meteor", "cosmos", "thrust", "booster",
+    "capsule", "module", "station", "solar", "lunar", "astro", "pilot", "hangar",
+]
+
+
+class BigramLM:
+    def __init__(self, words, k=1):
+        self.k = k
+        self.chars = ["."] + sorted(set("".join(words)))
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def count(self, a, b):
+        return self.counts[a][b]
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+    def perplexity(self, words):
+        return math.exp(self.nll(words))
+
+    def sample(self, rng, max_len=20):
+        out, prev = [], "."
+        while len(out) < max_len:
+            weights = [self.counts[prev][c] + self.k for c in self.chars]
+            nxt = rng.choices(self.chars, weights=weights)[0]
+            if nxt == ".":
+                break
+            out.append(nxt)
+            prev = nxt
+        return "".join(out)
+--- hint
+Store the counts as a dict of dicts: \`self.counts[a][b]\`, with every pair of \`chars\` starting at 0, then add 1 for each pair in \`["."] + list(word) + ["."]\`.
+--- hint
+\`prob(a, b)\` is \`(counts[a][b] + k) / (sum of row a + k * len(chars))\`. \`nll\` adds \`-math.log(prob(a, b))\` over the same pairs and divides by how many there were.
+--- hint
+In \`sample\`, keep the previous character (starting at \`"."\`), build the weights for its row, call \`rng.choices\` once per character, and stop at \`"."\` or at \`max_len\`.
+--- check test | chars is "." then the sorted letters
+(lambda m: m.chars[0] == "." and m.chars[1:] == sorted(set("".join(WORDS))) and len(m.chars) == 23)(BigramLM(WORDS))
+--- check test | count includes the start and end markers
+(lambda m: m.count(".", "m") == 4 and m.count("o", "o") == 2 and m.count("r", ".") == 9 and m.count(".", ".") == 0)(BigramLM(WORDS))
+--- check test | Every row of probabilities adds up to 1
+(lambda m: all(abs(sum(m.prob(a, b) for b in m.chars) - 1) < 1e-12 for a in m.chars))(BigramLM(WORDS, k=0.5))
+--- check test | prob applies add-k smoothing
+(lambda m: abs(m.prob("m", "o") - 3 / 10) < 1e-12 and abs(m.prob("m", "x") - 1 / 10) < 1e-12)(BigramLM(["moon", "mom", "max"], k=1)) and BigramLM(["ab"], k=0).prob("a", "b") == 1.0
+--- check test | nll of a tiny model, by hand
+abs(BigramLM(["ab"], k=0).nll(["ab"])) < 1e-12 and abs(BigramLM(["ab", "b"], k=0).nll(["b"]) - (-__import__("math").log(0.5) / 2)) < 1e-12
+--- check test | nll and perplexity on the training words
+(lambda m: abs(m.nll(WORDS) - 2.411853253394921) < 1e-9 and abs(m.perplexity(WORDS) - __import__("math").exp(m.nll(WORDS))) < 1e-9)(BigramLM(WORDS))
+--- check test | A model with no information has perplexity equal to its vocabulary size
+(lambda m: abs(m.perplexity(["abc", "cab"]) - 4) < 1e-6)(BigramLM(["abc"], k=10 ** 9))
+--- check test | Unseen pairs get a finite loss thanks to smoothing
+(lambda m: 0 < m.nll(["rrr", "mooon", "tsar"]) < 10)(BigramLM(WORDS))
+--- check case | Sampling (no smoothing) is deterministic for a given seed
+[BigramLM(WORDS, k=0).sample(random.Random(s)) for s in range(5)]
+=> ["stanele", "cosar", "tue", "fular", "fulachrosar"]
+--- check test | With smoothing, samples still respect max_len and use only known characters
+all(len(w) <= 3 and set(w) <= set(BigramLM(WORDS).chars[1:]) for w in [BigramLM(WORDS).sample(random.Random(s), max_len=3) for s in range(30)])
+
+=== ai-13 | Embeddings and causal self-attention
+--- teach
+The bigram model looks at one character. To predict well, a model must use the **whole context** and decide, for each position, which earlier tokens matter. **Attention** is the mechanism that does that, and it is the heart of the transformer, the architecture behind today's language models.
+
+**Embeddings: ids to vectors.** A token id is just a label; the number 17 is not "bigger" than 3 in any useful sense. So each id looks up a row in a learned table, its **embedding**: a vector of \`d\` numbers that training shapes so similar tokens get similar vectors. Attention on its own does not know word order, so each **position** also gets a learned vector, added on:
+
+\`\`\`python
+token_table = [[0.1, 0.2], [0.5, -0.3], [0.0, 0.9]]    # 3 tokens, d = 2
+pos_table = [[1.0, 0.0], [0.0, 1.0]]                  # 2 positions
+ids = [2, 0]
+[[t + p for t, p in zip(token_table[tok], pos_table[i])] for i, tok in enumerate(ids)]
+# [[1.0, 0.9], [0.1, 1.2]]
+\`\`\`
+
+(Looking up row \`i\` is the same as multiplying a one-hot vector by the table, which is why it can be trained like any other matrix.)
+
+**Queries, keys and values.** From each position's vector \`x\`, attention makes three vectors with three learned matrices: a **query** \`q = x @ Wq\` ("what am I looking for?"), a **key** \`k = x @ Wk\` ("what do I contain?") and a **value** \`v = x @ Wv\` ("what I pass on if chosen"). For a whole sequence \`X\` (one row per position) that is three matrix products: \`Q = X @ Wq\`, and so on.
+
+**Scores, softmax, weighted average.** Position \`i\` scores every position \`j\` with a dot product, \`q_i · k_j\` (big when they match), turns the scores into weights with softmax, and outputs the weighted average of the values:
+
+\`\`\`text
+weights[i] = softmax([q_i · k_j / sqrt(d) for every j])
+out[i]     = sum over j of weights[i][j] * v_j
+\`\`\`
+
+In matrix form: \`softmax(Q @ K.T / sqrt(d)) @ V\`, which is why attention is called **scaled dot-product attention**.
+
+**Why divide by \`sqrt(d)\`?** A dot product of two random \`d\`-long vectors grows like \`sqrt(d)\`. Without the scaling, large models get huge scores, softmax becomes almost one-hot, and its gradients vanish (lesson 10's saturation, in another place). Dividing by \`sqrt(d)\` keeps the scores in a sensible range whatever the size.
+
+**The causal mask.** A language model predicts the next token, so position \`i\` must not look at positions after it: that would be reading the answer. Before the softmax, set the scores for \`j > i\` to \`-inf\`. \`exp(-inf)\` is exactly 0, so those positions get weight 0, and the remaining weights still add up to 1. The first position can only attend to itself.
+
+\`\`\`python
+import math
+
+scores = [0.5, -math.inf, -math.inf]       # row 0 of a causal score matrix
+m = max(scores)
+exps = [math.exp(s - m) for s in scores]
+[e / sum(exps) for e in exps]              # [1.0, 0.0, 0.0]
+\`\`\`
+
+The stable softmax from lesson 10 handles \`-inf\` for free, as long as each row has at least one real score (the diagonal always is).
+
+**Common mistake:** masking **after** the softmax (zeroing weights). The row no longer adds up to 1, and the future still leaked into the other weights through the shared denominator. Mask the scores, then softmax.
+
+In PyTorch: \`nn.Embedding\`, and \`F.scaled_dot_product_attention(q, k, v, is_causal=True)\`, which does exactly this, fused into one fast GPU kernel.
+--- task
+The starter has \`matmul\` and a stable \`softmax\`. Write:
+
+- \`embed(ids, token_table, pos_table)\`: for each position \`i\`, the row \`token_table[ids[i]]\` plus \`pos_table[i]\`, element by element.
+- \`attention(Q, K, V, causal=True)\`: returns \`(out, weights)\`. \`weights[i][j]\` is the softmax over \`j\` of \`Q[i] · K[j] / sqrt(d)\`, where \`d\` is the length of a key; with \`causal\`, scores for \`j > i\` are \`-inf\` before the softmax. \`out\` is \`weights @ V\`.
+- \`self_attention(X, Wq, Wk, Wv, causal=True)\`: computes \`Q\`, \`K\`, \`V\` from \`X\` and returns only the \`out\` of \`attention\`.
+--- starter
+import math
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def embed(ids, token_table, pos_table):
+    pass
+
+
+def attention(Q, K, V, causal=True):
+    pass
+
+
+def self_attention(X, Wq, Wk, Wv, causal=True):
+    pass
+--- solution
+import math
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def embed(ids, token_table, pos_table):
+    return [[t + p for t, p in zip(token_table[tok], pos_table[i])] for i, tok in enumerate(ids)]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def self_attention(X, Wq, Wk, Wv, causal=True):
+    return attention(matmul(X, Wq), matmul(X, Wk), matmul(X, Wv), causal)[0]
+--- hint
+For each query row \`i\`, build the list of scores against every key row \`j\`: the dot product divided by \`math.sqrt(len(K[0]))\`, or \`-math.inf\` when \`causal\` and \`j > i\`. Softmax that list to get row \`i\` of the weights.
+--- hint
+Once you have all the weight rows, \`out = matmul(weights, V)\`: each output row is a weighted average of the value rows.
+--- hint
+\`self_attention\` is \`attention(matmul(X, Wq), matmul(X, Wk), matmul(X, Wv), causal)[0]\`.
+--- check case | embed adds each token's row to its position's row
+embed([2, 0], [[0.5, 1.0], [2.0, 2.0], [-1.0, 0.0]], [[0.0, 0.25], [1.0, 1.0]])
+=> [[-1.0, 0.25], [1.5, 2.0]]
+--- check test | The first position attends only to itself, and weights above the diagonal are exactly 0
+(lambda w: w[0] == [1.0, 0.0, 0.0] and w[1][2] == 0.0 and all(abs(sum(r) - 1) < 1e-12 for r in w))(attention([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], [[1.0, 2.0], [0.5, 0.5], [2.0, -1.0]], [[1.0], [2.0], [3.0]])[1])
+--- check test | With identical keys, each position spreads its weight evenly over what it may see
+(lambda w: all(abs(w[i][j] - (1 / (i + 1) if j <= i else 0)) < 1e-12 for i in range(4) for j in range(4)))(attention([[0.3, 1.0]] * 4, [[2.0, -1.0]] * 4, [[1.0]] * 4)[1])
+--- check test | out is the weighted average of the values: the causal first row is V[0]
+(lambda r: r[0][0] == [5.0, -1.0] and abs(r[0][1][0] - (r[1][1][0] * 5 + r[1][1][1] * 7)) < 1e-12)(attention([[1.0, 0.0], [0.0, 1.0]], [[1.0, 1.0], [0.0, 2.0]], [[5.0, -1.0], [7.0, 3.0]]))
+--- check test | Scores are divided by sqrt(d): d = 4 gives softmax([2, 0]), not softmax([4, 0])
+(lambda w: abs(w[0][0] - 0.8807970779778823) < 1e-12)(attention([[1.0, 1.0, 1.0, 1.0]], [[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]], [[1.0], [0.0]], causal=False)[1])
+--- check test | Without the mask, every position sees every other
+(lambda w: all(v > 0 for r in w for v in r))(attention([[1.0, 0.0], [0.0, 1.0]], [[1.0, 0.0], [0.0, 1.0]], [[1.0], [2.0]], causal=False)[1])
+--- check test | self_attention on a small sequence
+(lambda out: len(out) == 3 and len(out[0]) == 3 and all(abs(a - b) < 1e-9 for r, e in zip(out, [[1.0, 0.5, 1.5], [0.888201680895, 0.611798319105, 1.164605042684], [-0.204774628396, 1.284692502514, -1.694241759305]]) for a, b in zip(r, e)))(self_attention([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]], [[0.5, -1.0], [1.0, 0.0]], [[1.0, 0.5], [-0.5, 1.0]], [[1.0, 0.0, 2.0], [0.0, 1.0, -1.0]]))
+--- check test | Causal: changing the last token never changes the earlier outputs
+(lambda f: f([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]])[:2] == f([[1.0, 0.5], [-0.5, 2.0], [9.0, 9.0]])[:2] != f([[9.0, 9.0], [-0.5, 2.0], [0.0, -1.0]])[:2])(lambda X: self_attention(X, [[0.5, -1.0], [1.0, 0.0]], [[1.0, 0.5], [-0.5, 1.0]], [[1.0, 0.0], [0.0, 1.0]]))
+
+=== ai-14 | A transformer block, forward pass
+--- teach
+A transformer is a stack of identical **blocks**. Each block lets the positions exchange information (attention), then lets each position think on its own (an MLP), with two pieces of plumbing that make deep stacks trainable: **layer normalisation** and **residual connections**. This lesson builds one block's forward pass, the way GPT-style models arrange it.
+
+**Layer normalisation** rescales each position's vector to mean 0 and variance 1, then applies a learned scale \`gamma\` and shift \`beta\` (one per dimension):
+
+\`\`\`python
+import math
+
+x = [1.0, 2.0, 3.0, 4.0]
+mean = sum(x) / len(x)
+var = sum((v - mean) ** 2 for v in x) / len(x)
+[round((v - mean) / math.sqrt(var + 1e-5), 3) for v in x]     # [-1.342, -0.447, 0.447, 1.342]
+\`\`\`
+
+Without it, the size of the numbers drifts from layer to layer, and training becomes unstable. The small \`eps\` (\`1e-5\`) under the square root protects against a vector whose values are all equal (variance 0). The variance divides by \`n\`, not \`n - 1\`.
+
+**The MLP** works on each position separately: expand to a wider hidden size (4× in GPT models), apply a nonlinearity, project back. GPT models use **GELU**, a smooth cousin of ReLU, usually in this tanh form:
+
+\`\`\`text
+gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x ** 3)))
+\`\`\`
+
+**Multi-head attention.** One attention pattern per layer is limiting: a token may need to look at the previous word for grammar and at a name far back for meaning. So the \`d\` columns of \`Q\`, \`K\` and \`V\` are split into \`n_heads\` groups of \`d / n_heads\` columns; each **head** runs attention (lesson 13) on its own group; the heads' outputs are joined side by side again, and a final matrix \`Wo\` mixes them. Same cost as one big head, many patterns. (Each head's scale uses its own size, \`sqrt(d / n_heads)\`, which your \`attention\` already does, because it measures the key length.)
+
+\`\`\`python
+row = [1, 2, 3, 4, 5, 6]         # one position, d = 6, n_heads = 3, head size 2
+[row[h * 2:(h + 1) * 2] for h in range(3)]     # [[1, 2], [3, 4], [5, 6]]
+\`\`\`
+
+**Residual connections.** Each sub-layer **adds** its result to its input instead of replacing it. The block is:
+
+\`\`\`text
+x = x + attention(layer_norm_1(x))      # for every position
+x = x + mlp(layer_norm_2(x))            # for every position, separately
+\`\`\`
+
+(normalising **before** each sub-layer, "pre-norm", as GPT-2 onwards do). The sum means information and gradients have a straight path from the bottom of the stack to the top; each block only learns a *correction*. A neat consequence you can test: if a block's output weights are all zero, the block returns its input unchanged.
+
+**The whole model** is: embeddings (lesson 13), N blocks, a final layer norm, then a matrix from \`d\` to the vocabulary size giving logits, then softmax and cross-entropy (lesson 10). Training is lessons 5 to 9, at scale. GPT-2 small had \`d = 768\`, 12 heads, 12 blocks and 124 million parameters; frontier models are vastly larger, trained on thousands of GPUs in 16-bit precision with AdamW. The block you write here is the same computation, with dimensions of 4 instead of thousands.
+
+A note on conventions: here every matrix \`W\` has shape \`(inputs, outputs)\` and you compute \`x @ W\`. PyTorch's \`nn.Linear\` stores the transpose, \`(outputs, inputs)\`, and computes \`x @ W.T\`. Same maths; watch for it when you read real code.
+--- task
+The starter has \`matmul\`, \`softmax\`, \`attention\` from the last lesson and \`random_params(d, n_heads, hidden, seed)\`, which builds a dict of block weights. Write:
+
+- \`layer_norm(x, gamma, beta, eps=1e-5)\` for one vector.
+- \`gelu(x)\` for one number, the tanh form above.
+- \`mlp(x, W1, b1, W2, b2)\` for one vector: \`gelu\` applied to each entry of \`x @ W1 + b1\`, then \`@ W2 + b2\`.
+- \`multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads)\`: split \`Q\`, \`K\`, \`V\`'s columns into \`n_heads\` equal groups, run causal \`attention\` on each, join each position's head outputs in head order, multiply by \`Wo\`. Raise \`ValueError\` if \`n_heads\` does not divide the width of \`Q\`.
+- \`transformer_block(X, p)\`: the pre-norm block above, with the dict \`p\` holding \`"ln1_g"\`, \`"ln1_b"\`, \`"Wq"\`, \`"Wk"\`, \`"Wv"\`, \`"Wo"\`, \`"n_heads"\`, \`"ln2_g"\`, \`"ln2_b"\`, \`"W1"\`, \`"b1"\`, \`"W2"\`, \`"b2"\`. Return the new list of rows; do not modify \`X\`.
+--- starter
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    pass
+
+
+def gelu(x):
+    pass
+
+
+def mlp(x, W1, b1, W2, b2):
+    pass
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    pass
+
+
+def transformer_block(X, p):
+    pass
+--- solution
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append([a + b for a, b in zip(x, h)])
+    return out
+--- hint
+\`layer_norm\`: compute the mean, then the variance (divide by \`n\`), then \`gamma[i] * (x[i] - mean) / sqrt(var + eps) + beta[i]\` for each \`i\`.
+--- hint
+For multi-head attention, head \`h\` uses columns \`h * size\` to \`(h + 1) * size\` of each row of \`Q\`, \`K\` and \`V\`. After running \`attention\` for every head, position \`t\`'s joined row is head 0's row \`t\`, then head 1's row \`t\`, and so on.
+--- hint
+The block: \`normed = [layer_norm(x, ...) for x in X]\`, add \`multi_head_attention(normed, ...)\` to \`X\` row by row, then for each row add \`mlp(layer_norm(row, ...), ...)\` to it.
+--- check test | layer_norm gives mean 0 and variance 1 (with gamma 1, beta 0)
+(lambda y: abs(sum(y) / 4) < 1e-12 and abs(sum(v * v for v in y) / 4 - 1) < 1e-4)(layer_norm([1.0, 2.0, 3.0, 4.0], [1.0] * 4, [0.0] * 4))
+--- check test | layer_norm applies gamma and beta, and uses eps
+(lambda a, b: all(abs(y - (2 * x + 1)) < 1e-12 for x, y in zip(a, b)))(layer_norm([1.0, 2.0, 3.0, 4.0], [1.0] * 4, [0.0] * 4), layer_norm([1.0, 2.0, 3.0, 4.0], [2.0] * 4, [1.0] * 4)) and all(abs(a - b) < 1e-12 for a, b in zip(layer_norm([0.0, 2.0], [1.0, 1.0], [0.0, 0.0], eps=1.0), [-0.5 ** 0.5, 0.5 ** 0.5]))
+--- check test | layer_norm of a constant vector is just beta (no division by zero)
+layer_norm([5.0, 5.0, 5.0], [1.0, 2.0, 3.0], [0.5, -0.5, 0.0]) == [0.5, -0.5, 0.0]
+--- check test | gelu matches the tanh formula
+gelu(0.0) == 0.0 and abs(gelu(1.0) - 0.8411919906082768) < 1e-12 and abs(gelu(-3.0) - -0.0036373920817729943) < 1e-12
+--- check test | mlp on one vector
+all(abs(a - b) < 1e-12 for a, b in zip(mlp([1.0, -2.0], [[0.5, -1.0, 2.0], [1.0, 0.5, 0.0]], [0.1, 0.0, -0.1], [[1.0, 0.0], [0.0, 1.0], [2.0, -1.0]], [0.0, 0.5]), [3.57761053607186, -1.39085354036756]))
+--- check test | One head is plain self-attention followed by Wo
+(lambda p, X: all(abs(a - b) < 1e-12 for r, e in zip(multi_head_attention(X, p["Wq"], p["Wk"], p["Wv"], p["Wo"], 1), matmul(attention(matmul(X, p["Wq"]), matmul(X, p["Wk"]), matmul(X, p["Wv"]))[0], p["Wo"])) for a, b in zip(r, e)))(random_params(4, 1, 8, seed=3), [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]])
+--- check test | Two heads on a small sequence
+(lambda p: all(abs(a - b) < 1e-9 for r, e in zip(multi_head_attention([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]], p["Wq"], p["Wk"], p["Wv"], p["Wo"], 2), [[0.52548261581, 0.338383940322, -0.054366641016, -0.702477333552], [0.118149174294, 0.230007722128, -0.236039634078, -0.300683910893], [0.505348379938, 0.112846035778, 0.290356920922, -0.866726876303]]) for a, b in zip(r, e)))(random_params(4, 2, 8, seed=1))
+--- check test | Heads must divide the width
+raises(ValueError, lambda: multi_head_attention([[1.0, 2.0, 3.0]], [[1.0] * 3] * 3, [[1.0] * 3] * 3, [[1.0] * 3] * 3, [[1.0] * 3] * 3, 2))
+--- check test | A block whose output weights are zero returns its input unchanged (residuals)
+(lambda p, X: (p.update(Wo=[[0.0] * 4 for _ in range(4)], W2=[[0.0] * 4 for _ in range(8)], b2=[0.0] * 4), transformer_block(X, p) == X)[1])(random_params(4, 2, 8, seed=2), [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4]])
+--- check test | transformer_block on a small sequence, without changing X
+(lambda X: (lambda out: X == [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]] and all(abs(a - b) < 1e-9 for r, e in zip(out, [[2.878484185969, 1.86744645543, -1.55655834136, -0.491522897056], [2.218398589489, 2.872733263397, -1.508623708077, -1.126211526583], [2.903735348143, 0.317513785212, -0.364146823338, 0.117514086952]]) for a, b in zip(r, e)))(transformer_block(X, random_params(4, 2, 8, seed=1))))([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]])
+--- check test | The block is causal: a later token never changes earlier outputs
+(lambda p: transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]], p)[:2] == transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [-3.0, 3.0, 1.0, 0.0]], p)[:2])(random_params(4, 2, 8, seed=1))
+
+=== ai-15 | Debugging: leakage, overfitting and early stopping
+--- teach
+Training loss tells you how well a model fits the data it has seen. What you care about is how it does on data it has **not** seen: **generalisation**. A model can drive its training loss to zero by memorising, and be useless on anything new. So every serious training setup holds data back:
+
+- the **training set**: what the model learns from;
+- the **validation set**: never trained on; used to compare models, pick hyperparameters (learning rate, smoothing, size) and decide when to stop;
+- the **test set**: looked at **once**, at the end, for the number you report. If you choose anything based on it, it has become a validation set, and your reported number is optimistic.
+
+**Leakage** is any path by which validation information gets into training. It makes validation scores look great and then the model disappoints in the real world. The classic causes:
+
+- **Overlap from a sloppy split**, for example shuffling one copy of the data for validation but taking training from the unshuffled original.
+- **Duplicates.** The same example appears twice, lands on both sides of the split, and the model is "tested" on something it memorised. Web text is full of duplicates, so labs **deduplicate before splitting**. The same worry at scale is **benchmark contamination**: test questions that leaked into the pretraining data.
+- **Choosing on the wrong data.** Picking a hyperparameter by **training** loss always favours the option that memorises best (the least smoothing, the biggest model). Choose on validation loss.
+
+\`\`\`python
+items = ["moon", "mars", "moon", "venus", "mars"]
+unique = list(dict.fromkeys(items))          # keeps first occurrences, in order
+unique                                        # ['moon', 'mars', 'venus']
+train, val = unique[1:], unique[:1]
+set(train) & set(val)                         # set(): nothing shared, which you should assert
+\`\`\`
+
+**Overfitting and early stopping.** Train long enough and the curves split: training loss keeps falling, validation loss bottoms out and starts rising, because the model has begun to memorise noise. **Early stopping** evaluates on validation regularly, remembers the step with the **lowest** validation loss (keeping that checkpoint), and stops after \`patience\` evaluations in a row fail to beat it. Patience matters because validation loss is noisy: one bad evaluation is not a trend. The checkpoint you keep is the best one, not the last.
+
+**Debugging suspicious evaluations.** When results look too good (validation as low as training, or a model that aces validation but flops for real users), suspect leakage first and test for it directly: assert the splits share nothing, count duplicates, and read the code that picks hyperparameters to see which data it scores on.
+
+**At a lab,** evaluation is its own discipline: held-out sets for every capability, contamination checks against pretraining data, and **safety evaluations** that probe for harmful or unintended behaviour before a model is released. A model is only as trustworthy as the evaluation behind it, which is why these bugs matter so much.
+--- task
+**Bug report:** "Our validation NLL is nearly the same as training NLL, which seemed great until the model did badly on new users' words. Also, hyperparameter search always picks the smallest smoothing \`k\` we offer, and early stopping keeps the last checkpoint rather than the best one."
+
+The \`BigramLM\` class is correct (its vocabulary is fixed to \`.\` and \`a\` to \`z\`, so validation words can contain letters training lacked). Fix these three functions:
+
+- \`train_val_split(items, val_fraction=0.2, seed=0)\`: remove duplicates (keep first occurrences, in order), shuffle that list with \`random.Random(seed).shuffle\`, and return \`(train, val)\` where \`val\` is the first \`round(len(unique) * val_fraction)\` items and \`train\` is the rest. No item may be in both.
+- \`best_step(val_losses, patience=3)\`: return the index of the lowest loss (the earliest, on ties), scanning from the start and stopping as soon as \`patience\` losses in a row after the current best have failed to go below it; later losses are never looked at. Raise \`ValueError\` for an empty list.
+- \`choose_k(train, val, ks)\`: return the \`k\` from \`ks\` whose \`BigramLM(train, k)\` has the lowest NLL on \`val\` (the first, on ties).
+--- starter
+import math
+import random
+
+ALPHABET = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class BigramLM:
+    def __init__(self, words, k=1.0):
+        self.k = k
+        self.chars = list(ALPHABET)
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+
+def train_val_split(items, val_fraction=0.2, seed=0):
+    shuffled = list(items)
+    random.Random(seed).shuffle(shuffled)
+    n_val = round(len(items) * val_fraction)
+    val = shuffled[:n_val]
+    train = items[n_val:]
+    return train, val
+
+
+def best_step(val_losses, patience=3):
+    best, waited = 0, 0
+    for i, loss in enumerate(val_losses):
+        if loss < val_losses[best]:
+            best = i
+        else:
+            waited += 1
+        if waited >= patience:
+            break
+    return i
+
+
+def choose_k(train, val, ks):
+    return min(ks, key=lambda k: BigramLM(train, k).nll(train))
+--- solution
+import math
+import random
+
+ALPHABET = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class BigramLM:
+    def __init__(self, words, k=1.0):
+        self.k = k
+        self.chars = list(ALPHABET)
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+
+def train_val_split(items, val_fraction=0.2, seed=0):
+    unique = list(dict.fromkeys(items))
+    random.Random(seed).shuffle(unique)
+    n_val = round(len(unique) * val_fraction)
+    return unique[n_val:], unique[:n_val]
+
+
+def best_step(val_losses, patience=3):
+    if not val_losses:
+        raise ValueError("no validation losses")
+    best, waited = 0, 0
+    for i in range(1, len(val_losses)):
+        if val_losses[i] < val_losses[best]:
+            best, waited = i, 0
+        else:
+            waited += 1
+            if waited >= patience:
+                break
+    return best
+
+
+def choose_k(train, val, ks):
+    return min(ks, key=lambda k: BigramLM(train, k).nll(val))
+--- hint
+Reproduce each symptom: check \`set(train) & set(val)\` after a split of a list with duplicates; trace \`best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], 3)\` by hand; and look at which words \`choose_k\` scores on.
+--- hint
+Split: \`unique = list(dict.fromkeys(items))\`, shuffle \`unique\`, then slice both halves from that same shuffled list.
+--- hint
+\`best_step\`: compare each loss with the best so far; on an improvement, move \`best\` and reset the wait counter to 0; otherwise count up and stop at \`patience\`. Return \`best\`, not the index where you stopped.
+--- check test | The split shares nothing and drops duplicates
+(lambda items: (lambda tr, va: not set(tr) & set(va) and sorted(tr + va) == sorted(set(items)) and len(tr) + len(va) == 8)(*train_val_split(items, 0.25, seed=1)))(["moon", "mars", "moon", "venus", "star", "mars", "comet", "orbit", "probe", "rover", "star"])
+--- check test | The split is the seeded shuffle of the unique items: validation first
+(lambda items: train_val_split(items, 0.3, seed=4) == (lambda u: (__import__("random").Random(4).shuffle(u), (u[3:], u[:3]))[1])(list(dict.fromkeys(items))))([f"w{i % 10}" for i in range(25)])
+--- check test | The split is deterministic, and the seed changes it
+train_val_split(list(range(50)), 0.2, seed=7) == train_val_split(list(range(50)), 0.2, seed=7) != train_val_split(list(range(50)), 0.2, seed=8) and len(train_val_split(list(range(50)), 0.2)[1]) == 10
+--- check test | best_step keeps the best checkpoint and stops after patience evaluations
+best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], patience=3) == 2 and best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], patience=4) == 6
+--- check test | best_step resets its patience after every improvement
+best_step([5, 4, 4.5, 3.9, 4.2, 4.1, 4.3], patience=2) == 3 and best_step([5, 4, 4.5, 3.9, 4.2, 4.1, 3.0], patience=3) == 6
+--- check test | best_step: ties keep the earliest; one loss; empty raises
+best_step([3, 2, 2, 4], patience=5) == 1 and best_step([1.0]) == 0 and best_step([3, 3, 3]) == 0 and raises(ValueError, lambda: best_step([]))
+--- check test | choose_k picks by validation NLL, not training NLL
+(lambda tr, va, ks: choose_k(tr, va, ks) == min(ks, key=lambda k: BigramLM(tr, k).nll(va)) and choose_k(tr, va, ks) != min(ks))(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"], ["rockets", "orbiter", "landing", "boosters", "astronaut", "moonbase", "galactic", "planets"], [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0])
+--- check case | choose_k on a small example
+choose_k(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"], ["rockets", "orbiter", "landing", "boosters", "astronaut", "moonbase", "galactic", "planets"], [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0])
+=> 0.1
+
+=== ai-16 | Capstone: a language model that generalizes
+--- teach
+This is the capstone: a specification, a corpus and an empty design. The checks test only behaviour, so every decision is yours. It pulls together the whole course: probabilities and cross-entropy (lessons 3, 10, 12), smoothing and held-out evaluation (12, 15), sampling with a seeded generator (12), and the discipline of measuring before believing.
+
+**The job.** Build a character-level language model of English words that does well on words it has **never seen**. The starter holds \`TRAIN_WORDS\`, about 800 common English words. The checks hold back another 150 and measure your model's average negative log-likelihood on them (nats per character, counting the end of each word, exactly as in lesson 12). To pass, it must be **below 2.40**. For reference, a model that knows nothing scores \`log 27 ≈ 3.30\`, and the best add-k bigram model scores about 2.43 on these held-out words, so a bigram will not do: you need more context, used carefully.
+
+**Approaches that work** (choose, combine, invent):
+
+- **Longer context.** Condition on the previous two (or more) characters: a **trigram**. More context predicts better, but most long contexts are rare, so their counts are unreliable or zero.
+- **Interpolation.** Mix models: \`P = a * P_trigram + b * P_bigram + c * P_unigram\` with \`a + b + c = 1\`. The trigram is sharp when it has data; the lower orders fill the gaps, so nothing is ever impossible.
+- **Backoff.** Use the longest context that was seen often enough, and fall back to shorter ones otherwise.
+- **Tune on validation, not on the hidden test.** Carve a validation set out of \`TRAIN_WORDS\` with your \`train_val_split\` idea from lesson 15, choose mixing weights or smoothing on it, then refit on all the training words.
+
+A neural model would also work in principle (an MLP over the previous few characters' embeddings, trained with your autograd engine and Adam), but in pure Python it would train for minutes, and the checker stops long before that. Counting models are the right tool here, and the target a neural model would approach anyway.
+
+**Keep it honest.** Your \`next_distribution\` must be a real probability distribution over the 27 symbols (\`.\` and \`a\` to \`z\`): every value positive, all adding up to 1. Your \`nll\` must be computed from those same probabilities, and the checks confirm that it is. Otherwise a "model" could report any loss it liked. This is the same reason real labs define evaluations precisely and independently of the model being evaluated.
+
+**How to approach it** (as in the projects capstones): write down each behaviour as an example, choose your data model (count tables keyed by context strings work well), build a skeleton with every method, make one behaviour work at a time, and measure the held-out NLL on your own validation split as you go.
+
+**Where this goes next.** Real language models replace the count tables with a transformer (lessons 13 and 14), the characters with BPE tokens (lesson 11), 800 words with trillions of tokens, and a laptop with thousands of GPUs running for months. The quantities they watch are the ones you have built: training loss, validation loss, perplexity, and the evaluations that decide whether a model is good and safe enough to release.
+--- task
+Build a class \`CharLM\`:
+
+- \`CharLM()\` must work with no arguments (any settings you add need defaults).
+- \`fit(words)\` trains on a list of lowercase words (letters \`a\` to \`z\` only) and returns \`self\`.
+- \`next_distribution(context)\` returns a dict with exactly 27 keys, \`"."\` and \`"a"\` to \`"z"\`, giving the probability of each next symbol after the word-so-far \`context\` (\`""\` at the start of a word; any string of letters, seen in training or not). Every probability is positive and they add up to 1.
+- \`nll(words)\` returns the average of \`-log(next_distribution(prefix)[symbol])\` over every symbol of every word, including the final \`"."\`, where \`prefix\` is the part of the word before that symbol. It must be finite for any words of letters \`a\` to \`z\`.
+- \`generate(rng, max_len=12)\` samples a word, one symbol at a time from \`next_distribution\`, using only the random generator \`rng\` it is given. It stops at \`"."\` (not included) or at \`max_len\` letters. The same seed must give the same word.
+
+After \`CharLM().fit(TRAIN_WORDS)\`, the NLL on the hidden held-out words must be below **2.40**, and a trained model should generate varied words, mostly not empty.
+--- starter
+# Capstone: design and build CharLM to the specification in the task.
+import math
+import random
+
+TRAIN_WORDS = [
+    "about", "above", "across", "act", "action", "add", "after", "again", "age", "ago", "air",
+    "almost", "alone", "along", "already", "also", "always", "among", "amount", "any", "appear",
+    "apple", "area", "arm", "army", "around", "arrive", "art", "ask", "attack", "away", "baby",
+    "back", "bad", "bag", "ball", "bank", "basket", "beat", "become", "bed", "before", "behind",
+    "believe", "bell", "below", "best", "better", "between", "big", "bird", "birth", "black",
+    "blood", "blow", "blue", "board", "boat", "body", "bone", "book", "born", "bottom", "box",
+    "boy", "branch", "break", "bright", "bring", "broad", "brother", "busy", "but", "buy", "camp",
+    "can", "captain", "car", "card", "care", "case", "catch", "cause", "cell", "center", "century",
+    "certain", "chair", "change", "charge", "check", "chief", "child", "circle", "city", "claim",
+    "class", "clean", "clear", "clock", "close", "cloud", "coast", "coat", "cold", "collect",
+    "college", "color", "column", "come", "common", "company", "compare", "complete", "condition",
+    "connect", "consider", "continue", "control", "cook", "copy", "corn", "corner", "correct",
+    "could", "count", "course", "cover", "cow", "create", "crop", "crowd", "cry", "current", "dad",
+    "dance", "danger", "dark", "day", "dead", "deal", "dear", "death", "decide", "deep", "degree",
+    "depend", "describe", "detail", "develop", "dictionary", "did", "die", "differ", "direct",
+    "discuss", "divide", "doctor", "does", "dog", "dollar", "done", "door", "down", "draw", "dream",
+    "dress", "drive", "dry", "duck", "during", "each", "ear", "early", "ease", "east", "eat",
+    "edge", "egg", "eight", "either", "electric", "element", "else", "end", "enemy", "engine",
+    "enough", "enter", "equal", "even", "evening", "event", "ever", "every", "example", "except",
+    "excite", "exercise", "expect", "experience", "experiment", "eye", "face", "fact", "fair",
+    "fall", "famous", "farm", "fast", "father", "favor", "fear", "feed", "feel", "feet", "fell",
+    "few", "field", "fight", "figure", "fill", "final", "find", "fine", "finish", "fire", "first",
+    "fish", "five", "flat", "flow", "flower", "fly", "follow", "food", "foot", "force", "forest",
+    "form", "forward", "four", "free", "fresh", "friend", "fruit", "full", "fun", "game", "garden",
+    "gather", "gave", "general", "give", "glad", "glass", "gold", "gone", "good", "got", "govern",
+    "grand", "grass", "gray", "great", "grew", "ground", "group", "grow", "guess", "guide", "gun",
+    "hair", "hand", "happen", "happy", "hard", "hat", "have", "head", "hear", "heard", "heart",
+    "heat", "heavy", "help", "here", "high", "hill", "him", "his", "history", "hole", "home",
+    "hope", "horse", "hot", "hour", "house", "how", "human", "hundred", "hunt", "hurry", "ice",
+    "idea", "imagine", "include", "industry", "insect", "instant", "instrument", "invent", "iron",
+    "island", "job", "joy", "jump", "just", "keep", "kept", "key", "kill", "kind", "king",
+    "kitchen", "knew", "know", "lake", "language", "large", "last", "late", "laugh", "law", "least",
+    "led", "left", "leg", "let", "level", "lie", "life", "light", "like", "line", "liquid", "list",
+    "listen", "little", "live", "locate", "log", "lone", "long", "look", "lost", "lot", "loud",
+    "love", "low", "machine", "made", "magnet", "main", "make", "many", "map", "market", "master",
+    "match", "material", "matter", "may", "mean", "measure", "meat", "meet", "member", "men",
+    "metal", "middle", "might", "mile", "million", "mind", "mine", "miss", "modern", "molecule",
+    "moment", "money", "month", "moon", "more", "morning", "most", "mother", "motion", "mount",
+    "mountain", "mouth", "much", "must", "name", "natural", "near", "neck", "need", "neighbor",
+    "never", "new", "next", "night", "nine", "noise", "none", "noon", "nor", "north", "nose",
+    "nothing", "now", "number", "numeral", "object", "observe", "occur", "ocean", "offer", "office",
+    "often", "oil", "once", "one", "only", "open", "operate", "opposite", "order", "organ",
+    "original", "other", "our", "out", "over", "own", "oxygen", "page", "pair", "paper",
+    "paragraph", "particular", "party", "pass", "past", "path", "pattern", "people", "perhaps",
+    "period", "phrase", "pick", "picture", "place", "plain", "plan", "plane", "planet", "plant",
+    "play", "please", "plural", "poem", "point", "poor", "pose", "position", "possible", "post",
+    "pound", "power", "practice", "prepare", "present", "press", "pretty", "print", "probable",
+    "problem", "process", "produce", "product", "proper", "protect", "prove", "pull", "put",
+    "quart", "question", "quick", "quiet", "quite", "quotient", "race", "rail", "rain", "raise",
+    "ran", "range", "rather", "reach", "read", "ready", "real", "reason", "receive", "record",
+    "remember", "repeat", "reply", "represent", "require", "rest", "result", "rich", "ride",
+    "right", "ring", "rise", "river", "road", "rock", "roll", "room", "root", "rope", "rose",
+    "round", "row", "rub", "rule", "run", "safe", "said", "sail", "same", "sand", "sat", "save",
+    "saw", "say", "scale", "school", "science", "score", "search", "season", "seat", "section",
+    "see", "seed", "seem", "segment", "select", "self", "sell", "send", "sense", "sentence",
+    "separate", "serve", "set", "seven", "several", "shape", "share", "sharp", "sheet", "shell",
+    "shine", "ship", "shoe", "shop", "short", "should", "shoulder", "shout", "show", "side", "sign",
+    "silent", "silver", "similar", "since", "sing", "single", "sister", "sit", "six", "size",
+    "skill", "skin", "sky", "sleep", "slip", "slow", "small", "smell", "smile", "snow", "soft",
+    "soil", "soldier", "solution", "some", "son", "song", "sound", "south", "space", "speak",
+    "special", "speech", "speed", "spell", "spoke", "spread", "spring", "square", "star", "start",
+    "state", "station", "stay", "stead", "steam", "steel", "step", "stick", "still", "stood",
+    "stop", "store", "story", "straight", "strange", "street", "stretch", "string", "strong",
+    "student", "study", "subject", "subtract", "success", "such", "sudden", "suffix", "sugar",
+    "suggest", "suit", "summer", "sun", "support", "sure", "surface", "surprise", "swim", "system",
+    "table", "tail", "take", "talk", "tall", "teach", "team", "tell", "temperature", "ten", "test",
+    "thank", "that", "thick", "think", "third", "this", "those", "though", "thousand", "three",
+    "throw", "thus", "tie", "time", "tire", "together", "told", "tone", "took", "tool", "top",
+    "touch", "toward", "town", "track", "trade", "train", "travel", "tree", "triangle", "trip",
+    "trouble", "truck", "true", "try", "tube", "turn", "twenty", "type", "under", "until", "upon",
+    "use", "usual", "valley", "vary", "verb", "very", "view", "village", "visit", "voice", "wait",
+    "walk", "wall", "warm", "wash", "watch", "water", "wave", "way", "wear", "weather", "week",
+    "weight", "well", "went", "west", "what", "wheel", "when", "where", "whether", "while", "white",
+    "who", "whole", "whose", "wide", "wife", "wild", "will", "win", "wind", "window", "wing",
+    "winter", "wire", "wish", "with", "woman", "wonder", "work", "world", "would", "write", "wrong",
+    "yard", "year", "yellow", "yes", "yet", "you", "young"
+]
+--- solution
+import math
+import random
+
+TRAIN_WORDS = [
+    "about", "above", "across", "act", "action", "add", "after", "again", "age", "ago", "air",
+    "almost", "alone", "along", "already", "also", "always", "among", "amount", "any", "appear",
+    "apple", "area", "arm", "army", "around", "arrive", "art", "ask", "attack", "away", "baby",
+    "back", "bad", "bag", "ball", "bank", "basket", "beat", "become", "bed", "before", "behind",
+    "believe", "bell", "below", "best", "better", "between", "big", "bird", "birth", "black",
+    "blood", "blow", "blue", "board", "boat", "body", "bone", "book", "born", "bottom", "box",
+    "boy", "branch", "break", "bright", "bring", "broad", "brother", "busy", "but", "buy", "camp",
+    "can", "captain", "car", "card", "care", "case", "catch", "cause", "cell", "center", "century",
+    "certain", "chair", "change", "charge", "check", "chief", "child", "circle", "city", "claim",
+    "class", "clean", "clear", "clock", "close", "cloud", "coast", "coat", "cold", "collect",
+    "college", "color", "column", "come", "common", "company", "compare", "complete", "condition",
+    "connect", "consider", "continue", "control", "cook", "copy", "corn", "corner", "correct",
+    "could", "count", "course", "cover", "cow", "create", "crop", "crowd", "cry", "current", "dad",
+    "dance", "danger", "dark", "day", "dead", "deal", "dear", "death", "decide", "deep", "degree",
+    "depend", "describe", "detail", "develop", "dictionary", "did", "die", "differ", "direct",
+    "discuss", "divide", "doctor", "does", "dog", "dollar", "done", "door", "down", "draw", "dream",
+    "dress", "drive", "dry", "duck", "during", "each", "ear", "early", "ease", "east", "eat",
+    "edge", "egg", "eight", "either", "electric", "element", "else", "end", "enemy", "engine",
+    "enough", "enter", "equal", "even", "evening", "event", "ever", "every", "example", "except",
+    "excite", "exercise", "expect", "experience", "experiment", "eye", "face", "fact", "fair",
+    "fall", "famous", "farm", "fast", "father", "favor", "fear", "feed", "feel", "feet", "fell",
+    "few", "field", "fight", "figure", "fill", "final", "find", "fine", "finish", "fire", "first",
+    "fish", "five", "flat", "flow", "flower", "fly", "follow", "food", "foot", "force", "forest",
+    "form", "forward", "four", "free", "fresh", "friend", "fruit", "full", "fun", "game", "garden",
+    "gather", "gave", "general", "give", "glad", "glass", "gold", "gone", "good", "got", "govern",
+    "grand", "grass", "gray", "great", "grew", "ground", "group", "grow", "guess", "guide", "gun",
+    "hair", "hand", "happen", "happy", "hard", "hat", "have", "head", "hear", "heard", "heart",
+    "heat", "heavy", "help", "here", "high", "hill", "him", "his", "history", "hole", "home",
+    "hope", "horse", "hot", "hour", "house", "how", "human", "hundred", "hunt", "hurry", "ice",
+    "idea", "imagine", "include", "industry", "insect", "instant", "instrument", "invent", "iron",
+    "island", "job", "joy", "jump", "just", "keep", "kept", "key", "kill", "kind", "king",
+    "kitchen", "knew", "know", "lake", "language", "large", "last", "late", "laugh", "law", "least",
+    "led", "left", "leg", "let", "level", "lie", "life", "light", "like", "line", "liquid", "list",
+    "listen", "little", "live", "locate", "log", "lone", "long", "look", "lost", "lot", "loud",
+    "love", "low", "machine", "made", "magnet", "main", "make", "many", "map", "market", "master",
+    "match", "material", "matter", "may", "mean", "measure", "meat", "meet", "member", "men",
+    "metal", "middle", "might", "mile", "million", "mind", "mine", "miss", "modern", "molecule",
+    "moment", "money", "month", "moon", "more", "morning", "most", "mother", "motion", "mount",
+    "mountain", "mouth", "much", "must", "name", "natural", "near", "neck", "need", "neighbor",
+    "never", "new", "next", "night", "nine", "noise", "none", "noon", "nor", "north", "nose",
+    "nothing", "now", "number", "numeral", "object", "observe", "occur", "ocean", "offer", "office",
+    "often", "oil", "once", "one", "only", "open", "operate", "opposite", "order", "organ",
+    "original", "other", "our", "out", "over", "own", "oxygen", "page", "pair", "paper",
+    "paragraph", "particular", "party", "pass", "past", "path", "pattern", "people", "perhaps",
+    "period", "phrase", "pick", "picture", "place", "plain", "plan", "plane", "planet", "plant",
+    "play", "please", "plural", "poem", "point", "poor", "pose", "position", "possible", "post",
+    "pound", "power", "practice", "prepare", "present", "press", "pretty", "print", "probable",
+    "problem", "process", "produce", "product", "proper", "protect", "prove", "pull", "put",
+    "quart", "question", "quick", "quiet", "quite", "quotient", "race", "rail", "rain", "raise",
+    "ran", "range", "rather", "reach", "read", "ready", "real", "reason", "receive", "record",
+    "remember", "repeat", "reply", "represent", "require", "rest", "result", "rich", "ride",
+    "right", "ring", "rise", "river", "road", "rock", "roll", "room", "root", "rope", "rose",
+    "round", "row", "rub", "rule", "run", "safe", "said", "sail", "same", "sand", "sat", "save",
+    "saw", "say", "scale", "school", "science", "score", "search", "season", "seat", "section",
+    "see", "seed", "seem", "segment", "select", "self", "sell", "send", "sense", "sentence",
+    "separate", "serve", "set", "seven", "several", "shape", "share", "sharp", "sheet", "shell",
+    "shine", "ship", "shoe", "shop", "short", "should", "shoulder", "shout", "show", "side", "sign",
+    "silent", "silver", "similar", "since", "sing", "single", "sister", "sit", "six", "size",
+    "skill", "skin", "sky", "sleep", "slip", "slow", "small", "smell", "smile", "snow", "soft",
+    "soil", "soldier", "solution", "some", "son", "song", "sound", "south", "space", "speak",
+    "special", "speech", "speed", "spell", "spoke", "spread", "spring", "square", "star", "start",
+    "state", "station", "stay", "stead", "steam", "steel", "step", "stick", "still", "stood",
+    "stop", "store", "story", "straight", "strange", "street", "stretch", "string", "strong",
+    "student", "study", "subject", "subtract", "success", "such", "sudden", "suffix", "sugar",
+    "suggest", "suit", "summer", "sun", "support", "sure", "surface", "surprise", "swim", "system",
+    "table", "tail", "take", "talk", "tall", "teach", "team", "tell", "temperature", "ten", "test",
+    "thank", "that", "thick", "think", "third", "this", "those", "though", "thousand", "three",
+    "throw", "thus", "tie", "time", "tire", "together", "told", "tone", "took", "tool", "top",
+    "touch", "toward", "town", "track", "trade", "train", "travel", "tree", "triangle", "trip",
+    "trouble", "truck", "true", "try", "tube", "turn", "twenty", "type", "under", "until", "upon",
+    "use", "usual", "valley", "vary", "verb", "very", "view", "village", "visit", "voice", "wait",
+    "walk", "wall", "warm", "wash", "watch", "water", "wave", "way", "wear", "weather", "week",
+    "weight", "well", "went", "west", "what", "wheel", "when", "where", "whether", "while", "white",
+    "who", "whole", "whose", "wide", "wife", "wild", "will", "win", "wind", "window", "wing",
+    "winter", "wire", "wish", "with", "woman", "wonder", "work", "world", "would", "write", "wrong",
+    "yard", "year", "yellow", "yes", "yet", "you", "young"
+]
+
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class CharLM:
+    """An interpolated trigram model: a mix of trigram, bigram, unigram and uniform."""
+
+    def __init__(self, weights=(0.55, 0.3, 0.13, 0.02), k=0.01):
+        self.weights = weights
+        self.k = k
+        self.tables = [{}, {}, {}]      # context length 0, 1, 2 -> {context: {symbol: count}}
+
+    def fit(self, words):
+        self.tables = [{}, {}, {}]
+        for word in words:
+            padded = ".." + word + "."
+            for i in range(2, len(padded)):
+                symbol = padded[i]
+                for n in range(3):
+                    context = padded[i - n:i]
+                    row = self.tables[n].setdefault(context, {})
+                    row[symbol] = row.get(symbol, 0) + 1
+        return self
+
+    def _order_probs(self, n, context):
+        row = self.tables[n].get(context)
+        if not row:
+            return None
+        total = sum(row.values()) + self.k * len(SYMBOLS)
+        return {s: (row.get(s, 0) + self.k) / total for s in SYMBOLS}
+
+    def next_distribution(self, context):
+        padded = (".." + context)[-2:]
+        uniform = 1 / len(SYMBOLS)
+        dist = {s: self.weights[3] * uniform for s in SYMBOLS}
+        leftover = 0.0
+        for n, weight in zip((2, 1, 0), self.weights[:3]):
+            probs = self._order_probs(n, padded[2 - n:])
+            if probs is None:
+                leftover += weight
+                continue
+            for s in SYMBOLS:
+                dist[s] += weight * probs[s]
+        for s in SYMBOLS:
+            dist[s] += leftover * uniform
+        return dist
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            for i, symbol in enumerate(word + "."):
+                total -= math.log(self.next_distribution(word[:i])[symbol])
+                n += 1
+        return total / n
+
+    def generate(self, rng, max_len=12):
+        word = ""
+        while len(word) < max_len:
+            dist = self.next_distribution(word)
+            symbol = rng.choices(list(dist), weights=list(dist.values()))[0]
+            if symbol == ".":
+                break
+            word += symbol
+        return word
+--- hint
+Start by writing a model you already know (a smoothed bigram) to the interface, and measure it on a validation split carved from \`TRAIN_WORDS\`. It will score around 2.43: correct, but not good enough.
+--- hint
+Keep counts for several context lengths (0, 1 and 2 previous characters, padding the start of each word with \`..\`) and mix their probabilities with weights that add up to 1. Include a small uniform share so no symbol is ever impossible.
+--- hint
+When a context was never seen, give its share of the weight to the other parts of the mix. Tune the weights on your validation split, not on the hidden words.
+--- check test | fit returns the model itself
+(lambda m: m.fit(["moon", "mars"]) is m)(CharLM())
+--- check test | next_distribution is a real distribution over "." and a to z
+(lambda m: all(sorted(d) == sorted(".abcdefghijklmnopqrstuvwxyz") and all(p > 0 for p in d.values()) and abs(sum(d.values()) - 1) < 1e-9 for d in (m.next_distribution(c) for c in ("", "t", "th", "the", "qzx", "xylophone"))))(CharLM().fit(TRAIN_WORDS))
+--- check test | nll is computed from next_distribution
+(lambda m: abs(m.nll(["ab", "q"]) - -(__import__("math").log(m.next_distribution("")["a"]) + __import__("math").log(m.next_distribution("a")["b"]) + __import__("math").log(m.next_distribution("ab")["."]) + __import__("math").log(m.next_distribution("")["q"]) + __import__("math").log(m.next_distribution("q")["."])) / 5) < 1e-9)(CharLM().fit(TRAIN_WORDS))
+--- check test | nll is finite for strange and empty words
+(lambda m: all(0 < m.nll([w]) < 20 for w in ("zzzzqx", "q", "", "xylophone")))(CharLM().fit(TRAIN_WORDS))
+--- check test | The model learned something: training words score far better than uniform
+CharLM().fit(TRAIN_WORDS).nll(TRAIN_WORDS) < 2.4
+--- check test | Held-out words: NLL below 2.40 (a bigram model scores about 2.43)
+CharLM().fit(TRAIN_WORDS).nll(["against", "agree", "all", "allow", "animal", "answer", "base", "bear", "beauty", "because", "begin", "both", "bread", "brown", "build", "burn", "call", "came", "capital", "carry", "cat", "chance", "choose", "church", "climb", "colony", "contain", "cool", "cost", "cotton", "country", "cross", "cut", "desert", "design", "distant", "double", "drink", "drop", "earth", "effect", "energy", "exact", "family", "far", "finger", "fit", "floor", "found", "from", "front", "gas", "gentle", "get", "girl", "green", "half", "held", "hit", "hold", "huge", "inch", "indicate", "interest", "join", "lady", "land", "lay", "lead", "learn", "leave", "length", "less", "letter", "lift", "major", "man", "mark", "mass", "melody", "method", "milk", "minute", "move", "music", "nation", "nature", "necessary", "note", "notice", "noun", "off", "old", "paint", "parent", "part", "pay", "person", "piece", "pitch", "populate", "port", "property", "provide", "push", "radio", "red", "region", "salt", "sea", "second", "settle", "shall", "shore", "sight", "simple", "solve", "soon", "spend", "spot", "stand", "stone", "stream", "substance", "supply", "syllable", "symbol", "teeth", "term", "than", "thin", "thing", "thought", "through", "tiny", "too", "total", "two", "unit", "value", "vowel", "want", "war", "were", "which", "why", "wood", "word", "written", "wrote"]) < 2.40
+--- check test | Generation is deterministic for a seed and stays within the rules
+(lambda m: all(m.generate(random.Random(s)) == m.generate(random.Random(s)) for s in range(5)) and all(len(w) <= 6 and set(w) <= set("abcdefghijklmnopqrstuvwxyz") for w in (m.generate(random.Random(s), max_len=6) for s in range(40))))(CharLM().fit(TRAIN_WORDS))
+--- check test | Generated words vary and are mostly not empty
+(lambda ws: len(set(ws)) >= 12 and sum(1 for w in ws if w) >= 15)([CharLM().fit(TRAIN_WORDS).generate(random.Random(s)) for s in range(20)])
 `,Xe=`@track python
 @level expert
 @title Python · Expert
@@ -52032,17 +55765,17 @@ applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontS
 LIMITS.free === 100 && LIMITS.pro === 1000
 --- check source | LIMITS is a Record over the two plans
 LIMITS\\s*:\\s*Record\\s*<
-`,ut=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],dt=Object.assign({"./tracks/bash.advanced.txt":Oe,"./tracks/bash.intermediate.txt":ke,"./tracks/bash.txt":Ae,"./tracks/cpp.advanced.txt":je,"./tracks/cpp.expert.txt":Me,"./tracks/cpp.intermediate.txt":Ne,"./tracks/cpp.projects.txt":Pe,"./tracks/cpp.txt":Fe,"./tracks/git.advanced.txt":Ie,"./tracks/git.intermediate.txt":Le,"./tracks/git.txt":Re,"./tracks/html.advanced.txt":ze,"./tracks/html.expert.txt":Be,"./tracks/html.intermediate.txt":Ve,"./tracks/html.projects.txt":He,"./tracks/html.txt":Ue,"./tracks/javascript.advanced.txt":We,"./tracks/javascript.expert.txt":Ge,"./tracks/javascript.intermediate.txt":Ke,"./tracks/javascript.projects.txt":qe,"./tracks/javascript.txt":Je,"./tracks/python.advanced.txt":Ye,"./tracks/python.expert.txt":Xe,"./tracks/python.intermediate.txt":Ze,"./tracks/python.projects.txt":Qe,"./tracks/python.txt":$e,"./tracks/sql.advanced.txt":et,"./tracks/sql.expert.txt":tt,"./tracks/sql.intermediate.txt":nt,"./tracks/sql.projects.txt":rt,"./tracks/sql.txt":it,"./tracks/typescript.advanced.txt":at,"./tracks/typescript.expert.txt":ot,"./tracks/typescript.intermediate.txt":st,"./tracks/typescript.projects.txt":ct,"./tracks/typescript.txt":lt}),ft=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function z(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[ut.indexOf(t),ft.indexOf(n)]}var pt=Object.entries(dt).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>z(e)[0]>=0).sort((e,t)=>{let[n,r]=z(e[0]),[i,a]=z(t[0]);return n-i||r-a}),mt=ut.filter(e=>pt.some(([t])=>t.split(`.`)[0]===e)),B=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function V(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var ht=3e4;async function gt(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await C(t,be(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
+`,ut=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],dt=Object.assign({"./tracks/bash.advanced.txt":De,"./tracks/bash.intermediate.txt":Oe,"./tracks/bash.txt":ke,"./tracks/cpp.advanced.txt":Ae,"./tracks/cpp.expert.txt":je,"./tracks/cpp.intermediate.txt":Me,"./tracks/cpp.projects.txt":Ne,"./tracks/cpp.txt":Pe,"./tracks/git.advanced.txt":Fe,"./tracks/git.intermediate.txt":Ie,"./tracks/git.txt":Le,"./tracks/html.advanced.txt":Re,"./tracks/html.expert.txt":ze,"./tracks/html.intermediate.txt":Be,"./tracks/html.projects.txt":Ve,"./tracks/html.txt":He,"./tracks/javascript.advanced.txt":Ue,"./tracks/javascript.expert.txt":We,"./tracks/javascript.intermediate.txt":Ge,"./tracks/javascript.projects.txt":Ke,"./tracks/javascript.txt":qe,"./tracks/python.advanced.txt":Je,"./tracks/python.ai.txt":Ye,"./tracks/python.expert.txt":Xe,"./tracks/python.intermediate.txt":Ze,"./tracks/python.projects.txt":Qe,"./tracks/python.txt":$e,"./tracks/sql.advanced.txt":et,"./tracks/sql.expert.txt":tt,"./tracks/sql.intermediate.txt":nt,"./tracks/sql.projects.txt":rt,"./tracks/sql.txt":it,"./tracks/typescript.advanced.txt":at,"./tracks/typescript.expert.txt":ot,"./tracks/typescript.intermediate.txt":st,"./tracks/typescript.projects.txt":ct,"./tracks/typescript.txt":lt}),ft=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function B(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`),r=ft.indexOf(n);return[ut.indexOf(t),r>=0?r:ft.length]}var pt=Object.entries(dt).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>B(e)[0]>=0).sort((e,t)=>{let[n,r]=B(e[0]),[i,a]=B(t[0]);return n-i||r-a}),mt=ut.filter(e=>pt.some(([t])=>t.split(`.`)[0]===e)),V=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]},{id:`web`,title:`Web Developer`,blurb:`Whole websites and web apps, front to back: HTML, CSS and JavaScript taken all the way to accessible, fast, well-built pages, TypeScript to keep them correct, SQL for the data behind them, and three real sites built at the end.`,steps:[`bash`,`git`,`html`,`javascript`,`html-intermediate`,`javascript-intermediate`,`typescript`,`html-advanced`,`javascript-advanced`,`sql`,`html-expert`,`html-projects`]},{id:`ai-research`,title:`AI Research Engineer`,blurb:`The people who build and improve the models themselves: Python taken to expert, then neural networks, autograd, tokenizers, attention and a transformer built from scratch and trained, then C++ for the code that has to be fast.`,steps:[`bash`,`git`,`python`,`python-intermediate`,`python-advanced`,`python-expert`,`python-projects`,`python-ai`,`cpp`,`cpp-intermediate`,`cpp-advanced`]},{id:`data-eng`,title:`Data Engineer`,blurb:`The pipelines every analysis and model is fed by: SQL from the first SELECT to window functions, query plans and schemas that hold up, Python to move and clean the data, and the command line to run it all.`,steps:[`python`,`sql`,`bash`,`git`,`sql-intermediate`,`python-intermediate`,`sql-advanced`,`bash-intermediate`,`sql-expert`,`python-advanced`,`sql-projects`]},{id:`devops`,title:`DevOps & Platform Engineer`,blurb:`The ground other engineers build on: the command line to scripts that check their own input, git from first commit to rebase, bisect and a team workflow, and Python for the tools you write for everyone else.`,steps:[`bash`,`git`,`bash-intermediate`,`git-intermediate`,`bash-advanced`,`git-advanced`,`python`,`python-intermediate`,`sql`]},{id:`performance`,title:`Game & Performance Engineer`,blurb:`Code where every millisecond and byte counts — game engines, simulations, trading, embedded: C++ from the basics to move semantics, templates, containers built from raw memory and undefined behaviour, then three real programs.`,steps:[`bash`,`git`,`cpp`,`python`,`cpp-intermediate`,`cpp-advanced`,`cpp-expert`,`cpp-projects`]}];function H(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var ht=3e4;async function gt(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await w(t,ye(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
 `),stderr:r.join(`
-`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return V(await ee(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=ve(t,e.error);return n?{...V(await g(n.program,{onStatus:r})),typeFails:n.fails}:V(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
-`);return V(await m.run(t,{onStatus:r,limitMs:ht,...n?{stdin:n}:{}}))}case`cpp`:return V(await v(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await te(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function _t(e){return e===`git`?`bash`:e}function vt(e){e===`python`&&!m.isBooted&&m.preload(),e===`typescript`&&_.preload()}var yt=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],bt=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],xt=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),St=class extends Error{};function H(e,t){throw new St(`${e}: ${t}`)}function U(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
-`)}function W(e){let t=U(e);return t?`${t}\n`:``}function Ct(e,t){let n;try{n=JSON.parse(e)}catch{return H(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||H(t,`rows must be an array of arrays of strings, numbers or null`),n}function wt(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||H(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=U(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||H(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=U(c).split(`
-`).filter(e=>e.trim()!==``);return e.length||H(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||H(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a case needs the call, then a "=> expected" line`);let t=U(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
-`).slice(3).trim();return(!t||!n)&&H(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=U(c).split(`
-`).map(e=>e.trim()).filter(Boolean);return e.length||H(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&H(d,`unknown source flag "${a}"`),l||H(d,`a source check needs a pattern`);try{new RegExp(l)}catch{H(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=U(c).split(`
+`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return H(await ee(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=_e(t,e.error);return n?{...H(await g(n.program,{onStatus:r})),typeFails:n.fails}:H(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
+`);return H(await m.run(t,{onStatus:r,limitMs:ht,...n?{stdin:n}:{}}))}case`cpp`:return H(await v(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await te(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function _t(e){return e===`git`?`bash`:e}function vt(e){e===`python`&&!m.isBooted&&m.preload(),e===`typescript`&&_.preload()}var yt=[`basics`,`intermediate`,`advanced`,`expert`,`projects`,`specialty`],bt=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],xt=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),St=class extends Error{};function U(e,t){throw new St(`${e}: ${t}`)}function W(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
+`)}function G(e){let t=W(e);return t?`${t}\n`:``}function Ct(e,t){let n;try{n=JSON.parse(e)}catch{return U(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||U(t,`rows must be an array of arrays of strings, numbers or null`),n}function wt(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||U(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=W(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||U(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=W(c).split(`
+`).filter(e=>e.trim()!==``);return e.length||U(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||U(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&U(d,`a case needs the call, then a "=> expected" line`);let t=W(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
+`).slice(3).trim();return(!t||!n)&&U(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=W(c).split(`
+`).map(e=>e.trim()).filter(Boolean);return e.length||U(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&U(d,`unknown source flag "${a}"`),l||U(d,`a source check needs a pattern`);try{new RegExp(l)}catch{U(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=W(c).split(`
 `),t=e[0]?.trim()===`ordered`,n=(t?e.slice(1):e).join(`
-`).trim();return{...u,kind:`result`,rows:Ct(n,d),ordered:t}}case`type-error`:return l||H(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=U(c.slice(0,e));return t||H(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:Ct(c.slice(e).join(`
-`).slice(3).trim(),d)}}default:return H(d,`unknown check kind "${i}"`)}}function Tt(e,t=`track`){let n=e.replace(/\r\n?/g,`
+`).trim();return{...u,kind:`result`,rows:Ct(n,d),ordered:t}}case`type-error`:return l||U(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&U(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=W(c.slice(0,e));return t||U(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:Ct(c.slice(e).join(`
+`).slice(3).trim(),d)}}default:return U(d,`unknown check kind "${i}"`)}}function Tt(e,t=`track`){let n=e.replace(/\r\n?/g,`
 `).split(`
-`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&H(t,`"@schema" without a closing "@end"`),o=U(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(bt.includes(s)||H(t,`"@track" must be one of ${bt.join(`, `)}`),r.title||H(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||H(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&xt.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&H(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&H(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&H(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>wt(e.header,e.body,c));h.length||H(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?U(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:U(d),task:U(f),starter:p?W(p):``,solution:W(m),hints:l.filter(e=>e.header===`hint`).map(e=>U(e.body)),checks:h,...g?{stdin:W(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&H(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||H(t,`no lessons`);let l=r.level??`basics`;yt.includes(l)||H(t,`"@level" must be one of ${yt.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&H(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var G=pt.map(([e,t])=>Tt(t,e)),Et=new Map;for(let e of G)e.lessons.forEach((t,n)=>Et.set(t.id,{track:e,lesson:t,index:n}));function Dt(e){return G.find(t=>t.id===e)??G.find(t=>t.lang===e)}function K(e){return G.filter(t=>t.lang===e)}function Ot(e,t){let n=K(e);return n.find(e=>J(e,t)<e.lessons.length)??n[n.length-1]}function kt(e){return Et.get(e)}function q(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function J(e,t){return e.lessons.filter(e=>t[e.id]).length}function At(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var jt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function Y(e){return jt[e]??e}var Mt={typescript:[{before:`typescript`,course:`javascript`}],git:[{before:`git`,course:`bash`}],html:[{before:`html-advanced`,course:`javascript`}]};function Nt(e){let t=K(e).map(e=>e.id);for(let{before:n,course:r}of Mt[e]??[]){let e=t.indexOf(n);e>=0&&G.some(e=>e.id===r)&&!t.includes(r)&&t.splice(e,0,r)}return t}var X=[...new Set(G.map(e=>e.lang))].filter(e=>K(e).length>1).map(e=>({id:`master-${e}`,title:Y(e),blurb:`${Y(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:Nt(e)})),Z={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},Q=t();function Pt({lessonId:e}){if(!e)return(0,Q.jsx)(It,{});let t=e.startsWith(`roadmap-`)?Ft.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(Bt,{roadmap:t});let n=Dt(e);if(n)return(0,Q.jsx)(Vt,{track:n});let r=kt(e);return r?(0,Q.jsx)(Ht,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(It,{missing:e})}function $(){let{state:e}=o(),t=At(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var Ft=[...B,...X];function It({missing:e}){let{state:t}=o(),n=d(),r=Ft.find(e=>e.id===n.query.goal)??B[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(T,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:B.map(e=>i(e))}),X.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:X.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(zt,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),mt.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":Y(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(T,{lang:e,size:20}),Y(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[K(e).length,` course`,K(e).length===1?``:`s`,` · `,K(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:K(e).map(e=>{let n=J(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(T,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Z[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function Lt(e){let[t,n]=(0,D.useState)(3);return(0,D.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function Rt(e,t){let n=e.steps.map(e=>Dt(e)).filter(e=>!!e),r=n.map(e=>J(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function zt({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=Rt(e,t),o=(0,D.useRef)(null),s=Lt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=J(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(T,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(w,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Bt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=Rt(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${q(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&J(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=J(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(T,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(w,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function Vt({track:e}){let{state:t}=o(),r=J(e,t.learn),a=e.lessons.length,s=q(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(T,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Z[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),K(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${Y(e.lang)} courses`,children:K(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":J(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Z[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function Ht({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,D.useState)(!1),[g,_]=(0,D.useState)(0),[v,ee]=(0,D.useState)(!1),te=(0,D.useRef)(null),y=ce(`learn:${t.id}:example`,t.teach,t.schema),ne=!!a.learn[t.id],b=e.lessons[r-1],x=e.lessons[r+1],re=K(e.lang),S=x?void 0:re[re.findIndex(t=>t.id===e.id)+1];(0,D.useEffect)(()=>vt(t.lang),[t.lang]);let C=(0,D.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>te.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),w=(0,D.useCallback)(async(e,n,r)=>{let i=De(t,e,await gt(t,ye(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(T,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,ne?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:y,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(Ut,{lesson:t,onPass:C}):(0,Q.jsx)(oe,{lang:_t(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:w,onPass:C,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:te,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:x?`Lesson passed. Next: ${x.title}`:S?`That is the whole ${e.name} course. Next: ${S.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(x?`/learn/${x.id}`:S?`/learn/${S.lessons[0].id}`:`/learn/${e.id}`),children:[x?`Continue`:S?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+Wt(t.lang)+`
-`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[b?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${b.id}`),children:[(0,Q.jsx)(i,{size:13}),b.title]}):(0,Q.jsx)(`span`,{}),x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[x.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function Ut({lesson:e,onPass:t}){let[n,r]=(0,D.useState)(()=>we(e)),[i,o]=(0,D.useState)(0),[s,c]=(0,D.useState)(null),[l,u]=(0,D.useState)(!1),d=async()=>{u(!0),c(null);try{let r=De(e,``,await gt(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(re,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(we(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(ae,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(S,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(se,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(ie,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function Wt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Gt(e){let{state:t}=o();return(0,D.useMemo)(()=>{let n=Ot(e,t.learn);return n?{lesson:q(n,t.learn),done:J(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{Pt as Learn,Gt as useNextLesson};
+`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&U(t,`"@schema" without a closing "@end"`),o=W(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(bt.includes(s)||U(t,`"@track" must be one of ${bt.join(`, `)}`),r.title||U(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||U(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&xt.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&U(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&U(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&U(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>wt(e.header,e.body,c));h.length||U(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?W(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:W(d),task:W(f),starter:p?G(p):``,solution:G(m),hints:l.filter(e=>e.header===`hint`).map(e=>W(e.body)),checks:h,...g?{stdin:G(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&U(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||U(t,`no lessons`);let l=r.level??`basics`;yt.includes(l)||U(t,`"@level" must be one of ${yt.join(`, `)}`),l===`specialty`&&!r.course&&U(t,`a specialty course names itself with "@course <lang>-<topic>"`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&U(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var K=pt.map(([e,t])=>Tt(t,e)),Et=new Map;for(let e of K)e.lessons.forEach((t,n)=>Et.set(t.id,{track:e,lesson:t,index:n}));function Dt(e){return K.find(t=>t.id===e)??K.find(t=>t.lang===e)}function q(e){return K.filter(t=>t.lang===e)}function Ot(e,t){let n=q(e);return n.find(e=>Y(e,t)<e.lessons.length)??n[n.length-1]}function kt(e){return Et.get(e)}function J(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function Y(e,t){return e.lessons.filter(e=>t[e.id]).length}function At(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var jt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function X(e){return jt[e]??e}var Mt={typescript:[{before:`typescript`,course:`javascript`}],git:[{before:`git`,course:`bash`}],html:[{before:`html-advanced`,course:`javascript`}]};function Nt(e){let t=q(e).map(e=>e.id);for(let{before:n,course:r}of Mt[e]??[]){let e=t.indexOf(n);e>=0&&K.some(e=>e.id===r)&&!t.includes(r)&&t.splice(e,0,r)}return t}var Z=[...new Set(K.map(e=>e.lang))].filter(e=>q(e).length>1).map(e=>({id:`master-${e}`,title:X(e),blurb:`${X(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:Nt(e)})),Pt={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`,specialty:`Specialty`},Q=t();function Ft({lessonId:e}){if(!e)return(0,Q.jsx)(Lt,{});let t=e.startsWith(`roadmap-`)?It.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(Vt,{roadmap:t});let n=Dt(e);if(n)return(0,Q.jsx)(Ht,{track:n});let r=kt(e);return r?(0,Q.jsx)(Ut,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(Lt,{missing:e})}function $(){let{state:e}=o(),t=At(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var It=[...V,...Z];function Lt({missing:e}){let{state:t}=o(),n=d(),r=It.find(e=>e.id===n.query.goal)??V[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(E,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:V.map(e=>i(e))}),Z.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:Z.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(Bt,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),mt.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":X(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(E,{lang:e,size:20}),X(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[q(e).length,` course`,q(e).length===1?``:`s`,` · `,q(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:q(e).map(e=>{let n=Y(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(E,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Pt[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function Rt(e){let[t,n]=(0,O.useState)(3);return(0,O.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function zt(e,t){let n=e.steps.map(e=>Dt(e)).filter(e=>!!e),r=n.map(e=>Y(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function Bt({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=zt(e,t),o=(0,O.useRef)(null),s=Rt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=Y(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(E,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.id)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(T,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Vt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=zt(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${J(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&Y(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=Y(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(E,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.id)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(T,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function Ht({track:e}){let{state:t}=o(),r=Y(e,t.learn),a=e.lessons.length,s=J(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(E,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Pt[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),q(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${X(e.lang)} courses`,children:q(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":Y(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Pt[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function Ut({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,O.useState)(!1),[g,_]=(0,O.useState)(0),[v,ee]=(0,O.useState)(!1),te=(0,O.useRef)(null),y=se(`learn:${t.id}:example`,t.teach,t.schema),ne=!!a.learn[t.id],b=e.lessons[r-1],x=e.lessons[r+1],S=q(e.lang),C=x?void 0:S[S.findIndex(t=>t.id===e.id)+1];(0,O.useEffect)(()=>vt(t.lang),[t.lang]);let w=(0,O.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>te.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),T=(0,O.useCallback)(async(e,n,r)=>{let i=Ee(t,e,await gt(t,ve(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(E,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,ne?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:y,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(Wt,{lesson:t,onPass:w}):(0,Q.jsx)(ae,{lang:_t(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:T,onPass:w,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:te,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:x?`Lesson passed. Next: ${x.title}`:C?`That is the whole ${e.name} course. Next: ${C.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(x?`/learn/${x.id}`:C?`/learn/${C.lessons[0].id}`:`/learn/${e.id}`),children:[x?`Continue`:C?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+Gt(t.lang)+`
+`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[b?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${b.id}`),children:[(0,Q.jsx)(i,{size:13}),b.title]}):(0,Q.jsx)(`span`,{}),x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[x.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function Wt({lesson:e,onPass:t}){let[n,r]=(0,O.useState)(()=>Ce(e)),[i,o]=(0,O.useState)(0),[s,c]=(0,O.useState)(null),[l,u]=(0,O.useState)(!1),d=async()=>{u(!0),c(null);try{let r=Ee(e,``,await gt(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(S,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(Ce(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(ie,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(C,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(oe,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(re,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function Gt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Kt(e){let{state:t}=o();return(0,O.useMemo)(()=>{let n=Ot(e,t.learn);return n?{lesson:J(n,t.learn),done:Y(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{Ft as Learn,Kt as useNextLesson};

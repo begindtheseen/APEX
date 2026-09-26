@@ -97,6 +97,24 @@ describe('the tracks', () => {
     expect(new Set(all.map((r) => r.id)).size).toBe(all.length)
   })
 
+  it('every roadmap takes a course only after the ones it builds on', () => {
+    for (const r of [...ROADMAPS, ...MASTERY]) {
+      r.steps.forEach((id, i) => {
+        const before = r.steps.slice(0, i)
+        const t = trackFor(id)!
+        // The course before it on its own language's ladder…
+        const ladder = tracksFor(t.lang)
+        const prev = ladder[ladder.indexOf(t) - 1]
+        if (prev) expect(before, `${r.id}: ${id} needs ${prev.id} first`).toContain(prev.id)
+        // …and another language's course its ladder leans on.
+        for (const p of PREREQUISITES[t.lang] ?? []) {
+          const at = ladder.findIndex((c) => c.id === p.before)
+          if (at >= 0 && ladder.indexOf(t) >= at && TRACKS.some((c) => c.id === p.course)) expect(before, `${r.id}: ${id} needs ${p.course} first`).toContain(p.course)
+        }
+      })
+    }
+  })
+
   it('a language with more than one course has a beginner-to-expert roadmap through all of them', () => {
     for (const lang of LEARN_LANGS) {
       const courses = tracksFor(lang)
