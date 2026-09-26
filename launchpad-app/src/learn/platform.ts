@@ -98,6 +98,9 @@ function fromOutput(out: RunOutput): LearnRun {
  * A Terminal lesson has nothing to run: its checks read the shell she typed
  * into, passed in as `shell`.
  */
+/** How long a Python lesson check may run once Python is loaded. */
+export const PY_LESSON_LIMIT_MS = 30_000
+
 export async function runLearn(
   lesson: LearnLesson,
   program: string,
@@ -131,7 +134,9 @@ export async function runLearn(
     }
     case 'python': {
       const stdin = lesson.stdin?.replace(/\n$/, '').split('\n')
-      return fromOutput(await py.run(program, { onStatus, ...(stdin ? { stdin } : {}) }))
+      // The same limit as the lesson checker (verify/runners.ts): a program
+      // that passes there passes here, and a slow one stops instead of spinning.
+      return fromOutput(await py.run(program, { onStatus, limitMs: PY_LESSON_LIMIT_MS, ...(stdin ? { stdin } : {}) }))
     }
     case 'cpp':
       return fromOutput(await runCpp(program, { stdin: lesson.stdin ?? '', onStatus }))

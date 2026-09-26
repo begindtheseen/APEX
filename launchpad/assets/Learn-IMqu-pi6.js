@@ -1,9 +1,9 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-Bz31vl7X.js";import{t as p}from"./markdown-BxTb3qxq.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as ee,b as y,c as te,d as b,g as x,i as S,j as C,k as w,l as T,m as E,p as ne,r as re,s as ie,t as ae,v as oe,x as se,y as D}from"./lessonCode-DLdVejON.js";var O=e(),k=`@@LEARN`,ce=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function A(e){return e.replace(/\s*\n\s*/g,` `).trim()}function j(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var M=`const throws = (f) => { try { f(); return false } catch { return true } }
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-0HOqBNBB.js";import{t as p}from"./markdown-BQQ-i3Z9.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as ee,b as y,c as te,d as ne,g as b,i as x,j as S,k as C,l as w,m as T,p as re,r as ie,s as ae,t as oe,v as se,x as ce,y as E}from"./lessonCode-7NUZ6Lcb.js";var D=e(),O=`@@LEARN`,le=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var ue=`const throws = (f) => { try { f(); return false } catch { return true } }
   const __eq = (a, b) => { if (Object.is(a, b)) return true; if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => __eq(a[k], b[k])) }
   const __show = (v) => { if (v === undefined) return 'undefined'; if (typeof v === 'function') return '[Function]'; if (typeof v === 'bigint') return v + 'n'; try { const j = JSON.stringify(v); return j === undefined ? String(v) : j } catch { return String(v) } }
   const __err = (e) => (e instanceof Error ? e.name + ': ' + e.message : String(e))
-  const __learn = (i, f) => { try { const r = f(); console.log('${k} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }
-  const __case = (i, f, w) => { try { const got = f(); console.log('${k} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }`,le=M.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),ue=`#include <cmath>
+  const __learn = (i, f) => { try { const r = f(); console.log('${O} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }
+  const __case = (i, f, w) => { try { const got = f(); console.log('${O} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }`,de=ue.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),fe=`#include <cmath>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -17,32 +17,32 @@ inline std::string __learn_show(bool v) { return v ? "true" : "false"; }
 inline std::string __learn_show(char v) { return std::string("'") + v + "'"; }
 template <class T> std::string __learn_show(const std::vector<T>& v) { std::string o = "{"; for (std::size_t i = 0; i < v.size(); ++i) o += (i ? ", " : "") + __learn_show(v[i]); return o + "}"; }
 template <class K, class V> std::string __learn_show(const std::map<K, V>& m) { std::string o = "{"; bool first = true; for (const auto& [k, x] : m) { o += (first ? "" : ", ") + std::string("{") + __learn_show(k) + ", " + __learn_show(x) + "}"; first = false; } return o + "}"; }
-template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function de(e){let t=j(e,`test`),n=j(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?j(e,`type-error`).map(e=>`  // @ts-expect-error ${fe} ${e.i}\n  ;(() => { ${A(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
+template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function pe(e){let t=A(e,`test`),n=A(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?A(e,`type-error`).map(e=>`  // @ts-expect-error ${me} ${e.i}\n  ;(() => { ${k(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
 `)}\n}\n`:``;let a=r?`  // @ts-ignore
-`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?le:M}\n${o.join(`
+`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?de:ue}\n${o.join(`
 `)}\n${i.join(`
-`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${k} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${k} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
-`)}case`cpp`:return!t.length&&!n.length?``:`\n${ue}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${A(e.c.expr)}); std::cout << "${k} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${A(e.c.expect)})); std::cout << "${k} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
-`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${k}' AS __learn;\n${j(e,`query`).map(e=>`SELECT '${k} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
-`)}\n`;case`html`:case`bash`:case`git`:return``}}var fe=`learn-type-check`;function pe(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
-`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${fe} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
-`)}}function me(e,t){let n=de(e);return n?t.endsWith(`
-`)?t+n.replace(/^\n/,``):t+n:t}function he(e){return j(e,`dom`).map(e=>e.c.steps)}function N(e){return e.replace(/\r\n?/g,`
+`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${O} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${O} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
+`)}case`cpp`:return!t.length&&!n.length?``:`\n${fe}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${k(e.c.expr)}); std::cout << "${O} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${k(e.c.expect)})); std::cout << "${O} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
+`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${O}' AS __learn;\n${A(e,`query`).map(e=>`SELECT '${O} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
+`)}\n`;case`html`:case`bash`:case`git`:return``}}var me=`learn-type-check`;function he(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
+`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${me} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
+`)}}function ge(e,t){let n=pe(e);return n?t.endsWith(`
+`)?t+n.replace(/^\n/,``):t+n:t}function _e(e){return A(e,`dom`).map(e=>e.c.steps)}function j(e){return e.replace(/\r\n?/g,`
 `).split(`
 `).map(e=>e.trimEnd()).join(`
-`).replace(/^\n+|\n+$/g,``)}function ge(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
+`).replace(/^\n+|\n+$/g,``)}function ve(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
 `).split(`
-`)){let e=ce.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
-`),marks:t}}function _e(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function P(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>_e(e,a[t][n])))}function F(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
-`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function I(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var L=e=>se(ee,e),ve=e=>e.replace(/^\/home\/you/,`~`);function R(e){let t=y();for(let n of e.starter.split(`
-`))n.trim()&&(t=v(t,n).state);return{...t,history:[],transcript:[]}}function ye(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(2).join(` `);switch(r){case`cwd`:return e.cwd===L(i)?null:`you are in ${ve(e.cwd)}, not ${ve(L(i))}`;case`dir`:{let t=D(e,L(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return D(e,L(i))?`${i} should not exist any more`:null;case`file`:{let n=D(e,L(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!a)return null;let r=/^(==|contains)\s+(.*)$/.exec(a);if(!r)return`the check "${t}" could not be read`;let o=n.content.replace(/\n$/,``);return r[1]===`==`?o===r[2]?null:`${i} contains ${JSON.stringify(o)}, not ${JSON.stringify(r[2])}`:o.includes(r[2])?null:`${i} does not contain ${JSON.stringify(r[2])}`}case`ran`:{let t=n.slice(1).join(` `);return e.history.flatMap(e=>e.split(`&&`).map(e=>e.trim().replace(/\s+/g,` `))).some(e=>e===t||e.startsWith(`${t} `))?null:`you have not run ${t} yet`}case`used`:{let t=n.slice(1).join(` `);return e.history.some(e=>e.includes(t))?null:`you have not used ${t} in a command yet`}case`printed-line`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.split(`
-`).includes(t))?null:`nothing has printed the line ${JSON.stringify(t)} yet`}case`printed`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.includes(t))?null:`nothing has printed ${JSON.stringify(t)} yet`}case`git`:{let r=oe(e,L(i)),[,,a,...o]=n;if(!r)return`${i===`.`?`~/project`:i} is not a git repository yet`;switch(a){case`repo`:return null;case`commits`:{let e=Number(o[1]);return(o[0]===`>=`?r.commits>=e:r.commits===e)?null:`the repository has ${r.commits} commit${r.commits===1?``:`s`}`}case`branch`:return r.branch===o[0]?null:`you are on ${r.branch}, not ${o[0]}`;case`has-branch`:return r.branches.includes(o[0])?null:`there is no branch ${o[0]}`;case`staged`:return r.staged.includes(o[0])?null:`${o[0]} is not staged`;case`untracked`:return r.untracked.includes(o[0])?null:`${o[0]} is not an untracked file`;case`modified`:return r.modified.includes(o[0])?null:`${o[0]} has no unstaged changes`;case`commits-on`:{let e=Number(o[2]),t=r.branchCommits[o[0]];return t===void 0?`there is no branch ${o[0]}`:(o[1]===`>=`?t>=e:t===e)?null:`${o[0]} has ${t} commit${t===1?``:`s`}`}case`merges`:{let e=Number(o[1]);return(o[0]===`>=`?r.merges>=e:r.merges===e)?null:`the history has ${r.merges} merge commit${r.merges===1?``:`s`}`}case`log`:{let e=o.slice(1).join(` `);return r.messages.some(t=>t.includes(e))?null:`no commit message contains ${JSON.stringify(e)}`}case`clean`:return r.staged.length?`still staged: ${r.staged.join(`, `)}`:null;default:return`the check "${t}" could not be read`}}default:return`the check "${t}" could not be read`}}function be(e,t,n){let{clean:r,marks:i}=ge(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(j(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=N(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>ye(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
+`)){let e=le.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
+`),marks:t}}function ye(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function M(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>ye(e,a[t][n])))}function N(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
+`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function P(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var F=e=>ce(ee,e),I=e=>e.replace(/^\/home\/you/,`~`);function L(e){let t=y();for(let n of e.starter.split(`
+`))n.trim()&&(t=v(t,n).state);return{...t,history:[],transcript:[]}}function be(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(2).join(` `);switch(r){case`cwd`:return e.cwd===F(i)?null:`you are in ${I(e.cwd)}, not ${I(F(i))}`;case`dir`:{let t=E(e,F(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return E(e,F(i))?`${i} should not exist any more`:null;case`file`:{let n=E(e,F(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!a)return null;let r=/^(==|contains)\s+(.*)$/.exec(a);if(!r)return`the check "${t}" could not be read`;let o=n.content.replace(/\n$/,``);return r[1]===`==`?o===r[2]?null:`${i} contains ${JSON.stringify(o)}, not ${JSON.stringify(r[2])}`:o.includes(r[2])?null:`${i} does not contain ${JSON.stringify(r[2])}`}case`ran`:{let t=n.slice(1).join(` `);return e.history.flatMap(e=>e.split(`&&`).map(e=>e.trim().replace(/\s+/g,` `))).some(e=>e===t||e.startsWith(`${t} `))?null:`you have not run ${t} yet`}case`used`:{let t=n.slice(1).join(` `);return e.history.some(e=>e.includes(t))?null:`you have not used ${t} in a command yet`}case`printed-line`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.split(`
+`).includes(t))?null:`nothing has printed the line ${JSON.stringify(t)} yet`}case`printed`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.includes(t))?null:`nothing has printed ${JSON.stringify(t)} yet`}case`git`:{let r=se(e,F(i)),[,,a,...o]=n;if(!r)return`${i===`.`?`~/project`:i} is not a git repository yet`;switch(a){case`repo`:return null;case`commits`:{let e=Number(o[1]);return(o[0]===`>=`?r.commits>=e:r.commits===e)?null:`the repository has ${r.commits} commit${r.commits===1?``:`s`}`}case`branch`:return r.branch===o[0]?null:`you are on ${r.branch}, not ${o[0]}`;case`has-branch`:return r.branches.includes(o[0])?null:`there is no branch ${o[0]}`;case`staged`:return r.staged.includes(o[0])?null:`${o[0]} is not staged`;case`untracked`:return r.untracked.includes(o[0])?null:`${o[0]} is not an untracked file`;case`modified`:return r.modified.includes(o[0])?null:`${o[0]} has no unstaged changes`;case`commits-on`:{let e=Number(o[2]),t=r.branchCommits[o[0]];return t===void 0?`there is no branch ${o[0]}`:(o[1]===`>=`?t>=e:t===e)?null:`${o[0]} has ${t} commit${t===1?``:`s`}`}case`merges`:{let e=Number(o[1]);return(o[0]===`>=`?r.merges>=e:r.merges===e)?null:`the history has ${r.merges} merge commit${r.merges===1?``:`s`}`}case`log`:{let e=o.slice(1).join(` `);return r.messages.some(t=>t.includes(e))?null:`no commit message contains ${JSON.stringify(e)}`}case`clean`:return r.staged.length?`still staged: ${r.staged.join(`, `)}`:null;default:return`the check "${t}" could not be read`}}default:return`the check "${t}" could not be read`}}function R(e,t,n){let{clean:r,marks:i}=ve(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(A(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=j(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>be(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
 `),...e?{actual:e}:{}})}if(r.kind===`dom`){let e=n.dom?.[s.get(u)??-1];return c?f(!1,{input:r.steps.join(`
 `),detail:c}):e?f(e.pass,{input:r.steps.join(`
 `),...e.detail?{actual:e.detail}:{}}):f(!1,{input:r.steps.join(`
-`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?A(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=N(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:I(t),actual:I(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(N(e)));return f(!e.length,{expected:r.expect.join(`
-`),actual:I(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:A(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=F(r.rows)+(r.ordered?`
-(in this order)`:``);return e?f(P(r.rows,e.rows,r.ordered),{expected:t,actual:F(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(P(t(r.rows),t(e),!0),{input:r.sql,expected:F(t(r.rows)),actual:F(t(e))})}return f(P(r.rows,e,!0),{input:r.sql,expected:F(r.rows),actual:F(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
+`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?k(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=j(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:P(t),actual:P(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(j(e)));return f(!e.length,{expected:r.expect.join(`
+`),actual:P(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:k(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=N(r.rows)+(r.ordered?`
+(in this order)`:``);return e?f(M(r.rows,e.rows,r.ordered),{expected:t,actual:N(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(M(t(r.rows),t(e),!0),{input:r.sql,expected:N(t(r.rows)),actual:N(t(e))})}return f(M(r.rows,e,!0),{input:r.sql,expected:N(r.rows),actual:N(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
 `).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var xe='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',Se=`@track cpp
 @title C++
 @name C++, close to the machine
@@ -32717,6 +32717,8692 @@ Compare against \`(SELECT AVG(total) FROM spend)\`, and join \`users\` for the e
 --- check source | Uses WITH
 \\b[Ww][Ii][Tt][Hh]\\s+\\w+\\s+[Aa][Ss]\\s*\\(
 `,We=`@track typescript
+@level advanced
+@title TypeScript · Advanced
+@name TypeScript, advanced: computing types from types
+@blurb keyof, mapped and conditional types, template literals, brands and satisfies — then typed emitters, builders and data structures, with tests that prove what your types accept and reject.
+
+=== ts3-01 | keyof, indexed access, and testing types
+--- teach
+The intermediate course modelled data with unions, generics and guards. This course is about types computed from other types. Three operators start it off.
+
+**\`keyof T\`** is the union of \`T\`'s keys. **\`T[K]\`** is the type of the property \`K\` — an *indexed access*. **\`typeof value\`**, in a type position, is the type of a value you already have:
+
+\`\`\`ts
+const settings = { theme: 'dark', fontSize: 14 }
+type Settings = typeof settings        // { theme: string; fontSize: number }
+type Key = keyof Settings              // 'theme' | 'fontSize'
+type Size = Settings['fontSize']       // number
+type AnyValue = Settings[keyof Settings]   // string | number
+
+const list = ['a', 'b'] as const
+type Item = (typeof list)[number]      // 'a' | 'b' — [number] means "any element"
+\`\`\`
+
+Put them together with a generic and a key argument decides the return type:
+
+\`\`\`ts
+const settings = { theme: 'dark', fontSize: 14 }
+
+function get<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+get(settings, 'fontSize')     // number
+// get(settings, 'colour')    ✗ '"colour"' is not assignable to '"theme" | "fontSize"'
+\`\`\`
+
+(To build an object whose key comes from a variable, put the key in square brackets: \`{ ...settings, [key]: value }\` is a **computed key**.)
+
+**Testing types.** A runtime test cannot see a type, so how do you prove \`get\` returns \`number\` and not \`any\`? You write a line that only compiles if the types are what you claim. The standard helper compares two types exactly:
+
+\`\`\`ts
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false
+
+type Key = keyof { theme: string; fontSize: number }
+type Size = number
+
+const same: Equal<Key, 'theme' | 'fontSize'> = true      // compiles
+const different: Equal<Size, string> = false             // compiles: they differ
+\`\`\`
+
+The odd shape is deliberate: simpler versions call \`any\` equal to everything. From now on, checks named "… is exactly …" are written \`const no: Equal<Yours, Expected> = false\`, which must **fail** to compile — and it fails exactly when your type equals the expected one.
+--- task
+1. \`getProp<T, K extends keyof T>(obj: T, key: K): T[K]\`.
+2. \`pluck<T, K extends keyof T>(items: readonly T[], key: K): T[K][]\` — that property from every item.
+3. \`type ValueOf<T>\` — the union of \`T\`'s property types.
+4. \`type ElementOf<A extends readonly unknown[]>\` — the union of \`A\`'s element types.
+5. \`type Settings = typeof SETTINGS\`, and \`withSetting<K extends keyof Settings>(key: K, value: Settings[K]): Settings\` returning a **new** settings object with that one value changed.
+--- starter
+const SETTINGS = { theme: 'dark', fontSize: 14, beta: false }
+
+function getProp(obj: any, key: string): any {
+  return obj[key]
+}
+
+function pluck(items: any[], key: string): any[] {
+  return items.map((item) => item[key])
+}
+
+type ValueOf<T> = unknown
+type ElementOf<A extends readonly unknown[]> = unknown
+--- solution
+const SETTINGS = { theme: 'dark', fontSize: 14, beta: false }
+type Settings = typeof SETTINGS
+
+function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+function pluck<T, K extends keyof T>(items: readonly T[], key: K): T[K][] {
+  return items.map((item) => item[key])
+}
+
+type ValueOf<T> = T[keyof T]
+type ElementOf<A extends readonly unknown[]> = A[number]
+
+function withSetting<K extends keyof Settings>(key: K, value: Settings[K]): Settings {
+  return { ...SETTINGS, [key]: value }
+}
+--- hint
+\`ValueOf<T>\` is an indexed access with every key at once: \`T[keyof T]\`.
+--- hint
+For \`withSetting\`, a computed key in a spread builds the new object: \`{ ...SETTINGS, [key]: value }\`.
+--- check case | getProp
+getProp({ a: 1, b: 'x' }, 'b')
+=> 'x'
+--- check case | pluck
+pluck([{ id: 1, name: 'ada' }, { id: 2, name: 'lin' }], 'name')
+=> ['ada', 'lin']
+--- check case | withSetting returns a changed copy
+withSetting('fontSize', 16)
+=> { theme: 'dark', fontSize: 16, beta: false }
+--- check test | SETTINGS itself is unchanged
+(withSetting('beta', true), SETTINGS.beta === false)
+--- check type-error | getProp only accepts real keys
+getProp({ a: 1 }, 'b')
+--- check type-error | getProp returns the property's own type
+const n: number = getProp({ a: 'x' }, 'a')
+--- check type-error | A setting's value must match its type
+withSetting('fontSize', 'big')
+--- check type-error | Unknown settings are rejected
+withSetting('colour', 'red')
+--- check type-error | pluck(…, 'name') is exactly string[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const names = pluck([{ id: 1, name: 'ada' }], 'name');
+const no: Equal<typeof names, string[]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | ValueOf<{ a: 1; b: 'x' }> is exactly 1 | 'x'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ValueOf<{ a: 1; b: 'x' }>, 1 | 'x'> = false
+--- check type-error | ElementOf<readonly ['a', 'b']> is exactly 'a' | 'b'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementOf<readonly ['a', 'b']>, 'a' | 'b'> = false
+
+=== ts3-02 | Mapped types
+--- teach
+A **mapped type** builds an object type by walking over a union of keys:
+
+\`\`\`ts
+type Flags<T> = { [K in keyof T]: boolean }
+
+type UserFlags = Flags<{ name: string; age: number }>   // { name: boolean; age: boolean }
+\`\`\`
+
+Read \`[K in keyof T]\` as "for each key K of T". The value side can use \`K\` and \`T[K]\`. \`Partial\`, \`Required\`, \`Readonly\`, \`Pick\` and \`Record\` are all mapped types in the standard library.
+
+**Modifiers.** When you map over \`keyof T\`, \`readonly\` and \`?\` are copied from \`T\`. You can add or remove them explicitly:
+
+\`\`\`ts
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }   // strip readonly
+type Concrete<T> = { [K in keyof T]-?: T[K] }          // strip ?
+type Frozen<T> = { +readonly [K in keyof T]: T[K] }     // add readonly (the + is optional)
+\`\`\`
+
+**Key remapping** with \`as\` renames keys, or drops them by mapping them to \`never\`:
+
+\`\`\`ts
+type OnlyNumbers<T> = { [K in keyof T as T[K] extends number ? K : never]: T[K] }
+type N = OnlyNumbers<{ a: string; b: number; c: number }>    // { b: number; c: number }
+\`\`\`
+
+At runtime, building such an object usually needs one cast, because TypeScript cannot follow a loop that fills in keys one by one. Start from \`{} as Flags<T>\` inside the function; the public signature is what the checks prove. \`for (const key in obj)\` loops over an object's own and inherited enumerable keys; for a plain object that is just its keys, typed as \`Extract<keyof T, string>\`.
+--- task
+1. \`type Nullable<T>\` — every property may also be \`null\` (optional ones stay optional).
+2. \`type Mutable<T>\` — \`readonly\` removed from every property.
+3. \`type Concrete<T>\` — \`?\` removed from every property.
+4. \`type PickByValue<T, V>\` — only the properties whose type is assignable to \`V\`.
+5. \`type Flags<T>\` — every property becomes a \`boolean\`, and \`toFlags<T extends object>(obj: T): Flags<T>\`, turning each value into \`Boolean(value)\`.
+--- starter
+type Nullable<T> = T
+type Mutable<T> = T
+type Concrete<T> = T
+type PickByValue<T, V> = T
+type Flags<T> = Record<string, boolean>
+
+function toFlags(obj: object): Flags<object> {
+  return {}
+}
+--- solution
+type Nullable<T> = { [K in keyof T]: T[K] | null }
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }
+type Concrete<T> = { [K in keyof T]-?: T[K] }
+type PickByValue<T, V> = { [K in keyof T as T[K] extends V ? K : never]: T[K] }
+type Flags<T> = { [K in keyof T]: boolean }
+
+function toFlags<T extends object>(obj: T): Flags<T> {
+  const out = {} as Flags<T>
+  for (const key in obj) out[key] = Boolean(obj[key])
+  return out
+}
+--- hint
+Each one starts from \`{ [K in keyof T]: … }\`; only the modifiers, the \`as\` clause, or the value type change.
+--- hint
+\`PickByValue\` filters with \`as T[K] extends V ? K : never\` — a key mapped to \`never\` disappears.
+--- hint
+In \`toFlags\`, \`for (const key in obj)\` gives keys TypeScript accepts for both \`obj[key]\` and \`out[key]\`.
+--- check case | toFlags
+toFlags({ a: 1, b: '', c: 'x', d: 0 })
+=> { a: true, b: false, c: true, d: false }
+--- check type-error | Flags keeps exactly the object's keys
+const f = toFlags({ a: 1 }); f.b
+--- check type-error | Flags values are booleans
+const f: Flags<{ a: number }> = { a: 1 }
+--- check type-error | Nullable<{ a: string; b?: number }> is exactly { a: string | null; b?: number | null }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Nullable<{ a: string; b?: number }>, { a: string | null; b?: number | null }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | Mutable<{ readonly a: string; b: number }> is exactly { a: string; b: number }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Mutable<{ readonly a: string; b: number }>, { a: string; b: number }> = false
+--- check type-error | Concrete<{ a?: string; b: number }> is exactly { a: string; b: number }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Concrete<{ a?: string; b: number }>, { a: string; b: number }> = false
+--- check type-error | PickByValue<…, string> is exactly the string properties
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<PickByValue<{ a: string; b: number; c: string }, string>, { a: string; c: string }> = false
+
+=== ts3-03 | Conditional types and infer
+--- teach
+A **conditional type** chooses between two types with a test that looks like the ternary operator:
+
+\`\`\`ts
+type IsString<T> = T extends string ? 'yes' : 'no'
+type A = IsString<'hi'>    // 'yes'
+type B = IsString<42>      // 'no'
+\`\`\`
+
+\`T extends U\` asks "is T assignable to U?".
+
+**\`infer\`** pulls a piece out of a type while testing it — pattern matching for types:
+
+\`\`\`ts
+type ElementOf<T> = T extends readonly (infer E)[] ? E : never
+type Resolved<T> = T extends Promise<infer V> ? V : T
+type Ret<F> = F extends (...args: never[]) => infer R ? R : never
+
+type C = ElementOf<string[]>              // string
+type D = Resolved<Promise<number>>        // number
+type E = Ret<() => boolean>               // boolean
+\`\`\`
+
+**Distribution.** When the thing being tested is a bare type parameter and you pass a union, the conditional runs once per member and the results are unioned:
+
+\`\`\`ts
+type NoStrings<T> = T extends string ? never : T
+type F = NoStrings<string | number | boolean>   // number | boolean
+\`\`\`
+
+That is how \`Exclude\` and \`NonNullable\` work. To test the union as a whole instead, wrap both sides in brackets: \`[T] extends [string] ? … : …\`.
+
+A conditional type can refer to itself, so it can unwrap as many layers as there are: \`Promise<Promise<number>>\` → \`number\`.
+--- task
+1. \`type ElementType<T>\` — the element type of an array (readonly arrays too); any other type unchanged.
+2. \`type UnwrapPromise<T>\` — the value inside a promise, unwrapping nested promises all the way; any other type unchanged.
+3. \`type FirstArg<F>\` — the type of a function type's first parameter, or \`never\` if it takes none.
+4. \`type NonNullish<T>\` — \`T\` without \`null\` and \`undefined\` (write it yourself; do not use \`NonNullable\`).
+5. \`compact<T>(items: readonly T[]): NonNullish<T>[]\` — the items without \`null\` and \`undefined\`, keeping \`0\`, \`''\` and \`false\`.
+--- starter
+type ElementType<T> = T
+type UnwrapPromise<T> = T
+type FirstArg<F> = unknown
+type NonNullish<T> = T
+
+function compact(items: any[]): any[] {
+  return items.filter(Boolean)
+}
+--- solution
+type ElementType<T> = T extends readonly (infer E)[] ? E : T
+type UnwrapPromise<T> = T extends Promise<infer V> ? UnwrapPromise<V> : T
+type FirstArg<F> = F extends (...args: infer P) => unknown ? (P extends [infer A, ...unknown[]] ? A : never) : never
+type NonNullish<T> = T extends null | undefined ? never : T
+
+function compact<T>(items: readonly T[]): NonNullish<T>[] {
+  return items.filter((x): x is NonNullish<T> => x !== null && x !== undefined)
+}
+--- hint
+\`UnwrapPromise\` calls itself on the inferred value: \`T extends Promise<infer V> ? UnwrapPromise<V> : T\`.
+--- hint
+For \`FirstArg\`, infer the whole parameter list first (\`(...args: infer P) => unknown\`), then match \`P\` against \`[infer A, ...unknown[]]\`.
+--- hint
+\`filter\` narrows with a guard: \`(x): x is NonNullish<T> => x !== null && x !== undefined\`.
+--- check case | compact keeps falsy values that are not null or undefined
+compact([1, null, 0, undefined, '', false, 2])
+=> [1, 0, '', false, 2]
+--- check type-error | ElementType<readonly string[]> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementType<readonly string[]>, string> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | ElementType<number> is exactly number
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementType<number>, number> = false
+--- check type-error | UnwrapPromise<Promise<Promise<number>>> is exactly number
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<UnwrapPromise<Promise<Promise<number>>>, number> = false
+--- check type-error | FirstArg<(a: string, b: number) => void> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FirstArg<(a: string, b: number) => void>, string> = false
+--- check type-error | FirstArg<() => void> is exactly never
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FirstArg<() => void>, never> = false
+--- check type-error | NonNullish<string | null | undefined> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<NonNullish<string | null | undefined>, string> = false
+--- check type-error | compact(['a', null]) is exactly string[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const c = compact(['a', null]);
+const no: Equal<typeof c, string[]> = false
+
+=== ts3-04 | Utility types in practice
+--- teach
+The standard library's utility types cover most everyday type transformations. Knowing them saves you from writing — and repeating — shapes by hand:
+
+| Utility | Gives you |
+| --- | --- |
+| \`Partial<T>\` / \`Required<T>\` | every property optional / required |
+| \`Pick<T, K>\` / \`Omit<T, K>\` | only keys \`K\` / every key except \`K\` |
+| \`Record<K, V>\` | an object with keys \`K\`, values \`V\` |
+| \`Exclude<U, X>\` / \`Extract<U, X>\` | union members not / only assignable to \`X\` |
+| \`ReturnType<F>\` / \`Parameters<F>\` | a function type's return type / parameter tuple |
+| \`Awaited<T>\` | what \`await\` gives for \`T\` |
+
+The point is a **single source of truth**. Define \`User\` once, and derive the shape of a public profile, a sign-up form and a patch from it. Add a field to \`User\` and every derived type follows.
+
+\`\`\`ts
+interface Post { id: string; title: string; body: string; draft: boolean }
+
+type PostSummary = Pick<Post, 'id' | 'title'>
+type PostEdit = Partial<Omit<Post, 'id'>>
+
+async function loadPost(id: string): Promise<Post> {
+  return { id, title: 'Hello', body: '', draft: true }
+}
+type Loaded = Awaited<ReturnType<typeof loadPost>>    // Post
+\`\`\`
+
+\`typeof loadPost\` turns a function *value* into its type, which is how you reuse the types of code you do not own.
+
+**The trap:** these types exist only at compile time. \`Omit<User, 'password'>\` does not remove anything from an object. If you return the whole user from a function typed as returning the public shape, the password is still in the JSON you send. Build the smaller object for real — destructuring with a rest element does it neatly: \`const { password, ...rest } = user\`.
+--- task
+Using the \`User\` interface and \`fetchUser\` in the starter:
+
+1. \`type PublicUser\` — \`User\` without \`password\`. \`type NewUser\` — only \`email\`, \`name\`, \`password\`. \`type UserPatch\` — any of \`User\`'s fields except \`id\` and \`createdAt\`, all optional.
+2. \`type FetchedUser\` — what awaiting \`fetchUser\` gives, and \`type FetchArgs\` — its parameters. Derive both from \`typeof fetchUser\`.
+3. \`createUser(input: NewUser, id: string, now: number): User\` (\`now\` becomes \`createdAt\`).
+4. \`toPublic(user: User): PublicUser\` — the password must really be gone from the returned object.
+5. \`updateUser(user: User, patch: UserPatch): User\` — a new object with the patch applied.
+--- starter
+interface User {
+  id: string
+  email: string
+  name: string
+  password: string
+  createdAt: number
+}
+
+async function fetchUser(id: string): Promise<User> {
+  return { id, email: \`\${id}@example.com\`, name: id, password: 'hunter2', createdAt: 0 }
+}
+
+type PublicUser = User
+type NewUser = User
+type UserPatch = User
+type FetchedUser = unknown
+type FetchArgs = unknown[]
+
+function toPublic(user: User): PublicUser {
+  return user
+}
+--- solution
+interface User {
+  id: string
+  email: string
+  name: string
+  password: string
+  createdAt: number
+}
+
+async function fetchUser(id: string): Promise<User> {
+  return { id, email: \`\${id}@example.com\`, name: id, password: 'hunter2', createdAt: 0 }
+}
+
+type PublicUser = Omit<User, 'password'>
+type NewUser = Pick<User, 'email' | 'name' | 'password'>
+type UserPatch = Partial<Omit<User, 'id' | 'createdAt'>>
+type FetchedUser = Awaited<ReturnType<typeof fetchUser>>
+type FetchArgs = Parameters<typeof fetchUser>
+
+function createUser(input: NewUser, id: string, now: number): User {
+  return { ...input, id, createdAt: now }
+}
+
+function toPublic(user: User): PublicUser {
+  const { password, ...rest } = user
+  return rest
+}
+
+function updateUser(user: User, patch: UserPatch): User {
+  return { ...user, ...patch }
+}
+--- hint
+\`UserPatch\` combines two utilities: \`Partial<Omit<User, 'id' | 'createdAt'>>\`.
+--- hint
+\`Awaited<ReturnType<typeof fetchUser>>\` — the return type is a promise, and \`Awaited\` opens it.
+--- hint
+\`const { password, ...rest } = user\` gives you an object without the password.
+--- check case | toPublic keeps the public fields
+toPublic({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 })
+=> { id: 'u1', email: 'ada@x.io', name: 'Ada', createdAt: 5 }
+--- check test | The password is really gone at runtime
+!('password' in toPublic({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 }))
+--- check case | createUser
+createUser({ email: 'ada@x.io', name: 'Ada', password: 'pw' }, 'u1', 5)
+=> { email: 'ada@x.io', name: 'Ada', password: 'pw', id: 'u1', createdAt: 5 }
+--- check case | updateUser
+updateUser({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 }, { name: 'Ada L' })
+=> { id: 'u1', email: 'ada@x.io', name: 'Ada L', password: 'pw', createdAt: 5 }
+--- check type-error | A patch cannot change the id
+updateUser({ id: 'u1', email: 'e', name: 'n', password: 'p', createdAt: 5 }, { id: 'u2' })
+--- check type-error | A PublicUser has no password
+const p: PublicUser = { id: 'u1', email: 'e', name: 'n', createdAt: 0, password: 'x' }
+--- check type-error | A NewUser needs a password
+createUser({ email: 'e', name: 'n' }, 'u1', 1)
+--- check type-error | FetchedUser is exactly User
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FetchedUser, User> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | FetchArgs is exactly [string]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FetchArgs, [string]> = false
+--- check type-error | UserPatch is exactly the three optional fields
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<UserPatch, { email?: string; name?: string; password?: string }> = false
+
+=== ts3-05 | Exhaustive unions
+--- teach
+You know discriminated unions and the \`never\` check from the basics. This lesson makes them a habit you can rely on in a growing codebase.
+
+An \`if\` chain with a fallback **hides** new cases. Add a member to the union and the fallback quietly handles it wrong:
+
+\`\`\`ts
+type Shape = { kind: 'circle'; r: number } | { kind: 'square'; side: number }
+
+function area(s: Shape): number {
+  if (s.kind === 'circle') return Math.PI * s.r ** 2
+  return 0            // a new 'triangle' would land here, silently
+}
+\`\`\`
+
+A \`switch\` whose \`default\` passes the value to a function that only accepts \`never\` turns that into a compile error. Write the helper once:
+
+\`\`\`ts
+type Shape = { kind: 'circle'; r: number } | { kind: 'square'; side: number }
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function perimeter(s: Shape): number {
+  switch (s.kind) {
+    case 'circle':
+      return 2 * Math.PI * s.r
+    case 'square':
+      return 4 * s.side
+    default:
+      return assertNever(s)   // s is never here, unless a case is missing
+  }
+}
+
+perimeter({ kind: 'square', side: 2 })
+\`\`\`
+
+If a case is missing, \`s\` is not \`never\` in the \`default\` branch and the call does not compile — the error even names the missing member. If bad data arrives at runtime anyway (from JSON, say), the helper throws instead of returning nonsense.
+
+To talk about one member of a union, use \`Extract\`: \`Extract<Shape, { kind: 'circle' }>\` is the circle member. That lets you type a handler for exactly one case.
+--- task
+**Bug report:** \`rename\` actions do nothing — the \`if\` chain falls through to "return a copy".
+
+1. Write \`assertNever(value: never): never\` that throws an \`Error\`.
+2. Rewrite \`reduce\` as a \`switch\` on \`action.type\` with \`default: return assertNever(action)\`.
+3. Implement \`rename\`: replace the item at \`index\` with \`name\` (an index out of range leaves the list as it was).
+4. Add a fifth action, \`{ type: 'move'; from: number; to: number }\`: take the item at \`from\` out and insert it at \`to\`. Let the compiler show you where it must be handled.
+5. \`type ActionOf<T extends Action['type']>\` — the member of \`Action\` with that \`type\`.
+
+\`reduce\` must never change the array it is given.
+--- starter
+type Action =
+  | { type: 'add'; item: string }
+  | { type: 'remove'; index: number }
+  | { type: 'rename'; index: number; name: string }
+  | { type: 'clear' }
+
+function reduce(state: readonly string[], action: Action): string[] {
+  if (action.type === 'add') return [...state, action.item]
+  if (action.type === 'remove') return state.filter((_, i) => i !== action.index)
+  if (action.type === 'clear') return []
+  return [...state]
+}
+--- solution
+type Action =
+  | { type: 'add'; item: string }
+  | { type: 'remove'; index: number }
+  | { type: 'rename'; index: number; name: string }
+  | { type: 'move'; from: number; to: number }
+  | { type: 'clear' }
+
+type ActionOf<T extends Action['type']> = Extract<Action, { type: T }>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function reduce(state: readonly string[], action: Action): string[] {
+  switch (action.type) {
+    case 'add':
+      return [...state, action.item]
+    case 'remove':
+      return state.filter((_, i) => i !== action.index)
+    case 'rename':
+      return state.map((item, i) => (i === action.index ? action.name : item))
+    case 'move': {
+      const next = [...state]
+      const [moved] = next.splice(action.from, 1)
+      if (moved === undefined) return [...state]
+      next.splice(action.to, 0, moved)
+      return next
+    }
+    case 'clear':
+      return []
+    default:
+      return assertNever(action)
+  }
+}
+--- hint
+Add \`move\` to the union first, then build the switch: the \`assertNever(action)\` line will not compile until every member has a case.
+--- hint
+\`rename\` is a \`map\` that swaps one index. \`move\` is easiest on a copy: \`splice\` the item out, then \`splice\` it back in at \`to\`.
+--- hint
+\`Extract<Action, { type: T }>\` keeps the members whose \`type\` is \`T\`.
+--- check case | rename works now
+reduce(['a', 'b', 'c'], { type: 'rename', index: 1, name: 'B' })
+=> ['a', 'B', 'c']
+--- check case | rename out of range changes nothing
+reduce(['a'], { type: 'rename', index: 5, name: 'x' })
+=> ['a']
+--- check case | move
+reduce(['a', 'b', 'c', 'd'], { type: 'move', from: 0, to: 2 })
+=> ['b', 'c', 'a', 'd']
+--- check case | add, remove, clear still work
+[reduce(['a'], { type: 'add', item: 'b' }), reduce(['a', 'b'], { type: 'remove', index: 0 }), reduce(['a'], { type: 'clear' })]
+=> [['a', 'b'], ['b'], []]
+--- check test | The input array is never changed
+(() => { const s = ['a', 'b', 'c']; reduce(s, { type: 'move', from: 0, to: 2 }); reduce(s, { type: 'rename', index: 0, name: 'z' }); return s.join() === 'a,b,c' })()
+--- check test | assertNever throws if bad data gets through
+throws(() => assertNever('surprise' as never))
+--- check type-error | assertNever only accepts never
+assertNever('add')
+--- check type-error | Unknown actions do not compile
+reduce([], { type: 'undo' })
+--- check type-error | A move needs both indexes
+reduce([], { type: 'move', from: 0 })
+--- check type-error | ActionOf<'rename'> is exactly the rename action
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ActionOf<'rename'>, { type: 'rename'; index: number; name: string }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check source | The switch ends in assertNever(action)
+assertNever\\s*\\(\\s*action\\s*\\)
+
+=== ts3-06 | Branded types
+--- teach
+TypeScript's types are **structural**: two types with the same shape are interchangeable. Usually that is what you want. Sometimes it is a bug waiting to happen:
+
+\`\`\`ts
+type UserId = string
+type OrderId = string
+function cancelOrder(id: OrderId): void {}
+const uid: UserId = 'u_42'
+cancelOrder(uid)          // compiles — both are just strings
+\`\`\`
+
+A **brand** makes a type distinct by intersecting it with a property that no ordinary value has:
+
+\`\`\`ts
+type Brand<T, Name extends string> = T & { readonly __brand: Name }
+type Email = Brand<string, 'Email'>
+
+function toEmail(raw: string): Email {
+  if (!raw.includes('@')) throw new TypeError(\`not an email: \${raw}\`)
+  return raw as Email          // the one place a cast is allowed
+}
+
+const e = toEmail('ada@example.com')
+e.toUpperCase()                // still a string for every read
+// const bad: Email = 'nope'   ✗ string is not assignable to Email
+\`\`\`
+
+The \`__brand\` property never exists at runtime; it only lives in the type. A branded value is still a plain string or number, so every read works unchanged. What changes is *creating* one: the only way in is a **smart constructor** that checks the value. So an \`Email\` anywhere in your program means "this was validated", and a \`UserId\` can never be passed where an \`OrderId\` is expected.
+
+Keep the cast inside the constructor and nowhere else. A cast anywhere else is a hole in the guarantee.
+--- task
+1. A generic \`Brand<T, Name>\` helper, then \`UserId\` (a string), \`OrderId\` (a string) and \`Cents\` (a number).
+2. Smart constructors: \`userId(raw: string): UserId\` (must match \`/^u_\\w+$/\`), \`orderId(raw: string): OrderId\` (must match \`/^o_\\w+$/\`) — both throw a \`TypeError\` otherwise — and \`cents(n: number): Cents\`, which throws a \`RangeError\` unless \`n\` is a whole number \`>= 0\`.
+3. \`addCents(a: Cents, b: Cents): Cents\`.
+4. \`ordersFor(orders: readonly Order[], owner: UserId): Order[]\`, where \`Order\` is \`{ id: OrderId; owner: UserId; total: Cents }\`.
+--- starter
+type UserId = string
+type OrderId = string
+type Cents = number
+
+interface Order {
+  id: OrderId
+  owner: UserId
+  total: Cents
+}
+
+function userId(raw: string): UserId {
+  return raw
+}
+
+function orderId(raw: string): OrderId {
+  return raw
+}
+
+function cents(n: number): Cents {
+  return n
+}
+--- solution
+type Brand<T, Name extends string> = T & { readonly __brand: Name }
+type UserId = Brand<string, 'UserId'>
+type OrderId = Brand<string, 'OrderId'>
+type Cents = Brand<number, 'Cents'>
+
+interface Order {
+  id: OrderId
+  owner: UserId
+  total: Cents
+}
+
+function userId(raw: string): UserId {
+  if (!/^u_\\w+$/.test(raw)) throw new TypeError(\`not a user id: \${raw}\`)
+  return raw as UserId
+}
+
+function orderId(raw: string): OrderId {
+  if (!/^o_\\w+$/.test(raw)) throw new TypeError(\`not an order id: \${raw}\`)
+  return raw as OrderId
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`not a whole number of cents: \${n}\`)
+  return n as Cents
+}
+
+function addCents(a: Cents, b: Cents): Cents {
+  return cents(a + b)
+}
+
+function ordersFor(orders: readonly Order[], owner: UserId): Order[] {
+  return orders.filter((o) => o.owner === owner)
+}
+--- hint
+\`type Brand<T, Name extends string> = T & { readonly __brand: Name }\`, then \`type UserId = Brand<string, 'UserId'>\`.
+--- hint
+\`a + b\` is a plain \`number\` again — pass it back through \`cents(...)\` to brand it.
+--- check case | userId accepts a valid id
+userId('u_42')
+=> 'u_42'
+--- check test | Bad ids are rejected at runtime
+throws(() => userId('42')) && throws(() => orderId('u_1')) && !throws(() => orderId('o_1'))
+--- check test | cents rejects fractions and negatives with a RangeError
+(() => { try { cents(1.5); return false } catch (e) { return e instanceof RangeError && throws(() => cents(-1)) } })()
+--- check case | addCents
+addCents(cents(150), cents(250))
+=> 400
+--- check case | ordersFor filters by owner
+ordersFor([{ id: orderId('o_1'), owner: userId('u_1'), total: cents(100) }, { id: orderId('o_2'), owner: userId('u_2'), total: cents(5) }], userId('u_1')).map((o) => o.id)
+=> ['o_1']
+--- check type-error | A plain string is not a UserId
+const u: UserId = 'u_1'
+--- check type-error | A UserId is not an OrderId
+const o: OrderId = userId('u_1')
+--- check type-error | A plain number is not Cents
+addCents(cents(1), 5)
+--- check type-error | ordersFor wants a UserId, not an OrderId
+ordersFor([], orderId('o_1'))
+
+=== ts3-07 | Template literal types
+--- teach
+Template literals work in types too. They build string types from other string types:
+
+\`\`\`ts
+type Size = 'sm' | 'lg'
+type Color = 'red' | 'blue'
+type ClassName = \`\${Size}-\${Color}\`   // 'sm-red' | 'sm-blue' | 'lg-red' | 'lg-blue'
+
+type Px = \`\${number}px\`               // any string that is a number followed by px
+const w: Px = '12.5px'
+\`\`\`
+
+Unions multiply: every combination is produced. \`\${number}\` matches any numeric text. The intrinsic helpers \`Uppercase\`, \`Lowercase\`, \`Capitalize\` and \`Uncapitalize\` transform string types.
+
+Combined with key remapping they generate APIs:
+
+\`\`\`ts
+type Setters<T> = { [K in keyof T & string as \`set\${Capitalize<K>}\`]: (value: T[K]) => void }
+type S = Setters<{ name: string }>   // { setName: (value: string) => void }
+\`\`\`
+
+(\`keyof T & string\` keeps only string keys; symbols cannot go in a template.)
+
+And with \`infer\` they **parse** strings at the type level. The first \`\${infer X}\` matches as little as possible, up to the next literal part:
+
+\`\`\`ts
+type Head<S> = S extends \`\${infer H}.\${string}\` ? H : S
+type H = Head<'user.address.city'>    // 'user'
+\`\`\`
+
+Recursion then takes a string apart piece by piece.
+--- task
+1. \`type CssUnit = 'px' | 'rem' | '%'\` and \`type CssSize\` — a number followed by one of those units. \`size(n: number, unit: CssUnit): CssSize\`.
+2. \`type EventName<T extends string>\` — \`'click'\` becomes \`'onClick'\`.
+3. \`type Getters<T>\` — for each string key \`k\`, a method \`getK(): T[k]\` (e.g. \`name\` → \`getName\`). \`makeGetters<T extends object>(obj: T): Getters<T>\` builds it (one cast inside is fine).
+4. \`type Path<S extends string>\` — splits a dotted path into a tuple: \`'user.address.city'\` → \`['user', 'address', 'city']\`.
+--- starter
+type CssUnit = 'px' | 'rem' | '%'
+type CssSize = string
+type EventName<T extends string> = string
+type Getters<T> = Record<string, () => unknown>
+type Path<S extends string> = string[]
+
+function size(n: number, unit: CssUnit): CssSize {
+  return \`\${n}\${unit}\`
+}
+
+function makeGetters<T extends object>(obj: T): Getters<T> {
+  const out: Record<string, () => unknown> = {}
+  for (const key of Object.keys(obj) as (keyof T & string)[]) {
+    out[\`get\${key[0].toUpperCase()}\${key.slice(1)}\`] = () => obj[key]
+  }
+  return out
+}
+--- solution
+type CssUnit = 'px' | 'rem' | '%'
+type CssSize = \`\${number}\${CssUnit}\`
+type EventName<T extends string> = \`on\${Capitalize<T>}\`
+type Getters<T> = { [K in keyof T & string as \`get\${Capitalize<K>}\`]: () => T[K] }
+type Path<S extends string> = S extends \`\${infer Head}.\${infer Rest}\` ? [Head, ...Path<Rest>] : [S]
+
+function size(n: number, unit: CssUnit): CssSize {
+  return \`\${n}\${unit}\`
+}
+
+function makeGetters<T extends object>(obj: T): Getters<T> {
+  const out: Record<string, () => unknown> = {}
+  for (const key of Object.keys(obj) as (keyof T & string)[]) {
+    out[\`get\${key[0].toUpperCase()}\${key.slice(1)}\`] = () => obj[key]
+  }
+  return out as Getters<T>
+}
+--- hint
+\`CssSize\` is \`\${number}\${CssUnit}\`; \`EventName\` uses \`Capitalize<T>\` inside a template.
+--- hint
+\`Getters\` remaps keys: \`[K in keyof T & string as \\\`get\${Capitalize<K>}\\\`]: () => T[K]\`.
+--- hint
+\`Path\` matches \`\${infer Head}.\${infer Rest}\`, then recurses on \`Rest\`; with no dot left, it is \`[S]\`.
+--- check case | size
+size(1.5, 'rem')
+=> '1.5rem'
+--- check case | makeGetters
+makeGetters({ name: 'Ada', age: 36 }).getAge()
+=> 36
+--- check type-error | em is not a CssUnit
+const s: CssSize = '10em'
+--- check type-error | A CssSize needs a number
+const s: CssSize = 'px'
+--- check type-error | Getters only has getters for real keys
+makeGetters({ name: 'Ada' }).getAge()
+--- check type-error | EventName<'click' | 'focus'> is exactly 'onClick' | 'onFocus'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<EventName<'click' | 'focus'>, 'onClick' | 'onFocus'> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | Getters<{ name: string }> is exactly { getName: () => string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Getters<{ name: string }>, { getName: () => string }> = false
+--- check type-error | Path<'user.address.city'> is exactly ['user', 'address', 'city']
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Path<'user.address.city'>, ['user', 'address', 'city']> = false
+--- check type-error | Path<'id'> is exactly ['id']
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Path<'id'>, ['id']> = false
+
+=== ts3-08 | satisfies and as const
+--- teach
+There are three ways to give a constant a type, and they keep different amounts of information.
+
+**An annotation** sets the type, and the compiler forgets everything more specific:
+
+\`\`\`ts
+const routesA: Record<string, string> = { home: '/', about: '/about' }
+routesA.typo       // compiles: any string key is allowed
+\`\`\`
+
+**\`as const\`** (which you used for the literal lists in the intermediate course) keeps everything as specific as possible: literal types, \`readonly\` everywhere, arrays as tuples. But nothing checks the value against a shape you meant it to have.
+
+**\`satisfies\`** checks the value against a type *without* changing what is inferred:
+
+\`\`\`ts
+const routesB = { home: '/', about: '/about' } satisfies Record<string, \`/\${string}\`>
+routesB.about      // still known to exist
+// routesB.typo    ✗ Property 'typo' does not exist
+// adding { bad: 'about' } would fail the satisfies check: it does not start with /
+\`\`\`
+
+Combine them — \`as const satisfies T\` — to get literal, readonly types **and** a check:
+
+\`\`\`ts
+const SIZES = ['s', 'm', 'l'] as const satisfies readonly string[]
+type Size = (typeof SIZES)[number]     // 's' | 'm' | 'l'
+\`\`\`
+
+This is the idiom for configuration tables, route maps and lookup lists: write the data once and derive precise types from it with \`keyof typeof\` and \`[number]\`.
+--- task
+The starter's annotations throw away the keys and the literal values. Rewrite the two constants:
+
+1. \`ROUTES\` — \`as const\`, and \`satisfies Record<string, \\\`/\${string}\\\`>\` so every path must start with \`/\`. \`type RouteName = keyof typeof ROUTES\`. \`path(name: RouteName): string\`.
+2. \`PLANS\` — \`as const\` and \`satisfies\` a readonly array of \`{ id: string; price: number; seats: number }\`. \`type PlanId\` — the union of the plans' ids. \`priceOf(id: PlanId): number\`.
+--- starter
+const ROUTES: Record<string, string> = {
+  home: '/',
+  user: '/users/:id',
+  settings: '/settings',
+}
+type RouteName = keyof typeof ROUTES
+
+const PLANS = [
+  { id: 'free', price: 0, seats: 1 },
+  { id: 'team', price: 12, seats: 10 },
+  { id: 'business', price: 30, seats: 50 },
+]
+type PlanId = (typeof PLANS)[number]['id']
+
+function path(name: RouteName): string {
+  return ROUTES[name]!
+}
+
+function priceOf(id: PlanId): number {
+  const plan = PLANS.find((p) => p.id === id)
+  if (!plan) throw new Error(\`unknown plan: \${id}\`)
+  return plan.price
+}
+--- solution
+const ROUTES = {
+  home: '/',
+  user: '/users/:id',
+  settings: '/settings',
+} as const satisfies Record<string, \`/\${string}\`>
+type RouteName = keyof typeof ROUTES
+
+const PLANS = [
+  { id: 'free', price: 0, seats: 1 },
+  { id: 'team', price: 12, seats: 10 },
+  { id: 'business', price: 30, seats: 50 },
+] as const satisfies readonly { id: string; price: number; seats: number }[]
+type PlanId = (typeof PLANS)[number]['id']
+
+function path(name: RouteName): string {
+  return ROUTES[name]
+}
+
+function priceOf(id: PlanId): number {
+  const plan = PLANS.find((p) => p.id === id)
+  if (!plan) throw new Error(\`unknown plan: \${id}\`)
+  return plan.price
+}
+--- hint
+Remove the \`: Record<string, string>\` annotation and put \`as const satisfies Record<string, \\\`/\${string}\\\`>\` after the object instead.
+--- hint
+An \`as const\` array is readonly, so it satisfies \`readonly { … }[]\`, not a mutable array type.
+--- check case | path
+path('user')
+=> '/users/:id'
+--- check case | priceOf
+priceOf('team')
+=> 12
+--- check type-error | Unknown route names do not compile
+path('admin')
+--- check type-error | Unknown plans do not compile
+priceOf('enterprise')
+--- check type-error | ROUTES is read-only
+ROUTES.home = '/home'
+--- check type-error | RouteName is exactly the three route names
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<RouteName, 'home' | 'user' | 'settings'> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | ROUTES.user keeps its literal type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<(typeof ROUTES)['user'], '/users/:id'> = false
+--- check type-error | PlanId is exactly the three plan ids
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<PlanId, 'free' | 'team' | 'business'> = false
+--- check source | ROUTES is checked with satisfies
+satisfies\\s+Record\\s*<
+
+=== ts3-09 | A type-safe event emitter
+--- teach
+An event emitter is a classic place where JavaScript code goes untyped: names are strings, payloads are "whatever". A single type parameter fixes both. Describe the events once, as a map from name to payload type:
+
+\`\`\`ts
+type ChatEvents = {
+  message: { from: string; text: string }
+  typing: string          // who is typing
+  disconnect: void        // no payload
+}
+\`\`\`
+
+Then every method is generic over the event **name**, and looks the payload up with an indexed access:
+
+\`\`\`ts
+class Bus<Events extends Record<string, unknown>> {
+  on<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): void {
+    // …
+  }
+}
+\`\`\`
+
+\`K\` is inferred from the string you pass, so \`bus.on('message', (m) => m.text)\` knows \`m\` is a message, and \`bus.on('mesage', …)\` does not compile.
+
+**Events with no payload.** It would be silly to write \`emit('disconnect', undefined)\`. A conditional **rest parameter** lets the argument list itself depend on the event:
+
+\`\`\`ts
+type Args<P> = P extends void ? [] : [payload: P]
+// emit<K …>(name: K, ...args: Args<Events[K]>): void
+\`\`\`
+
+For \`'disconnect'\`, \`...args\` is \`[]\` — no second argument allowed. For \`'message'\`, it is exactly one payload.
+
+One detail: \`Record<string, unknown>\` as a constraint accepts \`type\` aliases but not \`interface\`s (interfaces have no implicit index signature). Declare event maps with \`type\`.
+
+At runtime, keep the handler lists per event (\`this.handlers[name] ??= []\` creates a list the first time: \`??=\` assigns only when the left side is \`null\` or \`undefined\`), and iterate over a **copy** when emitting: a handler that unsubscribes itself (like a \`once\` handler) would otherwise change the list under the loop.
+--- task
+Make the starter's emitter generic: \`class Emitter<Events extends Record<string, unknown>>\`.
+
+- \`on(name, handler)\` — only known names; the handler gets that event's payload type. Returns an unsubscribe function.
+- \`once(name, handler)\` — like \`on\`, but the handler runs at most once. Also returns an unsubscribe function.
+- \`emit(name, payload)\` — only known names and the right payload type; events whose payload type is \`void\` are emitted with no payload argument.
+
+Handlers run in the order they were added.
+--- starter
+class Emitter {
+  private handlers: Record<string, Function[]> = {}
+
+  on(name: string, handler: Function): () => void {
+    const list = (this.handlers[name] ??= [])
+    list.push(handler)
+    return () => {
+      this.handlers[name] = (this.handlers[name] ?? []).filter((h) => h !== handler)
+    }
+  }
+
+  emit(name: string, payload?: unknown): void {
+    for (const h of this.handlers[name] ?? []) h(payload)
+  }
+}
+--- solution
+type Args<P> = P extends void ? [] : [payload: P]
+
+class Emitter<Events extends Record<string, unknown>> {
+  private handlers: { [K in keyof Events]?: Array<(payload: Events[K]) => void> } = {}
+
+  on<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): () => void {
+    const list = (this.handlers[name] ??= [])
+    list.push(handler)
+    return () => {
+      this.handlers[name] = (this.handlers[name] ?? []).filter((h) => h !== handler)
+    }
+  }
+
+  once<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): () => void {
+    const off = this.on(name, (payload) => {
+      off()
+      handler(payload)
+    })
+    return off
+  }
+
+  emit<K extends keyof Events & string>(name: K, ...args: Args<Events[K]>): void {
+    for (const h of [...(this.handlers[name] ?? [])]) h(args[0] as Events[K])
+  }
+}
+--- hint
+Store handlers as \`{ [K in keyof Events]?: Array<(payload: Events[K]) => void> }\` so each list knows its payload type.
+--- hint
+\`once\` can be built from \`on\`: register a wrapper that unsubscribes itself, then calls the real handler.
+--- hint
+\`emit<K …>(name: K, ...args: Events[K] extends void ? [] : [payload: Events[K]])\`; the payload is \`args[0]\`.
+--- check case | Handlers run in order with the payload
+(() => { const e = new Emitter<{ tick: number }>(); const seen: number[] = []; e.on('tick', (n) => seen.push(n)); e.on('tick', (n) => seen.push(n * 10)); e.emit('tick', 2); return seen })()
+=> [2, 20]
+--- check case | Unsubscribing stops a handler
+(() => { const e = new Emitter<{ tick: number }>(); const seen: number[] = []; const off = e.on('tick', (n) => seen.push(n)); e.emit('tick', 1); off(); e.emit('tick', 2); return seen })()
+=> [1]
+--- check case | once runs a single time, alongside other handlers
+(() => { const e = new Emitter<{ tick: number }>(); const seen: string[] = []; e.once('tick', (n) => seen.push('once ' + n)); e.on('tick', (n) => seen.push('on ' + n)); e.emit('tick', 1); e.emit('tick', 2); return seen })()
+=> ['once 1', 'on 1', 'on 2']
+--- check case | A void event is emitted with no payload
+(() => { const e = new Emitter<{ logout: void }>(); let n = 0; e.on('logout', () => { n++ }); e.emit('logout'); e.emit('logout'); return n })()
+=> 2
+--- check case | Emitting with no listeners is fine
+(() => { const e = new Emitter<{ tick: number }>(); e.emit('tick', 1); return 'ok' })()
+=> 'ok'
+--- check type-error | Only known events can be emitted
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('nope', 1)
+--- check type-error | The payload must match the event
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('login', { user: 1 })
+--- check type-error | An event with a payload needs it
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('login')
+--- check type-error | A void event takes no payload
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('logout', 1)
+--- check type-error | Handlers see the payload's real type
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.on('login', (p) => p.nope)
+--- check type-error | A login handler's payload is exactly { user: string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const e = new Emitter<{ login: { user: string }; logout: void }>();
+e.on('login', (p) => { const no: Equal<typeof p, { user: string }> = false })
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts3-10 | A typed builder
+--- teach
+A builder assembles an object step by step: \`request().url('/users').method('GET').build()\`. The usual weakness is that \`build()\` is always there, so forgetting a required step is a runtime error. Types can track which steps have happened.
+
+Give the builder a type parameter holding the **set of steps done so far**, as a union of names. Each step returns a builder with its name added:
+
+\`\`\`ts
+interface Draft<Has extends string> {
+  title(t: string): Draft<Has | 'title'>
+  author(a: string): Draft<Has | 'author'>
+  done: 'title' | 'author' extends Has ? () => string : never
+}
+\`\`\`
+
+Start from \`Draft<never>\` (nothing done). After \`.title(…)\` the type is \`Draft<'title'>\`; after \`.author(…)\` too it is \`Draft<'title' | 'author'>\`. The order does not matter, because a union has no order.
+
+The last line is the trick. \`'title' | 'author' extends Has\` is true only when both names are in \`Has\`. Until then \`done\` has type \`never\`, and calling it is a compile error ("This expression is not callable"). The check happens without a single \`if\` at runtime.
+
+At runtime the builder is ordinary: each step returns a **new** builder with a copied draft, so a half-built one can be reused as a template without the branches interfering. The type is not something the runtime can express, so building it takes one cast — \`as unknown as Builder<Has>\` — in one place, behind a signature the tests prove.
+--- task
+Replace the starter's mutable class with a typed, immutable builder:
+
+- \`interface RequestBuilder<Has extends string>\` with \`url(u)\`, \`method(m)\`, \`header(name, value)\` and \`body(text)\`, each returning a new builder, and \`build\`, which is callable only once both \`url\` and \`method\` have been set. It returns an \`HttpRequest\`.
+- \`request(): RequestBuilder<never>\` starts an empty one (\`headers\` start as \`{}\`).
+- \`build()\` returns \`{ url, method, headers }\`, plus \`body\` only if one was set.
+- Each step leaves the builder it was called on unchanged.
+--- starter
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface HttpRequest {
+  url: string
+  method: Method
+  headers: Record<string, string>
+  body?: string
+}
+
+class RequestBuilder {
+  private draft: Partial<HttpRequest> = { headers: {} }
+
+  url(url: string): RequestBuilder {
+    this.draft.url = url
+    return this
+  }
+
+  method(method: Method): RequestBuilder {
+    this.draft.method = method
+    return this
+  }
+
+  header(name: string, value: string): RequestBuilder {
+    this.draft.headers = { ...this.draft.headers, [name]: value }
+    return this
+  }
+
+  body(text: string): RequestBuilder {
+    this.draft.body = text
+    return this
+  }
+
+  build(): HttpRequest {
+    const { url, method, headers = {}, body } = this.draft
+    if (!url || !method) throw new Error('url and method are required')
+    return body === undefined ? { url, method, headers } : { url, method, headers, body }
+  }
+}
+
+function request(): RequestBuilder {
+  return new RequestBuilder()
+}
+--- solution
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface HttpRequest {
+  url: string
+  method: Method
+  headers: Record<string, string>
+  body?: string
+}
+
+interface RequestBuilder<Has extends string> {
+  url(url: string): RequestBuilder<Has | 'url'>
+  method(method: Method): RequestBuilder<Has | 'method'>
+  header(name: string, value: string): RequestBuilder<Has>
+  body(text: string): RequestBuilder<Has>
+  build: 'url' | 'method' extends Has ? () => HttpRequest : never
+}
+
+function builder<Has extends string>(draft: Partial<HttpRequest>): RequestBuilder<Has> {
+  const b = {
+    url: (url: string) => builder<Has | 'url'>({ ...draft, url }),
+    method: (method: Method) => builder<Has | 'method'>({ ...draft, method }),
+    header: (name: string, value: string) => builder<Has>({ ...draft, headers: { ...draft.headers, [name]: value } }),
+    body: (text: string) => builder<Has>({ ...draft, body: text }),
+    build: (): HttpRequest => {
+      const { url = '', method = 'GET', headers = {}, body } = draft
+      return body === undefined ? { url, method, headers } : { url, method, headers, body }
+    },
+  }
+  return b as unknown as RequestBuilder<Has>
+}
+
+function request(): RequestBuilder<never> {
+  return builder<never>({ headers: {} })
+}
+--- hint
+Each step's return type adds its name: \`url(url: string): RequestBuilder<Has | 'url'>\`. \`header\` and \`body\` return \`RequestBuilder<Has>\` unchanged.
+--- hint
+\`build: 'url' | 'method' extends Has ? () => HttpRequest : never\` — a property whose type depends on \`Has\`.
+--- hint
+A private function \`builder<Has>(draft)\` can return an object of arrow functions, each calling \`builder\` again with a copied draft.
+--- check case | A full request
+request().url('/users').method('GET').header('accept', 'json').build()
+=> { url: '/users', method: 'GET', headers: { accept: 'json' } }
+--- check case | Steps in any order, with a body
+request().method('POST').body('{}').url('/users').build()
+=> { url: '/users', method: 'POST', headers: {}, body: '{}' }
+--- check case | A half-built builder can be reused
+(() => { const base = request().url('/items').header('x', '1'); const a = base.method('GET').build(); const b = base.method('DELETE').header('y', '2').build(); return [a, b] })()
+=> [{ url: '/items', method: 'GET', headers: { x: '1' } }, { url: '/items', method: 'DELETE', headers: { x: '1', y: '2' } }]
+--- check type-error | build needs a method
+request().url('/a').build()
+--- check type-error | build needs a url
+request().method('GET').build()
+--- check type-error | Nothing set, nothing to build
+request().build()
+--- check type-error | Only known methods
+request().url('/a').method('PATCH')
+--- check type-error | build returns exactly an HttpRequest
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = request().url('/a').method('GET').build();
+const no: Equal<typeof r, HttpRequest> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts3-11 | Debugging: when the types lie about the data
+--- teach
+Types are claims. The compiler checks that your code is consistent with its claims, but it cannot check that the **data** agrees. That gap opens wherever data enters: \`JSON.parse\`, \`fetch(...).json()\`, \`localStorage\`, a message from another thread. And the most common way to paper over it is a cast:
+
+\`\`\`ts
+interface Point { x: number; y: number }
+const p = JSON.parse('{"x": "3", "y": 4}') as Point
+p.x + p.y     // '34' — p.x is really a string
+\`\`\`
+
+Everything after the cast is type-checked against a lie. The failure shows up far from the cause — a string where a number should be, \`Cannot read properties of undefined\` three functions later.
+
+A method for these bugs:
+
+1. **Reproduce** with the exact input from the report.
+2. **Inspect the real value**: \`console.log(typeof user.age, user.age)\`. When the runtime type disagrees with the static type, you have found a lie.
+3. **Trace the value back** to where it entered the program. Look for \`as\`, \`any\`, \`JSON.parse\` and non-null \`!\`.
+4. **Fix it at the boundary.** Replace the cast with a check, so a bad value is rejected where it arrives, with a message naming what is wrong.
+
+A second, quieter lie: indexing. \`emails[0]\` has type \`string\` even when the array is empty, because TypeScript assumes indexes are in range (unless you turn on \`noUncheckedIndexedAccess\`). \`emails.at(0)\` is typed \`string | undefined\`, which is the truth.
+--- task
+**Bug report:** \`nextAge('{"name":"Ada","age":"36","emails":[]}')\` returned \`'361'\` although it is typed as a number, and \`primaryEmail\` crashed with *Cannot read properties of undefined (reading 'toLowerCase')* for a user with no emails.
+
+Fix the cause:
+
+1. \`isUser(x: unknown): x is User\` — \`name\` a string, \`age\` a finite number, \`emails\` an array of strings.
+2. \`parseUser(text: string): User\` — no cast. Throws a \`TypeError\` with the message \`'invalid user: <problem>'\`, where the problem is the first of \`not an object\`, \`name\`, \`age\`, \`emails\` that applies.
+3. \`primaryEmail(text: string): string | null\` — the first email in lower case, or \`null\` if there is none.
+--- starter
+interface User {
+  name: string
+  age: number
+  emails: string[]
+}
+
+function parseUser(text: string): User {
+  return JSON.parse(text) as User
+}
+
+function nextAge(text: string): number {
+  return parseUser(text).age + 1
+}
+
+function primaryEmail(text: string): string {
+  return parseUser(text).emails[0].toLowerCase()
+}
+--- solution
+interface User {
+  name: string
+  age: number
+  emails: string[]
+}
+
+function problem(x: unknown): string | null {
+  if (typeof x !== 'object' || x === null || Array.isArray(x)) return 'not an object'
+  const o = x as Record<string, unknown>
+  if (typeof o.name !== 'string') return 'name'
+  if (typeof o.age !== 'number' || !Number.isFinite(o.age)) return 'age'
+  if (!Array.isArray(o.emails) || !o.emails.every((e) => typeof e === 'string')) return 'emails'
+  return null
+}
+
+function isUser(x: unknown): x is User {
+  return problem(x) === null
+}
+
+function parseUser(text: string): User {
+  const data: unknown = JSON.parse(text)
+  if (!isUser(data)) throw new TypeError(\`invalid user: \${problem(data)}\`)
+  return data
+}
+
+function nextAge(text: string): number {
+  return parseUser(text).age + 1
+}
+
+function primaryEmail(text: string): string | null {
+  const first = parseUser(text).emails.at(0)
+  return first === undefined ? null : first.toLowerCase()
+}
+--- hint
+Run the bad input and log \`typeof parseUser(text).age\`. Where did a string get the type \`number\`?
+--- hint
+One helper that returns the first problem (or \`null\`) serves both \`isUser\` and the error message.
+--- hint
+\`emails.at(0)\` is typed \`string | undefined\` — it tells the truth about empty arrays.
+--- check case | A valid user
+nextAge('{"name": "Ada", "age": 36, "emails": []}')
+=> 37
+--- check case | An age given as a string is rejected with its field
+(() => { try { nextAge('{"name": "Ada", "age": "36", "emails": []}'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: age'
+--- check case | Missing emails are rejected
+(() => { try { parseUser('{"name": "Ada", "age": 36}'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: emails'
+--- check case | A bare number is not a user
+(() => { try { parseUser('42'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: not an object'
+--- check test | isUser checks every field
+isUser({ name: 'a', age: 1, emails: ['x'] }) && !isUser({ name: 'a', age: 1, emails: [1] }) && !isUser({ name: 'a', age: NaN, emails: [] }) && !isUser(null)
+--- check case | primaryEmail lower-cases the first email
+primaryEmail('{"name": "Ada", "age": 36, "emails": ["ADA@X.IO", "a@y.io"]}')
+=> 'ada@x.io'
+--- check case | primaryEmail with no emails
+primaryEmail('{"name": "Ada", "age": 36, "emails": []}')
+=> null
+--- check type-error | primaryEmail admits it can return null
+const e: string = primaryEmail('{}')
+--- check source absent | No cast of the parsed data
+\\bas\\s+User\\b
+
+=== ts3-12 | Generic data structures: Stack and Queue
+--- teach
+Containers are where generics earn their keep. A \`Stack<number>\` accepts only numbers and hands back numbers, and the class is written once for every type.
+
+\`\`\`ts
+class Box<T> {
+  constructor(private value: T) {}
+  get(): T {
+    return this.value
+  }
+  map<U>(f: (value: T) => U): Box<U> {
+    return new Box(f(this.value))
+  }
+}
+
+new Box(2).map((n) => \`#\${n}\`).get()   // Box<number> → Box<string>
+\`\`\`
+
+Three class features from the JavaScript course appear here: \`static\` members belong to the class itself (\`Stack.from(…)\`), \`get size()\` is a getter that reads like a property, and a generator method \`*[Symbol.iterator]()\` makes instances work with \`for…of\` and spread.
+
+Design points for a good generic container:
+
+- **Be honest about emptiness.** \`pop()\` on an empty stack returns \`T | undefined\`, not \`T\`. The caller then has to handle it.
+- **Let inference work.** A static \`from<T>(items: Iterable<T>)\` infers \`T\` from its argument: \`Stack.from([1, 2])\` is a \`Stack<number>\` without writing \`<number>\`.
+- **Return \`this\`** from mutating methods to allow chaining: \`stack.push(1).push(2)\`.
+- **Be iterable.** Implement \`[Symbol.iterator]\` and your container works with \`for…of\`, spread and \`Array.from\`. A generator method (\`*[Symbol.iterator]()\`) is the shortest way.
+
+A **queue** takes from the front. \`array.shift()\` moves every remaining element down one slot, so a queue built on it gets slower as it grows. Keep a \`head\` index instead (or a \`Map\` from index to item) and advance it: every operation is then constant time.
+--- task
+1. \`class Stack<T>\` — \`push(item): this\`, \`pop(): T | undefined\`, \`peek(): T | undefined\`, a \`size\` getter, \`static from<T>(items: Iterable<T>): Stack<T>\` (the last item ends on top), and iteration from the **top** down.
+2. \`class Queue<T>\` — \`enqueue(item): this\`, \`dequeue(): T | undefined\`, \`peek(): T | undefined\`, a \`size\` getter, and iteration from the **front**. Do not use \`shift\`.
+--- starter
+class Stack {
+  private items: any[] = []
+
+  push(item: any) {
+    this.items.push(item)
+    return this
+  }
+
+  pop(): any {
+    return this.items.pop()
+  }
+}
+--- solution
+class Stack<T> {
+  private items: T[] = []
+
+  static from<T>(items: Iterable<T>): Stack<T> {
+    const s = new Stack<T>()
+    for (const item of items) s.push(item)
+    return s
+  }
+
+  push(item: T): this {
+    this.items.push(item)
+    return this
+  }
+
+  pop(): T | undefined {
+    return this.items.pop()
+  }
+
+  peek(): T | undefined {
+    return this.items[this.items.length - 1]
+  }
+
+  get size(): number {
+    return this.items.length
+  }
+
+  *[Symbol.iterator](): Iterator<T> {
+    for (let i = this.items.length - 1; i >= 0; i--) yield this.items[i]
+  }
+}
+
+class Queue<T> {
+  private store = new Map<number, T>()
+  private head = 0
+  private tail = 0
+
+  enqueue(item: T): this {
+    this.store.set(this.tail++, item)
+    return this
+  }
+
+  dequeue(): T | undefined {
+    if (this.head === this.tail) return undefined
+    const item = this.store.get(this.head)
+    this.store.delete(this.head++)
+    return item
+  }
+
+  peek(): T | undefined {
+    return this.head === this.tail ? undefined : this.store.get(this.head)
+  }
+
+  get size(): number {
+    return this.tail - this.head
+  }
+
+  *[Symbol.iterator](): Iterator<T> {
+    for (let i = this.head; i < this.tail; i++) yield this.store.get(i)!
+  }
+}
+--- hint
+Put \`<T>\` on the class and replace every \`any\` with \`T\`; \`pop\` and \`peek\` return \`T | undefined\`.
+--- hint
+\`*[Symbol.iterator](): Iterator<T> { … yield … }\` makes the class iterable.
+--- hint
+For the queue, keep \`head\` and \`tail\` counters and store items in a \`Map<number, T>\` keyed by position.
+--- check case | Stack.from puts the last item on top
+Stack.from([1, 2, 3]).pop()
+=> 3
+--- check case | A stack iterates from the top
+[...Stack.from(['a', 'b', 'c'])]
+=> ['c', 'b', 'a']
+--- check case | Chaining, peek and size
+(() => { const s = new Stack<number>().push(1).push(2); return [s.peek(), s.size, new Stack<number>().pop()] })()
+=> [2, 2, undefined]
+--- check case | A queue is first in, first out
+(() => { const q = new Queue<string>(); q.enqueue('a').enqueue('b').enqueue('c'); return [q.dequeue(), q.peek(), q.size, [...q]] })()
+=> ['a', 'b', 2, ['b', 'c']]
+--- check case | An empty queue
+[new Queue<number>().dequeue(), new Queue<number>().peek(), new Queue<number>().size]
+=> [undefined, undefined, 0]
+--- check test | 100,000 operations through a queue
+(() => { const q = new Queue<number>(); let sum = 0; for (let i = 0; i < 100000; i++) { q.enqueue(i); if (i % 2 === 1) sum += q.dequeue()! } while (q.size) sum += q.dequeue()!; return sum === 4999950000 })()
+--- check source absent | The queue does not use shift
+\\.shift\\s*\\(
+--- check type-error | A Stack<number> only takes numbers
+new Stack<number>().push('a')
+--- check type-error | pop admits the stack might be empty
+const s: string = new Stack<string>().pop()
+--- check type-error | Stack.from infers the item type
+Stack.from([1, 2]).push('x')
+--- check type-error | A Queue<number> only takes numbers
+new Queue<number>().enqueue(null)
+--- check type-error | Spreading a Stack<number> gives exactly number[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const all = [...Stack.from([1])];
+const no: Equal<typeof all, number[]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts3-13 | A generic Result type
+--- teach
+Exceptions are invisible in a signature: \`parsePort(s: string): number\` does not say it can fail, or how. A **Result** type makes failure part of the return type:
+
+\`\`\`ts
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+\`\`\`
+
+The caller cannot reach \`value\` without checking \`ok\`, and the error type says exactly which failures to expect. Two tiny constructors keep call sites short:
+
+\`\`\`ts
+function ok<T>(value: T): { ok: true; value: T } {
+  return { ok: true, value }
+}
+ok(5).value
+\`\`\`
+
+Typing them as \`Result<T, never>\` and \`Result<never, E>\` is the neat part: \`never\` is assignable to everything, so \`ok(5)\` fits any \`Result<number, E>\`, whatever \`E\` is.
+
+Chaining functions that may fail is where the error types become interesting:
+
+\`\`\`ts
+// andThen: if r is ok, run f on its value; otherwise pass the error through
+// andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F>
+\`\`\`
+
+The result's error type is \`E | F\` — every way the chain can fail, collected by the compiler. Use literal strings (or small tagged objects) as error types, and a \`switch\` on them at the end is checked for exhaustiveness like any other union.
+
+Use Results for **expected** failures (bad input, not found, a rule broken). Keep exceptions for bugs.
+--- task
+1. \`type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }\`.
+2. \`ok<T>(value: T): Result<T, never>\` and \`err<E>(error: E): Result<never, E>\`.
+3. \`map<T, U, E>(r: Result<T, E>, f: (value: T) => U): Result<U, E>\`.
+4. \`andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F>\`.
+5. \`unwrapOr<T, E>(r: Result<T, E>, fallback: T): T\`.
+6. \`parsePort(s: string): Result<number, 'not-a-number' | 'out-of-range'>\` — a whole number from 1 to 65535 (\`Number(s)\`; anything that is not an integer is \`'not-a-number'\`).
+--- starter
+type Outcome<T, E> = { ok: boolean; value?: T; error?: E }
+
+function parsePort(s: string): Outcome<number, string> {
+  const n = Number(s)
+  if (!Number.isInteger(n)) return { ok: false, error: 'not-a-number' }
+  if (n < 1 || n > 65535) return { ok: false, error: 'out-of-range' }
+  return { ok: true, value: n }
+}
+--- solution
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function err<E>(error: E): Result<never, E> {
+  return { ok: false, error }
+}
+
+function map<T, U, E>(r: Result<T, E>, f: (value: T) => U): Result<U, E> {
+  return r.ok ? ok(f(r.value)) : r
+}
+
+function andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F> {
+  return r.ok ? f(r.value) : r
+}
+
+function unwrapOr<T, E>(r: Result<T, E>, fallback: T): T {
+  return r.ok ? r.value : fallback
+}
+
+function parsePort(s: string): Result<number, 'not-a-number' | 'out-of-range'> {
+  const n = Number(s)
+  if (!Number.isInteger(n)) return err('not-a-number')
+  if (n < 1 || n > 65535) return err('out-of-range')
+  return ok(n)
+}
+--- hint
+In \`map\` and \`andThen\`, when \`r.ok\` is false you can return \`r\` itself: its type is the error member, which fits the new Result.
+--- hint
+\`err('not-a-number')\` infers \`E\` as the literal \`'not-a-number'\`, which is assignable to the declared error union.
+--- check case | A valid port
+parsePort('8080')
+=> { ok: true, value: 8080 }
+--- check case | Not a number
+parsePort('http')
+=> { ok: false, error: 'not-a-number' }
+--- check case | Out of range
+parsePort('0')
+=> { ok: false, error: 'out-of-range' }
+--- check case | map transforms a value and passes errors through
+[map(ok(2), (n) => n * 10), map(err('bad'), (n: number) => n * 10)]
+=> [{ ok: true, value: 20 }, { ok: false, error: 'bad' }]
+--- check case | andThen chains, stopping at the first error
+[andThen(parsePort('80'), (p) => (p < 1024 ? err('privileged') : ok(p))), andThen(parsePort('x'), (p) => ok(p + 1)), andThen(parsePort('8080'), (p) => ok(p + 1))]
+=> [{ ok: false, error: 'privileged' }, { ok: false, error: 'not-a-number' }, { ok: true, value: 8081 }]
+--- check case | unwrapOr
+[unwrapOr(parsePort('x'), 80), unwrapOr(parsePort('443'), 80)]
+=> [80, 443]
+--- check type-error | You must check ok before reading value
+parsePort('80').value
+--- check type-error | A success cannot carry an error
+const r: Result<number, string> = { ok: true, error: 'x' }
+--- check type-error | The fallback must be the value's type
+unwrapOr(parsePort('1'), 'eighty')
+--- check type-error | map(ok(2), String) is exactly Result<string, never>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = map(ok(2), (n) => String(n));
+const no: Equal<typeof r, Result<string, never>> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | andThen collects both error types
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = andThen(parsePort('80'), (p) => (p < 1024 ? err('privileged' as const) : ok(p)));
+const no: Equal<typeof r, Result<number, 'not-a-number' | 'out-of-range' | 'privileged'>> = false
+
+=== ts3-14 | Problem: a typed LRU cache
+--- teach
+A problem-solving lesson with a generic class as the answer.
+
+**The problem.** A cache with room for \`capacity\` entries. When it is full and a new key arrives, it evicts the **least recently used** entry — the one read or written longest ago.
+
+**Examples by hand.** Capacity 2. \`set a\`, \`set b\`, \`get a\` (a is now the most recent), \`set c\` → evicts \`b\`, not \`a\`.
+
+**Brute force.** Keep an array of keys in recency order. \`get\` finds the key (\`indexOf\`), removes it (\`splice\`) and pushes it to the end; eviction removes index 0. Correct, but every operation walks the array: with 50,000 entries and 200,000 operations that is billions of steps.
+
+**Find the structure.** You need three things in constant time: look up a key, move a key to "most recent", and find the least recent. A JavaScript \`Map\` does all three, because it **remembers insertion order**:
+
+- lookup: \`map.get(key)\`
+- mark as most recent: \`map.delete(key)\` then \`map.set(key, value)\` — it goes to the end
+- least recent: the first key, \`map.keys().next()\`
+
+\`\`\`ts
+const m = new Map([['a', 1], ['b', 2]])
+m.delete('a')
+m.set('a', 1)
+const order = [...m.keys()]   // ['b', 'a']
+order
+\`\`\`
+
+**Types.** Make it \`LRUCache<K, V>\` so a cache of user ids to profiles cannot be filled with anything else. \`get\` returns \`V | undefined\` — a miss is normal. Note that \`map.keys().next()\` gives an iterator result whose \`value\` is only a \`K\` when \`done\` is false; check \`done\` rather than reaching for \`!\`.
+
+**Edge cases:** capacity below 1 (reject it), setting an existing key (update the value, mark it recent, no eviction), \`has\` (should it count as a use? Here: no).
+--- task
+Write \`class LRUCache<K, V>\`:
+
+- \`constructor(capacity: number)\` — throws a \`RangeError\` unless \`capacity\` is a whole number \`>= 1\`.
+- \`get(key: K): V | undefined\` — marks the key as most recently used.
+- \`set(key: K, value: V): this\` — inserts or updates, marks it most recent, and evicts the least recently used entry if the cache is over capacity.
+- \`has(key: K): boolean\` — does **not** change recency.
+- \`delete(key: K): boolean\`, a \`size\` getter, and \`keys(): K[]\` from least to most recently used.
+
+It must handle 200,000 operations on a cache of 50,000 quickly.
+--- starter
+class LRUCache<K, V> {
+  constructor(capacity: number) {}
+
+  get(key: K): V | undefined {
+    return undefined
+  }
+
+  set(key: K, value: V): this {
+    return this
+  }
+}
+--- solution
+class LRUCache<K, V> {
+  private map = new Map<K, V>()
+
+  constructor(private readonly capacity: number) {
+    if (!Number.isInteger(capacity) || capacity < 1) throw new RangeError(\`capacity must be a whole number >= 1, got \${capacity}\`)
+  }
+
+  get(key: K): V | undefined {
+    if (!this.map.has(key)) return undefined
+    const value = this.map.get(key) as V
+    this.map.delete(key)
+    this.map.set(key, value)
+    return value
+  }
+
+  set(key: K, value: V): this {
+    this.map.delete(key)
+    this.map.set(key, value)
+    if (this.map.size > this.capacity) {
+      const oldest = this.map.keys().next()
+      if (!oldest.done) this.map.delete(oldest.value)
+    }
+    return this
+  }
+
+  has(key: K): boolean {
+    return this.map.has(key)
+  }
+
+  delete(key: K): boolean {
+    return this.map.delete(key)
+  }
+
+  get size(): number {
+    return this.map.size
+  }
+
+  keys(): K[] {
+    return [...this.map.keys()]
+  }
+}
+--- hint
+Delete and re-insert a key to move it to the end of the \`Map\`'s order.
+--- hint
+The least recently used key is the first one: \`const oldest = this.map.keys().next()\`, and \`oldest.value\` is a \`K\` once you know \`!oldest.done\`.
+--- hint
+In \`get\`, check \`has\` first: a stored value could itself be \`undefined\`, so \`map.get(key) === undefined\` does not tell you it is missing.
+--- check case | The least recently used entry is evicted
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2); c.get('a'); c.set('c', 3); return [c.has('a'), c.has('b'), c.has('c'), c.keys()] })()
+=> [true, false, true, ['a', 'c']]
+--- check case | Updating a key refreshes it without evicting
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2).set('a', 10).set('c', 3); return [c.get('a'), c.get('b'), c.size] })()
+=> [10, undefined, 2]
+--- check case | has does not count as a use
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2); c.has('a'); c.set('c', 3); return c.keys() })()
+=> ['b', 'c']
+--- check case | delete
+(() => { const c = new LRUCache<string, number>(3); c.set('a', 1).set('b', 2); return [c.delete('a'), c.delete('zz'), c.size, c.keys()] })()
+=> [true, false, 1, ['b']]
+--- check test | A bad capacity is a RangeError
+(() => { try { new LRUCache<string, number>(0); return false } catch (e) { return e instanceof RangeError && throws(() => new LRUCache<string, number>(1.5)) } })()
+--- check test | 200,000 operations on a cache of 50,000
+(() => { const c = new LRUCache<number, number>(50000); let hits = 0; for (let i = 0; i < 200000; i++) { const k = i % 2 ? i % 1000 : (i * 7919) % 100000; if (c.get(k) !== undefined) hits++; else c.set(k, i) } return c.size === 50000 && hits > 0 })()
+--- check type-error | Values must match V
+new LRUCache<string, number>(2).set('a', 'x')
+--- check type-error | Keys must match K
+new LRUCache<string, number>(2).set(1, 1)
+--- check type-error | get admits a miss
+const v: number = new LRUCache<string, number>(2).get('a')
+`,Ge=`@track typescript
+@level expert
+@title TypeScript · Expert
+@name TypeScript, expert: type-level programming and APIs that cannot be misused
+@blurb Recursive and string-parsing types, variance, phantom and state-machine types, schema inference and typed containers: design libraries whose types rule out whole classes of bugs.
+
+=== ts4-01 | Recursive types: DeepReadonly and DeepPartial
+--- teach
+The advanced course computed types from types. This course pushes that into type-level programs — recursive types, parsers written in types, controlled inference — and uses them to design APIs that cannot be misused.
+
+\`Readonly<T>\` and \`Partial<T>\` stop at the first level. For nested configuration that is not enough: \`Readonly<Config>\` still lets you write \`config.server.port = 1\`.
+
+A type alias may refer to itself, so you can walk the whole structure. The shape is always the same: handle the cases that must **not** be walked into, then map over objects and recurse on each property:
+
+\`\`\`ts
+type DeepRequired<T> =
+  T extends (...args: never[]) => unknown ? T          // functions: leave alone
+  : T extends object ? { [K in keyof T]-?: DeepRequired<T[K]> }
+  : T                                                   // primitives: done
+
+type Cfg = DeepRequired<{ db?: { host?: string } }>    // { db: { host: string } }
+\`\`\`
+
+Order matters. Functions are objects, so test for them first, or you would map over a function's properties and lose its call signature. Arrays deserve their own case too: \`readonly (infer E)[]\` catches them, and for a *readonly* version you want \`readonly DeepReadonly<E>[]\` so \`push\` disappears.
+
+The runtime side mirrors the type. \`Object.freeze\` is shallow, just like \`Readonly\`; a deep freeze visits every nested object:
+
+\`\`\`ts
+const frozen = Object.freeze({ inner: { n: 1 } })
+frozen.inner.n = 2          // allowed: freeze is shallow
+frozen.inner.n
+\`\`\`
+
+A deep merge is the runtime partner of \`DeepPartial\`: plain objects merge key by key, recursively; anything else in the patch (a number, a string, an array) replaces the old value; keys the patch does not mention keep their old value.
+
+One inference detail for its signature. In \`deepMerge<T>(base: T, patch: DeepPartial<T>)\`, TypeScript infers \`T\` from **both** arguments, so a patch with a wrong type can widen \`T\` instead of being rejected. Write \`patch: DeepPartial<NoInfer<T>>\`: \`NoInfer\` tells the compiler to take \`T\` from \`base\` alone and only *check* the patch against it. (Lesson ts4-05 looks at \`NoInfer\` properly.)
+--- task
+1. \`type DeepReadonly<T>\` — functions unchanged; arrays become readonly arrays of \`DeepReadonly\` elements; objects get \`readonly\` on every property, recursively.
+2. \`type DeepPartial<T>\` — arrays unchanged (a patch replaces an array whole); objects get \`?\` on every property, recursively.
+3. \`deepFreeze<T>(value: T): DeepReadonly<T>\` — freezes the value and every object and array inside it.
+4. \`deepMerge<T>(base: T, patch: DeepPartial<NoInfer<T>>): T\` — a **new** value: plain objects merged recursively, arrays and primitives from the patch replacing, \`undefined\` in the patch ignored. \`base\` is not changed.
+--- starter
+type DeepReadonly<T> = Readonly<T>
+type DeepPartial<T> = Partial<T>
+
+function deepFreeze<T>(value: T): DeepReadonly<T> {
+  return Object.freeze(value)
+}
+
+function deepMerge<T>(base: T, patch: DeepPartial<T>): T {
+  return { ...base, ...patch }
+}
+--- solution
+type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends readonly (infer E)[]
+    ? readonly DeepReadonly<E>[]
+    : T extends object
+      ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+      : T
+
+type DeepPartial<T> = T extends readonly unknown[] ? T : T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T
+
+function deepFreeze<T>(value: T): DeepReadonly<T> {
+  if (typeof value === 'object' && value !== null) {
+    for (const inner of Object.values(value)) deepFreeze(inner)
+    Object.freeze(value)
+  }
+  return value as DeepReadonly<T>
+}
+
+function isPlainObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+
+function deepMerge<T>(base: T, patch: DeepPartial<NoInfer<T>>): T {
+  if (!isPlainObject(base) || !isPlainObject(patch)) return (patch === undefined ? base : patch) as T
+  const out: Record<string, unknown> = { ...base }
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) out[key] = deepMerge(base[key], value as never)
+  }
+  return out as T
+}
+--- hint
+Write \`DeepReadonly\` as a chain of conditionals: function? array (\`readonly (infer E)[]\`)? object? otherwise the type itself.
+--- hint
+\`deepFreeze\` freezes children first (\`Object.values(value)\`), then the value; the one cast at the end is the honest price of a recursive type.
+--- hint
+In \`deepMerge\`, if either side is not a plain object the patch wins (unless it is \`undefined\`); otherwise copy \`base\` and merge each patched key.
+--- check test | deepFreeze freezes every level
+(() => { const c = deepFreeze({ a: { b: [1, { c: 2 }] } }); return Object.isFrozen(c) && Object.isFrozen(c.a) && Object.isFrozen(c.a.b) && Object.isFrozen(c.a.b[1]) })()
+--- check case | deepMerge merges nested objects
+deepMerge({ server: { host: 'a', port: 1 }, tags: ['x'] }, { server: { port: 2 } })
+=> { server: { host: 'a', port: 2 }, tags: ['x'] }
+--- check case | Arrays in a patch replace; undefined is ignored
+deepMerge({ tags: ['x', 'y'], name: 'n' }, { tags: ['z'], name: undefined })
+=> { tags: ['z'], name: 'n' }
+--- check test | deepMerge leaves the base alone
+(() => { const base = { s: { port: 1 } }; const out = deepMerge(base, { s: { port: 2 } }); return base.s.port === 1 && out.s.port === 2 && out.s !== base.s })()
+--- check type-error | Nested properties are read-only
+const c = deepFreeze({ a: { b: 1 } }); c.a.b = 2
+--- check type-error | Nested arrays have no push
+const c = deepFreeze({ list: [1, 2] }); c.list.push(3)
+--- check type-error | Objects inside arrays are read-only too
+const c = deepFreeze({ list: [{ x: 1 }] }); c.list[0].x = 2
+--- check type-error | A patch keeps the value types
+deepMerge({ a: { b: 1 } }, { a: { b: 'x' } })
+--- check type-error | A patch cannot add unknown nested keys
+deepMerge({ a: { b: 1 } }, { a: { c: 1 } })
+--- check type-error | DeepReadonly is exactly right for nested objects, arrays and functions
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<DeepReadonly<{ a: { b: number[] }; f: () => void }>, { readonly a: { readonly b: readonly number[] }; readonly f: () => void }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | DeepPartial is exactly right for nested objects and arrays
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<DeepPartial<{ a: { b: number }; c: string[] }>, { a?: { b?: number }; c?: string[] }> = false
+
+=== ts4-02 | A type for JSON
+--- teach
+What can \`JSON.stringify\` faithfully round-trip? \`null\`, booleans, numbers, strings, and arrays and objects made of those. That definition is recursive, and so is its type:
+
+\`\`\`ts
+type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
+
+const ok: Json = { name: 'Ada', tags: ['x'], meta: { active: true, score: null } }
+\`\`\`
+
+A recursive union like this is one of the most useful types you can have in a program that talks to the outside world. It rules out, at compile time, exactly the values that silently change on the way through JSON:
+
+- \`undefined\` properties disappear;
+- functions and symbols disappear;
+- a \`Date\` becomes a string, a \`Map\` becomes \`{}\`;
+- \`NaN\` and \`Infinity\` become \`null\`;
+- \`1n\` (a bigint) throws.
+
+The type catches the literal cases. For values that arrive at runtime, pair it with a guard that checks the same rules, recursively. A plain object is one whose prototype is \`Object.prototype\` (or \`null\`): that excludes \`Date\`, \`Map\` and class instances.
+
+Walking a \`Json\` value is a matter of narrowing: \`Array.isArray(j)\`, then \`typeof j === 'object' && j !== null\` for objects, and everything else is a leaf. \`flatMap\` is handy for collecting from a tree: it maps each item to an array and flattens the results into one.
+--- task
+1. \`type Json\` as above.
+2. \`isJson(x: unknown): x is Json\` — \`null\`, booleans, strings, **finite** numbers, arrays of JSON, and **plain** objects whose values are all JSON.
+3. \`leafPaths(j: Json): string[]\` — the path of every leaf value (anything that is not an array or object), in order. Paths start at \`$\`, add \`.key\` for object keys and \`[i]\` for array indexes. A primitive at the root is \`['$']\`; empty arrays and objects have no leaves.
+--- starter
+type Json = any
+
+function isJson(x: unknown): boolean {
+  return x !== undefined
+}
+
+function leafPaths(j: Json): string[] {
+  return []
+}
+--- solution
+type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
+
+function isJson(x: unknown): x is Json {
+  if (x === null || typeof x === 'boolean' || typeof x === 'string') return true
+  if (typeof x === 'number') return Number.isFinite(x)
+  if (Array.isArray(x)) return x.every(isJson)
+  if (typeof x === 'object') {
+    const proto = Object.getPrototypeOf(x)
+    if (proto !== Object.prototype && proto !== null) return false
+    return Object.values(x).every(isJson)
+  }
+  return false
+}
+
+function leafPaths(j: Json, at = '$'): string[] {
+  if (Array.isArray(j)) return j.flatMap((item, i) => leafPaths(item, \`\${at}[\${i}]\`))
+  if (typeof j === 'object' && j !== null) return Object.entries(j).flatMap(([key, value]) => leafPaths(value, \`\${at}.\${key}\`))
+  return [at]
+}
+--- hint
+The type is a union with two recursive members: \`Json[]\` and \`{ [key: string]: Json }\`.
+--- hint
+In \`isJson\`, check primitives first, then \`Array.isArray(x) && x.every(isJson)\`, then plain objects with \`Object.getPrototypeOf\`.
+--- hint
+\`leafPaths\` can take a second parameter with a default, \`at = '$'\`, and recurse with \`flatMap\`.
+--- check test | isJson accepts nested JSON
+isJson({ a: [1, 'x', null, { b: true }], c: [] }) && isJson('s') && isJson(null) && isJson([1, [2, [3]]])
+--- check test | isJson rejects what JSON would mangle
+!isJson(undefined) && !isJson({ a: undefined }) && !isJson(NaN) && !isJson(Infinity) && !isJson(new Date()) && !isJson(() => 1) && !isJson(new Map()) && !isJson([1, 2n])
+--- check case | leafPaths
+leafPaths({ a: [1, { b: null }], c: 'x', d: {} })
+=> ['$.a[0]', '$.a[1].b', '$.c']
+--- check case | A primitive at the root
+leafPaths(42)
+=> ['$']
+--- check type-error | undefined is not JSON
+const j: Json = { a: undefined }
+--- check type-error | A Date is not JSON
+const j: Json = { when: new Date() }
+--- check type-error | Functions are not JSON
+const j: Json = [() => 1]
+--- check type-error | Bigints are not JSON
+const j: Json = { n: 1n }
+--- check type-error | leafPaths only takes JSON
+leafPaths({ f: Symbol('x') })
+
+=== ts4-03 | Parsing strings at the type level: route params
+--- teach
+Template literal types with \`infer\` can take a string apart. Recursion lets them take it apart **completely**, which means the type system can read a string you wrote and compute a type from it.
+
+A router is the classic use. From the pattern \`'/users/:id/posts/:postId'\`, you want the params type \`{ id: string; postId: string }\` — derived, never written by hand, never out of date.
+
+Break it into two steps. First collect the parameter **names** as a union:
+
+\`\`\`ts
+type Names<P extends string> =
+  P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+    ? Name | Names<\`/\${Rest}\`>
+    : P extends \`\${string}:\${infer Name}\`
+      ? Name
+      : never
+
+type N = Names<'/users/:id/posts/:postId'>   // 'id' | 'postId'
+\`\`\`
+
+How it matches: \`\${string}:\` skips everything up to the first colon; \`\${infer Name}/\` takes the characters up to the next slash; \`\${infer Rest}\` is whatever is left, which is parsed again. The second branch handles a parameter at the very end. A path with no colon matches neither branch and gives \`never\`.
+
+Then map the names to an object: \`{ [K in Names<P>]: string }\`. Mapping over \`never\` gives \`{}\` — no params required.
+
+The runtime code does the same job on the real string: split both pattern and path on \`/\`, compare segment by segment, and collect the \`:name\` segments. The one cast, from \`Record<string, string>\` to the computed type, is justified by the tests.
+--- task
+1. \`type RouteParams<P extends string>\` — an object type with a \`string\` property for every \`:name\` segment of \`P\`.
+2. Change \`matchRoute\` to \`matchRoute<P extends string>(pattern: P, path: string): RouteParams<P> | null\` and \`buildPath\` to \`buildPath<P extends string>(pattern: P, params: RouteParams<P>): string\`. Their runtime behaviour is already correct.
+--- starter
+type RouteParams<P extends string> = Record<string, string>
+
+function matchRoute<P extends string>(pattern: P, path: string): RouteParams<P> | null {
+  const want = pattern.split('/')
+  const got = path.split('/')
+  if (want.length !== got.length) return null
+  const params: Record<string, string> = {}
+  for (let i = 0; i < want.length; i++) {
+    const w = want[i]!
+    const g = got[i]!
+    if (w.startsWith(':')) {
+      if (g === '') return null
+      params[w.slice(1)] = decodeURIComponent(g)
+    } else if (w !== g) {
+      return null
+    }
+  }
+  return params as RouteParams<P>
+}
+
+function buildPath<P extends string>(pattern: P, params: RouteParams<P>): string {
+  const values: Record<string, string> = params
+  return pattern.replace(/:(\\w+)/g, (_, name: string) => encodeURIComponent(values[name] ?? ''))
+}
+--- solution
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type RouteParams<P extends string> = { [K in ParamNames<P>]: string }
+
+function matchRoute<P extends string>(pattern: P, path: string): RouteParams<P> | null {
+  const want = pattern.split('/')
+  const got = path.split('/')
+  if (want.length !== got.length) return null
+  const params: Record<string, string> = {}
+  for (let i = 0; i < want.length; i++) {
+    const w = want[i]!
+    const g = got[i]!
+    if (w.startsWith(':')) {
+      if (g === '') return null
+      params[w.slice(1)] = decodeURIComponent(g)
+    } else if (w !== g) {
+      return null
+    }
+  }
+  return params as RouteParams<P>
+}
+
+function buildPath<P extends string>(pattern: P, params: RouteParams<P>): string {
+  const values: Record<string, string> = params
+  return pattern.replace(/:(\\w+)/g, (_, name: string) => encodeURIComponent(values[name] ?? ''))
+}
+--- hint
+Write a helper \`ParamNames<P>\` that returns a union of names, then \`RouteParams<P> = { [K in ParamNames<P>]: string }\`.
+--- hint
+Two branches: \`\${string}:\${infer Name}/\${infer Rest}\` (a param with more path after it — recurse on \`/\${Rest}\`) and \`\${string}:\${infer Name}\` (a param at the end).
+--- check case | Matches and extracts both params
+matchRoute('/users/:id/posts/:postId', '/users/7/posts/42')
+=> { id: '7', postId: '42' }
+--- check case | A different path does not match
+[matchRoute('/users/:id', '/teams/7'), matchRoute('/users/:id', '/users/7/extra'), matchRoute('/users/:id', '/users/')]
+=> [null, null, null]
+--- check case | buildPath fills in and encodes params
+buildPath('/users/:id/posts/:postId', { id: 'a b', postId: '3' })
+=> '/users/a%20b/posts/3'
+--- check case | A route with no params
+buildPath('/about', {})
+=> '/about'
+--- check type-error | buildPath needs every param
+buildPath('/users/:id', {})
+--- check type-error | Every param of a longer route is required
+buildPath('/users/:id/posts/:postId', { postId: '1' })
+--- check type-error | buildPath rejects params the route does not have
+buildPath('/users/:id', { id: '1', extra: '2' })
+--- check type-error | Params are strings
+buildPath('/users/:id', { id: 1 })
+--- check type-error | A match only has the route's params
+matchRoute('/users/:id', '/users/1')?.name
+--- check type-error | RouteParams of a two-param route is exactly { id: string; postId: string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<RouteParams<'/users/:id/posts/:postId'>, { id: string; postId: string }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | RouteParams<'/about'> is exactly {}
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<RouteParams<'/about'>, {}> = false
+
+=== ts4-04 | Variadic tuple types
+--- teach
+A tuple type can contain a **spread of another tuple type**: \`[...A, ...B]\`. With generics, that lets you describe functions that add, remove or split arguments while keeping every position's type.
+
+\`\`\`ts
+function append<T extends unknown[], X>(items: [...T], x: X): [...T, X] {
+  return [...items, x]
+}
+
+append([1, 'a'], true)   // [number, string, boolean]
+\`\`\`
+
+Writing the parameter as \`[...T]\` rather than \`T\` is a hint to infer a **tuple**, not an array: without it, \`[1, 'a']\` would be inferred as \`(string | number)[]\`.
+
+\`infer\` works inside tuple patterns, at the start, at the end, or around a rest:
+
+\`\`\`ts
+type First<T extends readonly unknown[]> = T extends readonly [infer F, ...unknown[]] ? F : undefined
+type Init<T extends readonly unknown[]> = T extends readonly [...infer I, unknown] ? I : []
+
+type F1 = First<[string, number]>    // string
+type I1 = Init<[1, 2, 3]>            // [1, 2]
+\`\`\`
+
+The payoff is **partial application** with full types. Give a function some of its arguments now and the rest later:
+
+\`\`\`ts
+// partial(fn, ...pre) — fn takes [...P, ...A]; pre supplies P; you get back (...rest: A) => R
+\`\`\`
+
+TypeScript infers \`P\` from the arguments you pass, then works out \`A\` as whatever is left of \`fn\`'s parameter list. The returned function accepts exactly the remaining arguments, in order, with their names.
+--- task
+1. \`concat<A extends unknown[], B extends unknown[]>(a: [...A], b: [...B]): [...A, ...B]\`.
+2. \`type Tail<T extends readonly unknown[]>\` — everything but the first element (\`[]\` for an empty tuple).
+3. \`type Last<T extends readonly unknown[]>\` — the last element's type (\`undefined\` for an empty tuple).
+4. \`type Reverse<T extends readonly unknown[]>\` — the tuple in reverse order.
+5. \`partial<P extends unknown[], A extends unknown[], R>(fn: (...args: [...P, ...A]) => R, ...pre: P): (...rest: A) => R\`.
+--- starter
+function concat(a: unknown[], b: unknown[]): unknown[] {
+  return [...a, ...b]
+}
+
+type Tail<T extends readonly unknown[]> = unknown[]
+type Last<T extends readonly unknown[]> = unknown
+type Reverse<T extends readonly unknown[]> = unknown[]
+
+function partial(fn: (...args: any[]) => any, ...pre: any[]): (...rest: any[]) => any {
+  return (...rest) => fn(...pre, ...rest)
+}
+--- solution
+function concat<A extends unknown[], B extends unknown[]>(a: [...A], b: [...B]): [...A, ...B] {
+  return [...a, ...b]
+}
+
+type Tail<T extends readonly unknown[]> = T extends readonly [unknown, ...infer R] ? R : []
+type Last<T extends readonly unknown[]> = T extends readonly [...unknown[], infer L] ? L : undefined
+type Reverse<T extends readonly unknown[]> = T extends readonly [infer F, ...infer R] ? [...Reverse<R>, F] : []
+
+function partial<P extends unknown[], A extends unknown[], R>(fn: (...args: [...P, ...A]) => R, ...pre: P): (...rest: A) => R {
+  return (...rest) => fn(...pre, ...rest)
+}
+--- hint
+\`Tail\` and \`Last\` are one \`infer\` each: \`[unknown, ...infer R]\` and \`[...unknown[], infer L]\`.
+--- hint
+\`Reverse\` takes the first element off and puts it at the end of the reversed rest: \`[...Reverse<R>, F]\`.
+--- hint
+\`partial\`'s body does not change; only its signature does.
+--- check case | concat
+concat([1, 'a'], [true])
+=> [1, 'a', true]
+--- check case | partial fills in the first arguments
+partial((a: number, b: string, c: boolean) => \`\${a}-\${b}-\${c}\`, 1)('x', true)
+=> '1-x-true'
+--- check case | partial with two up front
+partial((a: number, b: number, c: number) => a * 100 + b * 10 + c, 1, 2)(3)
+=> 123
+--- check type-error | The partial function takes the remaining arguments, in order
+const p = partial((a: number, b: string) => a + b, 1); p(2)
+--- check type-error | The partial function needs all remaining arguments
+const p = partial((a: number, b: string, c: boolean) => a + b, 1); p('x')
+--- check type-error | The arguments given up front are checked too
+partial((a: number, b: string) => a + b, 'x')
+--- check type-error | concat([1, 'a'], [true]) is exactly [number, string, boolean]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const c = concat([1, 'a'], [true]);
+const no: Equal<typeof c, [number, string, boolean]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | Tail<[1, 2, 3]> is exactly [2, 3]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Tail<[1, 2, 3]>, [2, 3]> = false
+--- check type-error | Tail<[]> is exactly []
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Tail<[]>, []> = false
+--- check type-error | Last<['a', 'b']> is exactly 'b'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Last<['a', 'b']>, 'b'> = false
+--- check type-error | Reverse<[1, 'a', true]> is exactly [true, 'a', 1]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Reverse<[1, 'a', true]>, [true, 'a', 1]> = false
+
+=== ts4-05 | Controlling inference: const type parameters and NoInfer
+--- teach
+Generic functions infer their type parameters from the arguments. The defaults are sensible for everyday code and wrong for library code in two ways.
+
+**Inference widens.** Pass \`['admin', 'editor']\` and \`T\` becomes \`string[]\` — the exact values are lost. Callers used to write \`as const\` at every call site. A **\`const\` type parameter** does it for them:
+
+\`\`\`ts
+function tags<const T extends readonly string[]>(list: T): T {
+  return list
+}
+const t = tags(['a', 'b'])     // readonly ['a', 'b'], no \`as const\` needed
+\`\`\`
+
+The constraint should be \`readonly …[]\`: const inference produces readonly tuples, which do not fit a mutable \`string[]\` constraint.
+
+**Inference looks everywhere.** Every parameter that mentions \`T\` is a candidate. That is a problem for a parameter that should be *checked against* \`T\`, not *contribute to* it:
+
+\`\`\`ts
+function pick<T extends string>(options: readonly T[], fallback: T): T {
+  return fallback
+}
+pick(['s', 'm'], 'xl')      // compiles! T is inferred as 's' | 'm' | 'xl'
+\`\`\`
+
+**\`NoInfer<T>\`** (TypeScript 5.4+) marks a use of \`T\` that inference must ignore. Write \`fallback: NoInfer<T>\`, and \`T\` comes from \`options\` alone, so \`'xl'\` is rejected.
+
+Both tools are about the same idea: decide *where* a type parameter's value should come from, and tell the compiler. (For \`enumOf\`, \`Object.fromEntries([['a', 'a'], ['b', 'b']])\` builds \`{ a: 'a', b: 'b' }\` from key–value pairs.)
+--- task
+The starter works at runtime, but its types are too wide. Fix the signatures (the bodies may stay as they are):
+
+1. \`defineRoles(roles)\` — \`list\` must keep the exact tuple of role names (e.g. \`readonly ['admin', 'viewer']\`), and \`has(x)\` narrows a string to one of them.
+2. \`choose(options, fallback, input)\` — returns \`input\` if it is one of the options, else \`fallback\`. The fallback must be one of the options: \`choose(['s', 'm'], 'xl', …)\` must not compile. The result type is the union of the options.
+3. \`enumOf(values)\` — returns \`{ draft: 'draft', live: 'live' }\` for \`['draft', 'live']\`, typed with exactly those keys and literal values.
+--- starter
+function defineRoles<R extends readonly string[]>(roles: R) {
+  return {
+    list: roles,
+    has: (x: string): x is R[number] => roles.includes(x),
+  }
+}
+
+function choose<T extends string>(options: readonly T[], fallback: T, input: string): T {
+  return (options as readonly string[]).includes(input) ? (input as T) : fallback
+}
+
+function enumOf<T extends readonly string[]>(values: T): { readonly [K in T[number]]: K } {
+  return Object.fromEntries(values.map((v) => [v, v])) as { readonly [K in T[number]]: K }
+}
+--- solution
+function defineRoles<const R extends readonly string[]>(roles: R) {
+  return {
+    list: roles,
+    has: (x: string): x is R[number] => roles.includes(x),
+  }
+}
+
+function choose<const T extends string>(options: readonly T[], fallback: NoInfer<T>, input: string): T {
+  return (options as readonly string[]).includes(input) ? (input as T) : fallback
+}
+
+function enumOf<const T extends readonly string[]>(values: T): { readonly [K in T[number]]: K } {
+  return Object.fromEntries(values.map((v) => [v, v])) as { readonly [K in T[number]]: K }
+}
+--- hint
+Add \`const\` in front of the type parameter: \`function defineRoles<const R extends readonly string[]>(roles: R)\`.
+--- hint
+In \`choose\`, the options should decide \`T\`; wrap the fallback's type in \`NoInfer<…>\`.
+--- check case | has narrows to the roles
+[defineRoles(['admin', 'viewer']).has('viewer'), defineRoles(['admin', 'viewer']).has('root')]
+=> [true, false]
+--- check case | choose returns a valid input
+choose(['s', 'm', 'l'], 'm', 'l')
+=> 'l'
+--- check case | choose falls back for an invalid input
+choose(['s', 'm', 'l'], 'm', 'xl')
+=> 'm'
+--- check case | enumOf
+enumOf(['draft', 'live'])
+=> { draft: 'draft', live: 'live' }
+--- check type-error | The fallback must be one of the options
+choose(['s', 'm', 'l'], 'xl', 's')
+--- check type-error | enumOf has only the given keys
+const E = enumOf(['draft', 'live']); E.deleted
+--- check type-error | defineRoles keeps the exact tuple of names
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = defineRoles(['admin', 'viewer']);
+const no: Equal<typeof r.list, readonly ['admin', 'viewer']> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | choose returns exactly the union of the options
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const size = choose(['s', 'm'], 's', 'x');
+const no: Equal<typeof size, 's' | 'm'> = false
+--- check type-error | enumOf values are literal types
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const E = enumOf(['draft', 'live']);
+const no: Equal<typeof E.live, 'live'> = false
+
+=== ts4-06 | Debugging: why is this assignment rejected?
+--- teach
+Some of the most confusing compile errors are about **variance**: when is \`Box<Dog>\` assignable to \`Box<Animal>\`? The answer depends on which way values flow.
+
+- **Outputs are covariant.** A function that *returns* a \`Dog\` can stand in for one that returns an \`Animal\`: whoever calls it wanted an animal and got one.
+- **Inputs are contravariant.** A function that *accepts* a \`Dog\` cannot stand in for one that accepts any \`Animal\`: someone would pass it a cat, and it would call \`bark()\` on the cat. The reverse is fine — a function that handles any animal can certainly handle a dog.
+
+\`\`\`ts
+interface Animal { name: string }
+interface Dog extends Animal { bark(): string }
+
+const describeAnimal = (a: Animal) => a.name
+const forDogs: (d: Dog) => string = describeAnimal   // ✓ handles any animal, so handles dogs
+// const forAll: (a: Animal) => string = (d: Dog) => d.bark()   ✗ a cat would crash it
+\`\`\`
+
+So when the compiler rejects a list of handlers, do not reach for \`as any\`. Ask: *what will actually be passed to these functions?* If the answer is "only dogs", the list's type should say \`Dog\`, and then the general handler fits too.
+
+**The hole you should know about: arrays.** TypeScript treats \`Dog[]\` as assignable to \`Animal[]\`, even though arrays are also *inputs* (you can \`push\`). That is unsound, allowed for convenience:
+
+\`\`\`ts
+interface Animal { name: string }
+interface Dog extends Animal { bark(): string }
+
+function addCat(animals: Animal[]): void {
+  animals.push({ name: 'Tom' })
+}
+const dogs: Dog[] = []
+addCat(dogs)      // compiles — and now dogs holds a cat
+dogs.length
+\`\`\`
+
+The defence is to take \`readonly Animal[]\` when you only read, and to return a new array instead of writing into the caller's. (Methods declared with shorthand syntax, \`m(x: Dog): void\`, are checked loosely in the same way; function-typed properties, \`m: (x: Dog) => void\`, are checked strictly. Library authors can also mark type parameters \`in\`, \`out\` or \`in out\` to state variance explicitly.)
+--- task
+**Bug report:** the build fails at \`handlers\`. A teammate "fixed" it with \`as any\`, and then \`runAll({ name: 'Tom' })\` crashed with *d.bark is not a function*. Separately, after \`adopt(dogs, { name: 'Tom' })\`, looping over \`dogs\` and calling \`bark()\` crashed — and that one compiled without complaint.
+
+Fix both causes, with no casts and no \`any\`:
+
+1. The handlers are meant for dogs: \`runAll(dog: Dog)\` runs every handler on a dog. Give \`handlers\` (and \`runAll\`) the types that say so.
+2. \`adopt(pack, stray)\` must not write into the caller's array: take \`readonly Animal[]\` and return a new \`Animal[]\` with the stray at the end.
+--- starter
+interface Animal {
+  name: string
+}
+
+interface Dog extends Animal {
+  bark(): string
+}
+
+type Handler<T> = (value: T) => void
+
+const log: string[] = []
+const greet: Handler<Animal> = (a) => {
+  log.push(\`hello \${a.name}\`)
+}
+const train: Handler<Dog> = (d) => {
+  log.push(\`\${d.name} says \${d.bark()}\`)
+}
+
+const handlers: Handler<Animal>[] = [greet, train]
+
+function runAll(animal: Animal): void {
+  for (const h of handlers) h(animal)
+}
+
+function adopt(pack: Animal[], stray: Animal): Animal[] {
+  pack.push(stray)
+  return pack
+}
+--- solution
+interface Animal {
+  name: string
+}
+
+interface Dog extends Animal {
+  bark(): string
+}
+
+type Handler<T> = (value: T) => void
+
+const log: string[] = []
+const greet: Handler<Animal> = (a) => {
+  log.push(\`hello \${a.name}\`)
+}
+const train: Handler<Dog> = (d) => {
+  log.push(\`\${d.name} says \${d.bark()}\`)
+}
+
+const handlers: Handler<Dog>[] = [greet, train]
+
+function runAll(dog: Dog): void {
+  for (const h of handlers) h(dog)
+}
+
+function adopt(pack: readonly Animal[], stray: Animal): Animal[] {
+  return [...pack, stray]
+}
+--- hint
+Read the error on \`handlers\` carefully: which of the two handlers does not fit, and what would it do if it were given a cat?
+--- hint
+A \`Handler<Animal>\` is assignable to \`Handler<Dog>\` (it copes with any animal), so a list of dog handlers can hold both.
+--- hint
+With \`pack: readonly Animal[]\`, \`push\` no longer compiles; build a new array instead.
+--- check case | runAll runs both handlers on a dog
+(() => { log.length = 0; runAll({ name: 'Rex', bark: () => 'woof' }); return log })()
+=> ['hello Rex', 'Rex says woof']
+--- check test | adopt returns a new array and leaves the pack alone
+(() => { const pack = [{ name: 'Rex' }]; const out = adopt(pack, { name: 'Tom' }); return pack.length === 1 && out.length === 2 && out[1]!.name === 'Tom' })()
+--- check type-error | runAll refuses a cat
+runAll({ name: 'Tom' })
+--- check type-error | adopt's result is Animal[], not Dog[]
+const dogs: Dog[] = []; const same: Dog[] = adopt(dogs, { name: 'Tom' })
+--- check type-error | A cat-only handler cannot join the dog handlers
+handlers.push((c: { name: string; meow(): string }) => {})
+--- check source absent | No casts or any
+\\bas\\s+(any|unknown|Handler)\\b|:\\s*any\\b
+
+=== ts4-07 | Typed state machines
+--- teach
+A state machine lists states and, for each state, the events it accepts and where they lead. The usual code keeps the current state in a string and checks transitions at runtime, so an illegal transition is a bug you find in production.
+
+Put the table in a constant and derive everything from it:
+
+\`\`\`ts
+const DOOR = {
+  closed: { open: 'opened', lock: 'locked' },
+  opened: { close: 'closed' },
+  locked: { unlock: 'closed' },
+} as const
+
+type DoorState = keyof typeof DOOR                     // 'closed' | 'opened' | 'locked'
+type DoorEvent<S extends DoorState> = keyof (typeof DOOR)[S]
+type After<S extends DoorState, E extends DoorEvent<S>> = (typeof DOOR)[S][E]
+
+type T1 = After<'closed', 'lock'>                      // 'locked'
+\`\`\`
+
+Now make the **current state part of the type**. A \`Machine<S>\` whose \`send\` accepts only \`DoorEvent<S>\` and returns a \`Machine\` in the next state means an illegal sequence — unlocking an open door — does not compile:
+
+\`\`\`ts
+// door.send('open')    : Machine<'opened'>
+// door.send('unlock')  ✗ '"unlock"' is not assignable to '"open" | "lock"'
+\`\`\`
+
+Each \`send\` returns a **new** machine, because the state lives in the type: the old value keeps its old type.
+
+Two practical details. \`satisfies Record<StateName, Record<string, StateName>>\` makes the compiler check that every target in the table is a real state. And the compiler cannot see that \`(typeof TABLE)[S][E]\` is always a state, so wrap it: \`Extract<(typeof TABLE)[S][E], State>\` is the same type with that fact attached. Keep a runtime check as well: code that is not type-checked (or that came through JSON) can still send anything.
+--- task
+The starter's machine uses plain strings. Make illegal transitions fail to compile:
+
+1. \`type State\` — the keys of \`TRANSITIONS\`; \`type EventOf<S extends State>\` — the events \`S\` accepts; \`type Next<S, E>\` — where \`E\` leads from \`S\`.
+2. \`transition<S extends State, E extends EventOf<S>>(state: S, event: E): Next<S, E>\` — throws an \`Error\` for an event the state does not accept (for untyped callers).
+3. \`class Machine<S extends State>\` with \`state: S\`, \`history\` (every state visited, starting with \`'idle'\`), \`static start(): Machine<'idle'>\`, and \`send(event)\` accepting only \`EventOf<S>\` and returning a **new** \`Machine<Next<S, E>>\`.
+
+Keep \`TRANSITIONS\` checked with \`satisfies\`.
+--- starter
+type StateName = 'idle' | 'loading' | 'success' | 'failure'
+
+const TRANSITIONS = {
+  idle: { fetch: 'loading' },
+  loading: { resolve: 'success', reject: 'failure' },
+  success: { reset: 'idle' },
+  failure: { retry: 'loading', reset: 'idle' },
+} as const satisfies Record<StateName, Record<string, StateName>>
+
+function transition(state: string, event: string): string {
+  const next = (TRANSITIONS as Record<string, Record<string, string>>)[state]?.[event]
+  if (next === undefined) throw new Error(\`\${state} does not accept \${event}\`)
+  return next
+}
+
+class Machine {
+  private constructor(readonly state: string, readonly history: readonly string[]) {}
+
+  static start(): Machine {
+    return new Machine('idle', ['idle'])
+  }
+
+  send(event: string): Machine {
+    const next = transition(this.state, event)
+    return new Machine(next, [...this.history, next])
+  }
+}
+--- solution
+type StateName = 'idle' | 'loading' | 'success' | 'failure'
+
+const TRANSITIONS = {
+  idle: { fetch: 'loading' },
+  loading: { resolve: 'success', reject: 'failure' },
+  success: { reset: 'idle' },
+  failure: { retry: 'loading', reset: 'idle' },
+} as const satisfies Record<StateName, Record<string, StateName>>
+
+type Table = typeof TRANSITIONS
+type State = keyof Table
+type EventOf<S extends State> = keyof Table[S] & string
+type Next<S extends State, E extends EventOf<S>> = Extract<Table[S][E], State>
+
+function transition<S extends State, E extends EventOf<S>>(state: S, event: E): Next<S, E> {
+  const next = (TRANSITIONS as Record<string, Record<string, State>>)[state]?.[event]
+  if (next === undefined) throw new Error(\`\${state} does not accept \${event}\`)
+  return next as Next<S, E>
+}
+
+class Machine<S extends State> {
+  private constructor(readonly state: S, readonly history: readonly State[]) {}
+
+  static start(): Machine<'idle'> {
+    return new Machine('idle', ['idle'])
+  }
+
+  send<E extends EventOf<S>>(event: E): Machine<Next<S, E>> {
+    const next = transition(this.state, event)
+    return new Machine(next, [...this.history, next])
+  }
+}
+--- hint
+\`type Table = typeof TRANSITIONS\`, \`type State = keyof Table\`, \`type EventOf<S extends State> = keyof Table[S] & string\`.
+--- hint
+\`Next<S, E>\` is \`Table[S][E]\`, wrapped in \`Extract<…, State>\` so it can be used where a \`State\` is required.
+--- hint
+\`send<E extends EventOf<S>>(event: E): Machine<Next<S, E>>\` — the event type depends on the machine's current state \`S\`.
+--- check case | transition
+transition('idle', 'fetch')
+=> 'loading'
+--- check case | A legal run ends in success
+Machine.start().send('fetch').send('reject').send('retry').send('resolve').state
+=> 'success'
+--- check case | history records every state
+Machine.start().send('fetch').send('resolve').send('reset').history
+=> ['idle', 'loading', 'success', 'idle']
+--- check test | Untyped code still cannot make an illegal transition
+throws(() => (Machine.start() as any).send('resolve')) && throws(() => (transition as any)('success', 'retry'))
+--- check type-error | idle does not accept resolve
+Machine.start().send('resolve')
+--- check type-error | loading does not accept fetch
+Machine.start().send('fetch').send('fetch')
+--- check type-error | success cannot retry
+transition('success', 'retry')
+--- check type-error | Unknown states are rejected
+transition('paused', 'reset')
+--- check type-error | After fetch, the machine's state is exactly 'loading'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const m = Machine.start().send('fetch');
+const no: Equal<typeof m.state, 'loading'> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check source | TRANSITIONS is still checked with satisfies
+\\}\\s*as\\s+const\\s+satisfies\\b
+
+=== ts4-08 | Phantom types
+--- teach
+A **phantom type parameter** appears in a type but in no runtime value. It carries information the program needs the compiler to track — a unit, a validation state, a permission — at zero cost.
+
+\`\`\`ts
+declare const unitTag: unique symbol
+type Qty<U extends string> = number & { readonly [unitTag]: U }
+
+function qty<U extends string>(n: number, unit: U): Qty<U> {
+  return n as Qty<U>          // the unit argument exists only to fix U
+}
+
+const d = qty(5, 'km')        // Qty<'km'>, and at runtime just the number 5
+d + 1
+\`\`\`
+
+\`declare const … unique symbol\` gives a property key that no real object can have; it emits no code. A \`Qty<'km'>\` is still a number for every read, but only \`qty\` makes one.
+
+Generic operations keep the phantom flowing through: \`scale<U>(q: Qty<U>, k: number): Qty<U>\`.
+
+**The inference trap.** You would expect this to reject mixed units:
+
+\`\`\`ts
+// function add<U extends string>(a: Qty<U>, b: Qty<U>): Qty<U>
+// add(qty(1, 'm'), qty(1, 'ft'))
+\`\`\`
+
+It compiles. \`U\` is inferred from *both* arguments, and the compiler happily picks \`'m' | 'ft'\`: both arguments fit \`Qty<'m' | 'ft'>\`. The fix is to let only the first argument decide \`U\`: \`b: Qty<NoInfer<U>>\`. Then \`U\` is \`'m'\`, and a \`Qty<'ft'>\` does not fit.
+
+When a phantom-typed API "accepts things it should not", suspect inference picking a union.
+--- task
+**Bug report:** \`add(meters(100), feet(10))\` compiled and returned \`110\`.
+
+1. Fix \`add\` so both arguments must have the same unit, decided by the first.
+2. \`toMeters(length: Qty<'ft'>): Qty<'m'>\` — multiply by \`0.3048\`.
+3. \`speed(distance: Qty<'m'>, time: Qty<'s'>): number\` — metres per second.
+--- starter
+declare const unitTag: unique symbol
+type Unit = 'm' | 'ft' | 's'
+type Qty<U extends Unit> = number & { readonly [unitTag]: U }
+
+function qty<U extends Unit>(n: number, unit: U): Qty<U> {
+  return n as Qty<U>
+}
+
+const meters = (n: number) => qty(n, 'm')
+const feet = (n: number) => qty(n, 'ft')
+const seconds = (n: number) => qty(n, 's')
+
+function add<U extends Unit>(a: Qty<U>, b: Qty<U>): Qty<U> {
+  return (a + b) as Qty<U>
+}
+
+function scale<U extends Unit>(q: Qty<U>, k: number): Qty<U> {
+  return (q * k) as Qty<U>
+}
+--- solution
+declare const unitTag: unique symbol
+type Unit = 'm' | 'ft' | 's'
+type Qty<U extends Unit> = number & { readonly [unitTag]: U }
+
+function qty<U extends Unit>(n: number, unit: U): Qty<U> {
+  return n as Qty<U>
+}
+
+const meters = (n: number) => qty(n, 'm')
+const feet = (n: number) => qty(n, 'ft')
+const seconds = (n: number) => qty(n, 's')
+
+function add<U extends Unit>(a: Qty<U>, b: Qty<NoInfer<U>>): Qty<U> {
+  return (a + b) as Qty<U>
+}
+
+function scale<U extends Unit>(q: Qty<U>, k: number): Qty<U> {
+  return (q * k) as Qty<U>
+}
+
+function toMeters(length: Qty<'ft'>): Qty<'m'> {
+  return meters(length * 0.3048)
+}
+
+function speed(distance: Qty<'m'>, time: Qty<'s'>): number {
+  return distance / time
+}
+--- hint
+Hover (or reason out) what \`U\` is inferred as in \`add(meters(100), feet(10))\`. Which argument should decide it?
+--- hint
+\`b: Qty<NoInfer<U>>\` stops the second argument from widening \`U\`.
+--- hint
+\`toMeters\` can reuse the \`meters\` helper: \`meters(length * 0.3048)\`.
+--- check case | Adding the same unit works
+add(meters(1), meters(2))
+=> 3
+--- check test | toMeters
+Math.abs(toMeters(feet(10)) - 3.048) < 1e-9
+--- check case | speed
+speed(meters(100), seconds(20))
+=> 5
+--- check test | Quantities are plain numbers at runtime
+typeof meters(3) === 'number' && scale(feet(2), 3) === 6
+--- check type-error | Metres and feet cannot be added
+add(meters(1), feet(1))
+--- check type-error | Feet and metres cannot be added either
+add(feet(1), meters(1))
+--- check type-error | A bare number is not a quantity
+const m: Qty<'m'> = 5
+--- check type-error | toMeters takes feet
+toMeters(meters(3))
+--- check type-error | speed takes a distance, then a time
+speed(seconds(1), meters(1))
+--- check type-error | add(meters, meters) is exactly Qty<'m'>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const sum = add(meters(1), meters(2));
+const no: Equal<typeof sum, Qty<'m'>> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts4-09 | Typed error handling: Result pipelines
+--- teach
+You built a \`Result\` type in the advanced course. At scale, three more tools make it pleasant, and the types do something exceptions never can: they list every way an operation can fail.
+
+**Errors as tagged objects.** A string says little; an object with a \`kind\` carries data and still narrows:
+
+\`\`\`ts
+type SignupError =
+  | { kind: 'missing'; field: string }
+  | { kind: 'out-of-range'; field: string; min: number; max: number; got: number }
+\`\`\`
+
+A \`const\` type parameter on \`err\` keeps \`kind\` literal without \`as const\` at every call.
+
+**Combining results.** \`all([r1, r2, r3])\` succeeds with a tuple of values if every result is ok, and otherwise returns the first error. Its type is computed from the tuple you pass:
+
+\`\`\`ts
+// all([ok(1), ok('x')])            : Result<[number, string], never>
+// all([parseName(n), parseAge(a)]) : Result<[string, number], NameError | AgeError>
+\`\`\`
+
+Build it from two helper types — \`ValueOf<R>\` and \`ErrorOf<R>\`, each an \`infer\` on the \`Ok\` or \`Err\` member — and a mapped type over the tuple, which keeps it a tuple: \`{ -readonly [K in keyof Rs]: ValueOf<Rs[K]> }\`.
+
+**Bridging from exceptions.** Code you do not own throws. \`tryCatch(fn, onError)\` runs it and turns a throw into an \`Err\`, mapping the unknown thrown value to your own error type.
+
+**Consuming.** \`match(result, { ok, err })\` forces the caller to handle both cases, and a \`switch\` on \`error.kind\` with \`assertNever\` handles every error kind.
+
+In the given code, \`const ok = <T,>(value: T) => …\` is a **generic arrow function**; the comma after \`T\` is a harmless habit from files where \`<T>\` could be misread as a JSX tag.
+--- task
+\`Ok\`, \`Err\`, \`Result\`, \`ok\`, \`err\` (with a \`const\` type parameter) and \`andThen\` are given. Write:
+
+1. \`ValueOf<R>\` and \`ErrorOf<R>\`, then \`all<const Rs extends readonly Result<unknown, unknown>[]>(results: Rs)\` returning \`Result<{ -readonly [K in keyof Rs]: ValueOf<Rs[K]> }, ErrorOf<Rs[number]>>\` — the first error in order, or all the values.
+2. \`tryCatch<T, E>(f: () => T, onError: (thrown: unknown) => E): Result<T, E>\`.
+3. \`match<T, E, R>(r: Result<T, E>, handlers: { ok: (value: T) => R; err: (error: E) => R }): R\`.
+4. \`parseSignup(input: { name?: string; age?: string }): Result<{ name: string; age: number }, SignupError>\` using \`all\`:
+   - name missing or blank → \`{ kind: 'missing', field: 'name' }\` (checked first);
+   - age missing → \`{ kind: 'missing', field: 'age' }\`; age not a whole number → \`{ kind: 'not-a-number', field: 'age', input }\`; outside 13–120 → \`{ kind: 'out-of-range', field: 'age', min: 13, max: 120, got }\`.
+5. \`describeError(e: SignupError): string\` — \`'name is required'\`, \`'age must be a number, got "<input>"'\`, \`'age must be between 13 and 120, got <got>'\` (and \`'age is required'\`), with an exhaustive \`switch\`.
+--- starter
+type Ok<T> = { readonly ok: true; readonly value: T }
+type Err<E> = { readonly ok: false; readonly error: E }
+type Result<T, E> = Ok<T> | Err<E>
+
+const ok = <T,>(value: T): Ok<T> => ({ ok: true, value })
+const err = <const E,>(error: E): Err<E> => ({ ok: false, error })
+
+function andThen<T, E, U, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F> {
+  return r.ok ? f(r.value) : r
+}
+
+type SignupError =
+  | { kind: 'missing'; field: 'name' | 'age' }
+  | { kind: 'not-a-number'; field: 'age'; input: string }
+  | { kind: 'out-of-range'; field: 'age'; min: number; max: number; got: number }
+--- solution
+type Ok<T> = { readonly ok: true; readonly value: T }
+type Err<E> = { readonly ok: false; readonly error: E }
+type Result<T, E> = Ok<T> | Err<E>
+
+const ok = <T,>(value: T): Ok<T> => ({ ok: true, value })
+const err = <const E,>(error: E): Err<E> => ({ ok: false, error })
+
+function andThen<T, E, U, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F> {
+  return r.ok ? f(r.value) : r
+}
+
+type SignupError =
+  | { kind: 'missing'; field: 'name' | 'age' }
+  | { kind: 'not-a-number'; field: 'age'; input: string }
+  | { kind: 'out-of-range'; field: 'age'; min: number; max: number; got: number }
+
+type ValueOf<R> = R extends Ok<infer T> ? T : never
+type ErrorOf<R> = R extends Err<infer E> ? E : never
+
+function all<const Rs extends readonly Result<unknown, unknown>[]>(
+  results: Rs,
+): Result<{ -readonly [K in keyof Rs]: ValueOf<Rs[K]> }, ErrorOf<Rs[number]>> {
+  const values: unknown[] = []
+  for (const r of results) {
+    if (!r.ok) return r as Err<ErrorOf<Rs[number]>>
+    values.push(r.value)
+  }
+  return ok(values as { -readonly [K in keyof Rs]: ValueOf<Rs[K]> })
+}
+
+function tryCatch<T, E>(f: () => T, onError: (thrown: unknown) => E): Result<T, E> {
+  try {
+    return ok(f())
+  } catch (thrown) {
+    return { ok: false, error: onError(thrown) }
+  }
+}
+
+function match<T, E, R>(r: Result<T, E>, handlers: { ok: (value: T) => R; err: (error: E) => R }): R {
+  return r.ok ? handlers.ok(r.value) : handlers.err(r.error)
+}
+
+function parseName(name: string | undefined): Result<string, SignupError> {
+  return name === undefined || name.trim() === '' ? err({ kind: 'missing', field: 'name' }) : ok(name.trim())
+}
+
+function parseAge(age: string | undefined): Result<number, SignupError> {
+  if (age === undefined) return err({ kind: 'missing', field: 'age' })
+  const n = Number(age)
+  if (age.trim() === '' || !Number.isInteger(n)) return err({ kind: 'not-a-number', field: 'age', input: age })
+  if (n < 13 || n > 120) return err({ kind: 'out-of-range', field: 'age', min: 13, max: 120, got: n })
+  return ok(n)
+}
+
+function parseSignup(input: { name?: string; age?: string }): Result<{ name: string; age: number }, SignupError> {
+  const both = all([parseName(input.name), parseAge(input.age)])
+  return both.ok ? ok({ name: both.value[0], age: both.value[1] }) : both
+}
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function describeError(e: SignupError): string {
+  switch (e.kind) {
+    case 'missing':
+      return \`\${e.field} is required\`
+    case 'not-a-number':
+      return \`age must be a number, got "\${e.input}"\`
+    case 'out-of-range':
+      return \`age must be between \${e.min} and \${e.max}, got \${e.got}\`
+    default:
+      return assertNever(e)
+  }
+}
+--- hint
+\`type ValueOf<R> = R extends Ok<infer T> ? T : never\`; \`ErrorOf\` is the same on \`Err\`. Both distribute over unions.
+--- hint
+Inside \`all\`, loop: return the first \`Err\` you meet (a cast to \`Err<ErrorOf<…>>\` is fine there), otherwise collect values and return \`ok(values as …)\`.
+--- hint
+Give \`parseName\` and \`parseAge\` the return type \`Result<…, SignupError>\` so \`err({ kind: 'missing', … })\` is checked against the error union.
+--- check case | all collects values
+all([ok(1), ok('x'), ok(true)])
+=> { ok: true, value: [1, 'x', true] }
+--- check case | all returns the first error
+all([ok(1), err({ kind: 'a' }), err({ kind: 'b' })])
+=> { ok: false, error: { kind: 'a' } }
+--- check case | all of nothing is ok
+all([])
+=> { ok: true, value: [] }
+--- check case | tryCatch
+[tryCatch(() => JSON.parse('{"a": 1}'), () => 'bad-json'), tryCatch(() => JSON.parse('{'), (e) => (e instanceof SyntaxError ? 'bad-json' : 'other'))]
+=> [{ ok: true, value: { a: 1 } }, { ok: false, error: 'bad-json' }]
+--- check case | match
+[match(ok(2), { ok: (n) => n * 2, err: () => 0 }), match(err('x'), { ok: () => 'yes', err: (e) => 'no: ' + e })]
+=> [4, 'no: x']
+--- check case | A valid signup
+parseSignup({ name: ' Ada ', age: '36' })
+=> { ok: true, value: { name: 'Ada', age: 36 } }
+--- check case | The name is checked first
+parseSignup({ name: '  ', age: 'old' })
+=> { ok: false, error: { kind: 'missing', field: 'name' } }
+--- check case | Age errors carry their data
+[parseSignup({ name: 'Ada' }), parseSignup({ name: 'Ada', age: 'old' }), parseSignup({ name: 'Ada', age: '7' })]
+=> [{ ok: false, error: { kind: 'missing', field: 'age' } }, { ok: false, error: { kind: 'not-a-number', field: 'age', input: 'old' } }, { ok: false, error: { kind: 'out-of-range', field: 'age', min: 13, max: 120, got: 7 } }]
+--- check case | describeError
+[describeError({ kind: 'missing', field: 'name' }), describeError({ kind: 'not-a-number', field: 'age', input: 'old' }), describeError({ kind: 'out-of-range', field: 'age', min: 13, max: 120, got: 7 })]
+=> ['name is required', 'age must be a number, got "old"', 'age must be between 13 and 120, got 7']
+--- check type-error | match needs both handlers
+match(ok(2), { ok: (n) => n })
+--- check type-error | describeError only takes known errors
+describeError({ kind: 'other', field: 'age' })
+--- check type-error | all(…) values keep their positions' types
+const r = all([ok(1), ok('x')]); if (r.ok) { const s: string = r.value[0] }
+--- check type-error | all([ok(1), ok('x')]) is exactly Result<[number, string], never>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = all([ok(1), ok('x')]);
+const no: Equal<typeof r, Result<[number, string], never>> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | all collects every possible error type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = all([ok(1), err('a'), err('b')]);
+const no: Equal<typeof r, Result<[number, never, never], 'a' | 'b'>> = false
+
+=== ts4-10 | A schema library: types from values
+--- teach
+Validation libraries like Zod solve the problem from the advanced course — types that lie about runtime data — with one idea: **write the validator once, and infer the type from it.** No interface that can drift away from its checks.
+
+The core is an interface whose type parameter is the type of what it produces:
+
+\`\`\`ts
+interface Schema<T> {
+  parse(input: unknown, path?: string): T
+}
+\`\`\`
+
+\`parse\` returns a \`T\` or throws. Small functions build schemas: \`string()\` is a \`Schema<string>\`, \`array(string())\` a \`Schema<string[]>\`. Getting the type back out is an \`infer\`:
+
+\`\`\`ts
+interface Schema<T> { parse(input: unknown, path?: string): T }
+type Infer<S> = S extends Schema<infer T> ? T : never
+
+type Name = Infer<Schema<string>>   // string
+\`\`\`
+
+The interesting one is \`object\`. It takes a **shape** — an object whose values are schemas — and produces a schema for an object with the same keys, where each value is the inferred type of that key's schema:
+
+\`\`\`ts
+// object<Shape extends Record<string, Schema<unknown>>>(shape: Shape)
+//   : Schema<{ [K in keyof Shape]: Infer<Shape[K]> }>
+\`\`\`
+
+At runtime it checks the input is a plain object, then parses each key with its schema, passing a longer path (\`$.user.name\`) so errors say where they happened. It builds a **new** object from the parsed values, so unknown keys are dropped.
+
+Write the error as a class that records the path and what was expected; the message then reads \`expected number at $.age\`.
+--- task
+\`Schema<T>\`, \`SchemaError\` and \`string()\` are given. Add:
+
+1. \`number()\` (finite numbers only), \`boolean()\`, and \`literal<const V extends string | number | boolean>(value: V): Schema<V>\` — its expected text is \`JSON.stringify(value)\`.
+2. \`array<T>(item: Schema<T>): Schema<T[]>\` — each element parsed at path \`<path>[i]\`.
+3. \`object<Shape extends Record<string, Schema<unknown>>>(shape)\` — a plain object, each key parsed at \`<path>.<key>\`, unknown keys dropped. Its type: \`Schema<{ [K in keyof Shape]: Infer<Shape[K]> }>\`.
+4. \`type Infer<S>\`.
+
+A failure throws \`new SchemaError(path, expected)\` with expected \`'number'\`, \`'boolean'\`, \`'array'\`, \`'object'\` or the literal's JSON. The root path is \`'$'\`.
+--- starter
+interface Schema<T> {
+  parse(input: unknown, path?: string): T
+}
+
+class SchemaError extends Error {
+  constructor(
+    readonly path: string,
+    readonly expected: string,
+  ) {
+    super(\`expected \${expected} at \${path}\`)
+    this.name = 'SchemaError'
+  }
+}
+
+function string(): Schema<string> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'string') throw new SchemaError(path, 'string')
+      return input
+    },
+  }
+}
+--- solution
+interface Schema<T> {
+  parse(input: unknown, path?: string): T
+}
+
+class SchemaError extends Error {
+  constructor(
+    readonly path: string,
+    readonly expected: string,
+  ) {
+    super(\`expected \${expected} at \${path}\`)
+    this.name = 'SchemaError'
+  }
+}
+
+type Infer<S> = S extends Schema<infer T> ? T : never
+
+function string(): Schema<string> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'string') throw new SchemaError(path, 'string')
+      return input
+    },
+  }
+}
+
+function number(): Schema<number> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'number' || !Number.isFinite(input)) throw new SchemaError(path, 'number')
+      return input
+    },
+  }
+}
+
+function boolean(): Schema<boolean> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'boolean') throw new SchemaError(path, 'boolean')
+      return input
+    },
+  }
+}
+
+function literal<const V extends string | number | boolean>(value: V): Schema<V> {
+  return {
+    parse(input, path = '$') {
+      if (input !== value) throw new SchemaError(path, JSON.stringify(value))
+      return value
+    },
+  }
+}
+
+function array<T>(item: Schema<T>): Schema<T[]> {
+  return {
+    parse(input, path = '$') {
+      if (!Array.isArray(input)) throw new SchemaError(path, 'array')
+      return input.map((x, i) => item.parse(x, \`\${path}[\${i}]\`))
+    },
+  }
+}
+
+function object<Shape extends Record<string, Schema<unknown>>>(shape: Shape): Schema<{ [K in keyof Shape]: Infer<Shape[K]> }> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new SchemaError(path, 'object')
+      const source = input as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const key of Object.keys(shape)) out[key] = shape[key]!.parse(source[key], \`\${path}.\${key}\`)
+      return out as { [K in keyof Shape]: Infer<Shape[K]> }
+    },
+  }
+}
+--- hint
+Each primitive schema is the same pattern as \`string()\`: check with \`typeof\`, throw a \`SchemaError(path, …)\`, return the input.
+--- hint
+\`array\` maps over the input, calling \`item.parse(x, \\\`\${path}[\${i}]\\\`)\`.
+--- hint
+\`object\` loops over \`Object.keys(shape)\`, parsing \`source[key]\` with \`shape[key]\` at \`\${path}.\${key}\`, and casts the finished object once.
+--- check case | object parses and drops unknown keys
+object({ name: string(), age: number() }).parse({ name: 'Ada', age: 36, extra: true })
+=> { name: 'Ada', age: 36 }
+--- check case | Nested arrays and literals
+object({ role: literal('admin'), tags: array(string()), active: boolean() }).parse({ role: 'admin', tags: ['a', 'b'], active: false })
+=> { role: 'admin', tags: ['a', 'b'], active: false }
+--- check case | Errors name the path
+(() => { try { object({ name: string(), age: number() }).parse({ name: 'Ada', age: '36' }); return 'no error' } catch (e) { return e instanceof SchemaError ? e.message : 'not a SchemaError' } })()
+=> 'expected number at $.age'
+--- check case | Paths go into arrays and nested objects
+(() => { try { object({ user: object({ tags: array(string()) }) }).parse({ user: { tags: ['a', 7] } }); return 'no error' } catch (e) { return e instanceof SchemaError ? e.message : 'not a SchemaError' } })()
+=> 'expected string at $.user.tags[1]'
+--- check case | Literals and non-objects
+[(() => { try { literal('admin').parse('root'); return '' } catch (e) { return (e as Error).message } })(), (() => { try { object({}).parse([]); return '' } catch (e) { return (e as Error).message } })(), (() => { try { number().parse(NaN); return '' } catch (e) { return (e as Error).message } })()]
+=> ['expected "admin" at $', 'expected object at $', 'expected number at $']
+--- check type-error | A string schema parses to a string
+const n: number = string().parse('x')
+--- check type-error | The parsed object has only the shape's keys
+const u = object({ name: string() }).parse({}); u.age
+--- check type-error | A shape is made of schemas
+object({ name: 'string' })
+--- check type-error | literal keeps its literal type
+const r: 'admin' = literal('root').parse('root')
+--- check type-error | The inferred type of an object schema is exactly right
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const User = object({ name: string(), age: number(), tags: array(string()), role: literal('admin'), active: boolean() });
+const no: Equal<Infer<typeof User>, { name: string; age: number; tags: string[]; role: 'admin'; active: boolean }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts4-11 | A schema library: optional fields, unions and safeParse
+--- teach
+Real data has optional fields and alternatives. Both are harder at the type level than at runtime.
+
+**Optional fields.** \`optional(string())\` should parse \`undefined\` as well, and — the hard part — an object shape containing it should produce an **optional key**, \`nickname?: string\`, not a required key of type \`string | undefined\`. So \`object\` must split the shape's keys in two.
+
+Mark optional schemas in their type so a conditional can find them:
+
+\`\`\`ts
+interface Schema<T> { parse(input: unknown, path?: string): T }
+interface OptionalSchema<T> extends Schema<T | undefined> {
+  readonly optional: true
+}
+
+type OptionalKeys<Shape> = {
+  [K in keyof Shape]: Shape[K] extends OptionalSchema<unknown> ? K : never
+}[keyof Shape]
+\`\`\`
+
+That last line is a common trick: map each key to itself or \`never\`, then index the mapped type with \`[keyof Shape]\` to collect the survivors as a union.
+
+Build the object type as two mapped types — required keys without \`?\`, optional keys with \`?\` — joined with \`&\`, and flatten the intersection with \`type Simplify<T> = { [K in keyof T]: T[K] }\` so it reads (and compares) as one object type.
+
+**Unions.** \`union(string(), number())\` tries each option in turn and returns the first success. Its type is the union of the options' types: with the options as a tuple \`S\`, that is \`Infer<S[number]>\`.
+
+**safeParse.** Throwing is right for "this should never happen"; for user input, return a result: \`{ ok: true; value } | { ok: false; path; expected }\`.
+--- task
+Starting from the previous lesson's library:
+
+1. \`optional<T>(schema: Schema<T>): OptionalSchema<T>\` — \`undefined\` parses to \`undefined\`, anything else goes to the inner schema.
+2. Change \`object\` so keys whose schema is optional become optional keys in the inferred type, and a missing optional key is **left out** of the parsed object.
+3. \`union<const S extends readonly Schema<unknown>[]>(...options: S): Schema<Infer<S[number]>>\` — the first option that parses wins; if none does, throw \`SchemaError(path, 'one of the options')\`.
+4. \`safeParse<T>(schema: Schema<T>, input: unknown)\` returning \`{ ok: true; value: T } | { ok: false; path: string; expected: string }\`. Errors other than \`SchemaError\` are re-thrown.
+--- starter
+interface Schema<T> {
+  parse(input: unknown, path?: string): T
+}
+
+class SchemaError extends Error {
+  constructor(
+    readonly path: string,
+    readonly expected: string,
+  ) {
+    super(\`expected \${expected} at \${path}\`)
+    this.name = 'SchemaError'
+  }
+}
+
+type Infer<S> = S extends Schema<infer T> ? T : never
+
+function string(): Schema<string> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'string') throw new SchemaError(path, 'string')
+      return input
+    },
+  }
+}
+
+function number(): Schema<number> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'number' || !Number.isFinite(input)) throw new SchemaError(path, 'number')
+      return input
+    },
+  }
+}
+
+function boolean(): Schema<boolean> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'boolean') throw new SchemaError(path, 'boolean')
+      return input
+    },
+  }
+}
+
+function literal<const V extends string | number | boolean>(value: V): Schema<V> {
+  return {
+    parse(input, path = '$') {
+      if (input !== value) throw new SchemaError(path, JSON.stringify(value))
+      return value
+    },
+  }
+}
+
+function array<T>(item: Schema<T>): Schema<T[]> {
+  return {
+    parse(input, path = '$') {
+      if (!Array.isArray(input)) throw new SchemaError(path, 'array')
+      return input.map((x, i) => item.parse(x, \`\${path}[\${i}]\`))
+    },
+  }
+}
+
+function object<Shape extends Record<string, Schema<unknown>>>(shape: Shape): Schema<{ [K in keyof Shape]: Infer<Shape[K]> }> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new SchemaError(path, 'object')
+      const source = input as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const key of Object.keys(shape)) out[key] = shape[key]!.parse(source[key], \`\${path}.\${key}\`)
+      return out as { [K in keyof Shape]: Infer<Shape[K]> }
+    },
+  }
+}
+--- solution
+interface Schema<T> {
+  parse(input: unknown, path?: string): T
+}
+
+interface OptionalSchema<T> extends Schema<T | undefined> {
+  readonly optional: true
+}
+
+class SchemaError extends Error {
+  constructor(
+    readonly path: string,
+    readonly expected: string,
+  ) {
+    super(\`expected \${expected} at \${path}\`)
+    this.name = 'SchemaError'
+  }
+}
+
+type Infer<S> = S extends Schema<infer T> ? T : never
+type Simplify<T> = { [K in keyof T]: T[K] }
+type OptionalKeys<Shape> = { [K in keyof Shape]: Shape[K] extends OptionalSchema<unknown> ? K : never }[keyof Shape]
+type ObjectOf<Shape> = Simplify<
+  { [K in Exclude<keyof Shape, OptionalKeys<Shape>>]: Infer<Shape[K]> } & { [K in OptionalKeys<Shape>]?: Infer<Shape[K]> }
+>
+
+function string(): Schema<string> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'string') throw new SchemaError(path, 'string')
+      return input
+    },
+  }
+}
+
+function number(): Schema<number> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'number' || !Number.isFinite(input)) throw new SchemaError(path, 'number')
+      return input
+    },
+  }
+}
+
+function boolean(): Schema<boolean> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'boolean') throw new SchemaError(path, 'boolean')
+      return input
+    },
+  }
+}
+
+function literal<const V extends string | number | boolean>(value: V): Schema<V> {
+  return {
+    parse(input, path = '$') {
+      if (input !== value) throw new SchemaError(path, JSON.stringify(value))
+      return value
+    },
+  }
+}
+
+function array<T>(item: Schema<T>): Schema<T[]> {
+  return {
+    parse(input, path = '$') {
+      if (!Array.isArray(input)) throw new SchemaError(path, 'array')
+      return input.map((x, i) => item.parse(x, \`\${path}[\${i}]\`))
+    },
+  }
+}
+
+function optional<T>(schema: Schema<T>): OptionalSchema<T> {
+  return {
+    optional: true,
+    parse(input, path = '$') {
+      return input === undefined ? undefined : schema.parse(input, path)
+    },
+  }
+}
+
+function object<Shape extends Record<string, Schema<unknown>>>(shape: Shape): Schema<ObjectOf<Shape>> {
+  return {
+    parse(input, path = '$') {
+      if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new SchemaError(path, 'object')
+      const source = input as Record<string, unknown>
+      const out: Record<string, unknown> = {}
+      for (const key of Object.keys(shape)) {
+        const value = shape[key]!.parse(source[key], \`\${path}.\${key}\`)
+        if (value !== undefined || !('optional' in shape[key]!)) out[key] = value
+      }
+      return out as ObjectOf<Shape>
+    },
+  }
+}
+
+function union<const S extends readonly Schema<unknown>[]>(...options: S): Schema<Infer<S[number]>> {
+  return {
+    parse(input, path = '$') {
+      for (const option of options) {
+        try {
+          return option.parse(input, path) as Infer<S[number]>
+        } catch (e) {
+          if (!(e instanceof SchemaError)) throw e
+        }
+      }
+      throw new SchemaError(path, 'one of the options')
+    },
+  }
+}
+
+function safeParse<T>(schema: Schema<T>, input: unknown): { ok: true; value: T } | { ok: false; path: string; expected: string } {
+  try {
+    return { ok: true, value: schema.parse(input) }
+  } catch (e) {
+    if (e instanceof SchemaError) return { ok: false, path: e.path, expected: e.expected }
+    throw e
+  }
+}
+--- hint
+\`optional\` returns an object with \`optional: true\` and a \`parse\` that short-circuits on \`undefined\`.
+--- hint
+\`OptionalKeys<Shape>\` maps each key to itself or \`never\` and indexes with \`[keyof Shape]\`; the object type is required keys \`&\` optional keys, wrapped in \`Simplify\`.
+--- hint
+In \`object\`'s \`parse\`, skip writing a key when its value came back \`undefined\` from an optional schema (\`'optional' in shape[key]\`).
+--- check case | A missing optional key is left out
+object({ name: string(), nickname: optional(string()) }).parse({ name: 'Ada' })
+=> { name: 'Ada' }
+--- check case | A present optional key is parsed
+object({ name: string(), nickname: optional(string()) }).parse({ name: 'Ada', nickname: 'ada' })
+=> { name: 'Ada', nickname: 'ada' }
+--- check case | An optional key with the wrong type still fails
+(() => { try { object({ nickname: optional(string()) }).parse({ nickname: 3 }); return 'no error' } catch (e) { return (e as Error).message } })()
+=> 'expected string at $.nickname'
+--- check case | union takes the first option that parses
+[union(number(), string()).parse(5), union(number(), string()).parse('five'), union(literal('a'), literal('b')).parse('b')]
+=> [5, 'five', 'b']
+--- check case | union with no match
+(() => { try { union(number(), string()).parse(true); return 'no error' } catch (e) { return (e as Error).message } })()
+=> 'expected one of the options at $'
+--- check case | safeParse
+[safeParse(object({ age: number() }), { age: 3 }), safeParse(object({ age: number() }), { age: 'x' })]
+=> [{ ok: true, value: { age: 3 } }, { ok: false, path: '$.age', expected: 'number' }]
+--- check test | safeParse re-throws errors that are not schema errors
+throws(() => safeParse({ parse: () => { throw new RangeError('boom') } }, 1))
+--- check type-error | safeParse's value needs narrowing
+safeParse(string(), 'x').value
+--- check type-error | A union schema only produces its options
+const v: string = union(number(), string()).parse(1)
+--- check type-error | Optional keys are optional, required keys are not
+const S = object({ name: string(), nickname: optional(string()) }); const v: Infer<typeof S> = { nickname: 'x' }
+--- check type-error | The inferred type has an optional key, exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const S = object({ name: string(), nickname: optional(string()), id: union(string(), number()) });
+const no: Equal<Infer<typeof S>, { name: string; nickname?: string; id: string | number }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts4-12 | A typed dependency injection container
+--- teach
+A dependency injection container maps names to **factories** and creates each service on first use, passing it the services it depends on. Untyped, it is a bag of strings: \`container.resolve('dataBase')\` fails at runtime.
+
+The typed version carries a type parameter describing everything registered so far, and **grows it** with each registration:
+
+\`\`\`ts
+// class Container<S extends object = {}> {
+//   register<K extends string, T>(key: K, factory: (deps: S) => T): Container<S & { [P in K]: T }>
+//   resolve<K extends keyof S & string>(key: K): S[K]
+// }
+\`\`\`
+
+Each \`register\` returns the container with a bigger type. Chain the calls, and the final type knows every service and its type. The factory receives \`deps\` typed as what was registered **before** it, so it cannot depend on something that does not exist yet — which also means dependency cycles cannot be written.
+
+Refusing a duplicate key at compile time needs one more trick: make the key parameter's type \`never\` when the key is already known.
+
+\`\`\`ts
+// key: K extends keyof S ? never : K
+\`\`\`
+
+TypeScript still infers \`K\` from the argument, then checks it against that conditional, so a second \`register('db', …)\` has nothing it can be assigned to.
+
+At runtime, give each factory a \`deps\` object whose properties resolve lazily. A \`Proxy\` does it in a few lines: a \`Proxy\` wraps an object and runs your \`get\` function whenever any property is read (the JavaScript course covers proxies), so its \`get\` can call \`resolve(name)\`. Services are singletons: the first \`resolve\` runs the factory and caches the result.
+
+A registration method that returns \`this\` cast to a new type is a deliberate lie about the *same* object; it is safe here because nothing reads the old, smaller type afterwards.
+--- task
+The starter's container works at runtime but is untyped. Type it:
+
+- \`class Container<S extends object = {}>\`.
+- \`register(key, factory)\` — the factory gets \`deps\` typed as the services registered so far; registering a key that already exists does not compile (and throws at runtime). Returns the container typed with the new service added.
+- \`resolve(key)\` — only registered keys; returns that service's type.
+
+Keep the runtime behaviour: lazy, one instance per key, and \`resolve\` of an unknown key throws.
+--- starter
+class Container {
+  private factories = new Map<string, (deps: any) => unknown>()
+  private instances = new Map<string, unknown>()
+
+  register(key: string, factory: (deps: any) => unknown): this {
+    if (this.factories.has(key)) throw new Error(\`already registered: \${key}\`)
+    this.factories.set(key, factory)
+    return this
+  }
+
+  resolve(key: string): any {
+    if (this.instances.has(key)) return this.instances.get(key)
+    const factory = this.factories.get(key)
+    if (!factory) throw new Error(\`not registered: \${key}\`)
+    const deps = new Proxy({}, { get: (_, name) => this.resolve(String(name)) })
+    const value = factory(deps)
+    this.instances.set(key, value)
+    return value
+  }
+}
+--- solution
+class Container<S extends object = {}> {
+  private factories = new Map<string, (deps: never) => unknown>()
+  private instances = new Map<string, unknown>()
+
+  register<K extends string, T>(key: K extends keyof S ? never : K, factory: (deps: S) => T): Container<S & { [P in K]: T }> {
+    if (this.factories.has(key)) throw new Error(\`already registered: \${key}\`)
+    this.factories.set(key, factory)
+    return this as unknown as Container<S & { [P in K]: T }>
+  }
+
+  resolve<K extends keyof S & string>(key: K): S[K] {
+    if (this.instances.has(key)) return this.instances.get(key) as S[K]
+    const factory = this.factories.get(key)
+    if (!factory) throw new Error(\`not registered: \${key}\`)
+    const deps = new Proxy({}, { get: (_, name) => this.resolve(String(name) as keyof S & string) })
+    const value = factory(deps as never)
+    this.instances.set(key, value)
+    return value as S[K]
+  }
+}
+--- hint
+\`register<K extends string, T>(key: …, factory: (deps: S) => T): Container<S & { [P in K]: T }>\` — the return type grows by one service.
+--- hint
+Type the key parameter as \`K extends keyof S ? never : K\` to refuse duplicates.
+--- hint
+The body barely changes: a \`this as unknown as Container<…>\` at the end of \`register\`, and casts to \`S[K]\` where \`resolve\` returns.
+--- check case | Services are built with their dependencies
+new Container().register('config', () => ({ url: 'db://main' })).register('db', ({ config }) => ({ connectedTo: config.url })).register('repo', ({ db }) => 'repo on ' + db.connectedTo).resolve('repo')
+=> 'repo on db://main'
+--- check test | One instance per key
+(() => { const c = new Container().register('box', () => ({ n: 1 })); return c.resolve('box') === c.resolve('box') })()
+--- check case | Factories run lazily, once
+(() => { const made: string[] = []; const c = new Container().register('a', () => { made.push('a'); return 1 }).register('b', ({ a }) => { made.push('b'); return a + 1 }); const before = made.length; c.resolve('b'); c.resolve('b'); c.resolve('a'); return [before, made] })()
+=> [0, ['a', 'b']]
+--- check test | Runtime errors for untyped misuse
+throws(() => (new Container() as any).resolve('x')) && throws(() => (new Container().register('a', () => 1) as any).register('a', () => 2))
+--- check type-error | Only registered services can be resolved
+new Container().register('a', () => 1).resolve('b')
+--- check type-error | A factory can only use services registered before it
+new Container().register('db', (deps) => deps.config)
+--- check type-error | A key cannot be registered twice
+new Container().register('a', () => 1).register('a', () => 2)
+--- check type-error | Dependencies keep their types
+new Container().register('n', () => 42).register('s', ({ n }) => n.toUpperCase())
+--- check type-error | resolve returns exactly the service's type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const c = new Container().register('n', () => 42).register('s', ({ n }) => String(n));
+const v = c.resolve('s');
+const no: Equal<typeof v, string> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== ts4-13 | Debugging: conditional types that surprise you
+--- teach
+Type-level code has bugs too, and they are harder to see because nothing runs. The method is the same as for runtime bugs, with different tools:
+
+1. **Reproduce** with the smallest input: write \`type Probe = IsNever<never>\` and hover it (or, here, write an \`Equal\` check that fails).
+2. **Evaluate by hand**, one step at a time, like a trace. Most surprises come from two rules you have to keep in mind.
+3. **Fix the cause** — usually by switching one of those rules off.
+
+**Rule 1: a conditional distributes over a union when its checked type is a bare type parameter.** \`T extends U ? X : Y\` with \`T = A | B\` becomes \`(A extends U ? X : Y) | (B extends U ? X : Y)\`.
+
+\`\`\`ts
+type Boxed<T> = T extends unknown ? { value: T } : never
+type B = Boxed<string | number>   // { value: string } | { value: number } — two boxes, not one
+\`\`\`
+
+**Rule 2: \`never\` is the empty union.** Distributing over *no* members produces *no* results — \`never\` — without even looking at the branches. So any distributive conditional applied to \`never\` gives \`never\`.
+
+Both are switched off the same way: stop the checked type from being a bare type parameter by wrapping both sides in a one-element tuple, \`[T] extends [U] ? X : Y\`. That compares the whole type at once.
+
+And sometimes distribution is exactly what you want. A classic puzzle: is \`T\` a union? Distribute over \`T\` while keeping an undistributed copy to compare against:
+
+\`\`\`ts
+// type IsUnion<T, All = T> = T extends unknown ? ([All] extends [T] ? false : true) : never
+\`\`\`
+
+For a single type, each member *is* the whole, so \`false\`. For a union, some member is smaller than the whole, so \`true\`. Watch out: \`boolean\` is \`true | false\`, so it is a union too.
+--- task
+**Bug reports**, all from the starter's helpers:
+
+- \`ToArray<string | number>\` gives \`string[] | number[]\`; the team wanted \`(string | number)[]\`.
+- \`IsNever<never>\` gives \`never\` instead of \`true\`, so type tests built on it pass by accident.
+- \`AllStrings<'a' | 1>\` gives \`boolean\`; it should be \`false\` (and \`AllStrings<'a' | 'b'>\` is \`true\`).
+
+Fix all three, and add \`type IsUnion<T>\`: \`true\` for a union (including \`boolean\`), \`false\` otherwise. \`wrap\` must keep working.
+--- starter
+type ToArray<T> = T extends unknown ? T[] : never
+type IsNever<T> = T extends never ? true : false
+type AllStrings<T> = T extends string ? true : false
+
+function wrap<T>(value: T): ToArray<T> {
+  return [value] as ToArray<T>
+}
+--- solution
+type ToArray<T> = [T] extends [unknown] ? T[] : never
+type IsNever<T> = [T] extends [never] ? true : false
+type AllStrings<T> = [T] extends [string] ? true : false
+type IsUnion<T, All = T> = T extends unknown ? ([All] extends [T] ? false : true) : never
+
+function wrap<T>(value: T): ToArray<T> {
+  return [value] as ToArray<T>
+}
+--- hint
+Trace \`ToArray<string | number>\` with the distribution rule. Then wrap both sides of \`extends\` in brackets.
+--- hint
+The same bracket fix repairs \`IsNever\` and \`AllStrings\`: \`[T] extends [never]\`.
+--- hint
+\`IsUnion\` needs distribution on purpose: keep a second parameter \`All = T\` that is not distributed, and compare \`[All] extends [T]\` inside the distributive branch.
+--- check case | wrap still works
+wrap(1)
+=> [1]
+--- check type-error | ToArray<string | number> is exactly (string | number)[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ToArray<string | number>, (string | number)[]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | IsNever<never> is exactly true
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<IsNever<never>, true> = false
+--- check type-error | IsNever<string> is exactly false
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<IsNever<string>, false> = false
+--- check type-error | AllStrings<'a' | 1> is exactly false
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<AllStrings<'a' | 1>, false> = false
+--- check type-error | AllStrings<'a' | 'b'> is exactly true
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<AllStrings<'a' | 'b'>, true> = false
+--- check type-error | IsUnion<'a' | 'b'> is exactly true
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<IsUnion<'a' | 'b'>, true> = false
+--- check type-error | IsUnion<'a'> is exactly false
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<IsUnion<'a'>, false> = false
+--- check type-error | IsUnion<boolean> is exactly true
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<IsUnion<boolean>, true> = false
+
+=== ts4-14 | Design: an API client that cannot be misused
+--- teach
+The capstone of this course: design the types of a public API so that every misuse the spec lists is a compile error, and correct use needs no annotations at all.
+
+A method for this kind of design:
+
+1. **Write the calls first** — the ones that should compile and the ones that should not. Those lines are your test suite (the checks in this lesson are exactly that).
+2. **Find the single source of truth.** Here it is an \`Endpoints\` map: each key is \`'<METHOD> <path>'\`, each value says what the endpoint takes and returns. Everything else is derived from it.
+3. **Derive the argument list from the endpoint.** Path parameters come from parsing the path (you did that in ts4-03). A body is required exactly when the endpoint declares one. If an endpoint needs neither, there should be no options argument at all.
+
+The key move is making the **argument list** a computed tuple, as you did for void events in the emitter:
+
+\`\`\`ts
+// request<E extends keyof Endpoints>(endpoint: E, ...args: ArgsFor<E>): Endpoints[E]['response']
+// ArgsFor<E> is [] when E needs nothing, and [options: …] otherwise
+\`\`\`
+
+Compute the options object as an intersection of two conditional pieces — params or \`{}\`, body or \`{}\` — and flatten it with \`Simplify\` so excess-property checks work (a \`body\` on a \`DELETE\` is then an error, not silently allowed). \`keyof Options<E> extends never\` tells you when the options are empty.
+
+At runtime the client is small: split the endpoint into method and path, fill in the params (URL-encoded), and hand everything to the transport. The transport returns \`unknown\`; casting it to the response type is where a real client would run a schema from ts4-10 instead.
+--- task
+Design \`createClient(transport: Transport)\` returning an object with one method, \`request(endpoint, options?)\`, driven by the \`Endpoints\` interface:
+
+- Only endpoints in \`Endpoints\` are accepted.
+- \`options.params\` is required exactly when the path has \`:params\`, with a string for each and no others.
+- \`options.body\` is required exactly when the endpoint has a \`body\`, with that type; no body otherwise.
+- An endpoint with neither takes no options argument at all.
+- The return type is that endpoint's \`response\`.
+
+At runtime, \`request\` calls \`transport(method, path, body)\` with the params filled in and URL-encoded (\`body\` is \`undefined\` when there is none) and returns what the transport returns.
+--- starter
+interface User {
+  id: string
+  name: string
+}
+
+interface Endpoints {
+  'GET /users': { response: User[] }
+  'GET /users/:id': { response: User }
+  'POST /users': { body: { name: string }; response: User }
+  'PATCH /users/:id': { body: { name?: string }; response: User }
+  'DELETE /users/:id': { response: { deleted: true } }
+}
+
+type Transport = (method: string, path: string, body: unknown) => unknown
+
+function createClient(transport: Transport) {
+  return {
+    request(endpoint: string, options: any = {}): any {
+      const [method = '', pattern = ''] = endpoint.split(' ')
+      const path = pattern.replace(/:(\\w+)/g, (_, name: string) => encodeURIComponent(options.params?.[name] ?? ''))
+      return transport(method, path, options.body)
+    },
+  }
+}
+--- solution
+interface User {
+  id: string
+  name: string
+}
+
+interface Endpoints {
+  'GET /users': { response: User[] }
+  'GET /users/:id': { response: User }
+  'POST /users': { body: { name: string }; response: User }
+  'PATCH /users/:id': { body: { name?: string }; response: User }
+  'DELETE /users/:id': { response: { deleted: true } }
+}
+
+type Transport = (method: string, path: string, body: unknown) => unknown
+
+type Simplify<T> = { [K in keyof T]: T[K] }
+
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type PathOf<E extends string> = E extends \`\${string} \${infer P}\` ? P : never
+
+type ParamsPart<E extends keyof Endpoints> = [ParamNames<PathOf<E>>] extends [never]
+  ? {}
+  : { params: { [K in ParamNames<PathOf<E>>]: string } }
+
+type BodyPart<E extends keyof Endpoints> = Endpoints[E] extends { body: infer B } ? { body: B } : {}
+
+type Options<E extends keyof Endpoints> = Simplify<ParamsPart<E> & BodyPart<E>>
+
+type ArgsFor<E extends keyof Endpoints> = keyof Options<E> extends never ? [] : [options: Options<E>]
+
+function createClient(transport: Transport) {
+  return {
+    request<E extends keyof Endpoints>(endpoint: E, ...args: ArgsFor<E>): Endpoints[E]['response'] {
+      const [method = '', pattern = ''] = endpoint.split(' ')
+      const options = (args[0] ?? {}) as { params?: Record<string, string>; body?: unknown }
+      const path = pattern.replace(/:(\\w+)/g, (_, name: string) => encodeURIComponent(options.params?.[name] ?? ''))
+      return transport(method, path, options.body) as Endpoints[E]['response']
+    },
+  }
+}
+--- hint
+Split the problem: \`ParamsPart<E>\` (params or \`{}\`), \`BodyPart<E>\` (body or \`{}\`), then \`Options<E> = Simplify<ParamsPart<E> & BodyPart<E>>\`.
+--- hint
+\`PathOf<E>\` takes the path out of the key: \`E extends \\\`\${string} \${infer P}\\\` ? P : never\`. Reuse the route-param parser on it.
+--- hint
+\`ArgsFor<E> = keyof Options<E> extends never ? [] : [options: Options<E>]\`, used as \`...args: ArgsFor<E>\`; the options are \`args[0]\`.
+--- check case | GET with params fills in the path
+(() => { const calls: unknown[] = []; const client = createClient((m, p, b) => { calls.push([m, p, b]); return { id: '7', name: 'Ada' } }); const u = client.request('GET /users/:id', { params: { id: '7' } }); return [calls, u] })()
+=> [[['GET', '/users/7', undefined]], { id: '7', name: 'Ada' }]
+--- check case | POST sends the body
+(() => { const calls: unknown[] = []; const client = createClient((m, p, b) => { calls.push([m, p, b]); return null }); client.request('POST /users', { body: { name: 'Ada' } }); return calls })()
+=> [['POST', '/users', { name: 'Ada' }]]
+--- check case | No options at all, and params are encoded
+(() => { const calls: unknown[] = []; const client = createClient((m, p, b) => { calls.push([m, p, b]); return [] }); client.request('GET /users'); client.request('PATCH /users/:id', { params: { id: 'a/b' }, body: {} }); return calls })()
+=> [['GET', '/users', undefined], ['PATCH', '/users/a%2Fb', {}]]
+--- check type-error | Unknown endpoints do not compile
+const client = createClient(() => null); client.request('GET /nope')
+--- check type-error | Params are required when the path has them
+const client = createClient(() => null); client.request('GET /users/:id')
+--- check type-error | Every param must be given
+const client = createClient(() => null); client.request('GET /users/:id', { params: {} })
+--- check type-error | A body is required when the endpoint has one
+const client = createClient(() => null); client.request('POST /users')
+--- check type-error | The body has the endpoint's type
+const client = createClient(() => null); client.request('POST /users', { body: { name: 1 } })
+--- check type-error | An endpoint with no params or body takes no options
+const client = createClient(() => null); client.request('GET /users', { params: {} })
+--- check type-error | DELETE takes no body
+const client = createClient(() => null); client.request('DELETE /users/:id', { params: { id: '1' }, body: {} })
+--- check type-error | The response type comes from the endpoint, exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const client = createClient(() => null);
+const u = client.request('GET /users/:id', { params: { id: '1' } });
+const no: Equal<typeof u, User> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+`,Ke=`@track typescript
+@level intermediate
+@title TypeScript · Intermediate
+@name TypeScript, intermediate: modelling data and narrowing it safely
+@blurb Unions, narrowing, generics, type guards and validated input: describe your data precisely, prove bad calls cannot compile, and debug the errors the compiler hands you.
+
+=== ts2-01 | Interfaces and type aliases
+--- teach
+You met \`interface\` in the basics. There is a second way to name a type, the **type alias**, and for plain objects the two look almost identical:
+
+\`\`\`ts
+interface Point {
+  x: number
+  y: number
+}
+
+type PointAlias = {
+  x: number
+  y: number
+}
+
+const p: Point = { x: 1, y: 2 }
+const q: PointAlias = p      // fine: TypeScript compares shapes, not names
+\`\`\`
+
+The differences are what each one *can* name and how each one grows:
+
+- A \`type\` can name **anything**: a union (\`type Id = string | number\`), a tuple (\`type Pair = [string, number]\`), a function type, a primitive. An \`interface\` only describes objects (and things with call signatures).
+- An \`interface\` grows with **\`extends\`**: \`interface Pet extends Animal { owner: string }\` is an \`Animal\` plus an \`owner\`. A type alias gets the same result with an intersection: \`type Pet = Animal & { owner: string }\`.
+- Two \`interface\` declarations with the same name **merge** into one. That is how libraries let you add fields to their types. A \`type\` can only be declared once.
+
+A workable rule: use \`interface\` for object shapes, especially ones other types build on, and \`type\` for unions, tuples and everything else. Teams argue about it; being consistent inside one codebase matters more than which you pick.
+
+A new kind of check starts in this lesson: a **type-error check** holds one line of code that must *fail* to compile against your types. It proves your types reject what they should, which is half of what types are for. When one fails, it means the compiler accepted something it should have refused.
+
+The mistake to avoid is typing things as \`any\` "for now". \`any\` switches the checker off for that value and for everything it flows into, so the types you add later catch nothing that already went through it.
+--- task
+The starter's \`label\` takes \`any\` for both arguments, so the compiler accepts any nonsense. Give it real types:
+
+1. \`interface Animal\` with \`name: string\` and \`legs: number\`.
+2. \`interface Pet\` that **extends** \`Animal\` and adds \`owner: string\`.
+3. \`type Id = string | number\`.
+4. Change the signature to \`label(pet: Pet, id: Id): string\`. Keep what it returns: \`'#<id> <name> (<legs> legs, owner: <owner>)'\`.
+--- starter
+function label(pet: any, id: any): string {
+  return \`#\${id} \${pet.name} (\${pet.legs} legs, owner: \${pet.owner})\`
+}
+--- solution
+interface Animal {
+  name: string
+  legs: number
+}
+
+interface Pet extends Animal {
+  owner: string
+}
+
+type Id = string | number
+
+function label(pet: Pet, id: Id): string {
+  return \`#\${id} \${pet.name} (\${pet.legs} legs, owner: \${pet.owner})\`
+}
+--- hint
+\`interface Pet extends Animal { owner: string }\` inherits \`name\` and \`legs\`.
+--- hint
+An interface cannot be a union, so \`Id\` has to be a type alias: \`type Id = string | number\`.
+--- check case | A pet with a number id
+label({ name: 'Rex', legs: 4, owner: 'Ada' }, 7)
+=> '#7 Rex (4 legs, owner: Ada)'
+--- check case | A pet with a string id
+label({ name: 'Tweety', legs: 2, owner: 'Lin' }, 'b-12')
+=> '#b-12 Tweety (2 legs, owner: Lin)'
+--- check type-error | A Pet must have an owner
+const p: Pet = { name: 'Rex', legs: 4 }
+--- check type-error | An Animal's legs are a number
+const a: Animal = { name: 'Rex', legs: 'four' }
+--- check type-error | An id is a string or a number, nothing else
+label({ name: 'Rex', legs: 4, owner: 'Ada' }, true)
+--- check type-error | label needs a whole pet
+label({ name: 'Rex' }, 1)
+--- check source | Pet extends Animal
+interface\\s+Pet\\s+extends\\s+Animal\\b
+--- check source | Id is a type alias
+\\btype\\s+Id\\s*=
+
+=== ts2-02 | Narrowing four ways
+--- teach
+A union value can be any of its members, so TypeScript only lets you use what all of them share. **Narrowing** is how you find out which member you have. The compiler follows your \`if\`s and \`return\`s (this is called *control-flow analysis*) and gives the value a smaller type in each branch.
+
+There are four everyday tools:
+
+\`\`\`ts
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+  }
+}
+
+function explain(x: string | number | HttpError | { code: number } | null): string {
+  if (x === null) return 'nothing'              // equality: x is null
+  if (typeof x === 'string') return x           // typeof: primitives
+  if (typeof x === 'number') return x.toFixed(1)
+  if (x instanceof HttpError) return \`HTTP \${x.status}\`   // instanceof: classes
+  return \`code \${x.code}\`                        // only { code } is left
+}
+
+explain(null)
+explain(new HttpError(404, 'missing'))
+\`\`\`
+
+The example uses a **class**, which the JavaScript course covers properly: \`class HttpError extends Error\` makes a new kind of error with everything an \`Error\` has, \`new HttpError(404, 'missing')\` creates one, and \`super(message)\` runs \`Error\`'s own constructor. \`constructor(public status: number, …)\` is a TypeScript shorthand: \`public\` on a constructor parameter declares a \`status\` property and assigns it in one go.
+
+- **Equality** (\`=== null\`, \`=== 'GET'\`) narrows to that value.
+- **\`typeof\`** narrows primitives: \`'string'\`, \`'number'\`, \`'boolean'\`, \`'bigint'\`, \`'symbol'\`, \`'undefined'\`, \`'function'\`, \`'object'\`.
+- **\`instanceof\`** narrows to a class, using its prototype chain.
+- **\`'key' in x\`** narrows object unions to the members that declare that key.
+
+Two traps. \`typeof null\` is \`'object'\`, so check for \`null\` before you trust \`typeof x === 'object'\`. And order matters with \`instanceof\`: every \`HttpError\` is also an \`Error\`, so test the subclass **first** or the general branch swallows it.
+--- task
+Write \`describeFailure(f: Failure): string\` for the types in the starter:
+
+- \`null\` → \`'no failure'\`
+- a string → \`'error: <text>'\`
+- an \`ApiFailure\` → \`'code <code>: <message>'\` (use \`'code' in f\`)
+- an \`HttpError\` → \`'HTTP <status>: <message>'\`
+- any other \`Error\` → \`'<name>: <message>'\` (e.g. \`'TypeError: bad'\`)
+--- starter
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface ApiFailure {
+  code: number
+  message: string
+}
+
+type Failure = HttpError | Error | ApiFailure | string | null
+
+function describeFailure(f: Failure): string {
+  return String(f)
+}
+--- solution
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface ApiFailure {
+  code: number
+  message: string
+}
+
+type Failure = HttpError | Error | ApiFailure | string | null
+
+function describeFailure(f: Failure): string {
+  if (f === null) return 'no failure'
+  if (typeof f === 'string') return \`error: \${f}\`
+  if ('code' in f) return \`code \${f.code}: \${f.message}\`
+  if (f instanceof HttpError) return \`HTTP \${f.status}: \${f.message}\`
+  return \`\${f.name}: \${f.message}\`
+}
+--- hint
+Deal with \`null\` and strings first; after those two \`if\`s only objects are left, and \`'code' in f\` works on them.
+--- hint
+Put \`f instanceof HttpError\` before the plain \`Error\` case — after it, the only thing left is an \`Error\`.
+--- check case | null
+describeFailure(null)
+=> 'no failure'
+--- check case | A string
+describeFailure('disk full')
+=> 'error: disk full'
+--- check case | An API failure object
+describeFailure({ code: 7, message: 'quota exceeded' })
+=> 'code 7: quota exceeded'
+--- check case | An HttpError, even though it is also an Error
+describeFailure(new HttpError(404, 'not found'))
+=> 'HTTP 404: not found'
+--- check case | A plain Error subclass
+describeFailure(new TypeError('bad input'))
+=> 'TypeError: bad input'
+--- check source | Uses instanceof
+instanceof\\s+HttpError
+--- check source | Uses the in operator
+['"]code['"]\\s+in\\s+f
+
+=== ts2-03 | Literal types and widening
+--- teach
+A **literal type** is a type with exactly one value: \`'GET'\`, \`404\`, \`true\`. On their own they are not much use; in a union they become a closed list of allowed values:
+
+\`\`\`ts
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+const m: Method = 'POST'
+// const bad: Method = 'get'   ✗ Type '"get"' is not assignable to type 'Method'
+\`\`\`
+
+The surprise is **widening**. When TypeScript infers a type for something that can change, it widens the literal to its general type:
+
+\`\`\`ts
+const a = 'GET'                 // type 'GET'  — a const can never change
+let b = 'GET'                   // type string — b could be reassigned later
+const req = { method: 'GET' }   // { method: string } — req.method can be reassigned
+\`\`\`
+
+So this fails even though the value is fine:
+
+\`\`\`ts
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+function send(method: Method): string {
+  return method
+}
+const options = { method: 'GET' }
+// send(options.method)   ✗ Argument of type 'string' is not assignable to parameter of type 'Method'
+\`\`\`
+
+Fix it where the value is created: annotate it (\`const options: { method: Method } = …\`) or freeze its literals with \`as const\`. Do not fix it at the call with \`options.method as Method\` — that cast would also accept \`'GETT'\`.
+
+A \`Record\` over a literal union is a lookup table the compiler checks for completeness: \`Record<Method, string>\` must have all four keys, no more, no fewer.
+--- task
+The starter types methods and status codes as plain \`string\` and \`number\`, so typos compile. Tighten it:
+
+1. \`type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'\`.
+2. \`type StatusCode = 200 | 201 | 400 | 404 | 500\`.
+3. Write \`canHaveBody(m: Method): boolean\` — true for \`POST\` and \`PUT\` only.
+4. Write \`statusText(code: StatusCode): string\` using a \`Record<StatusCode, string>\`: \`OK\`, \`Created\`, \`Bad Request\`, \`Not Found\`, \`Server Error\`.
+5. Once \`Method\` is a union, \`request(defaults.method, …)\` stops compiling. Fix it by giving \`defaults\` a type, not with a cast.
+--- starter
+type Method = string
+type StatusCode = number
+
+function request(method: Method, path: string): string {
+  return \`\${method} \${path}\`
+}
+
+const defaults = { method: 'GET', path: '/' }
+
+console.log(request(defaults.method, defaults.path))
+--- solution
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+type StatusCode = 200 | 201 | 400 | 404 | 500
+
+function request(method: Method, path: string): string {
+  return \`\${method} \${path}\`
+}
+
+function canHaveBody(m: Method): boolean {
+  return m === 'POST' || m === 'PUT'
+}
+
+const STATUS_TEXT: Record<StatusCode, string> = {
+  200: 'OK',
+  201: 'Created',
+  400: 'Bad Request',
+  404: 'Not Found',
+  500: 'Server Error',
+}
+
+function statusText(code: StatusCode): string {
+  return STATUS_TEXT[code]
+}
+
+const defaults: { method: Method; path: string } = { method: 'GET', path: '/' }
+
+console.log(request(defaults.method, defaults.path))
+--- hint
+Change the two type aliases first, then run: the error on the last line is the widening problem from the lesson.
+--- hint
+\`const defaults: { method: Method; path: string } = …\` keeps \`method\` as a \`Method\`.
+--- hint
+\`const STATUS_TEXT: Record<StatusCode, string> = { 200: 'OK', … }\` — leave one out and the compiler tells you which.
+--- check test | POST and PUT can have a body
+canHaveBody('POST') && canHaveBody('PUT')
+--- check test | GET and DELETE cannot
+!canHaveBody('GET') && !canHaveBody('DELETE')
+--- check case | statusText(404)
+statusText(404)
+=> 'Not Found'
+--- check case | statusText(201)
+statusText(201)
+=> 'Created'
+--- check type-error | PATCH is not a Method
+canHaveBody('PATCH')
+--- check type-error | Methods are upper case
+const m: Method = 'get'
+--- check type-error | 418 is not a StatusCode
+statusText(418)
+--- check includes | Still prints the default request
+GET /
+--- check source absent | No cast at the call
+defaults\\.method\\s+as\\s
+
+=== ts2-04 | Optional and readonly
+--- teach
+Two property modifiers say a lot about how a value may be used.
+
+**\`?\` — optional.** The property may be missing, so its type is \`T | undefined\` and you must deal with that before using it:
+
+\`\`\`ts
+interface Profile {
+  name: string
+  bio?: string
+}
+
+function card(p: Profile): string {
+  return p.bio === undefined ? p.name : \`\${p.name}: \${p.bio}\`
+}
+
+card({ name: 'Ada' })
+\`\`\`
+
+Parameters can be optional too (\`function greet(name?: string)\`), or have a default (\`name = 'you'\`), which makes them optional to callers but never \`undefined\` inside.
+
+**\`readonly\` — no reassignment.** A \`readonly\` property cannot be assigned after the object is created, and a \`readonly string[]\` (also written \`ReadonlyArray<string>\`) has no \`push\`, \`pop\`, \`sort\` or index assignment:
+
+\`\`\`ts
+interface Order {
+  readonly id: string
+  readonly items: readonly string[]
+}
+
+const o: Order = { id: 'A1', items: ['pen'] }
+// o.id = 'B2'          ✗ Cannot assign to 'id' because it is a read-only property
+// o.items.push('ink')  ✗ Property 'push' does not exist on type 'readonly string[]'
+const next: Order = { ...o, items: [...o.items, 'ink'] }   // ✓ build a new one
+next.items
+\`\`\`
+
+\`[...o.items, 'ink']\` spreads the old items into a new array and adds one at the end, the array version of the object spread you know.
+
+Why bother? Code that changes an object other code is holding is a classic source of "it changed by itself" bugs. \`readonly\` makes the compiler refuse those writes, so the only way to "change" an order is to make a new one.
+
+Know its limit: \`readonly\` exists only at compile time. At runtime the object is an ordinary object; if you need a runtime guarantee, add \`Object.freeze\`.
+--- task
+The starter's \`addItem\` pushes into the order it was given, so the caller's order changes behind its back. Fix it:
+
+1. Make \`id\` and \`items\` readonly (\`items: readonly string[]\`); keep \`note\` optional.
+2. \`addItem(order: Order, item: string): Order\` must return a **new** order and leave the original alone.
+3. \`describeOrder(order: Order): string\` returns \`'<id>: <n> item(s)'\`, followed by \`' (note: <note>)'\` when there is a note.
+--- starter
+interface Order {
+  id: string
+  items: string[]
+  note?: string
+}
+
+function addItem(order: Order, item: string): Order {
+  order.items.push(item)
+  return order
+}
+
+function describeOrder(order: Order): string {
+  return \`\${order.id}: \${order.items.length} item(s)\`
+}
+--- solution
+interface Order {
+  readonly id: string
+  readonly items: readonly string[]
+  note?: string
+}
+
+function addItem(order: Order, item: string): Order {
+  return { ...order, items: [...order.items, item] }
+}
+
+function describeOrder(order: Order): string {
+  const base = \`\${order.id}: \${order.items.length} item(s)\`
+  return order.note === undefined ? base : \`\${base} (note: \${order.note})\`
+}
+--- hint
+Once \`items\` is \`readonly string[]\`, the \`push\` in \`addItem\` stops compiling — that error is the point.
+--- hint
+Spread the old order and give it a new items array: \`{ ...order, items: [...order.items, item] }\`.
+--- check test | addItem leaves the original order alone
+(() => { const o: Order = { id: 'A1', items: ['pen'] }; const p = addItem(o, 'ink'); return o.items.length === 1 && p.items.length === 2 && p !== o })()
+--- check case | addItem keeps the other fields
+addItem({ id: 'A1', items: ['pen'], note: 'gift' }, 'ink')
+=> { id: 'A1', items: ['pen', 'ink'], note: 'gift' }
+--- check case | describeOrder without a note
+describeOrder({ id: 'A1', items: ['pen', 'ink'] })
+=> 'A1: 2 item(s)'
+--- check case | describeOrder with a note
+describeOrder({ id: 'B7', items: ['pen'], note: 'gift wrap' })
+=> 'B7: 1 item(s) (note: gift wrap)'
+--- check type-error | An order's id cannot be reassigned
+const o: Order = { id: 'A1', items: [] }; o.id = 'B2'
+--- check type-error | An order's items cannot be pushed to
+const o: Order = { id: 'A1', items: [] }; o.items.push('pen')
+
+=== ts2-05 | Function types and overloads
+--- teach
+Functions are values, so they have types. A **function type** is written like an arrow:
+
+\`\`\`ts
+type Transform = (s: string) => string
+
+const shout: Transform = (s) => s.toUpperCase()   // s is inferred as string
+shout('hi')
+\`\`\`
+
+Use them for callbacks and for functions that take or return functions. Parameter names in a function type are only labels; the types are what count. A **rest parameter**, \`(...fns: Transform[])\`, collects any number of arguments into one array; its type is always an array type.
+
+Sometimes one function behaves differently depending on what you pass — a string in gives a number out, an array in gives an array out. A single signature with unions loses that link:
+
+\`\`\`ts
+function toNum(v: string | string[]): number | number[] {
+  return Array.isArray(v) ? v.map(Number) : Number(v)
+}
+// toNum('4').toFixed(1)  ✗ Property 'toFixed' does not exist on type 'number[]'
+\`\`\`
+
+**Overloads** restore it. You list the signatures callers may use, then one implementation whose own signature is wide enough for all of them:
+
+\`\`\`ts
+function toNumber(v: string): number
+function toNumber(v: string[]): number[]
+function toNumber(v: string | string[]): number | number[] {
+  return Array.isArray(v) ? v.map(Number) : Number(v)
+}
+
+toNumber('4').toFixed(1)     // number, so this is fine
+toNumber(['1', '2'])         // number[]
+\`\`\`
+
+Callers only see the overloads; the implementation signature is hidden. The compiler checks that the implementation is *compatible* with each overload, not that it really returns a \`number\` for a string — that part is on you, so keep implementations short.
+
+Reach for overloads only when the return type depends on the argument. If it does not, one signature with a union parameter is simpler.
+--- task
+Replace the \`any\`s:
+
+1. Declare \`type Transform = (s: string) => string\` and give \`pipe\` the signature \`pipe(...fns: Transform[]): Transform\`. It returns a function that runs the input through each transform in order (no transforms: the input unchanged).
+2. Give \`parse\` two overloads: \`parse(value: string): number\` and \`parse(value: string[]): number[]\`, plus the implementation.
+--- starter
+function pipe(...fns: any[]): any {
+  return (input: any) => fns.reduce((acc, fn) => fn(acc), input)
+}
+
+function parse(value: any): any {
+  return Array.isArray(value) ? value.map(Number) : Number(value)
+}
+--- solution
+type Transform = (s: string) => string
+
+function pipe(...fns: Transform[]): Transform {
+  return (input) => fns.reduce((acc, fn) => fn(acc), input)
+}
+
+function parse(value: string): number
+function parse(value: string[]): number[]
+function parse(value: string | string[]): number | number[] {
+  return Array.isArray(value) ? value.map(Number) : Number(value)
+}
+--- hint
+With \`pipe(...fns: Transform[]): Transform\`, the returned arrow's \`input\` is inferred as a string — no annotation needed.
+--- hint
+Overloads are signatures ending in a newline (or \`;\`) with no body, written straight above the implementation.
+--- check case | pipe runs transforms in order
+pipe((s) => s.trim(), (s) => s.toUpperCase())('  hi ')
+=> 'HI'
+--- check case | pipe with no transforms returns the input
+pipe()('same')
+=> 'same'
+--- check case | parse('42')
+parse('42')
+=> 42
+--- check case | parse(['1', '2.5'])
+parse(['1', '2.5'])
+=> [1, 2.5]
+--- check type-error | pipe only takes string transforms
+pipe((n: number) => n * 2)
+--- check type-error | parse takes strings, not numbers
+parse(42)
+--- check type-error | A string parses to one number, not an array
+parse('4').map((n) => n)
+--- check type-error | An array parses to an array, not a number
+parse(['4']).toFixed(1)
+--- check source | An overload for a string
+function\\s+parse\\s*\\(\\s*\\w+\\s*:\\s*string\\s*\\)\\s*:\\s*number\\b
+--- check source | An overload for an array
+function\\s+parse\\s*\\(\\s*\\w+\\s*:\\s*string\\[\\]\\s*\\)\\s*:\\s*number\\[\\]
+
+=== ts2-06 | Generics with constraints
+--- teach
+A plain \`<T>\` accepts any type, which means inside the function you can do almost nothing with a \`T\` — you do not know it has any properties. A **constraint** says what every \`T\` must at least have:
+
+\`\`\`ts
+function longer<T extends { length: number }>(a: T, b: T): T {
+  return b.length > a.length ? b : a
+}
+
+longer('abc', 'de')        // string
+longer([1, 2], [1, 2, 3])  // number[]
+// longer(10, 20)          ✗ number has no 'length'
+\`\`\`
+
+\`T extends { length: number }\` means "any type with a numeric \`length\`". Strings, arrays, and your own objects qualify. And unlike \`(a: { length: number })\`, the caller gets **their own type back**: pass strings, get a string.
+
+That is the difference between generics and \`any\`. Both accept many types, but \`any\` forgets what came in; a generic remembers it and checks everything done with it.
+
+You can have several type parameters, and constraints can mention objects:
+
+\`\`\`ts
+function merge<A extends object, B extends object>(a: A, b: B): A & B {
+  return { ...a, ...b }
+}
+
+merge({ id: 1 }, { name: 'Ada' }).name
+\`\`\`
+
+When TypeScript cannot infer a \`T\` from the arguments, write it yourself: \`longer<string>('a', 'b')\`.
+--- task
+Replace the \`any\`s in the starter with generics:
+
+1. \`longest<T extends { length: number }>(a: T, b: T): T\` — the longer one; on a tie, \`a\`.
+2. \`indexById<T extends { id: string }>(items: T[]): Record<string, T>\` — an object from each item's id to the item.
+3. \`merge<A extends object, B extends object>(a: A, b: B): A & B\` — the two objects combined, \`b\` winning on shared keys.
+--- starter
+function longest(a: any, b: any): any {
+  return b.length > a.length ? b : a
+}
+
+function indexById(items: any[]): Record<string, any> {
+  const out: Record<string, any> = {}
+  for (const item of items) out[item.id] = item
+  return out
+}
+--- solution
+function longest<T extends { length: number }>(a: T, b: T): T {
+  return b.length > a.length ? b : a
+}
+
+function indexById<T extends { id: string }>(items: T[]): Record<string, T> {
+  const out: Record<string, T> = {}
+  for (const item of items) out[item.id] = item
+  return out
+}
+
+function merge<A extends object, B extends object>(a: A, b: B): A & B {
+  return { ...a, ...b }
+}
+--- hint
+The type parameter list goes between the name and the brackets: \`function longest<T extends { length: number }>(a: T, b: T): T\`.
+--- hint
+Inside \`indexById\`, the output object is a \`Record<string, T>\` too.
+--- check case | longest of two strings
+longest('ab', 'abc')
+=> 'abc'
+--- check case | longest of two arrays
+longest([1, 2], [3])
+=> [1, 2]
+--- check case | A tie keeps the first
+longest('xy', 'zw')
+=> 'xy'
+--- check case | indexById
+indexById([{ id: 'a', n: 1 }, { id: 'b', n: 2 }]).b
+=> { id: 'b', n: 2 }
+--- check case | merge
+merge({ a: 1, shared: 'old' }, { b: 'x', shared: 'new' })
+=> { a: 1, shared: 'new', b: 'x' }
+--- check type-error | longest needs values with a length
+longest(10, 20)
+--- check type-error | longest gives back the type it was given
+const s: number = longest('a', 'bb')
+--- check type-error | indexById needs items with a string id
+indexById([{ name: 'x' }])
+--- check type-error | Indexed items keep their shape
+indexById([{ id: 'a', n: 1 }]).a.missing
+--- check type-error | merge takes objects
+merge({ a: 1 }, 5)
+
+=== ts2-07 | Type guards you write
+--- teach
+\`typeof\` and \`instanceof\` narrow built-in things. For your own shapes, write a **type guard**: a function whose return type is \`value is SomeType\`. When it returns true, the compiler narrows the argument to that type:
+
+\`\`\`ts
+interface Cat { name: string; meows: boolean }
+interface Dog { name: string; barks: boolean }
+
+function isCat(pet: Cat | Dog): pet is Cat {
+  return 'meows' in pet
+}
+
+function sound(pet: Cat | Dog): string {
+  return isCat(pet) ? 'meow' : 'woof'   // pet is Cat in the first branch, Dog in the second
+}
+
+sound({ name: 'Tom', meows: true })
+\`\`\`
+
+Guards also make \`filter\` return the narrower array type. \`pets.filter(isCat)\` is a \`Cat[]\`, not a \`(Cat | Dog)[]\`. (Recent TypeScript versions infer simple guards like \`(p) => 'meows' in p\` for you; an explicit, named guard still documents intent and can be reused.)
+
+The sibling is an **assertion function**: it returns nothing and throws if the check fails, and after the call the compiler treats the value as narrowed:
+
+\`\`\`ts
+interface Cat { name: string; meows: boolean }
+interface Dog { name: string; barks: boolean }
+
+function assertCat(pet: Cat | Dog): asserts pet is Cat {
+  if (!('meows' in pet)) throw new TypeError(\`\${pet.name} is not a cat\`)
+}
+\`\`\`
+
+A guard is a promise you make to the compiler, and it believes you. If \`isCat\` returned \`true\` for dogs, every narrowed use would be wrong and nothing would warn you. Keep guards small and test them.
+--- task
+The starter's \`isBook\` returns a plain \`boolean\`, so nothing is narrowed and \`books\` has to return \`any[]\`. Using the \`Book\`, \`Film\` and \`Item\` types:
+
+1. \`isBook(item: Item): item is Book\` and \`isFilm(item: Item): item is Film\`.
+2. \`books(items: Item[]): Book[]\` — use \`filter(isBook)\`, no cast.
+3. \`totalPages(items: Item[]): number\` and \`totalMinutes(items: Item[]): number\`.
+4. \`assertBook(item: Item): asserts item is Book\` — throws a \`TypeError\` with the message \`'not a book: <title>'\` for a film.
+--- starter
+interface Book {
+  title: string
+  pages: number
+}
+
+interface Film {
+  title: string
+  minutes: number
+}
+
+type Item = Book | Film
+
+function isBook(item: any): boolean {
+  return 'pages' in item
+}
+
+function books(items: Item[]): any[] {
+  return items.filter(isBook)
+}
+
+function totalPages(items: Item[]): number {
+  return books(items).reduce((sum, b) => sum + b.pages, 0)
+}
+--- solution
+interface Book {
+  title: string
+  pages: number
+}
+
+interface Film {
+  title: string
+  minutes: number
+}
+
+type Item = Book | Film
+
+function isBook(item: Item): item is Book {
+  return 'pages' in item
+}
+
+function isFilm(item: Item): item is Film {
+  return 'minutes' in item
+}
+
+function books(items: Item[]): Book[] {
+  return items.filter(isBook)
+}
+
+function totalPages(items: Item[]): number {
+  return books(items).reduce((sum, b) => sum + b.pages, 0)
+}
+
+function totalMinutes(items: Item[]): number {
+  return items.filter(isFilm).reduce((sum, f) => sum + f.minutes, 0)
+}
+
+function assertBook(item: Item): asserts item is Book {
+  if (!isBook(item)) throw new TypeError(\`not a book: \${item.title}\`)
+}
+--- hint
+The return type of a guard is written where \`boolean\` would go: \`function isBook(item: Item): item is Book\`.
+--- hint
+Inside \`assertBook\`, after \`!isBook(item)\` the item is a \`Film\`, and it still has a \`title\`.
+--- check case | totalPages adds only books
+totalPages([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Emma', pages: 400 }])
+=> 1000
+--- check case | totalMinutes adds only films
+totalMinutes([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Up', minutes: 96 }])
+=> 213
+--- check case | books keeps the books, in order
+books([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Emma', pages: 400 }]).map((b) => b.title)
+=> ['Dune', 'Emma']
+--- check case | assertBook throws for a film
+(() => { try { assertBook({ title: 'Alien', minutes: 117 }); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'wrong error type' } })()
+=> 'not a book: Alien'
+--- check test | assertBook lets a book through
+!throws(() => assertBook({ title: 'Dune', pages: 600 }))
+--- check type-error | isBook only takes library items
+isBook(42)
+--- check type-error | books() returns Books, which have no minutes
+books([]).map((b) => b.minutes)
+--- check source absent | No casts to Book
+\\bas\\s+Book
+
+=== ts2-08 | unknown, any, and data from outside
+--- teach
+\`JSON.parse\` returns \`any\`. That is a hole in the type system: an \`any\` can be assigned to anything, so this compiles and lies:
+
+\`\`\`ts
+interface Config { port: number }
+const config: Config = JSON.parse('{"port": "eighty"}')   // compiles
+config.port + 1                                            // '"eighty1"' at runtime
+\`\`\`
+
+**\`unknown\`** is the safe opposite. Anything can go *into* an \`unknown\`, but you cannot do anything *with* it until you narrow it:
+
+\`\`\`ts
+const data: unknown = JSON.parse('{"port": 80}')
+// data.port          ✗ 'data' is of type 'unknown'
+if (typeof data === 'object' && data !== null && 'port' in data) {
+  data.port           // now allowed (its type is unknown — check it too)
+}
+\`\`\`
+
+The pattern for any input you did not create — JSON, a request body, \`localStorage\`, a message from a worker:
+
+1. Annotate it \`unknown\` the moment it arrives.
+2. Check it step by step: is it an object (and not \`null\`, and not an array)? Does each field have the right type?
+3. **Build** the typed value from the parts you checked, rather than casting the whole thing. That also drops fields you did not ask for.
+
+For arrays, \`Array.isArray(x)\` narrows to an array, and \`list.every((t) => typeof t === 'string')\` is true only when every item passes — TypeScript narrows the array with it.
+
+A handy view once you know it is an object: \`const o = data as Record<string, unknown>\`. That cast is honest — it only says "an object with unknown values" — and it lets you read \`o.port\` to check it.
+
+Return failures as values the caller must handle, like the union \`{ ok: true; … } | { ok: false; error: string }\` below. The compiler then will not let anyone read \`config\` without checking \`ok\` first.
+--- task
+Rewrite \`parseConfig(text: string): ParseResult\` so it never returns a config that is not really a \`Config\`. Check in this order and return the first error:
+
+- not valid JSON → \`'invalid JSON'\`
+- not a plain object (\`null\`, an array, a number…) → \`'config must be an object'\`
+- \`port\` is not a whole number from 1 to 65535 → \`'port must be a whole number from 1 to 65535'\`
+- \`host\` is not a string → \`'host must be a string'\`
+- \`tags\` is not an array of strings → \`'tags must be a list of strings'\`
+
+On success return \`{ ok: true, config }\` where \`config\` has exactly \`port\`, \`host\` and \`tags\`. No \`any\`, no \`as Config\`.
+--- starter
+interface Config {
+  port: number
+  host: string
+  tags: string[]
+}
+
+type ParseResult = { ok: true; config: Config } | { ok: false; error: string }
+
+function parseConfig(text: string): ParseResult {
+  const data = JSON.parse(text)
+  return { ok: true, config: data }
+}
+--- solution
+interface Config {
+  port: number
+  host: string
+  tags: string[]
+}
+
+type ParseResult = { ok: true; config: Config } | { ok: false; error: string }
+
+function parseConfig(text: string): ParseResult {
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    return { ok: false, error: 'invalid JSON' }
+  }
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return { ok: false, error: 'config must be an object' }
+  }
+  const o = data as Record<string, unknown>
+  const { port, host, tags } = o
+  if (typeof port !== 'number' || !Number.isInteger(port) || port < 1 || port > 65535) {
+    return { ok: false, error: 'port must be a whole number from 1 to 65535' }
+  }
+  if (typeof host !== 'string') return { ok: false, error: 'host must be a string' }
+  if (!Array.isArray(tags) || !tags.every((t) => typeof t === 'string')) {
+    return { ok: false, error: 'tags must be a list of strings' }
+  }
+  return { ok: true, config: { port, host, tags } }
+}
+--- hint
+\`JSON.parse\` throws on bad JSON: wrap it in \`try\`/\`catch\`, and declare \`let data: unknown\` outside so it stays unknown.
+--- hint
+After ruling out non-objects, \`const o = data as Record<string, unknown>\` lets you check \`o.port\`, \`o.host\` and \`o.tags\` one by one.
+--- hint
+\`tags.every((t) => typeof t === 'string')\` checks each element, and TypeScript narrows \`tags\` to \`string[]\` with it.
+--- check case | A valid config
+parseConfig('{"port": 8080, "host": "localhost", "tags": ["dev"]}')
+=> { ok: true, config: { port: 8080, host: 'localhost', tags: ['dev'] } }
+--- check case | Extra fields are dropped
+parseConfig('{"port": 80, "host": "a", "tags": [], "debug": true}')
+=> { ok: true, config: { port: 80, host: 'a', tags: [] } }
+--- check case | Not JSON
+parseConfig('port=80')
+=> { ok: false, error: 'invalid JSON' }
+--- check case | An array is not a config
+parseConfig('[1, 2]')
+=> { ok: false, error: 'config must be an object' }
+--- check case | null is not a config
+parseConfig('null')
+=> { ok: false, error: 'config must be an object' }
+--- check case | A port given as a string
+parseConfig('{"port": "80", "host": "a", "tags": []}')
+=> { ok: false, error: 'port must be a whole number from 1 to 65535' }
+--- check case | A port out of range
+parseConfig('{"port": 70000, "host": "a", "tags": []}')
+=> { ok: false, error: 'port must be a whole number from 1 to 65535' }
+--- check case | A missing host
+parseConfig('{"port": 80, "tags": []}')
+=> { ok: false, error: 'host must be a string' }
+--- check case | Tags that are not all strings
+parseConfig('{"port": 80, "host": "a", "tags": ["x", 2]}')
+=> { ok: false, error: 'tags must be a list of strings' }
+--- check type-error | Callers must check ok before reading config
+parseConfig('{}').config
+--- check source absent | No any
+:\\s*any\\b|<any>
+--- check source absent | No cast to Config
+\\bas\\s+Config\\b
+
+=== ts2-09 | Tuples
+--- teach
+A tuple is an array with a fixed shape: how many items, and the type of each position. You have used \`[number, number]\`; here is the rest of the toolkit.
+
+Destructuring works on tuples as it does on arrays, including defaults and a rest element: \`const [first = '', ...others] = list\`.
+
+**Labels** document what each slot means. They show up in editor hints and change nothing else:
+
+\`\`\`ts
+type Entry = [key: string, value: number]
+const e: Entry = ['cpu', 42]
+const [key, value] = e       // key: string, value: number
+\`\`\`
+
+**Optional** and **rest** elements describe tuples of varying length:
+
+\`\`\`ts
+type Row = [name: string, ...scores: number[]]   // a name, then any number of scores
+const r: Row = ['ada', 9, 7, 10]
+type Point = [x: number, y: number, z?: number]  // 2 or 3 numbers
+\`\`\`
+
+The compiler knows the length, so \`e[2]\` is an error ("Tuple type of length 2 has no element at index 2"), and it knows each position's type. A plain \`(string | number)[]\` knows neither: every element could be either, at any index.
+
+Two things to watch. Inference prefers arrays: \`const pair = ['a', 1]\` is \`(string | number)[]\`, so annotate the return type of any function that returns a tuple. And \`readonly [string, number]\` stops anyone pushing a third element in.
+--- task
+1. \`parseEntry(line: string): [key: string, value: number]\` — \`'cpu = 42'\` gives \`['cpu', 42]\` (trim the key).
+2. \`zip<A, B>(as: A[], bs: B[]): [A, B][]\` — pairs up items by position, stopping at the shorter array.
+3. \`bestScore(row: [name: string, ...scores: number[]]): [name: string, best: number]\` — the name and its highest score, or \`0\` when there are no scores.
+--- starter
+function parseEntry(line: string): any[] {
+  const [key, value] = line.split('=')
+  return [key.trim(), Number(value)]
+}
+--- solution
+function parseEntry(line: string): [key: string, value: number] {
+  const [key = '', value = ''] = line.split('=')
+  return [key.trim(), Number(value)]
+}
+
+function zip<A, B>(as: A[], bs: B[]): [A, B][] {
+  const n = Math.min(as.length, bs.length)
+  const out: [A, B][] = []
+  for (let i = 0; i < n; i++) out.push([as[i], bs[i]])
+  return out
+}
+
+function bestScore(row: [name: string, ...scores: number[]]): [name: string, best: number] {
+  const [name, ...scores] = row
+  return [name, scores.length ? Math.max(...scores) : 0]
+}
+--- hint
+Only the return type of \`parseEntry\` needs to change; the returned array literal already has the right shape.
+--- hint
+In \`zip\`, annotate the output array as \`[A, B][]\` so each \`push([a, b])\` is checked as a pair.
+--- hint
+\`const [name, ...scores] = row\` splits a rest tuple into its first element and the rest.
+--- check case | parseEntry
+parseEntry('cpu = 42')
+=> ['cpu', 42]
+--- check case | zip stops at the shorter array
+zip([1, 2, 3], ['a', 'b'])
+=> [[1, 'a'], [2, 'b']]
+--- check case | bestScore
+bestScore(['ada', 3, 9, 4])
+=> ['ada', 9]
+--- check case | bestScore with no scores
+bestScore(['lin'])
+=> ['lin', 0]
+--- check type-error | A parsed entry has exactly two slots
+const e = parseEntry('a=1'); e[2]
+--- check type-error | The first slot is the key, a string
+const [k] = parseEntry('a=1'); k.toFixed(1)
+--- check type-error | zip keeps each side's type
+const z = zip([1], ['a']); const s: string = z[0][0]
+--- check type-error | A score row starts with a name
+bestScore([3, 9])
+
+=== ts2-10 | Enums or literal unions?
+--- teach
+TypeScript has **enums**, one of the few features that are not "JavaScript plus types": an enum produces a real object at runtime.
+
+\`\`\`ts
+enum Level {
+  Low = 1,     // numeric enums count up from the first value
+  Medium,      // 2
+  High,        // 3
+}
+
+Level.Medium    // 2
+Level[3]        // 'High' — numeric enums also map values back to names
+\`\`\`
+
+String enums (\`enum Color { Red = 'red' }\`) have no reverse mapping, and they refuse plain strings: a function taking \`Color\` will not accept \`'red'\`, only \`Color.Red\`.
+
+The common alternative is a **union of literals**, often built from a constant array so you get a runtime list and a type from one source:
+
+\`\`\`ts
+const SIZES = ['s', 'm', 'l'] as const    // readonly ['s', 'm', 'l']
+type Size = (typeof SIZES)[number]        // 's' | 'm' | 'l'
+
+SIZES.length
+\`\`\`
+
+\`as const\` is what makes it work: without it \`SIZES\` is a \`string[]\` and \`Size\` is just \`string\`. \`(typeof SIZES)[number]\` means "the type of any element of SIZES".
+
+How to choose: unions vanish at compile time, accept plain strings from JSON and APIs, and work with tools that strip types without compiling them (Node's type stripping and \`erasableSyntaxOnly\` reject enums). Enums give you named constants and reverse mapping. Many teams default to unions and keep enums for numeric codes where the names help.
+
+One snag with \`as const\` arrays: \`SIZES.includes(x)\` wants \`x\` to already be a \`Size\`. To check an arbitrary string, widen the array first: \`(SIZES as readonly string[]).includes(x)\`.
+--- task
+1. Declare \`enum Priority { Low = 1, Medium, High }\`.
+2. Make \`CHANNELS\` \`as const\`, so \`Channel\` becomes \`'email' | 'sms' | 'push'\`.
+3. \`isChannel(s: string): s is Channel\`.
+4. \`channelsFor(p: Priority): Channel[]\` — \`Low\` → \`['email']\`, \`Medium\` → \`['email', 'push']\`, \`High\` → \`['email', 'push', 'sms']\`.
+5. \`priorityName(p: Priority): string\` — the member's name, using the enum's reverse mapping (e.g. \`'High'\`).
+--- starter
+const CHANNELS = ['email', 'sms', 'push']
+type Channel = (typeof CHANNELS)[number]
+--- solution
+enum Priority {
+  Low = 1,
+  Medium,
+  High,
+}
+
+const CHANNELS = ['email', 'sms', 'push'] as const
+type Channel = (typeof CHANNELS)[number]
+
+function isChannel(s: string): s is Channel {
+  return (CHANNELS as readonly string[]).includes(s)
+}
+
+function channelsFor(p: Priority): Channel[] {
+  switch (p) {
+    case Priority.Low:
+      return ['email']
+    case Priority.Medium:
+      return ['email', 'push']
+    case Priority.High:
+      return ['email', 'push', 'sms']
+  }
+}
+
+function priorityName(p: Priority): string {
+  return Priority[p]
+}
+--- hint
+\`Medium\` and \`High\` need no values: they count up from \`Low = 1\`.
+--- hint
+\`CHANNELS.includes(s)\` will not accept a plain string — widen it first: \`(CHANNELS as readonly string[]).includes(s)\`.
+--- hint
+\`Priority[p]\` looks a name up by value.
+--- check test | Priority counts up from 1
+Priority.Low === 1 && Priority.Medium === 2 && Priority.High === 3
+--- check case | priorityName uses the reverse mapping
+priorityName(Priority.High)
+=> 'High'
+--- check case | channelsFor(Medium)
+channelsFor(Priority.Medium)
+=> ['email', 'push']
+--- check case | channelsFor(High)
+channelsFor(Priority.High)
+=> ['email', 'push', 'sms']
+--- check test | isChannel
+isChannel('sms') && !isChannel('fax')
+--- check type-error | fax is not a Channel
+const c: Channel = 'fax'
+--- check type-error | 7 is not a Priority
+channelsFor(7)
+
+=== ts2-11 | Debugging: an error that is really a bug
+--- teach
+When the build fails, the compiler has usually found a real problem, not a pedantic one. A method that works:
+
+1. **Reproduce.** Run it and read the *whole* list of errors.
+2. **Start with the first error.** One cause often produces several errors further down; fixing it can clear the rest.
+3. **Read the error literally.** \`main.ts(5,12): error TS2365: Operator '+' cannot be applied to types 'Line' and 'number'\` says: on line 5, column 12, the thing on the left of \`+\` is a \`Line\`. Ask *why* the compiler thinks it is a \`Line\` — the answer is the bug.
+4. **Check your assumptions** about the functions involved. Hover in an editor, or read the signature. \`Array.prototype.find\` returns \`T | undefined\`, because nothing may match. \`reduce\` without a starting value uses the first element as the starting accumulator.
+5. **Fix the cause, not the message.** \`!\`, \`as\` and \`any\` make the message go away and leave the bug in place.
+
+A classic:
+
+\`\`\`ts
+const prices = [3, 4]
+const found = prices.find((p) => p > 10)   // number | undefined
+// found.toFixed(2)                         ✗ 'found' is possibly 'undefined'
+found === undefined ? 'none' : found.toFixed(2)
+\`\`\`
+
+The error is not the compiler being fussy: nothing in the list is above 10, so \`found\` really is \`undefined\`, and \`found.toFixed\` would crash at runtime.
+--- task
+**Bug report:** checkout does not build. Expected behaviour:
+
+- \`total(lines, catalog)\` is the sum of \`price × qty\` over the lines.
+- An empty cart totals \`0\`.
+- A line whose \`productId\` is not in the catalog throws an \`Error\` with the message \`'unknown product: <productId>'\`.
+
+Run it, read the errors, and fix the causes. No \`!\`, no \`as\`, no \`any\`.
+--- starter
+interface Product {
+  id: string
+  name: string
+  price: number
+}
+
+interface Line {
+  productId: string
+  qty: number
+}
+
+function total(lines: Line[], catalog: Product[]): number {
+  return lines.reduce((sum, line) => {
+    const product = catalog.find((p) => p.id === line.productId)
+    return sum + product.price * line.qty
+  })
+}
+--- solution
+interface Product {
+  id: string
+  name: string
+  price: number
+}
+
+interface Line {
+  productId: string
+  qty: number
+}
+
+function total(lines: Line[], catalog: Product[]): number {
+  return lines.reduce((sum, line) => {
+    const product = catalog.find((p) => p.id === line.productId)
+    if (product === undefined) throw new Error(\`unknown product: \${line.productId}\`)
+    return sum + product.price * line.qty
+  }, 0)
+}
+--- hint
+Why is \`sum\` a \`Line\`? Look at what \`reduce\` uses as its first accumulator when you give it no starting value — and what it does with an empty array.
+--- hint
+\`catalog.find(...)\` can come back \`undefined\`. What should happen then, according to the bug report?
+--- check case | Sums price times quantity
+total([{ productId: 'pen', qty: 2 }, { productId: 'ink', qty: 1 }], [{ id: 'pen', name: 'Pen', price: 250 }, { id: 'ink', name: 'Ink', price: 100 }])
+=> 600
+--- check case | An empty cart is 0
+total([], [{ id: 'pen', name: 'Pen', price: 250 }])
+=> 0
+--- check case | An unknown product throws with its id
+(() => { try { total([{ productId: 'zz', qty: 1 }], []); return 'no error' } catch (e) { return e instanceof Error ? e.message : String(e) } })()
+=> 'unknown product: zz'
+--- check source absent | No non-null assertion, cast or any
+product!|\\bas\\s+Product\\b|:\\s*any\\b
+
+=== ts2-12 | Debugging: a type that is too loose
+--- teach
+Some bugs are not type errors at all. The code compiles, and that is the problem: the type allows values that make no sense, so nothing stopped a caller from creating one.
+
+\`\`\`ts
+interface Shape {
+  kind: string
+  radius?: number
+  width?: number
+}
+const s: Shape = { kind: 'circel', width: 3 }   // compiles; nonsense
+\`\`\`
+
+Every field optional and every tag a \`string\` means the compiler has nothing to check. The fix is to describe the valid states as a **union**, one member per case, each with exactly the fields that case needs. Then the invalid states cannot be written down: "make invalid states unrepresentable".
+
+The debugging method here runs the other way from a compile error:
+
+1. **Reproduce the bug as code that should not compile** — the bad call from the report. Right now it compiles; that is your failing test.
+2. **Tighten the type** until that line is rejected.
+3. **Fix what the tightening breaks.** Code that relied on the loose type now shows up as errors, and each one is a place that could have gone wrong.
+
+That is exactly what the \`type-error\` checks in this lesson do: each is a line that must *fail* to compile against your types.
+--- task
+**Bug report:** a customer was charged with \`{ method: 'card', amount: 5 }\` — no card number — and the receipt said \`card ending undefined\`. Someone else shipped a typo, \`method: 'crad'\`, which went down the bank branch.
+
+Replace the loose \`Payment\` interface with a union of \`CardPayment\` (\`method: 'card'\`, \`amount\`, \`cardNumber: string\`) and \`BankPayment\` (\`method: 'bank'\`, \`amount\`, \`iban: string\`), so a card without a number, an unknown method, and a payment mixing card and bank fields no longer compile. Keep \`describePayment\` working, without \`?.\` or \`!\`:
+
+- card → \`'card ending <last 4 digits>: <amount to 2 places>'\`
+- bank → \`'bank transfer from <first 4 characters of the IBAN>: <amount>'\`
+--- starter
+interface Payment {
+  method: string
+  amount: number
+  cardNumber?: string
+  iban?: string
+}
+
+function describePayment(p: Payment): string {
+  const amount = p.amount.toFixed(2)
+  if (p.method === 'card') return \`card ending \${p.cardNumber?.slice(-4)}: \${amount}\`
+  return \`bank transfer from \${p.iban?.slice(0, 4)}: \${amount}\`
+}
+--- solution
+interface CardPayment {
+  method: 'card'
+  amount: number
+  cardNumber: string
+}
+
+interface BankPayment {
+  method: 'bank'
+  amount: number
+  iban: string
+}
+
+type Payment = CardPayment | BankPayment
+
+function describePayment(p: Payment): string {
+  const amount = p.amount.toFixed(2)
+  if (p.method === 'card') return \`card ending \${p.cardNumber.slice(-4)}: \${amount}\`
+  return \`bank transfer from \${p.iban.slice(0, 4)}: \${amount}\`
+}
+--- hint
+Write the two interfaces, each with its own literal \`method\`, then \`type Payment = CardPayment | BankPayment\`.
+--- hint
+With the union, checking \`p.method === 'card'\` narrows \`p\` to \`CardPayment\`, where \`cardNumber\` is always there.
+--- check case | A card payment
+describePayment({ method: 'card', amount: 5, cardNumber: '4242424242424242' })
+=> 'card ending 4242: 5.00'
+--- check case | A bank payment
+describePayment({ method: 'bank', amount: 12.5, iban: 'DE89370400440532013000' })
+=> 'bank transfer from DE89: 12.50'
+--- check type-error | A card payment needs a card number
+const p: Payment = { method: 'card', amount: 5 }
+--- check type-error | A bank payment needs an IBAN
+const p: Payment = { method: 'bank', amount: 5 }
+--- check type-error | A typo in the method does not compile
+const p: Payment = { method: 'crad', amount: 5, cardNumber: '4242424242424242' }
+--- check type-error | A bank payment cannot carry a card number
+const p: Payment = { method: 'bank', amount: 5, iban: 'DE89370400440532013000', cardNumber: '4242' }
+--- check source absent | No optional chaining or non-null assertions in describePayment
+\\?\\.\\s*slice|!\\.\\s*slice
+
+=== ts2-13 | Problem: finding free time
+--- teach
+A problem-solving lesson. The types are part of the solution: they say what goes in and what comes out, so you can think about the algorithm.
+
+**Restate the problem.** You have busy intervals in a day. They may be unsorted, may overlap, may touch, may spill outside the day. You want the free gaps inside the day that are at least some length.
+
+**Work examples by hand.** Busy \`[540, 600)\`, \`[570, 660)\`, \`[780, 840)\` in a day \`[480, 1020)\`, minimum 60. The first two overlap, so together they are \`[540, 660)\`. The gaps are \`[480, 540)\`, \`[660, 780)\` and \`[840, 1020)\`.
+
+**Brute force first.** Mark every minute as busy, then scan for runs of free minutes. Simple and correct, but its cost grows with the *length of the day*, not the number of meetings. With timestamps in seconds across a year that is tens of millions of cells.
+
+**Find the pattern.** After sorting by start, overlapping intervals sit next to each other. Walk once, keeping a "current" merged interval: if the next one starts at or before the current end, extend the end; otherwise close the current one and start a new one. That is \`O(n log n)\` for the sort plus one pass. The free gaps are then just the spaces between consecutive merged intervals, clipped to the day.
+
+**Edge cases** to list before coding: no busy intervals (the whole day is free), the day completely busy (no gaps), intervals touching end to start (they merge), intervals outside the day.
+
+**Sorting.** \`array.sort((a, b) => a.start - b.start)\` orders by \`start\` (a negative result puts \`a\` first) and sorts the array **in place**.
+
+**Types that help.** Take \`readonly Slot[]\`: the compiler then refuses \`busy.sort(...)\`, which would have reordered the caller's array. Copy first: \`[...busy].sort(...)\`.
+--- task
+With \`interface Slot { start: number; end: number }\` (half-open: \`start\` included, \`end\` not):
+
+1. \`mergeBusy(busy: readonly Slot[]): Slot[]\` — sorted by start, with overlapping **or touching** slots merged. Do not modify the input.
+2. \`freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[]\` — the gaps inside \`day\` not covered by any busy slot, in order, keeping only gaps with \`end - start >= minLength\`.
+
+It must handle 200,000 busy slots quickly.
+--- starter
+interface Slot {
+  start: number
+  end: number
+}
+
+function mergeBusy(busy: readonly Slot[]): Slot[] {
+  return []
+}
+
+function freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[] {
+  return []
+}
+--- solution
+interface Slot {
+  start: number
+  end: number
+}
+
+function mergeBusy(busy: readonly Slot[]): Slot[] {
+  const sorted = [...busy].sort((a, b) => a.start - b.start)
+  const merged: Slot[] = []
+  for (const s of sorted) {
+    const last = merged[merged.length - 1]
+    if (last && s.start <= last.end) last.end = Math.max(last.end, s.end)
+    else merged.push({ start: s.start, end: s.end })
+  }
+  return merged
+}
+
+function freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[] {
+  const free: Slot[] = []
+  let cursor = day.start
+  for (const b of mergeBusy(busy)) {
+    if (b.end <= day.start || b.start >= day.end) continue
+    if (b.start > cursor) free.push({ start: cursor, end: b.start })
+    cursor = Math.max(cursor, b.end)
+  }
+  if (cursor < day.end) free.push({ start: cursor, end: day.end })
+  return free.filter((s) => s.end - s.start >= minLength)
+}
+--- hint
+Sort a copy by \`start\`. Keep the last merged slot; if the next slot starts at or before its end, stretch it, otherwise push a new one.
+--- hint
+For the gaps, keep a \`cursor\` at \`day.start\`. For each merged busy slot inside the day, the space from \`cursor\` to its start is free; then move \`cursor\` to its end.
+--- hint
+Push new objects into \`merged\` (\`{ start: s.start, end: s.end }\`), or stretching \`last.end\` would change the caller's slots.
+--- check case | Merges overlapping and touching slots
+mergeBusy([{ start: 5, end: 7 }, { start: 1, end: 3 }, { start: 2, end: 4 }, { start: 7, end: 8 }])
+=> [{ start: 1, end: 4 }, { start: 5, end: 8 }]
+--- check case | Nothing busy merges to nothing
+mergeBusy([])
+=> []
+--- check case | The worked example
+freeSlots([{ start: 540, end: 600 }, { start: 570, end: 660 }, { start: 780, end: 840 }], { start: 480, end: 1020 }, 60)
+=> [{ start: 480, end: 540 }, { start: 660, end: 780 }, { start: 840, end: 1020 }]
+--- check case | Gaps shorter than the minimum are dropped
+freeSlots([{ start: 10, end: 20 }, { start: 25, end: 40 }], { start: 0, end: 50 }, 10)
+=> [{ start: 0, end: 10 }, { start: 40, end: 50 }]
+--- check case | Busy slots spilling outside the day are clipped
+freeSlots([{ start: -50, end: 10 }, { start: 90, end: 500 }], { start: 0, end: 100 }, 1)
+=> [{ start: 10, end: 90 }]
+--- check case | An empty calendar is one free day
+freeSlots([], { start: 0, end: 100 }, 30)
+=> [{ start: 0, end: 100 }]
+--- check case | A fully busy day has no gaps
+freeSlots([{ start: 0, end: 60 }, { start: 50, end: 100 }], { start: 0, end: 100 }, 1)
+=> []
+--- check test | The caller's array and slots are left alone
+(() => { const busy = [{ start: 5, end: 9 }, { start: 1, end: 6 }]; freeSlots(busy, { start: 0, end: 20 }, 1); return busy[0]!.start === 5 && busy[0]!.end === 9 && busy[1]!.end === 6 })()
+--- check test | 200,000 busy slots over a huge range
+(() => { const n = 200000; const busy = Array.from({ length: n }, (_, i) => { const k = (i * 7919) % n; return { start: k * 10000, end: k * 10000 + 5000 } }); const free = freeSlots(busy, { start: 0, end: n * 10000 }, 1); return free.length === n && free[0]!.start === 5000 && free[n - 1]!.end === n * 10000 })()
+--- check type-error | Busy slots need both ends
+freeSlots([{ start: 1 }], { start: 0, end: 10 }, 1)
+
+=== ts2-14 | Design: modelling a lending library
+--- teach
+A design lesson: you get a domain described in words, and you decide the types. Good types here do most of the work — once they are right, the functions nearly write themselves and whole classes of bugs cannot be written.
+
+Questions to ask for each concept:
+
+- **What states can it be in?** A loan is either out or back. That is a union with a tag (\`status: 'active' | 'returned'\`), not one type with a pile of optional fields.
+- **What does each state need?** A returned loan has a return date; an active one must not. Put \`returnedOn\` only on the returned member.
+- **What is a closed set?** Membership tiers, error reasons: literal unions, so a typo cannot compile.
+- **How can an operation fail?** Return a result the caller has to inspect — \`{ ok: true; loan } | { ok: false; error }\` — rather than throwing for ordinary outcomes like "that book is already out". Throwing is for bugs; expected failures are values.
+
+Sketch the types first, then the class. For example, one state of something you might model:
+
+\`\`\`ts
+interface ActiveTicket {
+  status: 'open'
+  opened: number
+}
+interface ClosedTicket {
+  status: 'closed'
+  opened: number
+  closed: number
+}
+type Ticket = ActiveTicket | ClosedTicket
+
+const t: Ticket = { status: 'closed', opened: 1, closed: 5 }
+t.status
+\`\`\`
+
+Keep internal storage private and simple (a \`Map\` from ISBN to book, another from ISBN to its active loan) and expose only what the spec asks for. Two tools the JavaScript course teaches after its basics, in brief:
+
+- A **\`Map\`** is a dictionary: \`new Map<string, Book>()\` gives its key and value types; then \`get\`, \`set\`, \`has\`, \`delete\`, and \`values()\`, which \`[...map.values()]\` turns into an array.
+- In a **class**, fields can be declared with initial values (\`books = new Map<string, Book>()\`), and TypeScript's **\`private\`** makes the compiler refuse any use of that field from outside the class's own methods.
+--- task
+Model a lending library. Days are whole numbers.
+
+**Types** (use these names):
+- \`Tier\` is \`'standard'\` or \`'premium'\`; \`Member\` has \`id\`, \`name\`, \`tier\`; \`Book\` has \`isbn\`, \`title\`.
+- \`ActiveLoan\`: \`status: 'active'\`, \`isbn\`, \`memberId\`, \`due\`. \`ReturnedLoan\`: the same with \`status: 'returned'\`, plus \`returnedOn: number\` and \`late: boolean\`. \`Loan\` is either. An active loan cannot have \`returnedOn\`.
+- \`BorrowError\` is \`'unknown-member' | 'unknown-book' | 'already-on-loan' | 'limit-reached'\`, and \`BorrowResult\` is \`{ ok: true; loan: ActiveLoan } | { ok: false; error: BorrowError }\`.
+
+**\`class Library\`**:
+- \`addBook(book: Book): void\`, \`addMember(member: Member): void\`.
+- \`borrow(memberId: string, isbn: string, today: number): BorrowResult\` — checks in the order of \`BorrowError\` above. A standard member may have 2 active loans, premium 5. The loan is due \`today + 14\`.
+- \`giveBack(isbn: string, today: number): ReturnedLoan | null\` — \`null\` if that book is not on loan; \`late\` is \`today > due\`.
+- \`overdue(today: number): ActiveLoan[]\` — active loans with \`due < today\`, earliest due first.
+--- starter
+// Model the library: Tier, Member, Book, ActiveLoan, ReturnedLoan, Loan,
+// BorrowError and BorrowResult — then the Library class.
+
+class Library {
+}
+--- solution
+type Tier = 'standard' | 'premium'
+
+interface Member {
+  id: string
+  name: string
+  tier: Tier
+}
+
+interface Book {
+  isbn: string
+  title: string
+}
+
+interface ActiveLoan {
+  status: 'active'
+  isbn: string
+  memberId: string
+  due: number
+}
+
+interface ReturnedLoan {
+  status: 'returned'
+  isbn: string
+  memberId: string
+  due: number
+  returnedOn: number
+  late: boolean
+}
+
+type Loan = ActiveLoan | ReturnedLoan
+
+type BorrowError = 'unknown-member' | 'unknown-book' | 'already-on-loan' | 'limit-reached'
+
+type BorrowResult = { ok: true; loan: ActiveLoan } | { ok: false; error: BorrowError }
+
+const LIMITS: Record<Tier, number> = { standard: 2, premium: 5 }
+const LOAN_DAYS = 14
+
+class Library {
+  private books = new Map<string, Book>()
+  private members = new Map<string, Member>()
+  private active = new Map<string, ActiveLoan>()
+
+  addBook(book: Book): void {
+    this.books.set(book.isbn, book)
+  }
+
+  addMember(member: Member): void {
+    this.members.set(member.id, member)
+  }
+
+  borrow(memberId: string, isbn: string, today: number): BorrowResult {
+    const member = this.members.get(memberId)
+    if (!member) return { ok: false, error: 'unknown-member' }
+    if (!this.books.has(isbn)) return { ok: false, error: 'unknown-book' }
+    if (this.active.has(isbn)) return { ok: false, error: 'already-on-loan' }
+    const current = [...this.active.values()].filter((l) => l.memberId === memberId).length
+    if (current >= LIMITS[member.tier]) return { ok: false, error: 'limit-reached' }
+    const loan: ActiveLoan = { status: 'active', isbn, memberId, due: today + LOAN_DAYS }
+    this.active.set(isbn, loan)
+    return { ok: true, loan }
+  }
+
+  giveBack(isbn: string, today: number): ReturnedLoan | null {
+    const loan = this.active.get(isbn)
+    if (!loan) return null
+    this.active.delete(isbn)
+    return { ...loan, status: 'returned', returnedOn: today, late: today > loan.due }
+  }
+
+  overdue(today: number): ActiveLoan[] {
+    return [...this.active.values()].filter((l) => l.due < today).sort((a, b) => a.due - b.due)
+  }
+}
+--- hint
+Write the types before the class. \`ActiveLoan\` and \`ReturnedLoan\` are two interfaces with different literal \`status\` values; \`Loan\` is their union.
+--- hint
+Inside the class, a \`Map<string, ActiveLoan>\` from ISBN to the loan answers both "is this book out?" and "how many does this member have?".
+--- hint
+\`giveBack\` can build the returned loan with a spread: \`{ ...loan, status: 'returned', returnedOn: today, late: today > loan.due }\`.
+--- check case | A successful borrow
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); return lib.borrow('m1', 'b1', 10) })()
+=> { ok: true, loan: { status: 'active', isbn: 'b1', memberId: 'm1', due: 24 } }
+--- check case | An unknown member is reported first
+(() => { const lib = new Library(); return lib.borrow('nobody', 'nothing', 1) })()
+=> { ok: false, error: 'unknown-member' }
+--- check case | An unknown book
+(() => { const lib = new Library(); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); return lib.borrow('m1', 'b9', 1) })()
+=> { ok: false, error: 'unknown-book' }
+--- check case | A book cannot be out twice
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.addMember({ id: 'm2', name: 'Lin', tier: 'premium' }); lib.borrow('m1', 'b1', 1); return lib.borrow('m2', 'b1', 2) })()
+=> { ok: false, error: 'already-on-loan' }
+--- check case | Standard members stop at two, premium members do not
+(() => { const lib = new Library(); for (const i of [1, 2, 3, 4, 5, 6]) lib.addBook({ isbn: 'b' + i, title: 'T' + i }); lib.addMember({ id: 's', name: 'Sam', tier: 'standard' }); lib.addMember({ id: 'p', name: 'Pat', tier: 'premium' }); return [lib.borrow('s', 'b1', 1).ok, lib.borrow('s', 'b2', 1).ok, lib.borrow('s', 'b3', 1), lib.borrow('p', 'b3', 1).ok, lib.borrow('p', 'b4', 1).ok, lib.borrow('p', 'b5', 1).ok] })()
+=> [true, true, { ok: false, error: 'limit-reached' }, true, true, true]
+--- check case | Giving a book back, late
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.borrow('m1', 'b1', 10); return lib.giveBack('b1', 30) })()
+=> { status: 'returned', isbn: 'b1', memberId: 'm1', due: 24, returnedOn: 30, late: true }
+--- check case | Returning frees the book and the member's slot; a book not on loan gives null
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addBook({ isbn: 'b2', title: 'Emma' }); lib.addBook({ isbn: 'b3', title: 'Ulysses' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.borrow('m1', 'b1', 1); lib.borrow('m1', 'b2', 1); const back = lib.giveBack('b1', 5); return [back?.late, lib.giveBack('b1', 6), lib.borrow('m1', 'b3', 7).ok, lib.borrow('m1', 'b1', 7).ok] })()
+=> [false, null, true, false]
+--- check case | overdue lists late active loans, earliest due first
+(() => { const lib = new Library(); for (const i of [1, 2, 3]) lib.addBook({ isbn: 'b' + i, title: 'T' + i }); lib.addMember({ id: 'p', name: 'Pat', tier: 'premium' }); lib.borrow('p', 'b1', 10); lib.borrow('p', 'b2', 1); lib.borrow('p', 'b3', 20); return lib.overdue(26).map((l) => l.isbn) })()
+=> ['b2', 'b1']
+--- check type-error | An active loan cannot have a return date
+const l: ActiveLoan = { status: 'active', isbn: 'b1', memberId: 'm1', due: 1, returnedOn: 2 }
+--- check type-error | A returned loan must have its return date
+const l: ReturnedLoan = { status: 'returned', isbn: 'b1', memberId: 'm1', due: 1, late: false }
+--- check type-error | Only the four known borrow errors exist
+const r: BorrowResult = { ok: false, error: 'too-bad' }
+--- check type-error | A successful result carries a loan, not an error
+const r: BorrowResult = { ok: true, error: 'limit-reached' }
+--- check type-error | gold is not a tier
+new Library().addMember({ id: 'm', name: 'Ada', tier: 'gold' })
+--- check type-error | Callers must check ok before reading the loan
+new Library().borrow('m', 'b', 1).loan
+`,qe=`@track typescript
+@level projects
+@title TypeScript · Projects
+@name TypeScript projects: three typed systems and three capstones
+@blurb Build a typed store, an event-sourced bank ledger and a router with inferred params, one step at a time — then design three libraries from a spec on your own.
+
+=== tsp-01 | Store 1: products, SKUs and stock
+--- teach
+This course puts the whole TypeScript ladder to work: three typed systems built step by step, then three capstones you design from a specification.
+
+This is the first of four lessons building a small, fully typed store: products and stock, orders that move through states, discounts, and reports. Each lesson starts from where the last one ended.
+
+**The design idea for this step: validate once, then trust the type.** Two kinds of value are easy to get wrong in a store:
+
+- a **SKU** (stock-keeping unit) like \`PEN-001\` — a string, but not *any* string;
+- a **price** in cents — a number, but only a whole, non-negative one.
+
+Brand both (you met brands in the advanced course). The only way to get a \`Sku\` is \`sku(raw)\`, which checks the format; the only way to get \`Cents\` is \`cents(n)\`. Every function further in can then take a \`Sku\` and never re-check it, and a plain string typed in by accident does not compile.
+
+**The inventory** keeps two maps keyed by SKU: products and quantities on hand. Keep them \`private\` so nothing outside can put the two out of step. Think about each method's failure mode and choose deliberately:
+
+- adding the same SKU twice, or restocking an unknown one, is a programming mistake — **throw**;
+- asking to take more than is available is an ordinary outcome — return **\`false\`** and change nothing.
+
+Mark product fields \`readonly\`: a product's price changing under an order that already used it would be a nasty bug.
+--- task
+Build:
+
+1. \`type Brand<T, B extends string>\`, \`type Sku\` (a branded string) and \`type Cents\` (a branded number).
+2. \`sku(raw: string): Sku\` — must match \`/^[A-Z]{3}-\\d{3}$/\`, else throw a \`TypeError\` with the message \`'invalid SKU: <raw>'\`. \`cents(n: number): Cents\` — a whole number \`>= 0\`, else throw a \`RangeError\`.
+3. \`interface Product\` with readonly \`sku: Sku\`, \`name: string\`, \`price: Cents\`.
+4. \`class Inventory\`:
+   - \`addProduct(product: Product, quantity = 0): void\` — throws \`Error('duplicate SKU: <sku>')\` if it exists; \`RangeError\` unless \`quantity\` is a whole number \`>= 0\`.
+   - \`restock(s: Sku, quantity: number): void\` — throws \`Error('unknown SKU: <sku>')\`; \`RangeError\` unless \`quantity\` is a whole number \`> 0\`.
+   - \`product(s: Sku): Product | undefined\`, \`available(s: Sku): number\` (0 for unknown SKUs).
+   - \`take(s: Sku, quantity: number): boolean\` — removes stock and returns \`true\` only if the SKU exists, \`quantity\` is a whole number \`> 0\` and enough is available; otherwise \`false\`, unchanged.
+   - \`list(): Product[]\` — sorted by SKU.
+--- starter
+// The typed store, step 1: SKUs, prices, products and the inventory.
+
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+--- hint
+Start with the brands and the two smart constructors; they are the only places a cast (\`raw as Sku\`) belongs.
+--- hint
+Two private maps, \`Map<Sku, Product>\` and \`Map<Sku, number>\`, keep products and quantities.
+--- hint
+In \`take\`, compute every reason to refuse first, and only then change the stock.
+--- check case | sku accepts a valid code
+sku('PEN-001')
+=> 'PEN-001'
+--- check case | sku rejects bad codes with a TypeError
+(() => { try { sku('pen-1'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'wrong type' } })()
+=> 'invalid SKU: pen-1'
+--- check test | cents rejects fractions and negatives
+throws(() => cents(1.5)) && throws(() => cents(-1)) && cents(0) === 0
+--- check case | Stock goes in and out
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.restock(sku('PEN-001'), 5); const took = inv.take(sku('PEN-001'), 12); const tooMany = inv.take(sku('PEN-001'), 4); return [took, tooMany, inv.available(sku('PEN-001'))] })()
+=> [true, false, 3]
+--- check case | Unknown SKUs: nothing available, nothing taken
+(() => { const inv = new Inventory(); return [inv.available(sku('ABC-999')), inv.take(sku('ABC-999'), 1), inv.product(sku('ABC-999'))] })()
+=> [0, false, undefined]
+--- check case | list is sorted by SKU
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }); return inv.list().map((p) => p.name) })()
+=> ['Ink', 'Pen']
+--- check case | Mistakes throw with clear messages
+(() => { const inv = new Inventory(); const pen = { sku: sku('PEN-001'), name: 'Pen', price: cents(250) }; inv.addProduct(pen); const msg = (f: () => void) => { try { f(); return 'no error' } catch (e) { return (e as Error).message } }; return [msg(() => inv.addProduct(pen)), msg(() => inv.restock(sku('INK-002'), 1)), throws(() => inv.restock(sku('PEN-001'), 0))] })()
+=> ['duplicate SKU: PEN-001', 'unknown SKU: INK-002', true]
+--- check type-error | A plain string is not a Sku
+const s: Sku = 'PEN-001'
+--- check type-error | restock wants a Sku
+new Inventory().restock('PEN-001', 1)
+--- check type-error | A price must be Cents
+const p: Product = { sku: sku('PEN-001'), name: 'Pen', price: 250 }
+--- check type-error | Products are read-only
+const p: Product = { sku: sku('PEN-001'), name: 'Pen', price: cents(250) }; p.price = cents(1)
+--- check type-error | product() may find nothing
+new Inventory().product(sku('PEN-001')).name
+
+=== tsp-02 | Store 2: orders as a state machine
+--- teach
+An order is **draft** while the customer fills the cart, **placed** once stock is reserved, then **shipped** or **cancelled**. The tempting model is one \`Order\` type with a \`status: string\` and a pile of optional fields — \`total?\`, \`tracking?\`, \`reason?\`. Every function then has to wonder which fields are really there.
+
+Model each state as its own type instead, and write each operation's signature to say which states it accepts:
+
+\`\`\`ts
+// ship(order: PlacedOrder, tracking: string): ShippedOrder
+// cancel(order: DraftOrder | PlacedOrder, …): CancelledOrder
+\`\`\`
+
+Now "ship a draft" and "cancel a shipped order" are not runtime checks you might forget — they do not compile. A \`ShippedOrder\` always has \`tracking\`; a \`DraftOrder\` never has a \`total\`.
+
+**Placing an order can fail for ordinary reasons** — an empty cart, a SKU that does not exist, not enough stock. Those are values, not exceptions: return a \`Result\` whose error type is a union of tagged objects, each carrying what the caller needs to show a message (\`wanted\` and \`available\` for the out-of-stock case).
+
+**Be all-or-nothing.** If the second line is out of stock, the first line must not stay reserved. Check every line first; take stock only when all of them pass.
+
+Orders are immutable values: \`addLine\` returns a new draft. Cancelling a placed order gives its stock back.
+--- task
+Add to the store:
+
+1. \`interface Line\` — readonly \`sku: Sku\`, \`quantity: number\`.
+2. Four readonly order types sharing \`id\` and \`lines: readonly Line[]\`: \`DraftOrder\` (\`status: 'draft'\`), \`PlacedOrder\` (\`'placed'\`, plus \`total: Cents\`), \`ShippedOrder\` (\`'shipped'\`, \`total\` and \`tracking: string\`), \`CancelledOrder\` (\`'cancelled'\`, plus \`reason: string\`); \`type Order\` is any of them.
+3. \`type PlaceError\` — \`{ kind: 'empty' }\`, \`{ kind: 'unknown-sku'; sku: Sku }\` or \`{ kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }\`; and \`type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }\`.
+4. \`draft(id)\`; \`addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder\` — adds to an existing line for the same SKU; \`RangeError\` unless \`quantity\` is a whole number \`> 0\`.
+5. \`place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError>\` — checks lines in order, reserves nothing unless every line can be filled; \`total\` is the sum of price × quantity.
+6. \`ship(order: PlacedOrder, tracking: string): ShippedOrder\` and \`cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder\` (a placed order's stock goes back).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+--- hint
+Write the four order interfaces first; the function signatures then say which state goes in and which comes out.
+--- hint
+\`place\` makes two passes over the lines: one that only checks (and adds up the total), one that takes stock.
+--- hint
+In \`cancel\`, narrowing on \`order.status === 'placed'\` tells you whether there is stock to give back.
+--- check case | Placing an order reserves stock and totals it
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 5); const o = addLine(addLine(addLine(draft('o1'), sku('PEN-001'), 2), sku('INK-002'), 1), sku('PEN-001'), 1); const r = place(o, inv); return [r, inv.available(sku('PEN-001')), inv.available(sku('INK-002'))] })()
+=> [{ ok: true, value: { status: 'placed', id: 'o1', lines: [{ sku: 'PEN-001', quantity: 3 }, { sku: 'INK-002', quantity: 1 }], total: 850 } }, 7, 4]
+--- check case | Out of stock reserves nothing at all
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 1); const o = addLine(addLine(draft('o2'), sku('PEN-001'), 2), sku('INK-002'), 3); const r = place(o, inv); return [r, inv.available(sku('PEN-001'))] })()
+=> [{ ok: false, error: { kind: 'out-of-stock', sku: 'INK-002', wanted: 3, available: 1 } }, 10]
+--- check case | Empty orders and unknown SKUs
+(() => { const inv = new Inventory(); return [place(draft('o3'), inv), place(addLine(draft('o4'), sku('ABC-123'), 1), inv)] })()
+=> [{ ok: false, error: { kind: 'empty' } }, { ok: false, error: { kind: 'unknown-sku', sku: 'ABC-123' } }]
+--- check case | Shipping and cancelling
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const a = place(addLine(draft('a'), sku('PEN-001'), 4), inv); const b = place(addLine(draft('b'), sku('PEN-001'), 3), inv); if (!a.ok || !b.ok) return 'place failed'; const shipped = ship(a.value, 'TRK-1'); const cancelled = cancel(b.value, 'changed mind', inv); return [shipped.status, shipped.tracking, cancelled, inv.available(sku('PEN-001'))] })()
+=> ['shipped', 'TRK-1', { status: 'cancelled', id: 'b', lines: [{ sku: 'PEN-001', quantity: 3 }], reason: 'changed mind' }, 6]
+--- check test | addLine returns a new draft and validates the quantity
+(() => { const d = draft('x'); const e = addLine(d, sku('PEN-001'), 1); return d.lines.length === 0 && e.lines.length === 1 && throws(() => addLine(d, sku('PEN-001'), 0)) })()
+--- check type-error | A draft cannot be shipped
+ship(draft('o1'), 'TRK-1')
+--- check type-error | A shipped order cannot be cancelled
+(o: ShippedOrder, inv: Inventory) => cancel(o, 'late', inv)
+--- check type-error | Lines cannot be added to a placed order
+(o: PlacedOrder) => addLine(o, sku('PEN-001'), 1)
+--- check type-error | A shipped order must have tracking
+const o: ShippedOrder = { status: 'shipped', id: 'o1', lines: [], total: cents(0) }
+--- check type-error | An out-of-stock error carries the numbers
+const e: PlaceError = { kind: 'out-of-stock', sku: sku('PEN-001') }
+--- check type-error | Callers must check the result of place
+place(draft('o1'), new Inventory()).value
+
+=== tsp-03 | Store 3: discounts and checkout
+--- teach
+Discounts are a textbook discriminated union: each kind has its own data, and every function that handles them must handle every kind.
+
+\`\`\`ts
+type Sku = string & { readonly __brand: 'Sku' }
+type Cents = number & { readonly __brand: 'Cents' }
+
+type Discount =
+  | { kind: 'percent'; percent: number }                              // off the order total
+  | { kind: 'fixed'; amount: Cents }                                  // a set amount off
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }      // e.g. buy 2, get 1 free
+\`\`\`
+
+Compute each discount in a \`switch\` ending in \`assertNever\`. When marketing invents a fourth kind next month, adding it to the union makes the compiler point at every place that needs a new case.
+
+**Money rules**, decided once and applied everywhere:
+
+- A percentage discount is rounded to the nearest cent (\`Math.round\`).
+- *Buy X get Y* works in groups: for every \`buy + free\` units of that SKU in the order, \`free\` of them cost nothing. With buy 2 get 1 and 7 pens, there are two full groups of 3, so 2 pens are free.
+- Discounts are each computed from the order and added up; the total discount never exceeds the order's total, so nobody is ever paid to shop.
+
+Keep amounts as \`Cents\` all the way through and format only at the edge, for display: \`formatCents(1234)\` is \`'$12.34'\`. Formatting with integer arithmetic (\`Math.floor(c / 100)\` and \`c % 100\`) avoids floating-point surprises.
+--- task
+Add:
+
+1. \`type Discount\` as above, and \`assertNever(value: never): never\`.
+2. \`discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number\` — a \`switch\` on \`d.kind\` with an \`assertNever\` default. A percent outside 0–100 throws a \`RangeError\`. *Buy X get Y* for a SKU the order does not contain is 0.
+3. \`checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[])\` returning \`{ subtotal: Cents; discount: Cents; total: Cents }\` — the discount capped at the subtotal.
+4. \`formatCents(c: Cents): string\` — \`'$<dollars>.<two-digit cents>'\`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(\`invalid percent: \${d.percent}\`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return \`$\${Math.floor(c / 100)}.\${String(c % 100).padStart(2, '0')}\`
+}
+--- hint
+\`discountAmount\` is one \`switch (d.kind)\` with three cases and \`default: return assertNever(d)\`.
+--- hint
+For buy X get Y: \`Math.floor(line.quantity / (d.buy + d.free)) * d.free\` free units, each worth the product's price.
+--- hint
+\`formatCents\`: \`\` \`$\${Math.floor(c / 100)}.\${String(c % 100).padStart(2, '0')}\` \`\`.
+--- check case | A percent discount, rounded to the cent
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(333) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 3), inv); if (!r.ok) return 'place failed'; return checkout(r.value, inv, [{ kind: 'percent', percent: 15 }]) })()
+=> { subtotal: 999, discount: 150, total: 849 }
+--- check case | Buy two, get one free, plus a fixed amount
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 10); const r = place(addLine(addLine(draft('o'), sku('PEN-001'), 7), sku('INK-002'), 2), inv); if (!r.ok) return 'place failed'; return checkout(r.value, inv, [{ kind: 'buy-x-get-y', sku: sku('PEN-001'), buy: 2, free: 1 }, { kind: 'fixed', amount: cents(50) }]) })()
+=> { subtotal: 1950, discount: 550, total: 1400 }
+--- check case | The discount never exceeds the total; missing SKUs give nothing
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 1), inv); if (!r.ok) return 'place failed'; return [checkout(r.value, inv, [{ kind: 'fixed', amount: cents(1000) }]), checkout(r.value, inv, [{ kind: 'buy-x-get-y', sku: sku('INK-002'), buy: 1, free: 1 }])] })()
+=> [{ subtotal: 250, discount: 250, total: 0 }, { subtotal: 250, discount: 0, total: 250 }]
+--- check test | A percent outside 0 to 100 is a RangeError
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 1), inv); if (!r.ok) return false; try { checkout(r.value, inv, [{ kind: 'percent', percent: 120 }]); return false } catch (e) { return e instanceof RangeError } })()
+--- check case | formatCents
+[formatCents(cents(1234)), formatCents(cents(5)), formatCents(cents(100000))]
+=> ['$12.34', '$0.05', '$1000.00']
+--- check type-error | A percent discount has a percent, not an amount
+const d: Discount = { kind: 'percent', amount: cents(5) }
+--- check type-error | Unknown discount kinds do not compile
+const d: Discount = { kind: 'bogo' }
+--- check type-error | A fixed discount is in Cents
+const d: Discount = { kind: 'fixed', amount: 500 }
+--- check type-error | Only placed orders can be checked out
+(o: DraftOrder, inv: Inventory) => checkout(o, inv, [])
+--- check type-error | formatCents takes Cents
+formatCents(12.5)
+--- check source | The switch is exhaustive
+assertNever\\s*\\(\\s*d\\s*\\)
+
+=== tsp-04 | Store 4: typed reports
+--- teach
+The last step of the store turns orders into numbers a manager reads. Reports are where loose types creep back in — \`Record<string, number>\` everywhere — so this lesson is about keeping them precise.
+
+**Counts over a closed set.** "How many orders in each status?" has exactly four answers. \`Record<Order['status'], number>\` says so: all four keys, always present (zero included), and a typo like \`counts.shiped\` does not compile. \`Order['status']\` is an indexed access on a union, giving the union of all four literal statuses — derived from the order types, so it can never drift.
+
+**A generic \`groupBy\`.** Grouping by a key function is useful everywhere, so write it once:
+
+\`\`\`ts
+// groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>>
+\`\`\`
+
+\`K extends PropertyKey\` (\`string | number | symbol\`) is what may be an object key. The result is \`Partial\` because a key type like \`'draft' | 'placed' | …\` would otherwise promise a group for every status, even ones with no orders.
+
+**Narrowing inside reports.** Revenue counts placed and shipped orders only. After \`o.status === 'placed' || o.status === 'shipped'\`, TypeScript knows \`o.total\` exists — the state-machine types from lesson 2 pay off again.
+
+Sort with explicit tie-breakers so results are stable: most quantity first, then SKU alphabetically.
+--- task
+Add:
+
+1. \`groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>>\` — items in their original order within each group.
+2. \`countByStatus(orders: readonly Order[]): Record<Order['status'], number>\` — every status present.
+3. \`revenue(orders: readonly Order[]): Cents\` — the sum of \`total\` over placed and shipped orders.
+4. \`topProducts(orders: readonly Order[], n: number): { sku: Sku; quantity: number }[]\` — quantities summed over placed and shipped orders, highest first, ties by SKU ascending, at most \`n\`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(\`invalid percent: \${d.percent}\`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return \`$\${Math.floor(c / 100)}.\${String(c % 100).padStart(2, '0')}\`
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\\d{3}$/.test(raw)) throw new TypeError(\`invalid SKU: \${raw}\`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(\`invalid amount of cents: \${n}\`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(\`duplicate SKU: \${product.sku}\`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(\`unknown SKU: \${s}\`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(\`invalid quantity: \${quantity}\`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(\`invalid percent: \${d.percent}\`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return \`$\${Math.floor(c / 100)}.\${String(c % 100).padStart(2, '0')}\`
+}
+
+function groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>> {
+  const out: Partial<Record<K, T[]>> = {}
+  for (const item of items) {
+    const k = key(item)
+    const group = out[k]
+    if (group) group.push(item)
+    else out[k] = [item]
+  }
+  return out
+}
+
+function countByStatus(orders: readonly Order[]): Record<Order['status'], number> {
+  const counts: Record<Order['status'], number> = { draft: 0, placed: 0, shipped: 0, cancelled: 0 }
+  for (const o of orders) counts[o.status]++
+  return counts
+}
+
+function revenue(orders: readonly Order[]): Cents {
+  let sum = 0
+  for (const o of orders) if (o.status === 'placed' || o.status === 'shipped') sum += o.total
+  return cents(sum)
+}
+
+function topProducts(orders: readonly Order[], n: number): { sku: Sku; quantity: number }[] {
+  const totals = new Map<Sku, number>()
+  for (const o of orders) {
+    if (o.status !== 'placed' && o.status !== 'shipped') continue
+    for (const line of o.lines) totals.set(line.sku, (totals.get(line.sku) ?? 0) + line.quantity)
+  }
+  return [...totals]
+    .map(([s, quantity]) => ({ sku: s, quantity }))
+    .sort((a, b) => b.quantity - a.quantity || (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+    .slice(0, n)
+}
+--- hint
+Start \`countByStatus\` from an object with all four statuses at 0, typed \`Record<Order['status'], number>\`.
+--- hint
+In \`groupBy\`, read \`out[k]\`; push onto it if it exists, otherwise start it with \`[item]\`.
+--- hint
+\`topProducts\`: sum into a \`Map<Sku, number>\`, turn it into objects, sort by quantity then SKU, then \`slice(0, n)\`.
+--- check case | groupBy keeps order within groups
+groupBy(['apple', 'avocado', 'banana', 'blueberry', 'cherry'], (s) => s[0]!)
+=> { a: ['apple', 'avocado'], b: ['banana', 'blueberry'], c: ['cherry'] }
+--- check case | countByStatus includes zeros
+countByStatus([{ status: 'draft', id: 'a', lines: [] }, { status: 'cancelled', id: 'b', lines: [], reason: 'x' }, { status: 'draft', id: 'c', lines: [] }])
+=> { draft: 2, placed: 0, shipped: 0, cancelled: 1 }
+--- check case | revenue counts placed and shipped orders only
+revenue([{ status: 'placed', id: 'a', lines: [], total: cents(500) }, { status: 'shipped', id: 'b', lines: [], total: cents(250), tracking: 'T' }, { status: 'cancelled', id: 'c', lines: [], reason: 'x' }, { status: 'draft', id: 'd', lines: [] }])
+=> 750
+--- check case | topProducts sums, sorts and limits
+topProducts([{ status: 'placed', id: 'a', lines: [{ sku: sku('PEN-001'), quantity: 2 }, { sku: sku('INK-002'), quantity: 5 }], total: cents(1) }, { status: 'shipped', id: 'b', lines: [{ sku: sku('PEN-001'), quantity: 3 }, { sku: sku('CAP-003'), quantity: 5 }], total: cents(1), tracking: 'T' }, { status: 'cancelled', id: 'c', lines: [{ sku: sku('ZIP-009'), quantity: 99 }], reason: 'x' }], 3)
+=> [{ sku: 'CAP-003', quantity: 5 }, { sku: 'INK-002', quantity: 5 }, { sku: 'PEN-001', quantity: 5 }]
+--- check case | topProducts respects n
+topProducts([{ status: 'placed', id: 'a', lines: [{ sku: sku('PEN-001'), quantity: 2 }, { sku: sku('INK-002'), quantity: 1 }], total: cents(1) }], 1)
+=> [{ sku: 'PEN-001', quantity: 2 }]
+--- check type-error | countByStatus has only real statuses
+countByStatus([]).refunded
+--- check type-error | revenue only takes real orders
+revenue([{ status: 'refunded', id: 'x', lines: [] }])
+--- check type-error | groupBy's keys have the key function's type
+groupBy(['a', 'bb'], (s) => s.length).foo
+--- check type-error | countByStatus returns exactly a record of the four statuses
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ReturnType<typeof countByStatus>, Record<'draft' | 'placed' | 'shipped' | 'cancelled', number>> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check type-error | groupBy by length is exactly Partial<Record<number, string[]>>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const g = groupBy(['a', 'bb'], (s) => s.length);
+const no: Equal<typeof g, Partial<Record<number, string[]>>> = false
+
+=== tsp-05 | Ledger 1: events and replay
+--- teach
+The second project is a bank ledger built with **event sourcing**. Instead of storing balances and updating them, you store the list of things that happened — *opened*, *deposited*, *transferred* — and compute the balances by replaying that list. Nothing is ever overwritten, so you get a full audit trail and can ask what any balance was at any moment.
+
+Four lessons: events and replay (this one), commands that validate and produce events, a \`Ledger\` with typed subscriptions, and projections that answer questions about history.
+
+**Events are facts, in the past tense.** One discriminated union, readonly all the way down, because a fact never changes:
+
+\`\`\`ts
+type BankEvent =
+  | { readonly type: 'opened'; readonly account: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: string; readonly amount: number; readonly at: number }
+\`\`\`
+
+**\`apply(state, event)\` is a pure function**: it returns a new state and never mutates the old one. That is what makes replay trustworthy — \`replay(events)\` is just \`events.reduce(apply, {})\`, and the same events always give the same balances.
+
+\`apply\` does not validate. Events are things that *already happened*; refusing one would make the history disagree with itself. Validation belongs to the step that decides whether an event may happen — the next lesson.
+
+Money is whole cents, as plain numbers here. Account ids are branded so a stray string cannot pose as one.
+--- task
+1. \`type AccountId\` (a branded string) and \`accountId(raw: string): AccountId\` — must match \`/^acc_\\w+$/\`, else a \`TypeError\`.
+2. \`type LedgerEvent\`, readonly, with an \`at: number\` on every member:
+   - \`opened\` (\`account\`, \`owner: string\`), \`deposited\` (\`account\`, \`amount\`), \`withdrawn\` (\`account\`, \`amount\`), \`transferred\` (\`from\`, \`to\`, \`amount\`), \`closed\` (\`account\`).
+3. \`interface Account\` — readonly \`id\`, \`owner\`, \`balance\`, \`open: boolean\`; and \`type Accounts = Readonly<Record<string, Account>>\`.
+4. \`apply(state: Accounts, event: LedgerEvent): Accounts\` — pure; an exhaustive \`switch\` with \`assertNever\`. Opening starts at balance 0 and \`open: true\`; closing sets \`open: false\`. Events for accounts that do not exist change nothing.
+5. \`replay(events: readonly LedgerEvent[]): Accounts\`.
+--- starter
+// The event-sourced ledger, step 1: events, accounts, apply and replay.
+
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+--- hint
+Write the event union first; each member is a readonly object type with a literal \`type\`.
+--- hint
+A small helper \`change(state, id, update)\` that copies the state with one account updated keeps \`apply\` short.
+--- hint
+\`replay\` is one line: \`events.reduce(apply, {})\`.
+--- check case | Replay computes balances
+replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 1000, at: 3 }, { type: 'transferred', from: accountId('acc_a'), to: accountId('acc_b'), amount: 300, at: 4 }, { type: 'withdrawn', account: accountId('acc_b'), amount: 100, at: 5 }])
+=> { acc_a: { id: 'acc_a', owner: 'Ada', balance: 700, open: true }, acc_b: { id: 'acc_b', owner: 'Lin', balance: 200, open: true } }
+--- check case | Closing an account
+replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'closed', account: accountId('acc_a'), at: 2 }])
+=> { acc_a: { id: 'acc_a', owner: 'Ada', balance: 0, open: false } }
+--- check test | apply never changes the state it is given
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }]); const t = apply(s, { type: 'deposited', account: accountId('acc_a'), amount: 5, at: 2 }); return s.acc_a!.balance === 0 && t.acc_a!.balance === 5 && s !== t })()
+--- check case | Events for unknown accounts change nothing
+replay([{ type: 'deposited', account: accountId('acc_x'), amount: 5, at: 1 }])
+=> {}
+--- check test | Account ids are validated
+throws(() => accountId('a')) && accountId('acc_1') === 'acc_1'
+--- check type-error | A deposit needs an amount
+apply({}, { type: 'deposited', account: accountId('acc_a'), at: 1 })
+--- check type-error | Unknown event types do not compile
+apply({}, { type: 'refunded', account: accountId('acc_a'), at: 1 })
+--- check type-error | Account ids are branded
+const e: LedgerEvent = { type: 'opened', account: 'acc_a', owner: 'Ada', at: 1 }
+--- check type-error | Replayed accounts are read-only
+const s = replay([]); s.acc_a.balance = 5
+--- check source | apply is exhaustive
+assertNever\\s*\\(\\s*event\\s*\\)
+
+=== tsp-06 | Ledger 2: commands that decide
+--- teach
+Events say what happened. **Commands** say what someone *wants* to happen — "withdraw 50 from acc_a" — and may be refused. The piece in between is a pure function:
+
+\`\`\`ts
+// decide(state, command, at): Result<LedgerEvent, CommandError>
+\`\`\`
+
+Given the current state, it either produces the event that records the change, or an error saying why not. It never changes the state itself; applying the event does that. This split — *decide* then *apply* — is the heart of event sourcing: all the rules live in one function you can test without any setup beyond a state object.
+
+**Errors are data.** Each refusal is a tagged object carrying what a user interface would need to say something useful: the balance and the amount for insufficient funds, the account for a closed account. The union of them all is \`CommandError\`, and a caller can \`switch\` over \`error.code\` exhaustively.
+
+**Order the checks deliberately**, because the first failing rule is the one reported. Here: a transfer to the same account first, then the amount, then that each account exists and is open, then funds. Write the order down (the task does) and test it.
+
+A small helper for "this account must exist and be open" returns a \`Result<Account, CommandError>\` of its own, and its error can be returned straight through: TypeScript knows the error member of one \`Result\` fits another with the same error type.
+--- task
+Add:
+
+1. \`type Command\` — \`open\` (\`account\`, \`owner\`), \`deposit\` (\`account\`, \`amount\`), \`withdraw\` (\`account\`, \`amount\`), \`transfer\` (\`from\`, \`to\`, \`amount\`), \`close\` (\`account\`).
+2. \`type CommandError\` — \`already-exists\`, \`no-such-account\`, \`account-closed\` (each with \`account\`); \`invalid-amount\` (\`amount\`); \`insufficient-funds\` (\`account\`, \`balance\`, \`amount\`); \`same-account\`; \`balance-not-zero\` (\`account\`, \`balance\`). The tag is \`code\`.
+3. \`type Result<T, E>\` and \`decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError>\`:
+   - \`open\`: \`already-exists\` if the account exists.
+   - \`deposit\` / \`withdraw\`: amount must be a whole number \`> 0\`; then the account must exist and be open; a withdrawal needs enough balance.
+   - \`transfer\`: \`same-account\` first; then amount; then \`from\`, then \`to\`, must exist and be open; then funds in \`from\`.
+   - \`close\`: the account must exist and be open, with balance 0.
+   - Otherwise the matching event, with \`at\`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+--- hint
+Write a helper \`openAccount(state, id): Result<Account, CommandError>\` for "exists and is open" — every command but \`open\` uses it.
+--- hint
+When the helper fails, \`if (!account.ok) return account\` passes its error straight through.
+--- hint
+Give \`decide\` its return type up front so each \`{ type: 'deposited', … }\` is checked against \`LedgerEvent\`.
+--- check case | Opening, and opening twice
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }]); return [decide({}, { type: 'open', account: accountId('acc_a'), owner: 'Ada' }, 1), decide(s, { type: 'open', account: accountId('acc_a'), owner: 'Ada' }, 2)] })()
+=> [{ ok: true, value: { type: 'opened', account: 'acc_a', owner: 'Ada', at: 1 } }, { ok: false, error: { code: 'already-exists', account: 'acc_a' } }]
+--- check case | Deposits and withdrawals
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 2 }]); return [decide(s, { type: 'withdraw', account: accountId('acc_a'), amount: 40 }, 3), decide(s, { type: 'withdraw', account: accountId('acc_a'), amount: 400 }, 3), decide(s, { type: 'deposit', account: accountId('acc_a'), amount: 2.5 }, 3), decide(s, { type: 'deposit', account: accountId('acc_z'), amount: 5 }, 3)] })()
+=> [{ ok: true, value: { type: 'withdrawn', account: 'acc_a', amount: 40, at: 3 } }, { ok: false, error: { code: 'insufficient-funds', account: 'acc_a', balance: 100, amount: 400 } }, { ok: false, error: { code: 'invalid-amount', amount: 2.5 } }, { ok: false, error: { code: 'no-such-account', account: 'acc_z' } }]
+--- check case | Transfers check in the right order
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 3 }, { type: 'closed', account: accountId('acc_b'), at: 4 }]); return [decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_a'), amount: -1 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 0 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 10 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_q'), amount: 500 }, 5)] })()
+=> [{ ok: false, error: { code: 'same-account' } }, { ok: false, error: { code: 'invalid-amount', amount: 0 } }, { ok: false, error: { code: 'account-closed', account: 'acc_b' } }, { ok: false, error: { code: 'no-such-account', account: 'acc_q' } }]
+--- check case | A successful transfer
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 3 }]); return decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 60 }, 4) })()
+=> { ok: true, value: { type: 'transferred', from: 'acc_a', to: 'acc_b', amount: 60, at: 4 } }
+--- check case | Closing needs a zero balance
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 5, at: 2 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 3 }]); return [decide(s, { type: 'close', account: accountId('acc_a') }, 4), decide(s, { type: 'close', account: accountId('acc_b') }, 4)] })()
+=> [{ ok: false, error: { code: 'balance-not-zero', account: 'acc_a', balance: 5 } }, { ok: true, value: { type: 'closed', account: 'acc_b', at: 4 } }]
+--- check type-error | A deposit command needs an amount
+decide({}, { type: 'deposit', account: accountId('acc_a') }, 1)
+--- check type-error | Only the listed error codes exist
+const e: CommandError = { code: 'oops' }
+--- check type-error | insufficient-funds carries the balance and amount
+const e: CommandError = { code: 'insufficient-funds', account: accountId('acc_a') }
+--- check type-error | Callers must check the result
+decide({}, { type: 'close', account: accountId('acc_a') }, 1).value
+
+=== tsp-07 | Ledger 3: the Ledger and typed subscriptions
+--- teach
+Time to wrap the pure functions in an object that holds the history. \`Ledger.execute(command)\` runs *decide*; if that succeeds, it appends the event, applies it to the current state, and tells anyone listening.
+
+**Typed subscriptions.** Listeners subscribe to one event type and should receive exactly that event's shape. \`Extract\` picks a member of a union by its tag:
+
+\`\`\`ts
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: string; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: string; readonly to: string; readonly amount: number; readonly at: number }
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+// on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void)
+\`\`\`
+
+\`ledger.on('transferred', (e) => …)\` then knows \`e.from\` and \`e.to\` exist, and \`ledger.on('deposited', (e) => e.from)\` does not compile.
+
+**Storing handlers of different types in one map** is the one place the compiler cannot follow you: a \`Map<EventType, …>\` has a single value type. Store them as \`(event: LedgerEvent) => void\` with one cast at registration. It is safe because \`execute\` only ever calls a handler with an event of the type it was registered for — a fact the *public* signature guarantees, which is what the checks test.
+
+The clock is simple: an event's \`at\` is its position in the history, starting at 1. Refused commands record nothing and notify no one. Copy the handler list before calling handlers, so one that unsubscribes itself does not disturb the loop.
+--- task
+Add:
+
+1. \`type EventType\` and \`type EventOf<T extends EventType>\`.
+2. \`class Ledger\`:
+   - \`execute(command: Command): Result<LedgerEvent, CommandError>\` — decide with \`at\` = number of events so far + 1; on success record the event, update the state and call that type's handlers in the order they subscribed.
+   - \`on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void\` — returns an unsubscribe function.
+   - \`get accounts(): Accounts\` and \`history(): readonly LedgerEvent[]\` (a copy).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+--- hint
+\`type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>\`.
+--- hint
+Keep \`private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()\` and cast the handler once when you store it.
+--- hint
+\`execute\` is decide → (if ok) push, apply, notify → return the result.
+--- check case | Commands build up the accounts
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 500 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 200 }); return [l.accounts.acc_a!.balance, l.accounts.acc_b!.balance, l.history().map((e) => e.at)] })()
+=> [300, 200, [1, 2, 3, 4]]
+--- check case | Refused commands record nothing
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); const r = l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 5 }); return [r, l.history().length] })()
+=> [{ ok: false, error: { code: 'insufficient-funds', account: 'acc_a', balance: 0, amount: 5 } }, 1]
+--- check case | Subscribers get only their event type
+(() => { const l = new Ledger(); const seen: string[] = []; l.on('transferred', (e) => seen.push(\`\${e.from}->\${e.to}:\${e.amount}\`)); l.on('opened', (e) => seen.push('opened ' + e.owner)); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 50 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 20 }); return seen })()
+=> ['opened Ada', 'opened Lin', 'acc_a->acc_b:20']
+--- check case | Unsubscribing
+(() => { const l = new Ledger(); let n = 0; const off = l.on('opened', () => { n++ }); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); off(); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); return n })()
+=> 1
+--- check test | history is a copy
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); const h = l.history() as LedgerEvent[]; h.length = 0; return l.history().length === 1 })()
+--- check type-error | A deposit event has no from
+new Ledger().on('deposited', (e) => e.from)
+--- check type-error | Only real event types can be subscribed to
+new Ledger().on('refunded', () => {})
+--- check type-error | Commands need branded account ids
+new Ledger().execute({ type: 'deposit', account: 'acc_a', amount: 5 })
+--- check type-error | The accounts view is read-only
+new Ledger().accounts.acc_a.balance = 1
+--- check type-error | A transferred handler receives exactly the transferred event
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Ledger().on('transferred', (e) => { const no: Equal<typeof e, EventOf<'transferred'>> = false })
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-08 | Ledger 4: projections and time travel
+--- teach
+Replaying events into balances is one **projection** of the history. There are as many as you have questions: a statement for one account, the number of transfers per day, the balance as it was last Tuesday. Each is the same shape — a starting value and a step function — so give that shape a generic type:
+
+\`\`\`ts
+type LedgerEvent = { readonly type: 'deposited'; readonly amount: number; readonly at: number }
+
+interface Projection<S> {
+  readonly initial: S
+  step(state: S, event: LedgerEvent): S
+}
+// project<S>(events, projection): S  — a reduce, typed by S
+\`\`\`
+
+Your \`apply\` is already a projection: \`{ initial: {}, step: apply }\` is the balances. A projection can also be *made* by a function, when it needs a parameter — \`statement(account)\` returns the projection for that account.
+
+Because every event carries \`at\`, **time travel** is a filter: replay only the events with \`at <= t\` and you have the state at time \`t\`. No backups, no snapshots — the history already contains every past state.
+
+The statement projection is also a good exhaustiveness test. It has to decide, for every event type, whether the event concerns this account — and for a transfer, which side of it the account is on. A \`switch\` with \`assertNever\` makes sure a future event type is not silently left off statements.
+--- task
+Add:
+
+1. \`interface Projection<S>\` and \`project<S>(events: readonly LedgerEvent[], projection: Projection<S>): S\`.
+2. \`const balances: Projection<Accounts>\` built from \`apply\`.
+3. \`interface StatementLine\` — readonly \`at\`, \`text\`, \`change\`, \`balance\` (the running balance) — and \`statement(account: AccountId): Projection<readonly StatementLine[]>\`. Only events that concern the account add a line: \`opened\` (change 0), \`deposit\`, \`withdrawal\` (negative), \`transfer to <id>\` (negative), \`transfer from <id>\`, \`closed\` (change 0).
+4. \`balanceAt(events: readonly LedgerEvent[], account: AccountId, at: number): number\` — the balance using only events with \`at <= at\` (0 if the account did not exist yet).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\\w+$/.test(raw)) throw new TypeError(\`invalid account id: \${raw}\`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(\`unexpected: \${JSON.stringify(value)}\`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+
+interface Projection<S> {
+  readonly initial: S
+  step(state: S, event: LedgerEvent): S
+}
+
+function project<S>(events: readonly LedgerEvent[], projection: Projection<S>): S {
+  return events.reduce((state, event) => projection.step(state, event), projection.initial)
+}
+
+const balances: Projection<Accounts> = { initial: {}, step: apply }
+
+interface StatementLine {
+  readonly at: number
+  readonly text: string
+  readonly change: number
+  readonly balance: number
+}
+
+function statement(account: AccountId): Projection<readonly StatementLine[]> {
+  return {
+    initial: [],
+    step(lines, event) {
+      const balance = lines.length ? lines[lines.length - 1]!.balance : 0
+      const add = (text: string, amount: number) => [...lines, { at: event.at, text, change: amount, balance: balance + amount }]
+      switch (event.type) {
+        case 'opened':
+          return event.account === account ? add('opened', 0) : lines
+        case 'deposited':
+          return event.account === account ? add('deposit', event.amount) : lines
+        case 'withdrawn':
+          return event.account === account ? add('withdrawal', -event.amount) : lines
+        case 'transferred':
+          if (event.from === account) return add(\`transfer to \${event.to}\`, -event.amount)
+          if (event.to === account) return add(\`transfer from \${event.from}\`, event.amount)
+          return lines
+        case 'closed':
+          return event.account === account ? add('closed', 0) : lines
+        default:
+          return assertNever(event)
+      }
+    },
+  }
+}
+
+function balanceAt(events: readonly LedgerEvent[], account: AccountId, at: number): number {
+  return project(
+    events.filter((e) => e.at <= at),
+    balances,
+  )[account]?.balance ?? 0
+}
+--- hint
+\`project\` is a \`reduce\` starting from \`projection.initial\`.
+--- hint
+In \`statement\`, the running balance is the last line's balance (or 0); a small \`add(text, change)\` helper appends a line.
+--- hint
+\`balanceAt\` filters the events, projects \`balances\`, then reads the account with \`?.balance ?? 0\`.
+--- check case | A statement for one account
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 500 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 200 }); l.execute({ type: 'deposit', account: accountId('acc_b'), amount: 50 }); l.execute({ type: 'transfer', from: accountId('acc_b'), to: accountId('acc_a'), amount: 20 }); l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 20 }); return project(l.history(), statement(accountId('acc_a'))) })()
+=> [{ at: 1, text: 'opened', change: 0, balance: 0 }, { at: 3, text: 'deposit', change: 500, balance: 500 }, { at: 4, text: 'transfer to acc_b', change: -200, balance: 300 }, { at: 6, text: 'transfer from acc_b', change: 20, balance: 320 }, { at: 7, text: 'withdrawal', change: -20, balance: 300 }]
+--- check case | The balances projection matches the ledger
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 70 }); return [project(l.history(), balances), l.accounts] })()
+=> [{ acc_a: { id: 'acc_a', owner: 'Ada', balance: 70, open: true } }, { acc_a: { id: 'acc_a', owner: 'Ada', balance: 70, open: true } }]
+--- check case | Balances at earlier times
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 100 }); l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 30 }); const h = l.history(); return [balanceAt(h, accountId('acc_a'), 0), balanceAt(h, accountId('acc_a'), 2), balanceAt(h, accountId('acc_a'), 3), balanceAt(h, accountId('acc_z'), 3)] })()
+=> [0, 100, 70, 0]
+--- check case | Any projection works, e.g. counting events by type
+project([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 1, at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 1, at: 3 }], { initial: {} as Record<string, number>, step: (s, e) => ({ ...s, [e.type]: (s[e.type] ?? 0) + 1 }) })
+=> { opened: 1, deposited: 2 }
+--- check type-error | A projection's step must match its state type
+project([], { initial: 0, step: (s: string) => s })
+--- check type-error | Statement lines are read-only
+statement(accountId('acc_a')).initial.push({ at: 1, text: 'x', change: 0, balance: 0 })
+--- check type-error | balanceAt wants a branded id
+balanceAt([], 'acc_a', 5)
+--- check type-error | project returns exactly the projection's state type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const lines = project([], statement(accountId('acc_a')));
+const no: Equal<typeof lines, readonly StatementLine[]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+--- check source | statement's switch is exhaustive
+assertNever\\s*\\(\\s*event\\s*\\)[\\s\\S]*assertNever\\s*\\(\\s*event\\s*\\)
+
+=== tsp-09 | Router 1: patterns, matching and params
+--- teach
+The third project is an HTTP-style router — the piece of a web server that maps \`GET /users/42\` to the code that handles it — where the route **pattern** decides the handler's types. Write \`router.get('/users/:id', (req) => …)\` and \`req.params.id\` is known to exist; \`req.params.name\` does not compile.
+
+Four lessons: matching and param types (this one), the router itself, middleware that adds typed context, and validated request bodies.
+
+**Types.** You parsed params out of pattern strings in the expert course; reuse the idea: a recursive template-literal type collects the \`:name\` segments into a union, and a mapped type turns them into \`{ id: string }\`. Constrain patterns to start with \`/\` with a template literal type, \`\` \`/\${string}\` \`\`, so \`compile('users/:id')\` is a compile error.
+
+**Runtime.** \`compile(pattern)\` does the work *once* — splitting the pattern into segments — and returns a small matcher function to call per request. Then the rules, which are where real routers differ, so settle them explicitly:
+
+- a trailing slash is ignored on both sides (\`/users/42/\` matches \`/users/:id\`), except the root \`/\`;
+- a param must be a non-empty segment, and it is URL-decoded (\`my%20notes\` → \`my notes\`);
+- a malformed escape (like \`%E0%A4%A\`) makes \`decodeURIComponent\` throw — treat it as no match rather than crashing.
+
+Returning \`null\` for "no match" (rather than throwing) keeps the next step simple: the router will try routes in turn until one matches.
+--- task
+1. \`type Params<P extends string>\` — an object with a \`string\` property for each \`:name\` segment.
+2. \`compile<P extends \\\`/\${string}\\\`>(pattern: P): (path: string) => Params<P> | null\` following the rules above: segment counts must match, static segments must be equal, params must be non-empty and are decoded; trailing slashes are ignored except for \`/\` itself; a decoding error means no match.
+--- starter
+// The typed router, step 1: turn a pattern like '/users/:id' into a matcher.
+
+type Params<P extends string> = Record<string, string>
+
+function compile(pattern: string): (path: string) => Record<string, string> | null {
+  return () => null
+}
+--- solution
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+--- hint
+Reuse the route-param parser from the expert course for \`Params<P>\`, and give \`compile\` the constraint \`P extends \\\`/\${string}\\\`\`.
+--- hint
+A helper that removes one trailing slash unless the path is just \`/\` lets you normalise both the pattern and the path.
+--- hint
+Wrap \`decodeURIComponent\` in \`try\`/\`catch\` and return \`null\` from the \`catch\`.
+--- check case | A param is extracted
+compile('/users/:id')('/users/42')
+=> { id: '42' }
+--- check case | Two params
+compile('/teams/:team/members/:member')('/teams/red/members/ada')
+=> { team: 'red', member: 'ada' }
+--- check case | Trailing slashes are ignored on both sides
+[compile('/users/:id/')('/users/42'), compile('/users/:id')('/users/42/')]
+=> [{ id: '42' }, { id: '42' }]
+--- check case | Params are decoded
+compile('/files/:name')('/files/my%20notes')
+=> { name: 'my notes' }
+--- check case | Things that do not match
+[compile('/users/:id')('/teams/42'), compile('/users/:id')('/users/42/posts'), compile('/users/:id/posts')('/users//posts'), compile('/files/:name')('/files/%E0%A4%A')]
+=> [null, null, null, null]
+--- check case | The root matches only the root
+[compile('/')('/'), compile('/')('/x')]
+=> [{}, null]
+--- check type-error | Patterns must start with a slash
+compile('users/:id')
+--- check type-error | A match has only the pattern's params
+compile('/users/:id')('/users/1')?.name
+--- check type-error | Params are strings
+const m = compile('/a/:x')('/a/1'); if (m) { const n: number = m.x }
+--- check type-error | Params of a two-param pattern are exactly { team: string; member: string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Params<'/teams/:team/members/:member'>, { team: string; member: string }> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-10 | Router 2: routes, handlers and replies
+--- teach
+Now the router itself. Routes are registered with one method per HTTP verb, and each handler's request type is computed from its pattern:
+
+\`\`\`ts
+// get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this
+\`\`\`
+
+\`P\` is inferred from the pattern string, so inside the handler \`req.params\` is \`Params<P>\`. Returning \`this\` lets registrations chain: \`router.get(…).post(…)\`.
+
+**Dispatch** in \`handle(method, url, init)\`:
+
+1. Split the URL into path and query string; parse the query with \`URLSearchParams\`.
+2. Try routes **in registration order**. The first route whose pattern matches *and* whose method matches wins.
+3. If some route matched the path but none had this method, reply **405** (method not allowed) — more useful than a 404, because the resource exists.
+4. If nothing matched the path, reply **404**.
+5. If the handler throws, reply **500** rather than crashing the server. (Errors are logged in a real server; here, just reply.)
+
+**Storing handlers of different types.** Each route's handler has its own \`Req<P>\` type, but the routes live in one array. Store them in a single "raw" shape and cast once, on the way in. The cast is safe because the only thing that ever calls the stored handler passes it params produced by the *same* pattern's matcher — and the public signature, which the checks test, is exact.
+
+A method named \`delete\` is fine: reserved words are allowed as property and method names.
+--- task
+Add:
+
+1. \`type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'\`, \`interface Reply { status: number; body: unknown }\` (readonly) and \`reply(status, body): Reply\`.
+2. \`interface Req<P extends string>\` — readonly \`method\`, \`path\`, \`params: Params<P>\`, \`query\` and \`headers\` (both \`Readonly<Record<string, string>>\`), \`body: unknown\`.
+3. \`class Router\` with \`get\`, \`post\`, \`put\` and \`delete(pattern, handler)\`, each returning \`this\`, and \`handle(method: Method, url: string, init: { body?: unknown; headers?: Record<string, string> } = {}): Reply\` that dispatches as described (404 body \`{ error: 'not found' }\`, 405 \`{ error: 'method not allowed' }\`, 500 \`{ error: 'internal error' }\`). Missing headers are \`{}\`.
+--- starter
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface Req<P extends string> {
+  readonly method: Method
+  readonly path: string
+  readonly params: Params<P>
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: Omit<Req<string>, 'params'> & { params: Record<string, string> }) => Reply
+}
+
+class Router {
+  private routes: Route[] = []
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let pathMatched = false
+    for (const route of this.routes) {
+      const params = route.match(path)
+      if (!params) continue
+      pathMatched = true
+      if (route.method !== method) continue
+      try {
+        return route.handler({ method, path, params, query, headers: init.headers ?? {}, body: init.body })
+      } catch {
+        return reply(500, { error: 'internal error' })
+      }
+    }
+    return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+  }
+}
+--- hint
+Keep routes as \`{ method, match, handler }\` objects, where \`match\` is what \`compile(pattern)\` returned.
+--- hint
+One private \`add(method, pattern, handler)\` does the work; \`get\`, \`post\`, \`put\` and \`delete\` are one line each.
+--- hint
+In \`handle\`, remember whether any route matched the path, so you can tell a 405 from a 404 after the loop.
+--- check case | A route with a param
+new Router().get('/users/:id', (req) => reply(200, { id: req.params.id })).handle('GET', '/users/42')
+=> { status: 200, body: { id: '42' } }
+--- check case | Query strings, headers and bodies reach the handler
+new Router().post('/search', (req) => reply(200, [req.query.q, req.query.page, req.headers['x-token'], req.body])).handle('POST', '/search?q=ts&page=2', { body: { a: 1 }, headers: { 'x-token': 'abc' } })
+=> { status: 200, body: ['ts', '2', 'abc', { a: 1 }] }
+--- check case | The first matching route wins
+new Router().get('/users/me', () => reply(200, 'me')).get('/users/:id', (req) => reply(200, req.params.id)).handle('GET', '/users/me')
+=> { status: 200, body: 'me' }
+--- check case | 404 and 405
+(() => { const r = new Router().get('/users/:id', () => reply(200, 'ok')); return [r.handle('GET', '/nope'), r.handle('DELETE', '/users/1')] })()
+=> [{ status: 404, body: { error: 'not found' } }, { status: 405, body: { error: 'method not allowed' } }]
+--- check case | A throwing handler is a 500
+new Router().put('/boom', () => { throw new Error('bug') }).handle('PUT', '/boom')
+=> { status: 500, body: { error: 'internal error' } }
+--- check case | delete routes
+new Router().delete('/items/:id', (req) => reply(204, req.params.id)).handle('DELETE', '/items/9')
+=> { status: 204, body: '9' }
+--- check type-error | Handlers see only the pattern's params
+new Router().get('/users/:id', (req) => reply(200, req.params.name))
+--- check type-error | Patterns must start with a slash
+new Router().get('users', () => reply(200, null))
+--- check type-error | Handlers must return a Reply
+new Router().get('/x', () => 'hello')
+--- check type-error | Only known methods can be handled
+new Router().handle('PATCH', '/x')
+--- check type-error | A handler's params are exactly the pattern's
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Router().get('/a/:x/b/:y', (req) => { const no: Equal<typeof req.params, { x: string; y: string }> = false; return reply(200, null) })
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-11 | Router 3: middleware with typed context
+--- teach
+Middleware is code that runs before the handlers: checking a token, finding the current user, starting a timer. Each piece either **stops** the request with a reply (a 401, say) or lets it continue, often **adding** something for later code to use — \`req.user\`.
+
+In untyped code, "later code can use \`req.user\`" is a promise nobody checks. Here the router's type carries the context built so far, and \`use\` grows it — the same technique as the typed DI container:
+
+\`\`\`ts
+// class Router<Ctx extends object = {}> {
+//   use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add>
+//   get<P …>(pattern: P, handler: (req: Req<P> & Ctx) => Reply): this
+// }
+\`\`\`
+
+After \`.use(auth)\`, where \`auth\` adds \`{ user: string }\`, every handler registered on the returned router sees \`req.user: string\`. A handler on a router without that middleware gets a compile error for \`req.user\`.
+
+**The result type** makes "stop or continue" explicit: \`{ next: Add } | { reply: Reply }\`, built with two tiny helpers, \`next(add)\` and \`stop(reply)\`. \`stop\` returns \`MwResult<never>\`, so a middleware that sometimes stops and sometimes continues still infers \`Add\` from its \`next\` branch.
+
+**Runtime order:** middleware runs in the order it was added, for every request, before routing; each sees the context added by those before it. A thrown error anywhere is still a 500.
+
+\`use\` returns \`this\` cast to the bigger type — the same object, now described more precisely. Order matters for types as it does at runtime: register routes after the middleware they rely on.
+--- task
+Rework the router:
+
+1. \`interface BaseReq\` — the request without params (\`method\`, \`path\`, \`query\`, \`headers\`, \`body\`); \`type Req<P extends string, Ctx = {}> = BaseReq & { params: Params<P> } & Ctx\`.
+2. \`type MwResult<Add> = { next: Add } | { reply: Reply }\`, \`next<Add extends object>(add: Add): MwResult<Add>\` and \`stop(r: Reply): MwResult<never>\`.
+3. \`class Router<Ctx extends object = {}>\` with \`use(mw)\` as above, and handlers typed \`(req: Req<P, Ctx>) => Reply\`.
+4. \`handle\` runs the middleware first, in order, merging each \`next\` into the request and returning a \`stop\`'s reply immediately; then it routes as before.
+--- starter
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface Req<P extends string> {
+  readonly method: Method
+  readonly path: string
+  readonly params: Params<P>
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: Omit<Req<string>, 'params'> & { params: Record<string, string> }) => Reply
+}
+
+class Router {
+  private routes: Route[] = []
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let pathMatched = false
+    for (const route of this.routes) {
+      const params = route.match(path)
+      if (!params) continue
+      pathMatched = true
+      if (route.method !== method) continue
+      try {
+        return route.handler({ method, path, params, query, headers: init.headers ?? {}, body: init.body })
+      } catch {
+        return reply(500, { error: 'internal error' })
+      }
+    }
+    return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}> = BaseReq & { readonly params: Params<P> } & Ctx
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch {
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- hint
+\`use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add>\` — store the middleware, then \`return this as unknown as Router<Ctx & Add>\`.
+--- hint
+In \`handle\`, keep the request as a plain object; for each middleware, \`if ('reply' in result) return result.reply\`, else spread \`result.next\` into the request.
+--- hint
+Put the middleware loop and the routing loop inside one \`try\` so an error in either becomes a 500.
+--- check case | Middleware can add a user or stop with a 401
+(() => { const r = new Router().use((req) => (req.headers['x-user'] ? next({ user: req.headers['x-user'] }) : stop(reply(401, { error: 'unauthorized' })))).get('/me', (req) => reply(200, { user: req.user })); return [r.handle('GET', '/me', { headers: { 'x-user': 'ada' } }), r.handle('GET', '/me'), r.handle('GET', '/nope')] })()
+=> [{ status: 200, body: { user: 'ada' } }, { status: 401, body: { error: 'unauthorized' } }, { status: 401, body: { error: 'unauthorized' } }]
+--- check case | Middleware runs in order and sees earlier context
+new Router().use(() => next({ a: 1 })).use((req) => next({ b: req.a + 1 })).get('/', (req) => reply(200, [req.a, req.b])).handle('GET', '/')
+=> { status: 200, body: [1, 2] }
+--- check case | Routing still gives 404, 405 and params
+(() => { const r = new Router().use(() => next({ t: 'x' })).get('/users/:id', (req) => reply(200, req.params.id + req.t)); return [r.handle('GET', '/users/7'), r.handle('POST', '/users/7'), r.handle('GET', '/zzz')] })()
+=> [{ status: 200, body: '7x' }, { status: 405, body: { error: 'method not allowed' } }, { status: 404, body: { error: 'not found' } }]
+--- check case | An error in middleware is a 500
+new Router().use(() => { throw new Error('bug') }).get('/', () => reply(200, 'ok')).handle('GET', '/')
+=> { status: 500, body: { error: 'internal error' } }
+--- check type-error | Without the middleware, there is no user
+new Router().get('/me', (req) => reply(200, req.user))
+--- check type-error | Context keeps its types
+new Router().use(() => next({ user: 'ada' })).get('/me', (req) => reply(200, req.user.toFixed(1)))
+--- check type-error | Middleware must return next(…) or stop(…)
+new Router().use(() => ({ user: 'ada' }))
+--- check type-error | next takes an object
+next(5)
+--- check type-error | Context from two middlewares is merged, exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Router().use(() => next({ a: 1 })).use(() => next({ b: 'x' })).get('/', (req) => { const no: Equal<[typeof req.a, typeof req.b], [number, string]> = false; return reply(200, null) })
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-12 | Router 4: validated bodies and HTTP errors
+--- teach
+A request body is \`unknown\` — it came from outside. Handlers should not have to validate it themselves, and they certainly should not cast it. Let the route declare a **type guard**, and let the router do the checking:
+
+\`\`\`ts
+// post<P …>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this                        — body: unknown
+// post<P …, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this  — body: B
+\`\`\`
+
+Two **overloads**: without a guard the body stays \`unknown\`; with one, \`B\` is inferred from the guard's \`body is B\` predicate and the handler's \`req.body\` is a \`B\`. The router calls the guard before the handler and replies **400** if it fails, so the handler only ever runs with a valid body. A plain \`(b) => boolean\` is not a guard and does not match the second overload, which is exactly right: it proves nothing.
+
+The implementation signature (the third, hidden one) takes \`(pattern, first, second?)\`: when \`second\` is present, \`first\` was the guard.
+
+**HTTP errors.** Deep inside a handler you often discover "that user does not exist". Throwing a plain \`Error\` gives a 500, which is wrong. A small \`HttpError\` class carrying a status lets handlers throw \`new HttpError(404, 'no such user')\` and the router turns it into that status with \`{ error: message }\`. Everything else is still a 500.
+
+This finishes the router: typed params from patterns, typed context from middleware, typed bodies from guards — and not one cast in any handler.
+--- task
+Extend the router:
+
+1. \`class HttpError extends Error\` with a readonly \`status: number\` (constructor \`(status, message)\`).
+2. \`type Guard<B> = (body: unknown) => body is B\`, and give \`Req\` a third type parameter for the body: \`Req<P, Ctx = {}, B = unknown>\`.
+3. Overload \`post\` and \`put\`: \`(pattern, handler)\` with an \`unknown\` body, or \`(pattern, guard, handler)\` with a \`B\` body. When a route has a guard and the body fails it, reply \`400\` with \`{ error: 'invalid body' }\` without calling the handler.
+4. An \`HttpError\` thrown by middleware or a handler becomes \`reply(status, { error: message })\`; anything else is still a 500.
+--- starter
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}> = BaseReq & { readonly params: Params<P> } & Ctx
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch {
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends \`\${string}:\${infer Name}/\${infer Rest}\`
+  ? Name | ParamNames<\`/\${Rest}\`>
+  : P extends \`\${string}:\${infer Name}\`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = \`/\${string}\`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}, B = unknown> = Omit<BaseReq, 'body'> & { readonly body: B; readonly params: Params<P> } & Ctx
+
+type Guard<B> = (body: unknown) => body is B
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly guard: ((body: unknown) => boolean) | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+type AnyHandler = (req: never) => Reply
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add(method: Method, pattern: Pattern, guard: Guard<unknown> | null, handler: AnyHandler): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], guard, handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, null, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, null, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this
+  post<P extends Pattern, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this
+  post(pattern: Pattern, first: Guard<unknown> | AnyHandler, second?: AnyHandler): this {
+    return second ? this.add('POST', pattern, first as Guard<unknown>, second) : this.add('POST', pattern, null, first as AnyHandler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this
+  put<P extends Pattern, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this
+  put(pattern: Pattern, first: Guard<unknown> | AnyHandler, second?: AnyHandler): this {
+    return second ? this.add('PUT', pattern, first as Guard<unknown>, second) : this.add('PUT', pattern, null, first as AnyHandler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        if (route.guard && !route.guard(init.body)) return reply(400, { error: 'invalid body' })
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch (e) {
+      if (e instanceof HttpError) return reply(e.status, { error: e.message })
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- hint
+Store an optional guard on each route (\`null\` for none) and check it right before calling the handler.
+--- hint
+Write the two overload signatures, then one implementation \`post(pattern: Pattern, first: …, second?: …): this\` that looks at whether \`second\` was given.
+--- hint
+In the \`catch\`, test \`e instanceof HttpError\` first.
+--- check case | A valid body reaches the handler, typed
+(() => { const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null && typeof (b as { name?: unknown }).name === 'string'; return new Router().post('/users', isNewUser, (req) => reply(201, { created: req.body.name })).handle('POST', '/users', { body: { name: 'Ada' } }) })()
+=> { status: 201, body: { created: 'Ada' } }
+--- check case | An invalid body is a 400 and the handler never runs
+(() => { let ran = false; const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null && typeof (b as { name?: unknown }).name === 'string'; const r = new Router().put('/users/:id', isNewUser, () => { ran = true; return reply(200, 'ok') }); return [r.handle('PUT', '/users/1', { body: { name: 5 } }), ran] })()
+=> [{ status: 400, body: { error: 'invalid body' } }, false]
+--- check case | Without a guard the body passes through as it is
+new Router().post('/echo', (req) => reply(200, req.body)).handle('POST', '/echo', { body: [1, 2] })
+=> { status: 200, body: [1, 2] }
+--- check case | HttpError sets the status; other errors are 500
+(() => { const r = new Router().get('/users/:id', (req) => { if (req.params.id === '0') throw new HttpError(404, 'no such user'); throw new Error('bug') }); return [r.handle('GET', '/users/0'), r.handle('GET', '/users/1')] })()
+=> [{ status: 404, body: { error: 'no such user' } }, { status: 500, body: { error: 'internal error' } }]
+--- check case | Middleware and guards together
+(() => { const isNum = (b: unknown): b is number => typeof b === 'number'; return new Router().use(() => next({ scale: 10 })).post('/times', isNum, (req) => reply(200, req.body * req.scale)).handle('POST', '/times', { body: 4 }) })()
+=> { status: 200, body: 40 }
+--- check type-error | A guarded body has the guard's type
+const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null; new Router().post('/users', isNewUser, (req) => reply(201, req.body.nope))
+--- check type-error | Without a guard the body is unknown
+new Router().post('/users', (req) => reply(201, req.body.name))
+--- check type-error | A boolean check is not a guard
+new Router().post('/users', (b: unknown) => true, (req) => reply(201, req.body))
+--- check type-error | HttpError takes a numeric status
+new HttpError('404', 'missing')
+--- check type-error | The guarded body is exactly the guard's type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null;
+new Router().post('/users', isNewUser, (req) => { const no: Equal<typeof req.body, { name: string }> = false; return reply(201, null) })
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-13 | Capstone: a typed form-validation library
+--- teach
+The last three lessons are **capstones**. Each gives you a specification and an empty editor. There is no step-by-step and no suggested structure: you decide the types, the modules, the helpers. The checks test only behaviour and what must not compile, so any design that meets the spec passes.
+
+How to approach a capstone:
+
+1. **Read the whole spec twice** and write down the public surface — every function, method and type a user touches.
+2. **Write the usage first**: a few calls that should work and a few that should not compile. The checks are exactly that kind of list.
+3. **Design the types before the code.** Which types carry information forward (like the \`Opt\` flag on a field)? Where will inference happen?
+4. **Build the smallest end-to-end slice** (one field kind, one form), make it pass, then widen.
+5. **Keep casts at the boundaries** — one where you build a computed type at runtime is fine; one in every function is a sign the types fight the design.
+
+This first capstone is a form-validation library like the ones front-end teams use every day. Everything you need has appeared already: immutable builders (the typed builder), optional keys computed from a shape (the schema library), and results instead of exceptions.
+--- task
+Build \`field\` and \`form\`.
+
+**Fields** are immutable builders — every method returns a new field:
+- \`field.string()\` with \`.min(n)\` (\`'must be at least <n> characters'\`), \`.max(n)\` (\`'must be at most <n> characters'\`), \`.email()\` (\`'must be an email'\`: some text, \`@\`, some text, a dot, some text, no spaces).
+- \`field.number()\` (finite numbers only) with \`.min(n)\` (\`'must be at least <n>'\`), \`.max(n)\` (\`'must be at most <n>'\`), \`.integer()\` (\`'must be a whole number'\`).
+- \`field.boolean()\` with \`.accepted()\` (\`'must be accepted'\`: must be \`true\`).
+- Every field has \`.optional()\`, which can come anywhere in the chain. Methods only exist on the kinds listed (no \`.email()\` on a number).
+
+**Validation** of one value: \`undefined\` or \`null\` is \`'is required'\` (or, for an optional field, simply left out of the result); the wrong type is \`'must be a string'\` / \`'must be a number'\` / \`'must be a boolean'\`; then the field's checks run in the order they were added, and the first failure is the error.
+
+**\`form(shape).validate(input)\`** validates every field of the shape (extra input keys are ignored) and returns \`{ ok: true, value }\` — with only the shape's keys, optional keys typed \`?\` — or \`{ ok: false, errors }\`, an object with one message per failing field whose keys are limited to the shape's keys.
+--- starter
+// Capstone: build \`field\` and \`form\` from the specification in the task.
+
+--- solution
+type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
+type Check<T> = (value: T) => string | null
+
+interface BaseField<T, Opt extends boolean> {
+  readonly isOptional: Opt
+  run(raw: unknown): Parsed<T>
+}
+
+interface StringField<Opt extends boolean = false> extends BaseField<string, Opt> {
+  min(length: number): StringField<Opt>
+  max(length: number): StringField<Opt>
+  email(): StringField<Opt>
+  optional(): StringField<true>
+}
+
+interface NumberField<Opt extends boolean = false> extends BaseField<number, Opt> {
+  min(n: number): NumberField<Opt>
+  max(n: number): NumberField<Opt>
+  integer(): NumberField<Opt>
+  optional(): NumberField<true>
+}
+
+interface BooleanField<Opt extends boolean = false> extends BaseField<boolean, Opt> {
+  accepted(): BooleanField<Opt>
+  optional(): BooleanField<true>
+}
+
+function runner<T>(kind: string, is: (x: unknown) => x is T, checks: readonly Check<T>[]): (raw: unknown) => Parsed<T> {
+  return (raw) => {
+    if (!is(raw)) return { ok: false, error: \`must be a \${kind}\` }
+    for (const check of checks) {
+      const error = check(raw)
+      if (error !== null) return { ok: false, error }
+    }
+    return { ok: true, value: raw }
+  }
+}
+
+function stringField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<string>[]): StringField<Opt> {
+  const add = (check: Check<string>) => stringField(isOptional, [...checks, check])
+  return {
+    isOptional,
+    run: runner('string', (x): x is string => typeof x === 'string', checks),
+    min: (n) => add((v) => (v.length < n ? \`must be at least \${n} characters\` : null)),
+    max: (n) => add((v) => (v.length > n ? \`must be at most \${n} characters\` : null)),
+    email: () => add((v) => (/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(v) ? null : 'must be an email')),
+    optional: () => stringField(true, checks),
+  }
+}
+
+function numberField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<number>[]): NumberField<Opt> {
+  const add = (check: Check<number>) => numberField(isOptional, [...checks, check])
+  return {
+    isOptional,
+    run: runner('number', (x): x is number => typeof x === 'number' && Number.isFinite(x), checks),
+    min: (n) => add((v) => (v < n ? \`must be at least \${n}\` : null)),
+    max: (n) => add((v) => (v > n ? \`must be at most \${n}\` : null)),
+    integer: () => add((v) => (Number.isInteger(v) ? null : 'must be a whole number')),
+    optional: () => numberField(true, checks),
+  }
+}
+
+function booleanField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<boolean>[]): BooleanField<Opt> {
+  return {
+    isOptional,
+    run: runner('boolean', (x): x is boolean => typeof x === 'boolean', checks),
+    accepted: () => booleanField(isOptional, [...checks, (v) => (v ? null : 'must be accepted')]),
+    optional: () => booleanField(true, checks),
+  }
+}
+
+const field = {
+  string: () => stringField(false, []),
+  number: () => numberField(false, []),
+  boolean: () => booleanField(false, []),
+}
+
+type AnyField = BaseField<unknown, boolean>
+type ValueOfField<F> = F extends BaseField<infer T, boolean> ? T : never
+type OptionalKeys<S> = { [K in keyof S]: S[K] extends BaseField<unknown, true> ? K : never }[keyof S]
+type Simplify<T> = { [K in keyof T]: T[K] }
+type FormValue<S> = Simplify<
+  { [K in Exclude<keyof S, OptionalKeys<S>>]: ValueOfField<S[K]> } & { [K in OptionalKeys<S>]?: ValueOfField<S[K]> }
+>
+type FormResult<S> = { ok: true; value: FormValue<S> } | { ok: false; errors: Partial<Record<keyof S, string>> }
+
+function form<S extends Record<string, AnyField>>(shape: S): { validate(input: Readonly<Record<string, unknown>>): FormResult<S> } {
+  return {
+    validate(input) {
+      const value: Record<string, unknown> = {}
+      const errors: Record<string, string> = {}
+      for (const [key, f] of Object.entries(shape)) {
+        const raw = input[key]
+        if (raw === undefined || raw === null) {
+          if (!f.isOptional) errors[key] = 'is required'
+          continue
+        }
+        const result = f.run(raw)
+        if (result.ok) value[key] = result.value
+        else errors[key] = result.error
+      }
+      if (Object.keys(errors).length > 0) return { ok: false, errors: errors as Partial<Record<keyof S, string>> }
+      return { ok: true, value: value as FormValue<S> }
+    },
+  }
+}
+--- hint
+Give each field type a type parameter for "optional or not" (\`Opt extends boolean\`), so \`.optional()\` can return the same kind of field with \`Opt\` set to \`true\`.
+--- hint
+Store a field's checks as an array of \`(value) => string | null\`; each builder method returns a new field with one more check.
+--- hint
+The form's value type splits the shape's keys into required and optional ones, like the schema library's \`object\` did.
+--- check case | A valid form
+form({ email: field.string().email(), age: field.number().integer().min(13), nickname: field.string().optional(), terms: field.boolean().accepted() }).validate({ email: 'ada@example.com', age: 36, terms: true, extra: 'ignored' })
+=> { ok: true, value: { email: 'ada@example.com', age: 36, terms: true } }
+--- check case | Every failing field gets its own message
+form({ email: field.string().email(), age: field.number().integer().min(13), nickname: field.string().optional().min(3), terms: field.boolean().accepted() }).validate({ email: 'ada.example.com', age: 12.5, nickname: 'al', terms: false })
+=> { ok: false, errors: { email: 'must be an email', age: 'must be a whole number', nickname: 'must be at least 3 characters', terms: 'must be accepted' } }
+--- check case | Required and type errors
+form({ name: field.string(), age: field.number(), ok: field.boolean() }).validate({ name: 5, ok: 'yes' })
+=> { ok: false, errors: { name: 'must be a string', age: 'is required', ok: 'must be a boolean' } }
+--- check case | Checks run in the order they were added
+[form({ a: field.string().min(3).email() }).validate({ a: 'x' }), form({ a: field.string().email().min(3) }).validate({ a: 'x' })]
+=> [{ ok: false, errors: { a: 'must be at least 3 characters' } }, { ok: false, errors: { a: 'must be an email' } }]
+--- check case | min and max on numbers and strings
+form({ n: field.number().min(1).max(10), s: field.string().max(3) }).validate({ n: 11, s: 'abcd' })
+=> { ok: false, errors: { n: 'must be at most 10', s: 'must be at most 3 characters' } }
+--- check case | Optional fields: missing or null is fine, present is checked
+[form({ nick: field.string().optional().min(2) }).validate({ nick: null }), form({ nick: field.string().min(2).optional() }).validate({ nick: 'ab' }), form({ n: field.number().optional() }).validate({ n: NaN })]
+=> [{ ok: true, value: {} }, { ok: true, value: { nick: 'ab' } }, { ok: false, errors: { n: 'must be a number' } }]
+--- check test | Fields are immutable
+(() => { const base = field.string(); base.min(5); const r = form({ a: base }).validate({ a: 'ab' }); return r.ok })()
+--- check type-error | Numbers have no email check
+field.number().email()
+--- check type-error | Strings have no integer check
+field.string().integer()
+--- check type-error | min takes a number
+field.string().min('3')
+--- check type-error | Errors only have the shape's keys
+const r = form({ a: field.string() }).validate({}); if (!r.ok) { r.errors.b }
+--- check type-error | The value needs narrowing first
+form({ a: field.string() }).validate({}).value
+--- check type-error | The value type is exactly right, with optional keys
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = form({ email: field.string().email(), age: field.number(), nick: field.string().optional().min(2), terms: field.boolean() }).validate({});
+if (r.ok) { const no: Equal<typeof r.value, { email: string; age: number; nick?: string; terms: boolean }> = false }
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-14 | Capstone: a typed task graph
+--- teach
+Build tools, CI pipelines and data workflows all run a **graph of tasks**: each task names the tasks it depends on and uses their results. The classic failure modes are depending on a task that does not exist, misspelling one, creating a cycle, and using a dependency's result as the wrong type.
+
+In this capstone the types rule all of those out. The trick you need is the one from the typed DI container: a builder whose type grows with every registration. If a task may only depend on tasks declared **before** it, cycles are impossible by construction, and each task's inputs can be typed from exactly its declared dependencies.
+
+Think about the runtime too: running a task should run only what it needs, each dependency at most once, dependencies before dependents. A depth-first walk that visits each dependency in the order listed, then the task itself, produces exactly that order.
+
+As before: spec, empty editor, your design.
+--- task
+Build \`graph()\`, which returns an empty task graph. A graph is immutable — \`task\` returns a new graph.
+
+- \`task(name, deps, run)\` — adds a task. \`deps\` is an array of names of tasks **already in the graph**; \`run\` receives an object with exactly those dependencies' results (typed) and returns the task's result. A name already in the graph, or an unknown dependency, does not compile (and throws an \`Error\` at runtime for untyped callers).
+- \`order(name)\` — the names that running \`name\` would run, in order: for each dependency in the order listed, its own order (skipping names already included), then \`name\`.
+- \`run(name)\` — runs exactly the tasks in \`order(name)\`, each once, and returns \`name\`'s result (typed). Unknown names do not compile.
+- \`runAll()\` — runs every task once, in declaration order with dependencies first, and returns an object of all results (typed, e.g. \`{ fetch: number; label: string }\`).
+--- starter
+// Capstone: build \`graph()\` from the specification in the task.
+
+--- solution
+type Simplify<T> = { [K in keyof T]: T[K] }
+
+interface TaskNode {
+  readonly deps: readonly string[]
+  readonly run: (inputs: Record<string, unknown>) => unknown
+}
+
+class Graph<R extends object = {}> {
+  constructor(private readonly nodes: ReadonlyMap<string, TaskNode> = new Map()) {}
+
+  task<N extends string, const D extends readonly (keyof R & string)[], T>(
+    name: N extends keyof R ? never : N,
+    deps: D,
+    run: (inputs: Simplify<Pick<R, D[number]>>) => T,
+  ): Graph<Simplify<R & { [K in N]: T }>> {
+    if (this.nodes.has(name)) throw new Error(\`duplicate task: \${name}\`)
+    for (const d of deps) if (!this.nodes.has(d)) throw new Error(\`unknown dependency: \${d}\`)
+    const nodes = new Map(this.nodes)
+    nodes.set(name, { deps, run: run as TaskNode['run'] })
+    return new Graph(nodes)
+  }
+
+  order<N extends keyof R & string>(name: N): (keyof R & string)[] {
+    return this.visit(name, new Set(), []) as (keyof R & string)[]
+  }
+
+  run<N extends keyof R & string>(name: N): R[N] {
+    return this.execute(this.visit(name, new Set(), []))[name] as R[N]
+  }
+
+  runAll(): R {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const name of this.nodes.keys()) this.visit(name, seen, out)
+    return this.execute(out) as R
+  }
+
+  private visit(name: string, seen: Set<string>, out: string[]): string[] {
+    if (seen.has(name)) return out
+    const node = this.nodes.get(name)
+    if (!node) throw new Error(\`unknown task: \${name}\`)
+    seen.add(name)
+    for (const d of node.deps) this.visit(d, seen, out)
+    out.push(name)
+    return out
+  }
+
+  private execute(names: readonly string[]): Record<string, unknown> {
+    const results: Record<string, unknown> = {}
+    for (const name of names) {
+      const node = this.nodes.get(name)!
+      const inputs: Record<string, unknown> = {}
+      for (const d of node.deps) inputs[d] = results[d]
+      results[name] = node.run(inputs)
+    }
+    return results
+  }
+}
+
+function graph(): Graph {
+  return new Graph()
+}
+--- hint
+Give the graph a type parameter mapping each task name to its result type, and have \`task\` return a graph with one more entry.
+--- hint
+Constrain \`deps\` to \`readonly (keyof R & string)[]\` and type \`run\`'s input as \`Pick<R, …>\` of those names (a \`const\` type parameter keeps the names literal).
+--- hint
+One private depth-first \`visit(name, seen, out)\` gives you \`order\`, \`run\` and \`runAll\`.
+--- check case | run returns the task's result
+graph().task('fetch', [], () => 3).task('double', ['fetch'], ({ fetch }) => fetch * 2).task('label', ['fetch', 'double'], ({ fetch, double }) => \`\${fetch}->\${double}\`).run('label')
+=> '3->6'
+--- check case | order lists dependencies first, each once
+graph().task('a', [], () => 1).task('b', ['a'], () => 2).task('c', ['a'], () => 3).task('d', ['c', 'b'], () => 4).order('d')
+=> ['a', 'c', 'b', 'd']
+--- check case | run executes only what is needed, once each
+(() => { const ran: string[] = []; const g = graph().task('a', [], () => { ran.push('a'); return 1 }).task('b', ['a'], ({ a }) => { ran.push('b'); return a + 1 }).task('c', ['a', 'b'], ({ a, b }) => { ran.push('c'); return a + b }).task('z', [], () => { ran.push('z'); return 0 }); const result = g.run('c'); return [result, ran] })()
+=> [3, ['a', 'b', 'c']]
+--- check case | runAll returns every result
+graph().task('n', [], () => 2).task('sq', ['n'], ({ n }) => n * n).task('msg', ['sq'], ({ sq }) => 'sq=' + sq).runAll()
+=> { n: 2, sq: 4, msg: 'sq=4' }
+--- check test | Graphs are immutable
+(() => { const base = graph().task('a', [], () => 1); base.task('b', ['a'], () => 2); return Object.keys(base.runAll()).join() === 'a' })()
+--- check test | Untyped misuse throws at runtime
+throws(() => (graph().task('a', [], () => 1) as any).task('a', [], () => 2)) && throws(() => (graph() as any).task('b', ['nope'], () => 1)) && throws(() => (graph() as any).run('x'))
+--- check type-error | Dependencies must already exist
+graph().task('b', ['a'], () => 1)
+--- check type-error | A name cannot be used twice
+graph().task('a', [], () => 1).task('a', [], () => 2)
+--- check type-error | A task sees only the dependencies it declared
+graph().task('a', [], () => 1).task('b', [], ({ a }) => a)
+--- check type-error | Dependency results keep their types
+graph().task('a', [], () => 1).task('b', ['a'], ({ a }) => a.toUpperCase())
+--- check type-error | Only known tasks can be run
+graph().task('a', [], () => 1).run('b')
+--- check type-error | run and runAll are typed exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const g = graph().task('fetch', [], () => 3).task('label', ['fetch'], ({ fetch }) => String(fetch));
+const one = g.run('label');
+const all = g.runAll();
+const no: Equal<[typeof one, typeof all], [string, { fetch: number; label: string }]> = false
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+
+=== tsp-15 | Capstone: a typed command-line parser
+--- teach
+The final capstone: a command-line argument parser whose result type is **computed from its definition**. You declare the options once — their types, which are required, which have defaults — and \`parse\` returns an object whose type says exactly which properties are guaranteed to be there.
+
+This combines most of what the expert course taught: a \`const\` type parameter so \`required: true\` stays the literal \`true\`; conditional types that map a spec to a value type; key filtering to decide which properties are optional; and runtime parsing that must agree with all of it.
+
+The parsing rules are where CLI tools differ, so the specification pins them down. Read it carefully, list the error cases, and decide the order you check them in — the spec says which error wins when there are several.
+
+Spec, empty editor, your design. When this passes, you have built a small library with a public API that is hard to misuse — which is what the whole TypeScript path has been about.
+--- task
+Build \`defineCli(spec)\`, where \`spec\` is \`{ options, positionals }\`:
+
+- \`options\` maps camelCase names to \`{ type: 'string' | 'number', required?: boolean, default?: <that type> }\` or \`{ type: 'boolean' }\`. On the command line an option is \`--kebab-case\` (\`dryRun\` → \`--dry-run\`).
+- \`positionals\` is a list of names filled, in order, by the arguments that are not options.
+
+\`defineCli(spec).parse(argv: readonly string[])\` returns \`{ ok: true, value }\` or \`{ ok: false, error }\`:
+
+- A string or number option takes the next argument (\`--env prod\`) or an inline value (\`--env=prod\`). A boolean option takes no value and is \`true\` when present, \`false\` otherwise.
+- **The value type**: booleans, required options and options with a default are always present; other options are optional keys (absent when not given); every positional is a \`string\`. A default must match its option's type.
+- **Errors**, reading \`argv\` left to right: \`'unknown option <flag>'\`; \`'missing value for <flag>'\` (no next argument, or it starts with \`--\`); \`'<flag> must be a number'\`; \`'<flag> does not take a value'\` (a boolean with \`=\`). Then, in option order, \`'missing required option <flag>'\`. Then \`'unexpected argument <arg>'\` for the first extra positional, or \`'missing positional <name>'\` (with the angle brackets) for the first missing one.
+--- starter
+// Capstone: build \`defineCli\` from the specification in the task.
+
+--- solution
+type OptionSpec =
+  | { readonly type: 'string'; readonly required?: boolean; readonly default?: string }
+  | { readonly type: 'number'; readonly required?: boolean; readonly default?: number }
+  | { readonly type: 'boolean' }
+
+interface CliSpec {
+  readonly options: Readonly<Record<string, OptionSpec>>
+  readonly positionals: readonly string[]
+}
+
+type Simplify<T> = { [K in keyof T]: T[K] }
+type ValueOfSpec<S> = S extends { type: 'string' } ? string : S extends { type: 'number' } ? number : boolean
+type AlwaysKeys<O> = {
+  [K in keyof O]: O[K] extends { type: 'boolean' } | { required: true } | { default: string | number } ? K : never
+}[keyof O]
+
+type ParsedArgs<C extends CliSpec> = Simplify<
+  { [K in AlwaysKeys<C['options']>]: ValueOfSpec<C['options'][K]> } & {
+    [K in Exclude<keyof C['options'], AlwaysKeys<C['options']>>]?: ValueOfSpec<C['options'][K]>
+  } & { [K in C['positionals'][number]]: string }
+>
+
+type ParseResult<C extends CliSpec> = { ok: true; value: ParsedArgs<C> } | { ok: false; error: string }
+
+const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => \`-\${c.toLowerCase()}\`)
+
+function defineCli<const C extends CliSpec>(spec: C): { parse(argv: readonly string[]): ParseResult<C> } {
+  const byFlag = new Map<string, [string, OptionSpec]>()
+  for (const [key, option] of Object.entries(spec.options)) byFlag.set(\`--\${kebab(key)}\`, [key, option])
+
+  return {
+    parse(argv) {
+      const fail = (error: string): ParseResult<C> => ({ ok: false, error })
+      const values: Record<string, unknown> = {}
+      const positional: string[] = []
+      for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i]!
+        if (!arg.startsWith('--')) {
+          positional.push(arg)
+          continue
+        }
+        const eq = arg.indexOf('=')
+        const flag = eq >= 0 ? arg.slice(0, eq) : arg
+        const entry = byFlag.get(flag)
+        if (!entry) return fail(\`unknown option \${flag}\`)
+        const [key, option] = entry
+        if (option.type === 'boolean') {
+          if (eq >= 0) return fail(\`\${flag} does not take a value\`)
+          values[key] = true
+          continue
+        }
+        let raw: string
+        if (eq >= 0) {
+          raw = arg.slice(eq + 1)
+        } else {
+          const nextArg = argv[i + 1]
+          if (nextArg === undefined || nextArg.startsWith('--')) return fail(\`missing value for \${flag}\`)
+          raw = nextArg
+          i++
+        }
+        if (option.type === 'number') {
+          const n = Number(raw)
+          if (raw.trim() === '' || !Number.isFinite(n)) return fail(\`\${flag} must be a number\`)
+          values[key] = n
+        } else {
+          values[key] = raw
+        }
+      }
+      for (const [key, option] of Object.entries(spec.options)) {
+        if (key in values) continue
+        if (option.type === 'boolean') values[key] = false
+        else if (option.default !== undefined) values[key] = option.default
+        else if (option.required) return fail(\`missing required option --\${kebab(key)}\`)
+      }
+      if (positional.length > spec.positionals.length) return fail(\`unexpected argument \${positional[spec.positionals.length]}\`)
+      for (const [i, name] of spec.positionals.entries()) {
+        const value = positional[i]
+        if (value === undefined) return fail(\`missing positional <\${name}>\`)
+        values[name] = value
+      }
+      return { ok: true, value: values as ParsedArgs<C> }
+    },
+  }
+}
+--- hint
+Use \`function defineCli<const C extends CliSpec>(spec: C)\`: without \`const\`, \`required: true\` would widen to \`boolean\` and the value type could not tell required options apart.
+--- hint
+A mapped type over the options that keeps a key if its spec is a boolean, has \`required: true\` or has a \`default\`, indexed with \`[keyof …]\`, gives the always-present keys.
+--- hint
+Parse in two passes: walk \`argv\` collecting options and positionals, then fill defaults, check required options, and assign positionals.
+--- check case | A full command line
+defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse(['api', '--env', 'prod', '--replicas=3', '--dry-run'])
+=> { ok: true, value: { env: 'prod', replicas: 3, dryRun: true, service: 'api' } }
+--- check case | Defaults, false booleans and absent optional options
+defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse(['--env=dev', 'web', '--tag', 'v2'])
+=> { ok: true, value: { env: 'dev', tag: 'v2', replicas: 1, dryRun: false, service: 'web' } }
+--- check case | Errors while reading arguments
+(() => { const cli = defineCli({ options: { env: { type: 'string' }, n: { type: 'number' }, quiet: { type: 'boolean' } }, positionals: [] }); return [cli.parse(['--nope']), cli.parse(['--env']), cli.parse(['--env', '--n', '1']), cli.parse(['--n', 'ten']), cli.parse(['--quiet=yes'])] })()
+=> [{ ok: false, error: 'unknown option --nope' }, { ok: false, error: 'missing value for --env' }, { ok: false, error: 'missing value for --env' }, { ok: false, error: '--n must be a number' }, { ok: false, error: '--quiet does not take a value' }]
+--- check case | Required options and positionals
+(() => { const cli = defineCli({ options: { dryRun: { type: 'boolean' }, apiKey: { type: 'string', required: true } }, positionals: ['from', 'to'] }); return [cli.parse(['a', 'b']), cli.parse(['--api-key', 'k', 'a']), cli.parse(['--api-key', 'k', 'a', 'b', 'c']), cli.parse(['--api-key', 'k', 'a', 'b'])] })()
+=> [{ ok: false, error: 'missing required option --api-key' }, { ok: false, error: 'missing positional <to>' }, { ok: false, error: 'unexpected argument c' }, { ok: true, value: { apiKey: 'k', dryRun: false, from: 'a', to: 'b' } }]
+--- check case | Numbers and the order errors are found in
+(() => { const cli = defineCli({ options: { size: { type: 'number', required: true } }, positionals: [] }); return [cli.parse(['--size', '-2.5']), cli.parse(['--size', '']), cli.parse(['extra', '--bad'])] })()
+=> [{ ok: true, value: { size: -2.5 } }, { ok: false, error: '--size must be a number' }, { ok: false, error: 'unknown option --bad' }]
+--- check type-error | Option types are limited to string, number and boolean
+defineCli({ options: { when: { type: 'date' } }, positionals: [] })
+--- check type-error | A default must match its type
+defineCli({ options: { n: { type: 'number', default: 'ten' } }, positionals: [] })
+--- check type-error | argv is an array of strings
+defineCli({ options: {}, positionals: [] }).parse('--help')
+--- check type-error | The value has only the declared names
+const r = defineCli({ options: { env: { type: 'string' } }, positionals: ['file'] }).parse([]); if (r.ok) { r.value.nope }
+--- check type-error | Optional options may be missing
+const r = defineCli({ options: { tag: { type: 'string' } }, positionals: [] }).parse([]); if (r.ok) { const t: string = r.value.tag }
+--- check type-error | The value type is computed exactly from the spec
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse([]);
+if (r.ok) { const no: Equal<typeof r.value, { env: string; replicas: number; dryRun: boolean; tag?: string; service: string }> = false }
+?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
+`,Je=`@track typescript
 @title TypeScript
 @name TypeScript: types that catch bugs
 @blurb JavaScript with a checker that reads your code before it runs. Strict mode, from annotations to generics.
@@ -33259,17 +41945,17 @@ applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontS
 LIMITS.free === 100 && LIMITS.pro === 1000
 --- check source | LIMITS is a Record over the two plans
 LIMITS\\s*:\\s*Record\\s*<
-`,Ge=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],Ke=Object.assign({"./tracks/bash.txt":xe,"./tracks/cpp.txt":Se,"./tracks/git.txt":Ce,"./tracks/html.advanced.txt":we,"./tracks/html.expert.txt":Te,"./tracks/html.intermediate.txt":Ee,"./tracks/html.projects.txt":De,"./tracks/html.txt":Oe,"./tracks/javascript.advanced.txt":ke,"./tracks/javascript.expert.txt":Ae,"./tracks/javascript.intermediate.txt":je,"./tracks/javascript.projects.txt":Me,"./tracks/javascript.txt":Ne,"./tracks/python.advanced.txt":Pe,"./tracks/python.expert.txt":Fe,"./tracks/python.intermediate.txt":Ie,"./tracks/python.projects.txt":Le,"./tracks/python.txt":Re,"./tracks/sql.advanced.txt":ze,"./tracks/sql.expert.txt":Be,"./tracks/sql.intermediate.txt":Ve,"./tracks/sql.projects.txt":He,"./tracks/sql.txt":Ue,"./tracks/typescript.txt":We}),qe=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function z(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[Ge.indexOf(t),qe.indexOf(n)]}var Je=Object.entries(Ke).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>z(e)[0]>=0).sort((e,t)=>{let[n,r]=z(e[0]),[i,a]=z(t[0]);return n-i||r-a}),Ye=Ge.filter(e=>Je.some(([t])=>t.split(`.`)[0]===e)),B=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function V(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}async function Xe(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await x(t,he(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
+`,Ye=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],Xe=Object.assign({"./tracks/bash.txt":xe,"./tracks/cpp.txt":Se,"./tracks/git.txt":Ce,"./tracks/html.advanced.txt":we,"./tracks/html.expert.txt":Te,"./tracks/html.intermediate.txt":Ee,"./tracks/html.projects.txt":De,"./tracks/html.txt":Oe,"./tracks/javascript.advanced.txt":ke,"./tracks/javascript.expert.txt":Ae,"./tracks/javascript.intermediate.txt":je,"./tracks/javascript.projects.txt":Me,"./tracks/javascript.txt":Ne,"./tracks/python.advanced.txt":Pe,"./tracks/python.expert.txt":Fe,"./tracks/python.intermediate.txt":Ie,"./tracks/python.projects.txt":Le,"./tracks/python.txt":Re,"./tracks/sql.advanced.txt":ze,"./tracks/sql.expert.txt":Be,"./tracks/sql.intermediate.txt":Ve,"./tracks/sql.projects.txt":He,"./tracks/sql.txt":Ue,"./tracks/typescript.advanced.txt":We,"./tracks/typescript.expert.txt":Ge,"./tracks/typescript.intermediate.txt":Ke,"./tracks/typescript.projects.txt":qe,"./tracks/typescript.txt":Je}),Ze=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function z(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[Ye.indexOf(t),Ze.indexOf(n)]}var Qe=Object.entries(Xe).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>z(e)[0]>=0).sort((e,t)=>{let[n,r]=z(e[0]),[i,a]=z(t[0]);return n-i||r-a}),$e=Ye.filter(e=>Qe.some(([t])=>t.split(`.`)[0]===e)),B=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function V(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var et=3e4;async function tt(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await b(t,_e(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
 `),stderr:r.join(`
-`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return V(await m(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=pe(t,e.error);return n?{...V(await g(n.program,{onStatus:r})),typeFails:n.fails}:V(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
-`);return V(await h.run(t,{onStatus:r,...n?{stdin:n}:{}}))}case`cpp`:return V(await w(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await C(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function Ze(e){return e===`git`?`bash`:e}function Qe(e){e===`python`&&!h.isBooted&&h.preload(),e===`typescript`&&_.preload()}var $e=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],et=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],tt=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),nt=class extends Error{};function H(e,t){throw new nt(`${e}: ${t}`)}function U(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
-`)}function W(e){let t=U(e);return t?`${t}\n`:``}function rt(e,t){let n;try{n=JSON.parse(e)}catch{return H(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||H(t,`rows must be an array of arrays of strings, numbers or null`),n}function it(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||H(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=U(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||H(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=U(c).split(`
+`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return V(await m(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=he(t,e.error);return n?{...V(await g(n.program,{onStatus:r})),typeFails:n.fails}:V(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
+`);return V(await h.run(t,{onStatus:r,limitMs:et,...n?{stdin:n}:{}}))}case`cpp`:return V(await C(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await S(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function nt(e){return e===`git`?`bash`:e}function rt(e){e===`python`&&!h.isBooted&&h.preload(),e===`typescript`&&_.preload()}var it=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],at=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],ot=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),st=class extends Error{};function H(e,t){throw new st(`${e}: ${t}`)}function U(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
+`)}function W(e){let t=U(e);return t?`${t}\n`:``}function ct(e,t){let n;try{n=JSON.parse(e)}catch{return H(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||H(t,`rows must be an array of arrays of strings, numbers or null`),n}function lt(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||H(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=U(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||H(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=U(c).split(`
 `).filter(e=>e.trim()!==``);return e.length||H(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||H(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a case needs the call, then a "=> expected" line`);let t=U(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
 `).slice(3).trim();return(!t||!n)&&H(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=U(c).split(`
 `).map(e=>e.trim()).filter(Boolean);return e.length||H(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&H(d,`unknown source flag "${a}"`),l||H(d,`a source check needs a pattern`);try{new RegExp(l)}catch{H(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=U(c).split(`
 `),t=e[0]?.trim()===`ordered`,n=(t?e.slice(1):e).join(`
-`).trim();return{...u,kind:`result`,rows:rt(n,d),ordered:t}}case`type-error`:return l||H(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=U(c.slice(0,e));return t||H(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:rt(c.slice(e).join(`
-`).slice(3).trim(),d)}}default:return H(d,`unknown check kind "${i}"`)}}function at(e,t=`track`){let n=e.replace(/\r\n?/g,`
+`).trim();return{...u,kind:`result`,rows:ct(n,d),ordered:t}}case`type-error`:return l||H(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=U(c.slice(0,e));return t||H(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:ct(c.slice(e).join(`
+`).slice(3).trim(),d)}}default:return H(d,`unknown check kind "${i}"`)}}function ut(e,t=`track`){let n=e.replace(/\r\n?/g,`
 `).split(`
-`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&H(t,`"@schema" without a closing "@end"`),o=U(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(et.includes(s)||H(t,`"@track" must be one of ${et.join(`, `)}`),r.title||H(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||H(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&tt.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&H(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&H(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&H(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>it(e.header,e.body,c));h.length||H(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?U(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:U(d),task:U(f),starter:p?W(p):``,solution:W(m),hints:l.filter(e=>e.header===`hint`).map(e=>U(e.body)),checks:h,...g?{stdin:W(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&H(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||H(t,`no lessons`);let l=r.level??`basics`;$e.includes(l)||H(t,`"@level" must be one of ${$e.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&H(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var G=Je.map(([e,t])=>at(t,e)),ot=new Map;for(let e of G)e.lessons.forEach((t,n)=>ot.set(t.id,{track:e,lesson:t,index:n}));function st(e){return G.find(t=>t.id===e)??G.find(t=>t.lang===e)}function K(e){return G.filter(t=>t.lang===e)}function ct(e,t){let n=K(e);return n.find(e=>J(e,t)<e.lessons.length)??n[n.length-1]}function lt(e){return ot.get(e)}function q(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function J(e,t){return e.lessons.filter(e=>t[e.id]).length}function ut(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var dt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function Y(e){return dt[e]??e}var X=[...new Set(G.map(e=>e.lang))].filter(e=>K(e).length>1).map(e=>({id:`master-${e}`,title:Y(e),blurb:`${Y(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:K(e).map(e=>e.id)})),Z={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},Q=t();function ft({lessonId:e}){if(!e)return(0,Q.jsx)(mt,{});let t=e.startsWith(`roadmap-`)?pt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(vt,{roadmap:t});let n=st(e);if(n)return(0,Q.jsx)(yt,{track:n});let r=lt(e);return r?(0,Q.jsx)(bt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(mt,{missing:e})}function $(){let{state:e}=o(),t=ut(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var pt=[...B,...X];function mt({missing:e}){let{state:t}=o(),n=d(),r=pt.find(e=>e.id===n.query.goal)??B[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(T,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:B.map(e=>i(e))}),X.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:X.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(_t,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),Ye.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":Y(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(T,{lang:e,size:20}),Y(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[K(e).length,` course`,K(e).length===1?``:`s`,` · `,K(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:K(e).map(e=>{let n=J(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(T,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Z[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function ht(e){let[t,n]=(0,O.useState)(3);return(0,O.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function gt(e,t){let n=e.steps.map(e=>st(e)).filter(e=>!!e),r=n.map(e=>J(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function _t({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=gt(e,t),o=(0,O.useRef)(null),s=ht(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=J(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(T,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(S,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function vt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=gt(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${q(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&J(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=J(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(T,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(S,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function yt({track:e}){let{state:t}=o(),r=J(e,t.learn),a=e.lessons.length,s=q(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(T,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Z[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),K(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${Y(e.lang)} courses`,children:K(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":J(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Z[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function bt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,O.useState)(!1),[g,_]=(0,O.useState)(0),[v,ee]=(0,O.useState)(!1),y=(0,O.useRef)(null),te=ae(`learn:${t.id}:example`,t.teach,t.schema),b=!!a.learn[t.id],x=e.lessons[r-1],S=e.lessons[r+1],C=K(e.lang),w=S?void 0:C[C.findIndex(t=>t.id===e.id)+1];(0,O.useEffect)(()=>Qe(t.lang),[t.lang]);let E=(0,O.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>y.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),ne=(0,O.useCallback)(async(e,n,r)=>{let i=be(t,e,await Xe(t,me(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(T,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,b?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:te,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(xt,{lesson:t,onPass:E}):(0,Q.jsx)(re,{lang:Ze(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:ne,onPass:E,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:y,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:S?`Lesson passed. Next: ${S.title}`:w?`That is the whole ${e.name} course. Next: ${w.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(S?`/learn/${S.id}`:w?`/learn/${w.lessons[0].id}`:`/learn/${e.id}`),children:[S?`Continue`:w?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+St(t.lang)+`
-`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[(0,Q.jsx)(i,{size:13}),x.title]}):(0,Q.jsx)(`span`,{}),S?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${S.id}`),children:[S.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function xt({lesson:e,onPass:t}){let[n,r]=(0,O.useState)(()=>R(e)),[i,o]=(0,O.useState)(0),[s,c]=(0,O.useState)(null),[l,u]=(0,O.useState)(!1),d=async()=>{u(!0),c(null);try{let r=be(e,``,await Xe(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(te,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(R(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(ne,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(b,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(ie,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(E,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function St(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Ct(e){let{state:t}=o();return(0,O.useMemo)(()=>{let n=ct(e,t.learn);return n?{lesson:q(n,t.learn),done:J(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{ft as Learn,Ct as useNextLesson};
+`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&H(t,`"@schema" without a closing "@end"`),o=U(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(at.includes(s)||H(t,`"@track" must be one of ${at.join(`, `)}`),r.title||H(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||H(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&ot.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&H(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&H(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&H(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>lt(e.header,e.body,c));h.length||H(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?U(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:U(d),task:U(f),starter:p?W(p):``,solution:W(m),hints:l.filter(e=>e.header===`hint`).map(e=>U(e.body)),checks:h,...g?{stdin:W(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&H(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||H(t,`no lessons`);let l=r.level??`basics`;it.includes(l)||H(t,`"@level" must be one of ${it.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&H(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var G=Qe.map(([e,t])=>ut(t,e)),dt=new Map;for(let e of G)e.lessons.forEach((t,n)=>dt.set(t.id,{track:e,lesson:t,index:n}));function ft(e){return G.find(t=>t.id===e)??G.find(t=>t.lang===e)}function K(e){return G.filter(t=>t.lang===e)}function pt(e,t){let n=K(e);return n.find(e=>J(e,t)<e.lessons.length)??n[n.length-1]}function mt(e){return dt.get(e)}function q(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function J(e,t){return e.lessons.filter(e=>t[e.id]).length}function ht(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var gt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function Y(e){return gt[e]??e}var X=[...new Set(G.map(e=>e.lang))].filter(e=>K(e).length>1).map(e=>({id:`master-${e}`,title:Y(e),blurb:`${Y(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:K(e).map(e=>e.id)})),Z={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},Q=t();function _t({lessonId:e}){if(!e)return(0,Q.jsx)(yt,{});let t=e.startsWith(`roadmap-`)?vt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(Ct,{roadmap:t});let n=ft(e);if(n)return(0,Q.jsx)(wt,{track:n});let r=mt(e);return r?(0,Q.jsx)(Tt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(yt,{missing:e})}function $(){let{state:e}=o(),t=ht(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var vt=[...B,...X];function yt({missing:e}){let{state:t}=o(),n=d(),r=vt.find(e=>e.id===n.query.goal)??B[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(w,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:B.map(e=>i(e))}),X.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:X.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(St,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),$e.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":Y(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(w,{lang:e,size:20}),Y(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[K(e).length,` course`,K(e).length===1?``:`s`,` · `,K(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:K(e).map(e=>{let n=J(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(w,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Z[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function bt(e){let[t,n]=(0,D.useState)(3);return(0,D.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function xt(e,t){let n=e.steps.map(e=>ft(e)).filter(e=>!!e),r=n.map(e=>J(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function St({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=xt(e,t),o=(0,D.useRef)(null),s=bt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=J(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(w,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(x,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Ct({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=xt(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${q(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&J(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=J(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(w,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(x,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function wt({track:e}){let{state:t}=o(),r=J(e,t.learn),a=e.lessons.length,s=q(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(w,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Z[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),K(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${Y(e.lang)} courses`,children:K(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":J(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Z[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function Tt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,D.useState)(!1),[g,_]=(0,D.useState)(0),[v,ee]=(0,D.useState)(!1),y=(0,D.useRef)(null),te=oe(`learn:${t.id}:example`,t.teach,t.schema),ne=!!a.learn[t.id],b=e.lessons[r-1],x=e.lessons[r+1],S=K(e.lang),C=x?void 0:S[S.findIndex(t=>t.id===e.id)+1];(0,D.useEffect)(()=>rt(t.lang),[t.lang]);let T=(0,D.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>y.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),re=(0,D.useCallback)(async(e,n,r)=>{let i=R(t,e,await tt(t,ge(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(w,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,ne?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:te,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(Et,{lesson:t,onPass:T}):(0,Q.jsx)(ie,{lang:nt(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:re,onPass:T,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:y,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:x?`Lesson passed. Next: ${x.title}`:C?`That is the whole ${e.name} course. Next: ${C.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(x?`/learn/${x.id}`:C?`/learn/${C.lessons[0].id}`:`/learn/${e.id}`),children:[x?`Continue`:C?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+Dt(t.lang)+`
+`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[b?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${b.id}`),children:[(0,Q.jsx)(i,{size:13}),b.title]}):(0,Q.jsx)(`span`,{}),x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[x.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function Et({lesson:e,onPass:t}){let[n,r]=(0,D.useState)(()=>L(e)),[i,o]=(0,D.useState)(0),[s,c]=(0,D.useState)(null),[l,u]=(0,D.useState)(!1),d=async()=>{u(!0),c(null);try{let r=R(e,``,await tt(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(te,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(L(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(re,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(ne,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(ae,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(T,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function Dt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Ot(e){let{state:t}=o();return(0,D.useMemo)(()=>{let n=pt(e,t.learn);return n?{lesson:q(n,t.learn),done:J(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{_t as Learn,Ot as useNextLesson};

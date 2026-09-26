@@ -503,6 +503,87 @@ typed errors / `Result` types, branded types (`type-error` example
 `UserId` in parse.ts is not a lesson), modules, declaration files, `never`
 beyond exhaustiveness.
 
+### TypeScript · Intermediate — `typescript-intermediate`, prefix `ts2-`, 14 lessons
+
+Leans only on TypeScript basics + JavaScript basics; JavaScript beyond that
+is bridged where used (classes in ts2-02, array spread ts2-04, rest
+parameters ts2-05, `every` ts2-08, rest destructuring ts2-09, `sort` ts2-13,
+`Map` and class fields ts2-14). **Type-error checks** are introduced and
+explained in ts2-01.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| ts2-01 | concept | interface vs type alias, `extends`, intersection `&`, declaration merging, avoid `any`; what a type-error check proves |
+| ts2-02 | concept | narrowing by equality, `typeof`, `instanceof`, `in`; control-flow analysis; bridge: class, `extends Error`, `public` parameter properties |
+| ts2-03 | concept | literal types, **widening** (`let`, object properties), fix where created, `Record` over a literal union |
+| ts2-04 | concept | optional `?`, default parameters, **`readonly`** properties and `readonly T[]`, compile-time only (`Object.freeze`) |
+| ts2-05 | concept | function types, **overloads** |
+| ts2-06 | concept | **generic constraints** `T extends …`, several type parameters, explicit type arguments |
+| ts2-07 | concept | user-defined **type guards**, `filter(isX)`, **assertion functions** `asserts x is T` |
+| ts2-08 | concept | `any` vs `unknown`, validating outside data step by step, the honest `Record<string, unknown>` cast, results as unions |
+| ts2-09 | concept | labelled, optional and rest **tuple** elements; annotate tuple returns |
+| ts2-10 | concept | **enums** (numeric, reverse mapping, string) vs literal unions from `as const` arrays, `(typeof A)[number]` |
+| ts2-11 | **debugging** (method taught) | read the first error literally, `find` → `T \| undefined`, `reduce` start value; no `!`/`as`/`any` fixes |
+| ts2-12 | **debugging** | a type too loose to catch bugs → discriminated union ("make invalid states unrepresentable") |
+| ts2-13 | **problem** (approach taught) | merge intervals, free slots; `readonly` inputs; 200,000 slots |
+| ts2-14 | **design** | modelling a domain: tagged states, closed sets, results for expected failures; `private` |
+
+### TypeScript · Advanced — `typescript-advanced`, prefix `ts3-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| ts3-01 | concept | `keyof`, indexed access `T[K]`, `typeof` in types, `K extends keyof T`; the **`Equal<A, B>` type test** (every later "… is exactly …" check); computed keys |
+| ts3-02 | concept | **mapped types**, `+/-readonly`, `-?`, key remapping with `as`; `for…in` |
+| ts3-03 | concept | **conditional types**, `infer`, distribution and `[T]` to stop it, recursive conditionals |
+| ts3-04 | concept | utility types (`Pick`, `Omit`, `Exclude`, `Extract`, `ReturnType`, `Parameters`, `Awaited`), single source of truth, types do not remove data |
+| ts3-05 | concept/debug | exhaustive `switch` + `assertNever`, `Extract` a union member |
+| ts3-06 | concept | **branded types** and smart constructors |
+| ts3-07 | concept | **template literal types**, `Capitalize` etc., parsing strings with `infer` |
+| ts3-08 | concept | annotation vs `as const` vs **`satisfies`**, `as const satisfies` |
+| ts3-09 | build | a type-safe emitter: event maps, conditional rest parameters for `void` payloads; `??=` |
+| ts3-10 | build | a typed builder that tracks steps in a union type parameter |
+| ts3-11 | **debugging** | types that lie about data (casts at the boundary, indexing); guard at the boundary |
+| ts3-12 | concept | generic classes (`Stack`, `Queue`), `this` return, `static from`, iterable containers; class features bridged |
+| ts3-13 | concept | a generic **`Result<T, E>`**, `ok`/`err` with `never`, `map`, `andThen` collecting `E \| F` |
+| ts3-14 | **problem** | a generic LRU cache on a `Map`; 200,000 operations |
+
+### TypeScript · Expert — `typescript-expert`, prefix `ts4-`, 14 lessons
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| ts4-01 | concept | recursive types (`DeepReadonly`, `DeepPartial`), deep freeze/merge, `NoInfer` preview |
+| ts4-02 | concept | a recursive `Json` type and guard, leaf paths (`flatMap` bridged) |
+| ts4-03 | concept | route params parsed at the type level |
+| ts4-04 | concept | **variadic tuples**, `[...T]` inference hint, typed partial application |
+| ts4-05 | concept | **`const` type parameters**, **`NoInfer`**; `Object.fromEntries` |
+| ts4-06 | **debugging** | **variance**: covariant outputs, contravariant inputs, the array hole, `readonly` defence |
+| ts4-07 | build | typed state machines: state in the type, `Extract` to re-attach facts |
+| ts4-08 | concept | **phantom types**, `unique symbol`, the union-inference trap fixed with `NoInfer` |
+| ts4-09 | concept | Result pipelines: tagged errors, `all` over a tuple, `tryCatch`, `match` |
+| ts4-10 | build | a schema library: `Schema<T>`, `Infer`, `object` from a shape, error paths |
+| ts4-11 | build | optional keys (`OptionalKeys`, `Simplify`), `union`, `safeParse` |
+| ts4-12 | build | a typed DI container growing its type; duplicate keys as `never`; `Proxy` bridged |
+| ts4-13 | **debugging** | surprising conditional types: distribution, `never` as the empty union, `IsUnion` |
+| ts4-14 | **design** | an API client that cannot be misused: computed argument lists from an endpoint map |
+
+### TypeScript · Projects — `typescript-projects`, prefix `tsp-`, 15 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| tsp-01…04 | **Store**: branded SKUs/cents and a private inventory → orders as state types with a `Result` place → discount union with `assertNever`, money formatting → typed reports (`Record<Order['status'], number>`, generic `groupBy`) | ts3-05/06/13 |
+| tsp-05…08 | **Event-sourced ledger**: readonly event union + pure `apply`/`replay` → `decide` returning tagged `CommandError`s → `Ledger` with `Extract`-typed subscriptions → generic projections, statements, time travel | ts3-05/09/13 |
+| tsp-09…12 | **Router**: pattern-typed params → routes and replies (404/405/500) → middleware growing a typed context → overloads with body guards and `HttpError` | ts4-03/12, ts2-05/07 |
+| tsp-13 | **Capstone**: typed form-validation library | ts3-10, ts4-11 |
+| tsp-14 | **Capstone**: typed task graph (dependencies only on earlier tasks) | ts4-12 |
+| tsp-15 | **Capstone**: typed CLI parser (result type computed from the spec) | ts4-05, ts3-02/03 |
+
+Notes: several advanced/expert solutions and checks still write `x[i]!` on
+index access; with `noUncheckedIndexedAccess` off it is redundant (removed
+where it was pure habit in ts2-09, ts3-07, ts3-12), and `Map.get(k)!` remains
+in a few solutions where the key is known to exist. Not covered: modules and
+declaration files, decorators, `tsconfig` options as a topic, `infer …
+extends` constraints, `this` types beyond returning `this`.
+
 ---
 
 ## Python (`python`) — course `python`, prefix `py-`, 12 lessons

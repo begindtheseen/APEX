@@ -1,0 +1,3808 @@
+@track typescript
+@level projects
+@title TypeScript · Projects
+@name TypeScript projects: three typed systems and three capstones
+@blurb Build a typed store, an event-sourced bank ledger and a router with inferred params, one step at a time — then design three libraries from a spec on your own.
+
+=== tsp-01 | Store 1: products, SKUs and stock
+--- teach
+This course puts the whole TypeScript ladder to work: three typed systems built step by step, then three capstones you design from a specification.
+
+This is the first of four lessons building a small, fully typed store: products and stock, orders that move through states, discounts, and reports. Each lesson starts from where the last one ended.
+
+**The design idea for this step: validate once, then trust the type.** Two kinds of value are easy to get wrong in a store:
+
+- a **SKU** (stock-keeping unit) like `PEN-001` — a string, but not *any* string;
+- a **price** in cents — a number, but only a whole, non-negative one.
+
+Brand both (you met brands in the advanced course). The only way to get a `Sku` is `sku(raw)`, which checks the format; the only way to get `Cents` is `cents(n)`. Every function further in can then take a `Sku` and never re-check it, and a plain string typed in by accident does not compile.
+
+**The inventory** keeps two maps keyed by SKU: products and quantities on hand. Keep them `private` so nothing outside can put the two out of step. Think about each method's failure mode and choose deliberately:
+
+- adding the same SKU twice, or restocking an unknown one, is a programming mistake — **throw**;
+- asking to take more than is available is an ordinary outcome — return **`false`** and change nothing.
+
+Mark product fields `readonly`: a product's price changing under an order that already used it would be a nasty bug.
+--- task
+Build:
+
+1. `type Brand<T, B extends string>`, `type Sku` (a branded string) and `type Cents` (a branded number).
+2. `sku(raw: string): Sku` — must match `/^[A-Z]{3}-\d{3}$/`, else throw a `TypeError` with the message `'invalid SKU: <raw>'`. `cents(n: number): Cents` — a whole number `>= 0`, else throw a `RangeError`.
+3. `interface Product` with readonly `sku: Sku`, `name: string`, `price: Cents`.
+4. `class Inventory`:
+   - `addProduct(product: Product, quantity = 0): void` — throws `Error('duplicate SKU: <sku>')` if it exists; `RangeError` unless `quantity` is a whole number `>= 0`.
+   - `restock(s: Sku, quantity: number): void` — throws `Error('unknown SKU: <sku>')`; `RangeError` unless `quantity` is a whole number `> 0`.
+   - `product(s: Sku): Product | undefined`, `available(s: Sku): number` (0 for unknown SKUs).
+   - `take(s: Sku, quantity: number): boolean` — removes stock and returns `true` only if the SKU exists, `quantity` is a whole number `> 0` and enough is available; otherwise `false`, unchanged.
+   - `list(): Product[]` — sorted by SKU.
+--- starter
+// The typed store, step 1: SKUs, prices, products and the inventory.
+
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+--- hint
+Start with the brands and the two smart constructors; they are the only places a cast (`raw as Sku`) belongs.
+--- hint
+Two private maps, `Map<Sku, Product>` and `Map<Sku, number>`, keep products and quantities.
+--- hint
+In `take`, compute every reason to refuse first, and only then change the stock.
+--- check case | sku accepts a valid code
+sku('PEN-001')
+=> 'PEN-001'
+--- check case | sku rejects bad codes with a TypeError
+(() => { try { sku('pen-1'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'wrong type' } })()
+=> 'invalid SKU: pen-1'
+--- check test | cents rejects fractions and negatives
+throws(() => cents(1.5)) && throws(() => cents(-1)) && cents(0) === 0
+--- check case | Stock goes in and out
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.restock(sku('PEN-001'), 5); const took = inv.take(sku('PEN-001'), 12); const tooMany = inv.take(sku('PEN-001'), 4); return [took, tooMany, inv.available(sku('PEN-001'))] })()
+=> [true, false, 3]
+--- check case | Unknown SKUs: nothing available, nothing taken
+(() => { const inv = new Inventory(); return [inv.available(sku('ABC-999')), inv.take(sku('ABC-999'), 1), inv.product(sku('ABC-999'))] })()
+=> [0, false, undefined]
+--- check case | list is sorted by SKU
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }); return inv.list().map((p) => p.name) })()
+=> ['Ink', 'Pen']
+--- check case | Mistakes throw with clear messages
+(() => { const inv = new Inventory(); const pen = { sku: sku('PEN-001'), name: 'Pen', price: cents(250) }; inv.addProduct(pen); const msg = (f: () => void) => { try { f(); return 'no error' } catch (e) { return (e as Error).message } }; return [msg(() => inv.addProduct(pen)), msg(() => inv.restock(sku('INK-002'), 1)), throws(() => inv.restock(sku('PEN-001'), 0))] })()
+=> ['duplicate SKU: PEN-001', 'unknown SKU: INK-002', true]
+--- check type-error | A plain string is not a Sku
+const s: Sku = 'PEN-001'
+--- check type-error | restock wants a Sku
+new Inventory().restock('PEN-001', 1)
+--- check type-error | A price must be Cents
+const p: Product = { sku: sku('PEN-001'), name: 'Pen', price: 250 }
+--- check type-error | Products are read-only
+const p: Product = { sku: sku('PEN-001'), name: 'Pen', price: cents(250) }; p.price = cents(1)
+--- check type-error | product() may find nothing
+new Inventory().product(sku('PEN-001')).name
+
+=== tsp-02 | Store 2: orders as a state machine
+--- teach
+An order is **draft** while the customer fills the cart, **placed** once stock is reserved, then **shipped** or **cancelled**. The tempting model is one `Order` type with a `status: string` and a pile of optional fields — `total?`, `tracking?`, `reason?`. Every function then has to wonder which fields are really there.
+
+Model each state as its own type instead, and write each operation's signature to say which states it accepts:
+
+```ts
+// ship(order: PlacedOrder, tracking: string): ShippedOrder
+// cancel(order: DraftOrder | PlacedOrder, …): CancelledOrder
+```
+
+Now "ship a draft" and "cancel a shipped order" are not runtime checks you might forget — they do not compile. A `ShippedOrder` always has `tracking`; a `DraftOrder` never has a `total`.
+
+**Placing an order can fail for ordinary reasons** — an empty cart, a SKU that does not exist, not enough stock. Those are values, not exceptions: return a `Result` whose error type is a union of tagged objects, each carrying what the caller needs to show a message (`wanted` and `available` for the out-of-stock case).
+
+**Be all-or-nothing.** If the second line is out of stock, the first line must not stay reserved. Check every line first; take stock only when all of them pass.
+
+Orders are immutable values: `addLine` returns a new draft. Cancelling a placed order gives its stock back.
+--- task
+Add to the store:
+
+1. `interface Line` — readonly `sku: Sku`, `quantity: number`.
+2. Four readonly order types sharing `id` and `lines: readonly Line[]`: `DraftOrder` (`status: 'draft'`), `PlacedOrder` (`'placed'`, plus `total: Cents`), `ShippedOrder` (`'shipped'`, `total` and `tracking: string`), `CancelledOrder` (`'cancelled'`, plus `reason: string`); `type Order` is any of them.
+3. `type PlaceError` — `{ kind: 'empty' }`, `{ kind: 'unknown-sku'; sku: Sku }` or `{ kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }`; and `type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }`.
+4. `draft(id)`; `addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder` — adds to an existing line for the same SKU; `RangeError` unless `quantity` is a whole number `> 0`.
+5. `place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError>` — checks lines in order, reserves nothing unless every line can be filled; `total` is the sum of price × quantity.
+6. `ship(order: PlacedOrder, tracking: string): ShippedOrder` and `cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder` (a placed order's stock goes back).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+--- hint
+Write the four order interfaces first; the function signatures then say which state goes in and which comes out.
+--- hint
+`place` makes two passes over the lines: one that only checks (and adds up the total), one that takes stock.
+--- hint
+In `cancel`, narrowing on `order.status === 'placed'` tells you whether there is stock to give back.
+--- check case | Placing an order reserves stock and totals it
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 5); const o = addLine(addLine(addLine(draft('o1'), sku('PEN-001'), 2), sku('INK-002'), 1), sku('PEN-001'), 1); const r = place(o, inv); return [r, inv.available(sku('PEN-001')), inv.available(sku('INK-002'))] })()
+=> [{ ok: true, value: { status: 'placed', id: 'o1', lines: [{ sku: 'PEN-001', quantity: 3 }, { sku: 'INK-002', quantity: 1 }], total: 850 } }, 7, 4]
+--- check case | Out of stock reserves nothing at all
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 1); const o = addLine(addLine(draft('o2'), sku('PEN-001'), 2), sku('INK-002'), 3); const r = place(o, inv); return [r, inv.available(sku('PEN-001'))] })()
+=> [{ ok: false, error: { kind: 'out-of-stock', sku: 'INK-002', wanted: 3, available: 1 } }, 10]
+--- check case | Empty orders and unknown SKUs
+(() => { const inv = new Inventory(); return [place(draft('o3'), inv), place(addLine(draft('o4'), sku('ABC-123'), 1), inv)] })()
+=> [{ ok: false, error: { kind: 'empty' } }, { ok: false, error: { kind: 'unknown-sku', sku: 'ABC-123' } }]
+--- check case | Shipping and cancelling
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const a = place(addLine(draft('a'), sku('PEN-001'), 4), inv); const b = place(addLine(draft('b'), sku('PEN-001'), 3), inv); if (!a.ok || !b.ok) return 'place failed'; const shipped = ship(a.value, 'TRK-1'); const cancelled = cancel(b.value, 'changed mind', inv); return [shipped.status, shipped.tracking, cancelled, inv.available(sku('PEN-001'))] })()
+=> ['shipped', 'TRK-1', { status: 'cancelled', id: 'b', lines: [{ sku: 'PEN-001', quantity: 3 }], reason: 'changed mind' }, 6]
+--- check test | addLine returns a new draft and validates the quantity
+(() => { const d = draft('x'); const e = addLine(d, sku('PEN-001'), 1); return d.lines.length === 0 && e.lines.length === 1 && throws(() => addLine(d, sku('PEN-001'), 0)) })()
+--- check type-error | A draft cannot be shipped
+ship(draft('o1'), 'TRK-1')
+--- check type-error | A shipped order cannot be cancelled
+(o: ShippedOrder, inv: Inventory) => cancel(o, 'late', inv)
+--- check type-error | Lines cannot be added to a placed order
+(o: PlacedOrder) => addLine(o, sku('PEN-001'), 1)
+--- check type-error | A shipped order must have tracking
+const o: ShippedOrder = { status: 'shipped', id: 'o1', lines: [], total: cents(0) }
+--- check type-error | An out-of-stock error carries the numbers
+const e: PlaceError = { kind: 'out-of-stock', sku: sku('PEN-001') }
+--- check type-error | Callers must check the result of place
+place(draft('o1'), new Inventory()).value
+
+=== tsp-03 | Store 3: discounts and checkout
+--- teach
+Discounts are a textbook discriminated union: each kind has its own data, and every function that handles them must handle every kind.
+
+```ts
+type Sku = string & { readonly __brand: 'Sku' }
+type Cents = number & { readonly __brand: 'Cents' }
+
+type Discount =
+  | { kind: 'percent'; percent: number }                              // off the order total
+  | { kind: 'fixed'; amount: Cents }                                  // a set amount off
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }      // e.g. buy 2, get 1 free
+```
+
+Compute each discount in a `switch` ending in `assertNever`. When marketing invents a fourth kind next month, adding it to the union makes the compiler point at every place that needs a new case.
+
+**Money rules**, decided once and applied everywhere:
+
+- A percentage discount is rounded to the nearest cent (`Math.round`).
+- *Buy X get Y* works in groups: for every `buy + free` units of that SKU in the order, `free` of them cost nothing. With buy 2 get 1 and 7 pens, there are two full groups of 3, so 2 pens are free.
+- Discounts are each computed from the order and added up; the total discount never exceeds the order's total, so nobody is ever paid to shop.
+
+Keep amounts as `Cents` all the way through and format only at the edge, for display: `formatCents(1234)` is `'$12.34'`. Formatting with integer arithmetic (`Math.floor(c / 100)` and `c % 100`) avoids floating-point surprises.
+--- task
+Add:
+
+1. `type Discount` as above, and `assertNever(value: never): never`.
+2. `discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number` — a `switch` on `d.kind` with an `assertNever` default. A percent outside 0–100 throws a `RangeError`. *Buy X get Y* for a SKU the order does not contain is 0.
+3. `checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[])` returning `{ subtotal: Cents; discount: Cents; total: Cents }` — the discount capped at the subtotal.
+4. `formatCents(c: Cents): string` — `'$<dollars>.<two-digit cents>'`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(`invalid percent: ${d.percent}`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return `$${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`
+}
+--- hint
+`discountAmount` is one `switch (d.kind)` with three cases and `default: return assertNever(d)`.
+--- hint
+For buy X get Y: `Math.floor(line.quantity / (d.buy + d.free)) * d.free` free units, each worth the product's price.
+--- hint
+`formatCents`: `` `$${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}` ``.
+--- check case | A percent discount, rounded to the cent
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(333) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 3), inv); if (!r.ok) return 'place failed'; return checkout(r.value, inv, [{ kind: 'percent', percent: 15 }]) })()
+=> { subtotal: 999, discount: 150, total: 849 }
+--- check case | Buy two, get one free, plus a fixed amount
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); inv.addProduct({ sku: sku('INK-002'), name: 'Ink', price: cents(100) }, 10); const r = place(addLine(addLine(draft('o'), sku('PEN-001'), 7), sku('INK-002'), 2), inv); if (!r.ok) return 'place failed'; return checkout(r.value, inv, [{ kind: 'buy-x-get-y', sku: sku('PEN-001'), buy: 2, free: 1 }, { kind: 'fixed', amount: cents(50) }]) })()
+=> { subtotal: 1950, discount: 550, total: 1400 }
+--- check case | The discount never exceeds the total; missing SKUs give nothing
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 1), inv); if (!r.ok) return 'place failed'; return [checkout(r.value, inv, [{ kind: 'fixed', amount: cents(1000) }]), checkout(r.value, inv, [{ kind: 'buy-x-get-y', sku: sku('INK-002'), buy: 1, free: 1 }])] })()
+=> [{ subtotal: 250, discount: 250, total: 0 }, { subtotal: 250, discount: 0, total: 250 }]
+--- check test | A percent outside 0 to 100 is a RangeError
+(() => { const inv = new Inventory(); inv.addProduct({ sku: sku('PEN-001'), name: 'Pen', price: cents(250) }, 10); const r = place(addLine(draft('o'), sku('PEN-001'), 1), inv); if (!r.ok) return false; try { checkout(r.value, inv, [{ kind: 'percent', percent: 120 }]); return false } catch (e) { return e instanceof RangeError } })()
+--- check case | formatCents
+[formatCents(cents(1234)), formatCents(cents(5)), formatCents(cents(100000))]
+=> ['$12.34', '$0.05', '$1000.00']
+--- check type-error | A percent discount has a percent, not an amount
+const d: Discount = { kind: 'percent', amount: cents(5) }
+--- check type-error | Unknown discount kinds do not compile
+const d: Discount = { kind: 'bogo' }
+--- check type-error | A fixed discount is in Cents
+const d: Discount = { kind: 'fixed', amount: 500 }
+--- check type-error | Only placed orders can be checked out
+(o: DraftOrder, inv: Inventory) => checkout(o, inv, [])
+--- check type-error | formatCents takes Cents
+formatCents(12.5)
+--- check source | The switch is exhaustive
+assertNever\s*\(\s*d\s*\)
+
+=== tsp-04 | Store 4: typed reports
+--- teach
+The last step of the store turns orders into numbers a manager reads. Reports are where loose types creep back in — `Record<string, number>` everywhere — so this lesson is about keeping them precise.
+
+**Counts over a closed set.** "How many orders in each status?" has exactly four answers. `Record<Order['status'], number>` says so: all four keys, always present (zero included), and a typo like `counts.shiped` does not compile. `Order['status']` is an indexed access on a union, giving the union of all four literal statuses — derived from the order types, so it can never drift.
+
+**A generic `groupBy`.** Grouping by a key function is useful everywhere, so write it once:
+
+```ts
+// groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>>
+```
+
+`K extends PropertyKey` (`string | number | symbol`) is what may be an object key. The result is `Partial` because a key type like `'draft' | 'placed' | …` would otherwise promise a group for every status, even ones with no orders.
+
+**Narrowing inside reports.** Revenue counts placed and shipped orders only. After `o.status === 'placed' || o.status === 'shipped'`, TypeScript knows `o.total` exists — the state-machine types from lesson 2 pay off again.
+
+Sort with explicit tie-breakers so results are stable: most quantity first, then SKU alphabetically.
+--- task
+Add:
+
+1. `groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>>` — items in their original order within each group.
+2. `countByStatus(orders: readonly Order[]): Record<Order['status'], number>` — every status present.
+3. `revenue(orders: readonly Order[]): Cents` — the sum of `total` over placed and shipped orders.
+4. `topProducts(orders: readonly Order[], n: number): { sku: Sku; quantity: number }[]` — quantities summed over placed and shipped orders, highest first, ties by SKU ascending, at most `n`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(`invalid percent: ${d.percent}`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return `$${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type Sku = Brand<string, 'Sku'>
+type Cents = Brand<number, 'Cents'>
+
+function sku(raw: string): Sku {
+  if (!/^[A-Z]{3}-\d{3}$/.test(raw)) throw new TypeError(`invalid SKU: ${raw}`)
+  return raw as Sku
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid amount of cents: ${n}`)
+  return n as Cents
+}
+
+interface Product {
+  readonly sku: Sku
+  readonly name: string
+  readonly price: Cents
+}
+
+class Inventory {
+  private products = new Map<Sku, Product>()
+  private stock = new Map<Sku, number>()
+
+  addProduct(product: Product, quantity = 0): void {
+    if (this.products.has(product.sku)) throw new Error(`duplicate SKU: ${product.sku}`)
+    if (!Number.isInteger(quantity) || quantity < 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.products.set(product.sku, product)
+    this.stock.set(product.sku, quantity)
+  }
+
+  restock(s: Sku, quantity: number): void {
+    if (!this.products.has(s)) throw new Error(`unknown SKU: ${s}`)
+    if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+    this.stock.set(s, this.available(s) + quantity)
+  }
+
+  product(s: Sku): Product | undefined {
+    return this.products.get(s)
+  }
+
+  available(s: Sku): number {
+    return this.stock.get(s) ?? 0
+  }
+
+  take(s: Sku, quantity: number): boolean {
+    const have = this.available(s)
+    if (!this.products.has(s) || !Number.isInteger(quantity) || quantity <= 0 || quantity > have) return false
+    this.stock.set(s, have - quantity)
+    return true
+  }
+
+  list(): Product[] {
+    return [...this.products.values()].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+  }
+}
+
+interface Line {
+  readonly sku: Sku
+  readonly quantity: number
+}
+
+interface DraftOrder {
+  readonly status: 'draft'
+  readonly id: string
+  readonly lines: readonly Line[]
+}
+
+interface PlacedOrder {
+  readonly status: 'placed'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+}
+
+interface ShippedOrder {
+  readonly status: 'shipped'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly total: Cents
+  readonly tracking: string
+}
+
+interface CancelledOrder {
+  readonly status: 'cancelled'
+  readonly id: string
+  readonly lines: readonly Line[]
+  readonly reason: string
+}
+
+type Order = DraftOrder | PlacedOrder | ShippedOrder | CancelledOrder
+
+type PlaceError =
+  | { kind: 'empty' }
+  | { kind: 'unknown-sku'; sku: Sku }
+  | { kind: 'out-of-stock'; sku: Sku; wanted: number; available: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function draft(id: string): DraftOrder {
+  return { status: 'draft', id, lines: [] }
+}
+
+function addLine(order: DraftOrder, s: Sku, quantity: number): DraftOrder {
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new RangeError(`invalid quantity: ${quantity}`)
+  const existing = order.lines.some((l) => l.sku === s)
+  const lines = existing
+    ? order.lines.map((l) => (l.sku === s ? { sku: s, quantity: l.quantity + quantity } : l))
+    : [...order.lines, { sku: s, quantity }]
+  return { ...order, lines }
+}
+
+function place(order: DraftOrder, inv: Inventory): Result<PlacedOrder, PlaceError> {
+  if (order.lines.length === 0) return { ok: false, error: { kind: 'empty' } }
+  let total = 0
+  for (const line of order.lines) {
+    const product = inv.product(line.sku)
+    if (!product) return { ok: false, error: { kind: 'unknown-sku', sku: line.sku } }
+    const available = inv.available(line.sku)
+    if (available < line.quantity) return { ok: false, error: { kind: 'out-of-stock', sku: line.sku, wanted: line.quantity, available } }
+    total += product.price * line.quantity
+  }
+  for (const line of order.lines) inv.take(line.sku, line.quantity)
+  return { ok: true, value: { status: 'placed', id: order.id, lines: order.lines, total: cents(total) } }
+}
+
+function ship(order: PlacedOrder, tracking: string): ShippedOrder {
+  return { ...order, status: 'shipped', tracking }
+}
+
+function cancel(order: DraftOrder | PlacedOrder, reason: string, inv: Inventory): CancelledOrder {
+  if (order.status === 'placed') for (const line of order.lines) inv.restock(line.sku, line.quantity)
+  return { status: 'cancelled', id: order.id, lines: order.lines, reason }
+}
+
+type Discount =
+  | { kind: 'percent'; percent: number }
+  | { kind: 'fixed'; amount: Cents }
+  | { kind: 'buy-x-get-y'; sku: Sku; buy: number; free: number }
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function discountAmount(order: PlacedOrder, inv: Inventory, d: Discount): number {
+  switch (d.kind) {
+    case 'percent':
+      if (d.percent < 0 || d.percent > 100) throw new RangeError(`invalid percent: ${d.percent}`)
+      return Math.round((order.total * d.percent) / 100)
+    case 'fixed':
+      return d.amount
+    case 'buy-x-get-y': {
+      const line = order.lines.find((l) => l.sku === d.sku)
+      const product = inv.product(d.sku)
+      if (!line || !product) return 0
+      return Math.floor(line.quantity / (d.buy + d.free)) * d.free * product.price
+    }
+    default:
+      return assertNever(d)
+  }
+}
+
+function checkout(order: PlacedOrder, inv: Inventory, discounts: readonly Discount[]): { subtotal: Cents; discount: Cents; total: Cents } {
+  const wanted = discounts.reduce((sum, d) => sum + discountAmount(order, inv, d), 0)
+  const discount = Math.min(wanted, order.total)
+  return { subtotal: order.total, discount: cents(discount), total: cents(order.total - discount) }
+}
+
+function formatCents(c: Cents): string {
+  return `$${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`
+}
+
+function groupBy<T, K extends PropertyKey>(items: readonly T[], key: (item: T) => K): Partial<Record<K, T[]>> {
+  const out: Partial<Record<K, T[]>> = {}
+  for (const item of items) {
+    const k = key(item)
+    const group = out[k]
+    if (group) group.push(item)
+    else out[k] = [item]
+  }
+  return out
+}
+
+function countByStatus(orders: readonly Order[]): Record<Order['status'], number> {
+  const counts: Record<Order['status'], number> = { draft: 0, placed: 0, shipped: 0, cancelled: 0 }
+  for (const o of orders) counts[o.status]++
+  return counts
+}
+
+function revenue(orders: readonly Order[]): Cents {
+  let sum = 0
+  for (const o of orders) if (o.status === 'placed' || o.status === 'shipped') sum += o.total
+  return cents(sum)
+}
+
+function topProducts(orders: readonly Order[], n: number): { sku: Sku; quantity: number }[] {
+  const totals = new Map<Sku, number>()
+  for (const o of orders) {
+    if (o.status !== 'placed' && o.status !== 'shipped') continue
+    for (const line of o.lines) totals.set(line.sku, (totals.get(line.sku) ?? 0) + line.quantity)
+  }
+  return [...totals]
+    .map(([s, quantity]) => ({ sku: s, quantity }))
+    .sort((a, b) => b.quantity - a.quantity || (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0))
+    .slice(0, n)
+}
+--- hint
+Start `countByStatus` from an object with all four statuses at 0, typed `Record<Order['status'], number>`.
+--- hint
+In `groupBy`, read `out[k]`; push onto it if it exists, otherwise start it with `[item]`.
+--- hint
+`topProducts`: sum into a `Map<Sku, number>`, turn it into objects, sort by quantity then SKU, then `slice(0, n)`.
+--- check case | groupBy keeps order within groups
+groupBy(['apple', 'avocado', 'banana', 'blueberry', 'cherry'], (s) => s[0]!)
+=> { a: ['apple', 'avocado'], b: ['banana', 'blueberry'], c: ['cherry'] }
+--- check case | countByStatus includes zeros
+countByStatus([{ status: 'draft', id: 'a', lines: [] }, { status: 'cancelled', id: 'b', lines: [], reason: 'x' }, { status: 'draft', id: 'c', lines: [] }])
+=> { draft: 2, placed: 0, shipped: 0, cancelled: 1 }
+--- check case | revenue counts placed and shipped orders only
+revenue([{ status: 'placed', id: 'a', lines: [], total: cents(500) }, { status: 'shipped', id: 'b', lines: [], total: cents(250), tracking: 'T' }, { status: 'cancelled', id: 'c', lines: [], reason: 'x' }, { status: 'draft', id: 'd', lines: [] }])
+=> 750
+--- check case | topProducts sums, sorts and limits
+topProducts([{ status: 'placed', id: 'a', lines: [{ sku: sku('PEN-001'), quantity: 2 }, { sku: sku('INK-002'), quantity: 5 }], total: cents(1) }, { status: 'shipped', id: 'b', lines: [{ sku: sku('PEN-001'), quantity: 3 }, { sku: sku('CAP-003'), quantity: 5 }], total: cents(1), tracking: 'T' }, { status: 'cancelled', id: 'c', lines: [{ sku: sku('ZIP-009'), quantity: 99 }], reason: 'x' }], 3)
+=> [{ sku: 'CAP-003', quantity: 5 }, { sku: 'INK-002', quantity: 5 }, { sku: 'PEN-001', quantity: 5 }]
+--- check case | topProducts respects n
+topProducts([{ status: 'placed', id: 'a', lines: [{ sku: sku('PEN-001'), quantity: 2 }, { sku: sku('INK-002'), quantity: 1 }], total: cents(1) }], 1)
+=> [{ sku: 'PEN-001', quantity: 2 }]
+--- check type-error | countByStatus has only real statuses
+countByStatus([]).refunded
+--- check type-error | revenue only takes real orders
+revenue([{ status: 'refunded', id: 'x', lines: [] }])
+--- check type-error | groupBy's keys have the key function's type
+groupBy(['a', 'bb'], (s) => s.length).foo
+--- check type-error | countByStatus returns exactly a record of the four statuses
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ReturnType<typeof countByStatus>, Record<'draft' | 'placed' | 'shipped' | 'cancelled', number>> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | groupBy by length is exactly Partial<Record<number, string[]>>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const g = groupBy(['a', 'bb'], (s) => s.length);
+const no: Equal<typeof g, Partial<Record<number, string[]>>> = false
+
+=== tsp-05 | Ledger 1: events and replay
+--- teach
+The second project is a bank ledger built with **event sourcing**. Instead of storing balances and updating them, you store the list of things that happened — *opened*, *deposited*, *transferred* — and compute the balances by replaying that list. Nothing is ever overwritten, so you get a full audit trail and can ask what any balance was at any moment.
+
+Four lessons: events and replay (this one), commands that validate and produce events, a `Ledger` with typed subscriptions, and projections that answer questions about history.
+
+**Events are facts, in the past tense.** One discriminated union, readonly all the way down, because a fact never changes:
+
+```ts
+type BankEvent =
+  | { readonly type: 'opened'; readonly account: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: string; readonly amount: number; readonly at: number }
+```
+
+**`apply(state, event)` is a pure function**: it returns a new state and never mutates the old one. That is what makes replay trustworthy — `replay(events)` is just `events.reduce(apply, {})`, and the same events always give the same balances.
+
+`apply` does not validate. Events are things that *already happened*; refusing one would make the history disagree with itself. Validation belongs to the step that decides whether an event may happen — the next lesson.
+
+Money is whole cents, as plain numbers here. Account ids are branded so a stray string cannot pose as one.
+--- task
+1. `type AccountId` (a branded string) and `accountId(raw: string): AccountId` — must match `/^acc_\w+$/`, else a `TypeError`.
+2. `type LedgerEvent`, readonly, with an `at: number` on every member:
+   - `opened` (`account`, `owner: string`), `deposited` (`account`, `amount`), `withdrawn` (`account`, `amount`), `transferred` (`from`, `to`, `amount`), `closed` (`account`).
+3. `interface Account` — readonly `id`, `owner`, `balance`, `open: boolean`; and `type Accounts = Readonly<Record<string, Account>>`.
+4. `apply(state: Accounts, event: LedgerEvent): Accounts` — pure; an exhaustive `switch` with `assertNever`. Opening starts at balance 0 and `open: true`; closing sets `open: false`. Events for accounts that do not exist change nothing.
+5. `replay(events: readonly LedgerEvent[]): Accounts`.
+--- starter
+// The event-sourced ledger, step 1: events, accounts, apply and replay.
+
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+--- hint
+Write the event union first; each member is a readonly object type with a literal `type`.
+--- hint
+A small helper `change(state, id, update)` that copies the state with one account updated keeps `apply` short.
+--- hint
+`replay` is one line: `events.reduce(apply, {})`.
+--- check case | Replay computes balances
+replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 1000, at: 3 }, { type: 'transferred', from: accountId('acc_a'), to: accountId('acc_b'), amount: 300, at: 4 }, { type: 'withdrawn', account: accountId('acc_b'), amount: 100, at: 5 }])
+=> { acc_a: { id: 'acc_a', owner: 'Ada', balance: 700, open: true }, acc_b: { id: 'acc_b', owner: 'Lin', balance: 200, open: true } }
+--- check case | Closing an account
+replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'closed', account: accountId('acc_a'), at: 2 }])
+=> { acc_a: { id: 'acc_a', owner: 'Ada', balance: 0, open: false } }
+--- check test | apply never changes the state it is given
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }]); const t = apply(s, { type: 'deposited', account: accountId('acc_a'), amount: 5, at: 2 }); return s.acc_a!.balance === 0 && t.acc_a!.balance === 5 && s !== t })()
+--- check case | Events for unknown accounts change nothing
+replay([{ type: 'deposited', account: accountId('acc_x'), amount: 5, at: 1 }])
+=> {}
+--- check test | Account ids are validated
+throws(() => accountId('a')) && accountId('acc_1') === 'acc_1'
+--- check type-error | A deposit needs an amount
+apply({}, { type: 'deposited', account: accountId('acc_a'), at: 1 })
+--- check type-error | Unknown event types do not compile
+apply({}, { type: 'refunded', account: accountId('acc_a'), at: 1 })
+--- check type-error | Account ids are branded
+const e: LedgerEvent = { type: 'opened', account: 'acc_a', owner: 'Ada', at: 1 }
+--- check type-error | Replayed accounts are read-only
+const s = replay([]); s.acc_a.balance = 5
+--- check source | apply is exhaustive
+assertNever\s*\(\s*event\s*\)
+
+=== tsp-06 | Ledger 2: commands that decide
+--- teach
+Events say what happened. **Commands** say what someone *wants* to happen — "withdraw 50 from acc_a" — and may be refused. The piece in between is a pure function:
+
+```ts
+// decide(state, command, at): Result<LedgerEvent, CommandError>
+```
+
+Given the current state, it either produces the event that records the change, or an error saying why not. It never changes the state itself; applying the event does that. This split — *decide* then *apply* — is the heart of event sourcing: all the rules live in one function you can test without any setup beyond a state object.
+
+**Errors are data.** Each refusal is a tagged object carrying what a user interface would need to say something useful: the balance and the amount for insufficient funds, the account for a closed account. The union of them all is `CommandError`, and a caller can `switch` over `error.code` exhaustively.
+
+**Order the checks deliberately**, because the first failing rule is the one reported. Here: a transfer to the same account first, then the amount, then that each account exists and is open, then funds. Write the order down (the task does) and test it.
+
+A small helper for "this account must exist and be open" returns a `Result<Account, CommandError>` of its own, and its error can be returned straight through: TypeScript knows the error member of one `Result` fits another with the same error type.
+--- task
+Add:
+
+1. `type Command` — `open` (`account`, `owner`), `deposit` (`account`, `amount`), `withdraw` (`account`, `amount`), `transfer` (`from`, `to`, `amount`), `close` (`account`).
+2. `type CommandError` — `already-exists`, `no-such-account`, `account-closed` (each with `account`); `invalid-amount` (`amount`); `insufficient-funds` (`account`, `balance`, `amount`); `same-account`; `balance-not-zero` (`account`, `balance`). The tag is `code`.
+3. `type Result<T, E>` and `decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError>`:
+   - `open`: `already-exists` if the account exists.
+   - `deposit` / `withdraw`: amount must be a whole number `> 0`; then the account must exist and be open; a withdrawal needs enough balance.
+   - `transfer`: `same-account` first; then amount; then `from`, then `to`, must exist and be open; then funds in `from`.
+   - `close`: the account must exist and be open, with balance 0.
+   - Otherwise the matching event, with `at`.
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+--- hint
+Write a helper `openAccount(state, id): Result<Account, CommandError>` for "exists and is open" — every command but `open` uses it.
+--- hint
+When the helper fails, `if (!account.ok) return account` passes its error straight through.
+--- hint
+Give `decide` its return type up front so each `{ type: 'deposited', … }` is checked against `LedgerEvent`.
+--- check case | Opening, and opening twice
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }]); return [decide({}, { type: 'open', account: accountId('acc_a'), owner: 'Ada' }, 1), decide(s, { type: 'open', account: accountId('acc_a'), owner: 'Ada' }, 2)] })()
+=> [{ ok: true, value: { type: 'opened', account: 'acc_a', owner: 'Ada', at: 1 } }, { ok: false, error: { code: 'already-exists', account: 'acc_a' } }]
+--- check case | Deposits and withdrawals
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 2 }]); return [decide(s, { type: 'withdraw', account: accountId('acc_a'), amount: 40 }, 3), decide(s, { type: 'withdraw', account: accountId('acc_a'), amount: 400 }, 3), decide(s, { type: 'deposit', account: accountId('acc_a'), amount: 2.5 }, 3), decide(s, { type: 'deposit', account: accountId('acc_z'), amount: 5 }, 3)] })()
+=> [{ ok: true, value: { type: 'withdrawn', account: 'acc_a', amount: 40, at: 3 } }, { ok: false, error: { code: 'insufficient-funds', account: 'acc_a', balance: 100, amount: 400 } }, { ok: false, error: { code: 'invalid-amount', amount: 2.5 } }, { ok: false, error: { code: 'no-such-account', account: 'acc_z' } }]
+--- check case | Transfers check in the right order
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 3 }, { type: 'closed', account: accountId('acc_b'), at: 4 }]); return [decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_a'), amount: -1 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 0 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 10 }, 5), decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_q'), amount: 500 }, 5)] })()
+=> [{ ok: false, error: { code: 'same-account' } }, { ok: false, error: { code: 'invalid-amount', amount: 0 } }, { ok: false, error: { code: 'account-closed', account: 'acc_b' } }, { ok: false, error: { code: 'no-such-account', account: 'acc_q' } }]
+--- check case | A successful transfer
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 100, at: 3 }]); return decide(s, { type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 60 }, 4) })()
+=> { ok: true, value: { type: 'transferred', from: 'acc_a', to: 'acc_b', amount: 60, at: 4 } }
+--- check case | Closing needs a zero balance
+(() => { const s = replay([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 5, at: 2 }, { type: 'opened', account: accountId('acc_b'), owner: 'Lin', at: 3 }]); return [decide(s, { type: 'close', account: accountId('acc_a') }, 4), decide(s, { type: 'close', account: accountId('acc_b') }, 4)] })()
+=> [{ ok: false, error: { code: 'balance-not-zero', account: 'acc_a', balance: 5 } }, { ok: true, value: { type: 'closed', account: 'acc_b', at: 4 } }]
+--- check type-error | A deposit command needs an amount
+decide({}, { type: 'deposit', account: accountId('acc_a') }, 1)
+--- check type-error | Only the listed error codes exist
+const e: CommandError = { code: 'oops' }
+--- check type-error | insufficient-funds carries the balance and amount
+const e: CommandError = { code: 'insufficient-funds', account: accountId('acc_a') }
+--- check type-error | Callers must check the result
+decide({}, { type: 'close', account: accountId('acc_a') }, 1).value
+
+=== tsp-07 | Ledger 3: the Ledger and typed subscriptions
+--- teach
+Time to wrap the pure functions in an object that holds the history. `Ledger.execute(command)` runs *decide*; if that succeeds, it appends the event, applies it to the current state, and tells anyone listening.
+
+**Typed subscriptions.** Listeners subscribe to one event type and should receive exactly that event's shape. `Extract` picks a member of a union by its tag:
+
+```ts
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: string; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: string; readonly to: string; readonly amount: number; readonly at: number }
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+// on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void)
+```
+
+`ledger.on('transferred', (e) => …)` then knows `e.from` and `e.to` exist, and `ledger.on('deposited', (e) => e.from)` does not compile.
+
+**Storing handlers of different types in one map** is the one place the compiler cannot follow you: a `Map<EventType, …>` has a single value type. Store them as `(event: LedgerEvent) => void` with one cast at registration. It is safe because `execute` only ever calls a handler with an event of the type it was registered for — a fact the *public* signature guarantees, which is what the checks test.
+
+The clock is simple: an event's `at` is its position in the history, starting at 1. Refused commands record nothing and notify no one. Copy the handler list before calling handlers, so one that unsubscribes itself does not disturb the loop.
+--- task
+Add:
+
+1. `type EventType` and `type EventOf<T extends EventType>`.
+2. `class Ledger`:
+   - `execute(command: Command): Result<LedgerEvent, CommandError>` — decide with `at` = number of events so far + 1; on success record the event, update the state and call that type's handlers in the order they subscribed.
+   - `on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void` — returns an unsubscribe function.
+   - `get accounts(): Accounts` and `history(): readonly LedgerEvent[]` (a copy).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+--- hint
+`type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>`.
+--- hint
+Keep `private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()` and cast the handler once when you store it.
+--- hint
+`execute` is decide → (if ok) push, apply, notify → return the result.
+--- check case | Commands build up the accounts
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 500 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 200 }); return [l.accounts.acc_a!.balance, l.accounts.acc_b!.balance, l.history().map((e) => e.at)] })()
+=> [300, 200, [1, 2, 3, 4]]
+--- check case | Refused commands record nothing
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); const r = l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 5 }); return [r, l.history().length] })()
+=> [{ ok: false, error: { code: 'insufficient-funds', account: 'acc_a', balance: 0, amount: 5 } }, 1]
+--- check case | Subscribers get only their event type
+(() => { const l = new Ledger(); const seen: string[] = []; l.on('transferred', (e) => seen.push(`${e.from}->${e.to}:${e.amount}`)); l.on('opened', (e) => seen.push('opened ' + e.owner)); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 50 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 20 }); return seen })()
+=> ['opened Ada', 'opened Lin', 'acc_a->acc_b:20']
+--- check case | Unsubscribing
+(() => { const l = new Ledger(); let n = 0; const off = l.on('opened', () => { n++ }); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); off(); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); return n })()
+=> 1
+--- check test | history is a copy
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); const h = l.history() as LedgerEvent[]; h.length = 0; return l.history().length === 1 })()
+--- check type-error | A deposit event has no from
+new Ledger().on('deposited', (e) => e.from)
+--- check type-error | Only real event types can be subscribed to
+new Ledger().on('refunded', () => {})
+--- check type-error | Commands need branded account ids
+new Ledger().execute({ type: 'deposit', account: 'acc_a', amount: 5 })
+--- check type-error | The accounts view is read-only
+new Ledger().accounts.acc_a.balance = 1
+--- check type-error | A transferred handler receives exactly the transferred event
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Ledger().on('transferred', (e) => { const no: Equal<typeof e, EventOf<'transferred'>> = false })
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-08 | Ledger 4: projections and time travel
+--- teach
+Replaying events into balances is one **projection** of the history. There are as many as you have questions: a statement for one account, the number of transfers per day, the balance as it was last Tuesday. Each is the same shape — a starting value and a step function — so give that shape a generic type:
+
+```ts
+type LedgerEvent = { readonly type: 'deposited'; readonly amount: number; readonly at: number }
+
+interface Projection<S> {
+  readonly initial: S
+  step(state: S, event: LedgerEvent): S
+}
+// project<S>(events, projection): S  — a reduce, typed by S
+```
+
+Your `apply` is already a projection: `{ initial: {}, step: apply }` is the balances. A projection can also be *made* by a function, when it needs a parameter — `statement(account)` returns the projection for that account.
+
+Because every event carries `at`, **time travel** is a filter: replay only the events with `at <= t` and you have the state at time `t`. No backups, no snapshots — the history already contains every past state.
+
+The statement projection is also a good exhaustiveness test. It has to decide, for every event type, whether the event concerns this account — and for a transfer, which side of it the account is on. A `switch` with `assertNever` makes sure a future event type is not silently left off statements.
+--- task
+Add:
+
+1. `interface Projection<S>` and `project<S>(events: readonly LedgerEvent[], projection: Projection<S>): S`.
+2. `const balances: Projection<Accounts>` built from `apply`.
+3. `interface StatementLine` — readonly `at`, `text`, `change`, `balance` (the running balance) — and `statement(account: AccountId): Projection<readonly StatementLine[]>`. Only events that concern the account add a line: `opened` (change 0), `deposit`, `withdrawal` (negative), `transfer to <id>` (negative), `transfer from <id>`, `closed` (change 0).
+4. `balanceAt(events: readonly LedgerEvent[], account: AccountId, at: number): number` — the balance using only events with `at <= at` (0 if the account did not exist yet).
+--- starter
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+--- solution
+type Brand<T, B extends string> = T & { readonly __brand: B }
+type AccountId = Brand<string, 'AccountId'>
+
+function accountId(raw: string): AccountId {
+  if (!/^acc_\w+$/.test(raw)) throw new TypeError(`invalid account id: ${raw}`)
+  return raw as AccountId
+}
+
+type LedgerEvent =
+  | { readonly type: 'opened'; readonly account: AccountId; readonly owner: string; readonly at: number }
+  | { readonly type: 'deposited'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'withdrawn'; readonly account: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'transferred'; readonly from: AccountId; readonly to: AccountId; readonly amount: number; readonly at: number }
+  | { readonly type: 'closed'; readonly account: AccountId; readonly at: number }
+
+interface Account {
+  readonly id: AccountId
+  readonly owner: string
+  readonly balance: number
+  readonly open: boolean
+}
+
+type Accounts = Readonly<Record<string, Account>>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function change(state: Accounts, id: AccountId, update: (a: Account) => Account): Accounts {
+  const account = state[id]
+  return account ? { ...state, [id]: update(account) } : state
+}
+
+function apply(state: Accounts, event: LedgerEvent): Accounts {
+  switch (event.type) {
+    case 'opened':
+      return { ...state, [event.account]: { id: event.account, owner: event.owner, balance: 0, open: true } }
+    case 'deposited':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance + event.amount }))
+    case 'withdrawn':
+      return change(state, event.account, (a) => ({ ...a, balance: a.balance - event.amount }))
+    case 'transferred': {
+      const out = change(state, event.from, (a) => ({ ...a, balance: a.balance - event.amount }))
+      return change(out, event.to, (a) => ({ ...a, balance: a.balance + event.amount }))
+    }
+    case 'closed':
+      return change(state, event.account, (a) => ({ ...a, open: false }))
+    default:
+      return assertNever(event)
+  }
+}
+
+function replay(events: readonly LedgerEvent[]): Accounts {
+  return events.reduce(apply, {})
+}
+
+type Command =
+  | { readonly type: 'open'; readonly account: AccountId; readonly owner: string }
+  | { readonly type: 'deposit'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'withdraw'; readonly account: AccountId; readonly amount: number }
+  | { readonly type: 'transfer'; readonly from: AccountId; readonly to: AccountId; readonly amount: number }
+  | { readonly type: 'close'; readonly account: AccountId }
+
+type CommandError =
+  | { readonly code: 'already-exists'; readonly account: AccountId }
+  | { readonly code: 'no-such-account'; readonly account: AccountId }
+  | { readonly code: 'account-closed'; readonly account: AccountId }
+  | { readonly code: 'invalid-amount'; readonly amount: number }
+  | { readonly code: 'insufficient-funds'; readonly account: AccountId; readonly balance: number; readonly amount: number }
+  | { readonly code: 'same-account' }
+  | { readonly code: 'balance-not-zero'; readonly account: AccountId; readonly balance: number }
+
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function fail(error: CommandError): Result<never, CommandError> {
+  return { ok: false, error }
+}
+
+function openAccount(state: Accounts, id: AccountId): Result<Account, CommandError> {
+  const account = state[id]
+  if (!account) return fail({ code: 'no-such-account', account: id })
+  if (!account.open) return fail({ code: 'account-closed', account: id })
+  return ok(account)
+}
+
+function decide(state: Accounts, command: Command, at: number): Result<LedgerEvent, CommandError> {
+  switch (command.type) {
+    case 'open':
+      if (state[command.account]) return fail({ code: 'already-exists', account: command.account })
+      return ok({ type: 'opened', account: command.account, owner: command.owner, at })
+    case 'deposit': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      return ok({ type: 'deposited', account: command.account, amount: command.amount, at })
+    }
+    case 'withdraw': {
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.account, balance, amount: command.amount })
+      return ok({ type: 'withdrawn', account: command.account, amount: command.amount, at })
+    }
+    case 'transfer': {
+      if (command.from === command.to) return fail({ code: 'same-account' })
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail({ code: 'invalid-amount', amount: command.amount })
+      const from = openAccount(state, command.from)
+      if (!from.ok) return from
+      const to = openAccount(state, command.to)
+      if (!to.ok) return to
+      const { balance } = from.value
+      if (balance < command.amount) return fail({ code: 'insufficient-funds', account: command.from, balance, amount: command.amount })
+      return ok({ type: 'transferred', from: command.from, to: command.to, amount: command.amount, at })
+    }
+    case 'close': {
+      const account = openAccount(state, command.account)
+      if (!account.ok) return account
+      const { balance } = account.value
+      if (balance !== 0) return fail({ code: 'balance-not-zero', account: command.account, balance })
+      return ok({ type: 'closed', account: command.account, at })
+    }
+    default:
+      return assertNever(command)
+  }
+}
+
+type EventType = LedgerEvent['type']
+type EventOf<T extends EventType> = Extract<LedgerEvent, { type: T }>
+
+class Ledger {
+  private events: LedgerEvent[] = []
+  private state: Accounts = {}
+  private handlers = new Map<EventType, Array<(event: LedgerEvent) => void>>()
+
+  execute(command: Command): Result<LedgerEvent, CommandError> {
+    const result = decide(this.state, command, this.events.length + 1)
+    if (result.ok) {
+      const event = result.value
+      this.events.push(event)
+      this.state = apply(this.state, event)
+      for (const handler of [...(this.handlers.get(event.type) ?? [])]) handler(event)
+    }
+    return result
+  }
+
+  on<T extends EventType>(type: T, handler: (event: EventOf<T>) => void): () => void {
+    const stored = handler as (event: LedgerEvent) => void
+    const list = this.handlers.get(type) ?? []
+    this.handlers.set(type, [...list, stored])
+    return () => {
+      this.handlers.set(type, (this.handlers.get(type) ?? []).filter((h) => h !== stored))
+    }
+  }
+
+  get accounts(): Accounts {
+    return this.state
+  }
+
+  history(): readonly LedgerEvent[] {
+    return [...this.events]
+  }
+}
+
+interface Projection<S> {
+  readonly initial: S
+  step(state: S, event: LedgerEvent): S
+}
+
+function project<S>(events: readonly LedgerEvent[], projection: Projection<S>): S {
+  return events.reduce((state, event) => projection.step(state, event), projection.initial)
+}
+
+const balances: Projection<Accounts> = { initial: {}, step: apply }
+
+interface StatementLine {
+  readonly at: number
+  readonly text: string
+  readonly change: number
+  readonly balance: number
+}
+
+function statement(account: AccountId): Projection<readonly StatementLine[]> {
+  return {
+    initial: [],
+    step(lines, event) {
+      const balance = lines.length ? lines[lines.length - 1]!.balance : 0
+      const add = (text: string, amount: number) => [...lines, { at: event.at, text, change: amount, balance: balance + amount }]
+      switch (event.type) {
+        case 'opened':
+          return event.account === account ? add('opened', 0) : lines
+        case 'deposited':
+          return event.account === account ? add('deposit', event.amount) : lines
+        case 'withdrawn':
+          return event.account === account ? add('withdrawal', -event.amount) : lines
+        case 'transferred':
+          if (event.from === account) return add(`transfer to ${event.to}`, -event.amount)
+          if (event.to === account) return add(`transfer from ${event.from}`, event.amount)
+          return lines
+        case 'closed':
+          return event.account === account ? add('closed', 0) : lines
+        default:
+          return assertNever(event)
+      }
+    },
+  }
+}
+
+function balanceAt(events: readonly LedgerEvent[], account: AccountId, at: number): number {
+  return project(
+    events.filter((e) => e.at <= at),
+    balances,
+  )[account]?.balance ?? 0
+}
+--- hint
+`project` is a `reduce` starting from `projection.initial`.
+--- hint
+In `statement`, the running balance is the last line's balance (or 0); a small `add(text, change)` helper appends a line.
+--- hint
+`balanceAt` filters the events, projects `balances`, then reads the account with `?.balance ?? 0`.
+--- check case | A statement for one account
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'open', account: accountId('acc_b'), owner: 'Lin' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 500 }); l.execute({ type: 'transfer', from: accountId('acc_a'), to: accountId('acc_b'), amount: 200 }); l.execute({ type: 'deposit', account: accountId('acc_b'), amount: 50 }); l.execute({ type: 'transfer', from: accountId('acc_b'), to: accountId('acc_a'), amount: 20 }); l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 20 }); return project(l.history(), statement(accountId('acc_a'))) })()
+=> [{ at: 1, text: 'opened', change: 0, balance: 0 }, { at: 3, text: 'deposit', change: 500, balance: 500 }, { at: 4, text: 'transfer to acc_b', change: -200, balance: 300 }, { at: 6, text: 'transfer from acc_b', change: 20, balance: 320 }, { at: 7, text: 'withdrawal', change: -20, balance: 300 }]
+--- check case | The balances projection matches the ledger
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 70 }); return [project(l.history(), balances), l.accounts] })()
+=> [{ acc_a: { id: 'acc_a', owner: 'Ada', balance: 70, open: true } }, { acc_a: { id: 'acc_a', owner: 'Ada', balance: 70, open: true } }]
+--- check case | Balances at earlier times
+(() => { const l = new Ledger(); l.execute({ type: 'open', account: accountId('acc_a'), owner: 'Ada' }); l.execute({ type: 'deposit', account: accountId('acc_a'), amount: 100 }); l.execute({ type: 'withdraw', account: accountId('acc_a'), amount: 30 }); const h = l.history(); return [balanceAt(h, accountId('acc_a'), 0), balanceAt(h, accountId('acc_a'), 2), balanceAt(h, accountId('acc_a'), 3), balanceAt(h, accountId('acc_z'), 3)] })()
+=> [0, 100, 70, 0]
+--- check case | Any projection works, e.g. counting events by type
+project([{ type: 'opened', account: accountId('acc_a'), owner: 'Ada', at: 1 }, { type: 'deposited', account: accountId('acc_a'), amount: 1, at: 2 }, { type: 'deposited', account: accountId('acc_a'), amount: 1, at: 3 }], { initial: {} as Record<string, number>, step: (s, e) => ({ ...s, [e.type]: (s[e.type] ?? 0) + 1 }) })
+=> { opened: 1, deposited: 2 }
+--- check type-error | A projection's step must match its state type
+project([], { initial: 0, step: (s: string) => s })
+--- check type-error | Statement lines are read-only
+statement(accountId('acc_a')).initial.push({ at: 1, text: 'x', change: 0, balance: 0 })
+--- check type-error | balanceAt wants a branded id
+balanceAt([], 'acc_a', 5)
+--- check type-error | project returns exactly the projection's state type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const lines = project([], statement(accountId('acc_a')));
+const no: Equal<typeof lines, readonly StatementLine[]> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check source | statement's switch is exhaustive
+assertNever\s*\(\s*event\s*\)[\s\S]*assertNever\s*\(\s*event\s*\)
+
+=== tsp-09 | Router 1: patterns, matching and params
+--- teach
+The third project is an HTTP-style router — the piece of a web server that maps `GET /users/42` to the code that handles it — where the route **pattern** decides the handler's types. Write `router.get('/users/:id', (req) => …)` and `req.params.id` is known to exist; `req.params.name` does not compile.
+
+Four lessons: matching and param types (this one), the router itself, middleware that adds typed context, and validated request bodies.
+
+**Types.** You parsed params out of pattern strings in the expert course; reuse the idea: a recursive template-literal type collects the `:name` segments into a union, and a mapped type turns them into `{ id: string }`. Constrain patterns to start with `/` with a template literal type, `` `/${string}` ``, so `compile('users/:id')` is a compile error.
+
+**Runtime.** `compile(pattern)` does the work *once* — splitting the pattern into segments — and returns a small matcher function to call per request. Then the rules, which are where real routers differ, so settle them explicitly:
+
+- a trailing slash is ignored on both sides (`/users/42/` matches `/users/:id`), except the root `/`;
+- a param must be a non-empty segment, and it is URL-decoded (`my%20notes` → `my notes`);
+- a malformed escape (like `%E0%A4%A`) makes `decodeURIComponent` throw — treat it as no match rather than crashing.
+
+Returning `null` for "no match" (rather than throwing) keeps the next step simple: the router will try routes in turn until one matches.
+--- task
+1. `type Params<P extends string>` — an object with a `string` property for each `:name` segment.
+2. `compile<P extends \`/${string}\`>(pattern: P): (path: string) => Params<P> | null` following the rules above: segment counts must match, static segments must be equal, params must be non-empty and are decoded; trailing slashes are ignored except for `/` itself; a decoding error means no match.
+--- starter
+// The typed router, step 1: turn a pattern like '/users/:id' into a matcher.
+
+type Params<P extends string> = Record<string, string>
+
+function compile(pattern: string): (path: string) => Record<string, string> | null {
+  return () => null
+}
+--- solution
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+--- hint
+Reuse the route-param parser from the expert course for `Params<P>`, and give `compile` the constraint `P extends \`/${string}\``.
+--- hint
+A helper that removes one trailing slash unless the path is just `/` lets you normalise both the pattern and the path.
+--- hint
+Wrap `decodeURIComponent` in `try`/`catch` and return `null` from the `catch`.
+--- check case | A param is extracted
+compile('/users/:id')('/users/42')
+=> { id: '42' }
+--- check case | Two params
+compile('/teams/:team/members/:member')('/teams/red/members/ada')
+=> { team: 'red', member: 'ada' }
+--- check case | Trailing slashes are ignored on both sides
+[compile('/users/:id/')('/users/42'), compile('/users/:id')('/users/42/')]
+=> [{ id: '42' }, { id: '42' }]
+--- check case | Params are decoded
+compile('/files/:name')('/files/my%20notes')
+=> { name: 'my notes' }
+--- check case | Things that do not match
+[compile('/users/:id')('/teams/42'), compile('/users/:id')('/users/42/posts'), compile('/users/:id/posts')('/users//posts'), compile('/files/:name')('/files/%E0%A4%A')]
+=> [null, null, null, null]
+--- check case | The root matches only the root
+[compile('/')('/'), compile('/')('/x')]
+=> [{}, null]
+--- check type-error | Patterns must start with a slash
+compile('users/:id')
+--- check type-error | A match has only the pattern's params
+compile('/users/:id')('/users/1')?.name
+--- check type-error | Params are strings
+const m = compile('/a/:x')('/a/1'); if (m) { const n: number = m.x }
+--- check type-error | Params of a two-param pattern are exactly { team: string; member: string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Params<'/teams/:team/members/:member'>, { team: string; member: string }> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-10 | Router 2: routes, handlers and replies
+--- teach
+Now the router itself. Routes are registered with one method per HTTP verb, and each handler's request type is computed from its pattern:
+
+```ts
+// get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this
+```
+
+`P` is inferred from the pattern string, so inside the handler `req.params` is `Params<P>`. Returning `this` lets registrations chain: `router.get(…).post(…)`.
+
+**Dispatch** in `handle(method, url, init)`:
+
+1. Split the URL into path and query string; parse the query with `URLSearchParams`.
+2. Try routes **in registration order**. The first route whose pattern matches *and* whose method matches wins.
+3. If some route matched the path but none had this method, reply **405** (method not allowed) — more useful than a 404, because the resource exists.
+4. If nothing matched the path, reply **404**.
+5. If the handler throws, reply **500** rather than crashing the server. (Errors are logged in a real server; here, just reply.)
+
+**Storing handlers of different types.** Each route's handler has its own `Req<P>` type, but the routes live in one array. Store them in a single "raw" shape and cast once, on the way in. The cast is safe because the only thing that ever calls the stored handler passes it params produced by the *same* pattern's matcher — and the public signature, which the checks test, is exact.
+
+A method named `delete` is fine: reserved words are allowed as property and method names.
+--- task
+Add:
+
+1. `type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'`, `interface Reply { status: number; body: unknown }` (readonly) and `reply(status, body): Reply`.
+2. `interface Req<P extends string>` — readonly `method`, `path`, `params: Params<P>`, `query` and `headers` (both `Readonly<Record<string, string>>`), `body: unknown`.
+3. `class Router` with `get`, `post`, `put` and `delete(pattern, handler)`, each returning `this`, and `handle(method: Method, url: string, init: { body?: unknown; headers?: Record<string, string> } = {}): Reply` that dispatches as described (404 body `{ error: 'not found' }`, 405 `{ error: 'method not allowed' }`, 500 `{ error: 'internal error' }`). Missing headers are `{}`.
+--- starter
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface Req<P extends string> {
+  readonly method: Method
+  readonly path: string
+  readonly params: Params<P>
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: Omit<Req<string>, 'params'> & { params: Record<string, string> }) => Reply
+}
+
+class Router {
+  private routes: Route[] = []
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let pathMatched = false
+    for (const route of this.routes) {
+      const params = route.match(path)
+      if (!params) continue
+      pathMatched = true
+      if (route.method !== method) continue
+      try {
+        return route.handler({ method, path, params, query, headers: init.headers ?? {}, body: init.body })
+      } catch {
+        return reply(500, { error: 'internal error' })
+      }
+    }
+    return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+  }
+}
+--- hint
+Keep routes as `{ method, match, handler }` objects, where `match` is what `compile(pattern)` returned.
+--- hint
+One private `add(method, pattern, handler)` does the work; `get`, `post`, `put` and `delete` are one line each.
+--- hint
+In `handle`, remember whether any route matched the path, so you can tell a 405 from a 404 after the loop.
+--- check case | A route with a param
+new Router().get('/users/:id', (req) => reply(200, { id: req.params.id })).handle('GET', '/users/42')
+=> { status: 200, body: { id: '42' } }
+--- check case | Query strings, headers and bodies reach the handler
+new Router().post('/search', (req) => reply(200, [req.query.q, req.query.page, req.headers['x-token'], req.body])).handle('POST', '/search?q=ts&page=2', { body: { a: 1 }, headers: { 'x-token': 'abc' } })
+=> { status: 200, body: ['ts', '2', 'abc', { a: 1 }] }
+--- check case | The first matching route wins
+new Router().get('/users/me', () => reply(200, 'me')).get('/users/:id', (req) => reply(200, req.params.id)).handle('GET', '/users/me')
+=> { status: 200, body: 'me' }
+--- check case | 404 and 405
+(() => { const r = new Router().get('/users/:id', () => reply(200, 'ok')); return [r.handle('GET', '/nope'), r.handle('DELETE', '/users/1')] })()
+=> [{ status: 404, body: { error: 'not found' } }, { status: 405, body: { error: 'method not allowed' } }]
+--- check case | A throwing handler is a 500
+new Router().put('/boom', () => { throw new Error('bug') }).handle('PUT', '/boom')
+=> { status: 500, body: { error: 'internal error' } }
+--- check case | delete routes
+new Router().delete('/items/:id', (req) => reply(204, req.params.id)).handle('DELETE', '/items/9')
+=> { status: 204, body: '9' }
+--- check type-error | Handlers see only the pattern's params
+new Router().get('/users/:id', (req) => reply(200, req.params.name))
+--- check type-error | Patterns must start with a slash
+new Router().get('users', () => reply(200, null))
+--- check type-error | Handlers must return a Reply
+new Router().get('/x', () => 'hello')
+--- check type-error | Only known methods can be handled
+new Router().handle('PATCH', '/x')
+--- check type-error | A handler's params are exactly the pattern's
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Router().get('/a/:x/b/:y', (req) => { const no: Equal<typeof req.params, { x: string; y: string }> = false; return reply(200, null) })
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-11 | Router 3: middleware with typed context
+--- teach
+Middleware is code that runs before the handlers: checking a token, finding the current user, starting a timer. Each piece either **stops** the request with a reply (a 401, say) or lets it continue, often **adding** something for later code to use — `req.user`.
+
+In untyped code, "later code can use `req.user`" is a promise nobody checks. Here the router's type carries the context built so far, and `use` grows it — the same technique as the typed DI container:
+
+```ts
+// class Router<Ctx extends object = {}> {
+//   use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add>
+//   get<P …>(pattern: P, handler: (req: Req<P> & Ctx) => Reply): this
+// }
+```
+
+After `.use(auth)`, where `auth` adds `{ user: string }`, every handler registered on the returned router sees `req.user: string`. A handler on a router without that middleware gets a compile error for `req.user`.
+
+**The result type** makes "stop or continue" explicit: `{ next: Add } | { reply: Reply }`, built with two tiny helpers, `next(add)` and `stop(reply)`. `stop` returns `MwResult<never>`, so a middleware that sometimes stops and sometimes continues still infers `Add` from its `next` branch.
+
+**Runtime order:** middleware runs in the order it was added, for every request, before routing; each sees the context added by those before it. A thrown error anywhere is still a 500.
+
+`use` returns `this` cast to the bigger type — the same object, now described more precisely. Order matters for types as it does at runtime: register routes after the middleware they rely on.
+--- task
+Rework the router:
+
+1. `interface BaseReq` — the request without params (`method`, `path`, `query`, `headers`, `body`); `type Req<P extends string, Ctx = {}> = BaseReq & { params: Params<P> } & Ctx`.
+2. `type MwResult<Add> = { next: Add } | { reply: Reply }`, `next<Add extends object>(add: Add): MwResult<Add>` and `stop(r: Reply): MwResult<never>`.
+3. `class Router<Ctx extends object = {}>` with `use(mw)` as above, and handlers typed `(req: Req<P, Ctx>) => Reply`.
+4. `handle` runs the middleware first, in order, merging each `next` into the request and returning a `stop`'s reply immediately; then it routes as before.
+--- starter
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface Req<P extends string> {
+  readonly method: Method
+  readonly path: string
+  readonly params: Params<P>
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: Omit<Req<string>, 'params'> & { params: Record<string, string> }) => Reply
+}
+
+class Router {
+  private routes: Route[] = []
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let pathMatched = false
+    for (const route of this.routes) {
+      const params = route.match(path)
+      if (!params) continue
+      pathMatched = true
+      if (route.method !== method) continue
+      try {
+        return route.handler({ method, path, params, query, headers: init.headers ?? {}, body: init.body })
+      } catch {
+        return reply(500, { error: 'internal error' })
+      }
+    }
+    return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}> = BaseReq & { readonly params: Params<P> } & Ctx
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch {
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- hint
+`use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add>` — store the middleware, then `return this as unknown as Router<Ctx & Add>`.
+--- hint
+In `handle`, keep the request as a plain object; for each middleware, `if ('reply' in result) return result.reply`, else spread `result.next` into the request.
+--- hint
+Put the middleware loop and the routing loop inside one `try` so an error in either becomes a 500.
+--- check case | Middleware can add a user or stop with a 401
+(() => { const r = new Router().use((req) => (req.headers['x-user'] ? next({ user: req.headers['x-user'] }) : stop(reply(401, { error: 'unauthorized' })))).get('/me', (req) => reply(200, { user: req.user })); return [r.handle('GET', '/me', { headers: { 'x-user': 'ada' } }), r.handle('GET', '/me'), r.handle('GET', '/nope')] })()
+=> [{ status: 200, body: { user: 'ada' } }, { status: 401, body: { error: 'unauthorized' } }, { status: 401, body: { error: 'unauthorized' } }]
+--- check case | Middleware runs in order and sees earlier context
+new Router().use(() => next({ a: 1 })).use((req) => next({ b: req.a + 1 })).get('/', (req) => reply(200, [req.a, req.b])).handle('GET', '/')
+=> { status: 200, body: [1, 2] }
+--- check case | Routing still gives 404, 405 and params
+(() => { const r = new Router().use(() => next({ t: 'x' })).get('/users/:id', (req) => reply(200, req.params.id + req.t)); return [r.handle('GET', '/users/7'), r.handle('POST', '/users/7'), r.handle('GET', '/zzz')] })()
+=> [{ status: 200, body: '7x' }, { status: 405, body: { error: 'method not allowed' } }, { status: 404, body: { error: 'not found' } }]
+--- check case | An error in middleware is a 500
+new Router().use(() => { throw new Error('bug') }).get('/', () => reply(200, 'ok')).handle('GET', '/')
+=> { status: 500, body: { error: 'internal error' } }
+--- check type-error | Without the middleware, there is no user
+new Router().get('/me', (req) => reply(200, req.user))
+--- check type-error | Context keeps its types
+new Router().use(() => next({ user: 'ada' })).get('/me', (req) => reply(200, req.user.toFixed(1)))
+--- check type-error | Middleware must return next(…) or stop(…)
+new Router().use(() => ({ user: 'ada' }))
+--- check type-error | next takes an object
+next(5)
+--- check type-error | Context from two middlewares is merged, exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+new Router().use(() => next({ a: 1 })).use(() => next({ b: 'x' })).get('/', (req) => { const no: Equal<[typeof req.a, typeof req.b], [number, string]> = false; return reply(200, null) })
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-12 | Router 4: validated bodies and HTTP errors
+--- teach
+A request body is `unknown` — it came from outside. Handlers should not have to validate it themselves, and they certainly should not cast it. Let the route declare a **type guard**, and let the router do the checking:
+
+```ts
+// post<P …>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this                        — body: unknown
+// post<P …, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this  — body: B
+```
+
+Two **overloads**: without a guard the body stays `unknown`; with one, `B` is inferred from the guard's `body is B` predicate and the handler's `req.body` is a `B`. The router calls the guard before the handler and replies **400** if it fails, so the handler only ever runs with a valid body. A plain `(b) => boolean` is not a guard and does not match the second overload, which is exactly right: it proves nothing.
+
+The implementation signature (the third, hidden one) takes `(pattern, first, second?)`: when `second` is present, `first` was the guard.
+
+**HTTP errors.** Deep inside a handler you often discover "that user does not exist". Throwing a plain `Error` gives a 500, which is wrong. A small `HttpError` class carrying a status lets handlers throw `new HttpError(404, 'no such user')` and the router turns it into that status with `{ error: message }`. Everything else is still a 500.
+
+This finishes the router: typed params from patterns, typed context from middleware, typed bodies from guards — and not one cast in any handler.
+--- task
+Extend the router:
+
+1. `class HttpError extends Error` with a readonly `status: number` (constructor `(status, message)`).
+2. `type Guard<B> = (body: unknown) => body is B`, and give `Req` a third type parameter for the body: `Req<P, Ctx = {}, B = unknown>`.
+3. Overload `post` and `put`: `(pattern, handler)` with an `unknown` body, or `(pattern, guard, handler)` with a `B` body. When a route has a guard and the body fails it, reply `400` with `{ error: 'invalid body' }` without calling the handler.
+4. An `HttpError` thrown by middleware or a handler becomes `reply(status, { error: message })`; anything else is still a 500.
+--- starter
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}> = BaseReq & { readonly params: Params<P> } & Ctx
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add<P extends Pattern>(method: Method, pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('POST', pattern, handler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('PUT', pattern, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, handler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch {
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- solution
+type ParamNames<P extends string> = P extends `${string}:${infer Name}/${infer Rest}`
+  ? Name | ParamNames<`/${Rest}`>
+  : P extends `${string}:${infer Name}`
+    ? Name
+    : never
+
+type Params<P extends string> = { [K in ParamNames<P>]: string }
+type Pattern = `/${string}`
+
+function trimSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function compile<P extends Pattern>(pattern: P): (path: string) => Params<P> | null {
+  const want = trimSlash(pattern).split('/')
+  return (path) => {
+    const got = trimSlash(path).split('/')
+    if (got.length !== want.length) return null
+    const params: Record<string, string> = {}
+    for (let i = 0; i < want.length; i++) {
+      const w = want[i]!
+      const g = got[i]!
+      if (w.startsWith(':')) {
+        if (g === '') return null
+        try {
+          params[w.slice(1)] = decodeURIComponent(g)
+        } catch {
+          return null
+        }
+      } else if (w !== g) {
+        return null
+      }
+    }
+    return params as Params<P>
+  }
+}
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface Reply {
+  readonly status: number
+  readonly body: unknown
+}
+
+function reply(status: number, body: unknown): Reply {
+  return { status, body }
+}
+
+interface Init {
+  readonly body?: unknown
+  readonly headers?: Readonly<Record<string, string>>
+}
+
+function splitUrl(url: string): { path: string; query: Record<string, string> } {
+  const q = url.indexOf('?')
+  const query: Record<string, string> = {}
+  new URLSearchParams(q >= 0 ? url.slice(q + 1) : '').forEach((value, key) => {
+    query[key] = value
+  })
+  return { path: q >= 0 ? url.slice(0, q) : url, query }
+}
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface BaseReq {
+  readonly method: Method
+  readonly path: string
+  readonly query: Readonly<Record<string, string>>
+  readonly headers: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+type Req<P extends string, Ctx = {}, B = unknown> = Omit<BaseReq, 'body'> & { readonly body: B; readonly params: Params<P> } & Ctx
+
+type Guard<B> = (body: unknown) => body is B
+
+type MwResult<Add> = { readonly next: Add } | { readonly reply: Reply }
+
+function next<Add extends object>(add: Add): MwResult<Add> {
+  return { next: add }
+}
+
+function stop(r: Reply): MwResult<never> {
+  return { reply: r }
+}
+
+type RawReq = Record<string, unknown> & { params: Record<string, string> }
+
+interface Route {
+  readonly method: Method
+  readonly match: (path: string) => Record<string, string> | null
+  readonly guard: ((body: unknown) => boolean) | null
+  readonly handler: (req: RawReq) => Reply
+}
+
+type AnyHandler = (req: never) => Reply
+
+class Router<Ctx extends object = {}> {
+  private routes: Route[] = []
+  private middleware: Array<(req: Record<string, unknown>) => MwResult<object>> = []
+
+  use<Add extends object>(mw: (req: BaseReq & Ctx) => MwResult<Add>): Router<Ctx & Add> {
+    this.middleware.push(mw as unknown as (req: Record<string, unknown>) => MwResult<object>)
+    return this as unknown as Router<Ctx & Add>
+  }
+
+  private add(method: Method, pattern: Pattern, guard: Guard<unknown> | null, handler: AnyHandler): this {
+    this.routes.push({ method, match: compile(pattern) as Route['match'], guard, handler: handler as unknown as Route['handler'] })
+    return this
+  }
+
+  get<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('GET', pattern, null, handler)
+  }
+
+  delete<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this {
+    return this.add('DELETE', pattern, null, handler)
+  }
+
+  post<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this
+  post<P extends Pattern, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this
+  post(pattern: Pattern, first: Guard<unknown> | AnyHandler, second?: AnyHandler): this {
+    return second ? this.add('POST', pattern, first as Guard<unknown>, second) : this.add('POST', pattern, null, first as AnyHandler)
+  }
+
+  put<P extends Pattern>(pattern: P, handler: (req: Req<P, Ctx>) => Reply): this
+  put<P extends Pattern, B>(pattern: P, guard: Guard<B>, handler: (req: Req<P, Ctx, B>) => Reply): this
+  put(pattern: Pattern, first: Guard<unknown> | AnyHandler, second?: AnyHandler): this {
+    return second ? this.add('PUT', pattern, first as Guard<unknown>, second) : this.add('PUT', pattern, null, first as AnyHandler)
+  }
+
+  handle(method: Method, url: string, init: Init = {}): Reply {
+    const { path, query } = splitUrl(url)
+    let req: Record<string, unknown> = { method, path, query, headers: init.headers ?? {}, body: init.body }
+    try {
+      for (const mw of this.middleware) {
+        const result = mw(req)
+        if ('reply' in result) return result.reply
+        req = { ...req, ...result.next }
+      }
+      let pathMatched = false
+      for (const route of this.routes) {
+        const params = route.match(path)
+        if (!params) continue
+        pathMatched = true
+        if (route.method !== method) continue
+        if (route.guard && !route.guard(init.body)) return reply(400, { error: 'invalid body' })
+        return route.handler({ ...req, params })
+      }
+      return pathMatched ? reply(405, { error: 'method not allowed' }) : reply(404, { error: 'not found' })
+    } catch (e) {
+      if (e instanceof HttpError) return reply(e.status, { error: e.message })
+      return reply(500, { error: 'internal error' })
+    }
+  }
+}
+--- hint
+Store an optional guard on each route (`null` for none) and check it right before calling the handler.
+--- hint
+Write the two overload signatures, then one implementation `post(pattern: Pattern, first: …, second?: …): this` that looks at whether `second` was given.
+--- hint
+In the `catch`, test `e instanceof HttpError` first.
+--- check case | A valid body reaches the handler, typed
+(() => { const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null && typeof (b as { name?: unknown }).name === 'string'; return new Router().post('/users', isNewUser, (req) => reply(201, { created: req.body.name })).handle('POST', '/users', { body: { name: 'Ada' } }) })()
+=> { status: 201, body: { created: 'Ada' } }
+--- check case | An invalid body is a 400 and the handler never runs
+(() => { let ran = false; const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null && typeof (b as { name?: unknown }).name === 'string'; const r = new Router().put('/users/:id', isNewUser, () => { ran = true; return reply(200, 'ok') }); return [r.handle('PUT', '/users/1', { body: { name: 5 } }), ran] })()
+=> [{ status: 400, body: { error: 'invalid body' } }, false]
+--- check case | Without a guard the body passes through as it is
+new Router().post('/echo', (req) => reply(200, req.body)).handle('POST', '/echo', { body: [1, 2] })
+=> { status: 200, body: [1, 2] }
+--- check case | HttpError sets the status; other errors are 500
+(() => { const r = new Router().get('/users/:id', (req) => { if (req.params.id === '0') throw new HttpError(404, 'no such user'); throw new Error('bug') }); return [r.handle('GET', '/users/0'), r.handle('GET', '/users/1')] })()
+=> [{ status: 404, body: { error: 'no such user' } }, { status: 500, body: { error: 'internal error' } }]
+--- check case | Middleware and guards together
+(() => { const isNum = (b: unknown): b is number => typeof b === 'number'; return new Router().use(() => next({ scale: 10 })).post('/times', isNum, (req) => reply(200, req.body * req.scale)).handle('POST', '/times', { body: 4 }) })()
+=> { status: 200, body: 40 }
+--- check type-error | A guarded body has the guard's type
+const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null; new Router().post('/users', isNewUser, (req) => reply(201, req.body.nope))
+--- check type-error | Without a guard the body is unknown
+new Router().post('/users', (req) => reply(201, req.body.name))
+--- check type-error | A boolean check is not a guard
+new Router().post('/users', (b: unknown) => true, (req) => reply(201, req.body))
+--- check type-error | HttpError takes a numeric status
+new HttpError('404', 'missing')
+--- check type-error | The guarded body is exactly the guard's type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const isNewUser = (b: unknown): b is { name: string } => typeof b === 'object' && b !== null;
+new Router().post('/users', isNewUser, (req) => { const no: Equal<typeof req.body, { name: string }> = false; return reply(201, null) })
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-13 | Capstone: a typed form-validation library
+--- teach
+The last three lessons are **capstones**. Each gives you a specification and an empty editor. There is no step-by-step and no suggested structure: you decide the types, the modules, the helpers. The checks test only behaviour and what must not compile, so any design that meets the spec passes.
+
+How to approach a capstone:
+
+1. **Read the whole spec twice** and write down the public surface — every function, method and type a user touches.
+2. **Write the usage first**: a few calls that should work and a few that should not compile. The checks are exactly that kind of list.
+3. **Design the types before the code.** Which types carry information forward (like the `Opt` flag on a field)? Where will inference happen?
+4. **Build the smallest end-to-end slice** (one field kind, one form), make it pass, then widen.
+5. **Keep casts at the boundaries** — one where you build a computed type at runtime is fine; one in every function is a sign the types fight the design.
+
+This first capstone is a form-validation library like the ones front-end teams use every day. Everything you need has appeared already: immutable builders (the typed builder), optional keys computed from a shape (the schema library), and results instead of exceptions.
+--- task
+Build `field` and `form`.
+
+**Fields** are immutable builders — every method returns a new field:
+- `field.string()` with `.min(n)` (`'must be at least <n> characters'`), `.max(n)` (`'must be at most <n> characters'`), `.email()` (`'must be an email'`: some text, `@`, some text, a dot, some text, no spaces).
+- `field.number()` (finite numbers only) with `.min(n)` (`'must be at least <n>'`), `.max(n)` (`'must be at most <n>'`), `.integer()` (`'must be a whole number'`).
+- `field.boolean()` with `.accepted()` (`'must be accepted'`: must be `true`).
+- Every field has `.optional()`, which can come anywhere in the chain. Methods only exist on the kinds listed (no `.email()` on a number).
+
+**Validation** of one value: `undefined` or `null` is `'is required'` (or, for an optional field, simply left out of the result); the wrong type is `'must be a string'` / `'must be a number'` / `'must be a boolean'`; then the field's checks run in the order they were added, and the first failure is the error.
+
+**`form(shape).validate(input)`** validates every field of the shape (extra input keys are ignored) and returns `{ ok: true, value }` — with only the shape's keys, optional keys typed `?` — or `{ ok: false, errors }`, an object with one message per failing field whose keys are limited to the shape's keys.
+--- starter
+// Capstone: build `field` and `form` from the specification in the task.
+
+--- solution
+type Parsed<T> = { ok: true; value: T } | { ok: false; error: string }
+type Check<T> = (value: T) => string | null
+
+interface BaseField<T, Opt extends boolean> {
+  readonly isOptional: Opt
+  run(raw: unknown): Parsed<T>
+}
+
+interface StringField<Opt extends boolean = false> extends BaseField<string, Opt> {
+  min(length: number): StringField<Opt>
+  max(length: number): StringField<Opt>
+  email(): StringField<Opt>
+  optional(): StringField<true>
+}
+
+interface NumberField<Opt extends boolean = false> extends BaseField<number, Opt> {
+  min(n: number): NumberField<Opt>
+  max(n: number): NumberField<Opt>
+  integer(): NumberField<Opt>
+  optional(): NumberField<true>
+}
+
+interface BooleanField<Opt extends boolean = false> extends BaseField<boolean, Opt> {
+  accepted(): BooleanField<Opt>
+  optional(): BooleanField<true>
+}
+
+function runner<T>(kind: string, is: (x: unknown) => x is T, checks: readonly Check<T>[]): (raw: unknown) => Parsed<T> {
+  return (raw) => {
+    if (!is(raw)) return { ok: false, error: `must be a ${kind}` }
+    for (const check of checks) {
+      const error = check(raw)
+      if (error !== null) return { ok: false, error }
+    }
+    return { ok: true, value: raw }
+  }
+}
+
+function stringField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<string>[]): StringField<Opt> {
+  const add = (check: Check<string>) => stringField(isOptional, [...checks, check])
+  return {
+    isOptional,
+    run: runner('string', (x): x is string => typeof x === 'string', checks),
+    min: (n) => add((v) => (v.length < n ? `must be at least ${n} characters` : null)),
+    max: (n) => add((v) => (v.length > n ? `must be at most ${n} characters` : null)),
+    email: () => add((v) => (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? null : 'must be an email')),
+    optional: () => stringField(true, checks),
+  }
+}
+
+function numberField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<number>[]): NumberField<Opt> {
+  const add = (check: Check<number>) => numberField(isOptional, [...checks, check])
+  return {
+    isOptional,
+    run: runner('number', (x): x is number => typeof x === 'number' && Number.isFinite(x), checks),
+    min: (n) => add((v) => (v < n ? `must be at least ${n}` : null)),
+    max: (n) => add((v) => (v > n ? `must be at most ${n}` : null)),
+    integer: () => add((v) => (Number.isInteger(v) ? null : 'must be a whole number')),
+    optional: () => numberField(true, checks),
+  }
+}
+
+function booleanField<Opt extends boolean>(isOptional: Opt, checks: readonly Check<boolean>[]): BooleanField<Opt> {
+  return {
+    isOptional,
+    run: runner('boolean', (x): x is boolean => typeof x === 'boolean', checks),
+    accepted: () => booleanField(isOptional, [...checks, (v) => (v ? null : 'must be accepted')]),
+    optional: () => booleanField(true, checks),
+  }
+}
+
+const field = {
+  string: () => stringField(false, []),
+  number: () => numberField(false, []),
+  boolean: () => booleanField(false, []),
+}
+
+type AnyField = BaseField<unknown, boolean>
+type ValueOfField<F> = F extends BaseField<infer T, boolean> ? T : never
+type OptionalKeys<S> = { [K in keyof S]: S[K] extends BaseField<unknown, true> ? K : never }[keyof S]
+type Simplify<T> = { [K in keyof T]: T[K] }
+type FormValue<S> = Simplify<
+  { [K in Exclude<keyof S, OptionalKeys<S>>]: ValueOfField<S[K]> } & { [K in OptionalKeys<S>]?: ValueOfField<S[K]> }
+>
+type FormResult<S> = { ok: true; value: FormValue<S> } | { ok: false; errors: Partial<Record<keyof S, string>> }
+
+function form<S extends Record<string, AnyField>>(shape: S): { validate(input: Readonly<Record<string, unknown>>): FormResult<S> } {
+  return {
+    validate(input) {
+      const value: Record<string, unknown> = {}
+      const errors: Record<string, string> = {}
+      for (const [key, f] of Object.entries(shape)) {
+        const raw = input[key]
+        if (raw === undefined || raw === null) {
+          if (!f.isOptional) errors[key] = 'is required'
+          continue
+        }
+        const result = f.run(raw)
+        if (result.ok) value[key] = result.value
+        else errors[key] = result.error
+      }
+      if (Object.keys(errors).length > 0) return { ok: false, errors: errors as Partial<Record<keyof S, string>> }
+      return { ok: true, value: value as FormValue<S> }
+    },
+  }
+}
+--- hint
+Give each field type a type parameter for "optional or not" (`Opt extends boolean`), so `.optional()` can return the same kind of field with `Opt` set to `true`.
+--- hint
+Store a field's checks as an array of `(value) => string | null`; each builder method returns a new field with one more check.
+--- hint
+The form's value type splits the shape's keys into required and optional ones, like the schema library's `object` did.
+--- check case | A valid form
+form({ email: field.string().email(), age: field.number().integer().min(13), nickname: field.string().optional(), terms: field.boolean().accepted() }).validate({ email: 'ada@example.com', age: 36, terms: true, extra: 'ignored' })
+=> { ok: true, value: { email: 'ada@example.com', age: 36, terms: true } }
+--- check case | Every failing field gets its own message
+form({ email: field.string().email(), age: field.number().integer().min(13), nickname: field.string().optional().min(3), terms: field.boolean().accepted() }).validate({ email: 'ada.example.com', age: 12.5, nickname: 'al', terms: false })
+=> { ok: false, errors: { email: 'must be an email', age: 'must be a whole number', nickname: 'must be at least 3 characters', terms: 'must be accepted' } }
+--- check case | Required and type errors
+form({ name: field.string(), age: field.number(), ok: field.boolean() }).validate({ name: 5, ok: 'yes' })
+=> { ok: false, errors: { name: 'must be a string', age: 'is required', ok: 'must be a boolean' } }
+--- check case | Checks run in the order they were added
+[form({ a: field.string().min(3).email() }).validate({ a: 'x' }), form({ a: field.string().email().min(3) }).validate({ a: 'x' })]
+=> [{ ok: false, errors: { a: 'must be at least 3 characters' } }, { ok: false, errors: { a: 'must be an email' } }]
+--- check case | min and max on numbers and strings
+form({ n: field.number().min(1).max(10), s: field.string().max(3) }).validate({ n: 11, s: 'abcd' })
+=> { ok: false, errors: { n: 'must be at most 10', s: 'must be at most 3 characters' } }
+--- check case | Optional fields: missing or null is fine, present is checked
+[form({ nick: field.string().optional().min(2) }).validate({ nick: null }), form({ nick: field.string().min(2).optional() }).validate({ nick: 'ab' }), form({ n: field.number().optional() }).validate({ n: NaN })]
+=> [{ ok: true, value: {} }, { ok: true, value: { nick: 'ab' } }, { ok: false, errors: { n: 'must be a number' } }]
+--- check test | Fields are immutable
+(() => { const base = field.string(); base.min(5); const r = form({ a: base }).validate({ a: 'ab' }); return r.ok })()
+--- check type-error | Numbers have no email check
+field.number().email()
+--- check type-error | Strings have no integer check
+field.string().integer()
+--- check type-error | min takes a number
+field.string().min('3')
+--- check type-error | Errors only have the shape's keys
+const r = form({ a: field.string() }).validate({}); if (!r.ok) { r.errors.b }
+--- check type-error | The value needs narrowing first
+form({ a: field.string() }).validate({}).value
+--- check type-error | The value type is exactly right, with optional keys
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = form({ email: field.string().email(), age: field.number(), nick: field.string().optional().min(2), terms: field.boolean() }).validate({});
+if (r.ok) { const no: Equal<typeof r.value, { email: string; age: number; nick?: string; terms: boolean }> = false }
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-14 | Capstone: a typed task graph
+--- teach
+Build tools, CI pipelines and data workflows all run a **graph of tasks**: each task names the tasks it depends on and uses their results. The classic failure modes are depending on a task that does not exist, misspelling one, creating a cycle, and using a dependency's result as the wrong type.
+
+In this capstone the types rule all of those out. The trick you need is the one from the typed DI container: a builder whose type grows with every registration. If a task may only depend on tasks declared **before** it, cycles are impossible by construction, and each task's inputs can be typed from exactly its declared dependencies.
+
+Think about the runtime too: running a task should run only what it needs, each dependency at most once, dependencies before dependents. A depth-first walk that visits each dependency in the order listed, then the task itself, produces exactly that order.
+
+As before: spec, empty editor, your design.
+--- task
+Build `graph()`, which returns an empty task graph. A graph is immutable — `task` returns a new graph.
+
+- `task(name, deps, run)` — adds a task. `deps` is an array of names of tasks **already in the graph**; `run` receives an object with exactly those dependencies' results (typed) and returns the task's result. A name already in the graph, or an unknown dependency, does not compile (and throws an `Error` at runtime for untyped callers).
+- `order(name)` — the names that running `name` would run, in order: for each dependency in the order listed, its own order (skipping names already included), then `name`.
+- `run(name)` — runs exactly the tasks in `order(name)`, each once, and returns `name`'s result (typed). Unknown names do not compile.
+- `runAll()` — runs every task once, in declaration order with dependencies first, and returns an object of all results (typed, e.g. `{ fetch: number; label: string }`).
+--- starter
+// Capstone: build `graph()` from the specification in the task.
+
+--- solution
+type Simplify<T> = { [K in keyof T]: T[K] }
+
+interface TaskNode {
+  readonly deps: readonly string[]
+  readonly run: (inputs: Record<string, unknown>) => unknown
+}
+
+class Graph<R extends object = {}> {
+  constructor(private readonly nodes: ReadonlyMap<string, TaskNode> = new Map()) {}
+
+  task<N extends string, const D extends readonly (keyof R & string)[], T>(
+    name: N extends keyof R ? never : N,
+    deps: D,
+    run: (inputs: Simplify<Pick<R, D[number]>>) => T,
+  ): Graph<Simplify<R & { [K in N]: T }>> {
+    if (this.nodes.has(name)) throw new Error(`duplicate task: ${name}`)
+    for (const d of deps) if (!this.nodes.has(d)) throw new Error(`unknown dependency: ${d}`)
+    const nodes = new Map(this.nodes)
+    nodes.set(name, { deps, run: run as TaskNode['run'] })
+    return new Graph(nodes)
+  }
+
+  order<N extends keyof R & string>(name: N): (keyof R & string)[] {
+    return this.visit(name, new Set(), []) as (keyof R & string)[]
+  }
+
+  run<N extends keyof R & string>(name: N): R[N] {
+    return this.execute(this.visit(name, new Set(), []))[name] as R[N]
+  }
+
+  runAll(): R {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const name of this.nodes.keys()) this.visit(name, seen, out)
+    return this.execute(out) as R
+  }
+
+  private visit(name: string, seen: Set<string>, out: string[]): string[] {
+    if (seen.has(name)) return out
+    const node = this.nodes.get(name)
+    if (!node) throw new Error(`unknown task: ${name}`)
+    seen.add(name)
+    for (const d of node.deps) this.visit(d, seen, out)
+    out.push(name)
+    return out
+  }
+
+  private execute(names: readonly string[]): Record<string, unknown> {
+    const results: Record<string, unknown> = {}
+    for (const name of names) {
+      const node = this.nodes.get(name)!
+      const inputs: Record<string, unknown> = {}
+      for (const d of node.deps) inputs[d] = results[d]
+      results[name] = node.run(inputs)
+    }
+    return results
+  }
+}
+
+function graph(): Graph {
+  return new Graph()
+}
+--- hint
+Give the graph a type parameter mapping each task name to its result type, and have `task` return a graph with one more entry.
+--- hint
+Constrain `deps` to `readonly (keyof R & string)[]` and type `run`'s input as `Pick<R, …>` of those names (a `const` type parameter keeps the names literal).
+--- hint
+One private depth-first `visit(name, seen, out)` gives you `order`, `run` and `runAll`.
+--- check case | run returns the task's result
+graph().task('fetch', [], () => 3).task('double', ['fetch'], ({ fetch }) => fetch * 2).task('label', ['fetch', 'double'], ({ fetch, double }) => `${fetch}->${double}`).run('label')
+=> '3->6'
+--- check case | order lists dependencies first, each once
+graph().task('a', [], () => 1).task('b', ['a'], () => 2).task('c', ['a'], () => 3).task('d', ['c', 'b'], () => 4).order('d')
+=> ['a', 'c', 'b', 'd']
+--- check case | run executes only what is needed, once each
+(() => { const ran: string[] = []; const g = graph().task('a', [], () => { ran.push('a'); return 1 }).task('b', ['a'], ({ a }) => { ran.push('b'); return a + 1 }).task('c', ['a', 'b'], ({ a, b }) => { ran.push('c'); return a + b }).task('z', [], () => { ran.push('z'); return 0 }); const result = g.run('c'); return [result, ran] })()
+=> [3, ['a', 'b', 'c']]
+--- check case | runAll returns every result
+graph().task('n', [], () => 2).task('sq', ['n'], ({ n }) => n * n).task('msg', ['sq'], ({ sq }) => 'sq=' + sq).runAll()
+=> { n: 2, sq: 4, msg: 'sq=4' }
+--- check test | Graphs are immutable
+(() => { const base = graph().task('a', [], () => 1); base.task('b', ['a'], () => 2); return Object.keys(base.runAll()).join() === 'a' })()
+--- check test | Untyped misuse throws at runtime
+throws(() => (graph().task('a', [], () => 1) as any).task('a', [], () => 2)) && throws(() => (graph() as any).task('b', ['nope'], () => 1)) && throws(() => (graph() as any).run('x'))
+--- check type-error | Dependencies must already exist
+graph().task('b', ['a'], () => 1)
+--- check type-error | A name cannot be used twice
+graph().task('a', [], () => 1).task('a', [], () => 2)
+--- check type-error | A task sees only the dependencies it declared
+graph().task('a', [], () => 1).task('b', [], ({ a }) => a)
+--- check type-error | Dependency results keep their types
+graph().task('a', [], () => 1).task('b', ['a'], ({ a }) => a.toUpperCase())
+--- check type-error | Only known tasks can be run
+graph().task('a', [], () => 1).run('b')
+--- check type-error | run and runAll are typed exactly
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const g = graph().task('fetch', [], () => 3).task('label', ['fetch'], ({ fetch }) => String(fetch));
+const one = g.run('label');
+const all = g.runAll();
+const no: Equal<[typeof one, typeof all], [string, { fetch: number; label: string }]> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== tsp-15 | Capstone: a typed command-line parser
+--- teach
+The final capstone: a command-line argument parser whose result type is **computed from its definition**. You declare the options once — their types, which are required, which have defaults — and `parse` returns an object whose type says exactly which properties are guaranteed to be there.
+
+This combines most of what the expert course taught: a `const` type parameter so `required: true` stays the literal `true`; conditional types that map a spec to a value type; key filtering to decide which properties are optional; and runtime parsing that must agree with all of it.
+
+The parsing rules are where CLI tools differ, so the specification pins them down. Read it carefully, list the error cases, and decide the order you check them in — the spec says which error wins when there are several.
+
+Spec, empty editor, your design. When this passes, you have built a small library with a public API that is hard to misuse — which is what the whole TypeScript path has been about.
+--- task
+Build `defineCli(spec)`, where `spec` is `{ options, positionals }`:
+
+- `options` maps camelCase names to `{ type: 'string' | 'number', required?: boolean, default?: <that type> }` or `{ type: 'boolean' }`. On the command line an option is `--kebab-case` (`dryRun` → `--dry-run`).
+- `positionals` is a list of names filled, in order, by the arguments that are not options.
+
+`defineCli(spec).parse(argv: readonly string[])` returns `{ ok: true, value }` or `{ ok: false, error }`:
+
+- A string or number option takes the next argument (`--env prod`) or an inline value (`--env=prod`). A boolean option takes no value and is `true` when present, `false` otherwise.
+- **The value type**: booleans, required options and options with a default are always present; other options are optional keys (absent when not given); every positional is a `string`. A default must match its option's type.
+- **Errors**, reading `argv` left to right: `'unknown option <flag>'`; `'missing value for <flag>'` (no next argument, or it starts with `--`); `'<flag> must be a number'`; `'<flag> does not take a value'` (a boolean with `=`). Then, in option order, `'missing required option <flag>'`. Then `'unexpected argument <arg>'` for the first extra positional, or `'missing positional <name>'` (with the angle brackets) for the first missing one.
+--- starter
+// Capstone: build `defineCli` from the specification in the task.
+
+--- solution
+type OptionSpec =
+  | { readonly type: 'string'; readonly required?: boolean; readonly default?: string }
+  | { readonly type: 'number'; readonly required?: boolean; readonly default?: number }
+  | { readonly type: 'boolean' }
+
+interface CliSpec {
+  readonly options: Readonly<Record<string, OptionSpec>>
+  readonly positionals: readonly string[]
+}
+
+type Simplify<T> = { [K in keyof T]: T[K] }
+type ValueOfSpec<S> = S extends { type: 'string' } ? string : S extends { type: 'number' } ? number : boolean
+type AlwaysKeys<O> = {
+  [K in keyof O]: O[K] extends { type: 'boolean' } | { required: true } | { default: string | number } ? K : never
+}[keyof O]
+
+type ParsedArgs<C extends CliSpec> = Simplify<
+  { [K in AlwaysKeys<C['options']>]: ValueOfSpec<C['options'][K]> } & {
+    [K in Exclude<keyof C['options'], AlwaysKeys<C['options']>>]?: ValueOfSpec<C['options'][K]>
+  } & { [K in C['positionals'][number]]: string }
+>
+
+type ParseResult<C extends CliSpec> = { ok: true; value: ParsedArgs<C> } | { ok: false; error: string }
+
+const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
+
+function defineCli<const C extends CliSpec>(spec: C): { parse(argv: readonly string[]): ParseResult<C> } {
+  const byFlag = new Map<string, [string, OptionSpec]>()
+  for (const [key, option] of Object.entries(spec.options)) byFlag.set(`--${kebab(key)}`, [key, option])
+
+  return {
+    parse(argv) {
+      const fail = (error: string): ParseResult<C> => ({ ok: false, error })
+      const values: Record<string, unknown> = {}
+      const positional: string[] = []
+      for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i]!
+        if (!arg.startsWith('--')) {
+          positional.push(arg)
+          continue
+        }
+        const eq = arg.indexOf('=')
+        const flag = eq >= 0 ? arg.slice(0, eq) : arg
+        const entry = byFlag.get(flag)
+        if (!entry) return fail(`unknown option ${flag}`)
+        const [key, option] = entry
+        if (option.type === 'boolean') {
+          if (eq >= 0) return fail(`${flag} does not take a value`)
+          values[key] = true
+          continue
+        }
+        let raw: string
+        if (eq >= 0) {
+          raw = arg.slice(eq + 1)
+        } else {
+          const nextArg = argv[i + 1]
+          if (nextArg === undefined || nextArg.startsWith('--')) return fail(`missing value for ${flag}`)
+          raw = nextArg
+          i++
+        }
+        if (option.type === 'number') {
+          const n = Number(raw)
+          if (raw.trim() === '' || !Number.isFinite(n)) return fail(`${flag} must be a number`)
+          values[key] = n
+        } else {
+          values[key] = raw
+        }
+      }
+      for (const [key, option] of Object.entries(spec.options)) {
+        if (key in values) continue
+        if (option.type === 'boolean') values[key] = false
+        else if (option.default !== undefined) values[key] = option.default
+        else if (option.required) return fail(`missing required option --${kebab(key)}`)
+      }
+      if (positional.length > spec.positionals.length) return fail(`unexpected argument ${positional[spec.positionals.length]}`)
+      for (const [i, name] of spec.positionals.entries()) {
+        const value = positional[i]
+        if (value === undefined) return fail(`missing positional <${name}>`)
+        values[name] = value
+      }
+      return { ok: true, value: values as ParsedArgs<C> }
+    },
+  }
+}
+--- hint
+Use `function defineCli<const C extends CliSpec>(spec: C)`: without `const`, `required: true` would widen to `boolean` and the value type could not tell required options apart.
+--- hint
+A mapped type over the options that keeps a key if its spec is a boolean, has `required: true` or has a `default`, indexed with `[keyof …]`, gives the always-present keys.
+--- hint
+Parse in two passes: walk `argv` collecting options and positionals, then fill defaults, check required options, and assign positionals.
+--- check case | A full command line
+defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse(['api', '--env', 'prod', '--replicas=3', '--dry-run'])
+=> { ok: true, value: { env: 'prod', replicas: 3, dryRun: true, service: 'api' } }
+--- check case | Defaults, false booleans and absent optional options
+defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse(['--env=dev', 'web', '--tag', 'v2'])
+=> { ok: true, value: { env: 'dev', tag: 'v2', replicas: 1, dryRun: false, service: 'web' } }
+--- check case | Errors while reading arguments
+(() => { const cli = defineCli({ options: { env: { type: 'string' }, n: { type: 'number' }, quiet: { type: 'boolean' } }, positionals: [] }); return [cli.parse(['--nope']), cli.parse(['--env']), cli.parse(['--env', '--n', '1']), cli.parse(['--n', 'ten']), cli.parse(['--quiet=yes'])] })()
+=> [{ ok: false, error: 'unknown option --nope' }, { ok: false, error: 'missing value for --env' }, { ok: false, error: 'missing value for --env' }, { ok: false, error: '--n must be a number' }, { ok: false, error: '--quiet does not take a value' }]
+--- check case | Required options and positionals
+(() => { const cli = defineCli({ options: { dryRun: { type: 'boolean' }, apiKey: { type: 'string', required: true } }, positionals: ['from', 'to'] }); return [cli.parse(['a', 'b']), cli.parse(['--api-key', 'k', 'a']), cli.parse(['--api-key', 'k', 'a', 'b', 'c']), cli.parse(['--api-key', 'k', 'a', 'b'])] })()
+=> [{ ok: false, error: 'missing required option --api-key' }, { ok: false, error: 'missing positional <to>' }, { ok: false, error: 'unexpected argument c' }, { ok: true, value: { apiKey: 'k', dryRun: false, from: 'a', to: 'b' } }]
+--- check case | Numbers and the order errors are found in
+(() => { const cli = defineCli({ options: { size: { type: 'number', required: true } }, positionals: [] }); return [cli.parse(['--size', '-2.5']), cli.parse(['--size', '']), cli.parse(['extra', '--bad'])] })()
+=> [{ ok: true, value: { size: -2.5 } }, { ok: false, error: '--size must be a number' }, { ok: false, error: 'unknown option --bad' }]
+--- check type-error | Option types are limited to string, number and boolean
+defineCli({ options: { when: { type: 'date' } }, positionals: [] })
+--- check type-error | A default must match its type
+defineCli({ options: { n: { type: 'number', default: 'ten' } }, positionals: [] })
+--- check type-error | argv is an array of strings
+defineCli({ options: {}, positionals: [] }).parse('--help')
+--- check type-error | The value has only the declared names
+const r = defineCli({ options: { env: { type: 'string' } }, positionals: ['file'] }).parse([]); if (r.ok) { r.value.nope }
+--- check type-error | Optional options may be missing
+const r = defineCli({ options: { tag: { type: 'string' } }, positionals: [] }).parse([]); if (r.ok) { const t: string = r.value.tag }
+--- check type-error | The value type is computed exactly from the spec
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse([]);
+if (r.ok) { const no: Equal<typeof r.value, { env: string; replicas: number; dryRun: boolean; tag?: string; service: string }> = false }
+?? Passes when the types are exactly equal: then `false` cannot be assigned.

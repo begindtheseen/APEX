@@ -1,0 +1,1634 @@
+@track typescript
+@level advanced
+@title TypeScript · Advanced
+@name TypeScript, advanced: computing types from types
+@blurb keyof, mapped and conditional types, template literals, brands and satisfies — then typed emitters, builders and data structures, with tests that prove what your types accept and reject.
+
+=== ts3-01 | keyof, indexed access, and testing types
+--- teach
+The intermediate course modelled data with unions, generics and guards. This course is about types computed from other types. Three operators start it off.
+
+**`keyof T`** is the union of `T`'s keys. **`T[K]`** is the type of the property `K` — an *indexed access*. **`typeof value`**, in a type position, is the type of a value you already have:
+
+```ts
+const settings = { theme: 'dark', fontSize: 14 }
+type Settings = typeof settings        // { theme: string; fontSize: number }
+type Key = keyof Settings              // 'theme' | 'fontSize'
+type Size = Settings['fontSize']       // number
+type AnyValue = Settings[keyof Settings]   // string | number
+
+const list = ['a', 'b'] as const
+type Item = (typeof list)[number]      // 'a' | 'b' — [number] means "any element"
+```
+
+Put them together with a generic and a key argument decides the return type:
+
+```ts
+const settings = { theme: 'dark', fontSize: 14 }
+
+function get<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+get(settings, 'fontSize')     // number
+// get(settings, 'colour')    ✗ '"colour"' is not assignable to '"theme" | "fontSize"'
+```
+
+(To build an object whose key comes from a variable, put the key in square brackets: `{ ...settings, [key]: value }` is a **computed key**.)
+
+**Testing types.** A runtime test cannot see a type, so how do you prove `get` returns `number` and not `any`? You write a line that only compiles if the types are what you claim. The standard helper compares two types exactly:
+
+```ts
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false
+
+type Key = keyof { theme: string; fontSize: number }
+type Size = number
+
+const same: Equal<Key, 'theme' | 'fontSize'> = true      // compiles
+const different: Equal<Size, string> = false             // compiles: they differ
+```
+
+The odd shape is deliberate: simpler versions call `any` equal to everything. From now on, checks named "… is exactly …" are written `const no: Equal<Yours, Expected> = false`, which must **fail** to compile — and it fails exactly when your type equals the expected one.
+--- task
+1. `getProp<T, K extends keyof T>(obj: T, key: K): T[K]`.
+2. `pluck<T, K extends keyof T>(items: readonly T[], key: K): T[K][]` — that property from every item.
+3. `type ValueOf<T>` — the union of `T`'s property types.
+4. `type ElementOf<A extends readonly unknown[]>` — the union of `A`'s element types.
+5. `type Settings = typeof SETTINGS`, and `withSetting<K extends keyof Settings>(key: K, value: Settings[K]): Settings` returning a **new** settings object with that one value changed.
+--- starter
+const SETTINGS = { theme: 'dark', fontSize: 14, beta: false }
+
+function getProp(obj: any, key: string): any {
+  return obj[key]
+}
+
+function pluck(items: any[], key: string): any[] {
+  return items.map((item) => item[key])
+}
+
+type ValueOf<T> = unknown
+type ElementOf<A extends readonly unknown[]> = unknown
+--- solution
+const SETTINGS = { theme: 'dark', fontSize: 14, beta: false }
+type Settings = typeof SETTINGS
+
+function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+function pluck<T, K extends keyof T>(items: readonly T[], key: K): T[K][] {
+  return items.map((item) => item[key])
+}
+
+type ValueOf<T> = T[keyof T]
+type ElementOf<A extends readonly unknown[]> = A[number]
+
+function withSetting<K extends keyof Settings>(key: K, value: Settings[K]): Settings {
+  return { ...SETTINGS, [key]: value }
+}
+--- hint
+`ValueOf<T>` is an indexed access with every key at once: `T[keyof T]`.
+--- hint
+For `withSetting`, a computed key in a spread builds the new object: `{ ...SETTINGS, [key]: value }`.
+--- check case | getProp
+getProp({ a: 1, b: 'x' }, 'b')
+=> 'x'
+--- check case | pluck
+pluck([{ id: 1, name: 'ada' }, { id: 2, name: 'lin' }], 'name')
+=> ['ada', 'lin']
+--- check case | withSetting returns a changed copy
+withSetting('fontSize', 16)
+=> { theme: 'dark', fontSize: 16, beta: false }
+--- check test | SETTINGS itself is unchanged
+(withSetting('beta', true), SETTINGS.beta === false)
+--- check type-error | getProp only accepts real keys
+getProp({ a: 1 }, 'b')
+--- check type-error | getProp returns the property's own type
+const n: number = getProp({ a: 'x' }, 'a')
+--- check type-error | A setting's value must match its type
+withSetting('fontSize', 'big')
+--- check type-error | Unknown settings are rejected
+withSetting('colour', 'red')
+--- check type-error | pluck(…, 'name') is exactly string[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const names = pluck([{ id: 1, name: 'ada' }], 'name');
+const no: Equal<typeof names, string[]> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | ValueOf<{ a: 1; b: 'x' }> is exactly 1 | 'x'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ValueOf<{ a: 1; b: 'x' }>, 1 | 'x'> = false
+--- check type-error | ElementOf<readonly ['a', 'b']> is exactly 'a' | 'b'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementOf<readonly ['a', 'b']>, 'a' | 'b'> = false
+
+=== ts3-02 | Mapped types
+--- teach
+A **mapped type** builds an object type by walking over a union of keys:
+
+```ts
+type Flags<T> = { [K in keyof T]: boolean }
+
+type UserFlags = Flags<{ name: string; age: number }>   // { name: boolean; age: boolean }
+```
+
+Read `[K in keyof T]` as "for each key K of T". The value side can use `K` and `T[K]`. `Partial`, `Required`, `Readonly`, `Pick` and `Record` are all mapped types in the standard library.
+
+**Modifiers.** When you map over `keyof T`, `readonly` and `?` are copied from `T`. You can add or remove them explicitly:
+
+```ts
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }   // strip readonly
+type Concrete<T> = { [K in keyof T]-?: T[K] }          // strip ?
+type Frozen<T> = { +readonly [K in keyof T]: T[K] }     // add readonly (the + is optional)
+```
+
+**Key remapping** with `as` renames keys, or drops them by mapping them to `never`:
+
+```ts
+type OnlyNumbers<T> = { [K in keyof T as T[K] extends number ? K : never]: T[K] }
+type N = OnlyNumbers<{ a: string; b: number; c: number }>    // { b: number; c: number }
+```
+
+At runtime, building such an object usually needs one cast, because TypeScript cannot follow a loop that fills in keys one by one. Start from `{} as Flags<T>` inside the function; the public signature is what the checks prove. `for (const key in obj)` loops over an object's own and inherited enumerable keys; for a plain object that is just its keys, typed as `Extract<keyof T, string>`.
+--- task
+1. `type Nullable<T>` — every property may also be `null` (optional ones stay optional).
+2. `type Mutable<T>` — `readonly` removed from every property.
+3. `type Concrete<T>` — `?` removed from every property.
+4. `type PickByValue<T, V>` — only the properties whose type is assignable to `V`.
+5. `type Flags<T>` — every property becomes a `boolean`, and `toFlags<T extends object>(obj: T): Flags<T>`, turning each value into `Boolean(value)`.
+--- starter
+type Nullable<T> = T
+type Mutable<T> = T
+type Concrete<T> = T
+type PickByValue<T, V> = T
+type Flags<T> = Record<string, boolean>
+
+function toFlags(obj: object): Flags<object> {
+  return {}
+}
+--- solution
+type Nullable<T> = { [K in keyof T]: T[K] | null }
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }
+type Concrete<T> = { [K in keyof T]-?: T[K] }
+type PickByValue<T, V> = { [K in keyof T as T[K] extends V ? K : never]: T[K] }
+type Flags<T> = { [K in keyof T]: boolean }
+
+function toFlags<T extends object>(obj: T): Flags<T> {
+  const out = {} as Flags<T>
+  for (const key in obj) out[key] = Boolean(obj[key])
+  return out
+}
+--- hint
+Each one starts from `{ [K in keyof T]: … }`; only the modifiers, the `as` clause, or the value type change.
+--- hint
+`PickByValue` filters with `as T[K] extends V ? K : never` — a key mapped to `never` disappears.
+--- hint
+In `toFlags`, `for (const key in obj)` gives keys TypeScript accepts for both `obj[key]` and `out[key]`.
+--- check case | toFlags
+toFlags({ a: 1, b: '', c: 'x', d: 0 })
+=> { a: true, b: false, c: true, d: false }
+--- check type-error | Flags keeps exactly the object's keys
+const f = toFlags({ a: 1 }); f.b
+--- check type-error | Flags values are booleans
+const f: Flags<{ a: number }> = { a: 1 }
+--- check type-error | Nullable<{ a: string; b?: number }> is exactly { a: string | null; b?: number | null }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Nullable<{ a: string; b?: number }>, { a: string | null; b?: number | null }> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | Mutable<{ readonly a: string; b: number }> is exactly { a: string; b: number }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Mutable<{ readonly a: string; b: number }>, { a: string; b: number }> = false
+--- check type-error | Concrete<{ a?: string; b: number }> is exactly { a: string; b: number }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Concrete<{ a?: string; b: number }>, { a: string; b: number }> = false
+--- check type-error | PickByValue<…, string> is exactly the string properties
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<PickByValue<{ a: string; b: number; c: string }, string>, { a: string; c: string }> = false
+
+=== ts3-03 | Conditional types and infer
+--- teach
+A **conditional type** chooses between two types with a test that looks like the ternary operator:
+
+```ts
+type IsString<T> = T extends string ? 'yes' : 'no'
+type A = IsString<'hi'>    // 'yes'
+type B = IsString<42>      // 'no'
+```
+
+`T extends U` asks "is T assignable to U?".
+
+**`infer`** pulls a piece out of a type while testing it — pattern matching for types:
+
+```ts
+type ElementOf<T> = T extends readonly (infer E)[] ? E : never
+type Resolved<T> = T extends Promise<infer V> ? V : T
+type Ret<F> = F extends (...args: never[]) => infer R ? R : never
+
+type C = ElementOf<string[]>              // string
+type D = Resolved<Promise<number>>        // number
+type E = Ret<() => boolean>               // boolean
+```
+
+**Distribution.** When the thing being tested is a bare type parameter and you pass a union, the conditional runs once per member and the results are unioned:
+
+```ts
+type NoStrings<T> = T extends string ? never : T
+type F = NoStrings<string | number | boolean>   // number | boolean
+```
+
+That is how `Exclude` and `NonNullable` work. To test the union as a whole instead, wrap both sides in brackets: `[T] extends [string] ? … : …`.
+
+A conditional type can refer to itself, so it can unwrap as many layers as there are: `Promise<Promise<number>>` → `number`.
+--- task
+1. `type ElementType<T>` — the element type of an array (readonly arrays too); any other type unchanged.
+2. `type UnwrapPromise<T>` — the value inside a promise, unwrapping nested promises all the way; any other type unchanged.
+3. `type FirstArg<F>` — the type of a function type's first parameter, or `never` if it takes none.
+4. `type NonNullish<T>` — `T` without `null` and `undefined` (write it yourself; do not use `NonNullable`).
+5. `compact<T>(items: readonly T[]): NonNullish<T>[]` — the items without `null` and `undefined`, keeping `0`, `''` and `false`.
+--- starter
+type ElementType<T> = T
+type UnwrapPromise<T> = T
+type FirstArg<F> = unknown
+type NonNullish<T> = T
+
+function compact(items: any[]): any[] {
+  return items.filter(Boolean)
+}
+--- solution
+type ElementType<T> = T extends readonly (infer E)[] ? E : T
+type UnwrapPromise<T> = T extends Promise<infer V> ? UnwrapPromise<V> : T
+type FirstArg<F> = F extends (...args: infer P) => unknown ? (P extends [infer A, ...unknown[]] ? A : never) : never
+type NonNullish<T> = T extends null | undefined ? never : T
+
+function compact<T>(items: readonly T[]): NonNullish<T>[] {
+  return items.filter((x): x is NonNullish<T> => x !== null && x !== undefined)
+}
+--- hint
+`UnwrapPromise` calls itself on the inferred value: `T extends Promise<infer V> ? UnwrapPromise<V> : T`.
+--- hint
+For `FirstArg`, infer the whole parameter list first (`(...args: infer P) => unknown`), then match `P` against `[infer A, ...unknown[]]`.
+--- hint
+`filter` narrows with a guard: `(x): x is NonNullish<T> => x !== null && x !== undefined`.
+--- check case | compact keeps falsy values that are not null or undefined
+compact([1, null, 0, undefined, '', false, 2])
+=> [1, 0, '', false, 2]
+--- check type-error | ElementType<readonly string[]> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementType<readonly string[]>, string> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | ElementType<number> is exactly number
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ElementType<number>, number> = false
+--- check type-error | UnwrapPromise<Promise<Promise<number>>> is exactly number
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<UnwrapPromise<Promise<Promise<number>>>, number> = false
+--- check type-error | FirstArg<(a: string, b: number) => void> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FirstArg<(a: string, b: number) => void>, string> = false
+--- check type-error | FirstArg<() => void> is exactly never
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FirstArg<() => void>, never> = false
+--- check type-error | NonNullish<string | null | undefined> is exactly string
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<NonNullish<string | null | undefined>, string> = false
+--- check type-error | compact(['a', null]) is exactly string[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const c = compact(['a', null]);
+const no: Equal<typeof c, string[]> = false
+
+=== ts3-04 | Utility types in practice
+--- teach
+The standard library's utility types cover most everyday type transformations. Knowing them saves you from writing — and repeating — shapes by hand:
+
+| Utility | Gives you |
+| --- | --- |
+| `Partial<T>` / `Required<T>` | every property optional / required |
+| `Pick<T, K>` / `Omit<T, K>` | only keys `K` / every key except `K` |
+| `Record<K, V>` | an object with keys `K`, values `V` |
+| `Exclude<U, X>` / `Extract<U, X>` | union members not / only assignable to `X` |
+| `ReturnType<F>` / `Parameters<F>` | a function type's return type / parameter tuple |
+| `Awaited<T>` | what `await` gives for `T` |
+
+The point is a **single source of truth**. Define `User` once, and derive the shape of a public profile, a sign-up form and a patch from it. Add a field to `User` and every derived type follows.
+
+```ts
+interface Post { id: string; title: string; body: string; draft: boolean }
+
+type PostSummary = Pick<Post, 'id' | 'title'>
+type PostEdit = Partial<Omit<Post, 'id'>>
+
+async function loadPost(id: string): Promise<Post> {
+  return { id, title: 'Hello', body: '', draft: true }
+}
+type Loaded = Awaited<ReturnType<typeof loadPost>>    // Post
+```
+
+`typeof loadPost` turns a function *value* into its type, which is how you reuse the types of code you do not own.
+
+**The trap:** these types exist only at compile time. `Omit<User, 'password'>` does not remove anything from an object. If you return the whole user from a function typed as returning the public shape, the password is still in the JSON you send. Build the smaller object for real — destructuring with a rest element does it neatly: `const { password, ...rest } = user`.
+--- task
+Using the `User` interface and `fetchUser` in the starter:
+
+1. `type PublicUser` — `User` without `password`. `type NewUser` — only `email`, `name`, `password`. `type UserPatch` — any of `User`'s fields except `id` and `createdAt`, all optional.
+2. `type FetchedUser` — what awaiting `fetchUser` gives, and `type FetchArgs` — its parameters. Derive both from `typeof fetchUser`.
+3. `createUser(input: NewUser, id: string, now: number): User` (`now` becomes `createdAt`).
+4. `toPublic(user: User): PublicUser` — the password must really be gone from the returned object.
+5. `updateUser(user: User, patch: UserPatch): User` — a new object with the patch applied.
+--- starter
+interface User {
+  id: string
+  email: string
+  name: string
+  password: string
+  createdAt: number
+}
+
+async function fetchUser(id: string): Promise<User> {
+  return { id, email: `${id}@example.com`, name: id, password: 'hunter2', createdAt: 0 }
+}
+
+type PublicUser = User
+type NewUser = User
+type UserPatch = User
+type FetchedUser = unknown
+type FetchArgs = unknown[]
+
+function toPublic(user: User): PublicUser {
+  return user
+}
+--- solution
+interface User {
+  id: string
+  email: string
+  name: string
+  password: string
+  createdAt: number
+}
+
+async function fetchUser(id: string): Promise<User> {
+  return { id, email: `${id}@example.com`, name: id, password: 'hunter2', createdAt: 0 }
+}
+
+type PublicUser = Omit<User, 'password'>
+type NewUser = Pick<User, 'email' | 'name' | 'password'>
+type UserPatch = Partial<Omit<User, 'id' | 'createdAt'>>
+type FetchedUser = Awaited<ReturnType<typeof fetchUser>>
+type FetchArgs = Parameters<typeof fetchUser>
+
+function createUser(input: NewUser, id: string, now: number): User {
+  return { ...input, id, createdAt: now }
+}
+
+function toPublic(user: User): PublicUser {
+  const { password, ...rest } = user
+  return rest
+}
+
+function updateUser(user: User, patch: UserPatch): User {
+  return { ...user, ...patch }
+}
+--- hint
+`UserPatch` combines two utilities: `Partial<Omit<User, 'id' | 'createdAt'>>`.
+--- hint
+`Awaited<ReturnType<typeof fetchUser>>` — the return type is a promise, and `Awaited` opens it.
+--- hint
+`const { password, ...rest } = user` gives you an object without the password.
+--- check case | toPublic keeps the public fields
+toPublic({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 })
+=> { id: 'u1', email: 'ada@x.io', name: 'Ada', createdAt: 5 }
+--- check test | The password is really gone at runtime
+!('password' in toPublic({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 }))
+--- check case | createUser
+createUser({ email: 'ada@x.io', name: 'Ada', password: 'pw' }, 'u1', 5)
+=> { email: 'ada@x.io', name: 'Ada', password: 'pw', id: 'u1', createdAt: 5 }
+--- check case | updateUser
+updateUser({ id: 'u1', email: 'ada@x.io', name: 'Ada', password: 'pw', createdAt: 5 }, { name: 'Ada L' })
+=> { id: 'u1', email: 'ada@x.io', name: 'Ada L', password: 'pw', createdAt: 5 }
+--- check type-error | A patch cannot change the id
+updateUser({ id: 'u1', email: 'e', name: 'n', password: 'p', createdAt: 5 }, { id: 'u2' })
+--- check type-error | A PublicUser has no password
+const p: PublicUser = { id: 'u1', email: 'e', name: 'n', createdAt: 0, password: 'x' }
+--- check type-error | A NewUser needs a password
+createUser({ email: 'e', name: 'n' }, 'u1', 1)
+--- check type-error | FetchedUser is exactly User
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FetchedUser, User> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | FetchArgs is exactly [string]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<FetchArgs, [string]> = false
+--- check type-error | UserPatch is exactly the three optional fields
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<UserPatch, { email?: string; name?: string; password?: string }> = false
+
+=== ts3-05 | Exhaustive unions
+--- teach
+You know discriminated unions and the `never` check from the basics. This lesson makes them a habit you can rely on in a growing codebase.
+
+An `if` chain with a fallback **hides** new cases. Add a member to the union and the fallback quietly handles it wrong:
+
+```ts
+type Shape = { kind: 'circle'; r: number } | { kind: 'square'; side: number }
+
+function area(s: Shape): number {
+  if (s.kind === 'circle') return Math.PI * s.r ** 2
+  return 0            // a new 'triangle' would land here, silently
+}
+```
+
+A `switch` whose `default` passes the value to a function that only accepts `never` turns that into a compile error. Write the helper once:
+
+```ts
+type Shape = { kind: 'circle'; r: number } | { kind: 'square'; side: number }
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function perimeter(s: Shape): number {
+  switch (s.kind) {
+    case 'circle':
+      return 2 * Math.PI * s.r
+    case 'square':
+      return 4 * s.side
+    default:
+      return assertNever(s)   // s is never here, unless a case is missing
+  }
+}
+
+perimeter({ kind: 'square', side: 2 })
+```
+
+If a case is missing, `s` is not `never` in the `default` branch and the call does not compile — the error even names the missing member. If bad data arrives at runtime anyway (from JSON, say), the helper throws instead of returning nonsense.
+
+To talk about one member of a union, use `Extract`: `Extract<Shape, { kind: 'circle' }>` is the circle member. That lets you type a handler for exactly one case.
+--- task
+**Bug report:** `rename` actions do nothing — the `if` chain falls through to "return a copy".
+
+1. Write `assertNever(value: never): never` that throws an `Error`.
+2. Rewrite `reduce` as a `switch` on `action.type` with `default: return assertNever(action)`.
+3. Implement `rename`: replace the item at `index` with `name` (an index out of range leaves the list as it was).
+4. Add a fifth action, `{ type: 'move'; from: number; to: number }`: take the item at `from` out and insert it at `to`. Let the compiler show you where it must be handled.
+5. `type ActionOf<T extends Action['type']>` — the member of `Action` with that `type`.
+
+`reduce` must never change the array it is given.
+--- starter
+type Action =
+  | { type: 'add'; item: string }
+  | { type: 'remove'; index: number }
+  | { type: 'rename'; index: number; name: string }
+  | { type: 'clear' }
+
+function reduce(state: readonly string[], action: Action): string[] {
+  if (action.type === 'add') return [...state, action.item]
+  if (action.type === 'remove') return state.filter((_, i) => i !== action.index)
+  if (action.type === 'clear') return []
+  return [...state]
+}
+--- solution
+type Action =
+  | { type: 'add'; item: string }
+  | { type: 'remove'; index: number }
+  | { type: 'rename'; index: number; name: string }
+  | { type: 'move'; from: number; to: number }
+  | { type: 'clear' }
+
+type ActionOf<T extends Action['type']> = Extract<Action, { type: T }>
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected: ${JSON.stringify(value)}`)
+}
+
+function reduce(state: readonly string[], action: Action): string[] {
+  switch (action.type) {
+    case 'add':
+      return [...state, action.item]
+    case 'remove':
+      return state.filter((_, i) => i !== action.index)
+    case 'rename':
+      return state.map((item, i) => (i === action.index ? action.name : item))
+    case 'move': {
+      const next = [...state]
+      const [moved] = next.splice(action.from, 1)
+      if (moved === undefined) return [...state]
+      next.splice(action.to, 0, moved)
+      return next
+    }
+    case 'clear':
+      return []
+    default:
+      return assertNever(action)
+  }
+}
+--- hint
+Add `move` to the union first, then build the switch: the `assertNever(action)` line will not compile until every member has a case.
+--- hint
+`rename` is a `map` that swaps one index. `move` is easiest on a copy: `splice` the item out, then `splice` it back in at `to`.
+--- hint
+`Extract<Action, { type: T }>` keeps the members whose `type` is `T`.
+--- check case | rename works now
+reduce(['a', 'b', 'c'], { type: 'rename', index: 1, name: 'B' })
+=> ['a', 'B', 'c']
+--- check case | rename out of range changes nothing
+reduce(['a'], { type: 'rename', index: 5, name: 'x' })
+=> ['a']
+--- check case | move
+reduce(['a', 'b', 'c', 'd'], { type: 'move', from: 0, to: 2 })
+=> ['b', 'c', 'a', 'd']
+--- check case | add, remove, clear still work
+[reduce(['a'], { type: 'add', item: 'b' }), reduce(['a', 'b'], { type: 'remove', index: 0 }), reduce(['a'], { type: 'clear' })]
+=> [['a', 'b'], ['b'], []]
+--- check test | The input array is never changed
+(() => { const s = ['a', 'b', 'c']; reduce(s, { type: 'move', from: 0, to: 2 }); reduce(s, { type: 'rename', index: 0, name: 'z' }); return s.join() === 'a,b,c' })()
+--- check test | assertNever throws if bad data gets through
+throws(() => assertNever('surprise' as never))
+--- check type-error | assertNever only accepts never
+assertNever('add')
+--- check type-error | Unknown actions do not compile
+reduce([], { type: 'undo' })
+--- check type-error | A move needs both indexes
+reduce([], { type: 'move', from: 0 })
+--- check type-error | ActionOf<'rename'> is exactly the rename action
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<ActionOf<'rename'>, { type: 'rename'; index: number; name: string }> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check source | The switch ends in assertNever(action)
+assertNever\s*\(\s*action\s*\)
+
+=== ts3-06 | Branded types
+--- teach
+TypeScript's types are **structural**: two types with the same shape are interchangeable. Usually that is what you want. Sometimes it is a bug waiting to happen:
+
+```ts
+type UserId = string
+type OrderId = string
+function cancelOrder(id: OrderId): void {}
+const uid: UserId = 'u_42'
+cancelOrder(uid)          // compiles — both are just strings
+```
+
+A **brand** makes a type distinct by intersecting it with a property that no ordinary value has:
+
+```ts
+type Brand<T, Name extends string> = T & { readonly __brand: Name }
+type Email = Brand<string, 'Email'>
+
+function toEmail(raw: string): Email {
+  if (!raw.includes('@')) throw new TypeError(`not an email: ${raw}`)
+  return raw as Email          // the one place a cast is allowed
+}
+
+const e = toEmail('ada@example.com')
+e.toUpperCase()                // still a string for every read
+// const bad: Email = 'nope'   ✗ string is not assignable to Email
+```
+
+The `__brand` property never exists at runtime; it only lives in the type. A branded value is still a plain string or number, so every read works unchanged. What changes is *creating* one: the only way in is a **smart constructor** that checks the value. So an `Email` anywhere in your program means "this was validated", and a `UserId` can never be passed where an `OrderId` is expected.
+
+Keep the cast inside the constructor and nowhere else. A cast anywhere else is a hole in the guarantee.
+--- task
+1. A generic `Brand<T, Name>` helper, then `UserId` (a string), `OrderId` (a string) and `Cents` (a number).
+2. Smart constructors: `userId(raw: string): UserId` (must match `/^u_\w+$/`), `orderId(raw: string): OrderId` (must match `/^o_\w+$/`) — both throw a `TypeError` otherwise — and `cents(n: number): Cents`, which throws a `RangeError` unless `n` is a whole number `>= 0`.
+3. `addCents(a: Cents, b: Cents): Cents`.
+4. `ordersFor(orders: readonly Order[], owner: UserId): Order[]`, where `Order` is `{ id: OrderId; owner: UserId; total: Cents }`.
+--- starter
+type UserId = string
+type OrderId = string
+type Cents = number
+
+interface Order {
+  id: OrderId
+  owner: UserId
+  total: Cents
+}
+
+function userId(raw: string): UserId {
+  return raw
+}
+
+function orderId(raw: string): OrderId {
+  return raw
+}
+
+function cents(n: number): Cents {
+  return n
+}
+--- solution
+type Brand<T, Name extends string> = T & { readonly __brand: Name }
+type UserId = Brand<string, 'UserId'>
+type OrderId = Brand<string, 'OrderId'>
+type Cents = Brand<number, 'Cents'>
+
+interface Order {
+  id: OrderId
+  owner: UserId
+  total: Cents
+}
+
+function userId(raw: string): UserId {
+  if (!/^u_\w+$/.test(raw)) throw new TypeError(`not a user id: ${raw}`)
+  return raw as UserId
+}
+
+function orderId(raw: string): OrderId {
+  if (!/^o_\w+$/.test(raw)) throw new TypeError(`not an order id: ${raw}`)
+  return raw as OrderId
+}
+
+function cents(n: number): Cents {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError(`not a whole number of cents: ${n}`)
+  return n as Cents
+}
+
+function addCents(a: Cents, b: Cents): Cents {
+  return cents(a + b)
+}
+
+function ordersFor(orders: readonly Order[], owner: UserId): Order[] {
+  return orders.filter((o) => o.owner === owner)
+}
+--- hint
+`type Brand<T, Name extends string> = T & { readonly __brand: Name }`, then `type UserId = Brand<string, 'UserId'>`.
+--- hint
+`a + b` is a plain `number` again — pass it back through `cents(...)` to brand it.
+--- check case | userId accepts a valid id
+userId('u_42')
+=> 'u_42'
+--- check test | Bad ids are rejected at runtime
+throws(() => userId('42')) && throws(() => orderId('u_1')) && !throws(() => orderId('o_1'))
+--- check test | cents rejects fractions and negatives with a RangeError
+(() => { try { cents(1.5); return false } catch (e) { return e instanceof RangeError && throws(() => cents(-1)) } })()
+--- check case | addCents
+addCents(cents(150), cents(250))
+=> 400
+--- check case | ordersFor filters by owner
+ordersFor([{ id: orderId('o_1'), owner: userId('u_1'), total: cents(100) }, { id: orderId('o_2'), owner: userId('u_2'), total: cents(5) }], userId('u_1')).map((o) => o.id)
+=> ['o_1']
+--- check type-error | A plain string is not a UserId
+const u: UserId = 'u_1'
+--- check type-error | A UserId is not an OrderId
+const o: OrderId = userId('u_1')
+--- check type-error | A plain number is not Cents
+addCents(cents(1), 5)
+--- check type-error | ordersFor wants a UserId, not an OrderId
+ordersFor([], orderId('o_1'))
+
+=== ts3-07 | Template literal types
+--- teach
+Template literals work in types too. They build string types from other string types:
+
+```ts
+type Size = 'sm' | 'lg'
+type Color = 'red' | 'blue'
+type ClassName = `${Size}-${Color}`   // 'sm-red' | 'sm-blue' | 'lg-red' | 'lg-blue'
+
+type Px = `${number}px`               // any string that is a number followed by px
+const w: Px = '12.5px'
+```
+
+Unions multiply: every combination is produced. `${number}` matches any numeric text. The intrinsic helpers `Uppercase`, `Lowercase`, `Capitalize` and `Uncapitalize` transform string types.
+
+Combined with key remapping they generate APIs:
+
+```ts
+type Setters<T> = { [K in keyof T & string as `set${Capitalize<K>}`]: (value: T[K]) => void }
+type S = Setters<{ name: string }>   // { setName: (value: string) => void }
+```
+
+(`keyof T & string` keeps only string keys; symbols cannot go in a template.)
+
+And with `infer` they **parse** strings at the type level. The first `${infer X}` matches as little as possible, up to the next literal part:
+
+```ts
+type Head<S> = S extends `${infer H}.${string}` ? H : S
+type H = Head<'user.address.city'>    // 'user'
+```
+
+Recursion then takes a string apart piece by piece.
+--- task
+1. `type CssUnit = 'px' | 'rem' | '%'` and `type CssSize` — a number followed by one of those units. `size(n: number, unit: CssUnit): CssSize`.
+2. `type EventName<T extends string>` — `'click'` becomes `'onClick'`.
+3. `type Getters<T>` — for each string key `k`, a method `getK(): T[k]` (e.g. `name` → `getName`). `makeGetters<T extends object>(obj: T): Getters<T>` builds it (one cast inside is fine).
+4. `type Path<S extends string>` — splits a dotted path into a tuple: `'user.address.city'` → `['user', 'address', 'city']`.
+--- starter
+type CssUnit = 'px' | 'rem' | '%'
+type CssSize = string
+type EventName<T extends string> = string
+type Getters<T> = Record<string, () => unknown>
+type Path<S extends string> = string[]
+
+function size(n: number, unit: CssUnit): CssSize {
+  return `${n}${unit}`
+}
+
+function makeGetters<T extends object>(obj: T): Getters<T> {
+  const out: Record<string, () => unknown> = {}
+  for (const key of Object.keys(obj) as (keyof T & string)[]) {
+    out[`get${key[0].toUpperCase()}${key.slice(1)}`] = () => obj[key]
+  }
+  return out
+}
+--- solution
+type CssUnit = 'px' | 'rem' | '%'
+type CssSize = `${number}${CssUnit}`
+type EventName<T extends string> = `on${Capitalize<T>}`
+type Getters<T> = { [K in keyof T & string as `get${Capitalize<K>}`]: () => T[K] }
+type Path<S extends string> = S extends `${infer Head}.${infer Rest}` ? [Head, ...Path<Rest>] : [S]
+
+function size(n: number, unit: CssUnit): CssSize {
+  return `${n}${unit}`
+}
+
+function makeGetters<T extends object>(obj: T): Getters<T> {
+  const out: Record<string, () => unknown> = {}
+  for (const key of Object.keys(obj) as (keyof T & string)[]) {
+    out[`get${key[0].toUpperCase()}${key.slice(1)}`] = () => obj[key]
+  }
+  return out as Getters<T>
+}
+--- hint
+`CssSize` is `${number}${CssUnit}`; `EventName` uses `Capitalize<T>` inside a template.
+--- hint
+`Getters` remaps keys: `[K in keyof T & string as \`get${Capitalize<K>}\`]: () => T[K]`.
+--- hint
+`Path` matches `${infer Head}.${infer Rest}`, then recurses on `Rest`; with no dot left, it is `[S]`.
+--- check case | size
+size(1.5, 'rem')
+=> '1.5rem'
+--- check case | makeGetters
+makeGetters({ name: 'Ada', age: 36 }).getAge()
+=> 36
+--- check type-error | em is not a CssUnit
+const s: CssSize = '10em'
+--- check type-error | A CssSize needs a number
+const s: CssSize = 'px'
+--- check type-error | Getters only has getters for real keys
+makeGetters({ name: 'Ada' }).getAge()
+--- check type-error | EventName<'click' | 'focus'> is exactly 'onClick' | 'onFocus'
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<EventName<'click' | 'focus'>, 'onClick' | 'onFocus'> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | Getters<{ name: string }> is exactly { getName: () => string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Getters<{ name: string }>, { getName: () => string }> = false
+--- check type-error | Path<'user.address.city'> is exactly ['user', 'address', 'city']
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Path<'user.address.city'>, ['user', 'address', 'city']> = false
+--- check type-error | Path<'id'> is exactly ['id']
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<Path<'id'>, ['id']> = false
+
+=== ts3-08 | satisfies and as const
+--- teach
+There are three ways to give a constant a type, and they keep different amounts of information.
+
+**An annotation** sets the type, and the compiler forgets everything more specific:
+
+```ts
+const routesA: Record<string, string> = { home: '/', about: '/about' }
+routesA.typo       // compiles: any string key is allowed
+```
+
+**`as const`** (which you used for the literal lists in the intermediate course) keeps everything as specific as possible: literal types, `readonly` everywhere, arrays as tuples. But nothing checks the value against a shape you meant it to have.
+
+**`satisfies`** checks the value against a type *without* changing what is inferred:
+
+```ts
+const routesB = { home: '/', about: '/about' } satisfies Record<string, `/${string}`>
+routesB.about      // still known to exist
+// routesB.typo    ✗ Property 'typo' does not exist
+// adding { bad: 'about' } would fail the satisfies check: it does not start with /
+```
+
+Combine them — `as const satisfies T` — to get literal, readonly types **and** a check:
+
+```ts
+const SIZES = ['s', 'm', 'l'] as const satisfies readonly string[]
+type Size = (typeof SIZES)[number]     // 's' | 'm' | 'l'
+```
+
+This is the idiom for configuration tables, route maps and lookup lists: write the data once and derive precise types from it with `keyof typeof` and `[number]`.
+--- task
+The starter's annotations throw away the keys and the literal values. Rewrite the two constants:
+
+1. `ROUTES` — `as const`, and `satisfies Record<string, \`/${string}\`>` so every path must start with `/`. `type RouteName = keyof typeof ROUTES`. `path(name: RouteName): string`.
+2. `PLANS` — `as const` and `satisfies` a readonly array of `{ id: string; price: number; seats: number }`. `type PlanId` — the union of the plans' ids. `priceOf(id: PlanId): number`.
+--- starter
+const ROUTES: Record<string, string> = {
+  home: '/',
+  user: '/users/:id',
+  settings: '/settings',
+}
+type RouteName = keyof typeof ROUTES
+
+const PLANS = [
+  { id: 'free', price: 0, seats: 1 },
+  { id: 'team', price: 12, seats: 10 },
+  { id: 'business', price: 30, seats: 50 },
+]
+type PlanId = (typeof PLANS)[number]['id']
+
+function path(name: RouteName): string {
+  return ROUTES[name]!
+}
+
+function priceOf(id: PlanId): number {
+  const plan = PLANS.find((p) => p.id === id)
+  if (!plan) throw new Error(`unknown plan: ${id}`)
+  return plan.price
+}
+--- solution
+const ROUTES = {
+  home: '/',
+  user: '/users/:id',
+  settings: '/settings',
+} as const satisfies Record<string, `/${string}`>
+type RouteName = keyof typeof ROUTES
+
+const PLANS = [
+  { id: 'free', price: 0, seats: 1 },
+  { id: 'team', price: 12, seats: 10 },
+  { id: 'business', price: 30, seats: 50 },
+] as const satisfies readonly { id: string; price: number; seats: number }[]
+type PlanId = (typeof PLANS)[number]['id']
+
+function path(name: RouteName): string {
+  return ROUTES[name]
+}
+
+function priceOf(id: PlanId): number {
+  const plan = PLANS.find((p) => p.id === id)
+  if (!plan) throw new Error(`unknown plan: ${id}`)
+  return plan.price
+}
+--- hint
+Remove the `: Record<string, string>` annotation and put `as const satisfies Record<string, \`/${string}\`>` after the object instead.
+--- hint
+An `as const` array is readonly, so it satisfies `readonly { … }[]`, not a mutable array type.
+--- check case | path
+path('user')
+=> '/users/:id'
+--- check case | priceOf
+priceOf('team')
+=> 12
+--- check type-error | Unknown route names do not compile
+path('admin')
+--- check type-error | Unknown plans do not compile
+priceOf('enterprise')
+--- check type-error | ROUTES is read-only
+ROUTES.home = '/home'
+--- check type-error | RouteName is exactly the three route names
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<RouteName, 'home' | 'user' | 'settings'> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | ROUTES.user keeps its literal type
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<(typeof ROUTES)['user'], '/users/:id'> = false
+--- check type-error | PlanId is exactly the three plan ids
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const no: Equal<PlanId, 'free' | 'team' | 'business'> = false
+--- check source | ROUTES is checked with satisfies
+satisfies\s+Record\s*<
+
+=== ts3-09 | A type-safe event emitter
+--- teach
+An event emitter is a classic place where JavaScript code goes untyped: names are strings, payloads are "whatever". A single type parameter fixes both. Describe the events once, as a map from name to payload type:
+
+```ts
+type ChatEvents = {
+  message: { from: string; text: string }
+  typing: string          // who is typing
+  disconnect: void        // no payload
+}
+```
+
+Then every method is generic over the event **name**, and looks the payload up with an indexed access:
+
+```ts
+class Bus<Events extends Record<string, unknown>> {
+  on<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): void {
+    // …
+  }
+}
+```
+
+`K` is inferred from the string you pass, so `bus.on('message', (m) => m.text)` knows `m` is a message, and `bus.on('mesage', …)` does not compile.
+
+**Events with no payload.** It would be silly to write `emit('disconnect', undefined)`. A conditional **rest parameter** lets the argument list itself depend on the event:
+
+```ts
+type Args<P> = P extends void ? [] : [payload: P]
+// emit<K …>(name: K, ...args: Args<Events[K]>): void
+```
+
+For `'disconnect'`, `...args` is `[]` — no second argument allowed. For `'message'`, it is exactly one payload.
+
+One detail: `Record<string, unknown>` as a constraint accepts `type` aliases but not `interface`s (interfaces have no implicit index signature). Declare event maps with `type`.
+
+At runtime, keep the handler lists per event (`this.handlers[name] ??= []` creates a list the first time: `??=` assigns only when the left side is `null` or `undefined`), and iterate over a **copy** when emitting: a handler that unsubscribes itself (like a `once` handler) would otherwise change the list under the loop.
+--- task
+Make the starter's emitter generic: `class Emitter<Events extends Record<string, unknown>>`.
+
+- `on(name, handler)` — only known names; the handler gets that event's payload type. Returns an unsubscribe function.
+- `once(name, handler)` — like `on`, but the handler runs at most once. Also returns an unsubscribe function.
+- `emit(name, payload)` — only known names and the right payload type; events whose payload type is `void` are emitted with no payload argument.
+
+Handlers run in the order they were added.
+--- starter
+class Emitter {
+  private handlers: Record<string, Function[]> = {}
+
+  on(name: string, handler: Function): () => void {
+    const list = (this.handlers[name] ??= [])
+    list.push(handler)
+    return () => {
+      this.handlers[name] = (this.handlers[name] ?? []).filter((h) => h !== handler)
+    }
+  }
+
+  emit(name: string, payload?: unknown): void {
+    for (const h of this.handlers[name] ?? []) h(payload)
+  }
+}
+--- solution
+type Args<P> = P extends void ? [] : [payload: P]
+
+class Emitter<Events extends Record<string, unknown>> {
+  private handlers: { [K in keyof Events]?: Array<(payload: Events[K]) => void> } = {}
+
+  on<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): () => void {
+    const list = (this.handlers[name] ??= [])
+    list.push(handler)
+    return () => {
+      this.handlers[name] = (this.handlers[name] ?? []).filter((h) => h !== handler)
+    }
+  }
+
+  once<K extends keyof Events & string>(name: K, handler: (payload: Events[K]) => void): () => void {
+    const off = this.on(name, (payload) => {
+      off()
+      handler(payload)
+    })
+    return off
+  }
+
+  emit<K extends keyof Events & string>(name: K, ...args: Args<Events[K]>): void {
+    for (const h of [...(this.handlers[name] ?? [])]) h(args[0] as Events[K])
+  }
+}
+--- hint
+Store handlers as `{ [K in keyof Events]?: Array<(payload: Events[K]) => void> }` so each list knows its payload type.
+--- hint
+`once` can be built from `on`: register a wrapper that unsubscribes itself, then calls the real handler.
+--- hint
+`emit<K …>(name: K, ...args: Events[K] extends void ? [] : [payload: Events[K]])`; the payload is `args[0]`.
+--- check case | Handlers run in order with the payload
+(() => { const e = new Emitter<{ tick: number }>(); const seen: number[] = []; e.on('tick', (n) => seen.push(n)); e.on('tick', (n) => seen.push(n * 10)); e.emit('tick', 2); return seen })()
+=> [2, 20]
+--- check case | Unsubscribing stops a handler
+(() => { const e = new Emitter<{ tick: number }>(); const seen: number[] = []; const off = e.on('tick', (n) => seen.push(n)); e.emit('tick', 1); off(); e.emit('tick', 2); return seen })()
+=> [1]
+--- check case | once runs a single time, alongside other handlers
+(() => { const e = new Emitter<{ tick: number }>(); const seen: string[] = []; e.once('tick', (n) => seen.push('once ' + n)); e.on('tick', (n) => seen.push('on ' + n)); e.emit('tick', 1); e.emit('tick', 2); return seen })()
+=> ['once 1', 'on 1', 'on 2']
+--- check case | A void event is emitted with no payload
+(() => { const e = new Emitter<{ logout: void }>(); let n = 0; e.on('logout', () => { n++ }); e.emit('logout'); e.emit('logout'); return n })()
+=> 2
+--- check case | Emitting with no listeners is fine
+(() => { const e = new Emitter<{ tick: number }>(); e.emit('tick', 1); return 'ok' })()
+=> 'ok'
+--- check type-error | Only known events can be emitted
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('nope', 1)
+--- check type-error | The payload must match the event
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('login', { user: 1 })
+--- check type-error | An event with a payload needs it
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('login')
+--- check type-error | A void event takes no payload
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.emit('logout', 1)
+--- check type-error | Handlers see the payload's real type
+const e = new Emitter<{ login: { user: string }; logout: void }>(); e.on('login', (p) => p.nope)
+--- check type-error | A login handler's payload is exactly { user: string }
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const e = new Emitter<{ login: { user: string }; logout: void }>();
+e.on('login', (p) => { const no: Equal<typeof p, { user: string }> = false })
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== ts3-10 | A typed builder
+--- teach
+A builder assembles an object step by step: `request().url('/users').method('GET').build()`. The usual weakness is that `build()` is always there, so forgetting a required step is a runtime error. Types can track which steps have happened.
+
+Give the builder a type parameter holding the **set of steps done so far**, as a union of names. Each step returns a builder with its name added:
+
+```ts
+interface Draft<Has extends string> {
+  title(t: string): Draft<Has | 'title'>
+  author(a: string): Draft<Has | 'author'>
+  done: 'title' | 'author' extends Has ? () => string : never
+}
+```
+
+Start from `Draft<never>` (nothing done). After `.title(…)` the type is `Draft<'title'>`; after `.author(…)` too it is `Draft<'title' | 'author'>`. The order does not matter, because a union has no order.
+
+The last line is the trick. `'title' | 'author' extends Has` is true only when both names are in `Has`. Until then `done` has type `never`, and calling it is a compile error ("This expression is not callable"). The check happens without a single `if` at runtime.
+
+At runtime the builder is ordinary: each step returns a **new** builder with a copied draft, so a half-built one can be reused as a template without the branches interfering. The type is not something the runtime can express, so building it takes one cast — `as unknown as Builder<Has>` — in one place, behind a signature the tests prove.
+--- task
+Replace the starter's mutable class with a typed, immutable builder:
+
+- `interface RequestBuilder<Has extends string>` with `url(u)`, `method(m)`, `header(name, value)` and `body(text)`, each returning a new builder, and `build`, which is callable only once both `url` and `method` have been set. It returns an `HttpRequest`.
+- `request(): RequestBuilder<never>` starts an empty one (`headers` start as `{}`).
+- `build()` returns `{ url, method, headers }`, plus `body` only if one was set.
+- Each step leaves the builder it was called on unchanged.
+--- starter
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface HttpRequest {
+  url: string
+  method: Method
+  headers: Record<string, string>
+  body?: string
+}
+
+class RequestBuilder {
+  private draft: Partial<HttpRequest> = { headers: {} }
+
+  url(url: string): RequestBuilder {
+    this.draft.url = url
+    return this
+  }
+
+  method(method: Method): RequestBuilder {
+    this.draft.method = method
+    return this
+  }
+
+  header(name: string, value: string): RequestBuilder {
+    this.draft.headers = { ...this.draft.headers, [name]: value }
+    return this
+  }
+
+  body(text: string): RequestBuilder {
+    this.draft.body = text
+    return this
+  }
+
+  build(): HttpRequest {
+    const { url, method, headers = {}, body } = this.draft
+    if (!url || !method) throw new Error('url and method are required')
+    return body === undefined ? { url, method, headers } : { url, method, headers, body }
+  }
+}
+
+function request(): RequestBuilder {
+  return new RequestBuilder()
+}
+--- solution
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+interface HttpRequest {
+  url: string
+  method: Method
+  headers: Record<string, string>
+  body?: string
+}
+
+interface RequestBuilder<Has extends string> {
+  url(url: string): RequestBuilder<Has | 'url'>
+  method(method: Method): RequestBuilder<Has | 'method'>
+  header(name: string, value: string): RequestBuilder<Has>
+  body(text: string): RequestBuilder<Has>
+  build: 'url' | 'method' extends Has ? () => HttpRequest : never
+}
+
+function builder<Has extends string>(draft: Partial<HttpRequest>): RequestBuilder<Has> {
+  const b = {
+    url: (url: string) => builder<Has | 'url'>({ ...draft, url }),
+    method: (method: Method) => builder<Has | 'method'>({ ...draft, method }),
+    header: (name: string, value: string) => builder<Has>({ ...draft, headers: { ...draft.headers, [name]: value } }),
+    body: (text: string) => builder<Has>({ ...draft, body: text }),
+    build: (): HttpRequest => {
+      const { url = '', method = 'GET', headers = {}, body } = draft
+      return body === undefined ? { url, method, headers } : { url, method, headers, body }
+    },
+  }
+  return b as unknown as RequestBuilder<Has>
+}
+
+function request(): RequestBuilder<never> {
+  return builder<never>({ headers: {} })
+}
+--- hint
+Each step's return type adds its name: `url(url: string): RequestBuilder<Has | 'url'>`. `header` and `body` return `RequestBuilder<Has>` unchanged.
+--- hint
+`build: 'url' | 'method' extends Has ? () => HttpRequest : never` — a property whose type depends on `Has`.
+--- hint
+A private function `builder<Has>(draft)` can return an object of arrow functions, each calling `builder` again with a copied draft.
+--- check case | A full request
+request().url('/users').method('GET').header('accept', 'json').build()
+=> { url: '/users', method: 'GET', headers: { accept: 'json' } }
+--- check case | Steps in any order, with a body
+request().method('POST').body('{}').url('/users').build()
+=> { url: '/users', method: 'POST', headers: {}, body: '{}' }
+--- check case | A half-built builder can be reused
+(() => { const base = request().url('/items').header('x', '1'); const a = base.method('GET').build(); const b = base.method('DELETE').header('y', '2').build(); return [a, b] })()
+=> [{ url: '/items', method: 'GET', headers: { x: '1' } }, { url: '/items', method: 'DELETE', headers: { x: '1', y: '2' } }]
+--- check type-error | build needs a method
+request().url('/a').build()
+--- check type-error | build needs a url
+request().method('GET').build()
+--- check type-error | Nothing set, nothing to build
+request().build()
+--- check type-error | Only known methods
+request().url('/a').method('PATCH')
+--- check type-error | build returns exactly an HttpRequest
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = request().url('/a').method('GET').build();
+const no: Equal<typeof r, HttpRequest> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== ts3-11 | Debugging: when the types lie about the data
+--- teach
+Types are claims. The compiler checks that your code is consistent with its claims, but it cannot check that the **data** agrees. That gap opens wherever data enters: `JSON.parse`, `fetch(...).json()`, `localStorage`, a message from another thread. And the most common way to paper over it is a cast:
+
+```ts
+interface Point { x: number; y: number }
+const p = JSON.parse('{"x": "3", "y": 4}') as Point
+p.x + p.y     // '34' — p.x is really a string
+```
+
+Everything after the cast is type-checked against a lie. The failure shows up far from the cause — a string where a number should be, `Cannot read properties of undefined` three functions later.
+
+A method for these bugs:
+
+1. **Reproduce** with the exact input from the report.
+2. **Inspect the real value**: `console.log(typeof user.age, user.age)`. When the runtime type disagrees with the static type, you have found a lie.
+3. **Trace the value back** to where it entered the program. Look for `as`, `any`, `JSON.parse` and non-null `!`.
+4. **Fix it at the boundary.** Replace the cast with a check, so a bad value is rejected where it arrives, with a message naming what is wrong.
+
+A second, quieter lie: indexing. `emails[0]` has type `string` even when the array is empty, because TypeScript assumes indexes are in range (unless you turn on `noUncheckedIndexedAccess`). `emails.at(0)` is typed `string | undefined`, which is the truth.
+--- task
+**Bug report:** `nextAge('{"name":"Ada","age":"36","emails":[]}')` returned `'361'` although it is typed as a number, and `primaryEmail` crashed with *Cannot read properties of undefined (reading 'toLowerCase')* for a user with no emails.
+
+Fix the cause:
+
+1. `isUser(x: unknown): x is User` — `name` a string, `age` a finite number, `emails` an array of strings.
+2. `parseUser(text: string): User` — no cast. Throws a `TypeError` with the message `'invalid user: <problem>'`, where the problem is the first of `not an object`, `name`, `age`, `emails` that applies.
+3. `primaryEmail(text: string): string | null` — the first email in lower case, or `null` if there is none.
+--- starter
+interface User {
+  name: string
+  age: number
+  emails: string[]
+}
+
+function parseUser(text: string): User {
+  return JSON.parse(text) as User
+}
+
+function nextAge(text: string): number {
+  return parseUser(text).age + 1
+}
+
+function primaryEmail(text: string): string {
+  return parseUser(text).emails[0].toLowerCase()
+}
+--- solution
+interface User {
+  name: string
+  age: number
+  emails: string[]
+}
+
+function problem(x: unknown): string | null {
+  if (typeof x !== 'object' || x === null || Array.isArray(x)) return 'not an object'
+  const o = x as Record<string, unknown>
+  if (typeof o.name !== 'string') return 'name'
+  if (typeof o.age !== 'number' || !Number.isFinite(o.age)) return 'age'
+  if (!Array.isArray(o.emails) || !o.emails.every((e) => typeof e === 'string')) return 'emails'
+  return null
+}
+
+function isUser(x: unknown): x is User {
+  return problem(x) === null
+}
+
+function parseUser(text: string): User {
+  const data: unknown = JSON.parse(text)
+  if (!isUser(data)) throw new TypeError(`invalid user: ${problem(data)}`)
+  return data
+}
+
+function nextAge(text: string): number {
+  return parseUser(text).age + 1
+}
+
+function primaryEmail(text: string): string | null {
+  const first = parseUser(text).emails.at(0)
+  return first === undefined ? null : first.toLowerCase()
+}
+--- hint
+Run the bad input and log `typeof parseUser(text).age`. Where did a string get the type `number`?
+--- hint
+One helper that returns the first problem (or `null`) serves both `isUser` and the error message.
+--- hint
+`emails.at(0)` is typed `string | undefined` — it tells the truth about empty arrays.
+--- check case | A valid user
+nextAge('{"name": "Ada", "age": 36, "emails": []}')
+=> 37
+--- check case | An age given as a string is rejected with its field
+(() => { try { nextAge('{"name": "Ada", "age": "36", "emails": []}'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: age'
+--- check case | Missing emails are rejected
+(() => { try { parseUser('{"name": "Ada", "age": 36}'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: emails'
+--- check case | A bare number is not a user
+(() => { try { parseUser('42'); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'not a TypeError' } })()
+=> 'invalid user: not an object'
+--- check test | isUser checks every field
+isUser({ name: 'a', age: 1, emails: ['x'] }) && !isUser({ name: 'a', age: 1, emails: [1] }) && !isUser({ name: 'a', age: NaN, emails: [] }) && !isUser(null)
+--- check case | primaryEmail lower-cases the first email
+primaryEmail('{"name": "Ada", "age": 36, "emails": ["ADA@X.IO", "a@y.io"]}')
+=> 'ada@x.io'
+--- check case | primaryEmail with no emails
+primaryEmail('{"name": "Ada", "age": 36, "emails": []}')
+=> null
+--- check type-error | primaryEmail admits it can return null
+const e: string = primaryEmail('{}')
+--- check source absent | No cast of the parsed data
+\bas\s+User\b
+
+=== ts3-12 | Generic data structures: Stack and Queue
+--- teach
+Containers are where generics earn their keep. A `Stack<number>` accepts only numbers and hands back numbers, and the class is written once for every type.
+
+```ts
+class Box<T> {
+  constructor(private value: T) {}
+  get(): T {
+    return this.value
+  }
+  map<U>(f: (value: T) => U): Box<U> {
+    return new Box(f(this.value))
+  }
+}
+
+new Box(2).map((n) => `#${n}`).get()   // Box<number> → Box<string>
+```
+
+Three class features from the JavaScript course appear here: `static` members belong to the class itself (`Stack.from(…)`), `get size()` is a getter that reads like a property, and a generator method `*[Symbol.iterator]()` makes instances work with `for…of` and spread.
+
+Design points for a good generic container:
+
+- **Be honest about emptiness.** `pop()` on an empty stack returns `T | undefined`, not `T`. The caller then has to handle it.
+- **Let inference work.** A static `from<T>(items: Iterable<T>)` infers `T` from its argument: `Stack.from([1, 2])` is a `Stack<number>` without writing `<number>`.
+- **Return `this`** from mutating methods to allow chaining: `stack.push(1).push(2)`.
+- **Be iterable.** Implement `[Symbol.iterator]` and your container works with `for…of`, spread and `Array.from`. A generator method (`*[Symbol.iterator]()`) is the shortest way.
+
+A **queue** takes from the front. `array.shift()` moves every remaining element down one slot, so a queue built on it gets slower as it grows. Keep a `head` index instead (or a `Map` from index to item) and advance it: every operation is then constant time.
+--- task
+1. `class Stack<T>` — `push(item): this`, `pop(): T | undefined`, `peek(): T | undefined`, a `size` getter, `static from<T>(items: Iterable<T>): Stack<T>` (the last item ends on top), and iteration from the **top** down.
+2. `class Queue<T>` — `enqueue(item): this`, `dequeue(): T | undefined`, `peek(): T | undefined`, a `size` getter, and iteration from the **front**. Do not use `shift`.
+--- starter
+class Stack {
+  private items: any[] = []
+
+  push(item: any) {
+    this.items.push(item)
+    return this
+  }
+
+  pop(): any {
+    return this.items.pop()
+  }
+}
+--- solution
+class Stack<T> {
+  private items: T[] = []
+
+  static from<T>(items: Iterable<T>): Stack<T> {
+    const s = new Stack<T>()
+    for (const item of items) s.push(item)
+    return s
+  }
+
+  push(item: T): this {
+    this.items.push(item)
+    return this
+  }
+
+  pop(): T | undefined {
+    return this.items.pop()
+  }
+
+  peek(): T | undefined {
+    return this.items[this.items.length - 1]
+  }
+
+  get size(): number {
+    return this.items.length
+  }
+
+  *[Symbol.iterator](): Iterator<T> {
+    for (let i = this.items.length - 1; i >= 0; i--) yield this.items[i]
+  }
+}
+
+class Queue<T> {
+  private store = new Map<number, T>()
+  private head = 0
+  private tail = 0
+
+  enqueue(item: T): this {
+    this.store.set(this.tail++, item)
+    return this
+  }
+
+  dequeue(): T | undefined {
+    if (this.head === this.tail) return undefined
+    const item = this.store.get(this.head)
+    this.store.delete(this.head++)
+    return item
+  }
+
+  peek(): T | undefined {
+    return this.head === this.tail ? undefined : this.store.get(this.head)
+  }
+
+  get size(): number {
+    return this.tail - this.head
+  }
+
+  *[Symbol.iterator](): Iterator<T> {
+    for (let i = this.head; i < this.tail; i++) yield this.store.get(i)!
+  }
+}
+--- hint
+Put `<T>` on the class and replace every `any` with `T`; `pop` and `peek` return `T | undefined`.
+--- hint
+`*[Symbol.iterator](): Iterator<T> { … yield … }` makes the class iterable.
+--- hint
+For the queue, keep `head` and `tail` counters and store items in a `Map<number, T>` keyed by position.
+--- check case | Stack.from puts the last item on top
+Stack.from([1, 2, 3]).pop()
+=> 3
+--- check case | A stack iterates from the top
+[...Stack.from(['a', 'b', 'c'])]
+=> ['c', 'b', 'a']
+--- check case | Chaining, peek and size
+(() => { const s = new Stack<number>().push(1).push(2); return [s.peek(), s.size, new Stack<number>().pop()] })()
+=> [2, 2, undefined]
+--- check case | A queue is first in, first out
+(() => { const q = new Queue<string>(); q.enqueue('a').enqueue('b').enqueue('c'); return [q.dequeue(), q.peek(), q.size, [...q]] })()
+=> ['a', 'b', 2, ['b', 'c']]
+--- check case | An empty queue
+[new Queue<number>().dequeue(), new Queue<number>().peek(), new Queue<number>().size]
+=> [undefined, undefined, 0]
+--- check test | 100,000 operations through a queue
+(() => { const q = new Queue<number>(); let sum = 0; for (let i = 0; i < 100000; i++) { q.enqueue(i); if (i % 2 === 1) sum += q.dequeue()! } while (q.size) sum += q.dequeue()!; return sum === 4999950000 })()
+--- check source absent | The queue does not use shift
+\.shift\s*\(
+--- check type-error | A Stack<number> only takes numbers
+new Stack<number>().push('a')
+--- check type-error | pop admits the stack might be empty
+const s: string = new Stack<string>().pop()
+--- check type-error | Stack.from infers the item type
+Stack.from([1, 2]).push('x')
+--- check type-error | A Queue<number> only takes numbers
+new Queue<number>().enqueue(null)
+--- check type-error | Spreading a Stack<number> gives exactly number[]
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const all = [...Stack.from([1])];
+const no: Equal<typeof all, number[]> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+
+=== ts3-13 | A generic Result type
+--- teach
+Exceptions are invisible in a signature: `parsePort(s: string): number` does not say it can fail, or how. A **Result** type makes failure part of the return type:
+
+```ts
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+```
+
+The caller cannot reach `value` without checking `ok`, and the error type says exactly which failures to expect. Two tiny constructors keep call sites short:
+
+```ts
+function ok<T>(value: T): { ok: true; value: T } {
+  return { ok: true, value }
+}
+ok(5).value
+```
+
+Typing them as `Result<T, never>` and `Result<never, E>` is the neat part: `never` is assignable to everything, so `ok(5)` fits any `Result<number, E>`, whatever `E` is.
+
+Chaining functions that may fail is where the error types become interesting:
+
+```ts
+// andThen: if r is ok, run f on its value; otherwise pass the error through
+// andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F>
+```
+
+The result's error type is `E | F` — every way the chain can fail, collected by the compiler. Use literal strings (or small tagged objects) as error types, and a `switch` on them at the end is checked for exhaustiveness like any other union.
+
+Use Results for **expected** failures (bad input, not found, a rule broken). Keep exceptions for bugs.
+--- task
+1. `type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }`.
+2. `ok<T>(value: T): Result<T, never>` and `err<E>(error: E): Result<never, E>`.
+3. `map<T, U, E>(r: Result<T, E>, f: (value: T) => U): Result<U, E>`.
+4. `andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F>`.
+5. `unwrapOr<T, E>(r: Result<T, E>, fallback: T): T`.
+6. `parsePort(s: string): Result<number, 'not-a-number' | 'out-of-range'>` — a whole number from 1 to 65535 (`Number(s)`; anything that is not an integer is `'not-a-number'`).
+--- starter
+type Outcome<T, E> = { ok: boolean; value?: T; error?: E }
+
+function parsePort(s: string): Outcome<number, string> {
+  const n = Number(s)
+  if (!Number.isInteger(n)) return { ok: false, error: 'not-a-number' }
+  if (n < 1 || n > 65535) return { ok: false, error: 'out-of-range' }
+  return { ok: true, value: n }
+}
+--- solution
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
+function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+
+function err<E>(error: E): Result<never, E> {
+  return { ok: false, error }
+}
+
+function map<T, U, E>(r: Result<T, E>, f: (value: T) => U): Result<U, E> {
+  return r.ok ? ok(f(r.value)) : r
+}
+
+function andThen<T, U, E, F>(r: Result<T, E>, f: (value: T) => Result<U, F>): Result<U, E | F> {
+  return r.ok ? f(r.value) : r
+}
+
+function unwrapOr<T, E>(r: Result<T, E>, fallback: T): T {
+  return r.ok ? r.value : fallback
+}
+
+function parsePort(s: string): Result<number, 'not-a-number' | 'out-of-range'> {
+  const n = Number(s)
+  if (!Number.isInteger(n)) return err('not-a-number')
+  if (n < 1 || n > 65535) return err('out-of-range')
+  return ok(n)
+}
+--- hint
+In `map` and `andThen`, when `r.ok` is false you can return `r` itself: its type is the error member, which fits the new Result.
+--- hint
+`err('not-a-number')` infers `E` as the literal `'not-a-number'`, which is assignable to the declared error union.
+--- check case | A valid port
+parsePort('8080')
+=> { ok: true, value: 8080 }
+--- check case | Not a number
+parsePort('http')
+=> { ok: false, error: 'not-a-number' }
+--- check case | Out of range
+parsePort('0')
+=> { ok: false, error: 'out-of-range' }
+--- check case | map transforms a value and passes errors through
+[map(ok(2), (n) => n * 10), map(err('bad'), (n: number) => n * 10)]
+=> [{ ok: true, value: 20 }, { ok: false, error: 'bad' }]
+--- check case | andThen chains, stopping at the first error
+[andThen(parsePort('80'), (p) => (p < 1024 ? err('privileged') : ok(p))), andThen(parsePort('x'), (p) => ok(p + 1)), andThen(parsePort('8080'), (p) => ok(p + 1))]
+=> [{ ok: false, error: 'privileged' }, { ok: false, error: 'not-a-number' }, { ok: true, value: 8081 }]
+--- check case | unwrapOr
+[unwrapOr(parsePort('x'), 80), unwrapOr(parsePort('443'), 80)]
+=> [80, 443]
+--- check type-error | You must check ok before reading value
+parsePort('80').value
+--- check type-error | A success cannot carry an error
+const r: Result<number, string> = { ok: true, error: 'x' }
+--- check type-error | The fallback must be the value's type
+unwrapOr(parsePort('1'), 'eighty')
+--- check type-error | map(ok(2), String) is exactly Result<string, never>
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = map(ok(2), (n) => String(n));
+const no: Equal<typeof r, Result<string, never>> = false
+?? Passes when the types are exactly equal: then `false` cannot be assigned.
+--- check type-error | andThen collects both error types
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const r = andThen(parsePort('80'), (p) => (p < 1024 ? err('privileged' as const) : ok(p)));
+const no: Equal<typeof r, Result<number, 'not-a-number' | 'out-of-range' | 'privileged'>> = false
+
+=== ts3-14 | Problem: a typed LRU cache
+--- teach
+A problem-solving lesson with a generic class as the answer.
+
+**The problem.** A cache with room for `capacity` entries. When it is full and a new key arrives, it evicts the **least recently used** entry — the one read or written longest ago.
+
+**Examples by hand.** Capacity 2. `set a`, `set b`, `get a` (a is now the most recent), `set c` → evicts `b`, not `a`.
+
+**Brute force.** Keep an array of keys in recency order. `get` finds the key (`indexOf`), removes it (`splice`) and pushes it to the end; eviction removes index 0. Correct, but every operation walks the array: with 50,000 entries and 200,000 operations that is billions of steps.
+
+**Find the structure.** You need three things in constant time: look up a key, move a key to "most recent", and find the least recent. A JavaScript `Map` does all three, because it **remembers insertion order**:
+
+- lookup: `map.get(key)`
+- mark as most recent: `map.delete(key)` then `map.set(key, value)` — it goes to the end
+- least recent: the first key, `map.keys().next()`
+
+```ts
+const m = new Map([['a', 1], ['b', 2]])
+m.delete('a')
+m.set('a', 1)
+const order = [...m.keys()]   // ['b', 'a']
+order
+```
+
+**Types.** Make it `LRUCache<K, V>` so a cache of user ids to profiles cannot be filled with anything else. `get` returns `V | undefined` — a miss is normal. Note that `map.keys().next()` gives an iterator result whose `value` is only a `K` when `done` is false; check `done` rather than reaching for `!`.
+
+**Edge cases:** capacity below 1 (reject it), setting an existing key (update the value, mark it recent, no eviction), `has` (should it count as a use? Here: no).
+--- task
+Write `class LRUCache<K, V>`:
+
+- `constructor(capacity: number)` — throws a `RangeError` unless `capacity` is a whole number `>= 1`.
+- `get(key: K): V | undefined` — marks the key as most recently used.
+- `set(key: K, value: V): this` — inserts or updates, marks it most recent, and evicts the least recently used entry if the cache is over capacity.
+- `has(key: K): boolean` — does **not** change recency.
+- `delete(key: K): boolean`, a `size` getter, and `keys(): K[]` from least to most recently used.
+
+It must handle 200,000 operations on a cache of 50,000 quickly.
+--- starter
+class LRUCache<K, V> {
+  constructor(capacity: number) {}
+
+  get(key: K): V | undefined {
+    return undefined
+  }
+
+  set(key: K, value: V): this {
+    return this
+  }
+}
+--- solution
+class LRUCache<K, V> {
+  private map = new Map<K, V>()
+
+  constructor(private readonly capacity: number) {
+    if (!Number.isInteger(capacity) || capacity < 1) throw new RangeError(`capacity must be a whole number >= 1, got ${capacity}`)
+  }
+
+  get(key: K): V | undefined {
+    if (!this.map.has(key)) return undefined
+    const value = this.map.get(key) as V
+    this.map.delete(key)
+    this.map.set(key, value)
+    return value
+  }
+
+  set(key: K, value: V): this {
+    this.map.delete(key)
+    this.map.set(key, value)
+    if (this.map.size > this.capacity) {
+      const oldest = this.map.keys().next()
+      if (!oldest.done) this.map.delete(oldest.value)
+    }
+    return this
+  }
+
+  has(key: K): boolean {
+    return this.map.has(key)
+  }
+
+  delete(key: K): boolean {
+    return this.map.delete(key)
+  }
+
+  get size(): number {
+    return this.map.size
+  }
+
+  keys(): K[] {
+    return [...this.map.keys()]
+  }
+}
+--- hint
+Delete and re-insert a key to move it to the end of the `Map`'s order.
+--- hint
+The least recently used key is the first one: `const oldest = this.map.keys().next()`, and `oldest.value` is a `K` once you know `!oldest.done`.
+--- hint
+In `get`, check `has` first: a stored value could itself be `undefined`, so `map.get(key) === undefined` does not tell you it is missing.
+--- check case | The least recently used entry is evicted
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2); c.get('a'); c.set('c', 3); return [c.has('a'), c.has('b'), c.has('c'), c.keys()] })()
+=> [true, false, true, ['a', 'c']]
+--- check case | Updating a key refreshes it without evicting
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2).set('a', 10).set('c', 3); return [c.get('a'), c.get('b'), c.size] })()
+=> [10, undefined, 2]
+--- check case | has does not count as a use
+(() => { const c = new LRUCache<string, number>(2); c.set('a', 1).set('b', 2); c.has('a'); c.set('c', 3); return c.keys() })()
+=> ['b', 'c']
+--- check case | delete
+(() => { const c = new LRUCache<string, number>(3); c.set('a', 1).set('b', 2); return [c.delete('a'), c.delete('zz'), c.size, c.keys()] })()
+=> [true, false, 1, ['b']]
+--- check test | A bad capacity is a RangeError
+(() => { try { new LRUCache<string, number>(0); return false } catch (e) { return e instanceof RangeError && throws(() => new LRUCache<string, number>(1.5)) } })()
+--- check test | 200,000 operations on a cache of 50,000
+(() => { const c = new LRUCache<number, number>(50000); let hits = 0; for (let i = 0; i < 200000; i++) { const k = i % 2 ? i % 1000 : (i * 7919) % 100000; if (c.get(k) !== undefined) hits++; else c.set(k, i) } return c.size === 50000 && hits > 0 })()
+--- check type-error | Values must match V
+new LRUCache<string, number>(2).set('a', 'x')
+--- check type-error | Keys must match K
+new LRUCache<string, number>(2).set(1, 1)
+--- check type-error | get admits a miss
+const v: number = new LRUCache<string, number>(2).get('a')
