@@ -100,8 +100,35 @@ exactly as written.
   the launcher's count and any old realm backup keep working. Progress from the
   old in-page realm is adopted automatically on first launch. Settings has its
   own Export / Restore / Reset.
-- **The playground** runs JavaScript (in a throwaway worker), Python
-  (Pyodide) and SQL (sql.js) in the browser.
+- **The playground** has four modes — Code, SQL, Web and Terminal — in one IDE
+  window, and runs every language it offers, for real, in the browser:
+  JavaScript (a throwaway worker), TypeScript (the real compiler, strict —
+  a type error stops the run), Python (Pyodide), SQL (sql.js), C++ (clang++
+  compiled to WebAssembly, with an Input tab for stdin; no exceptions in this
+  toolchain), web pages (a sandboxed frame, `src/lib/web.ts`) and a practice
+  terminal (an in-page shell with enough git to learn the loop,
+  `src/lib/shell.ts`). The compilers are downloaded from a CDN on first use;
+  the browser suite serves the same pinned versions from `node_modules`.
+- **The playground, embedded.** `components/ide/Embed.tsx` is the playground's
+  window as a component: module lessons end with it (Try it here, languages
+  per module in `src/lib/practice.ts`), runnable code in any lesson or Learn
+  text becomes it, and Learn challenges are done in it. `src/lib/run.ts` is
+  the one place that says how each language runs.
+- **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
+  as a numbered path of course tiles ending at a certificate — and a mastery
+  roadmap per language. 36 courses, 499 lessons: the command line, Git, HTML
+  and CSS, JavaScript, TypeScript, Python, SQL and C++, each from basics
+  through intermediate, advanced and expert (the terminal and git to
+  advanced) to a projects course with capstones, mixing concept, debugging,
+  problem-solving and design lessons. Each lesson is done in the same IDE
+  window and graded as test cases. A course is one plain-text file in
+  `launchpad-app/src/learn/tracks/` (`<lang>.txt` for the basics,
+  `<lang>.<level>.txt` after; the format is described in `src/learn/parse.ts`
+  and how to write one in `src/learn/AUTHORING.md`; `src/learn/CURRICULUM.md`
+  maps what every lesson teaches). The roadmaps are in
+  `src/learn/platform.ts`. `src/learn/verify.test.ts` runs every lesson's
+  starter and solution in the real runtimes in Node (CI: "Every lesson can be
+  passed"), and `test/browser/learn.js` does the same through the app.
 
 ### Changing LAUNCHPAD
 

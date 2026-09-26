@@ -1,0 +1,543 @@
+@track typescript
+@title TypeScript
+@name TypeScript: types that catch bugs
+@blurb JavaScript with a checker that reads your code before it runs. Strict mode, from annotations to generics.
+
+=== ts-01 | Type annotations
+--- teach
+TypeScript is JavaScript plus **types**. You write what kind of value a variable holds after a colon, and the compiler checks every use before anything runs:
+
+```ts
+const name: string = 'Ada'
+let age: number = 36
+const isEngineer: boolean = true
+```
+
+Here, every run type-checks your code first (in `strict` mode, the setting real projects use). If the types do not line up, you get the compiler's error and **nothing runs** — the same stop `tsc` puts in front of CI.
+
+Most of the time TypeScript **infers** the type from the value (`let age = 36` is already a `number`), so you annotate where it helps a reader: function parameters, and things the compiler cannot see.
+--- task
+Declare three annotated variables — `city: string` as `'Houston'`, `population: number` as `2300000`, and `isCapital: boolean` as `false` — and print `city` and `population` on one line.
+--- starter
+// Declare city, population and isCapital with type annotations.
+
+--- solution
+const city: string = 'Houston'
+const population: number = 2300000
+const isCapital: boolean = false
+console.log(city, population)
+--- hint
+The pattern is `const name: type = value`.
+--- check source | city is annotated as a string
+\bcity\s*:\s*string\b
+--- check source | population is annotated as a number
+\bpopulation\s*:\s*number\b
+--- check source | isCapital is annotated as a boolean
+\bisCapital\s*:\s*boolean\b
+--- check test | The values are right
+city === 'Houston' && population === 2300000 && isCapital === false
+--- check output | Prints: Houston 2300000
+Houston 2300000
+
+=== ts-02 | Reading a type error
+--- teach
+A type error is the compiler telling you, before anything runs, that a value is being used as something it is not. They read like this:
+
+```
+main.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+```
+
+`main.ts(2,7)` is line 2, column 7. `TS2322` is the error code — search it and you will find explanations. The message says what it found (`string`) and what it needed (`number`).
+
+The fix is almost never to silence the checker. It is to make the value really be what the code says it is: here, turn the text into a number with `Number(...)`.
+--- task
+The starter does not type-check. Press Run & check to see the error, then fix the code so it type-checks and prints `Total: 42`. Keep the annotations; fix the values.
+--- starter
+const unitPrice: number = '6'
+const quantity: number = 7
+const total: number = unitPrice * quantity
+console.log(`Total: ${total}`)
+--- solution
+const unitPrice: number = Number('6')
+const quantity: number = 7
+const total: number = unitPrice * quantity
+console.log(`Total: ${total}`)
+--- hint
+`'6'` in quotes is a string. Either write `6`, or convert it with `Number('6')`.
+--- check output | Type-checks and prints the total
+Total: 42
+--- check source | Keeps the number annotation
+unitPrice\s*:\s*number
+
+=== ts-03 | Typed functions
+--- teach
+Parameters are where types pay off most: they say what a function accepts and what it gives back.
+
+```ts
+function add(a: number, b: number): number {
+  return a + b
+}
+
+const greet = (name: string, mark = '!'): string => `Hello, ${name}${mark}`
+```
+
+The return type after the brackets is a promise to the caller — the compiler checks every `return` against it. A function that returns nothing is `: void`. In strict mode an unannotated parameter is an error (`TS7006: implicitly has an 'any' type`), because an untyped parameter would switch the checker off for everything it touches.
+--- task
+Write `wordCount(text: string): number` (words split on whitespace; the empty string has none) and `isEven(n: number): boolean`. Both parameters and both return types must be annotated.
+--- starter
+function wordCount(text) {
+  return text.trim().split(/\s+/).length
+}
+
+function isEven(n) {
+  return n % 2 === 0
+}
+--- solution
+function wordCount(text: string): number {
+  const trimmed = text.trim()
+  return trimmed === '' ? 0 : trimmed.split(/\s+/).length
+}
+
+function isEven(n: number): boolean {
+  return n % 2 === 0
+}
+--- hint
+`function wordCount(text: string): number { … }`
+--- hint
+`''.trim().split(/\s+/)` is `['']`, one empty word — return 0 for the empty string first.
+--- check source | wordCount is typed
+wordCount\s*\(\s*text\s*:\s*string\s*\)\s*:\s*number
+--- check source | isEven is typed
+isEven\s*\(\s*n\s*:\s*number\s*\)\s*:\s*boolean
+--- check test | wordCount counts words
+wordCount('the quick brown fox') === 4 && wordCount('  spaced   out ') === 2
+--- check case | wordCount('') is 0
+wordCount('')
+=> 0
+--- check test | isEven works both ways
+isEven(10) && !isEven(7)
+
+=== ts-04 | Arrays and tuples
+--- teach
+An array type is the item type followed by `[]`:
+
+```ts
+const latencies: number[] = [120, 95, 210]
+const names: string[] = ['ada', 'lin']
+```
+
+The compiler then knows `latencies[0]` is a number and that `latencies.push('fast')` is an error.
+
+A **tuple** is a fixed-length array where each position has its own type — handy for returning two things at once:
+
+```ts
+const pair: [string, number] = ['ada', 1200]
+const [user, tokens] = pair    // user: string, tokens: number
+```
+--- task
+Write `minMax(values: number[]): [number, number]` that returns the smallest and largest value as a tuple.
+--- starter
+function minMax(values) {
+}
+--- solution
+function minMax(values: number[]): [number, number] {
+  return [Math.min(...values), Math.max(...values)]
+}
+--- hint
+`Math.min(...values)` spreads the array into arguments.
+--- check source | Takes number[] and returns a [number, number] tuple
+minMax\s*\(\s*values\s*:\s*number\[\]\s*\)\s*:\s*\[\s*number\s*,\s*number\s*\]
+--- check case | Finds both ends
+minMax([120, 95, 210, 143])
+=> [95, 210]
+--- check case | Works for one value
+minMax([7])
+=> [7, 7]
+
+=== ts-05 | Object types and interfaces
+--- teach
+Describe the shape of an object with an **interface** (or a `type` alias — for objects they are almost interchangeable):
+
+```ts
+interface User {
+  name: string
+  plan: 'free' | 'pro'
+  credits: number
+}
+
+function describe(user: User): string {
+  return `${user.name} (${user.plan}) has ${user.credits} credits`
+}
+```
+
+Now a misspelled property (`user.nmae`), a missing one, or a plan of `'gold'` is caught before the code runs. `'free' | 'pro'` is a **union of literal types**: only those two strings are allowed.
+--- task
+Declare `interface Request` with `user: string`, `model: string` and `tokens: number`. Then write `summarize(req: Request): string` returning `'<user> used <tokens> tokens on <model>'` — e.g. `'ada used 1200 tokens on sonnet'`.
+--- starter
+// Declare the Request interface, then summarize().
+
+--- solution
+interface Request {
+  user: string
+  model: string
+  tokens: number
+}
+
+function summarize(req: Request): string {
+  return `${req.user} used ${req.tokens} tokens on ${req.model}`
+}
+--- hint
+`interface Request { user: string; model: string; tokens: number }`
+--- check source | Declares the Request interface
+interface\s+Request\s*\{
+--- check source | summarize takes a Request
+summarize\s*\(\s*req\s*:\s*Request\s*\)\s*:\s*string
+--- check case | Builds the sentence
+summarize({ user: 'ada', model: 'sonnet', tokens: 1200 })
+=> 'ada used 1200 tokens on sonnet'
+
+=== ts-06 | Optional values and null
+--- teach
+A property marked `?` may be missing; its type becomes `T | undefined`:
+
+```ts
+interface Profile {
+  name: string
+  nickname?: string
+}
+```
+
+Strict mode will not let you call a string method on something that might be `undefined` — you must **narrow** first:
+
+```ts
+function display(p: Profile): string {
+  if (p.nickname !== undefined) {
+    return p.nickname.toUpperCase()   // here TypeScript knows it is a string
+  }
+  return p.name
+}
+```
+
+Shorter forms: `p.nickname ?? p.name` (use the right side when the left is null or undefined) and `p.nickname?.toUpperCase()` (stop and give undefined if it is missing).
+--- task
+The starter does not type-check. Fix `displayName` so it returns the nickname in uppercase when there is one, and the name otherwise — without `!` or `as` (narrow, or use `??` / `?.`).
+--- starter
+interface Profile {
+  name: string
+  nickname?: string
+}
+
+function displayName(p: Profile): string {
+  return p.nickname.toUpperCase()
+}
+--- solution
+interface Profile {
+  name: string
+  nickname?: string
+}
+
+function displayName(p: Profile): string {
+  return p.nickname?.toUpperCase() ?? p.name
+}
+--- hint
+`p.nickname?.toUpperCase()` is undefined when there is no nickname; `?? p.name` fills that in.
+--- check case | Uses the nickname when there is one
+displayName({ name: 'Ada Lovelace', nickname: 'ada' })
+=> 'ADA'
+--- check case | Falls back to the name
+displayName({ name: 'Lin' })
+=> 'Lin'
+--- check source absent | No non-null assertion or cast
+nickname!|\bas\s+string\b
+?? `!` and `as` tell the checker to trust you. Narrowing proves it.
+
+=== ts-07 | Unions and narrowing
+--- teach
+A **union** type is "one of these": `string | number`. Before you use a union value you narrow it, and TypeScript follows your checks:
+
+```ts
+function format(id: string | number): string {
+  if (typeof id === 'number') {
+    return id.toFixed(0)        // id: number here
+  }
+  return id.trim()              // id: string here
+}
+```
+
+`typeof` narrows primitives; `Array.isArray(x)` narrows arrays; `'key' in obj` and `instanceof` narrow objects.
+--- task
+Write `toCents(amount: number | string): number`. A number is dollars (`1.5` → `150`); a string looks like `'$2.25'` (→ `225`). Round to a whole number of cents.
+--- starter
+function toCents(amount: number | string): number {
+  return amount * 100
+}
+--- solution
+function toCents(amount: number | string): number {
+  if (typeof amount === 'number') {
+    return Math.round(amount * 100)
+  }
+  return Math.round(Number(amount.replace('$', '')) * 100)
+}
+--- hint
+`if (typeof amount === 'number') { … }` — below that, amount is a string.
+--- hint
+`'$2.25'.replace('$', '')` is `'2.25'`; `Number(...)` turns it into 2.25.
+--- check case | A number of dollars
+toCents(1.5)
+=> 150
+--- check case | A dollar string
+toCents('$2.25')
+=> 225
+--- check case | Rounds away float error
+toCents(0.29)
+=> 29
+--- check source | Narrows with typeof
+typeof\s+amount
+
+=== ts-08 | Discriminated unions
+--- teach
+When objects of different shapes share one field that says which shape they are, TypeScript can narrow on that field. That is a **discriminated union** — the backbone of M3's trust boundary and of every model response you will handle:
+
+```ts
+type Reply =
+  | { kind: 'text'; text: string }
+  | { kind: 'refusal'; reason: string }
+
+function show(r: Reply): string {
+  switch (r.kind) {
+    case 'text':
+      return r.text        // r is the text shape here
+    case 'refusal':
+      return r.reason
+  }
+}
+```
+
+Add `const unhandled: never = r` in a `default:` branch and the compiler **forces** you to handle every case: add a new kind to `Reply` and every switch that forgot it stops compiling.
+--- task
+`Event` has three kinds. Finish `describe` so every kind is handled, and keep the `never` line so a future kind cannot be missed:
+
+- `start` → `'started <model>'`
+- `delta` → `'+<text.length> chars'`
+- `stop` → `'stopped: <reason>'`
+--- starter
+type Event =
+  | { kind: 'start'; model: string }
+  | { kind: 'delta'; text: string }
+  | { kind: 'stop'; reason: string }
+
+function describe(e: Event): string {
+  switch (e.kind) {
+    case 'start':
+      return `started ${e.model}`
+    default: {
+      const unhandled: never = e
+      return unhandled
+    }
+  }
+}
+--- solution
+type Event =
+  | { kind: 'start'; model: string }
+  | { kind: 'delta'; text: string }
+  | { kind: 'stop'; reason: string }
+
+function describe(e: Event): string {
+  switch (e.kind) {
+    case 'start':
+      return `started ${e.model}`
+    case 'delta':
+      return `+${e.text.length} chars`
+    case 'stop':
+      return `stopped: ${e.reason}`
+    default: {
+      const unhandled: never = e
+      return unhandled
+    }
+  }
+}
+--- hint
+Run it first: the error on the `never` line tells you which kinds are still unhandled.
+--- check case | start
+describe({ kind: 'start', model: 'sonnet' })
+=> 'started sonnet'
+--- check case | delta
+describe({ kind: 'delta', text: 'hello' })
+=> '+5 chars'
+--- check case | stop
+describe({ kind: 'stop', reason: 'end_turn' })
+=> 'stopped: end_turn'
+--- check source | Keeps the exhaustiveness check
+:\s*never\s*=
+
+=== ts-09 | Generics
+--- teach
+Some functions work the same way for any type. A **generic** takes the type as a parameter, written in angle brackets:
+
+```ts
+function first<T>(items: T[]): T | undefined {
+  return items[0]
+}
+
+first([1, 2, 3])        // number | undefined
+first(['a', 'b'])       // string | undefined
+```
+
+`T` is filled in from the arguments, so the result keeps its real type instead of collapsing to `any`. Arrays themselves are generic: `number[]` is shorthand for `Array<number>`, and `Promise<string>` is a promise of a string.
+
+Two more pieces the task uses. `Record<string, number>` is a generic type too: an object whose keys are strings and whose values are numbers — the type of a counts object like `{ a: 2, l: 1 }`. And a parameter can be a function: `key: (item: T) => string` means "a function that takes one `T` and returns a string".
+--- task
+Write a generic `lastN<T>(items: T[], n: number): T[]` that returns the last `n` items (all of them if there are fewer), and a generic `groupCount<T>(items: T[], key: (item: T) => string): Record<string, number>` that counts items per key.
+--- starter
+function lastN(items, n) {
+}
+
+function groupCount(items, key) {
+}
+--- solution
+function lastN<T>(items: T[], n: number): T[] {
+  return n <= 0 ? [] : items.slice(-n)
+}
+
+function groupCount<T>(items: T[], key: (item: T) => string): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const item of items) {
+    const k = key(item)
+    counts[k] = (counts[k] ?? 0) + 1
+  }
+  return counts
+}
+--- hint
+`items.slice(-n)` gives the last n items — but check `n <= 0` first, since `slice(-0)` is everything.
+--- hint
+`Record<string, number>` is an object type with string keys and number values.
+--- check source | lastN is generic
+lastN\s*<\s*T\s*>
+--- check source | groupCount is generic
+groupCount\s*<\s*T\s*>
+--- check case | lastN(…, 2)
+lastN([1, 2, 3, 4], 2)
+=> [3, 4]
+--- check case | lastN with fewer items than n
+lastN(['a'], 5)
+=> ["a"]
+--- check case | groupCount counts by key
+groupCount(['ada', 'lin', 'al'], (s) => s[0])
+=> {"a": 2, "l": 1}
+
+=== ts-10 | unknown and type guards
+--- teach
+Data from outside your program — JSON from a model, a request body — has no type the compiler can trust. Give it the type **`unknown`**: TypeScript will not let you use an `unknown` value until you have checked what it is.
+
+A **type guard** is a function that does the checking and tells the compiler about it with `x is T`:
+
+```ts
+interface User { name: string; credits: number }
+
+function isUser(x: unknown): x is User {
+  return (
+    typeof x === 'object' && x !== null &&
+    typeof (x as Record<string, unknown>).name === 'string' &&
+    typeof (x as Record<string, unknown>).credits === 'number'
+  )
+}
+```
+
+This is "parse, don't assert": `JSON.parse(text) as User` compiles and lies; a guard checks. The one `as` inside the guard is different from the ones lesson 6 ruled out: `x as Record<string, unknown>` claims only "an object with some properties", and every property is still `unknown` until its own `typeof` check proves what it is. (In a real project a library such as Zod writes these for you — M3.)
+--- task
+Write `isPoint(x: unknown): x is Point` for `interface Point { x: number; y: number }`, then `parsePoint(text: string): Point | null` that parses JSON and returns the point only if it really is one.
+--- starter
+interface Point {
+  x: number
+  y: number
+}
+
+function parsePoint(text: string): Point | null {
+  return JSON.parse(text) as Point
+}
+--- solution
+interface Point {
+  x: number
+  y: number
+}
+
+function isPoint(x: unknown): x is Point {
+  if (typeof x !== 'object' || x === null) return false
+  const o = x as Record<string, unknown>
+  return typeof o.x === 'number' && typeof o.y === 'number'
+}
+
+function parsePoint(text: string): Point | null {
+  const value: unknown = JSON.parse(text)
+  return isPoint(value) ? value : null
+}
+--- hint
+Check `typeof x === 'object' && x !== null` first, then each property's type.
+--- hint
+`const value: unknown = JSON.parse(text)` — then `isPoint(value) ? value : null`.
+--- check case | A real point passes
+parsePoint('{"x": 1, "y": 2}')
+=> {"x": 1, "y": 2}
+--- check case | Wrong types are rejected
+parsePoint('{"x": "1", "y": 2}')
+=> null
+--- check case | Missing fields are rejected
+parsePoint('{"x": 1}')
+=> null
+--- check case | null is rejected
+parsePoint('null')
+=> null
+--- check source | Has a type guard
+x\s+is\s+Point
+--- check source absent | Does not cast the parsed JSON
+JSON\.parse\([^)]*\)\s+as\s
+
+=== ts-11 | Utility types
+--- teach
+TypeScript can build new types from existing ones. The ones you will use every week:
+
+```ts
+interface Settings { theme: string; fontSize: number; beta: boolean }
+
+Partial<Settings>                // every property optional
+Readonly<Settings>               // no property can be reassigned
+Pick<Settings, 'theme'>          // only the listed properties
+Omit<Settings, 'beta'>           // everything except those
+Record<'free' | 'pro', number>   // an object with exactly these keys
+```
+
+`Partial` is what an "update" takes: a patch with any subset of fields.
+--- task
+Write `applyPatch(current: Settings, patch: Partial<Settings>): Settings` that returns a **new** settings object with the patch applied (the original unchanged). Then declare `const LIMITS: Record<'free' | 'pro', number>` with free `100` and pro `1000`.
+--- starter
+interface Settings {
+  theme: string
+  fontSize: number
+  beta: boolean
+}
+
+--- solution
+interface Settings {
+  theme: string
+  fontSize: number
+  beta: boolean
+}
+
+function applyPatch(current: Settings, patch: Partial<Settings>): Settings {
+  return { ...current, ...patch }
+}
+
+const LIMITS: Record<'free' | 'pro', number> = { free: 100, pro: 1000 }
+--- hint
+Object spread: `{ ...current, ...patch }` — later properties win.
+--- check source | The patch is a Partial<Settings>
+patch\s*:\s*Partial\s*<\s*Settings\s*>
+--- check case | Applies the patch
+applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontSize
+=> 15
+--- check test | Keeps the rest, leaves the original alone
+(() => { const s = { theme: 'dark', fontSize: 13, beta: false }; const t = applyPatch(s, { beta: true }); return t.theme === 'dark' && t.beta && s.beta === false && t !== s })()
+--- check test | LIMITS has both plans
+LIMITS.free === 100 && LIMITS.pro === 1000
+--- check source | LIMITS is a Record over the two plans
+LIMITS\s*:\s*Record\s*<

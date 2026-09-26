@@ -1,0 +1,1603 @@
+@track javascript
+@level advanced
+@title JavaScript · Advanced
+@name JavaScript, advanced: this, prototypes, async and algorithms
+@blurb How JavaScript really works underneath — this, prototypes, promises and the event loop — plus the patterns and algorithms that let you design and debug serious programs.
+
+=== js3-01 | this: who is calling?
+--- teach
+The intermediate course covered the idioms working developers use every day. This course goes underneath them — how `this`, prototypes, promises and the event loop really work — and adds the patterns and algorithms that let you design and debug serious programs.
+
+`this` is not decided where a function is written. It is decided **each time the function is called**, by how it is called. Four rules cover almost everything:
+
+1. **Method call** — `obj.method()`: `this` is `obj`, the thing before the dot.
+2. **Plain call** — `fn()`: `this` is `undefined` (in strict mode, which modules and classes always use). Reading `this.x` then throws a `TypeError`.
+3. **`new`** — `new Fn()`: `this` is the brand-new object being built.
+4. **Explicit** — you choose it:
+   - `fn.call(obj, a, b)` calls `fn` with `this = obj` and the arguments listed.
+   - `fn.apply(obj, [a, b])` is the same with the arguments in an array.
+   - `fn.bind(obj)` does not call anything: it returns a **new function** whose `this` is locked to `obj` forever — even `call` cannot change it afterwards.
+
+```js
+const ship = {
+  name: 'Apollo',
+  describe() { return `I am ${this.name}` },
+}
+ship.describe()                          // 'I am Apollo'
+const other = { name: 'Gemini' }
+ship.describe.call(other)                // 'I am Gemini'
+const locked = ship.describe.bind(ship)
+locked()                                 // 'I am Apollo', even as a plain call
+```
+
+**Arrow functions are the exception**: they have no `this` of their own and use the `this` of the code around them. That makes them perfect for callbacks *inside* a method, and wrong as methods themselves:
+
+```js
+const bad = {
+  name: 'x',
+  describe: () => `I am ${this?.name}`,   // this is NOT bad; it is the outer this
+}
+bad.describe()    // 'I am undefined'
+```
+
+(`this?.name` is **optional chaining**: it reads `name` only if `this` is not `null` or `undefined`, and gives `undefined` otherwise.)
+
+A method that returns `this` can be **chained**: `list.add(1).add(2)`. Many APIs — array methods, query builders — work that way.
+--- task
+Write:
+
+- an object `counter` with a property `count` starting at `0` and a method `add(n)` that adds `n` to `count` and returns the object, so calls chain: `counter.add(2).add(3)`.
+- `function fullName()` that returns `this.first + ' ' + this.last`.
+- `nameOf(person)` — returns the full name of `person` by calling `fullName` with `call`.
+- `const grace` — `fullName` bound to `{ first: 'Grace', last: 'Hopper' }`.
+- `greetWith(person, args)` — `greet` is given in the starter; call it with `apply`, `this` set to `person` and `args` (an array) as its arguments.
+--- starter
+const counter = {
+  count: 0,
+  add: (n) => {
+    this.count += n
+    return this
+  },
+}
+
+function greet(greeting, mark) {
+  return `${greeting}, ${this.first}${mark}`
+}
+--- solution
+const counter = {
+  count: 0,
+  add(n) {
+    this.count += n
+    return this
+  },
+}
+
+function greet(greeting, mark) {
+  return `${greeting}, ${this.first}${mark}`
+}
+
+function fullName() {
+  return `${this.first} ${this.last}`
+}
+
+function nameOf(person) {
+  return fullName.call(person)
+}
+
+const grace = fullName.bind({ first: 'Grace', last: 'Hopper' })
+
+function greetWith(person, args) {
+  return greet.apply(person, args)
+}
+--- hint
+An arrow function has no `this` of its own. Write `add` with method syntax: `add(n) { … }`.
+--- hint
+`fullName.call(person)` runs `fullName` with `this` set to `person`.
+--- hint
+`fullName.bind({ … })` returns a new function; `greet.apply(person, args)` spreads the array into arguments.
+--- check case | add chains and counts
+(() => { counter.count = 0; return counter.add(2).add(3).count })()
+=> 5
+--- check case | nameOf uses the person as this
+nameOf({ first: 'Ada', last: 'Lovelace' })
+=> 'Ada Lovelace'
+--- check case | grace is bound
+grace()
+=> 'Grace Hopper'
+--- check case | A bound function ignores call
+grace.call({ first: 'Someone', last: 'Else' })
+=> 'Grace Hopper'
+--- check case | greetWith passes this and the arguments
+greetWith({ first: 'Lin' }, ['Hi', '!'])
+=> 'Hi, Lin!'
+--- check source | nameOf uses call, greetWith uses apply, grace uses bind
+(?=[\s\S]*fullName\.call\()(?=[\s\S]*greet\.apply\()(?=[\s\S]*fullName\.bind\()
+
+=== js3-02 | Debugging: the lost this
+--- teach
+`TypeError: Cannot read properties of undefined (reading 'counts')` inside a method is almost always the same bug: the method was **detached** from its object. Here is the method for tracking it down:
+
+1. **Read the error.** It names the property it tried to read (`counts`) and the line. Something before the dot — `this` — was `undefined`.
+2. **Find the call site, not the definition.** The method is fine; the question is *how it was called*. Search for places the method is passed as a value without calling it: `arr.forEach(this.record)`, `setTimeout(this.tick, 100)`, `const { format } = formatter`, `button.onclick = obj.handle`.
+3. **Confirm it.** `console.log(this)` at the top of the method prints `undefined`.
+4. **Fix the cause.**
+
+Why it happens: `this.record` is just a function value. Handing it to `forEach` gives `forEach` the function but *not* the object — and `forEach` calls it as a plain function, so rule 2 applies and `this` is `undefined`. The same goes for a `function () {}` callback written inside a method: it gets its own `this`, which is `undefined`, not the method's.
+
+Three fixes, from local to structural:
+
+```js
+class Tally {
+  constructor() {
+    this.counts = {}
+    this.record = this.record.bind(this)        // 3. bind once, in the constructor
+  }
+  record(word) { this.counts[word] = (this.counts[word] ?? 0) + 1 }
+  recordAll(words) {
+    words.forEach((w) => this.record(w))       // 1. an arrow keeps the method's this
+    words.forEach(this.record, this)           // 2. forEach takes a thisArg
+  }
+}
+```
+
+You can also declare the method as a class field arrow — `record = (word) => { … }` — which gives each object its own bound copy. Binding in the constructor (or the class field) is the right fix when the method is **meant** to be passed around as a callback, because then every caller is safe, not just the one you found.
+--- task
+Bug report: *"`tally.recordAll(words)` crashes with `Cannot read properties of undefined`. `formatter.formatAll(amounts)` crashes too. And when we pass `tally.record` straight to `forEach`, nothing is counted."*
+
+Fix the classes so that:
+
+- `recordAll(words)` counts every word and returns `this.counts`.
+- `formatAll(amounts)` returns each amount formatted by `format`.
+- `tally.record` works when passed on its own as a callback (for example `words.forEach(tally.record)`).
+--- starter
+class Tally {
+  constructor() {
+    this.counts = {}
+  }
+
+  record(word) {
+    this.counts[word] = (this.counts[word] ?? 0) + 1
+  }
+
+  recordAll(words) {
+    words.forEach(this.record)
+    return this.counts
+  }
+}
+
+class Formatter {
+  constructor(currency) {
+    this.currency = currency
+  }
+
+  format(amount) {
+    return `${amount.toFixed(2)} ${this.currency}`
+  }
+
+  formatAll(amounts) {
+    return amounts.map(function (amount) {
+      return this.format(amount)
+    })
+  }
+}
+--- solution
+class Tally {
+  constructor() {
+    this.counts = {}
+    this.record = this.record.bind(this)
+  }
+
+  record(word) {
+    this.counts[word] = (this.counts[word] ?? 0) + 1
+  }
+
+  recordAll(words) {
+    words.forEach(this.record)
+    return this.counts
+  }
+}
+
+class Formatter {
+  constructor(currency) {
+    this.currency = currency
+  }
+
+  format(amount) {
+    return `${amount.toFixed(2)} ${this.currency}`
+  }
+
+  formatAll(amounts) {
+    return amounts.map((amount) => this.format(amount))
+  }
+}
+--- hint
+Reproduce: `new Tally().recordAll(['a'])`. Then put `console.log(this)` as the first line of `record`.
+--- hint
+The `function (amount) { … }` callback gets its own `this`. An arrow function would use `formatAll`'s.
+--- hint
+For `record` to survive being passed around, bind it once in the constructor: `this.record = this.record.bind(this)`.
+--- check case | recordAll counts the words
+new Tally().recordAll(['a', 'b', 'a'])
+=> { a: 2, b: 1 }
+--- check case | recordAll of nothing
+new Tally().recordAll([])
+=> {}
+--- check case | formatAll formats every amount
+new Formatter('EUR').formatAll([1, 2.5])
+=> ['1.00 EUR', '2.50 EUR']
+--- check case | record works as a detached callback
+(() => { const t = new Tally(); ['x', 'y', 'x'].forEach(t.record); return t.counts })()
+=> { x: 2, y: 1 }
+--- check case | Two tallies do not share counts
+(() => { const a = new Tally(); const b = new Tally(); a.recordAll(['q']); return b.counts })()
+=> {}
+
+=== js3-03 | Prototypes: what classes are made of
+--- teach
+Every object has a hidden link to another object, its **prototype**. When you read a property the object does not have, JavaScript follows the link and looks there, then at *that* object's prototype, and so on up the **prototype chain** until it finds the property or reaches `null`.
+
+```js
+const base = { greet() { return `hi from ${this.name}` } }
+const ada = Object.create(base)        // a new object whose prototype is base
+ada.name = 'Ada'
+ada.greet()                            // 'hi from Ada' — found on base, this is ada
+Object.getPrototypeOf(ada) === base    // true
+Object.keys(ada)                       // ['name'] — greet is not ada's own
+```
+
+Before `class` existed, this is how everyone built types — and it is still exactly what `class` does underneath. A function called with `new` creates an object whose prototype is the function's `.prototype` property, runs the function with `this` set to it, and returns it:
+
+```js
+function Point(x, y) {
+  this.x = x
+  this.y = y
+}
+Point.prototype.norm = function () {
+  return Math.hypot(this.x, this.y)
+}
+const p = new Point(3, 4)
+p.norm()                                          // 5
+Object.getPrototypeOf(p) === Point.prototype      // true
+```
+
+Methods live **once** on the prototype and are shared by every object; only the data is per object. `class Point { norm() {} }` produces the same shape.
+
+Inheritance is a chain two links long: `Dog.prototype`'s own prototype is `Animal.prototype`. You wire it with `Object.create`, call the parent constructor with `Animal.call(this, name)` (what `super(name)` does), and restore `Dog.prototype.constructor = Dog`, which `Object.create` replaced.
+
+Mistakes to avoid: putting methods in the constructor (`this.speak = function …`) copies them onto every object; using arrow functions for prototype methods breaks `this`; and forgetting `Animal.call(this, …)` leaves the parent's fields unset.
+--- task
+Without the `class` keyword, write:
+
+- a constructor `Animal(name)` that sets `this.name`, with prototype methods `speak()` returning `'<name> makes a sound'` and `introduce()` returning `'I am <name>. '` followed by whatever `this.speak()` returns.
+- a constructor `Dog(name)` that inherits from `Animal`: it calls `Animal` for the name, its prototype's prototype is `Animal.prototype`, `Dog.prototype.constructor` is `Dog`, and it overrides `speak()` to return `'<name> barks'`.
+
+Only `name` should be an object's own property; the methods live on the prototypes.
+--- starter
+function Animal(name) {
+  this.name = name
+  this.speak = function () {
+    return `${this.name} makes a sound`
+  }
+}
+--- solution
+function Animal(name) {
+  this.name = name
+}
+
+Animal.prototype.speak = function () {
+  return `${this.name} makes a sound`
+}
+
+Animal.prototype.introduce = function () {
+  return `I am ${this.name}. ${this.speak()}`
+}
+
+function Dog(name) {
+  Animal.call(this, name)
+}
+
+Dog.prototype = Object.create(Animal.prototype)
+Dog.prototype.constructor = Dog
+
+Dog.prototype.speak = function () {
+  return `${this.name} barks`
+}
+--- hint
+Move `speak` out of the constructor: `Animal.prototype.speak = function () { … }`. Use `function`, not an arrow, so `this` works.
+--- hint
+Inside `Dog`, call `Animal.call(this, name)`. Then `Dog.prototype = Object.create(Animal.prototype)`.
+--- hint
+`Object.create` gave `Dog.prototype` the wrong `constructor`; set `Dog.prototype.constructor = Dog`, then add Dog's own `speak`.
+--- check case | An animal speaks
+new Animal('Cat').speak()
+=> 'Cat makes a sound'
+--- check case | A dog barks
+new Dog('Rex').speak()
+=> 'Rex barks'
+--- check case | introduce is inherited and uses the dog's speak
+new Dog('Rex').introduce()
+=> 'I am Rex. Rex barks'
+--- check test | A dog is an animal
+new Dog('Rex') instanceof Animal && new Dog('Rex') instanceof Dog
+--- check test | The chain is wired correctly
+Object.getPrototypeOf(Dog.prototype) === Animal.prototype && Dog.prototype.constructor === Dog
+--- check case | Methods are shared, not copied onto each object
+Object.keys(new Dog('Rex'))
+=> ['name']
+--- check source absent | No class keyword
+\bclass\b
+
+=== js3-04 | Promises: creating, chaining and failing
+--- teach
+A **promise** is an object standing in for a value that is not ready yet. It is *pending*, then settles exactly once: **fulfilled** with a value, or **rejected** with an error.
+
+You rarely need to build one by hand, except to wrap something callback-based such as a timer:
+
+```js
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+```
+
+`new Promise` runs your function immediately, handing it `resolve` and `reject`. Call one of them when the work is done. If the function throws, the promise rejects.
+
+`.then(fn)` returns a **new** promise, and what `fn` returns decides it:
+
+- return a value → the new promise fulfils with it;
+- return a promise → the new promise follows that one;
+- throw → the new promise rejects.
+
+That is why chains stay flat, and why errors flow down them to the nearest `.catch`:
+
+```js
+Promise.resolve('{"n": 2}')
+  .then((text) => JSON.parse(text))
+  .then((data) => data.n * 10)
+  .catch(() => 0)
+  .then((n) => console.log(n))     // 20; with bad JSON it would print 0
+```
+
+`.catch` handles a rejection and, like `then`, returns a new promise — so after a `catch` that returns a value, the chain continues *fulfilled*.
+
+The classic bug is **forgetting to return** inside `then`: `.then((x) => { save(x) })` returns `undefined`, so the next step runs before `save` finishes and never sees its errors. The second is wrapping a promise in `new Promise` needlessly. If you already have a promise, chain on it.
+--- task
+Write:
+
+- `delay(ms, value)` — a promise that fulfils with `value` after `ms` milliseconds.
+- `parseJSONAsync(text)` — always returns a promise: fulfilled with the parsed value, or **rejected** with the `SyntaxError` for bad JSON (it must not throw synchronously).
+- `loadConfig(text)` — returns a promise of the config: parse with `parseJSONAsync`, then return `{ port: 80, debug: false, ...parsed }`. If parsing fails, fulfil (do not reject) with `{ port: 80, debug: false, error: 'invalid config' }`. Use `.then` and `.catch`.
+
+Leave the test-drive lines at the end of the starter: the checks read `results`.
+--- starter
+function delay(ms, value) {
+  return value
+}
+
+function parseJSONAsync(text) {
+  return JSON.parse(text)
+}
+
+function loadConfig(text) {
+  return parseJSONAsync(text)
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const t0 = Date.now()
+const delayed = await delay(30, 'ready')
+const results = {
+  delayed,
+  waited: Date.now() - t0,
+  good: await loadConfig('{"port": 8080}'),
+  bad: await loadConfig('{port: 8080'),
+  parseError: await parseJSONAsync('nope').then(() => 'fulfilled', (err) => err.name),
+}
+--- solution
+function delay(ms, value) {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms))
+}
+
+function parseJSONAsync(text) {
+  return new Promise((resolve) => resolve(JSON.parse(text)))
+}
+
+function loadConfig(text) {
+  const defaults = { port: 80, debug: false }
+  return parseJSONAsync(text)
+    .then((parsed) => ({ ...defaults, ...parsed }))
+    .catch(() => ({ ...defaults, error: 'invalid config' }))
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const t0 = Date.now()
+const delayed = await delay(30, 'ready')
+const results = {
+  delayed,
+  waited: Date.now() - t0,
+  good: await loadConfig('{"port": 8080}'),
+  bad: await loadConfig('{port: 8080'),
+  parseError: await parseJSONAsync('nope').then(() => 'fulfilled', (err) => err.name),
+}
+--- hint
+`delay`: `new Promise((resolve) => setTimeout(() => resolve(value), ms))`.
+--- hint
+If the function you give `new Promise` throws, the promise rejects — so `new Promise((resolve) => resolve(JSON.parse(text)))` turns the throw into a rejection.
+--- hint
+`loadConfig` is `parseJSONAsync(text).then(…merge…).catch(…fallback…)`. Return the whole chain.
+--- check case | delay fulfils with the value
+results.delayed
+=> 'ready'
+--- check test | delay really waits
+results.waited >= 25
+--- check case | A good config is merged over the defaults
+results.good
+=> { port: 8080, debug: false }
+--- check case | A bad config falls back, marked with an error
+results.bad
+=> { port: 80, debug: false, error: 'invalid config' }
+--- check case | parseJSONAsync rejects with the SyntaxError
+results.parseError
+=> 'SyntaxError'
+--- check test | Both return promises
+delay(1) instanceof Promise && parseJSONAsync('1') instanceof Promise
+
+=== js3-05 | async/await and running promises together
+--- teach
+`async`/`await` is promise chaining written as ordinary code. An `async` function always returns a promise; inside it, `await p` pauses until `p` settles, then gives its value — or **throws** its error, so plain `try`/`catch` works.
+
+The skill is choosing how several promises combine:
+
+| Tool | Waits for | Result | Rejects when |
+| --- | --- | --- | --- |
+| `Promise.all(ps)` | all | array of values, in order | **any** rejects (fails fast) |
+| `Promise.allSettled(ps)` | all | `{ status, value }` or `{ status, reason }` for each | never |
+| `Promise.race(ps)` | the first to settle | that value | the first to settle rejected |
+| `Promise.any(ps)` | the first to **fulfil** | that value | all reject (`AggregateError`) |
+
+```js
+const sleep = (ms, v) => new Promise((r) => setTimeout(() => r(v), ms))
+await Promise.all([sleep(30, 'a'), sleep(10, 'b')])        // ['a', 'b'] after 30ms, not 40
+await Promise.race([sleep(30, 'slow'), sleep(10, 'fast')])  // 'fast'
+```
+
+Use `all` when you need every result and one failure spoils the batch; `allSettled` when you want whatever succeeded and a list of what failed; `race` to put a deadline on something (race it against a timer that rejects); `any` to take the first mirror or replica that answers.
+
+Two common mistakes. **Awaiting in a loop** runs the calls one after another: five 40ms requests take 200ms instead of 40. Start them all first, then await them together. And **losing the timer**: a timeout built with `race` leaves its `setTimeout` running after the real work wins; clear it in a `finally` so nothing fires late.
+--- task
+`fetchUser(id)` in the starter pretends to call an API (40ms each; id `13` fails). Write:
+
+- `fetchAll(ids)` — every user, in order, fetched **in parallel**. It rejects if any fetch fails.
+- `fetchSome(ids)` — never rejects: returns `{ users, failed }`, the users that loaded (in order) and the ids that failed.
+- `withTimeout(promise, ms)` — settles like `promise`, unless that takes longer than `ms`, in which case it rejects with `new Error('timed out')`.
+- `fastest(promises)` — the value of the first promise to **fulfil**, ignoring rejections; if all of them reject, it rejects with an `AggregateError`.
+
+The test drive at the end fills `results`; keep it.
+--- starter
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function fetchUser(id) {
+  await sleep(40)
+  if (id === 13) throw new Error(`user ${id} not found`)
+  return { id, name: `user${id}` }
+}
+
+async function fetchAll(ids) {
+  const users = []
+  for (const id of ids) users.push(await fetchUser(id))
+  return users
+}
+
+async function fetchSome(ids) {
+  return { users: [], failed: [] }
+}
+
+function withTimeout(promise, ms) {
+  return promise
+}
+
+function fastest(promises) {
+  return Promise.race(promises)
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const t0 = Date.now()
+const all = await fetchAll([1, 2, 3, 4, 5])
+const allMs = Date.now() - t0
+const results = {
+  all,
+  allMs,
+  some: await fetchSome([1, 13, 2]),
+  allFails: await fetchAll([1, 13]).then(() => 'fulfilled', (e) => e.message),
+  timedOut: await withTimeout(sleep(200).then(() => 'late'), 50).catch((e) => e.message),
+  inTime: await withTimeout(sleep(10).then(() => 'early'), 100),
+  first: await fastest([sleep(60).then(() => 'slow'), Promise.reject(new Error('down')), sleep(20).then(() => 'quick')]).catch((e) => e.message),
+  noneOk: await fastest([Promise.reject(new Error('a')), Promise.reject(new Error('b'))]).catch((e) => e.constructor.name),
+}
+--- solution
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function fetchUser(id) {
+  await sleep(40)
+  if (id === 13) throw new Error(`user ${id} not found`)
+  return { id, name: `user${id}` }
+}
+
+function fetchAll(ids) {
+  return Promise.all(ids.map((id) => fetchUser(id)))
+}
+
+async function fetchSome(ids) {
+  const settled = await Promise.allSettled(ids.map((id) => fetchUser(id)))
+  const users = []
+  const failed = []
+  settled.forEach((s, i) => {
+    if (s.status === 'fulfilled') users.push(s.value)
+    else failed.push(ids[i])
+  })
+  return { users, failed }
+}
+
+function withTimeout(promise, ms) {
+  let timer
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timed out')), ms)
+  })
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer))
+}
+
+function fastest(promises) {
+  return Promise.any(promises)
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const t0 = Date.now()
+const all = await fetchAll([1, 2, 3, 4, 5])
+const allMs = Date.now() - t0
+const results = {
+  all,
+  allMs,
+  some: await fetchSome([1, 13, 2]),
+  allFails: await fetchAll([1, 13]).then(() => 'fulfilled', (e) => e.message),
+  timedOut: await withTimeout(sleep(200).then(() => 'late'), 50).catch((e) => e.message),
+  inTime: await withTimeout(sleep(10).then(() => 'early'), 100),
+  first: await fastest([sleep(60).then(() => 'slow'), Promise.reject(new Error('down')), sleep(20).then(() => 'quick')]).catch((e) => e.message),
+  noneOk: await fastest([Promise.reject(new Error('a')), Promise.reject(new Error('b'))]).catch((e) => e.constructor.name),
+}
+--- hint
+`fetchAll` is one line: `Promise.all(ids.map((id) => fetchUser(id)))`.
+--- hint
+`Promise.allSettled` gives `{ status: 'fulfilled', value }` or `{ status: 'rejected', reason }` for each id, in the same order as `ids`.
+--- hint
+For `withTimeout`, build a second promise that rejects after `ms`, and `Promise.race` the two. `fastest` is `Promise.any`.
+--- check case | fetchAll gets every user in order
+results.all.map((u) => u.name)
+=> ['user1', 'user2', 'user3', 'user4', 'user5']
+--- check test | fetchAll runs in parallel (well under 5 × 40ms)
+results.allMs < 150
+--- check case | fetchSome keeps what loaded and lists what failed
+results.some
+=> { users: [{ id: 1, name: 'user1' }, { id: 2, name: 'user2' }], failed: [13] }
+--- check case | fetchAll rejects when one fails
+results.allFails
+=> 'user 13 not found'
+--- check case | withTimeout rejects a slow promise
+results.timedOut
+=> 'timed out'
+--- check case | withTimeout lets a fast promise through
+results.inTime
+=> 'early'
+--- check case | fastest takes the first success, ignoring failures
+results.first
+=> 'quick'
+--- check case | fastest rejects with an AggregateError when all fail
+results.noneOk
+=> 'AggregateError'
+
+=== js3-06 | The event loop: predict, then fix the order
+--- teach
+JavaScript runs one thing at a time on a single thread. What decides *what runs next* is the **event loop**, and knowing its rules lets you predict the order of any async code.
+
+1. **Synchronous code runs to the end first.** Nothing interrupts it — not a timer set to 0ms, not a resolved promise.
+2. Then the **microtask queue** is emptied, completely: promise callbacks (`.then`, `.catch`, `.finally`), `queueMicrotask`, and the rest of an `async` function after an `await`. Microtasks queued by microtasks run in the same round.
+3. Only then does one **task** (macrotask) run — a `setTimeout` callback, for example — followed again by all microtasks, and so on.
+
+```js
+const order = []
+setTimeout(() => order.push('timer'), 0)
+Promise.resolve().then(() => order.push('promise'))
+order.push('sync')
+await new Promise((r) => setTimeout(r, 5))
+console.log(order)   // [ 'sync', 'promise', 'timer' ]
+```
+
+The starter's `trace()` uses `;(async () => { … })()`: an async arrow function defined and called at once, with the leading `;` because the line starts with `(`. An `async` function runs **synchronously up to its first `await`**, then returns to its caller; the rest of its body becomes a microtask queued when the awaited value is ready. `await null` still pauses — it just resumes on the next microtask round.
+
+This is why a timeout of 0 is not "now", and why code like this is broken:
+
+```js
+function save(log) {
+  setTimeout(() => log.push('saved'), 0)   // a task: later
+}
+```
+
+Anything that must happen *after* the save cannot just be written on the next line, or in a `.then` of some unrelated promise — microtasks run before tasks. The fix is to make the slow thing a **promise that settles when it is actually done**, and `await` it. Order that matters should be expressed with `await`, never left to timing luck.
+--- task
+Two parts.
+
+1. **Predict.** Read `trace()` in the starter (do not change it). Set `const prediction` to an array literal of the labels in the order `trace()` pushes them. Work it out by reasoning; the checks compare your literal with what really happens.
+2. **Fix.** `commitThenAnnounce(log)` should push `'commit'` and then `'announce'`, and return a promise that fulfils once both have happened. The commit must still happen inside a `setTimeout` (it stands in for a slow write), so nothing is pushed synchronously.
+
+Keep the test drive at the end.
+--- starter
+async function trace() {
+  const log = []
+  log.push('start')
+  setTimeout(() => log.push('timeout'), 0)
+  Promise.resolve().then(() => log.push('then'))
+  queueMicrotask(() => log.push('microtask'))
+  ;(async () => {
+    log.push('async body')
+    await null
+    log.push('after await')
+  })()
+  log.push('end')
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  return log
+}
+
+// 1. Your prediction, as an array literal of the labels:
+const prediction = []
+
+// 2. Make 'commit' happen before 'announce':
+function commitThenAnnounce(log) {
+  setTimeout(() => log.push('commit'), 0)
+  return Promise.resolve().then(() => log.push('announce'))
+}
+
+// ---- Test drive: the checks read these. Keep this at the end. ----
+const actual = await trace()
+const fixedLog = []
+const pending = commitThenAnnounce(fixedLog)
+const syncSnapshot = [...fixedLog]
+await pending
+--- solution
+async function trace() {
+  const log = []
+  log.push('start')
+  setTimeout(() => log.push('timeout'), 0)
+  Promise.resolve().then(() => log.push('then'))
+  queueMicrotask(() => log.push('microtask'))
+  ;(async () => {
+    log.push('async body')
+    await null
+    log.push('after await')
+  })()
+  log.push('end')
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  return log
+}
+
+// 1. Your prediction, as an array literal of the labels:
+const prediction = ['start', 'async body', 'end', 'then', 'microtask', 'after await', 'timeout']
+
+// 2. Make 'commit' happen before 'announce':
+async function commitThenAnnounce(log) {
+  await new Promise((resolve) =>
+    setTimeout(() => {
+      log.push('commit')
+      resolve()
+    }, 0),
+  )
+  log.push('announce')
+}
+
+// ---- Test drive: the checks read these. Keep this at the end. ----
+const actual = await trace()
+const fixedLog = []
+const pending = commitThenAnnounce(fixedLog)
+const syncSnapshot = [...fixedLog]
+await pending
+--- hint
+All the synchronous pushes come first — including the part of the inner async function before its `await`.
+--- hint
+Microtasks run in the order they were queued: `then`, then `queueMicrotask`, then the code after `await null` (queued when it reached the `await`). Timers come last.
+--- hint
+For the fix, wrap the timer in a promise that resolves after pushing `'commit'`, `await` it, then push `'announce'`.
+--- check test | Your prediction matches what really happens
+JSON.stringify(prediction) === JSON.stringify(actual)
+?? Walk through it: sync code, then every microtask in queue order, then timers.
+--- check source | prediction is written as a literal, not computed
+const prediction = \[\s*['"]
+--- check case | commit comes before announce
+fixedLog
+=> ['commit', 'announce']
+--- check case | Nothing is pushed synchronously
+syncSnapshot
+=> []
+--- check test | commitThenAnnounce returns a promise
+commitThenAnnounce([]) instanceof Promise
+
+=== js3-07 | Debugging: the promise nobody waited for
+--- teach
+Async bugs rarely crash. Instead a number comes out as `0`, a list is half-empty, or a total is short — and the results change from run to run. Two causes account for most of them.
+
+**The floating promise.** An async function returns a promise immediately. If nobody `await`s it, the code after it runs before the work is done, and any error it throws is lost. The sneakiest version is `forEach` with an async callback:
+
+```js
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const saved = []
+const rows = ['a', 'b', 'c']
+rows.forEach(async (row) => {
+  await sleep(10)          // forEach does not wait for this…
+  saved.push(row)
+})
+console.log('done, saved', saved.length)   // …so this prints: done, saved 0
+```
+
+`forEach` calls your callback, gets a promise back, and throws it away. It never waits. Use `for…of` with `await` (one at a time, in order), or `await Promise.all(rows.map(…))` (all at once, when order and overlap do not matter).
+
+**The lost update.** Two async tasks each read a value, wait, then write back a new one:
+
+```js
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+let balance = 0
+async function deposit(amount) {
+  const current = balance        // both calls read 0…
+  await sleep(10)
+  balance = current + amount     // …and each writes back 0 + its own amount
+}
+await Promise.all([deposit(10), deposit(20)])
+console.log(balance)   // 20, not 30
+```
+
+Each overwrites the other, and the total comes out wrong. Any `await` between reading shared state and writing it opens this gap. Fix it by not overlapping those steps: do the updates in sequence, or compute the whole change first and write once.
+
+The debugging method: **make it visible**. Log with timestamps (`console.log(Date.now(), 'insert start', row)`) and you will see the order you assumed is not the order that happened. Then look at every call to an async function and ask: *who awaits this promise?* If the answer is nobody, that is your bug. (Linters have a rule for exactly this: `no-floating-promises`.)
+--- task
+Bug report: *"`importRows` says it imported 0 rows, and the rows land in the database in a random order. `depositAll([10, 20, 30])` leaves the balance at 30 instead of 60."*
+
+Fix the two functions:
+
+- `importRows(rows)` must insert every row **in the given order**, one after another, and return how many it inserted — only once they are all in.
+- `depositAll(amounts)` must add every amount to the balance, using `readBalance` and `writeBalance`, and return the final balance.
+
+Keep the test drive at the end.
+--- starter
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// A pretend database: longer rows take longer to insert.
+const db = {
+  rows: [],
+  async insert(row) {
+    await sleep(row.length * 5)
+    this.rows.push(row)
+  },
+}
+
+async function importRows(rows) {
+  let count = 0
+  rows.forEach(async (row) => {
+    await db.insert(row)
+    count++
+  })
+  return count
+}
+
+const account = { balance: 0 }
+async function readBalance() {
+  await sleep(5)
+  return account.balance
+}
+async function writeBalance(value) {
+  await sleep(5)
+  account.balance = value
+}
+
+async function depositAll(amounts) {
+  await Promise.all(
+    amounts.map(async (amount) => {
+      const current = await readBalance()
+      await writeBalance(current + amount)
+    }),
+  )
+  return account.balance
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const imported = await importRows(['ccc', 'a', 'bb'])
+const rowsAfterImport = [...db.rows]
+const results = { imported, rows: rowsAfterImport, balance: await depositAll([10, 20, 30]) }
+--- solution
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// A pretend database: longer rows take longer to insert.
+const db = {
+  rows: [],
+  async insert(row) {
+    await sleep(row.length * 5)
+    this.rows.push(row)
+  },
+}
+
+async function importRows(rows) {
+  let count = 0
+  for (const row of rows) {
+    await db.insert(row)
+    count++
+  }
+  return count
+}
+
+const account = { balance: 0 }
+async function readBalance() {
+  await sleep(5)
+  return account.balance
+}
+async function writeBalance(value) {
+  await sleep(5)
+  account.balance = value
+}
+
+async function depositAll(amounts) {
+  for (const amount of amounts) {
+    const current = await readBalance()
+    await writeBalance(current + amount)
+  }
+  return account.balance
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const imported = await importRows(['ccc', 'a', 'bb'])
+const rowsAfterImport = [...db.rows]
+const results = { imported, rows: rowsAfterImport, balance: await depositAll([10, 20, 30]) }
+--- hint
+Log it: add `console.log('inserted', row, Date.now())` after the insert and `console.log('returning', count)` before the return. Which prints first?
+--- hint
+`forEach` never waits for an async callback. A `for (const row of rows)` loop with `await` inside does.
+--- hint
+In `depositAll`, the three read-then-write steps overlap. Run them one after another with the same kind of loop.
+--- check case | importRows reports every row
+results.imported
+=> 3
+--- check case | The rows are in, in the given order, when it returns
+results.rows
+=> ['ccc', 'a', 'bb']
+--- check case | Every deposit counts
+results.balance
+=> 60
+--- check source absent | No async callback handed to forEach
+forEach\(\s*async
+
+=== js3-08 | Iterators and generators
+--- teach
+`for…of`, spread (`[...x]`) and destructuring all work on anything **iterable**. An object is iterable if it has a method under the key `Symbol.iterator` that returns an **iterator**: an object with a `next()` method returning `{ value, done }`.
+
+```js
+const it = [10, 20][Symbol.iterator]()
+it.next()    // { value: 10, done: false }
+it.next()    // { value: 20, done: false }
+it.next()    // { value: undefined, done: true }
+```
+
+Writing iterators by hand is fiddly. A **generator function** (`function*`) writes them for you: calling it returns an iterator, and each `yield` hands out one value, pausing the function until the next `next()`.
+
+```js
+function* countdown(n) {
+  while (n > 0) yield n--
+}
+[...countdown(3)]    // [3, 2, 1]
+```
+
+(Swapping two variables in one step is array destructuring: `;[a, b] = [b, a + b]` — with a leading `;`, because the line starts with `[`.)
+
+Because a generator pauses, it can describe an **infinite** sequence and only compute as much as you ask for. That makes generators the natural way to write lazy helpers such as `take`, `map` or `filter` over any iterable.
+
+To make your own class iterable, give it a generator method named `[Symbol.iterator]`:
+
+```js
+class Pair {
+  constructor(a, b) { this.a = a; this.b = b }
+  *[Symbol.iterator]() { yield this.a; yield this.b }
+}
+[...new Pair('x', 'y')]   // ['x', 'y']
+```
+
+Watch out for two things. A generator object can be consumed **only once** — spread it twice and the second time is empty — so a reusable collection should create a fresh generator each time `[Symbol.iterator]()` is called (a generator method does). And never spread an infinite generator: `[...naturals()]` never finishes. Cut it down with something like `take` first.
+--- task
+Write:
+
+- `class Range` — `new Range(start, end, step = 1)` is iterable and yields `start`, `start + step`, … up to but **not including** `end`. It can be iterated more than once. A `step` of 0 or less throws a `RangeError`.
+- `function* take(iterable, n)` — yields the first `n` values of any iterable, and pulls no more than `n` values from it (so it works on infinite ones).
+- `function* fibonacci()` — yields 0, 1, 1, 2, 3, 5, 8, … forever.
+--- starter
+class Range {
+  constructor(start, end, step = 1) {
+    this.start = start
+    this.end = end
+    this.step = step
+  }
+}
+
+function take(iterable, n) {
+  // yield the first n values here
+}
+
+function fibonacci() {
+  // yield 0, 1, 1, 2, 3, 5, … forever
+}
+--- solution
+class Range {
+  constructor(start, end, step = 1) {
+    if (step <= 0) throw new RangeError('step must be positive')
+    this.start = start
+    this.end = end
+    this.step = step
+  }
+
+  *[Symbol.iterator]() {
+    for (let v = this.start; v < this.end; v += this.step) yield v
+  }
+}
+
+function* take(iterable, n) {
+  if (n <= 0) return
+  let taken = 0
+  for (const value of iterable) {
+    yield value
+    taken++
+    if (taken >= n) return
+  }
+}
+
+function* fibonacci() {
+  let a = 0
+  let b = 1
+  while (true) {
+    yield a
+    ;[a, b] = [b, a + b]
+  }
+}
+--- hint
+Give `Range` a generator method: `*[Symbol.iterator]() { for (let v = this.start; v < this.end; v += this.step) yield v }`.
+--- hint
+In `take`, count as you yield and `return` as soon as you have `n` — before asking for another value.
+--- hint
+`fibonacci` keeps two numbers and loops forever: yield `a`, then move on with `;[a, b] = [b, a + b]`.
+--- check case | A range stops before its end
+[...new Range(1, 5)]
+=> [1, 2, 3, 4]
+--- check case | A range with a step
+[...new Range(0, 10, 3)]
+=> [0, 3, 6, 9]
+--- check case | An empty range
+[...new Range(5, 5)]
+=> []
+--- check case | A range can be iterated twice
+(() => { const r = new Range(0, 3); return [[...r], [...r]] })()
+=> [[0, 1, 2], [0, 1, 2]]
+--- check test | A step of 0 is rejected
+throws(() => new Range(0, 5, 0))
+--- check case | take the start of fibonacci
+[...take(fibonacci(), 8)]
+=> [0, 1, 1, 2, 3, 5, 8, 13]
+--- check case | take pulls only what it needs
+(() => { let pulled = 0; function* nat() { for (let i = 0; ; i++) { pulled++; yield i } }; const got = [...take(nat(), 3)]; return [got, pulled] })()
+=> [[0, 1, 2], 3]
+--- check case | take works on any iterable, and n = 0 gives nothing
+[[...take('hello', 2)], [...take([1, 2], 0)]]
+=> [['h', 'e'], []]
+
+=== js3-09 | Debounce and throttle
+--- teach
+Some events fire far more often than you want to react to them: key presses in a search box, scroll and resize events, a sensor streaming readings. Two classic higher-order functions tame them, and both are built from a closure plus a timer.
+
+**Debounce** waits for a pause. Each call cancels the previous timer and starts a new one; the function only runs once the calls have stopped for `ms` milliseconds, with the **latest** arguments. Use it for "search after the user stops typing".
+
+```js
+function debounce(fn, ms) {
+  let timer
+  return (...args) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), ms)
+  }
+}
+```
+
+**Throttle** guarantees a maximum rate. The first call runs straight away, and further calls are ignored until `ms` milliseconds have passed since the last run. Use it for "update the position at most every 100ms while scrolling". Throttle does not need a timer at all: remember *when* it last ran, and compare with `Date.now()`.
+
+The difference in one picture, for calls at 0, 10, 20 and 100ms with `ms = 50`:
+
+- debounced: runs once at 70ms (with the 20ms arguments), then at 150ms (with the 100ms ones).
+- throttled: runs at 0ms and at 100ms; the calls at 10 and 20 are dropped.
+
+The mistakes: creating the timer variable **inside** the returned function (then every call has its own timer and nothing is cancelled); passing the *first* arguments instead of the latest; and calling `debounce(fn, 300)` afresh on every event instead of once — each call makes a brand-new debounced function with its own empty memory.
+--- task
+Write:
+
+- `debounce(fn, ms)` — returns a function that, when called repeatedly, calls `fn` only once the calls have stopped for `ms` milliseconds, with the arguments of the last call.
+- `throttle(fn, ms)` — returns a function that calls `fn` immediately on the first call, then ignores calls until `ms` milliseconds have passed since `fn` last ran.
+
+Both pass all arguments through. The test drive at the end records the calls into `calls`; keep it.
+--- starter
+function debounce(fn, ms) {
+  return fn
+}
+
+function throttle(fn, ms) {
+  return fn
+}
+
+// ---- Test drive: the checks read `calls`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const calls = { debounced: [], throttled: [] }
+
+const d = debounce((...args) => calls.debounced.push(args), 50)
+d(1)
+d(2)
+await sleep(20)
+d(3, 'x')
+await sleep(90)
+d(4)
+await sleep(90)
+
+const t = throttle((...args) => calls.throttled.push(args), 60)
+t(1)
+t(2)
+await sleep(20)
+t(3)
+await sleep(60)
+t(4)
+t(5)
+await sleep(80)
+--- solution
+function debounce(fn, ms) {
+  let timer
+  return (...args) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), ms)
+  }
+}
+
+function throttle(fn, ms) {
+  let last = -Infinity
+  return (...args) => {
+    const now = Date.now()
+    if (now - last >= ms) {
+      last = now
+      fn(...args)
+    }
+  }
+}
+
+// ---- Test drive: the checks read `calls`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const calls = { debounced: [], throttled: [] }
+
+const d = debounce((...args) => calls.debounced.push(args), 50)
+d(1)
+d(2)
+await sleep(20)
+d(3, 'x')
+await sleep(90)
+d(4)
+await sleep(90)
+
+const t = throttle((...args) => calls.throttled.push(args), 60)
+t(1)
+t(2)
+await sleep(20)
+t(3)
+await sleep(60)
+t(4)
+t(5)
+await sleep(80)
+--- hint
+Both functions keep their memory in a variable declared **outside** the returned function — a timer for debounce, a time for throttle.
+--- hint
+Debounce: `clearTimeout(timer)` then `timer = setTimeout(() => fn(...args), ms)` on every call.
+--- hint
+Throttle: start `last` at `-Infinity`; run only when `Date.now() - last >= ms`, and then update `last`.
+--- check case | debounce runs once per burst, with the last arguments
+calls.debounced
+=> [[3, 'x'], [4]]
+?? Calls 1, 2 and 3 come within 50ms of each other: only the last of them should run.
+--- check case | throttle runs at most once per window, starting immediately
+calls.throttled
+=> [[1], [4]]
+--- check test | Both return functions
+typeof debounce(() => {}, 10) === 'function' && typeof throttle(() => {}, 10) === 'function'
+
+=== js3-10 | Memoisation
+--- teach
+**Memoisation** means remembering a function's answers. The first call with some arguments does the work and stores the result under a key made from the arguments; later calls with the same arguments return the stored result instantly.
+
+```js
+function memoize(fn) {
+  const cache = new Map()
+  return (n) => {
+    if (!cache.has(n)) cache.set(n, fn(n))
+    return cache.get(n)
+  }
+}
+```
+
+For several arguments you need a key that represents all of them — `JSON.stringify(args)` is a simple one for numbers and strings (`[1, 2]` and `[2, 1]` give different keys, as they should).
+
+It pays off enormously for **recursive** functions that solve the same sub-problem again and again. Counting the ways to climb `n` stairs taking 1, 2 or 3 at a time:
+
+```js
+function ways(n) {
+  if (n < 0) return 0
+  if (n === 0) return 1
+  return ways(n - 1) + ways(n - 2) + ways(n - 3)
+}
+```
+
+`ways(40)` calls `ways(37)` from three different places, each of which calls `ways(34)`… the number of calls grows roughly 1.8 times with every step up. `ways(40)` makes billions of calls. With memoisation, each `ways(k)` is computed once: 40 calls.
+
+The catch that trips everyone up: memoising a recursive function only helps if the **recursive calls go through the memoised version**. `const fast = memoize(ways)` caches the outer call, but `ways` still calls the slow `ways` inside. Define the function *as* the memoised one: `const ways = memoize((n) => … ways(n - 1) …)`.
+
+Two more rules. Only memoise **pure** functions — caching `fetchPrice()` would serve yesterday's price for ever. And check with `cache.has(key)`, not `if (cache.get(key))`: a remembered `0`, `''` or `undefined` is still an answer.
+--- task
+Write:
+
+- `memoize(fn)` — returns a function that calls `fn` with all its arguments the first time it sees a given combination of arguments, and returns the stored result on later calls with the same arguments (even if that result is `0` or `undefined`). Key the cache with `JSON.stringify(args)`.
+- `const ways` — the stair-climbing count from the lesson (steps of 1, 2 or 3; `ways(0)` is 1, negative `n` is 0), memoised so that `ways(60)` returns instantly.
+--- starter
+function memoize(fn) {
+  return fn
+}
+
+function ways(n) {
+  if (n < 0) return 0
+  if (n === 0) return 1
+  return ways(n - 1) + ways(n - 2) + ways(n - 3)
+}
+--- solution
+function memoize(fn) {
+  const cache = new Map()
+  return (...args) => {
+    const key = JSON.stringify(args)
+    if (!cache.has(key)) cache.set(key, fn(...args))
+    return cache.get(key)
+  }
+}
+
+const ways = memoize((n) => {
+  if (n < 0) return 0
+  if (n === 0) return 1
+  return ways(n - 1) + ways(n - 2) + ways(n - 3)
+})
+--- hint
+Keep a `Map` in the closure. The key for any arguments: `JSON.stringify(args)` where `args` came from `(...args)`.
+--- hint
+Use `cache.has(key)` to decide, so remembered falsy results count.
+--- hint
+Turn `ways` into `const ways = memoize((n) => { … })` so its recursive calls hit the cache too.
+--- check case | Repeated calls use the cache
+(() => { let calls = 0; const sq = memoize((x) => { calls++; return x * x }); return [sq(4), sq(4), sq(5), sq(4), calls] })()
+=> [16, 16, 25, 16, 2]
+--- check case | All the arguments form the key
+(() => { let calls = 0; const sub = memoize((a, b) => { calls++; return a - b }); return [sub(5, 2), sub(2, 5), sub(5, 2), calls] })()
+=> [3, -3, 3, 2]
+--- check case | Falsy results are remembered too
+(() => { let calls = 0; const f = memoize(() => { calls++; return undefined }); f(); f(); return calls })()
+=> 1
+--- check case | Small stair counts
+[ways(0), ways(1), ways(3), ways(4)]
+=> [1, 1, 4, 7]
+--- check case | ways(60), fast
+ways(60)
+=> 4680045560037375
+?? If this times out, the recursive calls are not going through the memoised function.
+
+=== js3-11 | Problem solving: an LRU cache
+--- teach
+A cache keeps recent answers close at hand, but memory is finite, so it needs an **eviction policy**: what to throw out when it is full. The most popular is **LRU — least recently used**: when there is no room, drop the item that has gone longest without being read or written.
+
+Work the problem before coding it. Capacity 2:
+
+```
+put(a, 1)   cache, oldest first: a
+put(b, 2)                        a b
+get(a)      → 1                  b a      (reading a makes it the most recent)
+put(c, 3)   full: evict b        a c
+get(b)      → undefined          a c
+put(a, 9)   update, no eviction  c a
+```
+
+Now the operations you need: find by key, move an item to the "most recent" end, and remove from the "oldest" end — all of them **on every call**.
+
+A first attempt with an array of keys works: `indexOf` to find, `splice` to move, `shift` to evict. But each of those walks the array, so with 50,000 items and 300,000 calls you are doing billions of steps.
+
+The key insight for JavaScript: **a `Map` remembers insertion order**, and deleting and re-inserting a key moves it to the end. So the Map *is* the recency list:
+
+- the most recent key is the last one; the least recent is the first — `map.keys().next().value`;
+- "touch" a key: `map.delete(key)` then `map.set(key, value)`;
+- all of these take the same small time however big the Map is.
+
+Edge cases to decide up front: updating an existing key must not evict anything; values can be falsy (`0`, `''`), so test with `has`, not with the value; and capacity 1 must still work.
+--- task
+Write `class LRUCache`:
+
+- `new LRUCache(capacity)`
+- `get(key)` — the value, or `undefined` if the key is not cached. A successful get makes the key the most recently used.
+- `put(key, value)` — stores the value (updating it if the key exists) and makes the key the most recently used. If that takes the cache above `capacity`, evict the least recently used key.
+- a `size` getter — how many keys are cached.
+- `keys()` — an array of the cached keys, least recently used first.
+
+It will be given 300,000 operations with a capacity of 50,000.
+--- starter
+class LRUCache {
+  constructor(capacity) {
+    this.capacity = capacity
+  }
+
+  get(key) {}
+
+  put(key, value) {}
+}
+--- solution
+class LRUCache {
+  constructor(capacity) {
+    this.capacity = capacity
+    this.map = new Map()
+  }
+
+  get(key) {
+    if (!this.map.has(key)) return undefined
+    const value = this.map.get(key)
+    this.map.delete(key)
+    this.map.set(key, value)
+    return value
+  }
+
+  put(key, value) {
+    if (this.map.has(key)) this.map.delete(key)
+    this.map.set(key, value)
+    if (this.map.size > this.capacity) this.map.delete(this.map.keys().next().value)
+  }
+
+  get size() {
+    return this.map.size
+  }
+
+  keys() {
+    return [...this.map.keys()]
+  }
+}
+--- hint
+Store everything in one `Map`. Its first key is always the least recently used, as long as you move a key to the end whenever it is used.
+--- hint
+To move a key to the end: `delete` it and `set` it again.
+--- hint
+To evict: `this.map.delete(this.map.keys().next().value)` removes the first (oldest) key.
+--- check case | The lesson's example
+(() => { const c = new LRUCache(2); c.put('a', 1); c.put('b', 2); const got = c.get('a'); c.put('c', 3); return [got, c.get('b'), c.keys()] })()
+=> [1, undefined, ['a', 'c']]
+--- check case | Updating a key refreshes it without evicting
+(() => { const c = new LRUCache(2); c.put('a', 1); c.put('b', 2); c.put('a', 9); return [c.size, c.keys(), c.get('a')] })()
+=> [2, ['b', 'a'], 9]
+--- check case | Falsy values are real values
+(() => { const c = new LRUCache(2); c.put('z', 0); c.put('e', ''); return [c.get('z'), c.get('e')] })()
+=> [0, '']
+--- check case | Capacity 1
+(() => { const c = new LRUCache(1); c.put(1, 'one'); c.put(2, 'two'); return [c.get(1), c.get(2), c.size] })()
+=> [undefined, 'two', 1]
+--- check case | A new cache is empty
+[new LRUCache(3).size, new LRUCache(3).keys()]
+=> [0, []]
+--- check case | 300,000 operations, fast
+(() => { const c = new LRUCache(50000); let hits = 0; for (let i = 0; i < 300000; i++) { const k = (i * i) % 140009; if (c.get(k) !== undefined) hits++; else c.put(k, i) } return [c.size, hits] })()
+=> [50000, 169980]
+?? Anything that searches an array on each call is too slow here. Let a Map's insertion order be the recency list.
+
+=== js3-12 | Currying and composition
+--- teach
+**Composition** builds a function out of smaller ones by feeding each one's output into the next. Two conventions:
+
+- `pipe(f, g, h)(x)` is `h(g(f(x)))` — reads left to right, in the order things happen.
+- `compose(f, g, h)(x)` is `f(g(h(x)))` — right to left, as in mathematics.
+
+Both are a single `reduce`:
+
+```js
+const pipe = (...fns) => (x) => fns.reduce((acc, f) => f(acc), x)
+const shout = pipe((s) => s.trim(), (s) => s.toUpperCase(), (s) => `${s}!`)
+shout('  hello ')   // 'HELLO!'
+```
+
+With no functions at all, both should return the input unchanged — that falls out of `reduce` naturally, as long as you pass the starting value.
+
+Composition only works with functions that take **one** argument. **Currying** is how you get them: a curried function takes its arguments one (or a few) at a time, returning a new function until it has all of them.
+
+```js
+const add3 = (a) => (b) => (c) => a + b + c
+add3(1)(2)(3)   // 6
+```
+
+A general `curry(fn)` uses `fn.length` — the number of parameters `fn` declares — to know when it has enough. Until then it returns a function that remembers the arguments so far:
+
+- `curry(f)(1, 2, 3)`, `curry(f)(1)(2)(3)` and `curry(f)(1, 2)(3)` should all be `f(1, 2, 3)`.
+
+Put the argument most likely to change **last** — `join(separator, list)`, not `join(list, separator)` — so that partial application gives useful single-argument pieces: `join('-')` is a function waiting for a list, ready to drop into a pipe.
+
+One limit: `fn.length` does not count rest parameters or ones with defaults, so `curry` is for functions with a fixed number of plain parameters.
+--- task
+Write:
+
+- `curry(fn)` — returns a curried version of `fn` that accepts its arguments in any grouping, and calls `fn` once it has at least `fn.length` of them.
+- `compose(...fns)` — right to left; `compose()` returns its input unchanged.
+- `pipe(...fns)` — left to right; `pipe()` returns its input unchanged.
+- `const join` — `curry((separator, list) => list.join(separator))`.
+- `const slugify` — a `pipe` that trims a string, lowercases it, splits it on runs of whitespace (`/\s+/`) and joins the words with `join('-')`.
+--- starter
+function curry(fn) {
+  return fn
+}
+
+function compose(...fns) {
+  return (x) => x
+}
+
+function pipe(...fns) {
+  return (x) => x
+}
+--- solution
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) return fn(...args)
+    return (...more) => curried(...args, ...more)
+  }
+}
+
+function compose(...fns) {
+  return (x) => fns.reduceRight((acc, f) => f(acc), x)
+}
+
+function pipe(...fns) {
+  return (x) => fns.reduce((acc, f) => f(acc), x)
+}
+
+const join = curry((separator, list) => list.join(separator))
+
+const slugify = pipe(
+  (s) => s.trim(),
+  (s) => s.toLowerCase(),
+  (s) => s.split(/\s+/),
+  join('-'),
+)
+--- hint
+`curry` returns a named inner function `curried(...args)`. If it has enough arguments, call `fn`; otherwise return `(...more) => curried(...args, ...more)`.
+--- hint
+`pipe` is `fns.reduce((acc, f) => f(acc), x)`; `compose` is the same with `reduceRight`.
+--- hint
+`join('-')` is already a one-argument function, so it can be the last step of `slugify`.
+--- check case | curry accepts every grouping
+(() => { const add = curry((a, b, c) => a + b + c); return [add(1, 2, 3), add(1)(2)(3), add(1, 2)(3), add(1)(2, 3)] })()
+=> [6, 6, 6, 6]
+--- check case | Partial applications are reusable
+(() => { const mul = curry((a, b) => a * b); const double = mul(2); return [double(5), double(21), mul(3)(3)] })()
+=> [10, 42, 9]
+--- check case | compose runs right to left
+compose((x) => x + 1, (x) => x * 10)(2)
+=> 21
+--- check case | pipe runs left to right
+pipe((x) => x + 1, (x) => x * 10)(2)
+=> 30
+--- check case | With no functions, the input comes back
+[compose()(7), pipe()('same')]
+=> [7, 'same']
+--- check case | join is curried
+join(', ')(['a', 'b', 'c'])
+=> 'a, b, c'
+--- check case | slugify is built from the pieces
+slugify('  Hello Big   World ')
+=> 'hello-big-world'
+
+=== js3-13 | Design: factory functions and dependency injection
+--- teach
+Look at code that reaches out and grabs what it needs — `Date.now()`, `Math.random()`, a global `sendEmail`, a module-level object holding state. It works, but try to *test* it: to check "a user is not emailed twice within a minute", you would have to actually wait a minute. You cannot check the message text because the id in it is random. And every caller shares one hidden state, so tests leak into each other.
+
+**Dependency injection** is the cure: a piece of code is **given** the things it depends on instead of finding them itself. In JavaScript the lightest way to do that is a **factory function** — a function that takes the dependencies and returns an object whose methods close over them:
+
+```js
+function createGreeter({ clock = () => new Date() } = {}) {
+  return {
+    greet(name) {
+      return clock().getHours() < 12 ? `Good morning, ${name}` : `Hello, ${name}`
+    },
+  }
+}
+const atNine = createGreeter({ clock: () => new Date(2026, 0, 1, 9) })
+atNine.greet('Ada')    // 'Good morning, Ada'
+```
+
+In production you call `createGreeter()` and get the real clock by default. In a test you pass a fake clock and control time completely.
+
+What a factory gives you:
+
+- **Testable** code: time, randomness and the outside world become arguments you can fake.
+- **Private state** in the closure, with **independent instances**: two notifiers never share a rate-limit table.
+- **Explicit dependencies**: the parameter list documents everything the module touches.
+
+Guidelines: inject what is slow, random, time-based or external (clocks, ids, network, storage); give sensible defaults so ordinary callers need not care; pass one options object, so adding a dependency later does not break existing calls; and return copies of internal state, never the live object.
+--- task
+The starter's `notify` is untestable: it reads `Date.now()`, makes random ids, sends through a global, and keeps its state at the top level. Replace it with a factory `createNotifier(options)`, where `options` has:
+
+- `send(to, text)` — required; how to deliver a message.
+- `clock` — returns the current time in ms; defaults to `Date.now`.
+- `makeId` — returns a new id; defaults to a random string.
+- `minGapMs` — defaults to `60000`.
+
+It returns an object with:
+
+- `notify(user, text)` — if this notifier sent to `user.email` less than `minGapMs` ago (by `clock()`), return `false` and send nothing. Otherwise call `send(user.email, '[' + id + '] ' + text)` with a fresh id and return `true`.
+- `history()` — a **copy** of the list of `{ to, at }` records for every message sent, oldest first.
+--- starter
+const sent = []
+function sendEmail(to, text) {
+  sent.push({ to, text })
+}
+
+const lastSent = {}
+function notify(user, text) {
+  const now = Date.now()
+  if (lastSent[user.email] && now - lastSent[user.email] < 60000) return false
+  lastSent[user.email] = now
+  const id = Math.random().toString(36).slice(2)
+  sendEmail(user.email, `[${id}] ${text}`)
+  return true
+}
+--- solution
+function createNotifier({ send, clock = Date.now, makeId = () => Math.random().toString(36).slice(2), minGapMs = 60000 }) {
+  const lastSent = new Map()
+  const records = []
+  return {
+    notify(user, text) {
+      const now = clock()
+      if (lastSent.has(user.email) && now - lastSent.get(user.email) < minGapMs) return false
+      lastSent.set(user.email, now)
+      send(user.email, `[${makeId()}] ${text}`)
+      records.push({ to: user.email, at: now })
+      return true
+    },
+    history() {
+      return records.map((r) => ({ ...r }))
+    },
+  }
+}
+--- hint
+Destructure the options with defaults in the parameter list: `function createNotifier({ send, clock = Date.now, … })`.
+--- hint
+Move the `lastSent` table inside the factory (a `Map` is a good fit), so each notifier has its own.
+--- hint
+`history()` should return `records.map((r) => ({ ...r }))`, so callers cannot change the notifier's own list.
+--- check case | It sends through the injected send, with the injected id
+(() => { const out = []; const n = createNotifier({ send: (to, text) => out.push([to, text]), clock: () => 1000, makeId: () => 'id7' }); const ok = n.notify({ email: 'ada@x.io' }, 'Welcome'); return [ok, out] })()
+=> [true, [['ada@x.io', '[id7] Welcome']]]
+--- check case | The rate limit follows the injected clock
+(() => { let now = 0; const out = []; const n = createNotifier({ send: (to) => out.push(to), clock: () => now, makeId: () => 'x' }); const a = n.notify({ email: 'a@x' }, 'hi'); now = 59999; const b = n.notify({ email: 'a@x' }, 'hi'); now = 60000; const c = n.notify({ email: 'a@x' }, 'hi'); return [a, b, c, out.length] })()
+=> [true, false, true, 2]
+--- check case | Different people are limited separately
+(() => { const n = createNotifier({ send: () => {}, clock: () => 5, makeId: () => 'x' }); return [n.notify({ email: 'a@x' }, 'hi'), n.notify({ email: 'b@x' }, 'hi')] })()
+=> [true, true]
+--- check case | minGapMs is configurable
+(() => { let now = 0; const n = createNotifier({ send: () => {}, clock: () => now, makeId: () => 'x', minGapMs: 10 }); n.notify({ email: 'a@x' }, 'hi'); now = 10; return n.notify({ email: 'a@x' }, 'again') })()
+=> true
+--- check case | Two notifiers are independent
+(() => { const opts = { send: () => {}, clock: () => 0, makeId: () => 'x' }; const a = createNotifier(opts); const b = createNotifier(opts); a.notify({ email: 'q@x' }, 'hi'); return b.notify({ email: 'q@x' }, 'hi') })()
+=> true
+--- check case | history is a copy of what was sent
+(() => { let now = 100; const n = createNotifier({ send: () => {}, clock: () => now, makeId: () => 'x' }); n.notify({ email: 'a@x' }, 'hi'); now = 200; n.notify({ email: 'b@x' }, 'hi'); const h = n.history(); h.pop(); h[0].to = 'changed'; return n.history() })()
+=> [{ to: 'a@x', at: 100 }, { to: 'b@x', at: 200 }]
+--- check test | The defaults work with only send given
+typeof createNotifier({ send: () => {} }).notify({ email: 'a@x' }, 'hi') === 'boolean'
+
+=== js3-14 | Problem solving: binary search and two pointers
+--- teach
+When the input is **sorted**, you can answer questions about it far faster than by looking at everything. Two techniques cover a remarkable number of problems.
+
+**Binary search.** Keep a window `[lo, hi)` that must contain the answer. Look at the middle: depending on how it compares with the target, the answer is in the left half or the right half, so throw the other half away. Each step halves the window, so a million items take about 20 steps instead of a million.
+
+The most useful version finds the **lower bound**: the first index whose value is `>=` the target (or `length` if there is none). It answers "is it there?", "where would it go?" and "how many are smaller?" all at once.
+
+```js
+function lowerBound(a, target) {
+  let lo = 0
+  let hi = a.length              // the answer is somewhere in [lo, hi]
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (a[mid] < target) lo = mid + 1   // mid is too small: answer is to its right
+    else hi = mid                       // mid might be the answer: keep it
+  }
+  return lo
+}
+lowerBound([1, 3, 3, 7], 3)   // 1
+lowerBound([1, 3, 3, 7], 4)   // 3
+```
+
+Binary search is famous for **off-by-one** errors. Guard against them by writing down what `lo` and `hi` mean (here: the answer is always within `[lo, hi]`) and checking that every branch keeps that true and shrinks the window.
+
+**Two pointers.** For "is there a pair that sums to `target`?", the brute force tries every pair — n²/2 of them. With sorted input, start one pointer at each end. If the pair sums too low, only moving the left pointer right can help; too high, move the right pointer left. Each step rules out a whole row of pairs, so one pass of n steps is enough.
+
+The approach to any problem like this: **restate** it, work small **examples** by hand (including empty input, one item and duplicates), write the **brute force** so you have something correct, then ask *what does sortedness let me skip?*
+--- task
+The arrays you get are sorted ascending and contain integers. Write:
+
+- `lowerBound(sorted, target)` — the first index whose value is `>= target`, or `sorted.length` if there is none. Use binary search.
+- `countInRange(sorted, lo, hi)` — how many values `v` have `lo <= v <= hi`.
+- `hasPairWithSum(sorted, target)` — `true` if two values at **different** positions add up to `target`. Use two pointers.
+
+They will be given a million numbers and 200,000 queries.
+--- starter
+function lowerBound(sorted, target) {
+  return sorted.findIndex((v) => v >= target)
+}
+
+function countInRange(sorted, lo, hi) {
+  return sorted.filter((v) => v >= lo && v <= hi).length
+}
+
+function hasPairWithSum(sorted, target) {
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (sorted[i] + sorted[j] === target) return true
+    }
+  }
+  return false
+}
+--- solution
+function lowerBound(sorted, target) {
+  let lo = 0
+  let hi = sorted.length
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (sorted[mid] < target) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+function countInRange(sorted, lo, hi) {
+  if (hi < lo) return 0
+  return lowerBound(sorted, hi + 1) - lowerBound(sorted, lo)
+}
+
+function hasPairWithSum(sorted, target) {
+  let i = 0
+  let j = sorted.length - 1
+  while (i < j) {
+    const sum = sorted[i] + sorted[j]
+    if (sum === target) return true
+    if (sum < target) i++
+    else j--
+  }
+  return false
+}
+--- hint
+`lowerBound`: keep `lo = 0`, `hi = sorted.length`; while `lo < hi`, move `lo` past `mid` if `sorted[mid] < target`, else bring `hi` down to `mid`.
+--- hint
+Because the values are integers, the count in `[lo, hi]` is `lowerBound(sorted, hi + 1) - lowerBound(sorted, lo)`.
+--- hint
+Two pointers: `i = 0`, `j = length - 1`, loop while `i < j`. Sum too small → `i++`; too big → `j--`.
+--- check case | lowerBound finds the first match among duplicates
+lowerBound([1, 3, 3, 7], 3)
+=> 1
+--- check case | lowerBound between values, before all, after all
+[lowerBound([1, 3, 3, 7], 4), lowerBound([1, 3, 3, 7], -5), lowerBound([1, 3, 3, 7], 8), lowerBound([], 1)]
+=> [3, 0, 4, 0]
+--- check case | countInRange counts inclusively
+[countInRange([1, 2, 2, 5, 9], 2, 5), countInRange([1, 2, 2, 5, 9], 6, 8), countInRange([], 0, 10)]
+=> [3, 0, 0]
+--- check case | hasPairWithSum, both ways
+[hasPairWithSum([1, 2, 4, 4], 8), hasPairWithSum([1, 2, 3, 9], 8)]
+=> [true, false]
+--- check case | One number cannot pair with itself
+[hasPairWithSum([5], 10), hasPairWithSum([], 0)]
+=> [false, false]
+--- check case | 200,000 range counts over a million numbers
+(() => { const a = Array.from({ length: 1000000 }, (_, i) => i * 2); let total = 0; for (let q = 0; q < 200000; q++) total += countInRange(a, q * 7, q * 7 + 100); return total })()
+=> 10100000
+?? A scan per query is 200,000 × 1,000,000 steps. Binary search makes each query about 20 steps.
+--- check case | A pair search over a million numbers
+(() => { const a = Array.from({ length: 1000000 }, (_, i) => i * 2); return [hasPairWithSum(a, 1999999), hasPairWithSum(a, 3999994)] })()
+=> [false, true]
+?? Trying every pair is half a trillion checks. Walk in from both ends instead.

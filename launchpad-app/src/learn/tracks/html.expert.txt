@@ -1,0 +1,2394 @@
+@track html
+@level expert
+@title Web · Expert
+@name Web, expert: architecture, performance and front-end debugging
+@blurb The ideas under every front-end framework, built by hand: a store with one-way data flow, derived state, keyed rendering, undo, templates and custom elements, debouncing, routing and state machines — plus accessibility audits and hunting down several bugs at once.
+
+=== web4-01 | A store: dispatch, reducers and subscribe
+--- teach
+The advanced course kept pages correct with one state object and one `render()`. This course scales that up: stores, derived data, keyed rendering, undo, reusable elements, performance, accessibility audits, focus and routing.
+
+As an app grows, "handlers change state and call render" needs one more rule: **all changes go through one door.** That door is a **store**, and the flow is always one way:
+
+```
+event  →  dispatch(action)  →  reducer(state, action)  →  new state  →  subscribers (render, log, save…)
+```
+
+- An **action** is a plain object describing what happened: `{ type: 'increment' }`, `{ type: 'setStep', step: 5 }`.
+- A **reducer** is a *pure* function `(state, action) => newState`. It never changes the old state; it returns a new object (`{ ...state, count: state.count + 1 }`). Same inputs, same output, no side effects.
+- **Subscribers** are functions the store calls after every change. `render` is one; a logger is another. `subscribe` returns a function that unsubscribes.
+
+```js
+function createStore(reducer, initialState) {
+  let state = initialState
+  const listeners = new Set()
+  return {
+    getState: () => state,
+    dispatch(action) {
+      state = reducer(state, action)
+      for (const listener of listeners) listener(state, action)
+    },
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+  }
+}
+```
+
+Some JavaScript in it: `new Set()` is a collection that holds each value once (`add`, `delete`, and `for…of` to loop over it); `dispatch(action) { … }` inside an object literal is shorthand for a method; and `state` and `listeners` live on inside the returned functions, a closure. Your reducer can use `switch (action.type)`, which runs the `case` whose value matches and `default` when none does.
+
+Why pure reducers matter: because every change produces a *new* object, anything that kept an old state still has the old values. That is what makes undo, time-travel debugging and cheap "did anything change?" checks (`prev === next`) possible. A reducer that mutates (`state.count += 1; return state`) breaks all of that silently — every saved "old" state is the same object as the new one.
+
+This is the design of Redux, and of React's `useReducer`; Vue and Svelte stores are close cousins.
+--- task
+The page is wired up; write the two missing pieces.
+
+- `createStore(reducer, initialState)` returning `{ getState, dispatch, subscribe }`. `dispatch` calls every subscriber with `(state, action)` once per action; `subscribe` returns an unsubscribe function.
+- `reducer(state, action)` — **pure**, always returning a new object — handling `increment` and `decrement` (by `state.step`), `setStep` (to `action.step`) and `reset` (count back to 0).
+--- starter
+<p>Count: <strong id="count"></strong></p>
+<button id="dec">−</button>
+<button id="inc">+</button>
+<button id="reset">Reset</button>
+<label for="step">Step</label>
+<select id="step">
+  <option value="1">1</option>
+  <option value="5">5</option>
+  <option value="10">10</option>
+</select>
+<p>Renders: <span id="renders">0</span></p>
+<p>History: <span id="history"></span></p>
+<button id="stop-log">Stop logging</button>
+<ol id="log"></ol>
+
+<script>
+  function createStore(reducer, initialState) {
+    // Return { getState, dispatch, subscribe }.
+  }
+
+  function reducer(state, action) {
+    return state
+  }
+
+  // ---- The app. You don't need to change anything below. ----
+  const store = createStore(reducer, { count: 0, step: 1 })
+  let renders = 0
+
+  function render(state) {
+    renders += 1
+    document.querySelector('#count').textContent = state.count
+    document.querySelector('#renders').textContent = renders
+  }
+
+  const seen = [store.getState()]
+  store.subscribe(render)
+  store.subscribe((state) => {
+    seen.push(state)
+    document.querySelector('#history').textContent = seen.map((s) => s.count).join(' → ')
+  })
+  const stopLogging = store.subscribe((state, action) => {
+    const li = document.createElement('li')
+    li.textContent = action.type
+    document.querySelector('#log').append(li)
+  })
+
+  document.querySelector('#inc').addEventListener('click', () => store.dispatch({ type: 'increment' }))
+  document.querySelector('#dec').addEventListener('click', () => store.dispatch({ type: 'decrement' }))
+  document.querySelector('#reset').addEventListener('click', () => store.dispatch({ type: 'reset' }))
+  document.querySelector('#step').addEventListener('change', (event) => store.dispatch({ type: 'setStep', step: Number(event.target.value) }))
+  document.querySelector('#stop-log').addEventListener('click', () => stopLogging())
+
+  render(store.getState())
+  document.querySelector('#history').textContent = '0'
+</script>
+--- solution
+<p>Count: <strong id="count"></strong></p>
+<button id="dec">−</button>
+<button id="inc">+</button>
+<button id="reset">Reset</button>
+<label for="step">Step</label>
+<select id="step">
+  <option value="1">1</option>
+  <option value="5">5</option>
+  <option value="10">10</option>
+</select>
+<p>Renders: <span id="renders">0</span></p>
+<p>History: <span id="history"></span></p>
+<button id="stop-log">Stop logging</button>
+<ol id="log"></ol>
+
+<script>
+  function createStore(reducer, initialState) {
+    let state = initialState
+    const listeners = new Set()
+    return {
+      getState: () => state,
+      dispatch(action) {
+        state = reducer(state, action)
+        for (const listener of listeners) listener(state, action)
+      },
+      subscribe(listener) {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      },
+    }
+  }
+
+  function reducer(state, action) {
+    switch (action.type) {
+      case 'increment':
+        return { ...state, count: state.count + state.step }
+      case 'decrement':
+        return { ...state, count: state.count - state.step }
+      case 'setStep':
+        return { ...state, step: action.step }
+      case 'reset':
+        return { ...state, count: 0 }
+      default:
+        return state
+    }
+  }
+
+  // ---- The app. You don't need to change anything below. ----
+  const store = createStore(reducer, { count: 0, step: 1 })
+  let renders = 0
+
+  function render(state) {
+    renders += 1
+    document.querySelector('#count').textContent = state.count
+    document.querySelector('#renders').textContent = renders
+  }
+
+  const seen = [store.getState()]
+  store.subscribe(render)
+  store.subscribe((state) => {
+    seen.push(state)
+    document.querySelector('#history').textContent = seen.map((s) => s.count).join(' → ')
+  })
+  const stopLogging = store.subscribe((state, action) => {
+    const li = document.createElement('li')
+    li.textContent = action.type
+    document.querySelector('#log').append(li)
+  })
+
+  document.querySelector('#inc').addEventListener('click', () => store.dispatch({ type: 'increment' }))
+  document.querySelector('#dec').addEventListener('click', () => store.dispatch({ type: 'decrement' }))
+  document.querySelector('#reset').addEventListener('click', () => store.dispatch({ type: 'reset' }))
+  document.querySelector('#step').addEventListener('change', (event) => store.dispatch({ type: 'setStep', step: Number(event.target.value) }))
+  document.querySelector('#stop-log').addEventListener('click', () => stopLogging())
+
+  render(store.getState())
+  document.querySelector('#history').textContent = '0'
+</script>
+--- hint
+`createStore` keeps `state` and a `Set` of listeners in its closure. `dispatch` replaces `state` with `reducer(state, action)`, then calls each listener with `(state, action)`.
+--- hint
+The reducer is a `switch (action.type)` where every case returns a fresh object, like `{ ...state, count: state.count + state.step }`, and `default` returns `state` unchanged.
+--- check dom | It starts at 0, drawn once
+#count text == 0
+#renders text == 1
+--- check dom | Each action updates the count and renders exactly once
+click #inc
+click #inc
+click #inc
+#count text == 3
+#renders text == 4
+--- check dom | The step changes how far each click goes
+type #step 5
+click #inc
+click #inc
+#count text == 10
+click #dec
+#count text == 5
+--- check dom | Reset goes back to 0
+click #inc
+click #reset
+#count text == 0
+--- check dom | Subscribers hear every action, and can unsubscribe
+click #inc
+click #dec
+#log li count == 2
+#log li:first-child text == increment
+click #stop-log
+click #inc
+#log li count == 2
+--- check dom | The reducer is pure: old states keep their values
+click #inc
+click #inc
+#history text == 0 → 1 → 2
+
+=== web4-02 | Design: derive it, don't store it
+--- teach
+A state object tends to collect copies: the list of items, *and* how many are done, *and* the filtered list the page shows. Each copy is another thing every handler must keep in sync, and sooner or later one handler forgets. That is not carelessness; it is a design that makes the mistake easy.
+
+**Store the minimum. Derive the rest.** If a value can be computed from other state, compute it when you need it:
+
+```js
+const state = { items: [...], filter: 'all' }   // the facts, nothing else
+
+function countDone(items) {
+  return items.filter((item) => item.done).length
+}
+function visibleItems(state) {
+  if (state.filter === 'open') return state.items.filter((i) => !i.done)
+  if (state.filter === 'finished') return state.items.filter((i) => i.done)
+  return state.items
+}
+
+function render() {
+  const shown = visibleItems(state)
+  // … draw `shown`, and `${countDone(state.items)} of ${state.items.length} done`
+}
+```
+
+These little functions are called **selectors**: they take state and answer a question about it. They can't go stale, because they are recomputed from the facts every time. Handlers get simpler too — toggling an item just flips `done`; nothing else needs remembering.
+
+"Isn't recomputing wasteful?" Filtering a few hundred items takes microseconds. If a selector ever does become expensive, you *memoize* it (cache the answer until its inputs change) — but you start from derived values and optimise later, never the other way round.
+
+A quick test for any piece of state: *could I compute this from the rest?* If yes, it is not state.
+--- task
+Bug report: *"Deleting a finished task leaves the done count too high. And the filter buttons don't change the list until I tick something."*
+
+Both bugs come from storing derived values. Remove `doneCount` and `visible` from `state` entirely, write the selectors `countDone(items)` and `visibleItems(state)`, and make `render()` use them. Behaviour otherwise stays the same (the filter buttons set `aria-pressed` on the chosen one).
+--- starter
+<ul id="items"></ul>
+<p id="summary"></p>
+<div>
+  <button id="all" aria-pressed="true">All</button>
+  <button id="open" aria-pressed="false">Open</button>
+  <button id="finished" aria-pressed="false">Finished</button>
+</div>
+
+<script>
+  const state = {
+    items: [
+      { id: 1, label: 'Fuel', done: true },
+      { id: 2, label: 'Comms', done: false },
+      { id: 3, label: 'Suits', done: false },
+    ],
+    doneCount: 1,
+    filter: 'all',
+    visible: [],
+  }
+
+  function refreshVisible() {
+    if (state.filter === 'open') state.visible = state.items.filter((i) => !i.done)
+    else if (state.filter === 'finished') state.visible = state.items.filter((i) => i.done)
+    else state.visible = state.items
+  }
+
+  const list = document.querySelector('#items')
+
+  function render() {
+    list.replaceChildren(
+      ...state.visible.map((item) => {
+        const li = document.createElement('li')
+        li.dataset.id = item.id
+        li.innerHTML = '<input type="checkbox" class="toggle"> <span class="label"></span> <button class="remove">Remove</button>'
+        li.querySelector('.toggle').checked = item.done
+        li.querySelector('.label').textContent = item.label
+        return li
+      }),
+    )
+    document.querySelector('#summary').textContent = `${state.doneCount} of ${state.items.length} done`
+    for (const f of ['all', 'open', 'finished']) {
+      document.querySelector(`#${f}`).setAttribute('aria-pressed', String(state.filter === f))
+    }
+  }
+
+  list.addEventListener('change', (event) => {
+    const item = state.items.find((i) => i.id === Number(event.target.closest('li').dataset.id))
+    item.done = event.target.checked
+    state.doneCount += item.done ? 1 : -1
+    refreshVisible()
+    render()
+  })
+  list.addEventListener('click', (event) => {
+    if (!event.target.closest('.remove')) return
+    const id = Number(event.target.closest('li').dataset.id)
+    state.items = state.items.filter((i) => i.id !== id)
+    refreshVisible()
+    render()
+  })
+  for (const f of ['all', 'open', 'finished']) {
+    document.querySelector(`#${f}`).addEventListener('click', () => {
+      state.filter = f
+      render()
+    })
+  }
+
+  refreshVisible()
+  render()
+</script>
+--- solution
+<ul id="items"></ul>
+<p id="summary"></p>
+<div>
+  <button id="all" aria-pressed="true">All</button>
+  <button id="open" aria-pressed="false">Open</button>
+  <button id="finished" aria-pressed="false">Finished</button>
+</div>
+
+<script>
+  const state = {
+    items: [
+      { id: 1, label: 'Fuel', done: true },
+      { id: 2, label: 'Comms', done: false },
+      { id: 3, label: 'Suits', done: false },
+    ],
+    filter: 'all',
+  }
+
+  function countDone(items) {
+    return items.filter((item) => item.done).length
+  }
+
+  function visibleItems(state) {
+    if (state.filter === 'open') return state.items.filter((i) => !i.done)
+    if (state.filter === 'finished') return state.items.filter((i) => i.done)
+    return state.items
+  }
+
+  const list = document.querySelector('#items')
+
+  function render() {
+    list.replaceChildren(
+      ...visibleItems(state).map((item) => {
+        const li = document.createElement('li')
+        li.dataset.id = item.id
+        li.innerHTML = '<input type="checkbox" class="toggle"> <span class="label"></span> <button class="remove">Remove</button>'
+        li.querySelector('.toggle').checked = item.done
+        li.querySelector('.label').textContent = item.label
+        return li
+      }),
+    )
+    document.querySelector('#summary').textContent = `${countDone(state.items)} of ${state.items.length} done`
+    for (const f of ['all', 'open', 'finished']) {
+      document.querySelector(`#${f}`).setAttribute('aria-pressed', String(state.filter === f))
+    }
+  }
+
+  list.addEventListener('change', (event) => {
+    const item = state.items.find((i) => i.id === Number(event.target.closest('li').dataset.id))
+    item.done = event.target.checked
+    render()
+  })
+  list.addEventListener('click', (event) => {
+    if (!event.target.closest('.remove')) return
+    const id = Number(event.target.closest('li').dataset.id)
+    state.items = state.items.filter((i) => i.id !== id)
+    render()
+  })
+  for (const f of ['all', 'open', 'finished']) {
+    document.querySelector(`#${f}`).addEventListener('click', () => {
+      state.filter = f
+      render()
+    })
+  }
+
+  render()
+</script>
+--- hint
+Delete `doneCount`, `visible` and `refreshVisible` completely, then follow the errors: every place that used them now calls a selector instead.
+--- hint
+`render()` draws `visibleItems(state)` and writes `countDone(state.items)`. The handlers only change `items` or `filter` and call `render()`.
+--- check dom | Starts with one of three done
+#items li count == 3
+#summary text == 1 of 3 done
+--- check dom | Deleting a finished task keeps the count right
+click #items li:first-child .remove
+#summary text == 0 of 2 done
+--- check dom | The filters change the list straight away
+click #finished
+#items li count == 1
+#items li .label text == Fuel
+#finished attr aria-pressed == true
+click #open
+#items li count == 2
+--- check dom | Ticking updates the count and the filtered view
+click #items li:nth-child(2) .toggle
+#summary text == 2 of 3 done
+click #finished
+#items li count == 2
+--- check source | Counts with a countDone selector
+function countDone\s*\(
+--- check source | Filters with a visibleItems selector
+function visibleItems\s*\(
+--- check source absent | No stored copies of derived values
+doneCount|visible\s*:|state\.visible
+
+=== web4-03 | Keyed rendering: update, don't rebuild
+--- teach
+Rebuilding a list from scratch on every change is simple, and it has a cost you only notice when the elements hold something of their own: text half-typed into an input, keyboard focus, a scroll position, a running animation, an open `<details>`. Throw the element away and all of that goes with it.
+
+**Keyed rendering** keeps each data item's element for as long as the item exists. Give every item a stable **key** (its id — never its position, which changes when items move), remember which element belongs to which key, and on each render:
+
+1. **Create** an element for a key you haven't seen.
+2. **Update** the existing element for a key you have — change only what differs, like its label's text.
+3. **Move** elements into the right order.
+4. **Remove** elements whose keys are gone.
+
+```js
+const rows = new Map()   // key → element
+
+function render() {
+  const seen = new Set()
+  items.forEach((item, index) => {
+    let li = rows.get(item.id)
+    if (!li) {
+      li = createRow(item)
+      rows.set(item.id, li)
+    }
+    li.querySelector('.label').textContent = item.label     // update in place
+    const here = list.children[index]
+    if (here !== li) list.insertBefore(li, here || null)    // move only if needed
+    seen.add(item.id)
+  })
+  for (const [id, li] of rows) {
+    if (!seen.has(id)) {
+      li.remove()
+      rows.delete(id)
+    }
+  }
+}
+```
+
+`new Map()` is a dictionary whose keys can be anything, numeric ids included: `get`, `set`, `has`, `delete`, and `for (const [key, value] of map)` to loop. `insertBefore` *moves* an element that is already in the page; it doesn't copy it. This, give or take, is what React's `key` prop and Vue's `:key` are for: they tell the framework which element is which, so it can reconcile instead of rebuild. Using the array index as a key reintroduces the bug the moment the list is reordered.
+--- task
+Bug report: *"Every time I add, rename or reorder, the notes I typed disappear and I lose my place."*
+
+Rewrite `render()` as a keyed render: keep one `li` per item id (with `data-key` set to the id), create rows for new items, update the `.label` of existing rows in place, put rows in the order of `items`, and remove rows for deleted items. Leave `createRow` and the buttons as they are.
+--- starter
+<button id="add">Add</button>
+<button id="rename">Rename Bravo</button>
+<button id="reverse">Reverse</button>
+<ul id="list"></ul>
+
+<script>
+  const names = ['Delta', 'Echo', 'Foxtrot', 'Golf']
+  let items = [
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ]
+  let nextId = 4
+  const list = document.querySelector('#list')
+
+  function createRow(item) {
+    const li = document.createElement('li')
+    li.dataset.key = item.id
+    const label = document.createElement('span')
+    label.className = 'label'
+    const note = document.createElement('input')
+    note.className = 'note'
+    note.setAttribute('aria-label', `Note for ${item.label}`)
+    const remove = document.createElement('button')
+    remove.className = 'remove'
+    remove.textContent = 'Remove'
+    li.append(label, ' ', note, ' ', remove)
+    return li
+  }
+
+  function render() {
+    list.replaceChildren()
+    for (const item of items) {
+      const li = createRow(item)
+      li.querySelector('.label').textContent = item.label
+      list.append(li)
+    }
+  }
+
+  document.querySelector('#add').addEventListener('click', () => {
+    items = [...items, { id: nextId, label: names[nextId - 4] }]
+    nextId += 1
+    render()
+  })
+  document.querySelector('#rename').addEventListener('click', () => {
+    items = items.map((item) => (item.id === 2 ? { ...item, label: 'Bravo (lead)' } : item))
+    render()
+  })
+  document.querySelector('#reverse').addEventListener('click', () => {
+    items = [...items].reverse()
+    render()
+  })
+  list.addEventListener('click', (event) => {
+    if (!event.target.closest('.remove')) return
+    const id = Number(event.target.closest('li').dataset.key)
+    items = items.filter((item) => item.id !== id)
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<button id="add">Add</button>
+<button id="rename">Rename Bravo</button>
+<button id="reverse">Reverse</button>
+<ul id="list"></ul>
+
+<script>
+  const names = ['Delta', 'Echo', 'Foxtrot', 'Golf']
+  let items = [
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ]
+  let nextId = 4
+  const list = document.querySelector('#list')
+  const rows = new Map()
+
+  function createRow(item) {
+    const li = document.createElement('li')
+    li.dataset.key = item.id
+    const label = document.createElement('span')
+    label.className = 'label'
+    const note = document.createElement('input')
+    note.className = 'note'
+    note.setAttribute('aria-label', `Note for ${item.label}`)
+    const remove = document.createElement('button')
+    remove.className = 'remove'
+    remove.textContent = 'Remove'
+    li.append(label, ' ', note, ' ', remove)
+    return li
+  }
+
+  function render() {
+    const seen = new Set()
+    items.forEach((item, index) => {
+      let li = rows.get(item.id)
+      if (!li) {
+        li = createRow(item)
+        rows.set(item.id, li)
+      }
+      const label = li.querySelector('.label')
+      if (label.textContent !== item.label) label.textContent = item.label
+      const here = list.children[index]
+      if (here !== li) list.insertBefore(li, here || null)
+      seen.add(item.id)
+    })
+    for (const [id, li] of rows) {
+      if (!seen.has(id)) {
+        li.remove()
+        rows.delete(id)
+      }
+    }
+  }
+
+  document.querySelector('#add').addEventListener('click', () => {
+    items = [...items, { id: nextId, label: names[nextId - 4] }]
+    nextId += 1
+    render()
+  })
+  document.querySelector('#rename').addEventListener('click', () => {
+    items = items.map((item) => (item.id === 2 ? { ...item, label: 'Bravo (lead)' } : item))
+    render()
+  })
+  document.querySelector('#reverse').addEventListener('click', () => {
+    items = [...items].reverse()
+    render()
+  })
+  list.addEventListener('click', (event) => {
+    if (!event.target.closest('.remove')) return
+    const id = Number(event.target.closest('li').dataset.key)
+    items = items.filter((item) => item.id !== id)
+    render()
+  })
+
+  render()
+</script>
+--- hint
+Keep a `const rows = new Map()` from id to `li` outside `render()`. In the loop, reuse `rows.get(item.id)` when it exists, and only call `createRow` when it doesn't.
+--- hint
+To order the rows, compare `list.children[index]` with the row that belongs there and `insertBefore` if they differ. Afterwards, remove any row whose id wasn't in `items` this time (from the page *and* the map).
+--- check dom | Three rows, keyed by id
+#list li count == 3
+#list li:first-child attr data-key == 1
+#list li:first-child .label text == Alpha
+--- check dom | Adding keeps what was typed in other rows
+type [data-key="2"]>.note check the valves
+click #add
+#list li count == 4
+#list li:last-child .label text == Delta
+[data-key="2"]>.note value == check the valves
+--- check dom | Renaming updates the label in place
+type [data-key="2"]>.note check the valves
+click #rename
+[data-key="2"]>.label text == Bravo (lead)
+[data-key="2"]>.note value == check the valves
+--- check dom | Reordering moves rows instead of rebuilding them
+type [data-key="1"]>.note first
+click #reverse
+#list li:first-child attr data-key == 3
+#list li:last-child attr data-key == 1
+[data-key="1"]>.note value == first
+--- check dom | Removing takes out just that row
+type [data-key="3"]>.note keep me
+click [data-key="1"]>.remove
+#list li count == 2
+[data-key="1"] missing
+[data-key="3"]>.note value == keep me
+--- check dom | Keyboard focus survives an update
+press [data-key="2"]>.note a
+click #add
+[data-key="2"]>.note focused
+
+=== web4-04 | Undo and redo
+--- teach
+Undo looks like a feature; it is really a data structure. Keep three things:
+
+```js
+const history = {
+  past: [],          // states before this one, oldest first
+  present: '#ffffff',
+  future: [],        // states you have undone, next one first
+}
+```
+
+- **A change**: push `present` onto `past`, set the new `present`, and **empty `future`**. (Once you do something new, the undone branch is gone — that is how every editor behaves.)
+- **Undo**: if `past` is empty, do nothing. Otherwise put `present` at the front of `future`, and pop the last of `past` into `present`.
+- **Redo**: the mirror image — push `present` onto `past`, and take the first of `future`.
+
+```js
+function undo() {
+  if (!history.past.length) return
+  history.future.unshift(history.present)
+  history.present = history.past.pop()
+  render()
+}
+```
+
+This only works because each state is a *value* that doesn't change after it is saved — the purity lesson from the store paying off. With objects, save new objects (`{ ...old, color }`); never mutate one that is already in `past`.
+
+Two details that separate a good undo from a sloppy one:
+
+- **Don't record non-changes.** Choosing the colour that is already chosen shouldn't create an undo step that appears to do nothing.
+- **Reflect what's possible.** Disable Undo when `past` is empty and Redo when `future` is empty, and support the shortcuts people expect: Ctrl+Z (Cmd+Z on a Mac) to undo, Ctrl+Shift+Z to redo. `event.key` is `'Z'` with Shift held and `'z'` without, so compare `event.key.toLowerCase()`.
+--- task
+Give the colour picker undo and redo:
+
+- clicking a swatch (`#tomato`, `#gold`, `#teal`) makes it the present colour, recording the old one — unless it is already the present colour; any new choice clears the redo future
+- `#undo` and `#redo` step back and forward, and are disabled when there is nothing to undo or redo
+- Ctrl+Z (or Cmd+Z) undoes and Ctrl+Shift+Z redoes, anywhere on the page
+- `#preview`'s background always shows the present colour (it starts `#ffffff`)
+--- starter
+<div id="preview" style="width: 120px; height: 80px; border: 1px solid #ccc"></div>
+<button id="tomato" data-color="#ff6347">Tomato</button>
+<button id="gold" data-color="#ffd700">Gold</button>
+<button id="teal" data-color="#008080">Teal</button>
+<button id="undo">Undo</button>
+<button id="redo">Redo</button>
+
+<script>
+  const preview = document.querySelector('#preview')
+  let color = '#ffffff'
+
+  for (const button of document.querySelectorAll('[data-color]')) {
+    button.addEventListener('click', () => {
+      color = button.dataset.color
+      preview.style.background = color
+    })
+  }
+
+  preview.style.background = color
+</script>
+--- solution
+<div id="preview" style="width: 120px; height: 80px; border: 1px solid #ccc"></div>
+<button id="tomato" data-color="#ff6347">Tomato</button>
+<button id="gold" data-color="#ffd700">Gold</button>
+<button id="teal" data-color="#008080">Teal</button>
+<button id="undo">Undo</button>
+<button id="redo">Redo</button>
+
+<script>
+  const preview = document.querySelector('#preview')
+  const undoButton = document.querySelector('#undo')
+  const redoButton = document.querySelector('#redo')
+  const history = { past: [], present: '#ffffff', future: [] }
+
+  function render() {
+    preview.style.background = history.present
+    undoButton.disabled = history.past.length === 0
+    redoButton.disabled = history.future.length === 0
+  }
+
+  function choose(color) {
+    if (color === history.present) return
+    history.past.push(history.present)
+    history.present = color
+    history.future = []
+    render()
+  }
+
+  function undo() {
+    if (!history.past.length) return
+    history.future.unshift(history.present)
+    history.present = history.past.pop()
+    render()
+  }
+
+  function redo() {
+    if (!history.future.length) return
+    history.past.push(history.present)
+    history.present = history.future.shift()
+    render()
+  }
+
+  for (const button of document.querySelectorAll('[data-color]')) {
+    button.addEventListener('click', () => choose(button.dataset.color))
+  }
+  undoButton.addEventListener('click', undo)
+  redoButton.addEventListener('click', redo)
+
+  document.addEventListener('keydown', (event) => {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return
+    event.preventDefault()
+    if (event.shiftKey) redo()
+    else undo()
+  })
+
+  render()
+</script>
+--- hint
+Replace `color` with `const history = { past: [], present: '#ffffff', future: [] }` and write `choose`, `undo` and `redo` exactly as the lesson describes, each ending with `render()`.
+--- hint
+`render()` sets the background and `undoButton.disabled = history.past.length === 0` (and the same for redo). For the shortcut, listen for `keydown` on `document` and check `event.ctrlKey || event.metaKey`, then `event.shiftKey`.
+--- check dom | Starts white, with nothing to undo or redo
+#preview style background-color == rgb(255, 255, 255)
+#undo[disabled] exists
+#redo[disabled] exists
+--- check dom | Undo steps back, and Redo becomes possible
+click #tomato
+click #teal
+click #undo
+#preview style background-color == rgb(255, 99, 71)
+#redo:not([disabled]) exists
+--- check dom | Undo all the way, then redo
+click #tomato
+click #teal
+click #undo
+click #undo
+#preview style background-color == rgb(255, 255, 255)
+#undo[disabled] exists
+click #redo
+#preview style background-color == rgb(255, 99, 71)
+--- check dom | A new choice clears the redo future
+click #tomato
+click #teal
+click #undo
+click #gold
+#redo[disabled] exists
+click #undo
+#preview style background-color == rgb(255, 99, 71)
+--- check dom | Choosing the same colour again is not a step
+click #tomato
+click #tomato
+click #undo
+#preview style background-color == rgb(255, 255, 255)
+--- check dom | Ctrl+Z and Ctrl+Shift+Z work
+click #tomato
+press body Ctrl+z
+#preview style background-color == rgb(255, 255, 255)
+press body Ctrl+Shift+z
+#preview style background-color == rgb(255, 99, 71)
+
+=== web4-05 | Templates and cloning
+--- teach
+Building markup from strings — `` li.innerHTML = `<h3>${launch.name}</h3>…` `` — is quick to write and has two real problems. Any data containing `<` is parsed as HTML (a name like `Starliner <Crew Flight Test>` loses its second half, and worse inputs run code). And the markup is buried inside JavaScript where nobody styling the page will find it.
+
+The `<template>` element holds markup that the browser parses but **doesn't render**. Its `content` is a `DocumentFragment` — a lightweight holder for nodes that isn't part of the page — which you **clone** for each item, fill with `textContent`, and insert:
+
+```html
+<template id="row-template">
+  <li class="row">
+    <span class="row__name"></span>
+    <button class="row__remove" type="button">Remove</button>
+  </li>
+</template>
+```
+
+```js
+const template = document.querySelector('#row-template')
+
+function Row(item) {
+  const li = template.content.firstElementChild.cloneNode(true)   // true: deep, with children
+  li.dataset.id = item.id
+  li.querySelector('.row__name').textContent = item.name
+  return li
+}
+
+list.append(...items.map(Row))
+```
+
+`cloneNode(true)` copies the element and everything inside it; it is fast, because the browser only parsed the template once. Cloning `template.content` itself gives you a fragment (inserting it moves its children into the page, leaving the fragment empty); cloning `firstElementChild` gives you the element directly, which is handier when you want to keep a reference to it.
+
+The markup is now HTML where it belongs, data only ever goes in as text, and each row is still a component: data in, element out.
+--- task
+Replace the string-building with the `#card-template`: render one card per launch into `#launches` by cloning the template, setting `data-id`, the `.card__title`, `.card__date` and `.card__crew` texts, and the class `card--uncrewed` when `crew` is 0. A click on a card's `.card__remove` button removes that card (use one listener on `#launches`).
+--- starter
+<template id="card-template">
+  <article class="card">
+    <h3 class="card__title"></h3>
+    <p class="card__meta"><span class="card__date"></span> · <span class="card__crew"></span> crew</p>
+    <button class="card__remove" type="button">Remove</button>
+  </article>
+</template>
+
+<section id="launches"></section>
+
+<script>
+  const launches = [
+    { id: 'a1', name: 'Artemis I', date: '2022-11-16', crew: 0 },
+    { id: 'st', name: 'Starliner <Crew Flight Test>', date: '2024-06-05', crew: 2 },
+    { id: 'c9', name: 'Crew-9', date: '2024-09-28', crew: 2 },
+  ]
+
+  const section = document.querySelector('#launches')
+  section.innerHTML = launches
+    .map((l) => `<article class="card"><h3 class="card__title">${l.name}</h3><p>${l.date} · ${l.crew} crew</p></article>`)
+    .join('')
+</script>
+--- solution
+<template id="card-template">
+  <article class="card">
+    <h3 class="card__title"></h3>
+    <p class="card__meta"><span class="card__date"></span> · <span class="card__crew"></span> crew</p>
+    <button class="card__remove" type="button">Remove</button>
+  </article>
+</template>
+
+<section id="launches"></section>
+
+<script>
+  const launches = [
+    { id: 'a1', name: 'Artemis I', date: '2022-11-16', crew: 0 },
+    { id: 'st', name: 'Starliner <Crew Flight Test>', date: '2024-06-05', crew: 2 },
+    { id: 'c9', name: 'Crew-9', date: '2024-09-28', crew: 2 },
+  ]
+
+  const section = document.querySelector('#launches')
+  const template = document.querySelector('#card-template')
+
+  function Card(launch) {
+    const card = template.content.firstElementChild.cloneNode(true)
+    card.dataset.id = launch.id
+    card.querySelector('.card__title').textContent = launch.name
+    card.querySelector('.card__date').textContent = launch.date
+    card.querySelector('.card__crew').textContent = launch.crew
+    card.classList.toggle('card--uncrewed', launch.crew === 0)
+    return card
+  }
+
+  section.append(...launches.map(Card))
+
+  section.addEventListener('click', (event) => {
+    const remove = event.target.closest('.card__remove')
+    if (remove) remove.closest('.card').remove()
+  })
+</script>
+--- hint
+`template.content.firstElementChild.cloneNode(true)` gives you a fresh `article` each time; fill its parts with `querySelector(...).textContent`.
+--- hint
+Write it as a `Card(launch)` function returning the article, then `section.append(...launches.map(Card))`. For removing, one click listener on the section with `closest('.card__remove')`.
+--- check dom | One card per launch
+#launches .card count == 3
+#launches .card:first-child attr data-id == a1
+--- check dom | Cards are filled from the data
+#launches .card:first-child .card__title text == Artemis I
+#launches .card:first-child .card__date text == 2022-11-16
+#launches .card:last-child .card__crew text == 2
+--- check dom | Names are text, even with angle brackets in them
+#launches .card:nth-child(2) .card__title text == Starliner <Crew Flight Test>
+--- check dom | Uncrewed launches are marked
+#launches .card--uncrewed count == 1
+#launches .card:first-child class card--uncrewed
+--- check dom | Remove takes out that card
+click #launches .card:nth-child(2) .card__remove
+#launches .card count == 2
+#launches [data-id=st] missing
+--- check dom | The template itself stays unrendered
+template#card-template exists
+body > .card missing
+
+=== web4-06 | Custom elements
+--- teach
+**Custom elements** let you add your own tags to HTML. Once defined, `<star-rating value="3"></star-rating>` works anywhere — in plain HTML, from `innerHTML`, inside a React or Vue app — because the browser itself knows what it is.
+
+```js
+class StarRating extends HTMLElement {
+  static observedAttributes = ['value', 'max']
+
+  connectedCallback() {            // added to the page
+    this.render()
+  }
+  attributeChangedCallback() {     // an observed attribute changed
+    if (this.isConnected) this.render()
+  }
+  get value() {
+    return Number(this.getAttribute('value') || 0)
+  }
+  set value(v) {
+    this.setAttribute('value', v)  // reflect the property to the attribute
+  }
+  render() { /* build the stars from this.value and this.max */ }
+}
+
+customElements.define('star-rating', StarRating)   // the name must contain a hyphen
+```
+
+The lifecycle: the **constructor** runs when the element is created (don't touch attributes or children there); `connectedCallback` when it enters the page; `attributeChangedCallback(name, oldValue, newValue)` whenever an attribute listed in `observedAttributes` changes — from HTML, from `setAttribute`, from anyone.
+
+Three class features appear here: `extends HTMLElement` makes the class a kind of element, so a constructor must call `super()` before anything else; `static observedAttributes` belongs to the class itself rather than to each element; and `get value()` / `set value(v)` make reading or assigning `el.value` run your code.
+
+**Attributes are the element's public API.** Make the attribute the source of truth: a click sets `value`, which sets the attribute, which triggers `attributeChangedCallback`, which re-renders. Then outside code changing the attribute works exactly like a click.
+
+**Tell the outside world** with an event: `this.dispatchEvent(new CustomEvent('change', { detail: { value }, bubbles: true }))`. The page listens for it the same way it would on an `<input>`.
+
+A custom element can also attach a **shadow root** to hide its insides and scope its CSS. Here you will render into the element's ordinary children ("light DOM"), which keeps it simple and styleable from the page.
+--- task
+Define `<star-rating>`:
+
+- it renders `max` buttons with the class `star` (default max 5); the first `value` of them have the class `on`; each star's `aria-label` is like `2 of 5`
+- clicking a star sets the element's `value` attribute to that star's number and dispatches a `change` event (with `detail.value`)
+- changing the `value` or `max` attribute from outside re-renders it
+
+The page code at the bottom is written for you.
+--- starter
+<star-rating id="main" value="3" max="5"></star-rating>
+<p id="out">Rating: 3</p>
+<star-rating id="small" value="1" max="3"></star-rating>
+<button id="clear">Clear</button>
+<button id="grow">Out of 10</button>
+
+<script>
+  // Define the star-rating element here.
+
+  // ---- The page. You don't need to change this. ----
+  const main = document.querySelector('#main')
+  main.addEventListener('change', (event) => {
+    document.querySelector('#out').textContent = `Rating: ${event.detail.value}`
+  })
+  document.querySelector('#clear').addEventListener('click', () => main.setAttribute('value', '0'))
+  document.querySelector('#grow').addEventListener('click', () => document.querySelector('#small').setAttribute('max', '10'))
+</script>
+--- solution
+<star-rating id="main" value="3" max="5"></star-rating>
+<p id="out">Rating: 3</p>
+<star-rating id="small" value="1" max="3"></star-rating>
+<button id="clear">Clear</button>
+<button id="grow">Out of 10</button>
+
+<script>
+  class StarRating extends HTMLElement {
+    static observedAttributes = ['value', 'max']
+
+    constructor() {
+      super()
+      this.addEventListener('click', (event) => {
+        const star = event.target.closest('.star')
+        if (!star) return
+        this.value = Number(star.dataset.value)
+        this.dispatchEvent(new CustomEvent('change', { detail: { value: this.value }, bubbles: true }))
+      })
+    }
+
+    get value() {
+      return Number(this.getAttribute('value') || 0)
+    }
+    set value(v) {
+      this.setAttribute('value', String(v))
+    }
+    get max() {
+      return Number(this.getAttribute('max') || 5)
+    }
+
+    connectedCallback() {
+      this.render()
+    }
+    attributeChangedCallback() {
+      if (this.isConnected) this.render()
+    }
+
+    render() {
+      const stars = []
+      for (let i = 1; i <= this.max; i++) {
+        const star = document.createElement('button')
+        star.type = 'button'
+        star.className = 'star'
+        star.dataset.value = i
+        star.textContent = '★'
+        star.setAttribute('aria-label', `${i} of ${this.max}`)
+        star.classList.toggle('on', i <= this.value)
+        stars.push(star)
+      }
+      this.replaceChildren(...stars)
+    }
+  }
+
+  customElements.define('star-rating', StarRating)
+
+  // ---- The page. You don't need to change this. ----
+  const main = document.querySelector('#main')
+  main.addEventListener('change', (event) => {
+    document.querySelector('#out').textContent = `Rating: ${event.detail.value}`
+  })
+  document.querySelector('#clear').addEventListener('click', () => main.setAttribute('value', '0'))
+  document.querySelector('#grow').addEventListener('click', () => document.querySelector('#small').setAttribute('max', '10'))
+</script>
+--- hint
+Start with `class StarRating extends HTMLElement`, `static observedAttributes = ['value', 'max']`, a `render()` that builds the buttons, and `customElements.define('star-rating', StarRating)`. Call `render()` from both `connectedCallback` and `attributeChangedCallback`.
+--- hint
+Add the click listener once, in the constructor (after `super()`), on the element itself; find the star with `event.target.closest('.star')`, set the `value` attribute, then dispatch the `CustomEvent`.
+--- check dom | Renders its stars from its attributes
+#main .star count == 5
+#main .star.on count == 3
+#small .star count == 3
+#small .star.on count == 1
+--- check dom | Each star is labelled
+#main .star:nth-child(2) attr aria-label == 2 of 5
+--- check dom | Clicking a star sets the value and tells the page
+click #main .star:nth-child(4)
+#main attr value == 4
+#main .star.on count == 4
+#out text == Rating: 4
+--- check dom | Changing value from outside re-renders
+click #clear
+#main .star.on count == 0
+--- check dom | Changing max from outside re-renders
+click #grow
+#small .star count == 10
+#small .star.on count == 1
+
+=== web4-07 | Performance: batching and debouncing
+--- teach
+Two habits prevent most front-end slowness.
+
+**1. Batch DOM changes.** Every insertion into the live page is work the browser may have to account for — styles, layout, observers, accessibility tree. Appending 1,000 rows one at a time means 1,000 separate changes. Build them off-page first and insert once:
+
+```js
+const fragment = document.createDocumentFragment()
+for (const ship of ships) {
+  const li = document.createElement('li')
+  li.textContent = ship
+  fragment.append(li)          // off the page: cheap
+}
+list.append(fragment)          // one change to the page
+```
+
+A `DocumentFragment` is a container that vanishes when inserted: its children move into the page in a single operation. To *replace* a list's contents in one operation, `list.replaceChildren(fragment)` removes the old children and inserts the new ones as one change. Worse than many insertions is **layout thrashing**: alternating writes (`el.style.width = …`) with reads that need layout (`el.offsetHeight`) inside a loop, forcing the browser to recalculate on every read. Do all your reads, then all your writes.
+
+**2. Debounce bursts of events.** An `input` event fires on every keystroke. If each one filters a big list (or calls a server), typing "falcon" does the work six times and only the last one matters. A **debounced** function waits until the events stop for a moment:
+
+```js
+function debounce(fn, ms) {
+  let timer = null
+  return (...args) => {
+    clearTimeout(timer)                             // a new event cancels the pending call
+    timer = setTimeout(() => fn(...args), ms)
+  }
+}
+
+input.addEventListener('input', debounce(applyFilter, 250))
+```
+
+Each event restarts the countdown; `applyFilter` runs once, 250ms after the last keystroke. (Its cousin, **throttling**, runs at most once per interval — better for scroll and resize.)
+
+The first script on this lesson's page is a meter: it counts the changes made to the list and how often the filter really runs.
+--- task
+Make the ship list fast:
+
+- render the 1,000 ships into `#rows` with **one** insertion (use a `DocumentFragment`)
+- debounce the filter by `250ms`, so a burst of typing runs it once; each run shows the ships whose name contains the text, replacing the list in one operation (`replaceChildren`), and adds one to `runs`
+
+Don't change the meter.
+--- starter
+<label for="search">Find a ship</label>
+<input id="search" autocomplete="off">
+<p>List changes: <span id="mutations">0</span> · Filter runs: <span id="runs">0</span></p>
+<ul id="rows"></ul>
+
+<script>
+  // The meter: counts changes to the list. Don't change this.
+  let changes = 0
+  new MutationObserver((records) => {
+    changes += records.length
+    document.querySelector('#mutations').textContent = changes
+  }).observe(document.querySelector('#rows'), { childList: true })
+</script>
+
+<script>
+  const ships = Array.from({ length: 1000 }, (_, i) => `Ship ${i + 1}`)
+  const list = document.querySelector('#rows')
+  let runs = 0
+
+  function rowsFor(names) {
+    return names.map((name) => {
+      const li = document.createElement('li')
+      li.textContent = name
+      return li
+    })
+  }
+
+  for (const li of rowsFor(ships)) list.append(li)
+
+  function applyFilter() {
+    runs += 1
+    document.querySelector('#runs').textContent = runs
+    const q = document.querySelector('#search').value.trim().toLowerCase()
+    list.innerHTML = ''
+    for (const li of rowsFor(ships.filter((s) => s.toLowerCase().includes(q)))) list.append(li)
+  }
+
+  document.querySelector('#search').addEventListener('input', applyFilter)
+</script>
+--- solution
+<label for="search">Find a ship</label>
+<input id="search" autocomplete="off">
+<p>List changes: <span id="mutations">0</span> · Filter runs: <span id="runs">0</span></p>
+<ul id="rows"></ul>
+
+<script>
+  // The meter: counts changes to the list. Don't change this.
+  let changes = 0
+  new MutationObserver((records) => {
+    changes += records.length
+    document.querySelector('#mutations').textContent = changes
+  }).observe(document.querySelector('#rows'), { childList: true })
+</script>
+
+<script>
+  const ships = Array.from({ length: 1000 }, (_, i) => `Ship ${i + 1}`)
+  const list = document.querySelector('#rows')
+  let runs = 0
+
+  function fragmentFor(names) {
+    const fragment = document.createDocumentFragment()
+    for (const name of names) {
+      const li = document.createElement('li')
+      li.textContent = name
+      fragment.append(li)
+    }
+    return fragment
+  }
+
+  list.append(fragmentFor(ships))
+
+  function debounce(fn, ms) {
+    let timer = null
+    return (...args) => {
+      clearTimeout(timer)
+      timer = setTimeout(() => fn(...args), ms)
+    }
+  }
+
+  function applyFilter() {
+    runs += 1
+    document.querySelector('#runs').textContent = runs
+    const q = document.querySelector('#search').value.trim().toLowerCase()
+    list.replaceChildren(fragmentFor(ships.filter((s) => s.toLowerCase().includes(q))))
+  }
+
+  document.querySelector('#search').addEventListener('input', debounce(applyFilter, 250))
+</script>
+--- hint
+Build the `li`s into `document.createDocumentFragment()` and append the fragment once; in the filter, `list.replaceChildren(fragment)` does the clear and the insert as one change.
+--- hint
+Write `debounce(fn, ms)` with a `timer` variable it clears on every call, and listen with `debounce(applyFilter, 250)`.
+--- check dom | 1,000 ships, inserted in one change
+#rows li count == 1000
+#mutations text == 1
+--- check dom | A burst of typing runs the filter once, after a pause
+type #search 1
+type #search 12
+type #search 123
+#runs text == 0
+wait 450
+#runs text == 1
+#rows li count == 1
+#rows li text == Ship 123
+--- check dom | Each keystroke restarts the wait
+type #search 9
+wait 150
+type #search 99
+wait 150
+#runs text == 0
+wait 300
+#runs text == 1
+--- check dom | A filter run replaces the list in one change
+type #search 5
+wait 450
+#mutations text == 2
+
+=== web4-08 | Debugging: results for the wrong search
+--- teach
+Some bugs only exist in time. Two requests go out; they come back in the other order; the older answer overwrites the newer. On a fast connection you never see it. On a train, the search box shows results for what you typed a second ago. It's called a **race condition**, and every UI that fetches while the user types has to handle it.
+
+**Reproduce it deliberately.** Races hide when things are fast, so make them slow: add artificial delays, or use the browser's network throttling. Here the fake server answers short queries *slower* than long ones, which is realistic — broad queries have more results to gather.
+
+**Draw the timeline.** Type `m`, then `ma`:
+
+```
+0ms    request "m"   sent  ─────────────────────────┐ (250ms)
+10ms   request "ma"  sent  ────────┐ (100ms)         │
+110ms                    "ma" arrives → shows ma ✓   │
+250ms                                  "m" arrives → shows m ✗
+```
+
+The code awaited each answer and rendered it, trusting that answers arrive in order. They don't.
+
+**Fix the cause: only the latest request may render.** Number each request; when an answer arrives, check it is still the newest:
+
+```js
+let latest = 0
+
+input.addEventListener('input', async () => {
+  const id = ++latest
+  const results = await search(input.value)
+  if (id !== latest) return          // a newer search has started: ignore this answer
+  render(results)
+})
+```
+
+With real `fetch`, an `AbortController` goes further and cancels the stale request. Either way the rule is the same: *the UI shows the answer to the question currently being asked.* Debouncing makes the race rarer; it doesn't remove it.
+--- task
+Bug report: *"I typed 'ma' and the page says it's showing results for 'm'."*
+
+Reproduce it (type fast, or read the timeline above), then fix the app code so an answer is only shown if it belongs to the most recent search. The status still says `Searching...` while a search is out, and then like `2 results for "ma"`. Don't change the fake server.
+--- starter
+<label for="q">Search the solar system</label>
+<input id="q" autocomplete="off">
+<p id="status" role="status"></p>
+<ul id="results"></ul>
+
+<script>
+  // The fake server. Don't change it: short queries are slow, long ones fast.
+  const bodies = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Ceres', 'Pluto', 'Haumea', 'Makemake', 'Eris']
+  function search(query) {
+    const q = query.trim().toLowerCase()
+    const delay = Math.max(50, 400 - q.length * 150)
+    return new Promise((resolve) => setTimeout(() => resolve(bodies.filter((b) => b.toLowerCase().includes(q))), delay))
+  }
+
+  // The app.
+  const input = document.querySelector('#q')
+  const statusLine = document.querySelector('#status')
+  const list = document.querySelector('#results')
+
+  function render(results, query) {
+    list.replaceChildren(
+      ...results.map((name) => {
+        const li = document.createElement('li')
+        li.textContent = name
+        return li
+      }),
+    )
+    statusLine.textContent = `${results.length} ${results.length === 1 ? 'result' : 'results'} for "${query}"`
+  }
+
+  input.addEventListener('input', async () => {
+    const query = input.value
+    statusLine.textContent = 'Searching...'
+    const results = await search(query)
+    render(results, query)
+  })
+</script>
+--- solution
+<label for="q">Search the solar system</label>
+<input id="q" autocomplete="off">
+<p id="status" role="status"></p>
+<ul id="results"></ul>
+
+<script>
+  // The fake server. Don't change it: short queries are slow, long ones fast.
+  const bodies = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Ceres', 'Pluto', 'Haumea', 'Makemake', 'Eris']
+  function search(query) {
+    const q = query.trim().toLowerCase()
+    const delay = Math.max(50, 400 - q.length * 150)
+    return new Promise((resolve) => setTimeout(() => resolve(bodies.filter((b) => b.toLowerCase().includes(q))), delay))
+  }
+
+  // The app.
+  const input = document.querySelector('#q')
+  const statusLine = document.querySelector('#status')
+  const list = document.querySelector('#results')
+  let latest = 0
+
+  function render(results, query) {
+    list.replaceChildren(
+      ...results.map((name) => {
+        const li = document.createElement('li')
+        li.textContent = name
+        return li
+      }),
+    )
+    statusLine.textContent = `${results.length} ${results.length === 1 ? 'result' : 'results'} for "${query}"`
+  }
+
+  input.addEventListener('input', async () => {
+    const id = ++latest
+    const query = input.value
+    statusLine.textContent = 'Searching...'
+    const results = await search(query)
+    if (id !== latest) return
+    render(results, query)
+  })
+</script>
+--- hint
+Put `console.log` before and after the `await` with the query. In which order do the lines appear when you type two letters quickly?
+--- hint
+Keep a counter outside the handler. Give each search `const id = ++latest`, and after the `await`, return early if `id !== latest`.
+--- check dom | While a search is out, it says so
+type #q e
+#status text == Searching...
+--- check dom | A single search shows its results
+type #q ven
+wait 250
+#results li count == 1
+#results li text == Venus
+#status text == 1 result for "ven"
+--- check dom | A slow older answer doesn't overwrite a newer one
+type #q m
+type #q ma
+wait 450
+#status text == 2 results for "ma"
+#results li count == 2
+--- check dom | Three quick searches: the last one wins
+type #q m
+type #q ma
+type #q mak
+wait 450
+#results li count == 1
+#results li text == Makemake
+
+=== web4-09 | Design: CSS architecture with tokens and BEM
+--- teach
+CSS has no modules and one global namespace, so a stylesheet's structure decides whether it stays changeable. Three conventions keep large projects sane.
+
+**1. Design tokens.** Every colour, space and radius is a custom property on `:root`, named for its *role*, not its value:
+
+```css
+:root {
+  --color-surface: #ffffff;
+  --color-text: #1e3a8a;
+  --color-primary: #1e90ff;
+  --space-4: 16px;
+  --radius: 8px;
+}
+```
+
+**2. Themes swap tokens, not rules.** A dark theme is just new values under an attribute on `html`; no component rule changes:
+
+```css
+[data-theme="dark"] {
+  --color-surface: #1f2937;
+  --color-text: #f9fafb;
+}
+```
+
+**3. BEM naming.** *Block, Element, Modifier*: `.card` (a standalone component), `.card__title` (a part of it, two underscores), `.card--featured` (a variant, two hyphens). Every selector is a single class:
+
+```css
+.card          { background: var(--color-surface); padding: var(--space-4); }
+.card__title   { color: var(--color-text); }
+.card--featured { border-color: var(--color-primary); }
+```
+
+Why single classes? **Specificity stays flat** — every rule scores (0,1,0), so the order you write them in decides, and you never need `!important` or an id to win a fight. Components stop depending on where they sit (`#app div.box h3` breaks the moment someone moves the box). And a class name tells you exactly where its CSS lives.
+
+The smells to remove: id selectors in CSS, long descendant chains, `!important`, the same hex code pasted in ten places, and "dark mode" written as a second copy of every rule.
+--- task
+Restructure the styles and markup, keeping the look:
+
+- tokens on `:root`: `--color-surface` `#ffffff`, `--color-text` `#1e3a8a`, `--color-primary` `#1e90ff`, `--color-border` `#dddddd`; `[data-theme="dark"]` sets `--color-surface` `#1f2937`, `--color-text` `#f9fafb`, `--color-border` `#374151`
+- BEM classes: each box becomes `.card` with a `.card__title` and `.card__body`; the special one also has `.card--featured` (its border uses the primary colour); buttons become `.button` plus `.button--primary` or `.button--secondary`
+- `#theme` toggles `data-theme="dark"` on the `html` element (and back)
+- no id selectors in the CSS and no `!important`
+--- starter
+<style>
+  #app div.box {
+    background: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  #app div.box h3 {
+    color: #1e3a8a;
+    margin: 0 0 8px;
+  }
+  #app div.box.special {
+    border-color: #1e90ff !important;
+  }
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    background: #1e90ff;
+    color: white;
+  }
+  .btn.grey {
+    background: #dddddd;
+    color: #1e3a8a;
+  }
+  body.dark #app div.box {
+    background: #1f2937 !important;
+    border-color: #374151;
+  }
+  body.dark #app div.box h3 {
+    color: #f9fafb;
+  }
+</style>
+
+<div id="app">
+  <div class="box">
+    <h3>Falcon</h3>
+    <p>Reusable first stage.</p>
+  </div>
+  <div class="box special">
+    <h3>Starship</h3>
+    <p>Fully reusable, eventually.</p>
+  </div>
+  <button class="btn">Book a launch</button>
+  <button class="btn grey" id="theme">Dark mode</button>
+</div>
+
+<script>
+  document.querySelector('#theme').addEventListener('click', () => {
+    document.body.classList.toggle('dark')
+  })
+</script>
+--- solution
+<style>
+  :root {
+    --color-surface: #ffffff;
+    --color-text: #1e3a8a;
+    --color-primary: #1e90ff;
+    --color-border: #dddddd;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --radius: 8px;
+  }
+  [data-theme="dark"] {
+    --color-surface: #1f2937;
+    --color-text: #f9fafb;
+    --color-border: #374151;
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  .card__title {
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+  }
+  .card--featured {
+    border-color: var(--color-primary);
+  }
+
+  .button {
+    border: none;
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-4);
+  }
+  .button--primary {
+    background: var(--color-primary);
+    color: white;
+  }
+  .button--secondary {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+</style>
+
+<main>
+  <article class="card">
+    <h3 class="card__title">Falcon</h3>
+    <p class="card__body">Reusable first stage.</p>
+  </article>
+  <article class="card card--featured">
+    <h3 class="card__title">Starship</h3>
+    <p class="card__body">Fully reusable, eventually.</p>
+  </article>
+  <button class="button button--primary">Book a launch</button>
+  <button class="button button--secondary" id="theme">Dark mode</button>
+</main>
+
+<script>
+  document.querySelector('#theme').addEventListener('click', () => {
+    const root = document.documentElement
+    if (root.dataset.theme === 'dark') delete root.dataset.theme
+    else root.dataset.theme = 'dark'
+  })
+</script>
+--- hint
+Write the tokens first, then rewrite each rule as a single class using `var(--…)`. The dark theme is one `[data-theme="dark"] { … }` block that only redefines tokens.
+--- hint
+For the toggle, `document.documentElement.dataset.theme = 'dark'` sets `data-theme="dark"` on `html`; `delete document.documentElement.dataset.theme` removes it.
+--- check dom | BEM blocks, elements and modifiers
+.card count == 2
+.card__title count == 2
+.card__body count == 2
+.card--featured count == 1
+.button--primary exists
+.button--secondary exists
+--- check dom | The light look is kept
+.card style background-color == rgb(255, 255, 255)
+.card__title style color == rgb(30, 58, 138)
+.card:not(.card--featured) style border-top-color == rgb(221, 221, 221)
+.card--featured style border-top-color == rgb(30, 144, 255)
+.button--primary style background-color == rgb(30, 144, 255)
+--- check dom | Tokens live on :root
+:root style --color-primary == #1e90ff
+:root style --color-surface == #ffffff
+--- check dom | Dark mode swaps the tokens
+click #theme
+html attr data-theme == dark
+:root style --color-surface == #1f2937
+.card style background-color == rgb(31, 41, 55)
+.card__title style color == rgb(249, 250, 251)
+.card--featured style border-top-color == rgb(30, 144, 255)
+--- check dom | And back again
+click #theme
+click #theme
+.card style background-color == rgb(255, 255, 255)
+--- check source absent | No !important
+!important
+--- check source absent | No id selectors in the CSS
+^[^\S\n]*[\w\s.>:*,-]*#[a-zA-Z][\w-]*[\w\s.>:*,-]*\{
+
+=== web4-10 | Debugging: an accessibility audit
+--- teach
+An accessibility audit is debugging with a checklist. Automated tools (the browser's Lighthouse panel, axe) catch perhaps a third of problems; the rest need a person with a keyboard and a screen reader. A sound order to work in:
+
+1. **Structure.** Is the page's language set (`<html lang="en">`), so a screen reader pronounces it correctly? Is there one `h1`, with headings in order? Are there landmarks?
+2. **Images.** Every `img` has an `alt` — descriptive, or empty if decorative.
+3. **Forms.** Every field has a real `label`. Placeholders vanish when typing starts and are often too faint to read.
+4. **Controls.** Everything clickable is a `button` or a link, reachable and pressable by keyboard. Icon-only buttons need an accessible name: `aria-label="Menu"`.
+5. **Focus.** Can you *see* where focus is? `outline: none` with no replacement leaves keyboard users lost. And **positive `tabindex`** (`tabindex="3"`) rips the element out of the natural order — use `0` (join the natural order) or `-1` (focusable by script only), never a positive number.
+6. **Contrast.** Body text needs a contrast ratio of at least **4.5 : 1** against its background (WCAG AA). Light grey `#bbbbbb` on white is about 1.9 : 1 — unreadable for many people, and in sunlight for everyone. `#595959` on white is about 7 : 1.
+
+Each finding gets fixed at its cause. Resist the quick patches: `role="button"` on a `div` announces a button that still can't be pressed; `aria-label` on an input *can* name it, but a visible `label` helps everyone, including sighted users.
+--- task
+Fix every finding in this audit report, keeping the page working (clicking or pressing Enter on Subscribe shows `Thanks!`):
+
+1. The page has no language: set `lang="en"` on `html`.
+2. The logo has no alt text: it should be `Orbit Weekly`.
+3. The headings jump from `h1` to `h3`: make "Sign up" an `h2`.
+4. The email field has only a placeholder: give it a visible label `Email address`.
+5. Subscribe is a `div` with `tabindex="3"`: make it a real button, with no positive tabindex anywhere.
+6. The menu button is an icon with no name: label it `Menu`.
+7. The fine print fails contrast: use `#595959`.
+8. Focus outlines are switched off: remove that rule.
+--- starter
+<!doctype html>
+<html>
+<head>
+  <title>Orbit Weekly</title>
+  <style>
+    .fine-print {
+      color: #bbbbbb;
+      font-size: 12px;
+    }
+    button:focus {
+      outline: none;
+    }
+    .subscribe {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="logo" src="logo.png">
+    <button id="menu" type="button">☰</button>
+  </header>
+  <main>
+    <h1>Orbit Weekly</h1>
+    <h3>Sign up</h3>
+    <input id="email" type="email" placeholder="Email address">
+    <div class="subscribe" id="subscribe" tabindex="3">Subscribe</div>
+    <p id="message"></p>
+    <p class="fine-print">We never share your address.</p>
+  </main>
+  <script>
+    document.querySelector('#subscribe').addEventListener('click', () => {
+      document.querySelector('#message').textContent = 'Thanks!'
+    })
+  </script>
+</body>
+</html>
+--- solution
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Orbit Weekly</title>
+  <style>
+    .fine-print {
+      color: #595959;
+      font-size: 12px;
+    }
+    .subscribe {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="logo" src="logo.png" alt="Orbit Weekly">
+    <button id="menu" type="button" aria-label="Menu">☰</button>
+  </header>
+  <main>
+    <h1>Orbit Weekly</h1>
+    <h2>Sign up</h2>
+    <label for="email">Email address</label>
+    <input id="email" type="email" placeholder="you@example.com">
+    <button class="subscribe" id="subscribe" type="button">Subscribe</button>
+    <p id="message"></p>
+    <p class="fine-print">We never share your address.</p>
+  </main>
+  <script>
+    document.querySelector('#subscribe').addEventListener('click', () => {
+      document.querySelector('#message').textContent = 'Thanks!'
+    })
+  </script>
+</body>
+</html>
+--- hint
+Work down the list one item at a time, checking the page still works after each. Most fixes are one attribute or one element.
+--- hint
+For 5, `<button class="subscribe" id="subscribe" type="button">` — and delete the `tabindex`. For 8, delete the whole `button:focus` rule.
+--- check dom | 1. The page's language is set
+html attr lang == en
+--- check dom | 2. The logo is named
+img.logo attr alt == Orbit Weekly
+--- check dom | 3. Headings go in order
+h3 missing
+h2 text == Sign up
+--- check dom | 4. The email field has a label
+label[for=email] text == Email address
+--- check dom | 5. Subscribe is a real button, in the natural tab order
+button#subscribe exists
+[tabindex]:not([tabindex="0"]):not([tabindex="-1"]) missing
+press #subscribe Enter
+#message text == Thanks!
+--- check dom | 6. The menu button has a name
+#menu attr aria-label == Menu
+--- check dom | 7. The fine print is readable
+.fine-print style color == rgb(89, 89, 89)
+--- check source absent | 8. Focus outlines are not switched off
+outline:\s*(none|0)
+
+=== web4-11 | Focus management
+--- teach
+When the page changes under the keyboard focus, *you* decide where focus goes. If you don't, the browser does — and its answer is usually "nowhere".
+
+Delete an item by pressing its Remove button, and that button is gone. Focus falls back to the `body`; the next Tab starts again from the top of the page. For a keyboard or screen reader user, every deletion means finding their place again. The rules of thumb:
+
+- **After removing an item**, focus the equivalent control on the item that took its place (the next one), or the previous one if it was the last, or — when the list is empty — a sensible landmark such as the list's heading.
+- **After opening something** (a panel, a dialog), focus its first useful control. **After closing**, return focus to what opened it.
+- **Announce changes that aren't visible where focus is**, using a live region: an element with `aria-live="polite"` whose text changes is read out when the reader is idle.
+
+A heading isn't normally focusable; `tabindex="-1"` makes it focusable by script (`heading.focus()`) without adding it to the Tab order.
+
+```js
+function removeAt(index) {
+  const [gone] = crew.splice(index, 1)
+  render()
+  const buttons = list.querySelectorAll('.remove')
+  const target = buttons[index] || buttons[index - 1] || heading
+  target.focus()
+  announce.textContent = `Removed ${gone}`
+}
+```
+
+`crew.splice(index, 1)` removes one item at `index` and returns an array of what it removed; `const [gone] = …` takes that array's first item.
+
+Note the order: change state, render, **then** find the element to focus in the freshly rendered page — elements from before the render may no longer exist.
+
+Accessible names matter here too: five buttons all named "Remove" are indistinguishable in a screen reader's list of controls. `aria-label="Remove Ada"` fixes that.
+--- task
+Make removing crew keyboard-friendly:
+
+- each `.remove` button's accessible name is `Remove <name>` (via `aria-label`)
+- after a removal, focus moves to the `.remove` button now at the same position, or the previous one if the last item was removed, or `#crew-heading` if the list is empty (make the heading focusable by script)
+- `#announce` (a polite live region) says `Removed <name>`
+--- starter
+<h2 id="crew-heading">Crew</h2>
+<ul id="crew"></ul>
+<p id="announce" aria-live="polite"></p>
+
+<script>
+  const crew = ['Ada', 'Bo', 'Lin', 'Sam']
+  const list = document.querySelector('#crew')
+
+  function render() {
+    list.replaceChildren(
+      ...crew.map((name) => {
+        const li = document.createElement('li')
+        li.textContent = name + ' '
+        const button = document.createElement('button')
+        button.className = 'remove'
+        button.textContent = 'Remove'
+        li.append(button)
+        return li
+      }),
+    )
+  }
+
+  list.addEventListener('click', (event) => {
+    const button = event.target.closest('.remove')
+    if (!button) return
+    const index = [...list.querySelectorAll('.remove')].indexOf(button)
+    crew.splice(index, 1)
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<h2 id="crew-heading" tabindex="-1">Crew</h2>
+<ul id="crew"></ul>
+<p id="announce" aria-live="polite"></p>
+
+<script>
+  const crew = ['Ada', 'Bo', 'Lin', 'Sam']
+  const list = document.querySelector('#crew')
+  const heading = document.querySelector('#crew-heading')
+  const announce = document.querySelector('#announce')
+
+  function render() {
+    list.replaceChildren(
+      ...crew.map((name) => {
+        const li = document.createElement('li')
+        li.textContent = name + ' '
+        const button = document.createElement('button')
+        button.className = 'remove'
+        button.textContent = 'Remove'
+        button.setAttribute('aria-label', `Remove ${name}`)
+        li.append(button)
+        return li
+      }),
+    )
+  }
+
+  list.addEventListener('click', (event) => {
+    const button = event.target.closest('.remove')
+    if (!button) return
+    const index = [...list.querySelectorAll('.remove')].indexOf(button)
+    const [gone] = crew.splice(index, 1)
+    render()
+    const buttons = list.querySelectorAll('.remove')
+    const target = buttons[index] || buttons[index - 1] || heading
+    target.focus()
+    announce.textContent = `Removed ${gone}`
+  })
+
+  render()
+</script>
+--- hint
+Set `aria-label` on each button in `render()`. For the heading, `tabindex="-1"` makes `heading.focus()` work.
+--- hint
+After `render()`, look up the new buttons and pick `buttons[index] || buttons[index - 1] || heading`, then call `.focus()` on it.
+--- check dom | Each Remove button is named for its person
+#crew li:first-child .remove attr aria-label == Remove Ada
+#crew li:last-child .remove attr aria-label == Remove Sam
+--- check dom | Focus moves to the next person's Remove button
+click #crew li:nth-child(2) .remove
+#crew li count == 3
+#crew li:nth-child(2) .remove attr aria-label == Remove Lin
+#crew li:nth-child(2) .remove focused
+--- check dom | Removing the last person focuses the new last one
+click #crew li:last-child .remove
+#crew li:last-child .remove focused
+--- check dom | An empty list sends focus to the heading
+click #crew li:first-child .remove
+click #crew li:first-child .remove
+click #crew li:first-child .remove
+click #crew li:first-child .remove
+#crew li count == 0
+#crew-heading focused
+--- check dom | The change is announced
+click #crew li:first-child .remove
+#announce text == Removed Ada
+
+=== web4-12 | A router on location.hash
+--- teach
+A single-page app shows different "pages" without loading new documents, and still needs real addresses: something to bookmark, share, and go Back to. The simplest router uses the part of the URL after `#` — the **hash** — because changing it never reloads the page:
+
+```js
+location.hash = '#/planets/mars'                      // changes the address, no reload
+window.addEventListener('hashchange', route)          // fires after every change, Back included
+```
+
+A router is a function from the current address to a view:
+
+```js
+function route() {
+  const path = location.hash.slice(1) || '/'          // '#/planets/mars' → '/planets/mars'
+  const parts = path.split('/').filter(Boolean)       // ['planets', 'mars']
+  if (path === '/') return showHome()
+  if (parts[0] === 'planets' && parts.length === 1) return showPlanets()
+  if (parts[0] === 'planets' && parts.length === 2) return showPlanet(parts[1])   // a route parameter
+  showNotFound()
+}
+route()   // and once at start, for whatever address the page opened on
+```
+
+Every view, including **Not found**, is just rendering. Mark the current section's nav link with `aria-current="page"`, so screen readers announce "current page".
+
+**Links.** Normally `<a href="#/about">` changes the hash by itself. This preview page is special: it is an `about:srcdoc` document whose relative links resolve against the *app's* address, so a plain click would load a different page into the frame. So the router **intercepts link clicks** — one delegated listener that cancels the default and sets `location.hash` itself:
+
+```js
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href^="#/"]')
+  if (!link) return
+  event.preventDefault()
+  location.hash = link.getAttribute('href')
+})
+```
+
+That is also exactly what real routers do in the modern variant, with `history.pushState` and clean paths instead of hashes. Note that `hashchange` fires a moment *after* the hash changes, not during the click.
+--- task
+Write the router for `#view`:
+
+- `#/` (or no hash) → an `h1` `Home`; `#/about` → `h1` `About`; `#/planets` → `h1` `Planets` and a list of links to `#/planets/<id>` for every planet
+- `#/planets/<id>` → an `h1` with the planet's name and a `p` like `Moons: 2`; an unknown id, or any other address → `h1` `Not found`
+- the nav link for the current section gets `aria-current="page"` (the Planets link for any planets page); the others have none
+- clicks on `#/…` links are intercepted and set `location.hash`; the view updates on `hashchange`
+--- starter
+<nav>
+  <a href="#/">Home</a>
+  <a href="#/planets">Planets</a>
+  <a href="#/about">About</a>
+</nav>
+<main id="view"></main>
+<footer><a href="#/moon-base">Moon base (old link)</a></footer>
+
+<script>
+  const planets = {
+    mercury: { name: 'Mercury', moons: 0 },
+    mars: { name: 'Mars', moons: 2 },
+    neptune: { name: 'Neptune', moons: 16 },
+  }
+  const view = document.querySelector('#view')
+</script>
+--- solution
+<nav>
+  <a href="#/">Home</a>
+  <a href="#/planets">Planets</a>
+  <a href="#/about">About</a>
+</nav>
+<main id="view"></main>
+<footer><a href="#/moon-base">Moon base (old link)</a></footer>
+
+<script>
+  const planets = {
+    mercury: { name: 'Mercury', moons: 0 },
+    mars: { name: 'Mars', moons: 2 },
+    neptune: { name: 'Neptune', moons: 16 },
+  }
+  const view = document.querySelector('#view')
+
+  function el(tag, text) {
+    const node = document.createElement(tag)
+    if (text !== undefined) node.textContent = text
+    return node
+  }
+
+  function show(section, ...nodes) {
+    view.replaceChildren(...nodes)
+    for (const link of document.querySelectorAll('nav a')) {
+      if (link.getAttribute('href') === section) link.setAttribute('aria-current', 'page')
+      else link.removeAttribute('aria-current')
+    }
+  }
+
+  function route() {
+    const path = location.hash.slice(1) || '/'
+    const parts = path.split('/').filter(Boolean)
+    if (path === '/') return show('#/', el('h1', 'Home'))
+    if (path === '/about') return show('#/about', el('h1', 'About'))
+    if (parts[0] === 'planets' && parts.length === 1) {
+      const list = el('ul')
+      for (const [id, planet] of Object.entries(planets)) {
+        const li = el('li')
+        const a = el('a', planet.name)
+        a.href = `#/planets/${id}`
+        li.append(a)
+        list.append(li)
+      }
+      return show('#/planets', el('h1', 'Planets'), list)
+    }
+    if (parts[0] === 'planets' && parts.length === 2 && planets[parts[1]]) {
+      const planet = planets[parts[1]]
+      return show('#/planets', el('h1', planet.name), el('p', `Moons: ${planet.moons}`))
+    }
+    show(null, el('h1', 'Not found'))
+  }
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="#/"]')
+    if (!link) return
+    event.preventDefault()
+    location.hash = link.getAttribute('href')
+  })
+
+  window.addEventListener('hashchange', route)
+  route()
+</script>
+--- hint
+Start with `route()` handling just Home and Not found, called once at the start and on `hashchange`. Then add the link interception and check that clicking About works.
+--- hint
+Split the path: `location.hash.slice(1).split('/').filter(Boolean)` turns `#/planets/mars` into `['planets', 'mars']`. Look the id up in `planets`; if it isn't there, fall through to Not found.
+--- check dom | Home shows first, and its link is current
+#view h1 text == Home
+nav a[href="#/"] attr aria-current == page
+--- check dom | The About link shows About without leaving the page
+click nav a[href="#/about"]
+wait 250
+#view h1 text == About
+nav a[href="#/about"] attr aria-current == page
+nav a[href="#/"]:not([aria-current]) exists
+--- check dom | Planets lists a link per planet
+click nav a[href="#/planets"]
+wait 250
+#view h1 text == Planets
+#view a count == 3
+--- check dom | A planet page reads its id from the address
+click nav a[href="#/planets"]
+wait 250
+click #view a[href="#/planets/mars"]
+wait 250
+#view h1 text == Mars
+#view p text == Moons: 2
+nav a[href="#/planets"] attr aria-current == page
+--- check dom | Unknown addresses show Not found
+click footer a
+wait 250
+#view h1 text == Not found
+nav a[aria-current] missing
+
+=== web4-13 | A form wizard as a state machine
+--- teach
+A multi-step form tends to grow booleans — `isOnStep2`, `showBack`, `submitted`, `canContinue` — that can combine into states that should be impossible: on step 3 and submitted and showing Back. A **finite state machine** makes the impossible unrepresentable. Name the states, and list which **events** move from each to which:
+
+```js
+const machine = {
+  details: { NEXT: 'address' },
+  address: { BACK: 'details', NEXT: 'review' },
+  review:  { BACK: 'address', SUBMIT: 'done' },
+  done:    {},
+}
+let current = 'details'
+
+function send(event) {
+  const next = machine[current][event]
+  if (!next) return                    // not allowed from here: ignore it
+  current = next
+  render()
+}
+```
+
+Now there is exactly one variable for "where are we", and anything not in the table simply cannot happen: you can't SUBMIT from `details`, and nothing leaves `done`.
+
+**Guards** are conditions on a transition: NEXT from `details` only if a name was entered. Check them in `send` before moving, and show why when they fail.
+
+**Keep the form's data separate from the machine's state.** The answers live in their own object (or in the inputs, which stay in the page when their step is hidden). Going Back must not lose what was typed.
+
+`render()` then derives everything from `current`: which step is visible, which buttons show, what the progress line says. There is no way for the buttons and the visible step to disagree, because both come from one value.
+
+Libraries like XState build on exactly this idea; for most UIs, the table and a `send` function are enough.
+--- task
+Drive the wizard with a state machine (`details` → `address` → `review` → `done`):
+
+- only the current step's section is visible; `#progress` says `Step 1 of 3` … `Step 3 of 3`, then `Finished`
+- `#back` is hidden on `details` and `done`; `#next` is hidden on `review` and `done`; `#submit` is visible only on `review`
+- NEXT from `details` needs a name (else `#error` says `Please enter your name.`), from `address` a city (`Please enter your city.`); `#error` is empty otherwise
+- `#summary` on the review step says like `Ada from Lisbon`; on `done`, `#thanks` says `Welcome aboard, Ada!`
+- going back keeps what was typed
+--- starter
+<p id="progress"></p>
+<section id="step-details">
+  <label for="name">Name</label>
+  <input id="name">
+</section>
+<section id="step-address">
+  <label for="city">City</label>
+  <input id="city">
+</section>
+<section id="step-review">
+  <p id="summary"></p>
+</section>
+<section id="step-done">
+  <p id="thanks"></p>
+</section>
+<p id="error" role="alert"></p>
+<button id="back">Back</button>
+<button id="next">Next</button>
+<button id="submit">Submit</button>
+
+<script>
+  const nameInput = document.querySelector('#name')
+  const cityInput = document.querySelector('#city')
+</script>
+--- solution
+<p id="progress"></p>
+<section id="step-details">
+  <label for="name">Name</label>
+  <input id="name">
+</section>
+<section id="step-address">
+  <label for="city">City</label>
+  <input id="city">
+</section>
+<section id="step-review">
+  <p id="summary"></p>
+</section>
+<section id="step-done">
+  <p id="thanks"></p>
+</section>
+<p id="error" role="alert"></p>
+<button id="back">Back</button>
+<button id="next">Next</button>
+<button id="submit">Submit</button>
+
+<script>
+  const nameInput = document.querySelector('#name')
+  const cityInput = document.querySelector('#city')
+
+  const machine = {
+    details: { NEXT: 'address' },
+    address: { BACK: 'details', NEXT: 'review' },
+    review: { BACK: 'address', SUBMIT: 'done' },
+    done: {},
+  }
+  const steps = ['details', 'address', 'review']
+  const guards = {
+    details: () => (nameInput.value.trim() ? '' : 'Please enter your name.'),
+    address: () => (cityInput.value.trim() ? '' : 'Please enter your city.'),
+  }
+  let current = 'details'
+  let error = ''
+
+  function send(event) {
+    const next = machine[current][event]
+    if (!next) return
+    if (event === 'NEXT' && guards[current]) {
+      error = guards[current]()
+      if (error) return render()
+    }
+    error = ''
+    current = next
+    render()
+  }
+
+  function render() {
+    for (const step of [...steps, 'done']) {
+      document.querySelector(`#step-${step}`).hidden = step !== current
+    }
+    document.querySelector('#progress').textContent = current === 'done' ? 'Finished' : `Step ${steps.indexOf(current) + 1} of 3`
+    document.querySelector('#back').hidden = !machine[current].BACK
+    document.querySelector('#next').hidden = !machine[current].NEXT
+    document.querySelector('#submit').hidden = !machine[current].SUBMIT
+    document.querySelector('#error').textContent = error
+    const name = nameInput.value.trim()
+    document.querySelector('#summary').textContent = `${name} from ${cityInput.value.trim()}`
+    document.querySelector('#thanks').textContent = `Welcome aboard, ${name}!`
+  }
+
+  document.querySelector('#back').addEventListener('click', () => send('BACK'))
+  document.querySelector('#next').addEventListener('click', () => send('NEXT'))
+  document.querySelector('#submit').addEventListener('click', () => send('SUBMIT'))
+
+  render()
+</script>
+--- hint
+Write the `machine` table and `send(event)` first. `render()` sets `hidden` on each section and button from `current` — a button shows exactly when `machine[current]` has its event.
+--- hint
+Guards: before moving on NEXT, check the current step's field; if it's empty, set the error message, render, and stay put. The inputs keep their values while hidden, so Back loses nothing.
+--- check dom | Starts on step 1, with only Next showing
+#step-details:not([hidden]) exists
+#step-address[hidden] exists
+#step-done[hidden] exists
+#progress text == Step 1 of 3
+#back[hidden] exists
+#submit[hidden] exists
+--- check dom | Next needs a name
+click #next
+#step-details:not([hidden]) exists
+#error text == Please enter your name.
+--- check dom | With a name, Next goes to step 2
+type #name Ada
+click #next
+#step-address:not([hidden]) exists
+#step-details[hidden] exists
+#progress text == Step 2 of 3
+#error text ==
+#back:not([hidden]) exists
+--- check dom | Back returns and keeps what was typed
+type #name Ada
+click #next
+click #back
+#step-details:not([hidden]) exists
+#name value == Ada
+--- check dom | The address step needs a city
+type #name Ada
+click #next
+click #next
+#error text == Please enter your city.
+#step-address:not([hidden]) exists
+--- check dom | Review shows the answers and only Back and Submit
+type #name Ada
+click #next
+type #city Lisbon
+click #next
+#step-review:not([hidden]) exists
+#summary text == Ada from Lisbon
+#next[hidden] exists
+#submit:not([hidden]) exists
+--- check dom | Submit finishes
+type #name Ada
+click #next
+type #city Lisbon
+click #next
+click #submit
+#step-done:not([hidden]) exists
+#thanks text == Welcome aboard, Ada!
+#progress text == Finished
+#back[hidden] exists
+#submit[hidden] exists
+
+=== web4-14 | Problem finding: four bugs, one report
+--- teach
+Real bug reports arrive in bundles, written by someone describing symptoms, not causes. Handling one well is a skill of its own:
+
+1. **Split it.** Number each symptom and treat it as its own bug. Two symptoms may share a cause, or one sentence may hide two causes — you find out by reproducing each separately.
+2. **Reproduce each one exactly.** Do what the reporter did, step by step, and confirm you see what they saw. If you can't reproduce it, you can't know you've fixed it.
+3. **Form a hypothesis, then test it.** "The total is built from strings" is a guess until a `console.log(typeof expense.amount)` proves it. Log the values at the moment things go wrong; don't reason from what the code *should* do.
+4. **Fix the cause, at the source.** If amounts are strings, convert them where they enter the program (`Number(input.value)`), not everywhere they are added up.
+5. **Re-test everything** — each fix can break another path — and look for the bug's siblings: if the delete handler trusts a position in a filtered list, does anything else?
+
+Common causes worth checking first in front-end code: values from inputs are **always strings**; **indexes** into a filtered or sorted view don't match the underlying array (use ids); **special cases** such as an "All" option that the code treats like any other value; and **missing validation** at the edge where user input enters.
+--- task
+Bug report for the expense tracker:
+
+1. *"I added Snacks for 5 and the total went from $52 to $525."*
+2. *"With the Food filter on, I removed Tacos — and Fuel disappeared instead."*
+3. *"After choosing Food, choosing All again shows nothing."*
+4. *"Clicking Add with no name adds an empty row. It shouldn't add anything without a name and an amount above 0."*
+
+Reproduce and fix all four, at their causes.
+--- starter
+<form id="add">
+  <label for="label">Name</label>
+  <input id="label">
+  <label for="amount">Amount</label>
+  <input id="amount" type="number">
+  <label for="category">Category</label>
+  <select id="category">
+    <option value="food">Food</option>
+    <option value="travel">Travel</option>
+    <option value="fun">Fun</option>
+  </select>
+  <button id="add-btn">Add</button>
+</form>
+
+<label for="filter">Show</label>
+<select id="filter">
+  <option value="all">All</option>
+  <option value="food">Food</option>
+  <option value="travel">Travel</option>
+  <option value="fun">Fun</option>
+</select>
+
+<ul id="expenses"></ul>
+<p id="total"></p>
+
+<script>
+  const state = {
+    expenses: [
+      { id: 1, label: 'Fuel', amount: 40, category: 'travel' },
+      { id: 2, label: 'Tacos', amount: 12, category: 'food' },
+    ],
+    filter: null,
+    nextId: 3,
+  }
+  const list = document.querySelector('#expenses')
+
+  function visible() {
+    return state.filter ? state.expenses.filter((e) => e.category === state.filter) : state.expenses
+  }
+
+  function render() {
+    list.replaceChildren(
+      ...visible().map((expense, index) => {
+        const li = document.createElement('li')
+        li.dataset.index = index
+        li.innerHTML = '<span class="label"></span> <span class="amount"></span> <button class="remove" type="button">Remove</button>'
+        li.querySelector('.label').textContent = expense.label
+        li.querySelector('.amount').textContent = '$' + expense.amount
+        return li
+      }),
+    )
+    const total = state.expenses.reduce((sum, e) => sum + e.amount, 0)
+    document.querySelector('#total').textContent = 'Total: $' + total
+  }
+
+  document.querySelector('#add').addEventListener('submit', (event) => {
+    event.preventDefault()
+    state.expenses.push({
+      id: state.nextId++,
+      label: document.querySelector('#label').value.trim(),
+      amount: document.querySelector('#amount').value,
+      category: document.querySelector('#category').value,
+    })
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const li = event.target.closest('.remove') && event.target.closest('li')
+    if (!li) return
+    state.expenses.splice(Number(li.dataset.index), 1)
+    render()
+  })
+
+  document.querySelector('#filter').addEventListener('change', (event) => {
+    state.filter = event.target.value
+    render()
+  })
+
+  render()
+</script>
+--- solution
+<form id="add">
+  <label for="label">Name</label>
+  <input id="label">
+  <label for="amount">Amount</label>
+  <input id="amount" type="number">
+  <label for="category">Category</label>
+  <select id="category">
+    <option value="food">Food</option>
+    <option value="travel">Travel</option>
+    <option value="fun">Fun</option>
+  </select>
+  <button id="add-btn">Add</button>
+</form>
+
+<label for="filter">Show</label>
+<select id="filter">
+  <option value="all">All</option>
+  <option value="food">Food</option>
+  <option value="travel">Travel</option>
+  <option value="fun">Fun</option>
+</select>
+
+<ul id="expenses"></ul>
+<p id="total"></p>
+
+<script>
+  const state = {
+    expenses: [
+      { id: 1, label: 'Fuel', amount: 40, category: 'travel' },
+      { id: 2, label: 'Tacos', amount: 12, category: 'food' },
+    ],
+    filter: 'all',
+    nextId: 3,
+  }
+  const list = document.querySelector('#expenses')
+
+  function visible() {
+    return state.filter === 'all' ? state.expenses : state.expenses.filter((e) => e.category === state.filter)
+  }
+
+  function render() {
+    list.replaceChildren(
+      ...visible().map((expense) => {
+        const li = document.createElement('li')
+        li.dataset.id = expense.id
+        li.innerHTML = '<span class="label"></span> <span class="amount"></span> <button class="remove" type="button">Remove</button>'
+        li.querySelector('.label').textContent = expense.label
+        li.querySelector('.amount').textContent = '$' + expense.amount
+        return li
+      }),
+    )
+    const total = state.expenses.reduce((sum, e) => sum + e.amount, 0)
+    document.querySelector('#total').textContent = 'Total: $' + total
+  }
+
+  document.querySelector('#add').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const label = document.querySelector('#label').value.trim()
+    const amount = Number(document.querySelector('#amount').value)
+    if (!label || !(amount > 0)) return
+    state.expenses.push({
+      id: state.nextId++,
+      label,
+      amount,
+      category: document.querySelector('#category').value,
+    })
+    render()
+  })
+
+  list.addEventListener('click', (event) => {
+    const li = event.target.closest('.remove') && event.target.closest('li')
+    if (!li) return
+    const id = Number(li.dataset.id)
+    state.expenses = state.expenses.filter((e) => e.id !== id)
+    render()
+  })
+
+  document.querySelector('#filter').addEventListener('change', (event) => {
+    state.filter = event.target.value
+    render()
+  })
+
+  render()
+</script>
+--- hint
+For 1, log `typeof` each amount inside the `reduce`. For 2, compare `li.dataset.index` with where that expense really sits in `state.expenses`.
+--- hint
+Fix at the source: convert the amount with `Number(...)` when adding (and validate it there, with the name, for 4); identify rows by `data-id` rather than position; treat `'all'` as "no filter".
+--- check dom | Starts with two expenses totalling $52
+#expenses li count == 2
+#total text == Total: $52
+--- check dom | 1. Amounts add up as numbers
+type #label Snacks
+type #amount 5
+click #add-btn
+#expenses li count == 3
+#expenses li:last-child .label text == Snacks
+#total text == Total: $57
+--- check dom | 2. Removing under a filter removes the right expense
+type #filter food
+click #expenses li:first-child .remove
+#expenses li count == 0
+#total text == Total: $40
+--- check dom | 3. All shows everything again
+type #filter food
+type #filter all
+#expenses li count == 2
+--- check dom | 4. Nothing is added without a name or a positive amount
+type #amount 5
+click #add-btn
+type #label Air
+type #amount 0
+click #add-btn
+#expenses li count == 2
+#total text == Total: $52

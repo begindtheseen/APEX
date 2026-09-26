@@ -1,0 +1,1432 @@
+@track javascript
+@level intermediate
+@title JavaScript · Intermediate
+@name JavaScript, intermediate: idioms, data and clean functions
+@blurb Array methods, closures, errors, JSON, Map and Set, classes, and the everyday bugs they cause: write JavaScript the way working developers do, and debug it when it misbehaves.
+
+=== js2-01 | map, filter and reduce in depth
+--- teach
+You met `map`, `filter` and `reduce` in the basics. Now look at what they really hand your callback. Every one of them calls it with **three** arguments: the item, its index, and the whole array.
+
+```js
+const names = ['ada', 'lin', 'sam']
+names.map((name, i) => `${i + 1}. ${name}`)   // ['1. ada', '2. lin', '3. sam']
+```
+
+`reduce` is the most general of the three. Its callback gets the **accumulator** (the result so far) and the current item, and whatever it returns becomes the accumulator for the next item. The second argument to `reduce` is where the accumulator starts. It does not have to be a number: an object works just as well, and that is how you turn an array into a lookup table.
+
+```js
+const people = [{ id: 7, name: 'ada' }, { id: 9, name: 'lin' }]
+const byId = people.reduce((table, person) => {
+  table[person.id] = person
+  return table
+}, {})
+byId[9].name   // 'lin'
+```
+
+Two mistakes catch almost everyone:
+
+- **Forgetting to return the accumulator.** With braces `{ … }` an arrow function returns nothing unless you write `return`, so the next step receives `undefined` and the code crashes with a confusing message.
+- **Leaving out the starting value.** Without it, `reduce` uses the first item as the start, which is wrong for anything but plain sums, and `[].reduce(fn)` throws `TypeError: Reduce of empty array with no initial value`. Always pass one.
+
+Finally, `map` is for building a new array. If you only want to *do* something for each item (print it, save it), use `for…of` or `forEach`; a `map` whose result nobody reads tells the next reader the wrong story.
+--- task
+`orders` are objects shaped like `{ id, customer, total, status }`. Write three functions:
+
+- `paidRevenue(orders)` — the sum of `total` over the orders whose `status` is `'paid'`. An empty array gives `0`.
+- `byId(orders)` — an object that maps each order's `id` to the order itself. Build it with `reduce`.
+- `numbered(names)` — the names as `'1. ada'`, `'2. lin'`, … using the index `map` gives you.
+--- starter
+function paidRevenue(orders) {
+  return 0
+}
+
+function byId(orders) {
+  return {}
+}
+
+function numbered(names) {
+  return names
+}
+--- solution
+function paidRevenue(orders) {
+  return orders.filter((o) => o.status === 'paid').reduce((sum, o) => sum + o.total, 0)
+}
+
+function byId(orders) {
+  return orders.reduce((table, order) => {
+    table[order.id] = order
+    return table
+  }, {})
+}
+
+function numbered(names) {
+  return names.map((name, i) => `${i + 1}. ${name}`)
+}
+--- hint
+`paidRevenue` is a `filter` then a `reduce` that starts at `0`.
+--- hint
+In `byId`, the accumulator starts as `{}`; each step sets `table[order.id] = order` and then **returns** `table`.
+--- hint
+`map`'s callback receives `(name, i)`; indexes start at 0, so print `i + 1`.
+--- check case | paidRevenue adds only the paid orders
+paidRevenue([{ id: 1, customer: 'ada', total: 30, status: 'paid' }, { id: 2, customer: 'lin', total: 12, status: 'refunded' }, { id: 3, customer: 'ada', total: 8, status: 'paid' }])
+=> 38
+--- check case | paidRevenue of no orders is 0
+paidRevenue([])
+=> 0
+--- check case | byId looks an order up by its id
+byId([{ id: 1, customer: 'ada', total: 30, status: 'paid' }, { id: 2, customer: 'lin', total: 12, status: 'refunded' }])[2].customer
+=> 'lin'
+--- check case | byId of no orders is an empty object
+byId([])
+=> {}
+--- check case | numbered counts from 1
+numbered(['ada', 'lin', 'sam'])
+=> ['1. ada', '2. lin', '3. sam']
+--- check source | byId is built with reduce
+\.reduce\(
+
+=== js2-02 | find, some, every and flatMap
+--- teach
+Four more array methods answer questions you would otherwise write loops for:
+
+```js
+const users = [
+  { name: 'ada', role: 'admin', verified: true, skills: ['js', 'sql'] },
+  { name: 'lin', role: 'member', verified: false, skills: ['python'] },
+]
+users.find((u) => u.name === 'lin')      // the first match: lin's object
+users.find((u) => u.name === 'zoe')      // undefined — nothing matched
+users.some((u) => u.role === 'admin')    // true — at least one passes
+users.every((u) => u.verified)           // false — not all of them pass
+users.flatMap((u) => u.skills)           // ['js', 'sql', 'python']
+```
+
+- `find` returns the **item**, or `undefined` when nothing matches. (`findIndex` gives the position, or `-1`.)
+- `some` and `every` return booleans, and stop as soon as they know the answer.
+- `flatMap` maps each item to an array and joins the arrays into one — the tidy way to collect "all the X of all the Y".
+
+Two things to watch. First, `undefined` leaks: if your function promises "the user, or `null`", convert with `?? null` rather than handing callers an `undefined` they did not expect. Second, `every` on an **empty** array is `true` and `some` is `false`. That is not a bug — "every item in an empty list is verified" has no counter-example — but it surprises people, so decide on purpose what an empty list should mean for your code.
+--- task
+Users look like `{ name, role, verified, skills }`. Write:
+
+- `findUser(users, name)` — the user with that name, or `null` if there is none.
+- `hasAdmin(users)` — `true` if any user's `role` is `'admin'`.
+- `allVerified(users)` — `true` if every user is verified (and so `true` for an empty list).
+- `allSkills(users)` — one array of every user's skills, in order (duplicates kept).
+
+Use `find`, `some`, `every` and `flatMap`.
+--- starter
+function findUser(users, name) {
+  for (const u of users) {
+    if (u.name === name) return u
+  }
+}
+
+function hasAdmin(users) {
+  return false
+}
+
+function allVerified(users) {
+  return false
+}
+
+function allSkills(users) {
+  return []
+}
+--- solution
+function findUser(users, name) {
+  return users.find((u) => u.name === name) ?? null
+}
+
+function hasAdmin(users) {
+  return users.some((u) => u.role === 'admin')
+}
+
+function allVerified(users) {
+  return users.every((u) => u.verified)
+}
+
+function allSkills(users) {
+  return users.flatMap((u) => u.skills)
+}
+--- hint
+`find` gives `undefined` when nothing matches; `?? null` turns that into `null`.
+--- hint
+Each of the others is one line: `users.some(...)`, `users.every(...)`, `users.flatMap((u) => u.skills)`.
+--- check case | findUser finds lin
+findUser([{ name: 'ada', role: 'admin', verified: true, skills: [] }, { name: 'lin', role: 'member', verified: false, skills: [] }], 'lin').role
+=> 'member'
+--- check case | findUser gives null, not undefined, when nobody matches
+findUser([{ name: 'ada', role: 'admin', verified: true, skills: [] }], 'zoe')
+=> null
+--- check case | hasAdmin spots an admin
+hasAdmin([{ name: 'lin', role: 'member' }, { name: 'ada', role: 'admin' }])
+=> true
+--- check case | hasAdmin of nobody is false
+hasAdmin([])
+=> false
+--- check case | allVerified is false when one user is not
+allVerified([{ verified: true }, { verified: false }])
+=> false
+--- check case | allVerified of an empty list is true
+allVerified([])
+=> true
+--- check case | allSkills flattens every list
+allSkills([{ skills: ['js', 'sql'] }, { skills: [] }, { skills: ['python', 'js'] }])
+=> ['js', 'sql', 'python', 'js']
+--- check source | Uses find, some, every and flatMap
+(?=[\s\S]*\.find\()(?=[\s\S]*\.some\()(?=[\s\S]*\.every\()(?=[\s\S]*\.flatMap\()
+
+=== js2-03 | Debugging: the sort that sorts wrong
+--- teach
+This lesson is about a bug, and about how to hunt one down. The method is the same every time:
+
+1. **Reproduce it** with the smallest input that shows the problem.
+2. **Read what actually happened**, not what you expected. Print the values.
+3. **Check your assumptions** — the bug usually lives in something you "knew" was true.
+4. **Fix the cause**, not the symptom, then prove it with the original input and a few edge cases.
+
+Here is an assumption that fails constantly: "`sort()` sorts numbers."
+
+```js
+[100, 25, 3].sort()        // [100, 25, 3]  — what?
+['b', 'a', 'c'].sort()     // ['a', 'b', 'c']
+```
+
+With no argument, `sort` converts every item to a **string** and compares the strings letter by letter. `'100'` comes before `'25'` because `'1'` comes before `'2'`. To sort by anything else, pass a **comparator**: a function `(a, b)` that returns a **negative number** if `a` goes first, a **positive number** if `b` goes first, and `0` if they tie.
+
+```js
+[100, 25, 3].sort((a, b) => a - b)   // [3, 25, 100]
+[100, 25, 3].sort((a, b) => b - a)   // [100, 25, 3], highest first
+['lin', 'ada'].sort((a, b) => a.localeCompare(b))   // ['ada', 'lin']
+```
+
+A comparator that returns `true`/`false` (like `(a, b) => a > b`) is a classic bug: `false` counts as `0`, "a tie", so the engine is never told to move `a` after `b`, and the result depends on the engine and the input.
+
+The second trap: **`sort` changes the array you call it on** and returns that same array. If a caller passes you their data and you sort it, you have reordered their array behind their back. Copy first — `[...items].sort(…)` — or use `items.toSorted(…)`, which returns a new array.
+
+To sort by one key and break ties with another, fall through when the first comparison is `0`: `b.score - a.score || a.name.localeCompare(b.name)`.
+--- task
+Bug report: *"The leaderboard shows 100 points below 25 points, players with equal scores come out in a random order, and after we render it the original `players` array has been reordered."*
+
+Fix both functions:
+
+- `sortScores(scores)` must return a **new** array of the numbers, highest first.
+- `leaderboard(players)` must return a **new** array of the `{ name, score }` objects, highest score first, and players with the same score in alphabetical order of name.
+
+Neither may change the array it was given.
+--- starter
+function sortScores(scores) {
+  return scores.sort().reverse()
+}
+
+function leaderboard(players) {
+  return players.sort((a, b) => a.score < b.score)
+}
+--- solution
+function sortScores(scores) {
+  return [...scores].sort((a, b) => b - a)
+}
+
+function leaderboard(players) {
+  return [...players].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+}
+--- hint
+Reproduce it first: `console.log([3, 100, 25].sort())`. The numbers are compared as text.
+--- hint
+A comparator returns a number: `(a, b) => b - a` puts the bigger number first.
+--- hint
+Copy before sorting with `[...scores]`. For the tie-break, `b.score - a.score || a.name.localeCompare(b.name)` — `||` only moves on when the first part is `0`.
+--- check case | Scores come out highest first, as numbers
+sortScores([3, 100, 25, 9])
+=> [100, 25, 9, 3]
+--- check case | Negative scores sort too
+sortScores([-5, 10, 0, -20])
+=> [10, 0, -5, -20]
+--- check case | sortScores leaves the original alone
+(() => { const s = [3, 100, 25]; sortScores(s); return s })()
+=> [3, 100, 25]
+--- check case | The leaderboard ranks by score, ties alphabetical
+leaderboard([{ name: 'sam', score: 25 }, { name: 'ada', score: 100 }, { name: 'lin', score: 25 }, { name: 'bo', score: 3 }]).map((p) => p.name)
+=> ['ada', 'lin', 'sam', 'bo']
+--- check case | leaderboard leaves the original alone
+(() => { const p = [{ name: 'b', score: 1 }, { name: 'a', score: 2 }]; leaderboard(p); return p.map((x) => x.name) })()
+=> ['b', 'a']
+--- check case | An empty leaderboard is an empty array
+leaderboard([])
+=> []
+
+=== js2-04 | Destructuring, spread and rest
+--- teach
+**Destructuring** pulls values out of objects and arrays into variables, and it works in function parameters too, which is where it shines:
+
+```js
+const user = { name: 'Ada', address: { city: 'London' } }
+const { name, role = 'guest' } = user          // role was missing, so the default is used
+const { address: { city } } = user             // reach inside: city is 'London'
+const [first, second] = ['gold', 'silver', 'bronze']
+const [winner, ...others] = ['gold', 'silver', 'bronze']   // others: ['silver', 'bronze']
+```
+
+A default only applies when the value is `undefined` — not when it is `null` or `0`. And destructuring something that is missing blows up: `const { address: { city } } = {}` throws, because there is no `address` to look inside. Give the nested object a default too: `{ address: { city } = {} }`.
+
+The same three dots do two opposite jobs:
+
+- **Rest** collects "everything else" into an array or object. In a parameter list, `function sum(...nums)` takes any number of arguments as a real array.
+- **Spread** expands an array or object in place: `Math.max(...nums)`, `[...a, ...b]`, `{ ...defaults, ...options }`.
+
+With object spread, **later keys win**. That makes it the idiomatic way to apply settings over defaults:
+
+```js
+const defaults = { retries: 3, timeout: 1000 }
+const settings = { ...defaults, timeout: 5000 }   // { retries: 3, timeout: 5000 }
+```
+
+Put the defaults first. `{ ...options, ...defaults }` would quietly throw away everything the caller asked for.
+--- task
+Write three functions:
+
+- `label(user)` — destructure the parameter. `user` has a `name`, maybe a `role`, and maybe an `address` with a `city`. Return `'name (role), city'`, using `'guest'` when there is no role and `'unknown'` when there is no address or no city. So `label({ name: 'Ada' })` is `'Ada (guest), unknown'`.
+- `average(...nums)` — take any number of arguments with rest and return their mean, or `0` when there are none.
+- `withDefaults(options)` — return a new object with `retries: 3` and `timeout: 1000`, overridden by anything in `options`.
+--- starter
+function label(user) {
+  return `${user.name} (${user.role}), ${user.address.city}`
+}
+
+function average(nums) {
+  return 0
+}
+
+function withDefaults(options) {
+  return options
+}
+--- solution
+function label({ name, role = 'guest', address: { city = 'unknown' } = {} }) {
+  return `${name} (${role}), ${city}`
+}
+
+function average(...nums) {
+  if (nums.length === 0) return 0
+  return nums.reduce((sum, n) => sum + n, 0) / nums.length
+}
+
+function withDefaults(options) {
+  return { retries: 3, timeout: 1000, ...options }
+}
+--- hint
+Defaults can go right inside the pattern: `{ name, role = 'guest' }`.
+--- hint
+For the nested city: `address: { city = 'unknown' } = {}` — the `= {}` covers a missing address.
+--- hint
+`{ retries: 3, timeout: 1000, ...options }` — the options come last so they win.
+--- check case | A full user
+label({ name: 'Ada', role: 'admin', address: { city: 'London' } })
+=> 'Ada (admin), London'
+--- check case | No role, no address
+label({ name: 'Ada' })
+=> 'Ada (guest), unknown'
+--- check case | An address without a city
+label({ name: 'Lin', role: 'editor', address: {} })
+=> 'Lin (editor), unknown'
+--- check case | average of several numbers
+average(2, 4, 9)
+=> 5
+--- check case | average of nothing is 0
+average()
+=> 0
+--- check case | withDefaults fills the gaps and keeps overrides
+withDefaults({ timeout: 5000, verbose: true })
+=> { retries: 3, timeout: 5000, verbose: true }
+--- check test | withDefaults returns a new object
+(() => { const o = { retries: 1 }; return withDefaults(o) !== o && o.timeout === undefined })()
+
+=== js2-05 | Debugging: the shared shopping cart
+--- teach
+Objects and arrays are held by **reference**. A variable does not contain the object; it points at it. Assigning it to another variable copies the pointer, so both names now reach the very same object:
+
+```js
+const a = { tags: ['x'] }
+const b = a
+b.tags.push('y')
+a.tags        // ['x', 'y'] — there was only ever one object
+```
+
+Spread makes a **shallow copy**: a new outer object, but its properties are copied as they are, and a property that is itself an array or object is still the *same* array or object.
+
+```js
+const original = { name: 'cart', items: ['apple'] }
+const copy = { ...original }
+copy.name = 'other'          // fine: copy has its own name
+copy.items.push('pear')      // oops: original.items changed too
+```
+
+To change something without touching the original, copy **every level you are about to change**:
+
+```js
+const original = { name: 'cart', items: ['apple'] }
+const next = { ...original, items: [...original.items, 'pear'] }
+original.items    // ['apple'] — untouched
+next.items        // ['apple', 'pear']
+```
+
+This style — return a new value instead of editing the old one — is called an **immutable update**. It is how React state and most data libraries expect you to work, and it removes a whole class of bugs where one part of a program edits data another part is still using. `structuredClone(obj)` makes a full deep copy when you really need one, but copying only the levels you change is cheaper and says more about your intent.
+
+When you debug "data changing by itself", the question to ask is: **which other variable points at this same object?** Log with `console.log(a === b)` to find out.
+--- task
+Bug report: *"When customer A adds an item, it also shows up in customer B's cart. The default cart has items in it after a few orders."*
+
+Fix the code so that:
+
+- `newCart()` returns a fresh, independent cart `{ items: [], discount: 0 }` every time.
+- `addItem(cart, item)` returns a **new** cart with `item` added at the end, and does not change the cart it was given (or its `items` array).
+- `setDiscount(cart, discount)` returns a **new** cart with that discount, leaving the old one alone.
+
+`DEFAULT_CART` must never change.
+--- starter
+const DEFAULT_CART = { items: [], discount: 0 }
+
+function newCart() {
+  return { ...DEFAULT_CART }
+}
+
+function addItem(cart, item) {
+  cart.items.push(item)
+  return cart
+}
+
+function setDiscount(cart, discount) {
+  cart.discount = discount
+  return cart
+}
+--- solution
+const DEFAULT_CART = { items: [], discount: 0 }
+
+function newCart() {
+  return { ...DEFAULT_CART, items: [...DEFAULT_CART.items] }
+}
+
+function addItem(cart, item) {
+  return { ...cart, items: [...cart.items, item] }
+}
+
+function setDiscount(cart, discount) {
+  return { ...cart, discount }
+}
+--- hint
+Reproduce it: make two carts with `newCart()` and check `a.items === b.items`. The spread copied the outer object only.
+--- hint
+`newCart` needs its own `items` array: `{ ...DEFAULT_CART, items: [] }` or a copy of the default's.
+--- hint
+`addItem` should build a new cart: `{ ...cart, items: [...cart.items, item] }`.
+--- check case | Two new carts do not share items
+(() => { const a = newCart(); const b = newCart(); const a2 = addItem(a, 'apple'); return [a2.items, b.items] })()
+=> [['apple'], []]
+--- check case | addItem does not change the cart it was given
+(() => { const c = newCart(); addItem(c, 'pear'); return c.items })()
+=> []
+--- check case | addItem adds to the end of a new cart
+addItem(addItem(newCart(), 'apple'), 'pear')
+=> { items: ['apple', 'pear'], discount: 0 }
+--- check case | setDiscount leaves the old cart alone
+(() => { const c = newCart(); const d = setDiscount(c, 10); return [c.discount, d.discount] })()
+=> [0, 10]
+--- check case | DEFAULT_CART is untouched after use
+(() => { addItem(newCart(), 'x'); setDiscount(newCart(), 5); return DEFAULT_CART })()
+=> { items: [], discount: 0 }
+
+=== js2-06 | Strings and regular expressions
+--- teach
+A **regular expression** (regex) is a small pattern language for text. You write it between slashes:
+
+```js
+/\d+/.test('order 66')            // true — "one or more digits" appears
+'a1b22c333'.match(/\d+/g)          // ['1', '22', '333'] — g means "all matches"
+'Hello'.replace(/l/g, 'L')         // 'HeLLo'
+```
+
+The pieces you will use most: `\d` a digit, `\w` a letter, digit or underscore, `\s` whitespace, `.` any character, `[a-z]` a range, `[^a-z]` anything *not* in it, `+` one or more, `*` zero or more, `?` optional, `{4}` exactly four, `^` and `$` the start and end. Flags go after the closing slash: `g` (every match), `i` (ignore case).
+
+**Groups** in brackets capture parts of a match, and you can name them with `(?<name>…)`:
+
+```js
+const m = /^(?<user>\w+)@(?<host>[\w.]+)$/.exec('ada@example.com')
+m.groups.user    // 'ada'
+m.groups.host    // 'example.com'
+```
+
+`exec` returns `null` when there is no match — check for that before reading `.groups`. To loop over every match with its groups, use `text.matchAll(/…/g)`.
+
+Common mistakes: forgetting `^` and `$`, so `/\d{4}/` happily "matches" `'12345678'`; forgetting that `.` means any character (write `\.` for a real dot); and forgetting the `g` flag on `replace`, which then changes only the first match. Regex is powerful but hard to read — name your groups, keep each pattern to one job, and test it on inputs that should *not* match as well as ones that should.
+--- task
+Write:
+
+- `parseLogLine(line)` — lines look like `2026-03-14 09:26:53 ERROR [auth] Token expired`: a date, a time, a level (one of `DEBUG`, `INFO`, `WARN`, `ERROR`), a module name in square brackets (letters, digits, `_` or `-`), then the message. Return `{ date, time, level, module, message }`, or `null` if the line is not in that shape.
+- `slugify(title)` — lowercase, turn every run of characters that are not `a–z` or `0–9` into a single `-`, and remove `-` from both ends. `'  Hello, World! 2026 '` becomes `'hello-world-2026'`.
+- `hashtags(text)` — every `#tag` (letters, digits, `_`) lowercased and without the `#`, each once, in the order first seen.
+--- starter
+function parseLogLine(line) {
+  const parts = line.split(' ')
+  return { date: parts[0], time: parts[1], level: parts[2], module: parts[3], message: parts[4] }
+}
+
+function slugify(title) {
+  return title.toLowerCase().replace(' ', '-')
+}
+
+function hashtags(text) {
+  return []
+}
+--- solution
+const LOG_LINE = /^(?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2}) (?<level>DEBUG|INFO|WARN|ERROR) \[(?<module>[\w-]+)\] (?<message>.*)$/
+
+function parseLogLine(line) {
+  const m = LOG_LINE.exec(line)
+  if (!m) return null
+  const { date, time, level, module, message } = m.groups
+  return { date, time, level, module, message }
+}
+
+function slugify(title) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function hashtags(text) {
+  const seen = []
+  for (const m of text.matchAll(/#(\w+)/g)) {
+    const tag = m[1].toLowerCase()
+    if (!seen.includes(tag)) seen.push(tag)
+  }
+  return seen
+}
+--- hint
+Build the log pattern one piece at a time: `(?<date>\d{4}-\d{2}-\d{2})`, then a space, then the time, and so on. Anchor it with `^` and `$`.
+--- hint
+The brackets around the module are special in regex, so escape them: `\[(?<module>[\w-]+)\]`. The message is `(?<message>.*)`.
+--- hint
+`slugify` is two replaces with the `g` flag: `/[^a-z0-9]+/g` becomes `'-'`, then `/^-+|-+$/g` becomes `''`.
+--- check case | Parses a well-formed line
+parseLogLine('2026-03-14 09:26:53 ERROR [auth] Token expired for user 42')
+=> { date: '2026-03-14', time: '09:26:53', level: 'ERROR', module: 'auth', message: 'Token expired for user 42' }
+--- check case | Module names may contain a dash
+parseLogLine('2026-01-01 00:00:00 INFO [job-runner] started').module
+=> 'job-runner'
+--- check case | An unknown level is not a log line
+parseLogLine('2026-03-14 09:26:53 LOUD [auth] hi')
+=> null
+--- check case | Rubbish is not a log line
+parseLogLine('hello world')
+=> null
+--- check case | slugify a messy title
+slugify('  Hello, World! 2026 ')
+=> 'hello-world-2026'
+--- check case | slugify of only punctuation is empty
+slugify('--- !!! ---')
+=> ''
+--- check case | hashtags are lowercased and unique
+hashtags('Loving #JavaScript and #js_tips. #JS #javascript again!')
+=> ['javascript', 'js_tips', 'js']
+--- check case | No hashtags gives an empty array
+hashtags('nothing to see')
+=> []
+
+=== js2-07 | Closures: functions that remember
+--- teach
+A function can use variables from the place where it was **written**, not just its own. When an inner function is returned and outlives the outer one, it keeps those variables alive. That pairing — a function plus the variables it can still reach — is a **closure**.
+
+```js
+function makeGreeter(greeting) {
+  return (name) => `${greeting}, ${name}!`
+}
+const hello = makeGreeter('Hello')
+const howdy = makeGreeter('Howdy')
+hello('Ada')   // 'Hello, Ada!'
+howdy('Lin')   // 'Howdy, Lin!'
+```
+
+Each call to `makeGreeter` creates a fresh `greeting` variable, so `hello` and `howdy` remember different ones. The same trick gives you **private state**: a variable only your returned functions can see.
+
+```js
+function makeWallet() {
+  let balance = 0                       // nobody outside can touch this
+  return {
+    deposit(n) { balance += n },
+    balance: () => balance,
+  }
+}
+const w = makeWallet()
+w.deposit(5)
+w.balance()      // 5
+w.balance = 99   // replaces the method, but the real balance is still 5 inside
+```
+
+`deposit(n) { … }` inside an object literal is **method shorthand**: a property whose value is a function. `balance: () => balance` is the same idea written with an arrow.
+
+The classic closure trap is a loop with `var`:
+
+```js
+for (var i = 0; i < 3; i++) setTimeout(() => console.log(i), 0)   // 3 3 3
+for (let j = 0; j < 3; j++) setTimeout(() => console.log(j), 0)   // 0 1 2
+```
+
+`var` makes **one** `i` shared by the whole loop, and by the time the timers fire it is 3. `let` makes a new `j` for each pass, so each closure remembers its own. This is one more reason to never use `var`.
+--- task
+Write `makeCounter(start = 0, step = 1)`. It returns an object with three methods:
+
+- `next()` — adds `step` to the count and returns the new count.
+- `reset()` — puts the count back to `start` and returns it.
+- `value()` — returns the current count without changing it.
+
+The count must be private: the object has only these three methods as its properties. Counters made by separate calls are independent.
+--- starter
+function makeCounter(start = 0, step = 1) {
+  return {
+    count: start,
+    next() {
+      return start + step
+    },
+  }
+}
+--- solution
+function makeCounter(start = 0, step = 1) {
+  let count = start
+  return {
+    next() {
+      count += step
+      return count
+    },
+    reset() {
+      count = start
+      return count
+    },
+    value() {
+      return count
+    },
+  }
+}
+--- hint
+Keep the count in a `let` inside `makeCounter`, not as a property of the returned object.
+--- hint
+Each method reads or changes that variable: `next() { count += step; return count }`.
+--- check case | next counts up by one by default
+(() => { const c = makeCounter(); c.next(); c.next(); return c.next() })()
+=> 3
+--- check case | start and step are used
+(() => { const c = makeCounter(10, 5); c.next(); return c.next() })()
+=> 20
+--- check case | value does not change the count
+(() => { const c = makeCounter(); c.next(); c.value(); return c.value() })()
+=> 1
+--- check case | reset goes back to the start
+(() => { const c = makeCounter(7); c.next(); c.next(); return [c.reset(), c.next()] })()
+=> [7, 8]
+--- check case | Two counters are independent
+(() => { const a = makeCounter(); const b = makeCounter(100); a.next(); a.next(); b.next(); return [a.value(), b.value()] })()
+=> [2, 101]
+--- check case | The count is private: only the three methods are visible
+Object.keys(makeCounter()).sort()
+=> ['next', 'reset', 'value']
+
+=== js2-08 | Higher-order functions
+--- teach
+A **higher-order function** takes a function, returns a function, or both. You have used them all along — `map` takes one — but writing your own is how you package up a *behaviour* and reuse it.
+
+A function that returns a function can configure it first:
+
+```js
+const multiplyBy = (factor) => (n) => n * factor
+const double = multiplyBy(2)
+[1, 2, 3].map(double)     // [2, 4, 6]
+```
+
+A function that takes a function can wrap it with extra behaviour — logging, timing, caching, retrying — without the wrapped function knowing:
+
+```js
+function logged(fn) {
+  return (...args) => {
+    const result = fn(...args)
+    console.log(fn.name, args, '->', result)
+    return result
+  }
+}
+const add = (a, b) => a + b
+const loudAdd = logged(add)
+loudAdd(2, 3)   // prints: add [ 2, 3 ] -> 5, and returns 5
+```
+
+Notice `(...args) => fn(...args)`: rest collects whatever arguments come in and spread passes them all on, so the wrapper works for any function.
+
+Comparators are a great place for this. Instead of writing `(a, b) => …` by hand every time you sort, write a function that **builds** comparators. One warning: `a - b` only works for numbers. For strings it gives `NaN`, and a comparator returning `NaN` leaves the order unpredictable. Compare with `<` and `>` and return `-1`, `1` or `0`, which works for numbers and strings alike.
+--- task
+Write:
+
+- `once(fn)` — returns a function that calls `fn` (with whatever arguments it gets) the first time, and on every later call returns that first result without calling `fn` again.
+- `by(keyFn)` — returns a comparator that orders items by `keyFn(item)`, smallest first. It must work when the keys are numbers **or** strings.
+- `reversed(compare)` — returns a comparator that orders things the opposite way to `compare`.
+--- starter
+function once(fn) {
+  return fn
+}
+
+function by(keyFn) {
+  return (a, b) => keyFn(a) - keyFn(b)
+}
+
+function reversed(compare) {
+  return compare
+}
+--- solution
+function once(fn) {
+  let called = false
+  let result
+  return (...args) => {
+    if (!called) {
+      called = true
+      result = fn(...args)
+    }
+    return result
+  }
+}
+
+function by(keyFn) {
+  return (a, b) => {
+    const ka = keyFn(a)
+    const kb = keyFn(b)
+    if (ka < kb) return -1
+    if (ka > kb) return 1
+    return 0
+  }
+}
+
+function reversed(compare) {
+  return (a, b) => compare(b, a)
+}
+--- hint
+`once` needs two remembered variables: whether it has run, and what it returned.
+--- hint
+For `by`, compute both keys, then return `-1`, `1` or `0` using `<` and `>`.
+--- hint
+`reversed` can just swap the arguments: `(a, b) => compare(b, a)`.
+--- check case | once calls the function only the first time
+(() => { let calls = 0; const init = once((x) => { calls++; return x * 2 }); return [init(5), init(99), init(1), calls] })()
+=> [10, 10, 10, 1]
+--- check case | by sorts by a number key
+['pear', 'fig', 'banana'].sort(by((s) => s.length))
+=> ['fig', 'pear', 'banana']
+--- check case | by sorts by a string key
+[{ name: 'sam' }, { name: 'ada' }, { name: 'lin' }].sort(by((p) => p.name)).map((p) => p.name)
+=> ['ada', 'lin', 'sam']
+--- check case | reversed flips the order
+[3, 1, 2].sort(reversed(by((n) => n)))
+=> [3, 2, 1]
+--- check case | reversed works on strings too
+['b', 'c', 'a'].sort(reversed(by((s) => s)))
+=> ['c', 'b', 'a']
+
+=== js2-09 | Errors: throw, catch, finally and your own error types
+--- teach
+An error is an object. `throw` hands it up the call stack until a `try`/`catch` catches it or the program stops. `finally` runs on the way out either way — the place for clean-up.
+
+```js
+function readConfig(text) {
+  try {
+    return JSON.parse(text)
+  } catch (err) {
+    console.log('bad config:', err.message)
+    return {}
+  } finally {
+    console.log('done reading')
+  }
+}
+readConfig('{oops')   // prints both lines and returns {}
+```
+
+Built-in types include `Error`, `TypeError`, `RangeError` and `SyntaxError`. For your own failures, make a **subclass** so callers can tell your errors apart from bugs. A `class` describes a kind of object (lesson 12 covers classes fully); `class NotFoundError extends Error` makes a new kind of error with everything an `Error` has. Its `constructor` runs when you write `new NotFoundError(…)`, `super(…)` runs `Error`'s own constructor first, and `this` is the new error object:
+
+```js
+class NotFoundError extends Error {
+  constructor(what) {
+    super(`${what} not found`)     // sets message
+    this.name = 'NotFoundError'    // shows up in logs as "NotFoundError: …"
+    this.what = what               // any extra data callers need
+  }
+}
+const e = new NotFoundError('user 7')
+e instanceof NotFoundError   // true
+e instanceof Error           // true
+e.message                    // 'user 7 not found'
+```
+
+The big mistake is the **catch-all that swallows everything**:
+
+```js
+function saveUser(user) {
+  try { save(user) } catch { return 'invalid input' }
+}
+```
+
+If `save` has a typo in it, that `TypeError` is now reported as "invalid input" and you will spend an afternoon looking in the wrong place. Catch only what you expect — check with `instanceof` — and **re-throw** everything else with `throw err`.
+--- task
+Write:
+
+- `class ValidationError extends Error` whose constructor takes `(field, message)`, sets `message` (through `super`), `name` to `'ValidationError'`, and `field`.
+- `validateSignup(data)` — throws `new ValidationError('email', 'email is not valid')` unless `data.email` is a string with something before an `@` and a dot somewhere after it (like `a@b.co`); then throws `new ValidationError('password', 'password must be at least 8 characters')` unless `data.password` is a string of 8 or more characters. Otherwise returns `true`.
+- `trySignup(data)` — calls `validateSignup`. Returns `{ ok: true }` if it passes, or `{ ok: false, field, message }` for a `ValidationError`. Any other error must be **re-thrown**. Whatever happens, add 1 to the top-level variable `attempts` (use `finally`).
+--- starter
+let attempts = 0
+
+function validateSignup(data) {
+  return true
+}
+
+function trySignup(data) {
+  try {
+    validateSignup(data)
+    return { ok: true }
+  } catch {
+    return { ok: false }
+  }
+}
+--- solution
+let attempts = 0
+
+class ValidationError extends Error {
+  constructor(field, message) {
+    super(message)
+    this.name = 'ValidationError'
+    this.field = field
+  }
+}
+
+function validateSignup(data) {
+  if (typeof data.email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) {
+    throw new ValidationError('email', 'email is not valid')
+  }
+  if (typeof data.password !== 'string' || data.password.length < 8) {
+    throw new ValidationError('password', 'password must be at least 8 characters')
+  }
+  return true
+}
+
+function trySignup(data) {
+  try {
+    validateSignup(data)
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof ValidationError) return { ok: false, field: err.field, message: err.message }
+    throw err
+  } finally {
+    attempts++
+  }
+}
+--- hint
+In the constructor, call `super(message)` first, then set `this.name` and `this.field`.
+--- hint
+A regex for the email: `/^[^@\s]+@[^@\s]+\.[^@\s]+$/`.
+--- hint
+In the `catch (err)`, check `err instanceof ValidationError`; if it is not, `throw err`. Put `attempts++` in `finally`.
+--- check test | ValidationError is a real Error subclass
+new ValidationError('email', 'x') instanceof Error && new ValidationError('email', 'x').name === 'ValidationError'
+--- check case | It carries the field and message
+(() => { const e = new ValidationError('age', 'too young'); return [e.field, e.message] })()
+=> ['age', 'too young']
+--- check case | A good signup
+trySignup({ email: 'ada@example.com', password: 'correct horse' })
+=> { ok: true }
+--- check case | A bad email is reported
+trySignup({ email: 'ada.example.com', password: 'correct horse' })
+=> { ok: false, field: 'email', message: 'email is not valid' }
+--- check case | A short password is reported
+trySignup({ email: 'ada@example.com', password: 'short' })
+=> { ok: false, field: 'password', message: 'password must be at least 8 characters' }
+--- check test | Other errors are re-thrown, not swallowed
+throws(() => trySignup(null))
+--- check case | attempts counts every call, even ones that throw
+(() => { const before = attempts; try { trySignup(null) } catch {}; trySignup({ email: 'a@b.co', password: '12345678' }); return attempts - before })()
+=> 2
+
+=== js2-10 | JSON: parse, stringify and validate
+--- teach
+JSON is text. `JSON.stringify` turns a value into it, `JSON.parse` turns it back:
+
+```js
+JSON.stringify({ name: 'launch', tags: ['a'] })   // '{"name":"launch","tags":["a"]}'
+JSON.stringify({ a: 1 }, null, 2)                 // pretty-printed, 2 spaces
+JSON.parse('{"n": 1}').n                           // 1
+```
+
+JSON only knows strings, numbers, booleans, `null`, arrays and plain objects. Everything else is changed on the way through, and this is where bugs come from:
+
+- A `Date` becomes an ISO **string** (Dates have a `toJSON` method), and `JSON.parse` does not turn it back.
+- `undefined` and functions vanish from objects; `NaN` and `Infinity` become `null`.
+- `Map` and `Set` become `{}`.
+
+`JSON.parse` takes an optional **reviver**, a function called for every key and value on the way in. Whatever it returns is used instead:
+
+```js
+const text = '{"at":"2026-01-02T03:04:05.000Z"}'
+const data = JSON.parse(text, (key, value) => (key === 'at' ? new Date(value) : value))
+data.at instanceof Date    // true
+```
+
+Three checks help with shapes: `Array.isArray(x)` (is it an array?), `'name' in obj` (does the object have that key?) and `typeof`. `new Date(text)` makes a date; text it cannot read gives an Invalid Date.
+
+And `JSON.parse` **throws** a `SyntaxError` on bad input. Anything that reads JSON from outside your program — a file, a request, local storage — must expect that, and must also check the *shape*: valid JSON can still be `[1, 2]` or `null` when you expected an object, or be missing a field. Parse, then validate, then use — and report *what* was wrong, so the person fixing the input knows where to look.
+--- task
+Write `parseEvent(text)`. An event is a JSON object with a `name` and an `at` timestamp string. Return:
+
+- `{ ok: false, error: 'invalid JSON' }` if the text does not parse,
+- `{ ok: false, error: 'not an object' }` if it parses to anything but a plain object (an array or `null` counts as not an object),
+- `{ ok: false, error: 'missing field: name' }` (or `…: at`) if a field is absent — check `name` first,
+- `{ ok: false, error: 'invalid date' }` if `at` is not a string that makes a valid `Date`,
+- otherwise `{ ok: true, event }`, where `event` is the parsed object with `at` turned into a `Date` (use a reviver).
+--- starter
+function parseEvent(text) {
+  return { ok: true, event: JSON.parse(text) }
+}
+--- solution
+function parseEvent(text) {
+  let data
+  try {
+    data = JSON.parse(text, (key, value) => (key === 'at' && typeof value === 'string' ? new Date(value) : value))
+  } catch {
+    return { ok: false, error: 'invalid JSON' }
+  }
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) return { ok: false, error: 'not an object' }
+  for (const field of ['name', 'at']) {
+    if (!(field in data)) return { ok: false, error: `missing field: ${field}` }
+  }
+  if (!(data.at instanceof Date) || Number.isNaN(data.at.getTime())) return { ok: false, error: 'invalid date' }
+  return { ok: true, event: data }
+}
+--- hint
+Wrap only the `JSON.parse` in `try`/`catch`, and return the `invalid JSON` result from the `catch`.
+--- hint
+The reviver: `(key, value) => (key === 'at' && typeof value === 'string' ? new Date(value) : value)`.
+--- hint
+A bad date string makes an "Invalid Date" whose `getTime()` is `NaN`: test it with `Number.isNaN(...)`.
+--- check test | at comes back as a Date
+parseEvent('{"name":"launch","at":"2026-01-02T03:04:05.000Z"}').event.at instanceof Date
+--- check case | The date is the right moment
+parseEvent('{"name":"launch","at":"2026-01-02T03:04:05.000Z"}').event.at.getTime()
+=> Date.UTC(2026, 0, 2, 3, 4, 5)
+--- check case | Bad JSON is reported, not thrown
+parseEvent('{name: launch}')
+=> { ok: false, error: 'invalid JSON' }
+--- check case | An array is not an object
+parseEvent('[1, 2]')
+=> { ok: false, error: 'not an object' }
+--- check case | null is not an object
+parseEvent('null')
+=> { ok: false, error: 'not an object' }
+--- check case | A missing name is named
+parseEvent('{"at":"2026-01-02T00:00:00Z"}')
+=> { ok: false, error: 'missing field: name' }
+--- check case | A missing timestamp is named
+parseEvent('{"name":"x"}')
+=> { ok: false, error: 'missing field: at' }
+--- check case | A nonsense date is rejected
+parseEvent('{"name":"x","at":"soon"}')
+=> { ok: false, error: 'invalid date' }
+--- check case | A round trip through stringify keeps the other fields
+parseEvent(JSON.stringify({ name: 'x', at: new Date(0), tags: ['a'] })).event.tags
+=> ['a']
+
+=== js2-11 | Map and Set
+--- teach
+A plain object is a fine record, but a poor general-purpose dictionary: its keys are always strings (so `1` and `'1'` collide), it has inherited keys like `toString`, and it has no size. **`Map`** is built for the job:
+
+```js
+const visits = new Map()
+visits.set('ada', 1)
+visits.set('ada', visits.get('ada') + 1)
+visits.get('ada')       // 2
+visits.has('zoe')       // false
+visits.size             // 1
+[...visits]             // [['ada', 2]] — entries, in insertion order
+```
+
+A `Map` keeps keys in the order they were first added, accepts any value as a key (numbers, objects), and is fast to add to and look up in, even with millions of entries.
+
+A **`Set`** holds each value at most once:
+
+```js
+const tags = new Set(['js', 'css', 'js'])
+tags.size               // 2
+tags.has('css')         // true
+[...new Set([3, 1, 3, 2, 1])]   // [3, 1, 2] — de-duplicate, keeping first-seen order
+```
+
+The reason to reach for them is not only tidiness, it is **speed**. `array.includes(x)` looks at every item, so calling it inside a loop over another array is slow for large inputs: 100,000 × 100,000 comparisons. `set.has(x)` takes about the same time however big the set is. When you catch yourself searching an array inside a loop, build a `Set` or `Map` first.
+--- task
+Write:
+
+- `unique(values)` — the values with duplicates removed, in first-seen order.
+- `intersect(a, b)` — the values of array `a` that also appear in array `b`, each once, in `a`'s order. It must be fast for arrays of 200,000 items.
+- `wordLines(lines)` — given an array of lines of text, return a `Map` from each lowercase word (a run of letters `a–z`) to the array of **line numbers** (starting at 1) it appears on, each line number once. Words are in the order first seen.
+--- starter
+function unique(values) {
+  return values
+}
+
+function intersect(a, b) {
+  return a.filter((x) => b.includes(x))
+}
+
+function wordLines(lines) {
+  return {}
+}
+--- solution
+function unique(values) {
+  return [...new Set(values)]
+}
+
+function intersect(a, b) {
+  const inB = new Set(b)
+  return unique(a.filter((x) => inB.has(x)))
+}
+
+function wordLines(lines) {
+  const index = new Map()
+  lines.forEach((line, i) => {
+    for (const word of line.toLowerCase().match(/[a-z]+/g) ?? []) {
+      if (!index.has(word)) index.set(word, [])
+      const seen = index.get(word)
+      if (seen.at(-1) !== i + 1) seen.push(i + 1)
+    }
+  })
+  return index
+}
+--- hint
+`[...new Set(values)]` removes duplicates and keeps the order.
+--- hint
+For `intersect`, turn `b` into a `Set` once, then filter `a` with `set.has(x)`, then remove duplicates.
+--- hint
+For `wordLines`, `line.toLowerCase().match(/[a-z]+/g) ?? []` gives the words. Push the line number only if it is not already the last one in that word's array.
+--- check case | unique keeps first-seen order
+unique([3, 1, 3, 2, 1])
+=> [3, 1, 2]
+--- check case | unique tells 1 and '1' apart
+unique([1, '1', 1, 'a', 'a'])
+=> [1, '1', 'a']
+--- check case | intersect keeps a's order, once each
+intersect([5, 1, 2, 2, 3], [3, 2, 4, 5])
+=> [5, 2, 3]
+--- check case | intersect is fast on 200,000 items
+intersect(Array.from({ length: 200000 }, (_, i) => i), Array.from({ length: 200000 }, (_, i) => i + 100000)).length
+=> 100000
+?? Searching b with includes for every item of a is 200,000 × 200,000 steps. Build a Set from b first.
+--- check test | wordLines returns a Map
+wordLines(['hi']) instanceof Map
+--- check case | wordLines maps words to line numbers
+[...wordLines(['The cat', 'the dog and the cat', 'A dog!'])]
+=> [['the', [1, 2]], ['cat', [1, 2]], ['dog', [2, 3]], ['and', [2]], ['a', [3]]]
+--- check case | No lines, no words
+wordLines([]).size
+=> 0
+
+=== js2-12 | Classes: getters, setters and static members
+--- teach
+A **class** is a template for objects that share behaviour:
+
+```js
+class Rect {
+  constructor(width, height) {
+    this.width = width
+    this.height = height
+  }
+  area() {
+    return this.width * this.height
+  }
+}
+new Rect(2, 3).area()   // 6
+```
+
+Three features make classes more than bags of methods.
+
+**Getters and setters** look like properties but run code. A getter computes a value on demand; a setter can validate before storing:
+
+```js
+class Circle {
+  constructor(r) { this.radius = r }
+  get diameter() { return this.radius * 2 }
+  set diameter(d) { this.radius = d / 2 }
+}
+const c = new Circle(1)
+c.diameter        // 2 — no brackets, it reads like a property
+c.diameter = 10
+c.radius          // 5
+```
+
+**Private fields** start with `#` and cannot be read or written from outside the class at all — not even by `Object.keys` or `JSON.stringify`. Pair them with a getter and setter and every write goes through your validation.
+
+**Static members** belong to the class itself, not to each object: constants (`static MAX = 10`) and alternative constructors (`static fromJSON(text)`), called as `Circle.fromJSON(…)`.
+
+A classic mistake: a setter that assigns to its own name. `set radius(r) { this.radius = r }` calls itself forever and crashes with "Maximum call stack size exceeded". Store the value in a differently named (usually private) field. And set things through the setter in the constructor too, so the rules apply from the very first value.
+--- task
+Write `class Temperature`:
+
+- `new Temperature(celsius)` stores the temperature in a **private** field.
+- a `celsius` getter and setter; the setter throws a `RangeError` if the value is below `Temperature.ABSOLUTE_ZERO`, which is a static property equal to `-273.15`. The constructor must apply the same rule.
+- a `fahrenheit` getter (`celsius * 9 / 5 + 32`) and setter (which sets the temperature from a Fahrenheit value).
+- `static fromFahrenheit(f)` — returns a new `Temperature`.
+--- starter
+class Temperature {
+  constructor(celsius) {
+    this.celsius = celsius
+  }
+}
+--- solution
+class Temperature {
+  static ABSOLUTE_ZERO = -273.15
+  #celsius
+
+  constructor(celsius) {
+    this.celsius = celsius
+  }
+
+  get celsius() {
+    return this.#celsius
+  }
+
+  set celsius(value) {
+    if (value < Temperature.ABSOLUTE_ZERO) throw new RangeError(`${value} is below absolute zero`)
+    this.#celsius = value
+  }
+
+  get fahrenheit() {
+    return (this.#celsius * 9) / 5 + 32
+  }
+
+  set fahrenheit(f) {
+    this.celsius = ((f - 32) * 5) / 9
+  }
+
+  static fromFahrenheit(f) {
+    return new Temperature(((f - 32) * 5) / 9)
+  }
+}
+--- hint
+Declare the private field at the top of the class body: `#celsius`. Read and write it as `this.#celsius`.
+--- hint
+If the constructor does `this.celsius = celsius`, it goes through your setter and gets checked for free.
+--- hint
+`static ABSOLUTE_ZERO = -273.15` and `static fromFahrenheit(f) { return new Temperature(...) }`.
+--- check case | 100°C is 212°F
+new Temperature(100).fahrenheit
+=> 212
+--- check case | Setting Fahrenheit changes Celsius
+(() => { const t = new Temperature(20); t.fahrenheit = 32; return t.celsius })()
+=> 0
+--- check case | fromFahrenheit builds a Temperature
+Temperature.fromFahrenheit(-40).celsius
+=> -40
+--- check case | The static constant
+Temperature.ABSOLUTE_ZERO
+=> -273.15
+--- check case | The constructor rejects impossible temperatures with a RangeError
+(() => { try { new Temperature(-300); return 'no error' } catch (e) { return e instanceof RangeError } })()
+=> true
+--- check test | The setter rejects them too
+throws(() => { const t = new Temperature(0); t.celsius = -274 })
+--- check case | The temperature is private
+Object.keys(new Temperature(5))
+=> []
+
+=== js2-13 | Debugging: == versus === and truthiness
+--- teach
+JavaScript is happy to convert values for you, and most of its surprising bugs come from that.
+
+**Truthiness.** In an `if`, or with `||` and `&&`, every value counts as true or false. The **falsy** values are `false`, `0`, `''`, `null`, `undefined` and `NaN`. Everything else is truthy — including `'0'`, `'false'`, `[]` and `{}`.
+
+So `x || fallback` means "use the fallback if `x` is **falsy**", which is not the same as "if `x` is missing":
+
+```js
+const qty = 0
+qty || 1        // 1 — the real 0 was thrown away
+qty ?? 1        // 0 — ?? only replaces null and undefined
+```
+
+**Loose equality.** `==` converts both sides before comparing, by rules few people remember:
+
+```js
+0 == ''         // true
+0 == '0'        // true
+'' == '0'       // false — so == is not even consistent
+null == 0       // false
+null == undefined   // true
+```
+
+`===` compares without converting: different types are never equal. Use it always, and when two values really are of different types (an id from a URL is a string; the id in your data is a number), **convert explicitly** — `Number(text)` — and check the conversion worked, so you decide what a blank or garbage value means instead of letting `==` decide for you.
+
+When debugging, print the **type** as well as the value: `console.log(typeof id, JSON.stringify(id))`. `'0'` and `0` look identical in a plain `console.log`.
+--- task
+Bug report from the shop: *"Customers who order 0 of an add-on are charged for 1. Opening `/items/` with a blank id shows item 0 instead of 'not found'. And a feature flag saved as the text `'false'` counts as switched on."*
+
+Fix the three functions:
+
+- `lineTotal(item)` — `price × qty`, where `qty` defaults to 1 **only** when it is missing (`null` or `undefined`).
+- `findItem(items, idText)` — `idText` is a string from the URL. Return the item whose numeric `id` equals it, or `null`. A blank string or one that is not a whole number finds nothing. Compare with `===`.
+- `isEnabled(flag)` — `true` only for `true` or the string `'true'`; everything else is `false`.
+--- starter
+function lineTotal(item) {
+  const qty = item.qty || 1
+  return item.price * qty
+}
+
+function findItem(items, idText) {
+  return items.find((item) => item.id == idText) ?? null
+}
+
+function isEnabled(flag) {
+  return flag ? true : false
+}
+--- solution
+function lineTotal(item) {
+  const qty = item.qty ?? 1
+  return item.price * qty
+}
+
+function findItem(items, idText) {
+  if (idText.trim() === '') return null
+  const id = Number(idText)
+  if (!Number.isInteger(id)) return null
+  return items.find((item) => item.id === id) ?? null
+}
+
+function isEnabled(flag) {
+  return flag === true || flag === 'true'
+}
+--- hint
+Reproduce each report: `lineTotal({ price: 5, qty: 0 })`, `findItem([{ id: 0 }], '')`, `isEnabled('false')`. Print what comes back.
+--- hint
+`??` falls back only for `null` and `undefined`, unlike `||`.
+--- hint
+In `findItem`, reject a blank string first, convert with `Number(idText)`, check `Number.isInteger`, then compare with `===`.
+--- check case | Ordering 0 costs nothing
+lineTotal({ price: 5, qty: 0 })
+=> 0
+--- check case | A missing qty means 1
+lineTotal({ price: 5 })
+=> 5
+--- check case | A null qty means 1
+lineTotal({ price: 5, qty: null })
+=> 5
+--- check case | Ordinary quantities multiply
+lineTotal({ price: 4, qty: 3 })
+=> 12
+--- check case | '2' finds item 2
+findItem([{ id: 0, name: 'zero' }, { id: 2, name: 'two' }], '2').name
+=> 'two'
+--- check case | '0' finds item 0
+findItem([{ id: 0, name: 'zero' }, { id: 2, name: 'two' }], '0').name
+=> 'zero'
+--- check case | A blank id finds nothing
+findItem([{ id: 0, name: 'zero' }], '')
+=> null
+--- check case | Spaces or text find nothing
+[findItem([{ id: 0 }], '  '), findItem([{ id: 0 }], 'abc')]
+=> [null, null]
+--- check case | Flags: only true and 'true' are on
+[true, 'true', 'false', false, 1, 'yes', undefined].map(isEnabled)
+=> [true, true, false, false, false, false, false]
+
+=== js2-14 | Problem solving: counting and grouping at scale
+--- teach
+A huge number of real problems are "count things" or "group things" in disguise: the most common error in a log, the busiest customer, orders by month. Here is how to approach a problem like this — or any problem.
+
+1. **Restate it** in your own words, and write down small examples with their answers, including the awkward ones: empty input, ties, one item.
+2. **Solve it slowly first.** The obvious way to count words: for each distinct word, walk the whole list and count matches. It is correct, and it is a good thing to compare against.
+3. **Find the waste.** The slow version walks the list once *per distinct word*. With 300,000 words and 30,000 distinct ones that is 9 billion steps — minutes, not milliseconds.
+4. **Improve.** Walk the list **once**, keeping a running tally in a `Map`:
+
+```js
+const counts = new Map()
+for (const w of ['a', 'b', 'a']) counts.set(w, (counts.get(w) ?? 0) + 1)
+[...counts]    // [['a', 2], ['b', 1]]
+```
+
+One pass, one lookup per word: fast however long the input. Grouping is the same pattern, with an array per key instead of a number.
+
+Two small tools for grouping: `x ??= value` assigns only when `x` is `null` or `undefined`, so `groups[key] ??= []` creates the array the first time a key appears. And because these lessons leave out semicolons, a line that **starts** with `(` or `[` must begin with `;`, or JavaScript reads it as part of the line above: `;(groups[key] ??= []).push(item)`.
+
+5. **Then shape the answer.** To get the top k, turn the Map into entries and sort them — that sort is over the *distinct* words only, which is far fewer. Be exact about ties: "most frequent first, and equal counts in alphabetical order" is a comparator with a tie-break.
+
+Test with the small cases you wrote down, then with something large. A correct but slow answer is still a failing answer when the input is real.
+--- task
+Write:
+
+- `groupBy(items, keyFn)` — a plain object mapping each `keyFn(item)` to the array of items with that key, in their original order.
+- `topWords(text, k)` — words are runs of lowercase letters and apostrophes after lowercasing the text (`/[a-z']+/g`). Return the `k` most frequent as `[word, count]` pairs, highest count first, ties in alphabetical order. If there are fewer than `k` distinct words, return them all; empty text gives `[]`.
+
+`topWords` will be given 300,000 words.
+--- starter
+function groupBy(items, keyFn) {
+  return {}
+}
+
+function topWords(text, k) {
+  const words = text.toLowerCase().match(/[a-z']+/g) ?? []
+  const distinct = [...new Set(words)]
+  return distinct
+    .map((w) => [w, words.filter((x) => x === w).length])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, k)
+}
+--- solution
+function groupBy(items, keyFn) {
+  const groups = {}
+  for (const item of items) {
+    const key = keyFn(item)
+    ;(groups[key] ??= []).push(item)
+  }
+  return groups
+}
+
+function topWords(text, k) {
+  const counts = new Map()
+  for (const w of text.toLowerCase().match(/[a-z']+/g) ?? []) counts.set(w, (counts.get(w) ?? 0) + 1)
+  return [...counts]
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .slice(0, k)
+}
+--- hint
+Both are one pass over the input. For `groupBy`, create the array for a key the first time you see it: `groups[key] ??= []`.
+--- hint
+Count into a `Map`, then sort `[...counts]`. That sort is over distinct words only, so it is cheap.
+--- hint
+The comparator: bigger count first, then the word: `b[1] - a[1] || (a[0] < b[0] ? -1 : 1)`.
+--- check case | groupBy groups by the key, keeping order
+groupBy([{ n: 'ada', team: 'red' }, { n: 'lin', team: 'blue' }, { n: 'sam', team: 'red' }], (p) => p.team)
+=> { red: [{ n: 'ada', team: 'red' }, { n: 'sam', team: 'red' }], blue: [{ n: 'lin', team: 'blue' }] }
+--- check case | groupBy of nothing is {}
+groupBy([], (x) => x)
+=> {}
+--- check case | topWords counts and ranks
+topWords("The cat and the hat. The cat's hat!", 3)
+=> [['the', 3], ['hat', 2], ['and', 1]]
+--- check case | Ties are alphabetical
+topWords('b a c b a c d', 3)
+=> [['a', 2], ['b', 2], ['c', 2]]
+--- check case | Fewer words than k
+topWords('one', 5)
+=> [['one', 1]]
+--- check case | Empty text
+topWords('', 3)
+=> []
+--- check case | 300,000 words, fast
+(() => { const word = (i) => { let s = ''; do { s += String.fromCharCode(97 + (i % 26)); i = Math.floor(i / 26) } while (i > 0); return s }; const parts = []; for (let j = 0; j < 300000; j++) parts.push(word((j * j) % 30011)); return topWords(parts.join(' '), 3) })()
+=> [['aaab', 20], ['aabb', 20], ['aad', 20]]
+?? Filtering the whole word list once per distinct word is billions of steps here. Count in a single pass with a Map.
+--- check case | groupBy on 300,000 items
+(() => { const g = groupBy(Array.from({ length: 300000 }, (_, i) => i), (n) => n % 1000); return [Object.keys(g).length, g[7].length, g[7][1]] })()
+=> [1000, 300, 1007]
+
+=== js2-15 | Design: untangling code into small pure functions
+--- teach
+Working code is not finished code. Look at a function that validates, aggregates, sorts and formats all in one loop, while also updating variables outside itself. It works — once. Call it a second time and the totals double, because the outside variables still hold the last run's numbers. It is also impossible to test one step without running all of them.
+
+A **pure function** is one whose result depends only on its arguments, and which changes nothing outside itself: no global variables, no mutation of its inputs, no printing. Pure functions are the easiest code there is to test, reuse, and reason about — the same input always gives the same output.
+
+The refactoring recipe:
+
+1. **Name the steps.** Read the tangled code and write down what it does in plain English: "drop invalid orders; total per customer; sort; format". Each phrase becomes a function.
+2. **Move the state inside.** Anything the steps need is an argument; anything they produce is a return value. Variables at the top of the file that the function updates are the first thing to go.
+3. **Stop mutating inputs.** Build new arrays and objects instead of editing the ones you were given.
+4. **Compose.** The original entry point becomes a short pipeline of the new functions:
+
+```js
+const report = (orders) => format(totals(valid(orders)))
+```
+
+5. **Keep behaviour identical** — except for the bugs you meant to fix. Checks on the output before and after are your safety net.
+
+A good sign you are done: each function fits on your screen, has a name that says exactly what it returns, and could be tested with a one-line call.
+--- task
+`report(orders)` works on the first call but returns doubled totals on the second, because it keeps its state in top-level variables. Refactor it into pure functions:
+
+- `validOrders(orders)` — the orders that are not `'cancelled'` and have an `amount` above 0.
+- `totalsByCustomer(orders)` — an array of `{ customer, total }`, one per customer, sorted by `total` highest first; customers with equal totals stay in the order they first appeared.
+- `formatReport(totals)` — the text: one line per customer, `customer: total` with 2 decimals, then a last line `TOTAL: ` and the grand total with 2 decimals, lines joined by `\n`.
+- `report(orders)` — returns `formatReport(totalsByCustomer(validOrders(orders)))`.
+
+No top-level `let` variables, and nothing may change the `orders` array or its objects.
+--- starter
+let grandTotal = 0
+let lines = []
+
+function report(orders) {
+  for (let i = 0; i < orders.length; i++) {
+    const o = orders[i]
+    if (o.status !== 'cancelled' && o.amount > 0) {
+      let found = false
+      for (let j = 0; j < lines.length; j++) {
+        if (lines[j].customer === o.customer) {
+          lines[j].total += o.amount
+          found = true
+        }
+      }
+      if (!found) lines.push({ customer: o.customer, total: o.amount })
+      grandTotal += o.amount
+    }
+  }
+  lines.sort((a, b) => b.total - a.total)
+  let out = ''
+  for (const l of lines) out += l.customer + ': ' + l.total.toFixed(2) + '\n'
+  out += 'TOTAL: ' + grandTotal.toFixed(2)
+  return out
+}
+--- solution
+function validOrders(orders) {
+  return orders.filter((o) => o.status !== 'cancelled' && o.amount > 0)
+}
+
+function totalsByCustomer(orders) {
+  const totals = new Map()
+  for (const o of orders) totals.set(o.customer, (totals.get(o.customer) ?? 0) + o.amount)
+  return [...totals]
+    .map(([customer, total]) => ({ customer, total }))
+    .sort((a, b) => b.total - a.total)
+}
+
+function formatReport(totals) {
+  const grand = totals.reduce((sum, t) => sum + t.total, 0)
+  return [...totals.map((t) => `${t.customer}: ${t.total.toFixed(2)}`), `TOTAL: ${grand.toFixed(2)}`].join('\n')
+}
+
+function report(orders) {
+  return formatReport(totalsByCustomer(validOrders(orders)))
+}
+--- hint
+Start with `validOrders`: it is one `filter`. Then `totalsByCustomer` is a Map of running totals, turned into objects and sorted (`sort` is stable, so ties keep their order).
+--- hint
+`formatReport` can build an array of lines — one per customer, then the TOTAL line — and `join('\n')` them.
+--- hint
+Delete the two `let` lines at the top: every value lives inside a function now.
+--- check case | validOrders drops cancelled and empty orders
+validOrders([{ customer: 'a', amount: 5, status: 'paid' }, { customer: 'b', amount: 9, status: 'cancelled' }, { customer: 'c', amount: 0, status: 'paid' }])
+=> [{ customer: 'a', amount: 5, status: 'paid' }]
+--- check case | totalsByCustomer adds up and sorts, ties in first-seen order
+totalsByCustomer([{ customer: 'lin', amount: 5 }, { customer: 'ada', amount: 20 }, { customer: 'sam', amount: 10 }, { customer: 'lin', amount: 5 }])
+=> [{ customer: 'ada', total: 20 }, { customer: 'lin', total: 10 }, { customer: 'sam', total: 10 }]
+--- check case | formatReport writes the lines and the total
+formatReport([{ customer: 'ada', total: 20 }, { customer: 'lin', total: 7.5 }])
+=> 'ada: 20.00\nlin: 7.50\nTOTAL: 27.50'
+--- check case | formatReport of nothing is just the total
+formatReport([])
+=> 'TOTAL: 0.00'
+--- check case | report gives the same answer every time
+(() => { const orders = [{ customer: 'ada', amount: 12.5, status: 'paid' }, { customer: 'lin', amount: 30, status: 'paid' }, { customer: 'ada', amount: 4, status: 'cancelled' }, { customer: 'ada', amount: 20, status: 'paid' }]; return [report(orders), report(orders)] })()
+=> ['ada: 32.50\nlin: 30.00\nTOTAL: 62.50', 'ada: 32.50\nlin: 30.00\nTOTAL: 62.50']
+--- check case | report does not change the orders
+(() => { const orders = [{ customer: 'b', amount: 1, status: 'paid' }, { customer: 'a', amount: 2, status: 'paid' }]; report(orders); return orders })()
+=> [{ customer: 'b', amount: 1, status: 'paid' }, { customer: 'a', amount: 2, status: 'paid' }]
+--- check source absent | No top-level let variables
+^let\s
+--- check source | report composes the three functions
+formatReport\(\s*totalsByCustomer\(\s*validOrders\(

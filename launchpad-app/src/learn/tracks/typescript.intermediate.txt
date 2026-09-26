@@ -1,0 +1,1425 @@
+@track typescript
+@level intermediate
+@title TypeScript · Intermediate
+@name TypeScript, intermediate: modelling data and narrowing it safely
+@blurb Unions, narrowing, generics, type guards and validated input: describe your data precisely, prove bad calls cannot compile, and debug the errors the compiler hands you.
+
+=== ts2-01 | Interfaces and type aliases
+--- teach
+You met `interface` in the basics. There is a second way to name a type, the **type alias**, and for plain objects the two look almost identical:
+
+```ts
+interface Point {
+  x: number
+  y: number
+}
+
+type PointAlias = {
+  x: number
+  y: number
+}
+
+const p: Point = { x: 1, y: 2 }
+const q: PointAlias = p      // fine: TypeScript compares shapes, not names
+```
+
+The differences are what each one *can* name and how each one grows:
+
+- A `type` can name **anything**: a union (`type Id = string | number`), a tuple (`type Pair = [string, number]`), a function type, a primitive. An `interface` only describes objects (and things with call signatures).
+- An `interface` grows with **`extends`**: `interface Pet extends Animal { owner: string }` is an `Animal` plus an `owner`. A type alias gets the same result with an intersection: `type Pet = Animal & { owner: string }`.
+- Two `interface` declarations with the same name **merge** into one. That is how libraries let you add fields to their types. A `type` can only be declared once.
+
+A workable rule: use `interface` for object shapes, especially ones other types build on, and `type` for unions, tuples and everything else. Teams argue about it; being consistent inside one codebase matters more than which you pick.
+
+A new kind of check starts in this lesson: a **type-error check** holds one line of code that must *fail* to compile against your types. It proves your types reject what they should, which is half of what types are for. When one fails, it means the compiler accepted something it should have refused.
+
+The mistake to avoid is typing things as `any` "for now". `any` switches the checker off for that value and for everything it flows into, so the types you add later catch nothing that already went through it.
+--- task
+The starter's `label` takes `any` for both arguments, so the compiler accepts any nonsense. Give it real types:
+
+1. `interface Animal` with `name: string` and `legs: number`.
+2. `interface Pet` that **extends** `Animal` and adds `owner: string`.
+3. `type Id = string | number`.
+4. Change the signature to `label(pet: Pet, id: Id): string`. Keep what it returns: `'#<id> <name> (<legs> legs, owner: <owner>)'`.
+--- starter
+function label(pet: any, id: any): string {
+  return `#${id} ${pet.name} (${pet.legs} legs, owner: ${pet.owner})`
+}
+--- solution
+interface Animal {
+  name: string
+  legs: number
+}
+
+interface Pet extends Animal {
+  owner: string
+}
+
+type Id = string | number
+
+function label(pet: Pet, id: Id): string {
+  return `#${id} ${pet.name} (${pet.legs} legs, owner: ${pet.owner})`
+}
+--- hint
+`interface Pet extends Animal { owner: string }` inherits `name` and `legs`.
+--- hint
+An interface cannot be a union, so `Id` has to be a type alias: `type Id = string | number`.
+--- check case | A pet with a number id
+label({ name: 'Rex', legs: 4, owner: 'Ada' }, 7)
+=> '#7 Rex (4 legs, owner: Ada)'
+--- check case | A pet with a string id
+label({ name: 'Tweety', legs: 2, owner: 'Lin' }, 'b-12')
+=> '#b-12 Tweety (2 legs, owner: Lin)'
+--- check type-error | A Pet must have an owner
+const p: Pet = { name: 'Rex', legs: 4 }
+--- check type-error | An Animal's legs are a number
+const a: Animal = { name: 'Rex', legs: 'four' }
+--- check type-error | An id is a string or a number, nothing else
+label({ name: 'Rex', legs: 4, owner: 'Ada' }, true)
+--- check type-error | label needs a whole pet
+label({ name: 'Rex' }, 1)
+--- check source | Pet extends Animal
+interface\s+Pet\s+extends\s+Animal\b
+--- check source | Id is a type alias
+\btype\s+Id\s*=
+
+=== ts2-02 | Narrowing four ways
+--- teach
+A union value can be any of its members, so TypeScript only lets you use what all of them share. **Narrowing** is how you find out which member you have. The compiler follows your `if`s and `return`s (this is called *control-flow analysis*) and gives the value a smaller type in each branch.
+
+There are four everyday tools:
+
+```ts
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+  }
+}
+
+function explain(x: string | number | HttpError | { code: number } | null): string {
+  if (x === null) return 'nothing'              // equality: x is null
+  if (typeof x === 'string') return x           // typeof: primitives
+  if (typeof x === 'number') return x.toFixed(1)
+  if (x instanceof HttpError) return `HTTP ${x.status}`   // instanceof: classes
+  return `code ${x.code}`                        // only { code } is left
+}
+
+explain(null)
+explain(new HttpError(404, 'missing'))
+```
+
+The example uses a **class**, which the JavaScript course covers properly: `class HttpError extends Error` makes a new kind of error with everything an `Error` has, `new HttpError(404, 'missing')` creates one, and `super(message)` runs `Error`'s own constructor. `constructor(public status: number, …)` is a TypeScript shorthand: `public` on a constructor parameter declares a `status` property and assigns it in one go.
+
+- **Equality** (`=== null`, `=== 'GET'`) narrows to that value.
+- **`typeof`** narrows primitives: `'string'`, `'number'`, `'boolean'`, `'bigint'`, `'symbol'`, `'undefined'`, `'function'`, `'object'`.
+- **`instanceof`** narrows to a class, using its prototype chain.
+- **`'key' in x`** narrows object unions to the members that declare that key.
+
+Two traps. `typeof null` is `'object'`, so check for `null` before you trust `typeof x === 'object'`. And order matters with `instanceof`: every `HttpError` is also an `Error`, so test the subclass **first** or the general branch swallows it.
+--- task
+Write `describeFailure(f: Failure): string` for the types in the starter:
+
+- `null` → `'no failure'`
+- a string → `'error: <text>'`
+- an `ApiFailure` → `'code <code>: <message>'` (use `'code' in f`)
+- an `HttpError` → `'HTTP <status>: <message>'`
+- any other `Error` → `'<name>: <message>'` (e.g. `'TypeError: bad'`)
+--- starter
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface ApiFailure {
+  code: number
+  message: string
+}
+
+type Failure = HttpError | Error | ApiFailure | string | null
+
+function describeFailure(f: Failure): string {
+  return String(f)
+}
+--- solution
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+interface ApiFailure {
+  code: number
+  message: string
+}
+
+type Failure = HttpError | Error | ApiFailure | string | null
+
+function describeFailure(f: Failure): string {
+  if (f === null) return 'no failure'
+  if (typeof f === 'string') return `error: ${f}`
+  if ('code' in f) return `code ${f.code}: ${f.message}`
+  if (f instanceof HttpError) return `HTTP ${f.status}: ${f.message}`
+  return `${f.name}: ${f.message}`
+}
+--- hint
+Deal with `null` and strings first; after those two `if`s only objects are left, and `'code' in f` works on them.
+--- hint
+Put `f instanceof HttpError` before the plain `Error` case — after it, the only thing left is an `Error`.
+--- check case | null
+describeFailure(null)
+=> 'no failure'
+--- check case | A string
+describeFailure('disk full')
+=> 'error: disk full'
+--- check case | An API failure object
+describeFailure({ code: 7, message: 'quota exceeded' })
+=> 'code 7: quota exceeded'
+--- check case | An HttpError, even though it is also an Error
+describeFailure(new HttpError(404, 'not found'))
+=> 'HTTP 404: not found'
+--- check case | A plain Error subclass
+describeFailure(new TypeError('bad input'))
+=> 'TypeError: bad input'
+--- check source | Uses instanceof
+instanceof\s+HttpError
+--- check source | Uses the in operator
+['"]code['"]\s+in\s+f
+
+=== ts2-03 | Literal types and widening
+--- teach
+A **literal type** is a type with exactly one value: `'GET'`, `404`, `true`. On their own they are not much use; in a union they become a closed list of allowed values:
+
+```ts
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+const m: Method = 'POST'
+// const bad: Method = 'get'   ✗ Type '"get"' is not assignable to type 'Method'
+```
+
+The surprise is **widening**. When TypeScript infers a type for something that can change, it widens the literal to its general type:
+
+```ts
+const a = 'GET'                 // type 'GET'  — a const can never change
+let b = 'GET'                   // type string — b could be reassigned later
+const req = { method: 'GET' }   // { method: string } — req.method can be reassigned
+```
+
+So this fails even though the value is fine:
+
+```ts
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+function send(method: Method): string {
+  return method
+}
+const options = { method: 'GET' }
+// send(options.method)   ✗ Argument of type 'string' is not assignable to parameter of type 'Method'
+```
+
+Fix it where the value is created: annotate it (`const options: { method: Method } = …`) or freeze its literals with `as const`. Do not fix it at the call with `options.method as Method` — that cast would also accept `'GETT'`.
+
+A `Record` over a literal union is a lookup table the compiler checks for completeness: `Record<Method, string>` must have all four keys, no more, no fewer.
+--- task
+The starter types methods and status codes as plain `string` and `number`, so typos compile. Tighten it:
+
+1. `type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'`.
+2. `type StatusCode = 200 | 201 | 400 | 404 | 500`.
+3. Write `canHaveBody(m: Method): boolean` — true for `POST` and `PUT` only.
+4. Write `statusText(code: StatusCode): string` using a `Record<StatusCode, string>`: `OK`, `Created`, `Bad Request`, `Not Found`, `Server Error`.
+5. Once `Method` is a union, `request(defaults.method, …)` stops compiling. Fix it by giving `defaults` a type, not with a cast.
+--- starter
+type Method = string
+type StatusCode = number
+
+function request(method: Method, path: string): string {
+  return `${method} ${path}`
+}
+
+const defaults = { method: 'GET', path: '/' }
+
+console.log(request(defaults.method, defaults.path))
+--- solution
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+type StatusCode = 200 | 201 | 400 | 404 | 500
+
+function request(method: Method, path: string): string {
+  return `${method} ${path}`
+}
+
+function canHaveBody(m: Method): boolean {
+  return m === 'POST' || m === 'PUT'
+}
+
+const STATUS_TEXT: Record<StatusCode, string> = {
+  200: 'OK',
+  201: 'Created',
+  400: 'Bad Request',
+  404: 'Not Found',
+  500: 'Server Error',
+}
+
+function statusText(code: StatusCode): string {
+  return STATUS_TEXT[code]
+}
+
+const defaults: { method: Method; path: string } = { method: 'GET', path: '/' }
+
+console.log(request(defaults.method, defaults.path))
+--- hint
+Change the two type aliases first, then run: the error on the last line is the widening problem from the lesson.
+--- hint
+`const defaults: { method: Method; path: string } = …` keeps `method` as a `Method`.
+--- hint
+`const STATUS_TEXT: Record<StatusCode, string> = { 200: 'OK', … }` — leave one out and the compiler tells you which.
+--- check test | POST and PUT can have a body
+canHaveBody('POST') && canHaveBody('PUT')
+--- check test | GET and DELETE cannot
+!canHaveBody('GET') && !canHaveBody('DELETE')
+--- check case | statusText(404)
+statusText(404)
+=> 'Not Found'
+--- check case | statusText(201)
+statusText(201)
+=> 'Created'
+--- check type-error | PATCH is not a Method
+canHaveBody('PATCH')
+--- check type-error | Methods are upper case
+const m: Method = 'get'
+--- check type-error | 418 is not a StatusCode
+statusText(418)
+--- check includes | Still prints the default request
+GET /
+--- check source absent | No cast at the call
+defaults\.method\s+as\s
+
+=== ts2-04 | Optional and readonly
+--- teach
+Two property modifiers say a lot about how a value may be used.
+
+**`?` — optional.** The property may be missing, so its type is `T | undefined` and you must deal with that before using it:
+
+```ts
+interface Profile {
+  name: string
+  bio?: string
+}
+
+function card(p: Profile): string {
+  return p.bio === undefined ? p.name : `${p.name}: ${p.bio}`
+}
+
+card({ name: 'Ada' })
+```
+
+Parameters can be optional too (`function greet(name?: string)`), or have a default (`name = 'you'`), which makes them optional to callers but never `undefined` inside.
+
+**`readonly` — no reassignment.** A `readonly` property cannot be assigned after the object is created, and a `readonly string[]` (also written `ReadonlyArray<string>`) has no `push`, `pop`, `sort` or index assignment:
+
+```ts
+interface Order {
+  readonly id: string
+  readonly items: readonly string[]
+}
+
+const o: Order = { id: 'A1', items: ['pen'] }
+// o.id = 'B2'          ✗ Cannot assign to 'id' because it is a read-only property
+// o.items.push('ink')  ✗ Property 'push' does not exist on type 'readonly string[]'
+const next: Order = { ...o, items: [...o.items, 'ink'] }   // ✓ build a new one
+next.items
+```
+
+`[...o.items, 'ink']` spreads the old items into a new array and adds one at the end, the array version of the object spread you know.
+
+Why bother? Code that changes an object other code is holding is a classic source of "it changed by itself" bugs. `readonly` makes the compiler refuse those writes, so the only way to "change" an order is to make a new one.
+
+Know its limit: `readonly` exists only at compile time. At runtime the object is an ordinary object; if you need a runtime guarantee, add `Object.freeze`.
+--- task
+The starter's `addItem` pushes into the order it was given, so the caller's order changes behind its back. Fix it:
+
+1. Make `id` and `items` readonly (`items: readonly string[]`); keep `note` optional.
+2. `addItem(order: Order, item: string): Order` must return a **new** order and leave the original alone.
+3. `describeOrder(order: Order): string` returns `'<id>: <n> item(s)'`, followed by `' (note: <note>)'` when there is a note.
+--- starter
+interface Order {
+  id: string
+  items: string[]
+  note?: string
+}
+
+function addItem(order: Order, item: string): Order {
+  order.items.push(item)
+  return order
+}
+
+function describeOrder(order: Order): string {
+  return `${order.id}: ${order.items.length} item(s)`
+}
+--- solution
+interface Order {
+  readonly id: string
+  readonly items: readonly string[]
+  note?: string
+}
+
+function addItem(order: Order, item: string): Order {
+  return { ...order, items: [...order.items, item] }
+}
+
+function describeOrder(order: Order): string {
+  const base = `${order.id}: ${order.items.length} item(s)`
+  return order.note === undefined ? base : `${base} (note: ${order.note})`
+}
+--- hint
+Once `items` is `readonly string[]`, the `push` in `addItem` stops compiling — that error is the point.
+--- hint
+Spread the old order and give it a new items array: `{ ...order, items: [...order.items, item] }`.
+--- check test | addItem leaves the original order alone
+(() => { const o: Order = { id: 'A1', items: ['pen'] }; const p = addItem(o, 'ink'); return o.items.length === 1 && p.items.length === 2 && p !== o })()
+--- check case | addItem keeps the other fields
+addItem({ id: 'A1', items: ['pen'], note: 'gift' }, 'ink')
+=> { id: 'A1', items: ['pen', 'ink'], note: 'gift' }
+--- check case | describeOrder without a note
+describeOrder({ id: 'A1', items: ['pen', 'ink'] })
+=> 'A1: 2 item(s)'
+--- check case | describeOrder with a note
+describeOrder({ id: 'B7', items: ['pen'], note: 'gift wrap' })
+=> 'B7: 1 item(s) (note: gift wrap)'
+--- check type-error | An order's id cannot be reassigned
+const o: Order = { id: 'A1', items: [] }; o.id = 'B2'
+--- check type-error | An order's items cannot be pushed to
+const o: Order = { id: 'A1', items: [] }; o.items.push('pen')
+
+=== ts2-05 | Function types and overloads
+--- teach
+Functions are values, so they have types. A **function type** is written like an arrow:
+
+```ts
+type Transform = (s: string) => string
+
+const shout: Transform = (s) => s.toUpperCase()   // s is inferred as string
+shout('hi')
+```
+
+Use them for callbacks and for functions that take or return functions. Parameter names in a function type are only labels; the types are what count. A **rest parameter**, `(...fns: Transform[])`, collects any number of arguments into one array; its type is always an array type.
+
+Sometimes one function behaves differently depending on what you pass — a string in gives a number out, an array in gives an array out. A single signature with unions loses that link:
+
+```ts
+function toNum(v: string | string[]): number | number[] {
+  return Array.isArray(v) ? v.map(Number) : Number(v)
+}
+// toNum('4').toFixed(1)  ✗ Property 'toFixed' does not exist on type 'number[]'
+```
+
+**Overloads** restore it. You list the signatures callers may use, then one implementation whose own signature is wide enough for all of them:
+
+```ts
+function toNumber(v: string): number
+function toNumber(v: string[]): number[]
+function toNumber(v: string | string[]): number | number[] {
+  return Array.isArray(v) ? v.map(Number) : Number(v)
+}
+
+toNumber('4').toFixed(1)     // number, so this is fine
+toNumber(['1', '2'])         // number[]
+```
+
+Callers only see the overloads; the implementation signature is hidden. The compiler checks that the implementation is *compatible* with each overload, not that it really returns a `number` for a string — that part is on you, so keep implementations short.
+
+Reach for overloads only when the return type depends on the argument. If it does not, one signature with a union parameter is simpler.
+--- task
+Replace the `any`s:
+
+1. Declare `type Transform = (s: string) => string` and give `pipe` the signature `pipe(...fns: Transform[]): Transform`. It returns a function that runs the input through each transform in order (no transforms: the input unchanged).
+2. Give `parse` two overloads: `parse(value: string): number` and `parse(value: string[]): number[]`, plus the implementation.
+--- starter
+function pipe(...fns: any[]): any {
+  return (input: any) => fns.reduce((acc, fn) => fn(acc), input)
+}
+
+function parse(value: any): any {
+  return Array.isArray(value) ? value.map(Number) : Number(value)
+}
+--- solution
+type Transform = (s: string) => string
+
+function pipe(...fns: Transform[]): Transform {
+  return (input) => fns.reduce((acc, fn) => fn(acc), input)
+}
+
+function parse(value: string): number
+function parse(value: string[]): number[]
+function parse(value: string | string[]): number | number[] {
+  return Array.isArray(value) ? value.map(Number) : Number(value)
+}
+--- hint
+With `pipe(...fns: Transform[]): Transform`, the returned arrow's `input` is inferred as a string — no annotation needed.
+--- hint
+Overloads are signatures ending in a newline (or `;`) with no body, written straight above the implementation.
+--- check case | pipe runs transforms in order
+pipe((s) => s.trim(), (s) => s.toUpperCase())('  hi ')
+=> 'HI'
+--- check case | pipe with no transforms returns the input
+pipe()('same')
+=> 'same'
+--- check case | parse('42')
+parse('42')
+=> 42
+--- check case | parse(['1', '2.5'])
+parse(['1', '2.5'])
+=> [1, 2.5]
+--- check type-error | pipe only takes string transforms
+pipe((n: number) => n * 2)
+--- check type-error | parse takes strings, not numbers
+parse(42)
+--- check type-error | A string parses to one number, not an array
+parse('4').map((n) => n)
+--- check type-error | An array parses to an array, not a number
+parse(['4']).toFixed(1)
+--- check source | An overload for a string
+function\s+parse\s*\(\s*\w+\s*:\s*string\s*\)\s*:\s*number\b
+--- check source | An overload for an array
+function\s+parse\s*\(\s*\w+\s*:\s*string\[\]\s*\)\s*:\s*number\[\]
+
+=== ts2-06 | Generics with constraints
+--- teach
+A plain `<T>` accepts any type, which means inside the function you can do almost nothing with a `T` — you do not know it has any properties. A **constraint** says what every `T` must at least have:
+
+```ts
+function longer<T extends { length: number }>(a: T, b: T): T {
+  return b.length > a.length ? b : a
+}
+
+longer('abc', 'de')        // string
+longer([1, 2], [1, 2, 3])  // number[]
+// longer(10, 20)          ✗ number has no 'length'
+```
+
+`T extends { length: number }` means "any type with a numeric `length`". Strings, arrays, and your own objects qualify. And unlike `(a: { length: number })`, the caller gets **their own type back**: pass strings, get a string.
+
+That is the difference between generics and `any`. Both accept many types, but `any` forgets what came in; a generic remembers it and checks everything done with it.
+
+You can have several type parameters, and constraints can mention objects:
+
+```ts
+function merge<A extends object, B extends object>(a: A, b: B): A & B {
+  return { ...a, ...b }
+}
+
+merge({ id: 1 }, { name: 'Ada' }).name
+```
+
+When TypeScript cannot infer a `T` from the arguments, write it yourself: `longer<string>('a', 'b')`.
+--- task
+Replace the `any`s in the starter with generics:
+
+1. `longest<T extends { length: number }>(a: T, b: T): T` — the longer one; on a tie, `a`.
+2. `indexById<T extends { id: string }>(items: T[]): Record<string, T>` — an object from each item's id to the item.
+3. `merge<A extends object, B extends object>(a: A, b: B): A & B` — the two objects combined, `b` winning on shared keys.
+--- starter
+function longest(a: any, b: any): any {
+  return b.length > a.length ? b : a
+}
+
+function indexById(items: any[]): Record<string, any> {
+  const out: Record<string, any> = {}
+  for (const item of items) out[item.id] = item
+  return out
+}
+--- solution
+function longest<T extends { length: number }>(a: T, b: T): T {
+  return b.length > a.length ? b : a
+}
+
+function indexById<T extends { id: string }>(items: T[]): Record<string, T> {
+  const out: Record<string, T> = {}
+  for (const item of items) out[item.id] = item
+  return out
+}
+
+function merge<A extends object, B extends object>(a: A, b: B): A & B {
+  return { ...a, ...b }
+}
+--- hint
+The type parameter list goes between the name and the brackets: `function longest<T extends { length: number }>(a: T, b: T): T`.
+--- hint
+Inside `indexById`, the output object is a `Record<string, T>` too.
+--- check case | longest of two strings
+longest('ab', 'abc')
+=> 'abc'
+--- check case | longest of two arrays
+longest([1, 2], [3])
+=> [1, 2]
+--- check case | A tie keeps the first
+longest('xy', 'zw')
+=> 'xy'
+--- check case | indexById
+indexById([{ id: 'a', n: 1 }, { id: 'b', n: 2 }]).b
+=> { id: 'b', n: 2 }
+--- check case | merge
+merge({ a: 1, shared: 'old' }, { b: 'x', shared: 'new' })
+=> { a: 1, shared: 'new', b: 'x' }
+--- check type-error | longest needs values with a length
+longest(10, 20)
+--- check type-error | longest gives back the type it was given
+const s: number = longest('a', 'bb')
+--- check type-error | indexById needs items with a string id
+indexById([{ name: 'x' }])
+--- check type-error | Indexed items keep their shape
+indexById([{ id: 'a', n: 1 }]).a.missing
+--- check type-error | merge takes objects
+merge({ a: 1 }, 5)
+
+=== ts2-07 | Type guards you write
+--- teach
+`typeof` and `instanceof` narrow built-in things. For your own shapes, write a **type guard**: a function whose return type is `value is SomeType`. When it returns true, the compiler narrows the argument to that type:
+
+```ts
+interface Cat { name: string; meows: boolean }
+interface Dog { name: string; barks: boolean }
+
+function isCat(pet: Cat | Dog): pet is Cat {
+  return 'meows' in pet
+}
+
+function sound(pet: Cat | Dog): string {
+  return isCat(pet) ? 'meow' : 'woof'   // pet is Cat in the first branch, Dog in the second
+}
+
+sound({ name: 'Tom', meows: true })
+```
+
+Guards also make `filter` return the narrower array type. `pets.filter(isCat)` is a `Cat[]`, not a `(Cat | Dog)[]`. (Recent TypeScript versions infer simple guards like `(p) => 'meows' in p` for you; an explicit, named guard still documents intent and can be reused.)
+
+The sibling is an **assertion function**: it returns nothing and throws if the check fails, and after the call the compiler treats the value as narrowed:
+
+```ts
+interface Cat { name: string; meows: boolean }
+interface Dog { name: string; barks: boolean }
+
+function assertCat(pet: Cat | Dog): asserts pet is Cat {
+  if (!('meows' in pet)) throw new TypeError(`${pet.name} is not a cat`)
+}
+```
+
+A guard is a promise you make to the compiler, and it believes you. If `isCat` returned `true` for dogs, every narrowed use would be wrong and nothing would warn you. Keep guards small and test them.
+--- task
+The starter's `isBook` returns a plain `boolean`, so nothing is narrowed and `books` has to return `any[]`. Using the `Book`, `Film` and `Item` types:
+
+1. `isBook(item: Item): item is Book` and `isFilm(item: Item): item is Film`.
+2. `books(items: Item[]): Book[]` — use `filter(isBook)`, no cast.
+3. `totalPages(items: Item[]): number` and `totalMinutes(items: Item[]): number`.
+4. `assertBook(item: Item): asserts item is Book` — throws a `TypeError` with the message `'not a book: <title>'` for a film.
+--- starter
+interface Book {
+  title: string
+  pages: number
+}
+
+interface Film {
+  title: string
+  minutes: number
+}
+
+type Item = Book | Film
+
+function isBook(item: any): boolean {
+  return 'pages' in item
+}
+
+function books(items: Item[]): any[] {
+  return items.filter(isBook)
+}
+
+function totalPages(items: Item[]): number {
+  return books(items).reduce((sum, b) => sum + b.pages, 0)
+}
+--- solution
+interface Book {
+  title: string
+  pages: number
+}
+
+interface Film {
+  title: string
+  minutes: number
+}
+
+type Item = Book | Film
+
+function isBook(item: Item): item is Book {
+  return 'pages' in item
+}
+
+function isFilm(item: Item): item is Film {
+  return 'minutes' in item
+}
+
+function books(items: Item[]): Book[] {
+  return items.filter(isBook)
+}
+
+function totalPages(items: Item[]): number {
+  return books(items).reduce((sum, b) => sum + b.pages, 0)
+}
+
+function totalMinutes(items: Item[]): number {
+  return items.filter(isFilm).reduce((sum, f) => sum + f.minutes, 0)
+}
+
+function assertBook(item: Item): asserts item is Book {
+  if (!isBook(item)) throw new TypeError(`not a book: ${item.title}`)
+}
+--- hint
+The return type of a guard is written where `boolean` would go: `function isBook(item: Item): item is Book`.
+--- hint
+Inside `assertBook`, after `!isBook(item)` the item is a `Film`, and it still has a `title`.
+--- check case | totalPages adds only books
+totalPages([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Emma', pages: 400 }])
+=> 1000
+--- check case | totalMinutes adds only films
+totalMinutes([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Up', minutes: 96 }])
+=> 213
+--- check case | books keeps the books, in order
+books([{ title: 'Dune', pages: 600 }, { title: 'Alien', minutes: 117 }, { title: 'Emma', pages: 400 }]).map((b) => b.title)
+=> ['Dune', 'Emma']
+--- check case | assertBook throws for a film
+(() => { try { assertBook({ title: 'Alien', minutes: 117 }); return 'no error' } catch (e) { return e instanceof TypeError ? e.message : 'wrong error type' } })()
+=> 'not a book: Alien'
+--- check test | assertBook lets a book through
+!throws(() => assertBook({ title: 'Dune', pages: 600 }))
+--- check type-error | isBook only takes library items
+isBook(42)
+--- check type-error | books() returns Books, which have no minutes
+books([]).map((b) => b.minutes)
+--- check source absent | No casts to Book
+\bas\s+Book
+
+=== ts2-08 | unknown, any, and data from outside
+--- teach
+`JSON.parse` returns `any`. That is a hole in the type system: an `any` can be assigned to anything, so this compiles and lies:
+
+```ts
+interface Config { port: number }
+const config: Config = JSON.parse('{"port": "eighty"}')   // compiles
+config.port + 1                                            // '"eighty1"' at runtime
+```
+
+**`unknown`** is the safe opposite. Anything can go *into* an `unknown`, but you cannot do anything *with* it until you narrow it:
+
+```ts
+const data: unknown = JSON.parse('{"port": 80}')
+// data.port          ✗ 'data' is of type 'unknown'
+if (typeof data === 'object' && data !== null && 'port' in data) {
+  data.port           // now allowed (its type is unknown — check it too)
+}
+```
+
+The pattern for any input you did not create — JSON, a request body, `localStorage`, a message from a worker:
+
+1. Annotate it `unknown` the moment it arrives.
+2. Check it step by step: is it an object (and not `null`, and not an array)? Does each field have the right type?
+3. **Build** the typed value from the parts you checked, rather than casting the whole thing. That also drops fields you did not ask for.
+
+For arrays, `Array.isArray(x)` narrows to an array, and `list.every((t) => typeof t === 'string')` is true only when every item passes — TypeScript narrows the array with it.
+
+A handy view once you know it is an object: `const o = data as Record<string, unknown>`. That cast is honest — it only says "an object with unknown values" — and it lets you read `o.port` to check it.
+
+Return failures as values the caller must handle, like the union `{ ok: true; … } | { ok: false; error: string }` below. The compiler then will not let anyone read `config` without checking `ok` first.
+--- task
+Rewrite `parseConfig(text: string): ParseResult` so it never returns a config that is not really a `Config`. Check in this order and return the first error:
+
+- not valid JSON → `'invalid JSON'`
+- not a plain object (`null`, an array, a number…) → `'config must be an object'`
+- `port` is not a whole number from 1 to 65535 → `'port must be a whole number from 1 to 65535'`
+- `host` is not a string → `'host must be a string'`
+- `tags` is not an array of strings → `'tags must be a list of strings'`
+
+On success return `{ ok: true, config }` where `config` has exactly `port`, `host` and `tags`. No `any`, no `as Config`.
+--- starter
+interface Config {
+  port: number
+  host: string
+  tags: string[]
+}
+
+type ParseResult = { ok: true; config: Config } | { ok: false; error: string }
+
+function parseConfig(text: string): ParseResult {
+  const data = JSON.parse(text)
+  return { ok: true, config: data }
+}
+--- solution
+interface Config {
+  port: number
+  host: string
+  tags: string[]
+}
+
+type ParseResult = { ok: true; config: Config } | { ok: false; error: string }
+
+function parseConfig(text: string): ParseResult {
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    return { ok: false, error: 'invalid JSON' }
+  }
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return { ok: false, error: 'config must be an object' }
+  }
+  const o = data as Record<string, unknown>
+  const { port, host, tags } = o
+  if (typeof port !== 'number' || !Number.isInteger(port) || port < 1 || port > 65535) {
+    return { ok: false, error: 'port must be a whole number from 1 to 65535' }
+  }
+  if (typeof host !== 'string') return { ok: false, error: 'host must be a string' }
+  if (!Array.isArray(tags) || !tags.every((t) => typeof t === 'string')) {
+    return { ok: false, error: 'tags must be a list of strings' }
+  }
+  return { ok: true, config: { port, host, tags } }
+}
+--- hint
+`JSON.parse` throws on bad JSON: wrap it in `try`/`catch`, and declare `let data: unknown` outside so it stays unknown.
+--- hint
+After ruling out non-objects, `const o = data as Record<string, unknown>` lets you check `o.port`, `o.host` and `o.tags` one by one.
+--- hint
+`tags.every((t) => typeof t === 'string')` checks each element, and TypeScript narrows `tags` to `string[]` with it.
+--- check case | A valid config
+parseConfig('{"port": 8080, "host": "localhost", "tags": ["dev"]}')
+=> { ok: true, config: { port: 8080, host: 'localhost', tags: ['dev'] } }
+--- check case | Extra fields are dropped
+parseConfig('{"port": 80, "host": "a", "tags": [], "debug": true}')
+=> { ok: true, config: { port: 80, host: 'a', tags: [] } }
+--- check case | Not JSON
+parseConfig('port=80')
+=> { ok: false, error: 'invalid JSON' }
+--- check case | An array is not a config
+parseConfig('[1, 2]')
+=> { ok: false, error: 'config must be an object' }
+--- check case | null is not a config
+parseConfig('null')
+=> { ok: false, error: 'config must be an object' }
+--- check case | A port given as a string
+parseConfig('{"port": "80", "host": "a", "tags": []}')
+=> { ok: false, error: 'port must be a whole number from 1 to 65535' }
+--- check case | A port out of range
+parseConfig('{"port": 70000, "host": "a", "tags": []}')
+=> { ok: false, error: 'port must be a whole number from 1 to 65535' }
+--- check case | A missing host
+parseConfig('{"port": 80, "tags": []}')
+=> { ok: false, error: 'host must be a string' }
+--- check case | Tags that are not all strings
+parseConfig('{"port": 80, "host": "a", "tags": ["x", 2]}')
+=> { ok: false, error: 'tags must be a list of strings' }
+--- check type-error | Callers must check ok before reading config
+parseConfig('{}').config
+--- check source absent | No any
+:\s*any\b|<any>
+--- check source absent | No cast to Config
+\bas\s+Config\b
+
+=== ts2-09 | Tuples
+--- teach
+A tuple is an array with a fixed shape: how many items, and the type of each position. You have used `[number, number]`; here is the rest of the toolkit.
+
+Destructuring works on tuples as it does on arrays, including defaults and a rest element: `const [first = '', ...others] = list`.
+
+**Labels** document what each slot means. They show up in editor hints and change nothing else:
+
+```ts
+type Entry = [key: string, value: number]
+const e: Entry = ['cpu', 42]
+const [key, value] = e       // key: string, value: number
+```
+
+**Optional** and **rest** elements describe tuples of varying length:
+
+```ts
+type Row = [name: string, ...scores: number[]]   // a name, then any number of scores
+const r: Row = ['ada', 9, 7, 10]
+type Point = [x: number, y: number, z?: number]  // 2 or 3 numbers
+```
+
+The compiler knows the length, so `e[2]` is an error ("Tuple type of length 2 has no element at index 2"), and it knows each position's type. A plain `(string | number)[]` knows neither: every element could be either, at any index.
+
+Two things to watch. Inference prefers arrays: `const pair = ['a', 1]` is `(string | number)[]`, so annotate the return type of any function that returns a tuple. And `readonly [string, number]` stops anyone pushing a third element in.
+--- task
+1. `parseEntry(line: string): [key: string, value: number]` — `'cpu = 42'` gives `['cpu', 42]` (trim the key).
+2. `zip<A, B>(as: A[], bs: B[]): [A, B][]` — pairs up items by position, stopping at the shorter array.
+3. `bestScore(row: [name: string, ...scores: number[]]): [name: string, best: number]` — the name and its highest score, or `0` when there are no scores.
+--- starter
+function parseEntry(line: string): any[] {
+  const [key, value] = line.split('=')
+  return [key.trim(), Number(value)]
+}
+--- solution
+function parseEntry(line: string): [key: string, value: number] {
+  const [key = '', value = ''] = line.split('=')
+  return [key.trim(), Number(value)]
+}
+
+function zip<A, B>(as: A[], bs: B[]): [A, B][] {
+  const n = Math.min(as.length, bs.length)
+  const out: [A, B][] = []
+  for (let i = 0; i < n; i++) out.push([as[i], bs[i]])
+  return out
+}
+
+function bestScore(row: [name: string, ...scores: number[]]): [name: string, best: number] {
+  const [name, ...scores] = row
+  return [name, scores.length ? Math.max(...scores) : 0]
+}
+--- hint
+Only the return type of `parseEntry` needs to change; the returned array literal already has the right shape.
+--- hint
+In `zip`, annotate the output array as `[A, B][]` so each `push([a, b])` is checked as a pair.
+--- hint
+`const [name, ...scores] = row` splits a rest tuple into its first element and the rest.
+--- check case | parseEntry
+parseEntry('cpu = 42')
+=> ['cpu', 42]
+--- check case | zip stops at the shorter array
+zip([1, 2, 3], ['a', 'b'])
+=> [[1, 'a'], [2, 'b']]
+--- check case | bestScore
+bestScore(['ada', 3, 9, 4])
+=> ['ada', 9]
+--- check case | bestScore with no scores
+bestScore(['lin'])
+=> ['lin', 0]
+--- check type-error | A parsed entry has exactly two slots
+const e = parseEntry('a=1'); e[2]
+--- check type-error | The first slot is the key, a string
+const [k] = parseEntry('a=1'); k.toFixed(1)
+--- check type-error | zip keeps each side's type
+const z = zip([1], ['a']); const s: string = z[0][0]
+--- check type-error | A score row starts with a name
+bestScore([3, 9])
+
+=== ts2-10 | Enums or literal unions?
+--- teach
+TypeScript has **enums**, one of the few features that are not "JavaScript plus types": an enum produces a real object at runtime.
+
+```ts
+enum Level {
+  Low = 1,     // numeric enums count up from the first value
+  Medium,      // 2
+  High,        // 3
+}
+
+Level.Medium    // 2
+Level[3]        // 'High' — numeric enums also map values back to names
+```
+
+String enums (`enum Color { Red = 'red' }`) have no reverse mapping, and they refuse plain strings: a function taking `Color` will not accept `'red'`, only `Color.Red`.
+
+The common alternative is a **union of literals**, often built from a constant array so you get a runtime list and a type from one source:
+
+```ts
+const SIZES = ['s', 'm', 'l'] as const    // readonly ['s', 'm', 'l']
+type Size = (typeof SIZES)[number]        // 's' | 'm' | 'l'
+
+SIZES.length
+```
+
+`as const` is what makes it work: without it `SIZES` is a `string[]` and `Size` is just `string`. `(typeof SIZES)[number]` means "the type of any element of SIZES".
+
+How to choose: unions vanish at compile time, accept plain strings from JSON and APIs, and work with tools that strip types without compiling them (Node's type stripping and `erasableSyntaxOnly` reject enums). Enums give you named constants and reverse mapping. Many teams default to unions and keep enums for numeric codes where the names help.
+
+One snag with `as const` arrays: `SIZES.includes(x)` wants `x` to already be a `Size`. To check an arbitrary string, widen the array first: `(SIZES as readonly string[]).includes(x)`.
+--- task
+1. Declare `enum Priority { Low = 1, Medium, High }`.
+2. Make `CHANNELS` `as const`, so `Channel` becomes `'email' | 'sms' | 'push'`.
+3. `isChannel(s: string): s is Channel`.
+4. `channelsFor(p: Priority): Channel[]` — `Low` → `['email']`, `Medium` → `['email', 'push']`, `High` → `['email', 'push', 'sms']`.
+5. `priorityName(p: Priority): string` — the member's name, using the enum's reverse mapping (e.g. `'High'`).
+--- starter
+const CHANNELS = ['email', 'sms', 'push']
+type Channel = (typeof CHANNELS)[number]
+--- solution
+enum Priority {
+  Low = 1,
+  Medium,
+  High,
+}
+
+const CHANNELS = ['email', 'sms', 'push'] as const
+type Channel = (typeof CHANNELS)[number]
+
+function isChannel(s: string): s is Channel {
+  return (CHANNELS as readonly string[]).includes(s)
+}
+
+function channelsFor(p: Priority): Channel[] {
+  switch (p) {
+    case Priority.Low:
+      return ['email']
+    case Priority.Medium:
+      return ['email', 'push']
+    case Priority.High:
+      return ['email', 'push', 'sms']
+  }
+}
+
+function priorityName(p: Priority): string {
+  return Priority[p]
+}
+--- hint
+`Medium` and `High` need no values: they count up from `Low = 1`.
+--- hint
+`CHANNELS.includes(s)` will not accept a plain string — widen it first: `(CHANNELS as readonly string[]).includes(s)`.
+--- hint
+`Priority[p]` looks a name up by value.
+--- check test | Priority counts up from 1
+Priority.Low === 1 && Priority.Medium === 2 && Priority.High === 3
+--- check case | priorityName uses the reverse mapping
+priorityName(Priority.High)
+=> 'High'
+--- check case | channelsFor(Medium)
+channelsFor(Priority.Medium)
+=> ['email', 'push']
+--- check case | channelsFor(High)
+channelsFor(Priority.High)
+=> ['email', 'push', 'sms']
+--- check test | isChannel
+isChannel('sms') && !isChannel('fax')
+--- check type-error | fax is not a Channel
+const c: Channel = 'fax'
+--- check type-error | 7 is not a Priority
+channelsFor(7)
+
+=== ts2-11 | Debugging: an error that is really a bug
+--- teach
+When the build fails, the compiler has usually found a real problem, not a pedantic one. A method that works:
+
+1. **Reproduce.** Run it and read the *whole* list of errors.
+2. **Start with the first error.** One cause often produces several errors further down; fixing it can clear the rest.
+3. **Read the error literally.** `main.ts(5,12): error TS2365: Operator '+' cannot be applied to types 'Line' and 'number'` says: on line 5, column 12, the thing on the left of `+` is a `Line`. Ask *why* the compiler thinks it is a `Line` — the answer is the bug.
+4. **Check your assumptions** about the functions involved. Hover in an editor, or read the signature. `Array.prototype.find` returns `T | undefined`, because nothing may match. `reduce` without a starting value uses the first element as the starting accumulator.
+5. **Fix the cause, not the message.** `!`, `as` and `any` make the message go away and leave the bug in place.
+
+A classic:
+
+```ts
+const prices = [3, 4]
+const found = prices.find((p) => p > 10)   // number | undefined
+// found.toFixed(2)                         ✗ 'found' is possibly 'undefined'
+found === undefined ? 'none' : found.toFixed(2)
+```
+
+The error is not the compiler being fussy: nothing in the list is above 10, so `found` really is `undefined`, and `found.toFixed` would crash at runtime.
+--- task
+**Bug report:** checkout does not build. Expected behaviour:
+
+- `total(lines, catalog)` is the sum of `price × qty` over the lines.
+- An empty cart totals `0`.
+- A line whose `productId` is not in the catalog throws an `Error` with the message `'unknown product: <productId>'`.
+
+Run it, read the errors, and fix the causes. No `!`, no `as`, no `any`.
+--- starter
+interface Product {
+  id: string
+  name: string
+  price: number
+}
+
+interface Line {
+  productId: string
+  qty: number
+}
+
+function total(lines: Line[], catalog: Product[]): number {
+  return lines.reduce((sum, line) => {
+    const product = catalog.find((p) => p.id === line.productId)
+    return sum + product.price * line.qty
+  })
+}
+--- solution
+interface Product {
+  id: string
+  name: string
+  price: number
+}
+
+interface Line {
+  productId: string
+  qty: number
+}
+
+function total(lines: Line[], catalog: Product[]): number {
+  return lines.reduce((sum, line) => {
+    const product = catalog.find((p) => p.id === line.productId)
+    if (product === undefined) throw new Error(`unknown product: ${line.productId}`)
+    return sum + product.price * line.qty
+  }, 0)
+}
+--- hint
+Why is `sum` a `Line`? Look at what `reduce` uses as its first accumulator when you give it no starting value — and what it does with an empty array.
+--- hint
+`catalog.find(...)` can come back `undefined`. What should happen then, according to the bug report?
+--- check case | Sums price times quantity
+total([{ productId: 'pen', qty: 2 }, { productId: 'ink', qty: 1 }], [{ id: 'pen', name: 'Pen', price: 250 }, { id: 'ink', name: 'Ink', price: 100 }])
+=> 600
+--- check case | An empty cart is 0
+total([], [{ id: 'pen', name: 'Pen', price: 250 }])
+=> 0
+--- check case | An unknown product throws with its id
+(() => { try { total([{ productId: 'zz', qty: 1 }], []); return 'no error' } catch (e) { return e instanceof Error ? e.message : String(e) } })()
+=> 'unknown product: zz'
+--- check source absent | No non-null assertion, cast or any
+product!|\bas\s+Product\b|:\s*any\b
+
+=== ts2-12 | Debugging: a type that is too loose
+--- teach
+Some bugs are not type errors at all. The code compiles, and that is the problem: the type allows values that make no sense, so nothing stopped a caller from creating one.
+
+```ts
+interface Shape {
+  kind: string
+  radius?: number
+  width?: number
+}
+const s: Shape = { kind: 'circel', width: 3 }   // compiles; nonsense
+```
+
+Every field optional and every tag a `string` means the compiler has nothing to check. The fix is to describe the valid states as a **union**, one member per case, each with exactly the fields that case needs. Then the invalid states cannot be written down: "make invalid states unrepresentable".
+
+The debugging method here runs the other way from a compile error:
+
+1. **Reproduce the bug as code that should not compile** — the bad call from the report. Right now it compiles; that is your failing test.
+2. **Tighten the type** until that line is rejected.
+3. **Fix what the tightening breaks.** Code that relied on the loose type now shows up as errors, and each one is a place that could have gone wrong.
+
+That is exactly what the `type-error` checks in this lesson do: each is a line that must *fail* to compile against your types.
+--- task
+**Bug report:** a customer was charged with `{ method: 'card', amount: 5 }` — no card number — and the receipt said `card ending undefined`. Someone else shipped a typo, `method: 'crad'`, which went down the bank branch.
+
+Replace the loose `Payment` interface with a union of `CardPayment` (`method: 'card'`, `amount`, `cardNumber: string`) and `BankPayment` (`method: 'bank'`, `amount`, `iban: string`), so a card without a number, an unknown method, and a payment mixing card and bank fields no longer compile. Keep `describePayment` working, without `?.` or `!`:
+
+- card → `'card ending <last 4 digits>: <amount to 2 places>'`
+- bank → `'bank transfer from <first 4 characters of the IBAN>: <amount>'`
+--- starter
+interface Payment {
+  method: string
+  amount: number
+  cardNumber?: string
+  iban?: string
+}
+
+function describePayment(p: Payment): string {
+  const amount = p.amount.toFixed(2)
+  if (p.method === 'card') return `card ending ${p.cardNumber?.slice(-4)}: ${amount}`
+  return `bank transfer from ${p.iban?.slice(0, 4)}: ${amount}`
+}
+--- solution
+interface CardPayment {
+  method: 'card'
+  amount: number
+  cardNumber: string
+}
+
+interface BankPayment {
+  method: 'bank'
+  amount: number
+  iban: string
+}
+
+type Payment = CardPayment | BankPayment
+
+function describePayment(p: Payment): string {
+  const amount = p.amount.toFixed(2)
+  if (p.method === 'card') return `card ending ${p.cardNumber.slice(-4)}: ${amount}`
+  return `bank transfer from ${p.iban.slice(0, 4)}: ${amount}`
+}
+--- hint
+Write the two interfaces, each with its own literal `method`, then `type Payment = CardPayment | BankPayment`.
+--- hint
+With the union, checking `p.method === 'card'` narrows `p` to `CardPayment`, where `cardNumber` is always there.
+--- check case | A card payment
+describePayment({ method: 'card', amount: 5, cardNumber: '4242424242424242' })
+=> 'card ending 4242: 5.00'
+--- check case | A bank payment
+describePayment({ method: 'bank', amount: 12.5, iban: 'DE89370400440532013000' })
+=> 'bank transfer from DE89: 12.50'
+--- check type-error | A card payment needs a card number
+const p: Payment = { method: 'card', amount: 5 }
+--- check type-error | A bank payment needs an IBAN
+const p: Payment = { method: 'bank', amount: 5 }
+--- check type-error | A typo in the method does not compile
+const p: Payment = { method: 'crad', amount: 5, cardNumber: '4242424242424242' }
+--- check type-error | A bank payment cannot carry a card number
+const p: Payment = { method: 'bank', amount: 5, iban: 'DE89370400440532013000', cardNumber: '4242' }
+--- check source absent | No optional chaining or non-null assertions in describePayment
+\?\.\s*slice|!\.\s*slice
+
+=== ts2-13 | Problem solving: finding free time
+--- teach
+A problem-solving lesson. The types are part of the solution: they say what goes in and what comes out, so you can think about the algorithm.
+
+**Restate the problem.** You have busy intervals in a day. They may be unsorted, may overlap, may touch, may spill outside the day. You want the free gaps inside the day that are at least some length.
+
+**Work examples by hand.** Busy `[540, 600)`, `[570, 660)`, `[780, 840)` in a day `[480, 1020)`, minimum 60. The first two overlap, so together they are `[540, 660)`. The gaps are `[480, 540)`, `[660, 780)` and `[840, 1020)`.
+
+**Brute force first.** Mark every minute as busy, then scan for runs of free minutes. Simple and correct, but its cost grows with the *length of the day*, not the number of meetings. With timestamps in seconds across a year that is tens of millions of cells.
+
+**Find the pattern.** After sorting by start, overlapping intervals sit next to each other. Walk once, keeping a "current" merged interval: if the next one starts at or before the current end, extend the end; otherwise close the current one and start a new one. That is `O(n log n)` for the sort plus one pass. The free gaps are then just the spaces between consecutive merged intervals, clipped to the day.
+
+**Edge cases** to list before coding: no busy intervals (the whole day is free), the day completely busy (no gaps), intervals touching end to start (they merge), intervals outside the day.
+
+**Sorting.** `array.sort((a, b) => a.start - b.start)` orders by `start` (a negative result puts `a` first) and sorts the array **in place**.
+
+**Types that help.** Take `readonly Slot[]`: the compiler then refuses `busy.sort(...)`, which would have reordered the caller's array. Copy first: `[...busy].sort(...)`.
+--- task
+With `interface Slot { start: number; end: number }` (half-open: `start` included, `end` not):
+
+1. `mergeBusy(busy: readonly Slot[]): Slot[]` — sorted by start, with overlapping **or touching** slots merged. Do not modify the input.
+2. `freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[]` — the gaps inside `day` not covered by any busy slot, in order, keeping only gaps with `end - start >= minLength`.
+
+It must handle 200,000 busy slots quickly.
+--- starter
+interface Slot {
+  start: number
+  end: number
+}
+
+function mergeBusy(busy: readonly Slot[]): Slot[] {
+  return []
+}
+
+function freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[] {
+  return []
+}
+--- solution
+interface Slot {
+  start: number
+  end: number
+}
+
+function mergeBusy(busy: readonly Slot[]): Slot[] {
+  const sorted = [...busy].sort((a, b) => a.start - b.start)
+  const merged: Slot[] = []
+  for (const s of sorted) {
+    const last = merged[merged.length - 1]
+    if (last && s.start <= last.end) last.end = Math.max(last.end, s.end)
+    else merged.push({ start: s.start, end: s.end })
+  }
+  return merged
+}
+
+function freeSlots(busy: readonly Slot[], day: Slot, minLength: number): Slot[] {
+  const free: Slot[] = []
+  let cursor = day.start
+  for (const b of mergeBusy(busy)) {
+    if (b.end <= day.start || b.start >= day.end) continue
+    if (b.start > cursor) free.push({ start: cursor, end: b.start })
+    cursor = Math.max(cursor, b.end)
+  }
+  if (cursor < day.end) free.push({ start: cursor, end: day.end })
+  return free.filter((s) => s.end - s.start >= minLength)
+}
+--- hint
+Sort a copy by `start`. Keep the last merged slot; if the next slot starts at or before its end, stretch it, otherwise push a new one.
+--- hint
+For the gaps, keep a `cursor` at `day.start`. For each merged busy slot inside the day, the space from `cursor` to its start is free; then move `cursor` to its end.
+--- hint
+Push new objects into `merged` (`{ start: s.start, end: s.end }`), or stretching `last.end` would change the caller's slots.
+--- check case | Merges overlapping and touching slots
+mergeBusy([{ start: 5, end: 7 }, { start: 1, end: 3 }, { start: 2, end: 4 }, { start: 7, end: 8 }])
+=> [{ start: 1, end: 4 }, { start: 5, end: 8 }]
+--- check case | Nothing busy merges to nothing
+mergeBusy([])
+=> []
+--- check case | The worked example
+freeSlots([{ start: 540, end: 600 }, { start: 570, end: 660 }, { start: 780, end: 840 }], { start: 480, end: 1020 }, 60)
+=> [{ start: 480, end: 540 }, { start: 660, end: 780 }, { start: 840, end: 1020 }]
+--- check case | Gaps shorter than the minimum are dropped
+freeSlots([{ start: 10, end: 20 }, { start: 25, end: 40 }], { start: 0, end: 50 }, 10)
+=> [{ start: 0, end: 10 }, { start: 40, end: 50 }]
+--- check case | Busy slots spilling outside the day are clipped
+freeSlots([{ start: -50, end: 10 }, { start: 90, end: 500 }], { start: 0, end: 100 }, 1)
+=> [{ start: 10, end: 90 }]
+--- check case | An empty calendar is one free day
+freeSlots([], { start: 0, end: 100 }, 30)
+=> [{ start: 0, end: 100 }]
+--- check case | A fully busy day has no gaps
+freeSlots([{ start: 0, end: 60 }, { start: 50, end: 100 }], { start: 0, end: 100 }, 1)
+=> []
+--- check test | The caller's array and slots are left alone
+(() => { const busy = [{ start: 5, end: 9 }, { start: 1, end: 6 }]; freeSlots(busy, { start: 0, end: 20 }, 1); return busy[0]!.start === 5 && busy[0]!.end === 9 && busy[1]!.end === 6 })()
+--- check test | 200,000 busy slots over a huge range
+(() => { const n = 200000; const busy = Array.from({ length: n }, (_, i) => { const k = (i * 7919) % n; return { start: k * 10000, end: k * 10000 + 5000 } }); const free = freeSlots(busy, { start: 0, end: n * 10000 }, 1); return free.length === n && free[0]!.start === 5000 && free[n - 1]!.end === n * 10000 })()
+--- check type-error | Busy slots need both ends
+freeSlots([{ start: 1 }], { start: 0, end: 10 }, 1)
+
+=== ts2-14 | Design: modelling a lending library
+--- teach
+A design lesson: you get a domain described in words, and you decide the types. Good types here do most of the work — once they are right, the functions nearly write themselves and whole classes of bugs cannot be written.
+
+Questions to ask for each concept:
+
+- **What states can it be in?** A loan is either out or back. That is a union with a tag (`status: 'active' | 'returned'`), not one type with a pile of optional fields.
+- **What does each state need?** A returned loan has a return date; an active one must not. Put `returnedOn` only on the returned member.
+- **What is a closed set?** Membership tiers, error reasons: literal unions, so a typo cannot compile.
+- **How can an operation fail?** Return a result the caller has to inspect — `{ ok: true; loan } | { ok: false; error }` — rather than throwing for ordinary outcomes like "that book is already out". Throwing is for bugs; expected failures are values.
+
+Sketch the types first, then the class. For example, one state of something you might model:
+
+```ts
+interface ActiveTicket {
+  status: 'open'
+  opened: number
+}
+interface ClosedTicket {
+  status: 'closed'
+  opened: number
+  closed: number
+}
+type Ticket = ActiveTicket | ClosedTicket
+
+const t: Ticket = { status: 'closed', opened: 1, closed: 5 }
+t.status
+```
+
+Keep internal storage private and simple (a `Map` from ISBN to book, another from ISBN to its active loan) and expose only what the spec asks for. Two tools the JavaScript course teaches after its basics, in brief:
+
+- A **`Map`** is a dictionary: `new Map<string, Book>()` gives its key and value types; then `get`, `set`, `has`, `delete`, and `values()`, which `[...map.values()]` turns into an array.
+- In a **class**, fields can be declared with initial values (`books = new Map<string, Book>()`), and TypeScript's **`private`** makes the compiler refuse any use of that field from outside the class's own methods.
+--- task
+Model a lending library. Days are whole numbers.
+
+**Types** (use these names):
+- `Tier` is `'standard'` or `'premium'`; `Member` has `id`, `name`, `tier`; `Book` has `isbn`, `title`.
+- `ActiveLoan`: `status: 'active'`, `isbn`, `memberId`, `due`. `ReturnedLoan`: the same with `status: 'returned'`, plus `returnedOn: number` and `late: boolean`. `Loan` is either. An active loan cannot have `returnedOn`.
+- `BorrowError` is `'unknown-member' | 'unknown-book' | 'already-on-loan' | 'limit-reached'`, and `BorrowResult` is `{ ok: true; loan: ActiveLoan } | { ok: false; error: BorrowError }`.
+
+**`class Library`**:
+- `addBook(book: Book): void`, `addMember(member: Member): void`.
+- `borrow(memberId: string, isbn: string, today: number): BorrowResult` — checks in the order of `BorrowError` above. A standard member may have 2 active loans, premium 5. The loan is due `today + 14`.
+- `giveBack(isbn: string, today: number): ReturnedLoan | null` — `null` if that book is not on loan; `late` is `today > due`.
+- `overdue(today: number): ActiveLoan[]` — active loans with `due < today`, earliest due first.
+--- starter
+// Model the library: Tier, Member, Book, ActiveLoan, ReturnedLoan, Loan,
+// BorrowError and BorrowResult — then the Library class.
+
+class Library {
+}
+--- solution
+type Tier = 'standard' | 'premium'
+
+interface Member {
+  id: string
+  name: string
+  tier: Tier
+}
+
+interface Book {
+  isbn: string
+  title: string
+}
+
+interface ActiveLoan {
+  status: 'active'
+  isbn: string
+  memberId: string
+  due: number
+}
+
+interface ReturnedLoan {
+  status: 'returned'
+  isbn: string
+  memberId: string
+  due: number
+  returnedOn: number
+  late: boolean
+}
+
+type Loan = ActiveLoan | ReturnedLoan
+
+type BorrowError = 'unknown-member' | 'unknown-book' | 'already-on-loan' | 'limit-reached'
+
+type BorrowResult = { ok: true; loan: ActiveLoan } | { ok: false; error: BorrowError }
+
+const LIMITS: Record<Tier, number> = { standard: 2, premium: 5 }
+const LOAN_DAYS = 14
+
+class Library {
+  private books = new Map<string, Book>()
+  private members = new Map<string, Member>()
+  private active = new Map<string, ActiveLoan>()
+
+  addBook(book: Book): void {
+    this.books.set(book.isbn, book)
+  }
+
+  addMember(member: Member): void {
+    this.members.set(member.id, member)
+  }
+
+  borrow(memberId: string, isbn: string, today: number): BorrowResult {
+    const member = this.members.get(memberId)
+    if (!member) return { ok: false, error: 'unknown-member' }
+    if (!this.books.has(isbn)) return { ok: false, error: 'unknown-book' }
+    if (this.active.has(isbn)) return { ok: false, error: 'already-on-loan' }
+    const current = [...this.active.values()].filter((l) => l.memberId === memberId).length
+    if (current >= LIMITS[member.tier]) return { ok: false, error: 'limit-reached' }
+    const loan: ActiveLoan = { status: 'active', isbn, memberId, due: today + LOAN_DAYS }
+    this.active.set(isbn, loan)
+    return { ok: true, loan }
+  }
+
+  giveBack(isbn: string, today: number): ReturnedLoan | null {
+    const loan = this.active.get(isbn)
+    if (!loan) return null
+    this.active.delete(isbn)
+    return { ...loan, status: 'returned', returnedOn: today, late: today > loan.due }
+  }
+
+  overdue(today: number): ActiveLoan[] {
+    return [...this.active.values()].filter((l) => l.due < today).sort((a, b) => a.due - b.due)
+  }
+}
+--- hint
+Write the types before the class. `ActiveLoan` and `ReturnedLoan` are two interfaces with different literal `status` values; `Loan` is their union.
+--- hint
+Inside the class, a `Map<string, ActiveLoan>` from ISBN to the loan answers both "is this book out?" and "how many does this member have?".
+--- hint
+`giveBack` can build the returned loan with a spread: `{ ...loan, status: 'returned', returnedOn: today, late: today > loan.due }`.
+--- check case | A successful borrow
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); return lib.borrow('m1', 'b1', 10) })()
+=> { ok: true, loan: { status: 'active', isbn: 'b1', memberId: 'm1', due: 24 } }
+--- check case | An unknown member is reported first
+(() => { const lib = new Library(); return lib.borrow('nobody', 'nothing', 1) })()
+=> { ok: false, error: 'unknown-member' }
+--- check case | An unknown book
+(() => { const lib = new Library(); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); return lib.borrow('m1', 'b9', 1) })()
+=> { ok: false, error: 'unknown-book' }
+--- check case | A book cannot be out twice
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.addMember({ id: 'm2', name: 'Lin', tier: 'premium' }); lib.borrow('m1', 'b1', 1); return lib.borrow('m2', 'b1', 2) })()
+=> { ok: false, error: 'already-on-loan' }
+--- check case | Standard members stop at two, premium members do not
+(() => { const lib = new Library(); for (const i of [1, 2, 3, 4, 5, 6]) lib.addBook({ isbn: 'b' + i, title: 'T' + i }); lib.addMember({ id: 's', name: 'Sam', tier: 'standard' }); lib.addMember({ id: 'p', name: 'Pat', tier: 'premium' }); return [lib.borrow('s', 'b1', 1).ok, lib.borrow('s', 'b2', 1).ok, lib.borrow('s', 'b3', 1), lib.borrow('p', 'b3', 1).ok, lib.borrow('p', 'b4', 1).ok, lib.borrow('p', 'b5', 1).ok] })()
+=> [true, true, { ok: false, error: 'limit-reached' }, true, true, true]
+--- check case | Giving a book back, late
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.borrow('m1', 'b1', 10); return lib.giveBack('b1', 30) })()
+=> { status: 'returned', isbn: 'b1', memberId: 'm1', due: 24, returnedOn: 30, late: true }
+--- check case | Returning frees the book and the member's slot; a book not on loan gives null
+(() => { const lib = new Library(); lib.addBook({ isbn: 'b1', title: 'Dune' }); lib.addBook({ isbn: 'b2', title: 'Emma' }); lib.addBook({ isbn: 'b3', title: 'Ulysses' }); lib.addMember({ id: 'm1', name: 'Ada', tier: 'standard' }); lib.borrow('m1', 'b1', 1); lib.borrow('m1', 'b2', 1); const back = lib.giveBack('b1', 5); return [back?.late, lib.giveBack('b1', 6), lib.borrow('m1', 'b3', 7).ok, lib.borrow('m1', 'b1', 7).ok] })()
+=> [false, null, true, false]
+--- check case | overdue lists late active loans, earliest due first
+(() => { const lib = new Library(); for (const i of [1, 2, 3]) lib.addBook({ isbn: 'b' + i, title: 'T' + i }); lib.addMember({ id: 'p', name: 'Pat', tier: 'premium' }); lib.borrow('p', 'b1', 10); lib.borrow('p', 'b2', 1); lib.borrow('p', 'b3', 20); return lib.overdue(26).map((l) => l.isbn) })()
+=> ['b2', 'b1']
+--- check type-error | An active loan cannot have a return date
+const l: ActiveLoan = { status: 'active', isbn: 'b1', memberId: 'm1', due: 1, returnedOn: 2 }
+--- check type-error | A returned loan must have its return date
+const l: ReturnedLoan = { status: 'returned', isbn: 'b1', memberId: 'm1', due: 1, late: false }
+--- check type-error | Only the four known borrow errors exist
+const r: BorrowResult = { ok: false, error: 'too-bad' }
+--- check type-error | A successful result carries a loan, not an error
+const r: BorrowResult = { ok: true, error: 'limit-reached' }
+--- check type-error | gold is not a tier
+new Library().addMember({ id: 'm', name: 'Ada', tier: 'gold' })
+--- check type-error | Callers must check ok before reading the loan
+new Library().borrow('m', 'b', 1).loan

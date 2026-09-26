@@ -19,6 +19,7 @@ const ModulePage = lazy(() => import('@/pages/Module').then((m) => ({ default: m
 const Review = lazy(() => import('@/pages/Review').then((m) => ({ default: m.Review })))
 const Track = lazy(() => import('@/pages/Track').then((m) => ({ default: m.Track })))
 const Playground = lazy(() => import('@/pages/Playground').then((m) => ({ default: m.Playground })))
+const Learn = lazy(() => import('@/pages/Learn').then((m) => ({ default: m.Learn })))
 const Focus = lazy(() => import('@/pages/Focus').then((m) => ({ default: m.Focus })))
 const Plan = lazy(() => import('@/pages/Plan').then((m) => ({ default: m.Plan })))
 const Tracks = lazy(() => import('@/pages/Tracks').then((m) => ({ default: m.Tracks })))
@@ -104,6 +105,8 @@ function Page({ path, segments }: { path: string; segments: string[] }) {
       return <Track track={head as TrackId} />
     case 'playground':
       return <Playground />
+    case 'learn':
+      return <Learn lessonId={rest || undefined} />
     case 'plan':
       return <Plan />
     case 'tracks':
@@ -128,6 +131,7 @@ function titleFor(path: string): string {
   if (layer) return layer.title
   if (seg === 'plan') return 'The Plan'
   if (seg === 'tracks') return 'Parallel tracks'
+  if (seg === 'learn') return 'Learn to code'
   return seg.charAt(0).toUpperCase() + seg.slice(1)
 }
 

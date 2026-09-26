@@ -1,0 +1,1959 @@
+@track javascript
+@level expert
+@title JavaScript · Expert
+@name JavaScript, expert: metaprogramming, concurrency and building your own tools
+@blurb Build the machinery other people use: proxies, emitters, middleware, job pools, reactive stores, a parser and a test runner, and find the performance and timing bugs that only experts catch.
+
+=== js4-01 | Proxy and Reflect: objects with rules
+--- teach
+The advanced course showed how JavaScript works underneath. This course builds the machinery other code stands on — proxies, emitters, middleware, pools, stores, a parser and a test runner — and hunts the performance and timing bugs that only show up under load or bad timing.
+
+A **Proxy** wraps an object and lets you intercept the basic operations on it — reading a property, writing one, deleting one, listing keys. You supply a **handler** whose methods (called **traps**) run instead of the default behaviour:
+
+```js
+const loud = new Proxy({ name: 'ada' }, {
+  get(target, key, receiver) {
+    const value = Reflect.get(target, key, receiver)
+    return typeof value === 'string' ? value.toUpperCase() : value
+  },
+})
+loud.name     // 'ADA'
+```
+
+**Reflect** has one function for every trap (`Reflect.get`, `Reflect.set`, `Reflect.deleteProperty`, `Reflect.has`, …) that performs the *default* operation. Inside a trap, do your extra work and then hand over to `Reflect` for the normal behaviour, passing along every argument you received — especially `receiver`, which keeps getters and inheritance working.
+
+The traps you will use most:
+
+- `set(target, key, value, receiver)` — must **return `true`** when the write succeeded. Returning `false` (or nothing, which is `undefined`) makes the assignment throw a `TypeError` in strict mode. `return Reflect.set(…)` gets this right for free.
+- `deleteProperty(target, key)` — likewise returns a boolean.
+- `get(target, key, receiver)` — returns the value to use.
+
+Proxies are how libraries give plain-looking objects superpowers: Vue's reactivity, validation layers, change tracking, default values, read-only views. Two patterns cover most uses:
+
+- **Validation** — the `set` trap checks the key and value, and throws before anything is stored, so an invalid state can never exist.
+- **Observation** — the `set` and `deleteProperty` traps perform the change, then tell someone about it.
+
+Mistakes to avoid: writing to `receiver` (the proxy) inside a `set` trap — `receiver[key] = value` calls the trap again, forever; forgetting to return `true`; and firing change notifications when the value did not actually change, which makes listeners do pointless work. Compare with `Object.is(old, value)`, which is `===` except that `NaN` equals `NaN` (and `0` and `-0` differ). A related helper you will want: `Object.hasOwn(obj, key)` is true when `obj` itself has `key`, not something it inherits.
+--- task
+Write:
+
+- `validated(schema)` — `schema` maps field names to predicate functions. Return a proxy over a new empty object where setting a field that is not in the schema throws `new TypeError('unknown field: <key>')`, setting a value the field's predicate rejects throws `new TypeError('invalid value for <key>')`, and anything else is stored normally.
+- `observable(target, onChange)` — return a proxy over `target`. After a property is set to a value that is different (by `Object.is`) from its current value, call `onChange(key, oldValue, newValue)`. Setting the same value calls nothing. Deleting a property that exists calls `onChange(key, oldValue, undefined)`. Writes go through to `target`.
+--- starter
+function validated(schema) {
+  return {}
+}
+
+function observable(target, onChange) {
+  return target
+}
+--- solution
+function validated(schema) {
+  return new Proxy({}, {
+    set(target, key, value, receiver) {
+      if (!Object.hasOwn(schema, key)) throw new TypeError(`unknown field: ${String(key)}`)
+      if (!schema[key](value)) throw new TypeError(`invalid value for ${String(key)}`)
+      return Reflect.set(target, key, value, receiver)
+    },
+  })
+}
+
+function observable(target, onChange) {
+  return new Proxy(target, {
+    set(obj, key, value, receiver) {
+      const old = obj[key]
+      const ok = Reflect.set(obj, key, value, receiver)
+      if (ok && !Object.is(old, value)) onChange(key, old, value)
+      return ok
+    },
+    deleteProperty(obj, key) {
+      const had = Object.hasOwn(obj, key)
+      const old = obj[key]
+      const ok = Reflect.deleteProperty(obj, key)
+      if (ok && had) onChange(key, old, undefined)
+      return ok
+    },
+  })
+}
+--- hint
+Both are `new Proxy(target, { set(…) { … } })`. Finish every `set` trap with `return Reflect.set(target, key, value, receiver)`.
+--- hint
+In `validated`, check `Object.hasOwn(schema, key)` first, then `schema[key](value)`, and throw before storing anything.
+--- hint
+In `observable`, read the old value before the write, and call `onChange` only if `!Object.is(old, value)`. Add a `deleteProperty` trap for deletes.
+--- check case | validated stores valid values
+(() => { const u = validated({ age: (v) => Number.isInteger(v) && v >= 0 }); u.age = 30; return u.age })()
+=> 30
+--- check case | validated rejects unknown fields
+(() => { const u = validated({ age: () => true }); try { u.name = 'x'; return 'stored' } catch (e) { return [e instanceof TypeError, e.message] } })()
+=> [true, 'unknown field: name']
+--- check case | validated rejects bad values and keeps the old one
+(() => { const u = validated({ age: (v) => Number.isInteger(v) && v >= 0 }); u.age = 5; try { u.age = -1 } catch (e) { return [e instanceof TypeError, e.message, u.age] } return 'stored' })()
+=> [true, 'invalid value for age', 5]
+--- check case | observable reports real changes and deletes
+(() => { const log = []; const o = observable({ a: 1 }, (...change) => log.push(change)); o.a = 2; o.a = 2; o.b = 'x'; delete o.a; delete o.zzz; return log })()
+=> [['a', 1, 2], ['b', undefined, 'x'], ['a', 2, undefined]]
+--- check case | observable writes through to the target
+(() => { const target = { n: 0 }; const o = observable(target, () => {}); o.n = 7; delete o.n; o.m = 1; return target })()
+=> { m: 1 }
+
+=== js4-02 | WeakMap: private data and caches that do not leak
+--- teach
+A `WeakMap` is a Map with three differences: its keys must be **objects**, you cannot list or count its entries, and it holds its keys **weakly** — if nothing else in the program refers to a key object any more, the garbage collector may remove the object and its entry together.
+
+That makes it perfect for **attaching data to objects without touching them**:
+
+```js
+const visits = new WeakMap()
+function visit(user) {
+  visits.set(user, (visits.get(user) ?? 0) + 1)
+  return visits.get(user)
+}
+const ada = { name: 'ada' }
+visit(ada)
+visit(ada)          // 2
+Object.keys(ada)    // ['name'] — the count is not on the object at all
+```
+
+Two classic uses:
+
+**Private data.** Before `#private` fields existed, libraries kept an object's secrets in a module-level WeakMap keyed by the object. Code outside the module has no way to reach the map, so the data is truly private, and when the object is dropped its secret goes with it. The technique still matters for objects you do not own — a DOM node, another library's instance — where you cannot add fields.
+
+**Caches.** Caching a computed result per object in a normal `Map` keeps every object you ever cached alive for ever: a **memory leak**. Keyed weakly, the cache entry disappears when the object does.
+
+Things that surprise people: `new WeakMap().set('text', 1)` throws, because a string is not an object; there is no `size`, no `keys()`, no iteration — by design, since entries can vanish at any moment; and a WeakMap does not make a *value* weak, only the key. If the value refers back to its own key, that is fine — the pair is collected together.
+--- task
+Write:
+
+- a module-level `const balances = new WeakMap()` and a `class Account` that keeps each account's balance in it (not in a property or a `#` field). `new Account(owner)` sets `this.owner` and a balance of 0. `deposit(amount)` adds (a `RangeError` unless the amount is a positive number), `withdraw(amount)` subtracts (a `RangeError` if the amount is not positive or is more than the balance), and a `balance` getter reads it. There is no setter.
+- `summary(obj)` — returns the object's own keys, sorted, joined with `','`. Cache the result per object in a WeakMap, and add 1 to the top-level `let computations` each time you actually compute one.
+--- starter
+let computations = 0
+
+class Account {
+  constructor(owner) {
+    this.owner = owner
+    this.balance = 0
+  }
+}
+
+function summary(obj) {
+  computations++
+  return Object.keys(obj).sort().join(',')
+}
+--- solution
+let computations = 0
+const balances = new WeakMap()
+const summaries = new WeakMap()
+
+class Account {
+  constructor(owner) {
+    this.owner = owner
+    balances.set(this, 0)
+  }
+
+  deposit(amount) {
+    if (!(typeof amount === 'number' && amount > 0)) throw new RangeError('deposit must be positive')
+    balances.set(this, balances.get(this) + amount)
+  }
+
+  withdraw(amount) {
+    if (!(typeof amount === 'number' && amount > 0)) throw new RangeError('withdrawal must be positive')
+    if (amount > balances.get(this)) throw new RangeError('insufficient funds')
+    balances.set(this, balances.get(this) - amount)
+  }
+
+  get balance() {
+    return balances.get(this)
+  }
+}
+
+function summary(obj) {
+  if (!summaries.has(obj)) {
+    computations++
+    summaries.set(obj, Object.keys(obj).sort().join(','))
+  }
+  return summaries.get(obj)
+}
+--- hint
+In the constructor: `balances.set(this, 0)`. Every method reads with `balances.get(this)` and writes with `balances.set(this, …)`.
+--- hint
+A getter with no matching setter makes `account.balance = 5` throw in strict mode — exactly what you want.
+--- hint
+`summary` checks `summaries.has(obj)` first, and only counts and computes when it is missing.
+--- check case | Deposits and withdrawals
+(() => { const a = new Account('ada'); a.deposit(50); a.withdraw(20); return a.balance })()
+=> 30
+--- check case | The balance is invisible from outside
+(() => { const a = new Account('ada'); a.deposit(10); return [Object.keys(a), JSON.stringify(a)] })()
+=> [['owner'], '{"owner":"ada"}']
+--- check test | The balance cannot be assigned
+throws(() => { const a = new Account('x'); a.balance = 1000 })
+--- check case | Overdrafts and bad amounts are RangeErrors
+(() => { const a = new Account('x'); a.deposit(5); const errs = []; for (const f of [() => a.withdraw(6), () => a.deposit(-1), () => a.deposit('5'), () => a.withdraw(0)]) { try { f(); errs.push('ok') } catch (e) { errs.push(e.constructor.name) } } return [errs, a.balance] })()
+=> [['RangeError', 'RangeError', 'RangeError', 'RangeError'], 5]
+--- check case | Two accounts keep separate balances
+(() => { const a = new Account('a'); const b = new Account('b'); a.deposit(1); b.deposit(2); return [a.balance, b.balance] })()
+=> [1, 2]
+--- check case | summary is computed once per object
+(() => { const o = { b: 1, a: 2 }; const before = computations; summary(o); summary(o); return [summary(o), computations - before] })()
+=> ['a,b', 1]
+--- check case | Different objects get their own summaries
+(() => { const before = computations; const r = [summary({ x: 1 }), summary({ y: 1, x: 2 })]; return [r, computations - before] })()
+=> [['x', 'x,y'], 2]
+--- check source | Uses a WeakMap
+new WeakMap\(
+--- check source absent | Not a # private field
+this\.#
+
+=== js4-03 | An event emitter
+--- teach
+An **event emitter** lets one part of a program announce "this happened" without knowing who cares. Listeners subscribe to an event name; `emit` calls each of them with the event's data. Node's `EventEmitter`, the DOM's `addEventListener` and most UI frameworks are built on this pattern.
+
+The core is a `Map` from event name to an array of listener functions:
+
+```js
+const listeners = new Map()
+function on(event, fn) {
+  if (!listeners.has(event)) listeners.set(event, [])
+  listeners.get(event).push(fn)
+}
+function emit(event, ...args) {
+  for (const fn of listeners.get(event) ?? []) fn(...args)
+}
+```
+
+The details are where real emitters earn their keep:
+
+- **Unsubscribing.** Returning an "off" function from `on` is the most convenient API: `const off = emitter.on('save', fn)` … `off()`. It closes over exactly the right event and function.
+- **`once`.** Wrap the listener in a function that removes itself and then calls the original.
+- **Changing the list during an emit.** A listener may unsubscribe itself (every `once` listener does!) or add another listener while `emit` is looping. Removing items from an array you are iterating over skips the next item. Iterate over a **copy** of the list taken when `emit` starts, so changes take effect from the next emit.
+- **The `'error'` event.** Node's rule is worth copying: emitting `'error'` when nobody listens **throws** the error, rather than silently losing it.
+
+A memory-leak warning comes with the pattern: every listener stays alive for as long as the emitter does, along with everything it closes over. Components that subscribe must unsubscribe when they are done.
+--- task
+Write `class Emitter` with:
+
+- `on(event, fn)` — adds a listener and returns a function that removes it.
+- `off(event, fn)` — removes one registration of `fn` (the same function may be registered more than once).
+- `once(event, fn)` — a listener that runs at most once; also returns a remover.
+- `emit(event, ...args)` — calls the event's listeners in the order they were added, using the list as it was when the emit started; returns how many listeners it called. If `event` is `'error'` and there are no listeners, throw `args[0]` instead.
+- `listenerCount(event)` — how many listeners the event has.
+--- starter
+class Emitter {
+  constructor() {
+    this.listeners = {}
+  }
+
+  on(event, fn) {
+    this.listeners[event] = fn
+  }
+
+  emit(event, ...args) {
+    if (this.listeners[event]) this.listeners[event](...args)
+  }
+}
+--- solution
+class Emitter {
+  #listeners = new Map()
+
+  on(event, fn) {
+    if (!this.#listeners.has(event)) this.#listeners.set(event, [])
+    this.#listeners.get(event).push(fn)
+    return () => this.off(event, fn)
+  }
+
+  off(event, fn) {
+    const list = this.#listeners.get(event)
+    if (!list) return
+    const i = list.indexOf(fn)
+    if (i >= 0) list.splice(i, 1)
+  }
+
+  once(event, fn) {
+    const wrapper = (...args) => {
+      this.off(event, wrapper)
+      fn(...args)
+    }
+    return this.on(event, wrapper)
+  }
+
+  emit(event, ...args) {
+    const list = [...(this.#listeners.get(event) ?? [])]
+    if (event === 'error' && list.length === 0) throw args[0]
+    for (const fn of list) fn(...args)
+    return list.length
+  }
+
+  listenerCount(event) {
+    return this.#listeners.get(event)?.length ?? 0
+  }
+}
+--- hint
+Store a `Map` from event name to an **array** of functions. `on` returns `() => this.off(event, fn)`.
+--- hint
+`once` registers a wrapper that calls `this.off(event, wrapper)` before calling `fn`.
+--- hint
+In `emit`, copy the list first (`[...list]`) and loop over the copy.
+--- check case | Listeners get the arguments; emit counts them
+(() => { const e = new Emitter(); const got = []; e.on('save', (a, b) => got.push([a, b])); e.on('save', (a) => got.push(a)); const n = e.emit('save', 1, 2); return [n, got] })()
+=> [2, [[1, 2], 1]]
+--- check case | The remover returned by on works
+(() => { const e = new Emitter(); let hits = 0; const off = e.on('x', () => hits++); e.emit('x'); off(); e.emit('x'); return [hits, e.listenerCount('x')] })()
+=> [1, 0]
+--- check case | once runs only once
+(() => { const e = new Emitter(); const got = []; e.once('x', (v) => got.push(v)); e.emit('x', 'a'); e.emit('x', 'b'); return got })()
+=> ['a']
+--- check case | Changes during an emit wait for the next emit
+(() => { const e = new Emitter(); const got = []; const second = () => got.push('second'); e.on('x', () => { got.push('first'); e.off('x', second); e.on('x', () => got.push('late')) }); e.on('x', second); e.emit('x'); return got })()
+=> ['first', 'second']
+--- check case | The same function twice, removed once
+(() => { const e = new Emitter(); let hits = 0; const f = () => hits++; e.on('x', f); e.on('x', f); e.off('x', f); e.emit('x'); return hits })()
+=> 1
+--- check case | Emitting an event nobody listens to
+new Emitter().emit('nothing')
+=> 0
+--- check case | An unheard error is thrown; a heard one is not
+(() => { const e = new Emitter(); let thrown; try { e.emit('error', new Error('boom')) } catch (err) { thrown = err.message } let heard; e.on('error', (err) => { heard = err.message }); e.emit('error', new Error('bang')); return [thrown, heard] })()
+=> ['boom', 'bang']
+
+=== js4-04 | Design: a middleware pipeline
+--- teach
+Web servers, bots and build tools all face the same design problem: every request needs several independent steps — logging, error handling, authentication, routing — and one tangled function that does them all becomes impossible to change. The **middleware** pattern (Koa, Express, Redux) solves it.
+
+Each middleware is a function `async (ctx, next)`. `ctx` is a shared context object for this request. `next()` runs **the rest of the pipeline** and returns a promise that settles when the rest is done. So a middleware can act before, after, or instead of everything that follows:
+
+```js
+async function timer(ctx, next) {
+  const start = Date.now()
+  await next()                           // everything downstream runs here
+  ctx.ms = Date.now() - start            // then we are back, on the way out
+}
+async function guard(ctx, next) {
+  if (!ctx.user) return (ctx.status = 401)   // short-circuit: never call next
+  await next()
+}
+```
+
+Picture an onion: the request passes inwards through each layer's "before" part, and the response passes back out through each "after" part in reverse order. An error thrown deep inside travels back out as a rejected `next()`, so an outer middleware can `try { await next() } catch …` and turn any failure into a clean response.
+
+`compose(middlewares)` turns the list into a single function. The idea is a `dispatch(i)` that calls middleware `i`, passing a `next` of `() => dispatch(i + 1)`; past the end, `dispatch` does nothing. Two details make it robust:
+
+- Always return a **promise** from `dispatch`, even when a middleware throws synchronously — wrap the call so the error becomes a rejection.
+- Calling `next()` **twice** from one middleware would run everything downstream twice. Detect it and reject with an error.
+
+The design win: each concern is a small function that can be tested alone, reordered, reused, or removed — and adding a new concern means adding one function, not editing a tangle.
+--- task
+First, write `compose(middlewares)`: it returns `(ctx) => Promise`. Middleware `i` is called with `(ctx, next)`, where `next()` calls middleware `i + 1` and returns a promise of its completion; calling `next` past the end resolves at once. If a middleware throws or rejects, the composed promise rejects with that error. If a middleware calls `next()` a second time, that call rejects with `new Error('next() called twice')`.
+
+Then replace the tangled `app` with four middlewares and `const app = compose([logger, errors, auth, router])`:
+
+- `logger` — after the rest has run, pushes `'<path> <status>'` onto `ctx.log`.
+- `errors` — if the rest throws, sets `ctx.res = { status: 500, body: err.message }`.
+- `auth` — without `ctx.req.token`, sets `ctx.res = { status: 401, body: 'unauthorized' }` and stops; otherwise continues.
+- `router` — `/hello` gives `{ status: 200, body: 'hello <token>' }`, `/boom` throws `new Error('kaboom')`, anything else `{ status: 404, body: 'not found' }`.
+
+Keep the test drive at the end.
+--- starter
+function compose(middlewares) {
+  return async (ctx) => {}
+}
+
+async function app(ctx) {
+  const { req } = ctx
+  try {
+    if (!req.token) {
+      ctx.res = { status: 401, body: 'unauthorized' }
+    } else if (req.path === '/hello') {
+      ctx.res = { status: 200, body: `hello ${req.token}` }
+    } else if (req.path === '/boom') {
+      throw new Error('kaboom')
+    } else {
+      ctx.res = { status: 404, body: 'not found' }
+    }
+  } catch (err) {
+    ctx.res = { status: 500, body: err.message }
+  }
+  ctx.log.push(`${req.path} ${ctx.res.status}`)
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const attempt = async (fn) => {
+  try {
+    return await fn()
+  } catch (e) {
+    return `error: ${e.message}`
+  }
+}
+const request = async (req) => {
+  const ctx = { req, res: null, log: [] }
+  await app(ctx)
+  return { res: ctx.res, log: ctx.log }
+}
+const results = {
+  hello: await attempt(() => request({ path: '/hello', token: 'ada' })),
+  noToken: await attempt(() => request({ path: '/hello' })),
+  boom: await attempt(() => request({ path: '/boom', token: 'ada' })),
+  missing: await attempt(() => request({ path: '/nope', token: 'ada' })),
+  onion: await attempt(async () => {
+    const order = []
+    await compose([
+      async (c, next) => { order.push(1); await next(); order.push(4) },
+      async (c, next) => { order.push(2); await next(); order.push(3) },
+    ])({})
+    return order
+  }),
+  twice: await attempt(() => compose([async (c, next) => { await next(); await next() }])({})),
+  rejects: await attempt(() => compose([async () => { throw new Error('inner') }])({})),
+  empty: await attempt(async () => { await compose([])({}); return 'ok' }),
+  authAlone: await attempt(async () => {
+    const ctx = { req: {}, res: null, log: [] }
+    let called = false
+    await auth(ctx, async () => { called = true })
+    return [ctx.res, called]
+  }),
+}
+--- solution
+function compose(middlewares) {
+  return (ctx) => {
+    let last = -1
+    function dispatch(i) {
+      if (i <= last) return Promise.reject(new Error('next() called twice'))
+      last = i
+      const fn = middlewares[i]
+      if (!fn) return Promise.resolve()
+      try {
+        return Promise.resolve(fn(ctx, () => dispatch(i + 1)))
+      } catch (err) {
+        return Promise.reject(err)
+      }
+    }
+    return dispatch(0)
+  }
+}
+
+async function logger(ctx, next) {
+  await next()
+  ctx.log.push(`${ctx.req.path} ${ctx.res.status}`)
+}
+
+async function errors(ctx, next) {
+  try {
+    await next()
+  } catch (err) {
+    ctx.res = { status: 500, body: err.message }
+  }
+}
+
+async function auth(ctx, next) {
+  if (!ctx.req.token) {
+    ctx.res = { status: 401, body: 'unauthorized' }
+    return
+  }
+  await next()
+}
+
+async function router(ctx) {
+  const { path, token } = ctx.req
+  if (path === '/hello') ctx.res = { status: 200, body: `hello ${token}` }
+  else if (path === '/boom') throw new Error('kaboom')
+  else ctx.res = { status: 404, body: 'not found' }
+}
+
+const app = compose([logger, errors, auth, router])
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const attempt = async (fn) => {
+  try {
+    return await fn()
+  } catch (e) {
+    return `error: ${e.message}`
+  }
+}
+const request = async (req) => {
+  const ctx = { req, res: null, log: [] }
+  await app(ctx)
+  return { res: ctx.res, log: ctx.log }
+}
+const results = {
+  hello: await attempt(() => request({ path: '/hello', token: 'ada' })),
+  noToken: await attempt(() => request({ path: '/hello' })),
+  boom: await attempt(() => request({ path: '/boom', token: 'ada' })),
+  missing: await attempt(() => request({ path: '/nope', token: 'ada' })),
+  onion: await attempt(async () => {
+    const order = []
+    await compose([
+      async (c, next) => { order.push(1); await next(); order.push(4) },
+      async (c, next) => { order.push(2); await next(); order.push(3) },
+    ])({})
+    return order
+  }),
+  twice: await attempt(() => compose([async (c, next) => { await next(); await next() }])({})),
+  rejects: await attempt(() => compose([async () => { throw new Error('inner') }])({})),
+  empty: await attempt(async () => { await compose([])({}); return 'ok' }),
+  authAlone: await attempt(async () => {
+    const ctx = { req: {}, res: null, log: [] }
+    let called = false
+    await auth(ctx, async () => { called = true })
+    return [ctx.res, called]
+  }),
+}
+--- hint
+Inside `compose`, write `dispatch(i)`: call `middlewares[i](ctx, () => dispatch(i + 1))`; if there is no middleware `i`, return `Promise.resolve()`.
+--- hint
+To catch a second `next()`, remember the highest index dispatched so far; dispatching an index that is not higher means `next` was called again.
+--- hint
+Each middleware is a few lines. `logger` awaits `next()` first and logs after; `errors` wraps `await next()` in `try`/`catch`; `auth` returns without calling `next` when there is no token.
+--- check case | /hello with a token
+results.hello
+=> { res: { status: 200, body: 'hello ada' }, log: ['/hello 200'] }
+--- check case | No token: 401, still logged
+results.noToken
+=> { res: { status: 401, body: 'unauthorized' }, log: ['/hello 401'] }
+--- check case | A thrown error becomes a 500, still logged
+results.boom
+=> { res: { status: 500, body: 'kaboom' }, log: ['/boom 500'] }
+--- check case | Unknown paths are 404
+results.missing
+=> { res: { status: 404, body: 'not found' }, log: ['/nope 404'] }
+--- check case | compose runs like an onion
+results.onion
+=> [1, 2, 3, 4]
+--- check case | Calling next twice is an error
+results.twice
+=> 'error: next() called twice'
+--- check case | A failing middleware rejects the pipeline
+results.rejects
+=> 'error: inner'
+--- check case | An empty pipeline resolves
+results.empty
+=> 'ok'
+--- check case | auth stops the pipeline without a token
+results.authAlone
+=> [{ status: 401, body: 'unauthorized' }, false]
+--- check source | app is composed from the four middlewares
+const app = compose\(\[\s*logger,\s*errors,\s*auth,\s*router\s*\]\)
+
+=== js4-05 | A promise pool: concurrency with a limit
+--- teach
+`Promise.all(items.map(fetchOne))` starts **everything at once**. For five requests that is fine; for five thousand it floods the server, trips rate limits and runs out of sockets. What you want is a **pool**: at most `limit` jobs running at any moment, and as soon as one finishes, the next one starts.
+
+The first thing to get right is that jobs must be **functions that start work**, not promises. A promise is work that has already started — by the time you have an array of promises, it is too late to limit anything. So a pool takes `tasks`, an array of `() => Promise`, and calls each one only when there is room.
+
+The neatest design uses **workers**: start `limit` async loops, and let each one repeatedly take the next unclaimed task until none are left.
+
+```js
+let next = 0
+async function worker() {
+  while (next < tasks.length) {
+    const i = next++            // claim a task (no await between check and claim)
+    results[i] = await tasks[i]()
+  }
+}
+```
+
+Because JavaScript runs one thing at a time, `next++` can never be claimed by two workers at once — there is no `await` between reading `next` and incrementing it. Storing by index `i` keeps results in the **input order**, even though jobs finish in any order.
+
+Then `await Promise.all(workers)` waits until every loop has run dry. Start `Math.min(limit, tasks.length)` workers so an empty task list resolves straight away.
+
+What about failure? The simplest useful rule is Promise.all's: if a task rejects, the whole pool rejects with that error. (Production pools often offer an `allSettled` mode too.) The mistake to avoid is *pre-starting*: writing `tasks.map((t) => t())` anywhere — even "just to get the promises ready" — runs every job immediately and the limit means nothing.
+--- task
+Write `runPool(tasks, limit)`. `tasks` is an array of functions that each return a promise. Call them so that no more than `limit` are running at once, starting the next as soon as one finishes, in array order. Resolve with the results **in the same order as `tasks`**. If any task rejects, reject with its error. An empty array resolves to `[]`.
+
+Keep the test drive at the end.
+--- starter
+async function runPool(tasks, limit) {
+  return Promise.all(tasks.map((task) => task()))
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+let active = 0
+let maxActive = 0
+const started = []
+const job = (id, ms) => async () => {
+  active++
+  maxActive = Math.max(maxActive, active)
+  started.push(id)
+  await sleep(ms)
+  active--
+  return id * 10
+}
+const t0 = Date.now()
+const out = await runPool([job(1, 50), job(2, 10), job(3, 10), job(4, 10), job(5, 50)], 2)
+const elapsed = Date.now() - t0
+const results = {
+  out,
+  maxActive,
+  started: [...started],
+  elapsed,
+  big: await runPool([job(6, 5)], 10),
+  empty: await runPool([], 3),
+  failed: await runPool([job(7, 5), async () => { throw new Error('bad job') }], 2).then(() => 'fulfilled', (e) => e.message),
+}
+--- solution
+async function runPool(tasks, limit) {
+  const results = new Array(tasks.length)
+  let next = 0
+  async function worker() {
+    while (next < tasks.length) {
+      const i = next++
+      results[i] = await tasks[i]()
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker())
+  await Promise.all(workers)
+  return results
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+let active = 0
+let maxActive = 0
+const started = []
+const job = (id, ms) => async () => {
+  active++
+  maxActive = Math.max(maxActive, active)
+  started.push(id)
+  await sleep(ms)
+  active--
+  return id * 10
+}
+const t0 = Date.now()
+const out = await runPool([job(1, 50), job(2, 10), job(3, 10), job(4, 10), job(5, 50)], 2)
+const elapsed = Date.now() - t0
+const results = {
+  out,
+  maxActive,
+  started: [...started],
+  elapsed,
+  big: await runPool([job(6, 5)], 10),
+  empty: await runPool([], 3),
+  failed: await runPool([job(7, 5), async () => { throw new Error('bad job') }], 2).then(() => 'fulfilled', (e) => e.message),
+}
+--- hint
+Never call `task()` up front. Start `limit` async "worker" loops that each claim the next index and await that one task.
+--- hint
+Keep a shared counter `next`. In each worker: `while (next < tasks.length) { const i = next++; results[i] = await tasks[i]() }`.
+--- hint
+Start `Math.min(limit, tasks.length)` workers and `await Promise.all(workers)`, then return `results`.
+--- check case | Results come back in task order
+results.out
+=> [10, 20, 30, 40, 50]
+--- check case | Never more than 2 at once
+results.maxActive
+=> 2
+?? Calling every task up front starts them all at the same time.
+--- check case | Tasks start in order
+results.started.slice(0, 5)
+=> [1, 2, 3, 4, 5]
+--- check test | The next task starts as soon as a slot frees up (about 80ms, not 130ms)
+results.elapsed >= 70 && results.elapsed < 125
+--- check case | A limit bigger than the list is fine
+results.big
+=> [60]
+--- check case | No tasks, no results
+results.empty
+=> []
+--- check case | A failing task rejects the pool
+results.failed
+=> 'bad job'
+
+=== js4-06 | A tiny reactive store
+--- teach
+Redux, Zustand, Pinia and friends all share one small idea: keep the application's state in **one place**, change it only through **described actions**, and let anyone **subscribe** to hear about changes.
+
+```js
+function reducer(state, action) {
+  if (action.type === 'add') return { ...state, count: state.count + action.by }
+  return state
+}
+reducer({ count: 1 }, { type: 'add', by: 2 })   // { count: 3 }
+```
+
+A **reducer** is a pure function `(state, action) => newState`. It never edits the old state; it returns a new object for a change, and the **same object** when the action does not concern it. That rule is what makes change detection cheap: the store can tell whether anything changed with a single `===`, no deep comparison needed.
+
+The store itself is a closure around the current state and a list of listeners:
+
+- `getState()` returns the current state.
+- `dispatch(action)` runs the reducer; if the result is a different object, it stores it and calls every listener.
+- `subscribe(fn)` adds a listener and returns an unsubscribe function.
+
+Real UIs add **selectors**: a component usually cares about a slice of the state (`state.user`), not all of it. `select(selector, fn)` remembers the selected value and calls `fn` only when *that* value changes — which works precisely because the reducer returns the same object for unchanged parts.
+
+Mistakes to watch for: a reducer that mutates (`state.count++; return state`) — the store sees the same object and tells nobody; notifying when nothing changed, which re-renders everything on every action; and listeners that unsubscribe during a notification, which skip their neighbours if you loop over the live list. Loop over a copy.
+--- task
+Write:
+
+- `reducer(state, action)` for state `{ count, user }`: `{ type: 'increment' }` returns a new state with `count + 1`; `{ type: 'rename', name }` returns a new state with `user` set to `name` — unless `user` is already `name`, in which case it returns the same state; any other action returns the same state.
+- `createStore(reducer, initialState)` returning `{ getState, dispatch, subscribe, select }`:
+  - `dispatch(action)` — computes the next state; only if it is a different object, stores it and calls every listener with the new state (looping over a copy of the listeners).
+  - `subscribe(fn)` — returns an unsubscribe function.
+  - `select(selector, fn)` — subscribes so that `fn(newValue, oldValue)` is called only when `selector(state)` changes (by `Object.is`); returns an unsubscribe function.
+--- starter
+function reducer(state, action) {
+  if (action.type === 'increment') state.count++
+  return state
+}
+
+function createStore(reducer, initialState) {
+  let state = initialState
+  return {
+    getState: () => state,
+    dispatch(action) {
+      state = reducer(state, action)
+    },
+    subscribe(fn) {},
+  }
+}
+--- solution
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return { ...state, count: state.count + 1 }
+    case 'rename':
+      return state.user === action.name ? state : { ...state, user: action.name }
+    default:
+      return state
+  }
+}
+
+function createStore(reducer, initialState) {
+  let state = initialState
+  let listeners = []
+
+  const subscribe = (fn) => {
+    listeners.push(fn)
+    return () => {
+      listeners = listeners.filter((l) => l !== fn)
+    }
+  }
+
+  return {
+    getState: () => state,
+    dispatch(action) {
+      const next = reducer(state, action)
+      if (next !== state) {
+        state = next
+        for (const fn of [...listeners]) fn(state)
+      }
+      return action
+    },
+    subscribe,
+    select(selector, fn) {
+      let current = selector(state)
+      return subscribe((s) => {
+        const value = selector(s)
+        if (!Object.is(value, current)) {
+          const old = current
+          current = value
+          fn(value, old)
+        }
+      })
+    },
+  }
+}
+--- hint
+The reducer must build new objects with spread — `{ ...state, count: state.count + 1 }` — and return `state` itself when nothing changes.
+--- hint
+In `dispatch`, compare `next !== state` before notifying anyone.
+--- hint
+`select` remembers `selector(state)` and subscribes a wrapper that compares the new selected value with the remembered one.
+--- check case | The reducer does not mutate
+(() => { const s = { count: 0, user: 'ada' }; const n = reducer(s, { type: 'increment' }); return [s, n, n !== s] })()
+=> [{ count: 0, user: 'ada' }, { count: 1, user: 'ada' }, true]
+--- check test | Unknown actions and same-name renames return the same object
+(() => { const s = { count: 0, user: 'ada' }; return reducer(s, { type: 'nope' }) === s && reducer(s, { type: 'rename', name: 'ada' }) === s })()
+--- check case | Subscribers hear about changes
+(() => { const store = createStore(reducer, { count: 0, user: 'ada' }); const seen = []; store.subscribe((s) => seen.push(s.count)); store.dispatch({ type: 'increment' }); store.dispatch({ type: 'increment' }); return [seen, store.getState().count] })()
+=> [[1, 2], 2]
+--- check case | No change, no notification
+(() => { const store = createStore(reducer, { count: 0, user: 'ada' }); let calls = 0; store.subscribe(() => calls++); store.dispatch({ type: 'nope' }); store.dispatch({ type: 'rename', name: 'ada' }); return calls })()
+=> 0
+--- check case | Unsubscribe stops notifications
+(() => { const store = createStore(reducer, { count: 0, user: 'ada' }); let calls = 0; const off = store.subscribe(() => calls++); store.dispatch({ type: 'increment' }); off(); store.dispatch({ type: 'increment' }); return calls })()
+=> 1
+--- check case | A listener unsubscribing mid-notify does not skip the next one
+(() => { const store = createStore(reducer, { count: 0, user: 'ada' }); const seen = []; const off = store.subscribe(() => { seen.push('a'); off() }); store.subscribe(() => seen.push('b')); store.dispatch({ type: 'increment' }); store.dispatch({ type: 'increment' }); return seen })()
+=> ['a', 'b', 'b']
+--- check case | select fires only when its slice changes
+(() => { const store = createStore(reducer, { count: 0, user: 'ada' }); const seen = []; store.select((s) => s.user, (now, before) => seen.push([before, now])); store.dispatch({ type: 'increment' }); store.dispatch({ type: 'rename', name: 'lin' }); store.dispatch({ type: 'increment' }); store.dispatch({ type: 'rename', name: 'sam' }); return seen })()
+=> [['ada', 'lin'], ['lin', 'sam']]
+
+=== js4-07 | Deep equality and deep cloning
+--- teach
+`===` on objects asks "is this the **same** object?", not "do these look the same?". Two separately built `{ a: 1 }` objects are not `===`. And spread copies only one level. Sooner or later you need both **deep equality** and **deep copies** — and writing them teaches you exactly how JavaScript values are shaped.
+
+For copies, the platform has an answer: **`structuredClone(value)`** deep-copies objects, arrays, `Date`, `Map`, `Set`, typed arrays and even **cyclic** structures.
+
+```js
+const original = { when: new Date(0), tags: new Set(['a']), nested: { n: 1 } }
+const copy = structuredClone(original)
+copy.nested.n = 2
+original.nested.n       // 1
+copy.when instanceof Date   // true
+```
+
+Know its limits: functions cannot be cloned (it throws), class instances come back as plain objects (their methods are gone), and getters are run and replaced by their values. Use it in real code — but you should understand what it does, so here you write your own.
+
+**Deep equality**, recursively:
+
+1. Primitives are equal if `===` — except `NaN`, which should equal `NaN`.
+2. Two `Date`s are equal if their times are equal.
+3. An array only equals an array: same length, items deep-equal in order.
+4. Plain objects: same number of own keys, and every key of one exists in the other with a deep-equal value. **Key order does not matter** — which is why comparing `JSON.stringify` output is wrong.
+
+**Deep cloning**, recursively, with one subtlety: **cycles**. If an object contains itself (`o.self = o`), naive recursion never ends. The fix is a `Map` from each original object to its copy, filled in *before* recursing into its children. When you meet an object you have already started copying, return its copy from the map. The same map also preserves **shared references**: if two places point at one object, the clone has two places pointing at one copy.
+--- task
+Write, without using `structuredClone`:
+
+- `deepEqual(a, b)` — following the four rules above (primitives with `NaN` equal to itself, `Date`s by time, arrays only equal arrays, plain objects by own keys in any order).
+- `deepClone(value)` — returns a deep copy of primitives, arrays, plain objects, `Date`s, `Map`s (keys kept as they are, values cloned) and `Set`s (values cloned). It must handle cycles and keep shared references shared.
+--- starter
+function deepEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+function deepClone(value) {
+  return { ...value }
+}
+--- solution
+function deepEqual(a, b) {
+  if (a === b) return true
+  if (Number.isNaN(a) && Number.isNaN(b)) return true
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false
+  if (a instanceof Date || b instanceof Date) return a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
+  if (Array.isArray(a) !== Array.isArray(b)) return false
+  if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => deepEqual(x, b[i]))
+  const ka = Object.keys(a)
+  const kb = Object.keys(b)
+  return ka.length === kb.length && ka.every((k) => Object.hasOwn(b, k) && deepEqual(a[k], b[k]))
+}
+
+function deepClone(value, seen = new Map()) {
+  if (typeof value !== 'object' || value === null) return value
+  if (seen.has(value)) return seen.get(value)
+  if (value instanceof Date) return new Date(value.getTime())
+  if (value instanceof Map) {
+    const copy = new Map()
+    seen.set(value, copy)
+    for (const [k, v] of value) copy.set(k, deepClone(v, seen))
+    return copy
+  }
+  if (value instanceof Set) {
+    const copy = new Set()
+    seen.set(value, copy)
+    for (const v of value) copy.add(deepClone(v, seen))
+    return copy
+  }
+  const copy = Array.isArray(value) ? [] : {}
+  seen.set(value, copy)
+  for (const key of Object.keys(value)) copy[key] = deepClone(value[key], seen)
+  return copy
+}
+--- hint
+In `deepEqual`, deal with the easy cases first: `a === b`, both `NaN`, and "either is not an object". Then Dates, then arrays, then plain objects.
+--- hint
+For objects, compare `Object.keys` lengths and check every key with `Object.hasOwn(b, k) && deepEqual(a[k], b[k])`.
+--- hint
+Give `deepClone` a second parameter `seen = new Map()`. Create the empty copy, `seen.set(value, copy)`, **then** fill it recursively, passing `seen` along.
+--- check case | Nested structures, keys in any order
+deepEqual({ a: [1, { b: 2 }], c: 'x' }, { c: 'x', a: [1, { b: 2 }] })
+=> true
+--- check case | Differences are found
+[deepEqual({ a: 1 }, { a: 1, b: undefined }), deepEqual([1, 2], { 0: 1, 1: 2 }), deepEqual({ a: [1, 2] }, { a: [1, 3] }), deepEqual('1', 1), deepEqual(null, {})]
+=> [false, false, false, false, false]
+--- check case | NaN and Dates
+[deepEqual(NaN, NaN), deepEqual(new Date(5), new Date(5)), deepEqual(new Date(5), new Date(6)), deepEqual(new Date(0), {})]
+=> [true, true, false, false]
+--- check case | A clone is independent at every level
+(() => { const o = { a: { b: [1, { c: 2 }] } }; const c = deepClone(o); c.a.b[1].c = 99; c.a.b.push(3); return [o, deepEqual(deepClone(o), o)] })()
+=> [{ a: { b: [1, { c: 2 }] } }, true]
+--- check case | Dates, Maps and Sets are copied, not shared
+(() => { const d = new Date(1000); const inner = { n: 1 }; const m = new Map([['k', inner]]); const s = new Set([inner]); const c = deepClone({ d, m, s }); return [c.d instanceof Date && c.d !== d && c.d.getTime() === 1000, c.m instanceof Map && c.m.get('k') !== inner && c.m.get('k').n === 1, c.s instanceof Set && !c.s.has(inner) && c.s.size === 1] })()
+=> [true, true, true]
+--- check case | Cycles are preserved
+(() => { const o = { name: 'o' }; o.self = o; const c = deepClone(o); return [c !== o, c.self === c, c.name] })()
+=> [true, true, 'o']
+--- check case | Shared references stay shared
+(() => { const shared = { x: 1 }; const c = deepClone([shared, shared]); return [c[0] === c[1], c[0] !== shared] })()
+=> [true, true]
+--- check source absent | Written by hand, not with structuredClone
+structuredClone\(
+
+=== js4-08 | Debugging: money, floating point and BigInt
+--- teach
+JavaScript numbers are 64-bit binary floating point. They store most decimal fractions **approximately**, because 0.1 has no exact binary form — just as 1/3 has no exact decimal form.
+
+```js
+0.1 + 0.2                  // 0.30000000000000004
+1.15 * 1.1                 // prints 1.265, but the stored value is a hair below it
+(1.15 * 1.1).toFixed(2)    // '1.26' — so a customer is short-changed a cent
+Number.MAX_SAFE_INTEGER    // 9007199254740991
+2 ** 53 + 1                // 9007199254740992 — whole numbers stop being exact too
+```
+
+`toFixed` does not save you: it rounds the approximate value, and when the true answer ends in exactly half a cent, the approximation may sit just below it and round the wrong way. Past about 15–16 significant digits, even whole numbers lose precision.
+
+The fix every payments system uses: **never store money as fractional numbers**. Store an **integer number of the smallest unit** (cents), do all arithmetic on integers, and convert to text only for display. For amounts that may exceed `Number.MAX_SAFE_INTEGER` cents, use **BigInt** — whole numbers of any size, written with an `n` suffix:
+
+```js
+const cents = 123456789012345678n + 1n     // exact
+cents / 100n                                 // 1234567890123456n — BigInt division drops the fraction
+cents % 100n                                 // 79n
+```
+
+BigInt rules: you cannot mix it with ordinary numbers (`1n + 1` throws — convert with `BigInt(x)`), division truncates toward zero, and there are no decimals, so **you** decide how to round. "Round half up" for a non-negative amount is `(x + 50n) / 100n` when dividing by 100.
+
+Parse money from **text**, not through `parseFloat`: split on the dot and build the cents from the digits. And when splitting a bill, integer division leaves a remainder that must go somewhere — give the leftover cents to the first people, so the parts always add back up to the total exactly.
+
+The debugging lesson: when a sum is off by a cent, print the full value (`console.log(x)` rather than `x.toFixed(2)`) — the hidden `...9999999` tells you it is a representation problem, not a logic problem.
+--- task
+Bug reports: *"`total(['1234567890123456.78', '0.01'])` gives `…56.75`. Adding 10% tax to 1.15 gives 1.26 instead of 1.27. Splitting 100.00 three ways gives three 33.33s and a cent disappears."*
+
+Rewrite using integer cents held in **BigInt**:
+
+- `toCents(text)` — `'12.34'` → `1234n`. Accepts an optional leading `-`, whole digits, and optionally a dot with 1 or 2 digits (`'7'`, `'0.5'`, `'-3.20'`).
+- `formatCents(cents)` — `1234n` → `'12.34'`, `-5n` → `'-0.05'`.
+- `total(prices)` — the exact sum of the price strings, formatted.
+- `addTax(amount, ratePercent)` — `amount` (a non-negative price string) plus `ratePercent`% tax (a whole number), with the tax rounded half up to the cent, formatted.
+- `splitBill(amount, people)` — an array of `people` formatted shares that add up exactly to `amount`, differing by at most a cent, the extra cents going to the first people.
+--- starter
+function total(prices) {
+  let sum = 0
+  for (const p of prices) sum += parseFloat(p)
+  return sum.toFixed(2)
+}
+
+function addTax(amount, ratePercent) {
+  return (parseFloat(amount) * (1 + ratePercent / 100)).toFixed(2)
+}
+
+function splitBill(amount, people) {
+  const each = (parseFloat(amount) / people).toFixed(2)
+  return Array(people).fill(each)
+}
+--- solution
+function toCents(text) {
+  const m = /^(-)?(\d+)(?:\.(\d{1,2}))?$/.exec(text.trim())
+  if (!m) throw new SyntaxError(`not an amount: ${text}`)
+  const cents = BigInt(m[2]) * 100n + BigInt((m[3] ?? '').padEnd(2, '0'))
+  return m[1] ? -cents : cents
+}
+
+function formatCents(cents) {
+  const sign = cents < 0n ? '-' : ''
+  const abs = cents < 0n ? -cents : cents
+  return `${sign}${abs / 100n}.${String(abs % 100n).padStart(2, '0')}`
+}
+
+function total(prices) {
+  return formatCents(prices.reduce((sum, p) => sum + toCents(p), 0n))
+}
+
+function addTax(amount, ratePercent) {
+  const cents = toCents(amount)
+  const tax = (cents * BigInt(ratePercent) + 50n) / 100n
+  return formatCents(cents + tax)
+}
+
+function splitBill(amount, people) {
+  const cents = toCents(amount)
+  const n = BigInt(people)
+  const base = cents / n
+  const extra = Number(cents % n)
+  return Array.from({ length: people }, (_, i) => formatCents(base + (i < extra ? 1n : 0n)))
+}
+--- hint
+Reproduce each report and print the raw float: `console.log(1.15 * 1.1)`. The error is in the representation, so the fix is to stop using fractions.
+--- hint
+`toCents`: a regex like `/^(-)?(\d+)(?:\.(\d{1,2}))?$/` gives the sign, the whole part and the decimals. Pad the decimals to two digits, then `BigInt(whole) * 100n + BigInt(decimals)`.
+--- hint
+Tax in cents, rounded half up: `(cents * BigInt(rate) + 50n) / 100n`. For the split, `cents / n` is everyone's base share and `cents % n` people get one more cent.
+--- check test | toCents parses into BigInt cents
+toCents('12.3') === 1230n && toCents('-3.20') === -320n && toCents('7') === 700n && typeof toCents('1') === 'bigint'
+--- check case | formatCents pads and signs
+[formatCents(1234n), formatCents(-5n), formatCents(0n), formatCents(100n)]
+=> ['12.34', '-0.05', '0.00', '1.00']
+--- check case | Small sums are exact
+[total(['0.10', '0.20']), total([]), total(['5', '-2.5'])]
+=> ['0.30', '0.00', '2.50']
+--- check case | Huge sums are exact
+total(['1234567890123456.78', '0.01'])
+=> '1234567890123456.79'
+--- check case | Tax rounds half up to the cent
+[addTax('1.15', 10), addTax('0.70', 5), addTax('3.30', 5), addTax('100.00', 0)]
+=> ['1.27', '0.74', '3.47', '100.00']
+--- check case | A bill splits without losing a cent
+splitBill('100.00', 3)
+=> ['33.34', '33.33', '33.33']
+--- check case | Tiny and even splits
+[splitBill('0.05', 2), splitBill('9.00', 3)]
+=> [['0.03', '0.02'], ['3.00', '3.00', '3.00']]
+--- check test | Shares always add back up
+[['123.45', 7], ['0.01', 4], ['1000000000000000.01', 3]].every(([a, n]) => total(splitBill(a, n)) === formatCents(toCents(a)))
+
+=== js4-09 | A tokenizer
+--- teach
+Calculators, template engines, query languages, config formats and compilers all start the same way: turn a string of characters into a list of **tokens** — the words of the language. This step is called **lexing** or **tokenizing**, and it is what makes the next step (parsing) manageable, because the parser no longer has to think about spaces or how many digits a number has.
+
+For the expression `max(x, 2.5) * 3`:
+
+```
+name max · op ( · name x · op , · num 2.5 · op ) · op * · num 3 · end
+```
+
+The standard technique is a loop with a **position index**. Look at the character at `i` and decide what kind of token starts there:
+
+- whitespace → skip it;
+- a digit → keep consuming digits (and one optional `.` followed by digits), then convert the text with `Number`;
+- a letter or `_` → consume letters, digits and `_`: a name;
+- one of the operator characters → a one-character token;
+- anything else → a **syntax error that says where**.
+
+A sticky regular expression (`/…/y`, which only matches exactly at `lastIndex`) is a compact way to do this, but a hand-written loop is just as good and easier to debug:
+
+```js
+const isDigit = (c) => c >= '0' && c <= '9'
+isDigit('7')    // true
+isDigit('x')    // false
+```
+
+Two design decisions make the parser's life easier. First, give every token a `type` and a `value`, so the parser can ask "is this an `op` whose value is `(`?". Second, finish the list with a special **end** token, so the parser can always look at "the current token" without checking whether it has run off the end of the array.
+
+Error messages deserve care: "unexpected character "$" at 2" tells the user exactly what to fix. And keep the scan **linear**: move an index forward instead of repeatedly slicing the rest of the string, which copies it again and again on long inputs.
+--- task
+Write `tokenize(src)`, returning an array of tokens:
+
+- numbers — digits, optionally followed by a `.` and more digits — as `{ type: 'num', value: <the Number> }`;
+- names — a letter or `_`, then letters, digits or `_` — as `{ type: 'name', value: <the text> }`;
+- any of `+ - * / ^ ( ) ,` as `{ type: 'op', value: <the character> }`;
+- whitespace is skipped;
+- the list always ends with `{ type: 'end' }`.
+
+Any other character throws `new SyntaxError('unexpected character "<c>" at <index>')`.
+--- starter
+function tokenize(src) {
+  return src.split(' ')
+}
+--- solution
+const OPS = new Set(['+', '-', '*', '/', '^', '(', ')', ','])
+const isDigit = (c) => c >= '0' && c <= '9'
+const isNameStart = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_'
+const isNameChar = (c) => isNameStart(c) || isDigit(c)
+
+function tokenize(src) {
+  const tokens = []
+  let i = 0
+  while (i < src.length) {
+    const c = src[i]
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      i++
+    } else if (isDigit(c)) {
+      const start = i
+      while (i < src.length && isDigit(src[i])) i++
+      if (src[i] === '.' && isDigit(src[i + 1] ?? '')) {
+        i++
+        while (i < src.length && isDigit(src[i])) i++
+      }
+      tokens.push({ type: 'num', value: Number(src.slice(start, i)) })
+    } else if (isNameStart(c)) {
+      const start = i
+      while (i < src.length && isNameChar(src[i])) i++
+      tokens.push({ type: 'name', value: src.slice(start, i) })
+    } else if (OPS.has(c)) {
+      tokens.push({ type: 'op', value: c })
+      i++
+    } else {
+      throw new SyntaxError(`unexpected character "${c}" at ${i}`)
+    }
+  }
+  tokens.push({ type: 'end' })
+  return tokens
+}
+--- hint
+Keep an index `i` and a `while (i < src.length)` loop. Decide what to do from `src[i]`: skip, read a number, read a name, take an operator, or throw.
+--- hint
+To read a number, remember `start = i`, advance past the digits (and an optional `.` plus digits), then push `Number(src.slice(start, i))`.
+--- hint
+After the loop, push `{ type: 'end' }`.
+--- check case | An expression becomes tokens
+tokenize('1 + 2.5*x')
+=> [{ type: 'num', value: 1 }, { type: 'op', value: '+' }, { type: 'num', value: 2.5 }, { type: 'op', value: '*' }, { type: 'name', value: 'x' }, { type: 'end' }]
+--- check case | Names, calls and commas
+tokenize('max(a_1, 20)').map((t) => t.value ?? t.type)
+=> ['max', '(', 'a_1', ',', 20, ')', 'end']
+--- check case | Empty input is just the end
+tokenize('   ')
+=> [{ type: 'end' }]
+--- check case | Every operator
+tokenize('+-*/^(),').map((t) => t.value ?? t.type)
+=> ['+', '-', '*', '/', '^', '(', ')', ',', 'end']
+--- check case | A bad character is a SyntaxError that says where
+(() => { try { tokenize('2 $ 3'); return 'no error' } catch (e) { return [e.name, e.message] } })()
+=> ['SyntaxError', 'unexpected character "$" at 2']
+--- check case | Long input is tokenized quickly
+tokenize('12+'.repeat(200000) + '1').length
+=> 400002
+
+=== js4-10 | A recursive-descent parser and evaluator
+--- teach
+With tokens in hand, you need to understand their **structure**: in `1 + 2 * 3` the `*` binds tighter than the `+`. The classic hand-written technique is **recursive descent**: write one function per level of precedence, from loosest to tightest, each calling the next level for its operands. The grammar for arithmetic:
+
+```
+expr  := term  (('+' | '-') term)*
+term  := unary (('*' | '/') unary)*
+unary := '-' unary | power
+power := atom ('^' unary)?
+atom  := number | name | name '(' args ')' | '(' expr ')'
+```
+
+Read it top down: an expression is terms joined by `+`/`-`; a term is unary pieces joined by `*`/`/`; and so on. Each rule becomes a function:
+
+- `(… )*` becomes a **loop**, which makes the operator **left-associative**: `10 - 4 - 3` is `(10 - 4) - 3`.
+- `power` calls `unary` on its right-hand side, which calls back into `power` — **recursion** — making `^` **right-associative**: `2 ^ 3 ^ 2` is `2 ^ 9`. Because `unary` sits *above* `power`, `-2 ^ 2` is `-(2 ^ 2)`, as in mathematics.
+- `atom` handles the base cases, and a parenthesised expression restarts at the top with `expr`.
+
+The functions share a position in the token array. Two small helpers keep them readable: `peek()` returns the current token, and `expect(value)` consumes the current token if it is that operator — or throws a `SyntaxError` naming what it found.
+
+This version **evaluates as it parses**: each function returns a number. (A compiler would return tree nodes instead and evaluate later, but the shape of the code is identical.)
+
+Finally, after parsing an `expr`, check that you have reached the `end` token. Forgetting this makes `1 2` quietly evaluate to `1`. Good errors matter as much as correct answers: a user who typed `(1 + 2` should hear "unexpected end", not get `NaN`.
+--- task
+The starter includes a working `tokenize`. Write `evaluate(src, vars = {})`, following the grammar above:
+
+- `+ - * /` with the usual precedence, left to right; `^` binds tighter and is right-associative; unary minus sits above `^`, so `-2 ^ 2` is `-4` and `2 ^ -1` is `0.5`.
+- names read from `vars`; an unknown name throws `new ReferenceError('unknown variable: <name>')`.
+- calls `name(arg, arg, …)` to `min`, `max`, `abs` and `sqrt` (the `Math` functions); an unknown function throws `new ReferenceError('unknown function: <name>')`.
+- dividing by zero throws `new RangeError('division by zero')`.
+- anything else malformed — a missing operand, an unclosed bracket, leftover tokens — throws a `SyntaxError`.
+--- starter
+const OPS = new Set(['+', '-', '*', '/', '^', '(', ')', ','])
+const isDigit = (c) => c >= '0' && c <= '9'
+const isNameStart = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_'
+const isNameChar = (c) => isNameStart(c) || isDigit(c)
+
+function tokenize(src) {
+  const tokens = []
+  let i = 0
+  while (i < src.length) {
+    const c = src[i]
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      i++
+    } else if (isDigit(c)) {
+      const start = i
+      while (i < src.length && isDigit(src[i])) i++
+      if (src[i] === '.' && isDigit(src[i + 1] ?? '')) {
+        i++
+        while (i < src.length && isDigit(src[i])) i++
+      }
+      tokens.push({ type: 'num', value: Number(src.slice(start, i)) })
+    } else if (isNameStart(c)) {
+      const start = i
+      while (i < src.length && isNameChar(src[i])) i++
+      tokens.push({ type: 'name', value: src.slice(start, i) })
+    } else if (OPS.has(c)) {
+      tokens.push({ type: 'op', value: c })
+      i++
+    } else {
+      throw new SyntaxError(`unexpected character "${c}" at ${i}`)
+    }
+  }
+  tokens.push({ type: 'end' })
+  return tokens
+}
+
+function evaluate(src, vars = {}) {
+  return Number(src)
+}
+--- solution
+const OPS = new Set(['+', '-', '*', '/', '^', '(', ')', ','])
+const isDigit = (c) => c >= '0' && c <= '9'
+const isNameStart = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_'
+const isNameChar = (c) => isNameStart(c) || isDigit(c)
+
+function tokenize(src) {
+  const tokens = []
+  let i = 0
+  while (i < src.length) {
+    const c = src[i]
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      i++
+    } else if (isDigit(c)) {
+      const start = i
+      while (i < src.length && isDigit(src[i])) i++
+      if (src[i] === '.' && isDigit(src[i + 1] ?? '')) {
+        i++
+        while (i < src.length && isDigit(src[i])) i++
+      }
+      tokens.push({ type: 'num', value: Number(src.slice(start, i)) })
+    } else if (isNameStart(c)) {
+      const start = i
+      while (i < src.length && isNameChar(src[i])) i++
+      tokens.push({ type: 'name', value: src.slice(start, i) })
+    } else if (OPS.has(c)) {
+      tokens.push({ type: 'op', value: c })
+      i++
+    } else {
+      throw new SyntaxError(`unexpected character "${c}" at ${i}`)
+    }
+  }
+  tokens.push({ type: 'end' })
+  return tokens
+}
+
+const FUNCTIONS = { min: Math.min, max: Math.max, abs: Math.abs, sqrt: Math.sqrt }
+
+function evaluate(src, vars = {}) {
+  const tokens = tokenize(src)
+  let pos = 0
+  const peek = () => tokens[pos]
+  const isOp = (value) => peek().type === 'op' && peek().value === value
+  const describe = (t) => (t.type === 'end' ? 'end of input' : `"${t.value}"`)
+  const expect = (value) => {
+    if (!isOp(value)) throw new SyntaxError(`expected "${value}" but found ${describe(peek())}`)
+    pos++
+  }
+
+  function expr() {
+    let value = term()
+    while (isOp('+') || isOp('-')) {
+      const op = tokens[pos++].value
+      const right = term()
+      value = op === '+' ? value + right : value - right
+    }
+    return value
+  }
+
+  function term() {
+    let value = unary()
+    while (isOp('*') || isOp('/')) {
+      const op = tokens[pos++].value
+      const right = unary()
+      if (op === '/' && right === 0) throw new RangeError('division by zero')
+      value = op === '*' ? value * right : value / right
+    }
+    return value
+  }
+
+  function unary() {
+    if (isOp('-')) {
+      pos++
+      return -unary()
+    }
+    return power()
+  }
+
+  function power() {
+    const base = atom()
+    if (isOp('^')) {
+      pos++
+      return base ** unary()
+    }
+    return base
+  }
+
+  function atom() {
+    const t = peek()
+    if (t.type === 'num') {
+      pos++
+      return t.value
+    }
+    if (t.type === 'name') {
+      pos++
+      if (isOp('(')) {
+        pos++
+        const args = []
+        if (!isOp(')')) {
+          args.push(expr())
+          while (isOp(',')) {
+            pos++
+            args.push(expr())
+          }
+        }
+        expect(')')
+        if (!Object.hasOwn(FUNCTIONS, t.value)) throw new ReferenceError(`unknown function: ${t.value}`)
+        return FUNCTIONS[t.value](...args)
+      }
+      if (!Object.hasOwn(vars, t.value)) throw new ReferenceError(`unknown variable: ${t.value}`)
+      return vars[t.value]
+    }
+    if (isOp('(')) {
+      pos++
+      const value = expr()
+      expect(')')
+      return value
+    }
+    throw new SyntaxError(`unexpected ${describe(t)}`)
+  }
+
+  const result = expr()
+  if (peek().type !== 'end') throw new SyntaxError(`unexpected ${describe(peek())}`)
+  return result
+}
+--- hint
+Inside `evaluate`, tokenize, keep `let pos = 0`, and write `peek()` and an `isOp(value)` helper. Then one inner function per grammar rule: `expr`, `term`, `unary`, `power`, `atom`.
+--- hint
+`expr` and `term` are loops: parse one operand, then `while` the current token is one of their operators, consume it, parse the next operand and combine. `power` calls `unary()` for its right side, which gives right-associativity.
+--- hint
+In `atom`: a number; a name (a call if the next token is `(`); or `(` expr `)`. Anything else is a `SyntaxError`. After the top-level `expr()`, the current token must be `end`.
+--- check case | Precedence
+[evaluate('1 + 2 * 3'), evaluate('(1 + 2) * 3'), evaluate('2 * 3 + 4 * 5')]
+=> [7, 9, 26]
+--- check case | Left to right for - and /
+[evaluate('10 - 4 - 3'), evaluate('64 / 4 / 2')]
+=> [3, 8]
+--- check case | ^ is right-associative; unary minus sits above it
+[evaluate('2 ^ 3 ^ 2'), evaluate('-2 ^ 2'), evaluate('(-2) ^ 2'), evaluate('2 ^ -1'), evaluate('--3')]
+=> [512, -4, 4, 0.5, 3]
+--- check case | Variables
+evaluate('x * (y + 1)', { x: 3, y: 4 })
+=> 15
+--- check case | Function calls, nested
+evaluate('max(1, min(8, 5), 3) + abs(-2) + sqrt(16)')
+=> 11
+--- check case | Unknown names are ReferenceErrors
+(() => { const out = []; for (const s of ['z + 1', 'nope(1)']) { try { evaluate(s); out.push('no error') } catch (e) { out.push(e.name + ': ' + e.message) } } return out })()
+=> ['ReferenceError: unknown variable: z', 'ReferenceError: unknown function: nope']
+--- check case | Division by zero is a RangeError
+(() => { try { evaluate('1 / (2 - 2)'); return 'no error' } catch (e) { return e.name + ': ' + e.message } })()
+=> 'RangeError: division by zero'
+--- check case | Malformed input is a SyntaxError
+['1 +', '(1 + 2', '1 2', ')', '', 'max(1,'].map((s) => { try { evaluate(s); return 'no error' } catch (e) { return e.name } })
+=> ['SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError']
+--- check case | Long and deeply nested input
+[evaluate('1+'.repeat(100000) + '1'), evaluate('('.repeat(500) + '7' + ')'.repeat(500))]
+=> [100001, 7]
+
+=== js4-11 | A mini test runner
+--- teach
+Test frameworks feel like magic, but the core of Jest, Vitest or Mocha fits on one screen, and building it shows you what the familiar `describe`/`it`/`expect` really do.
+
+**Collecting, then running.** `describe(name, fn)` does not test anything: it calls `fn` straight away so that the `it` calls inside can **register** themselves, with the describe names pushed onto a stack so each test knows its full name (`'math > adds'`). `it(name, fn)` stores `{ name, fn }` in a list. Only `run()` actually executes the tests — one after another, in the order they were registered.
+
+**Assertions are just functions that throw.** `expect(actual)` returns an object of matchers; each matcher checks something and throws an `Error` with a helpful message if it does not hold:
+
+```js
+function expect(actual) {
+  return {
+    toBe(expected) {
+      if (!Object.is(actual, expected)) {
+        throw new Error(`expected ${JSON.stringify(actual)} to be ${JSON.stringify(expected)}`)
+      }
+    },
+  }
+}
+```
+
+So a test passes if its function returns (or its promise fulfils) without throwing, and fails otherwise.
+
+**Isolation.** `run` wraps each test in `try`/`catch` and records the result, so one failure never stops the others. It `await`s each test function, which makes **async tests** work for free — a rejected promise is caught like a throw. The error message is the most important output a test runner produces: "expected 3 to be 4" points straight at the problem; "test failed" wastes the reader's time.
+
+`toBe` compares identity (`Object.is`), so it is for primitives. `toEqual` compares **structure**, which needs a deep comparison — key order must not matter. `toThrow` takes a *function* (not the result of calling it) and checks that calling it throws — the classic mistake is writing `expect(parse('{')).toThrow()`, which throws before `expect` is even called.
+--- task
+Write a small test framework:
+
+- `describe(name, fn)` — calls `fn` immediately; tests registered inside are named `'<describe name> > <test name>'`, and describes can nest.
+- `it(name, fn)` — registers a test; `fn` may be async.
+- `expect(actual)` returning matchers that throw an `Error` on failure:
+  - `toBe(expected)` — `Object.is`; message `'expected <actual> to be <expected>'`, both written with `JSON.stringify`.
+  - `toEqual(expected)` — deep equality of primitives, arrays and plain objects, key order ignored.
+  - `toThrow()` — `actual` is a function; fails unless calling it throws.
+- `run()` — async. Runs every registered test in order, awaiting each, and resolves to `{ passed, failed, results }`, where each result is `{ name, ok }` plus `error` (the error's message) when it failed. Then clears the registered tests, so running again starts empty.
+
+Keep the test drive at the end: it uses your framework.
+--- starter
+function describe(name, fn) {}
+
+function it(name, fn) {}
+
+function expect(actual) {
+  return {}
+}
+
+async function run() {
+  return { passed: 0, failed: 0, results: [] }
+}
+
+// ---- Test drive: the checks read `report` and `second`. Keep this at the end. ----
+function add(a, b) {
+  return a + b
+}
+describe('math', () => {
+  it('adds', () => expect(add(2, 2)).toBe(4))
+  it('fails on purpose', () => expect(add(1, 2)).toBe(4))
+  describe('objects', () => {
+    it('compares deeply', () => expect({ a: [1, 2], b: { c: 3 } }).toEqual({ b: { c: 3 }, a: [1, 2] }))
+    it('spots differences', () => expect({ a: 1 }).toEqual({ a: 2 }))
+  })
+})
+it('throws', () => expect(() => JSON.parse('{')).toThrow())
+it('does not throw', () => expect(() => 1).toThrow())
+it('waits for async tests', async () => {
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  expect(1).toBe(1)
+})
+it('catches async failures', async () => {
+  await null
+  throw new Error('async boom')
+})
+const report = await run()
+const second = await run()
+--- solution
+const tests = []
+const suites = []
+
+function describe(name, fn) {
+  suites.push(name)
+  try {
+    fn()
+  } finally {
+    suites.pop()
+  }
+}
+
+function it(name, fn) {
+  tests.push({ name: [...suites, name].join(' > '), fn })
+}
+
+function equal(a, b) {
+  if (Object.is(a, b)) return true
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false
+  if (Array.isArray(a) !== Array.isArray(b)) return false
+  const ka = Object.keys(a)
+  const kb = Object.keys(b)
+  return ka.length === kb.length && ka.every((k) => Object.hasOwn(b, k) && equal(a[k], b[k]))
+}
+
+function expect(actual) {
+  return {
+    toBe(expected) {
+      if (!Object.is(actual, expected)) throw new Error(`expected ${JSON.stringify(actual)} to be ${JSON.stringify(expected)}`)
+    },
+    toEqual(expected) {
+      if (!equal(actual, expected)) throw new Error(`expected ${JSON.stringify(actual)} to equal ${JSON.stringify(expected)}`)
+    },
+    toThrow() {
+      try {
+        actual()
+      } catch {
+        return
+      }
+      throw new Error('expected the function to throw')
+    },
+  }
+}
+
+async function run() {
+  const results = []
+  for (const test of tests.splice(0)) {
+    try {
+      await test.fn()
+      results.push({ name: test.name, ok: true })
+    } catch (err) {
+      results.push({ name: test.name, ok: false, error: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  const passed = results.filter((r) => r.ok).length
+  return { passed, failed: results.length - passed, results }
+}
+
+// ---- Test drive: the checks read `report` and `second`. Keep this at the end. ----
+function add(a, b) {
+  return a + b
+}
+describe('math', () => {
+  it('adds', () => expect(add(2, 2)).toBe(4))
+  it('fails on purpose', () => expect(add(1, 2)).toBe(4))
+  describe('objects', () => {
+    it('compares deeply', () => expect({ a: [1, 2], b: { c: 3 } }).toEqual({ b: { c: 3 }, a: [1, 2] }))
+    it('spots differences', () => expect({ a: 1 }).toEqual({ a: 2 }))
+  })
+})
+it('throws', () => expect(() => JSON.parse('{')).toThrow())
+it('does not throw', () => expect(() => 1).toThrow())
+it('waits for async tests', async () => {
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  expect(1).toBe(1)
+})
+it('catches async failures', async () => {
+  await null
+  throw new Error('async boom')
+})
+const report = await run()
+const second = await run()
+--- hint
+Keep two module-level arrays: the registered tests, and a stack of describe names. `describe` pushes its name, calls `fn`, then pops (use `finally`).
+--- hint
+Each matcher is a function that throws `new Error(…)` when its check fails. `toThrow` calls `actual()` inside a `try`, returns quietly from the `catch`, and throws after it.
+--- hint
+`run` loops over `tests.splice(0)` (which also empties the list), `await`s each `fn` inside `try`/`catch`, and records `{ name, ok }` or `{ name, ok: false, error: err.message }`.
+--- check case | Tests are named through their describes, in order
+report.results.map((r) => r.name)
+=> ['math > adds', 'math > fails on purpose', 'math > objects > compares deeply', 'math > objects > spots differences', 'throws', 'does not throw', 'waits for async tests', 'catches async failures']
+--- check case | Each test passes or fails correctly
+report.results.map((r) => r.ok)
+=> [true, false, true, false, true, false, true, false]
+--- check case | The counts add up
+[report.passed, report.failed]
+=> [4, 4]
+--- check case | toBe explains what went wrong
+report.results[1].error
+=> 'expected 3 to be 4'
+--- check case | Async failures are caught with their message
+report.results[7].error
+=> 'async boom'
+--- check case | Running again starts empty
+second
+=> { passed: 0, failed: 0, results: [] }
+
+=== js4-12 | Performance: from quadratic to linear
+--- teach
+Code that is correct on ten items can be useless on a hundred thousand. The tool for predicting this is **Big-O**: how the work grows as the input grows.
+
+- **O(n)** — one pass. Ten times the data, ten times the time.
+- **O(n²)** — a loop inside a loop over the same data. Ten times the data, a **hundred** times the time. 200,000 items means 40 billion steps: minutes, or a frozen browser tab.
+
+The trouble is that the inner loop is often **hidden inside a method call**. Every one of these walks the array:
+
+```js
+const arr = [1, 2, 3]
+arr.includes(3)           // looks at every item
+arr.indexOf(3)            // same
+arr.filter((x) => x > 1)  // visits every item, builds a new array
+arr.slice(0, 2)           // copies items
+```
+
+So `for (const x of items) if (seen.includes(x)) …` is O(n²), and so is `users.map((u) => events.filter((e) => e.user === u))`. Other hidden loops: `find`, `some`, `splice`, `shift`/`unshift` (they move everything), and spreading an accumulator (`acc = [...acc, x]`) inside `reduce`.
+
+The standard cure is to **trade memory for time**: build a `Set` or `Map` in one pass, then answer each question with a single lookup.
+
+- "Have I seen this before?" → a `Set` of what you have seen.
+- "What is the best/latest item per key?" → a `Map` from key to the best so far, updated in one pass.
+- "How many earlier items pair with this one?" → a `Map` from value to how many times you have seen it.
+
+**Measure, do not guess**: wrap a call in `performance.now()` before and after, and try it at sizes 1,000, 10,000 and 100,000. If each tenfold step costs a hundredfold more time, you have found an O(n²) — and that is where to look.
+
+When you optimise, keep the behaviour **identical**, including the details: which element is "first", what happens on ties, what an empty input returns. The checks on small inputs are there to make sure the fast version still answers the same question.
+--- task
+All three functions in the starter are correct, but quadratic. Make each one a single pass (O(n)) with the same results:
+
+- `firstRepeat(items)` — the first item that has appeared earlier in the array, or `undefined`.
+- `latestPerUser(events)` — events are `{ user, time }`. One event per user — the one with the greatest `time` (on a tie, the earlier event in the array) — in the order each user first appears.
+- `countPairsWithSum(nums, target)` — how many index pairs `i < j` have `nums[i] + nums[j] === target`.
+
+Each will be given 200,000 items.
+--- starter
+function firstRepeat(items) {
+  for (let i = 0; i < items.length; i++) {
+    if (items.slice(0, i).includes(items[i])) return items[i]
+  }
+  return undefined
+}
+
+function latestPerUser(events) {
+  const users = [...new Set(events.map((e) => e.user))]
+  return users.map((user) => {
+    const mine = events.filter((e) => e.user === user)
+    return mine.reduce((best, e) => (e.time > best.time ? e : best))
+  })
+}
+
+function countPairsWithSum(nums, target) {
+  let count = 0
+  for (let i = 0; i < nums.length; i++) {
+    for (let j = i + 1; j < nums.length; j++) {
+      if (nums[i] + nums[j] === target) count++
+    }
+  }
+  return count
+}
+--- solution
+function firstRepeat(items) {
+  const seen = new Set()
+  for (const item of items) {
+    if (seen.has(item)) return item
+    seen.add(item)
+  }
+  return undefined
+}
+
+function latestPerUser(events) {
+  const best = new Map()
+  for (const e of events) {
+    const current = best.get(e.user)
+    if (!current || e.time > current.time) best.set(e.user, e)
+  }
+  return [...best.values()]
+}
+
+function countPairsWithSum(nums, target) {
+  const seen = new Map()
+  let count = 0
+  for (const n of nums) {
+    count += seen.get(target - n) ?? 0
+    seen.set(n, (seen.get(n) ?? 0) + 1)
+  }
+  return count
+}
+--- hint
+Find the hidden loops first: `slice` and `includes` inside a loop; `filter` inside `map`; a loop inside a loop.
+--- hint
+`firstRepeat`: a `Set` of items seen so far. `latestPerUser`: a `Map` from user to the best event so far — a Map keeps its keys in first-insertion order, and updating a key does not move it.
+--- hint
+`countPairsWithSum`: walking left to right, each number pairs with every earlier number equal to `target - n`. Keep a `Map` of how many times each value has appeared so far.
+--- check case | firstRepeat on small inputs
+[firstRepeat([3, 1, 4, 1, 5, 3]), firstRepeat(['a', 'b']), firstRepeat([])]
+=> [1, undefined, undefined]
+--- check case | latestPerUser keeps first-appearance order and the earlier event on ties
+latestPerUser([{ user: 'b', time: 1 }, { user: 'a', time: 5 }, { user: 'b', time: 9 }, { user: 'a', time: 5, tie: true }, { user: 'b', time: 3 }])
+=> [{ user: 'b', time: 9 }, { user: 'a', time: 5 }]
+--- check case | countPairsWithSum counts index pairs, duplicates included
+[countPairsWithSum([1, 5, 7, -1, 5], 6), countPairsWithSum([3, 3, 3], 6), countPairsWithSum([], 1), countPairsWithSum([2], 4)]
+=> [3, 3, 0, 0]
+--- check case | firstRepeat on 200,000 items
+firstRepeat([...Array.from({ length: 200000 }, (_, i) => i), 123456])
+=> 123456
+?? Slicing and searching the earlier items for every item is about 20 billion steps. Remember what you have seen in a Set.
+--- check case | latestPerUser on 200,000 events
+(() => { const ev = Array.from({ length: 200000 }, (_, i) => ({ user: 'u' + (i % 50000), time: (i * 7919) % 1000003 })); const r = latestPerUser(ev); return [r.length, r[123], r[49999]] })()
+=> [50000, { user: 'u123', time: 974037 }, { user: 'u49999', time: 940896 }]
+--- check case | countPairsWithSum on 200,000 numbers
+countPairsWithSum(Array.from({ length: 200000 }, (_, i) => i % 1000), 999)
+=> 20000000
+
+=== js4-13 | Debugging: the out-of-order response
+--- teach
+Here is a bug that passes every test on a fast machine and shows up only in production: a search box shows results for **"a"** while the box says **"ab"**.
+
+The code is innocent-looking:
+
+```js
+async function type(query) {
+  state.query = query
+  state.results = await api(query)
+}
+```
+
+The hidden assumption is that **responses arrive in the order requests were sent**. They do not. The request for "a" matches more rows and is slower; the request for "ab" is sent 5ms later but answers first. So "ab"'s results arrive, then "a"'s results arrive and **overwrite** them. The same race breaks loading spinners (the first response to arrive switches the spinner off while the latest request is still running) and error messages (a stale failure replaces fresh results).
+
+How to debug a race like this:
+
+1. **Make timing controllable.** Replace the real API with a fake whose delays you choose, so the bad interleaving happens every time, not one run in fifty.
+2. **Log with identities.** Give each request a number and log `start #1 a`, `start #2 ab`, `done #2`, `done #1`. The order of the "done" lines is the smoking gun.
+3. **Name the invariant.** "The results on screen always belong to the latest query."
+4. **Enforce it at the point of writing**, not by adding delays.
+
+The standard fix is a **request counter**: each call takes `const id = ++latest`, and after every `await` it checks `if (id !== latest) return` before touching shared state. Only the most recent request may write. Apply the same check to the loading flag and to errors — every piece of state the request writes.
+
+In a browser you would also cancel the stale request with an `AbortController` to save bandwidth — but cancelling is an optimisation. The counter check is what makes the state correct, because a response can still arrive after you tried to cancel it.
+
+Never "fix" a race with `setTimeout` or a longer delay. That only changes which interleaving is rare.
+--- task
+Bug report: *"Typing 'a' then 'ab' quickly shows the results for 'a'. The spinner sometimes turns off while a search is still running. A failed old search can wipe out good results."*
+
+Fix `createSearchBox(api)` so that:
+
+- `state.results` only ever holds the results of the **latest** query typed; responses for older queries are ignored completely.
+- `state.loading` is `true` from the moment a query is typed until the **latest** query's response arrives.
+- if the latest query fails, `state.results` becomes `[]` and `state.error` its message; a success sets `state.error` back to `null`. Stale failures are ignored.
+- `type(query)` returns a promise that fulfils when its own request has settled, and never rejects.
+
+Keep the test drive at the end.
+--- starter
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// A pretend search API: one-letter queries are slow, and 'err' fails.
+async function searchApi(query) {
+  await sleep(query.length === 1 ? 60 : 20)
+  if (query === 'err') throw new Error('search failed')
+  return [`${query}-1`, `${query}-2`]
+}
+
+function createSearchBox(api) {
+  const state = { query: '', results: [], loading: false, error: null }
+  async function type(query) {
+    state.query = query
+    state.loading = true
+    state.results = await api(query)
+    state.loading = false
+  }
+  return { state, type }
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const box = createSearchBox(searchApi)
+const p1 = box.type('a')
+await sleep(5)
+const p2 = box.type('ab')
+await p2
+const afterLatest = { ...box.state }
+await p1
+const afterStale = { ...box.state }
+
+const box2 = createSearchBox(searchApi)
+const q1 = box2.type('ab')
+await sleep(5)
+const q2 = box2.type('x')
+await sleep(30)
+const whileWaiting = { ...box2.state }
+await Promise.allSettled([q1, q2])
+
+const box3 = createSearchBox(searchApi)
+const r1 = box3.type('err')
+const r2 = box3.type('good')
+await Promise.allSettled([r1, r2])
+const afterStaleError = { ...box3.state }
+const r3 = box3.type('err')
+const settledAs = await r3.then(() => 'fulfilled', () => 'rejected')
+const afterError = { ...box3.state }
+const results = { afterLatest, afterStale, whileWaiting, afterStaleError, afterError, settledAs }
+--- solution
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// A pretend search API: one-letter queries are slow, and 'err' fails.
+async function searchApi(query) {
+  await sleep(query.length === 1 ? 60 : 20)
+  if (query === 'err') throw new Error('search failed')
+  return [`${query}-1`, `${query}-2`]
+}
+
+function createSearchBox(api) {
+  const state = { query: '', results: [], loading: false, error: null }
+  let latest = 0
+  async function type(query) {
+    const id = ++latest
+    state.query = query
+    state.loading = true
+    try {
+      const found = await api(query)
+      if (id !== latest) return
+      state.results = found
+      state.error = null
+    } catch (err) {
+      if (id !== latest) return
+      state.results = []
+      state.error = err.message
+    } finally {
+      if (id === latest) state.loading = false
+    }
+  }
+  return { state, type }
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const box = createSearchBox(searchApi)
+const p1 = box.type('a')
+await sleep(5)
+const p2 = box.type('ab')
+await p2
+const afterLatest = { ...box.state }
+await p1
+const afterStale = { ...box.state }
+
+const box2 = createSearchBox(searchApi)
+const q1 = box2.type('ab')
+await sleep(5)
+const q2 = box2.type('x')
+await sleep(30)
+const whileWaiting = { ...box2.state }
+await Promise.allSettled([q1, q2])
+
+const box3 = createSearchBox(searchApi)
+const r1 = box3.type('err')
+const r2 = box3.type('good')
+await Promise.allSettled([r1, r2])
+const afterStaleError = { ...box3.state }
+const r3 = box3.type('err')
+const settledAs = await r3.then(() => 'fulfilled', () => 'rejected')
+const afterError = { ...box3.state }
+const results = { afterLatest, afterStale, whileWaiting, afterStaleError, afterError, settledAs }
+--- hint
+Reproduce it with logs: number each call and print when it starts and when its response arrives. The "done" lines come back in a different order.
+--- hint
+Keep `let latest = 0` in the closure. Each call does `const id = ++latest`; after the `await`, if `id !== latest`, return without touching `state`.
+--- hint
+Use `try`/`catch`/`finally`: set results or the error only for the latest id, and switch `loading` off in `finally` only when `id === latest`. Catching the error also stops `type` from rejecting.
+--- check case | The latest query's results are shown
+results.afterLatest
+=> { query: 'ab', results: ['ab-1', 'ab-2'], loading: false, error: null }
+--- check case | A late, stale response does not overwrite them
+results.afterStale
+=> { query: 'ab', results: ['ab-1', 'ab-2'], loading: false, error: null }
+?? The response for 'a' arrives after the one for 'ab'. Only the latest request may write to state.
+--- check case | Still loading while the latest query is out, even after an older one returns
+results.whileWaiting
+=> { query: 'x', results: [], loading: true, error: null }
+--- check case | A stale failure does not wipe out good results
+results.afterStaleError
+=> { query: 'good', results: ['good-1', 'good-2'], loading: false, error: null }
+--- check case | The latest failure is shown
+results.afterError
+=> { query: 'err', results: [], loading: false, error: 'search failed' }
+--- check case | type never rejects
+results.settledAs
+=> 'fulfilled'
+
+=== js4-14 | Generators as coroutines
+--- teach
+So far generators have only handed values **out**. But `next(value)` can also send a value **in**: it becomes the result of the `yield` expression the generator is paused at. A function that can pause, receive a value, and carry on is a **coroutine**.
+
+```js
+function* greeter() {
+  const name = yield 'What is your name?'
+  const mood = yield `Hi ${name}! How are you?`
+  return `Glad you are ${mood}.`
+}
+const g = greeter()
+g.next().value          // 'What is your name?' — runs to the first yield
+g.next('Ada').value     // 'Hi Ada! How are you?' — 'Ada' became the first yield's value
+g.next('well').value    // 'Glad you are well.'
+```
+
+Notice the first `next()` carries no value: it only starts the generator and runs it up to the first `yield` (this is called **priming**). There is also `g.throw(err)`, which resumes the generator by throwing `err` *at* the paused `yield` — so a `try`/`catch` inside the generator can handle it.
+
+Coroutines let you write something stateful — a running average, a parser, a game loop — as straight-line code that keeps its variables between inputs.
+
+They are also how `async`/`await` was prototyped. Imagine a generator that `yield`s promises. A small **runner** takes each yielded promise, waits for it, and sends the result back in with `next(result)` — or, if it rejected, calls `throw(error)` on the generator. From the generator's point of view, `const user = yield fetchUser(1)` reads exactly like `const user = await fetchUser(1)`. Libraries such as `co` and redux-saga work this way, and it is still useful whenever you want to control *how* the waiting happens — to cancel, retry, log, or test async flows without real time.
+
+The runner's loop, in words: call `step = gen.next(value)` (or `gen.throw(error)`); if `step.done`, fulfil with `step.value`; otherwise wait for `step.value` (wrap it in `Promise.resolve` so plain values work too), then loop with the outcome. If `next` or `throw` itself throws — the generator did not catch it — reject.
+--- task
+Write:
+
+- `function* averager()` — a coroutine for a running average. Its first `yield` produces `null` (priming). After that, each number sent in with `next(n)` makes it yield the average of all numbers sent so far.
+- `run(genFn, ...args)` — calls `genFn(...args)` to get a generator and drives it: each yielded value is awaited (plain values too) and sent back in; a rejection is thrown into the generator with `throw`. Returns a promise that fulfils with the generator's return value, or rejects if the generator throws an error it does not catch.
+
+Keep the test drive at the end.
+--- starter
+function* averager() {}
+
+async function run(genFn, ...args) {
+  return genFn(...args).next().value
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const fetchNumber = (n) => sleep(10).then(() => n)
+const fail = () => sleep(5).then(() => {
+  throw new Error('nope')
+})
+const results = {
+  sum: await run(function* (start) {
+    const a = yield fetchNumber(start)
+    const b = yield fetchNumber(a + 1)
+    const c = yield 5
+    return a + b + c
+  }, 1).catch((e) => `rejected: ${e.message}`),
+  recovered: await run(function* () {
+    try {
+      yield fail()
+      return 'not caught'
+    } catch (e) {
+      return `caught ${e.message}`
+    }
+  }).catch((e) => `rejected: ${e.message}`),
+  escaped: await run(function* () {
+    yield fail()
+    return 'unreachable'
+  }).catch((e) => `rejected: ${e.message}`),
+  early: await run(function* () {
+    throw new Error('early')
+  }).catch((e) => `rejected: ${e.message}`),
+}
+--- solution
+function* averager() {
+  let total = 0
+  let count = 0
+  let n = yield null
+  while (true) {
+    total += n
+    count++
+    n = yield total / count
+  }
+}
+
+function run(genFn, ...args) {
+  return new Promise((resolve, reject) => {
+    let gen
+    try {
+      gen = genFn(...args)
+    } catch (err) {
+      reject(err)
+      return
+    }
+    function step(method, input) {
+      let result
+      try {
+        result = gen[method](input)
+      } catch (err) {
+        reject(err)
+        return
+      }
+      if (result.done) {
+        resolve(result.value)
+        return
+      }
+      Promise.resolve(result.value).then(
+        (value) => step('next', value),
+        (error) => step('throw', error),
+      )
+    }
+    step('next', undefined)
+  })
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const fetchNumber = (n) => sleep(10).then(() => n)
+const fail = () => sleep(5).then(() => {
+  throw new Error('nope')
+})
+const results = {
+  sum: await run(function* (start) {
+    const a = yield fetchNumber(start)
+    const b = yield fetchNumber(a + 1)
+    const c = yield 5
+    return a + b + c
+  }, 1).catch((e) => `rejected: ${e.message}`),
+  recovered: await run(function* () {
+    try {
+      yield fail()
+      return 'not caught'
+    } catch (e) {
+      return `caught ${e.message}`
+    }
+  }).catch((e) => `rejected: ${e.message}`),
+  escaped: await run(function* () {
+    yield fail()
+    return 'unreachable'
+  }).catch((e) => `rejected: ${e.message}`),
+  early: await run(function* () {
+    throw new Error('early')
+  }).catch((e) => `rejected: ${e.message}`),
+}
+--- hint
+`averager` keeps `total` and `count`. Start with `let n = yield null`, then loop: add `n`, and `n = yield total / count`.
+--- hint
+`run` returns a `new Promise`. Inside, a `step(method, input)` function calls `gen[method](input)` — `method` is `'next'` or `'throw'` — inside a `try`, rejecting if it throws.
+--- hint
+If the step is `done`, resolve with its value. Otherwise `Promise.resolve(result.value).then((v) => step('next', v), (e) => step('throw', e))`.
+--- check case | averager is primed with null, then averages
+(() => { const avg = averager(); return [avg.next().value, avg.next(10).value, avg.next(20).value, avg.next(0).value] })()
+=> [null, 10, 15, 10]
+--- check case | Two averagers are independent
+(() => { const a = averager(); const b = averager(); a.next(); b.next(); a.next(100); return [a.next(0).value, b.next(7).value] })()
+=> [50, 7]
+--- check case | run sends awaited values back in, plain values too
+results.sum
+=> 8
+--- check case | A rejection is thrown into the generator, where it can be caught
+results.recovered
+=> 'caught nope'
+--- check case | An uncaught rejection rejects run
+results.escaped
+=> 'rejected: nope'
+--- check case | A generator that throws straight away rejects run
+results.early
+=> 'rejected: early'
+--- check test | run returns a promise
+run(function* () { return 1 }) instanceof Promise

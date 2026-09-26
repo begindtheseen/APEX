@@ -1,0 +1,3422 @@
+@track javascript
+@level projects
+@title JavaScript · Projects
+@name JavaScript projects: three builds and four capstones
+@blurb Build real programs step by step — a to-do store with undo, a text-adventure engine, a CSV report pipeline — then prove you can build from a spec alone with four capstones.
+
+=== jsp-01 | To-do store 1: the data model
+--- teach
+This course is about building whole programs with everything the three JavaScript courses taught: closures and factories, classes, promises, generators, patterns, and the debugging habits that go with them. The first one is a **to-do store**: the part of a to-do app that holds the data and enforces the rules, with no screen attached. Over four lessons it gains commands, undo and redo, and saving. Each lesson's starter is the previous lesson's solution, so you are always extending working code — the way real software grows.
+
+Every good module starts with three decisions, made before any code:
+
+1. **The data model.** A to-do is `{ id, text, done }`. The store holds a list of them, in the order added.
+2. **The invariants** — rules that must always be true. Ids are unique and **never reused**, even after a delete (otherwise an old reference could silently point at a new item). Text is never empty. `done` is always a boolean.
+3. **The interface.** What callers can do: add, toggle, remove, list. Nothing else can touch the data.
+
+A **factory function** gives you all three. The list lives in a closure, so the only way to change it is through the methods you return — and those methods are where the invariants are enforced.
+
+```js
+function createCounter() {
+  let count = 0                   // private: only the methods below can see it
+  return {
+    increment() { count++ },
+    value: () => count,
+  }
+}
+const c = createCounter()
+c.increment()
+c.value()     // 1
+```
+
+Two habits separate a solid module from a leaky one:
+
+- **Return copies, not your internal objects.** If `list()` hands out the real to-do objects, a caller can write `store.list()[0].done = 'maybe'` and break your invariants without calling any method. `todos.map((t) => ({ ...t }))` makes that impossible.
+- **Fail loudly and specifically.** Removing an id that does not exist is a bug in the caller. Throwing `no todo with id 7` gets it fixed; silently doing nothing hides it.
+--- task
+Write `createTodoStore()`. It returns an object with:
+
+- `add(text)` — trims `text`; throws `new Error('text is required')` if nothing is left. Otherwise adds `{ id, text, done: false }` with ids counting 1, 2, 3, … (never reused) and returns the new id.
+- `toggle(id)` — flips `done`. Throws `new Error('no todo with id <id>')` if there is no such to-do.
+- `remove(id)` — deletes the to-do, with the same error for an unknown id.
+- `list(filter = 'all')` — copies of the to-dos in the order added: `'all'`, `'open'` (not done) or `'done'`. Any other filter throws an `Error`.
+--- starter
+function createTodoStore() {
+  const todos = []
+  return {
+    add(text) {},
+    toggle(id) {},
+    remove(id) {},
+    list(filter = 'all') {
+      return todos
+    },
+  }
+}
+--- solution
+function createTodoStore() {
+  const todos = []
+  let nextId = 1
+
+  function find(id) {
+    const todo = todos.find((t) => t.id === id)
+    if (!todo) throw new Error(`no todo with id ${id}`)
+    return todo
+  }
+
+  return {
+    add(text) {
+      const clean = String(text ?? '').trim()
+      if (!clean) throw new Error('text is required')
+      const todo = { id: nextId++, text: clean, done: false }
+      todos.push(todo)
+      return todo.id
+    },
+    toggle(id) {
+      const todo = find(id)
+      todo.done = !todo.done
+    },
+    remove(id) {
+      const todo = find(id)
+      todos.splice(todos.indexOf(todo), 1)
+    },
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+  }
+}
+--- hint
+Keep `todos` and `let nextId = 1` inside the factory. `add` builds `{ id: nextId++, text: clean, done: false }`.
+--- hint
+A small inner helper `find(id)` that throws when the to-do is missing serves both `toggle` and `remove`.
+--- hint
+`list` filters, then copies each to-do with `.map((t) => ({ ...t }))`.
+--- check case | add returns 1, 2, …
+(() => { const s = createTodoStore(); return [s.add('milk'), s.add('eggs')] })()
+=> [1, 2]
+--- check case | list shows the to-dos, text trimmed
+(() => { const s = createTodoStore(); s.add('  milk '); s.add('eggs'); return s.list() })()
+=> [{ id: 1, text: 'milk', done: false }, { id: 2, text: 'eggs', done: false }]
+--- check case | toggle, and the open and done filters
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.add('c'); s.toggle(2); s.toggle(3); s.toggle(3); return [s.list('done').map((t) => t.id), s.list('open').map((t) => t.id)] })()
+=> [[2], [1, 3]]
+--- check case | remove, and ids are never reused
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.remove(2); return [s.add('c'), s.list().map((t) => t.id)] })()
+=> [3, [1, 3]]
+--- check case | Clear errors
+(() => { const s = createTodoStore(); const msg = (f) => { try { f(); return 'no error' } catch (e) { return e.message } }; return [msg(() => s.add('   ')), msg(() => s.toggle(99)), msg(() => s.remove(99))] })()
+=> ['text is required', 'no todo with id 99', 'no todo with id 99']
+--- check test | An unknown filter throws
+throws(() => createTodoStore().list('later'))
+--- check case | list hands out copies
+(() => { const s = createTodoStore(); s.add('a'); s.list()[0].text = 'hacked'; s.list().push({}); return s.list() })()
+=> [{ id: 1, text: 'a', done: false }]
+--- check case | Two stores are independent
+(() => { const a = createTodoStore(); const b = createTodoStore(); a.add('x'); return [b.list(), b.add('y')] })()
+=> [[], 1]
+
+=== jsp-02 | To-do store 2: every change is a command
+--- teach
+Next the store will get undo and redo. Before writing a single line of undo, change the **shape** of the code so undo becomes easy. This is the **command pattern**: every change is an object that knows how to **do** itself and how to **undo** itself.
+
+```js
+function setColour(colour) {
+  let previous
+  return {
+    do(state) { previous = state.colour; state.colour = colour },
+    undo(state) { state.colour = previous },
+  }
+}
+const state = { colour: 'red' }
+const cmd = setColour('blue')
+cmd.do(state)
+state.colour     // 'blue'
+cmd.undo(state)
+state.colour     // 'red'
+```
+
+The key idea: a command **remembers whatever it needs to reverse itself**, and it captures that information when it runs, not when it is created. A remove command remembers the item it removed *and the position it was at*, so undo can put it back in exactly the same place. An add command remembers the id it assigned, so that doing it again (redo) recreates the same to-do rather than a new one with a different id.
+
+The store then becomes a thin shell: each public method builds a command and passes it to one `execute(command)` function, which runs it and records it in a **history** list. All the knowledge about how to change things lives in the commands; the store only coordinates.
+
+Refactoring like this is a design skill in itself. The public behaviour does not change at all — every check from the last lesson must still pass — while the inside is rearranged so the next feature is a small addition instead of a rewrite. Validate when the command is **created** (empty text) or at the start of `do` (unknown id), before anything changes, so a failed command never half-happens and never lands in the history.
+--- task
+Starting from your store, write three command factories. Each takes its arguments and returns `{ do(state), undo(state) }`, where `state` is `{ todos, nextId }`:
+
+- `addCommand(text)` — throws `'text is required'` straight away for empty text. `do` adds the to-do (taking `state.nextId++` the first time, and reusing that same id if done again) and returns the id; `undo` removes it.
+- `toggleCommand(id)` — `do` and `undo` both flip `done`.
+- `removeCommand(id)` — `do` removes the to-do, remembering it and its position; `undo` puts it back at that position.
+
+Unknown ids throw `'no todo with id <id>'` from `do`. Then rebuild `createTodoStore()` on top of them: keep `state` inside, route `add`, `toggle` and `remove` through an `execute(command)` that runs `do` and pushes the command onto a history list, and add `historySize()` — how many commands have succeeded. Everything from the last lesson must still work.
+--- starter
+function createTodoStore() {
+  const todos = []
+  let nextId = 1
+
+  function find(id) {
+    const todo = todos.find((t) => t.id === id)
+    if (!todo) throw new Error(`no todo with id ${id}`)
+    return todo
+  }
+
+  return {
+    add(text) {
+      const clean = String(text ?? '').trim()
+      if (!clean) throw new Error('text is required')
+      const todo = { id: nextId++, text: clean, done: false }
+      todos.push(todo)
+      return todo.id
+    },
+    toggle(id) {
+      const todo = find(id)
+      todo.done = !todo.done
+    },
+    remove(id) {
+      const todo = find(id)
+      todos.splice(todos.indexOf(todo), 1)
+    },
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+  }
+}
+--- solution
+function findIndex(state, id) {
+  const i = state.todos.findIndex((t) => t.id === id)
+  if (i < 0) throw new Error(`no todo with id ${id}`)
+  return i
+}
+
+function cleanText(text) {
+  const clean = String(text ?? '').trim()
+  if (!clean) throw new Error('text is required')
+  return clean
+}
+
+function addCommand(text) {
+  const clean = cleanText(text)
+  let id = null
+  return {
+    do(state) {
+      if (id === null) id = state.nextId++
+      state.todos.push({ id, text: clean, done: false })
+      return id
+    },
+    undo(state) {
+      state.todos.splice(findIndex(state, id), 1)
+    },
+  }
+}
+
+function toggleCommand(id) {
+  const flip = (state) => {
+    const todo = state.todos[findIndex(state, id)]
+    todo.done = !todo.done
+  }
+  return { do: flip, undo: flip }
+}
+
+function removeCommand(id) {
+  let index = -1
+  let removed = null
+  return {
+    do(state) {
+      index = findIndex(state, id)
+      removed = state.todos.splice(index, 1)[0]
+    },
+    undo(state) {
+      state.todos.splice(index, 0, removed)
+    },
+  }
+}
+
+function createTodoStore() {
+  const state = { todos: [], nextId: 1 }
+  const history = []
+
+  function execute(command) {
+    const result = command.do(state)
+    history.push(command)
+    return result
+  }
+
+  return {
+    add: (text) => execute(addCommand(text)),
+    toggle: (id) => execute(toggleCommand(id)),
+    remove: (id) => execute(removeCommand(id)),
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return state.todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+    historySize: () => history.length,
+  }
+}
+--- hint
+Move the index-finding into a helper `findIndex(state, id)` that throws for a missing id; every command can use it.
+--- hint
+`addCommand` keeps `let id = null` in its closure: `do` sets it from `state.nextId++` only if it is still `null`.
+--- hint
+`removeCommand`'s `do` stores `index` and the removed to-do (`state.todos.splice(index, 1)[0]`); `undo` calls `state.todos.splice(index, 0, removed)`.
+--- check case | addCommand does and undoes
+(() => { const s = { todos: [], nextId: 1 }; const c = addCommand(' milk '); const id = c.do(s); const after = s.todos.map((t) => t.text); c.undo(s); return [id, after, s.todos, s.nextId] })()
+=> [1, ['milk'], [], 2]
+--- check case | Doing an add again reuses its id
+(() => { const s = { todos: [], nextId: 1 }; const c = addCommand('x'); c.do(s); c.undo(s); return [c.do(s), s.nextId] })()
+=> [1, 2]
+--- check case | removeCommand puts the to-do back where it was
+(() => { const s = { todos: [{ id: 1, text: 'a', done: false }, { id: 2, text: 'b', done: true }, { id: 3, text: 'c', done: false }], nextId: 4 }; const c = removeCommand(2); c.do(s); const after = s.todos.map((t) => t.id); c.undo(s); return [after, s.todos] })()
+=> [[1, 3], [{ id: 1, text: 'a', done: false }, { id: 2, text: 'b', done: true }, { id: 3, text: 'c', done: false }]]
+--- check case | toggleCommand flips and flips back
+(() => { const s = { todos: [{ id: 1, text: 'a', done: false }], nextId: 2 }; const c = toggleCommand(1); c.do(s); const after = s.todos[0].done; c.undo(s); return [after, s.todos[0].done] })()
+=> [true, false]
+--- check test | Empty text fails when the command is made
+throws(() => addCommand('   '))
+--- check case | The store still behaves exactly as before
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.add('c'); s.toggle(1); s.remove(2); return [s.list(), s.list('open').map((t) => t.id), s.add('d')] })()
+=> [[{ id: 1, text: 'a', done: true }, { id: 3, text: 'c', done: false }], [3], 4]
+--- check case | Only successful changes enter the history
+(() => { const s = createTodoStore(); s.add('a'); try { s.add('') } catch {}; try { s.toggle(42) } catch {}; s.toggle(1); return [s.historySize(), s.list()] })()
+=> [2, [{ id: 1, text: 'a', done: true }]]
+
+=== jsp-03 | To-do store 3: undo and redo
+--- teach
+With every change already a command, undo and redo are two stacks and a few lines.
+
+- **Undo**: pop the last command off the history, call its `undo`, and push it onto a **redo** stack.
+- **Redo**: pop from the redo stack, call `do` again, and push it back onto the history.
+- **Any new change clears the redo stack.** If you undo "add milk", then add "eggs", redoing "add milk" would replay a change on top of a state it was never made for. Every editor you have used behaves this way: type after undoing, and the redo is gone.
+
+```
+history: [add a, add b]   redo: []
+undo  →  history: [add a]          redo: [add b]
+redo  →  history: [add a, add b]   redo: []
+undo, then add c
+      →  history: [add a, add c]   redo: []     (add b is gone for good)
+```
+
+This is why the design work in the last lesson mattered: the commands already remember what they need, so undoing a remove really does put the to-do back **in its old position**, and redoing an add recreates it **with its old id**. Notice too what does *not* happen: an undone add does not give its id back. Ids are never reused, so after "add, undo, add" the second to-do gets id 2 — which keeps any saved reference to id 1 from silently pointing at a different to-do.
+
+Return `true` or `false` from `undo` and `redo` to say whether anything happened, and offer `canUndo()` / `canRedo()` so a user interface can grey out its buttons. It is tempting to throw when there is nothing to undo, but pressing undo on an empty history is a normal thing for a user to do, not a bug.
+--- task
+Add to the store:
+
+- `undo()` — undoes the most recent change still in the history and returns `true`, or returns `false` if there is nothing to undo.
+- `redo()` — re-does the most recently undone change and returns `true`, or `false` if there is nothing to redo.
+- `canUndo()` and `canRedo()` — booleans.
+
+Any successful new change (add, toggle or remove) empties the redo stack. Undo and redo must restore the exact previous state: positions, ids and `done` flags.
+--- starter
+function findIndex(state, id) {
+  const i = state.todos.findIndex((t) => t.id === id)
+  if (i < 0) throw new Error(`no todo with id ${id}`)
+  return i
+}
+
+function cleanText(text) {
+  const clean = String(text ?? '').trim()
+  if (!clean) throw new Error('text is required')
+  return clean
+}
+
+function addCommand(text) {
+  const clean = cleanText(text)
+  let id = null
+  return {
+    do(state) {
+      if (id === null) id = state.nextId++
+      state.todos.push({ id, text: clean, done: false })
+      return id
+    },
+    undo(state) {
+      state.todos.splice(findIndex(state, id), 1)
+    },
+  }
+}
+
+function toggleCommand(id) {
+  const flip = (state) => {
+    const todo = state.todos[findIndex(state, id)]
+    todo.done = !todo.done
+  }
+  return { do: flip, undo: flip }
+}
+
+function removeCommand(id) {
+  let index = -1
+  let removed = null
+  return {
+    do(state) {
+      index = findIndex(state, id)
+      removed = state.todos.splice(index, 1)[0]
+    },
+    undo(state) {
+      state.todos.splice(index, 0, removed)
+    },
+  }
+}
+
+function createTodoStore() {
+  const state = { todos: [], nextId: 1 }
+  const history = []
+
+  function execute(command) {
+    const result = command.do(state)
+    history.push(command)
+    return result
+  }
+
+  return {
+    add: (text) => execute(addCommand(text)),
+    toggle: (id) => execute(toggleCommand(id)),
+    remove: (id) => execute(removeCommand(id)),
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return state.todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+    historySize: () => history.length,
+  }
+}
+--- solution
+function findIndex(state, id) {
+  const i = state.todos.findIndex((t) => t.id === id)
+  if (i < 0) throw new Error(`no todo with id ${id}`)
+  return i
+}
+
+function cleanText(text) {
+  const clean = String(text ?? '').trim()
+  if (!clean) throw new Error('text is required')
+  return clean
+}
+
+function addCommand(text) {
+  const clean = cleanText(text)
+  let id = null
+  return {
+    do(state) {
+      if (id === null) id = state.nextId++
+      state.todos.push({ id, text: clean, done: false })
+      return id
+    },
+    undo(state) {
+      state.todos.splice(findIndex(state, id), 1)
+    },
+  }
+}
+
+function toggleCommand(id) {
+  const flip = (state) => {
+    const todo = state.todos[findIndex(state, id)]
+    todo.done = !todo.done
+  }
+  return { do: flip, undo: flip }
+}
+
+function removeCommand(id) {
+  let index = -1
+  let removed = null
+  return {
+    do(state) {
+      index = findIndex(state, id)
+      removed = state.todos.splice(index, 1)[0]
+    },
+    undo(state) {
+      state.todos.splice(index, 0, removed)
+    },
+  }
+}
+
+function createTodoStore() {
+  const state = { todos: [], nextId: 1 }
+  const history = []
+  const undone = []
+
+  function execute(command) {
+    const result = command.do(state)
+    history.push(command)
+    undone.length = 0
+    return result
+  }
+
+  return {
+    add: (text) => execute(addCommand(text)),
+    toggle: (id) => execute(toggleCommand(id)),
+    remove: (id) => execute(removeCommand(id)),
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return state.todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+    historySize: () => history.length,
+    undo() {
+      const command = history.pop()
+      if (!command) return false
+      command.undo(state)
+      undone.push(command)
+      return true
+    },
+    redo() {
+      const command = undone.pop()
+      if (!command) return false
+      command.do(state)
+      history.push(command)
+      return true
+    },
+    canUndo: () => history.length > 0,
+    canRedo: () => undone.length > 0,
+  }
+}
+--- hint
+Add a second array, `undone`, next to `history`. `undo` moves a command from `history` to `undone`; `redo` moves it back.
+--- hint
+In `execute`, after a command succeeds, clear the redo stack: `undone.length = 0`.
+--- check case | Undo an add, then redo it with the same id
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); const u = s.undo(); const afterUndo = s.list().map((t) => t.text); const r = s.redo(); return [u, afterUndo, r, s.list()] })()
+=> [true, ['a'], true, [{ id: 1, text: 'a', done: false }, { id: 2, text: 'b', done: false }]]
+--- check case | Undoing a remove restores the position
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.add('c'); s.remove(2); s.undo(); return s.list().map((t) => t.id) })()
+=> [1, 2, 3]
+--- check case | Undo a toggle
+(() => { const s = createTodoStore(); s.add('a'); s.toggle(1); s.undo(); return s.list()[0].done })()
+=> false
+--- check case | Nothing to undo or redo
+(() => { const s = createTodoStore(); return [s.undo(), s.redo(), s.canUndo(), s.canRedo()] })()
+=> [false, false, false, false]
+--- check case | A new change clears redo, and ids are not reused
+(() => { const s = createTodoStore(); s.add('a'); s.undo(); s.add('b'); return [s.redo(), s.canRedo(), s.list().map((t) => [t.id, t.text])] })()
+=> [false, false, [[2, 'b']]]
+--- check case | Undo everything, then redo everything
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.toggle(1); s.remove(2); while (s.undo()) {}; const empty = s.list(); while (s.redo()) {}; return [empty, s.list()] })()
+=> [[], [{ id: 1, text: 'a', done: true }]]
+--- check case | canUndo and canRedo follow along
+(() => { const s = createTodoStore(); s.add('a'); const one = [s.canUndo(), s.canRedo()]; s.undo(); return [one, [s.canUndo(), s.canRedo()]] })()
+=> [[true, false], [false, true]]
+
+=== jsp-04 | To-do store 4: renaming, saving and loading
+--- teach
+Two last features finish the store, and each tests the design from a different side.
+
+**Renaming** is a new kind of change. With the command pattern, adding it touches nothing that exists: write `renameCommand(id, text)` — it remembers the old text when it runs, and puts it back on undo — and add one line to the store. Undo and redo work for it immediately. That is the payoff of the pattern: new features are additions, not edits.
+
+**Saving** is about the boundary between your program and the outside world. `JSON.stringify` turns the state into text you could put in a file or `localStorage`; loading turns the text back into state. Decide deliberately what belongs in a save:
+
+- The to-dos, obviously.
+- `nextId` too — **not** "the largest id plus one". If you delete the newest to-do and reload, recomputing from the remaining ids would hand out a deleted id again and break the never-reused rule.
+- **Not** the undo history. Commands are objects full of functions and closures; they do not survive JSON, and "undo" after a reload would mean something strange anyway.
+
+Loading is where you must be **defensive**. The text may be from an old version, hand-edited, or truncated:
+
+```js
+function safeParse(text) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+safeParse('{"ok": true}')   // { ok: true }
+safeParse('{"ok": tr')      // null
+```
+
+Parsing is not enough: check the **shape** — an object, with an array of to-dos, each with the right types, and an integer `nextId`. If anything is wrong, throw one clear error rather than letting a half-valid object into the store to cause confusing failures later. And copy what you load field by field, so unknown extra fields in the file do not leak into your state.
+--- task
+Add:
+
+- `renameCommand(id, text)` — throws `'text is required'` for empty text when created; `do` sets the trimmed text (throwing `'no todo with id <id>'` for an unknown id) and `undo` restores the old text. The store gets `rename(id, text)`, undoable like the others.
+- `save()` — returns a JSON string of `{ todos, nextId }` (no history).
+- `createTodoStore(saved)` — with no argument, an empty store as before; given a string from `save()`, a store with that state and an empty history. If the text is not valid JSON, or is not an object with a `todos` array (each with an integer `id`, a string `text` and a boolean `done`) and an integer `nextId`, throw `new Error('corrupt save')`.
+--- starter
+function findIndex(state, id) {
+  const i = state.todos.findIndex((t) => t.id === id)
+  if (i < 0) throw new Error(`no todo with id ${id}`)
+  return i
+}
+
+function cleanText(text) {
+  const clean = String(text ?? '').trim()
+  if (!clean) throw new Error('text is required')
+  return clean
+}
+
+function addCommand(text) {
+  const clean = cleanText(text)
+  let id = null
+  return {
+    do(state) {
+      if (id === null) id = state.nextId++
+      state.todos.push({ id, text: clean, done: false })
+      return id
+    },
+    undo(state) {
+      state.todos.splice(findIndex(state, id), 1)
+    },
+  }
+}
+
+function toggleCommand(id) {
+  const flip = (state) => {
+    const todo = state.todos[findIndex(state, id)]
+    todo.done = !todo.done
+  }
+  return { do: flip, undo: flip }
+}
+
+function removeCommand(id) {
+  let index = -1
+  let removed = null
+  return {
+    do(state) {
+      index = findIndex(state, id)
+      removed = state.todos.splice(index, 1)[0]
+    },
+    undo(state) {
+      state.todos.splice(index, 0, removed)
+    },
+  }
+}
+
+function createTodoStore() {
+  const state = { todos: [], nextId: 1 }
+  const history = []
+  const undone = []
+
+  function execute(command) {
+    const result = command.do(state)
+    history.push(command)
+    undone.length = 0
+    return result
+  }
+
+  return {
+    add: (text) => execute(addCommand(text)),
+    toggle: (id) => execute(toggleCommand(id)),
+    remove: (id) => execute(removeCommand(id)),
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return state.todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+    historySize: () => history.length,
+    undo() {
+      const command = history.pop()
+      if (!command) return false
+      command.undo(state)
+      undone.push(command)
+      return true
+    },
+    redo() {
+      const command = undone.pop()
+      if (!command) return false
+      command.do(state)
+      history.push(command)
+      return true
+    },
+    canUndo: () => history.length > 0,
+    canRedo: () => undone.length > 0,
+  }
+}
+--- solution
+function findIndex(state, id) {
+  const i = state.todos.findIndex((t) => t.id === id)
+  if (i < 0) throw new Error(`no todo with id ${id}`)
+  return i
+}
+
+function cleanText(text) {
+  const clean = String(text ?? '').trim()
+  if (!clean) throw new Error('text is required')
+  return clean
+}
+
+function addCommand(text) {
+  const clean = cleanText(text)
+  let id = null
+  return {
+    do(state) {
+      if (id === null) id = state.nextId++
+      state.todos.push({ id, text: clean, done: false })
+      return id
+    },
+    undo(state) {
+      state.todos.splice(findIndex(state, id), 1)
+    },
+  }
+}
+
+function toggleCommand(id) {
+  const flip = (state) => {
+    const todo = state.todos[findIndex(state, id)]
+    todo.done = !todo.done
+  }
+  return { do: flip, undo: flip }
+}
+
+function removeCommand(id) {
+  let index = -1
+  let removed = null
+  return {
+    do(state) {
+      index = findIndex(state, id)
+      removed = state.todos.splice(index, 1)[0]
+    },
+    undo(state) {
+      state.todos.splice(index, 0, removed)
+    },
+  }
+}
+
+function renameCommand(id, text) {
+  const clean = cleanText(text)
+  let before = null
+  return {
+    do(state) {
+      const todo = state.todos[findIndex(state, id)]
+      before = todo.text
+      todo.text = clean
+    },
+    undo(state) {
+      state.todos[findIndex(state, id)].text = before
+    },
+  }
+}
+
+function loadState(saved) {
+  let data
+  try {
+    data = JSON.parse(saved)
+  } catch {
+    throw new Error('corrupt save')
+  }
+  const ok =
+    data !== null &&
+    typeof data === 'object' &&
+    Array.isArray(data.todos) &&
+    Number.isInteger(data.nextId) &&
+    data.todos.every((t) => Number.isInteger(t?.id) && typeof t.text === 'string' && typeof t.done === 'boolean')
+  if (!ok) throw new Error('corrupt save')
+  return { todos: data.todos.map(({ id, text, done }) => ({ id, text, done })), nextId: data.nextId }
+}
+
+function createTodoStore(saved) {
+  const state = saved === undefined ? { todos: [], nextId: 1 } : loadState(saved)
+  const history = []
+  const undone = []
+
+  function execute(command) {
+    const result = command.do(state)
+    history.push(command)
+    undone.length = 0
+    return result
+  }
+
+  return {
+    add: (text) => execute(addCommand(text)),
+    toggle: (id) => execute(toggleCommand(id)),
+    remove: (id) => execute(removeCommand(id)),
+    rename: (id, text) => execute(renameCommand(id, text)),
+    save: () => JSON.stringify({ todos: state.todos, nextId: state.nextId }),
+    list(filter = 'all') {
+      if (!['all', 'open', 'done'].includes(filter)) throw new Error(`unknown filter: ${filter}`)
+      return state.todos
+        .filter((t) => filter === 'all' || (filter === 'done' ? t.done : !t.done))
+        .map((t) => ({ ...t }))
+    },
+    historySize: () => history.length,
+    undo() {
+      const command = history.pop()
+      if (!command) return false
+      command.undo(state)
+      undone.push(command)
+      return true
+    },
+    redo() {
+      const command = undone.pop()
+      if (!command) return false
+      command.do(state)
+      history.push(command)
+      return true
+    },
+    canUndo: () => history.length > 0,
+    canRedo: () => undone.length > 0,
+  }
+}
+--- hint
+`renameCommand` looks just like `toggleCommand`, except that `do` saves `before = todo.text` before overwriting it, and `undo` writes `before` back.
+--- hint
+Write a `loadState(saved)` helper: `JSON.parse` inside `try`/`catch`, then check the shape, then build a fresh `{ todos, nextId }`. Throw `'corrupt save'` for any problem.
+--- hint
+`save` is `JSON.stringify({ todos: state.todos, nextId: state.nextId })`. In `createTodoStore(saved)`, use `saved === undefined` to decide between a new state and `loadState(saved)`.
+--- check case | rename, and undo it
+(() => { const s = createTodoStore(); s.add('milk'); s.rename(1, '  oat milk '); const after = s.list()[0].text; s.undo(); const undone = s.list()[0].text; s.redo(); return [after, undone, s.list()[0].text] })()
+=> ['oat milk', 'milk', 'oat milk']
+--- check case | Bad renames fail and are not recorded
+(() => { const s = createTodoStore(); s.add('a'); const msg = (f) => { try { f(); return 'no error' } catch (e) { return e.message } }; return [msg(() => s.rename(1, ' ')), msg(() => s.rename(7, 'x')), s.historySize()] })()
+=> ['text is required', 'no todo with id 7', 1]
+--- check case | save is JSON with the to-dos and nextId
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.toggle(1); s.remove(2); return JSON.parse(s.save()) })()
+=> { todos: [{ id: 1, text: 'a', done: true }], nextId: 3 }
+--- check case | A loaded store has the state, no history, and keeps counting ids
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.remove(2); const t = createTodoStore(s.save()); const fresh = [t.canUndo(), t.canRedo()]; return [t.list(), fresh, t.add('c')] })()
+=> [[{ id: 1, text: 'a', done: false }], [false, false], 3]
+--- check case | A loaded store is independent of the original
+(() => { const s = createTodoStore(); s.add('a'); const t = createTodoStore(s.save()); t.toggle(1); t.add('b'); return s.list() })()
+=> [{ id: 1, text: 'a', done: false }]
+--- check case | Corrupt saves are rejected
+['{oops', '[]', 'null', '{"todos": 5, "nextId": 1}', '{"todos": [{"id": "1", "text": "a", "done": false}], "nextId": 2}'].map((text) => { try { createTodoStore(text); return 'loaded' } catch (e) { return e.message } })
+=> ['corrupt save', 'corrupt save', 'corrupt save', 'corrupt save', 'corrupt save']
+--- check case | Everything from before still works
+(() => { const s = createTodoStore(); s.add('a'); s.add('b'); s.toggle(2); s.undo(); s.remove(1); s.undo(); return [s.list(), s.list('done')] })()
+=> [[{ id: 1, text: 'a', done: false }, { id: 2, text: 'b', done: false }], []]
+
+=== jsp-05 | Adventure engine 1: a state machine
+--- teach
+The second build is a text-adventure engine. Underneath any game, wizard, checkout flow, network protocol or traffic light is the same structure: a **finite state machine**. You will build a reusable one first, then the game on top of it.
+
+A state machine has:
+
+- a set of **states** — exactly one of which is current (a door is `closed`, `open` or `locked`);
+- **events** that can happen (`OPEN`, `CLOSE`, `LOCK`, `UNLOCK`);
+- **transitions**: in state X, event E moves you to state Y. An event with no transition in the current state is simply ignored.
+
+The powerful move is to write the machine as **data**:
+
+```js
+const door = {
+  initial: 'closed',
+  states: {
+    closed: { on: { OPEN: 'open', LOCK: 'locked' } },
+    open: { on: { CLOSE: 'closed' } },
+    locked: { on: { UNLOCK: 'closed' } },
+  },
+}
+```
+
+Compare this with a tangle of booleans — `isOpen`, `isLocked` — where nothing stops both being true. A state machine makes **impossible states impossible**: there is no way to be open and locked at once, because there is no such state. And an illegal action (opening a locked door) cannot happen, because there is no transition for it.
+
+A generic engine reads the config and does the bookkeeping: tracks the current state, looks up transitions, and **validates the config when the machine is created**. A typo in a target state name should fail immediately with a clear message, not strand a player in a state that does not exist three hours into a game. That habit — checking configuration up front — pays off in every data-driven system you will build.
+
+One detail: look transitions up with `Object.hasOwn(on, event)`, not `on[event]`. Otherwise an event called `toString` or `constructor` finds something on `Object.prototype`.
+--- task
+Write `createMachine({ initial, states })`, where each state may have `on`, an object mapping event names to target state names. It returns:
+
+- a `state` getter — the current state's name;
+- `can(event)` — `true` if the current state has a transition for `event`;
+- `send(event)` — follows the transition if there is one (otherwise does nothing) and returns the current state;
+- `history()` — a copy of the list of states the machine has been in, starting with `initial`, adding one for every transition taken.
+
+When created, it throws `new Error('unknown state: <name>')` if `initial` or any transition's target is not one of the states.
+
+Also define `const doorConfig` — the door above: it starts `closed`; `OPEN` goes from closed to open, `CLOSE` from open to closed, `LOCK` from closed to locked, and `UNLOCK` from locked to closed.
+--- starter
+function createMachine({ initial, states }) {
+  let current = initial
+  return {
+    get state() {
+      return current
+    },
+    send(event) {
+      current = states[current].on[event]
+      return current
+    },
+  }
+}
+--- solution
+function createMachine({ initial, states }) {
+  const known = (name) => Object.hasOwn(states, name)
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const target of Object.values(def.on ?? {})) {
+      if (!known(target)) throw new Error(`unknown state: ${target}`)
+    }
+  }
+
+  let current = initial
+  const visited = [initial]
+  const can = (event) => Object.hasOwn(states[current].on ?? {}, event)
+
+  return {
+    get state() {
+      return current
+    },
+    can,
+    send(event) {
+      if (can(event)) {
+        current = states[current].on[event]
+        visited.push(current)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+
+const doorConfig = {
+  initial: 'closed',
+  states: {
+    closed: { on: { OPEN: 'open', LOCK: 'locked' } },
+    open: { on: { CLOSE: 'closed' } },
+    locked: { on: { UNLOCK: 'closed' } },
+  },
+}
+--- hint
+Validate first: check `initial`, then loop over every state's `on` values and check each target with `Object.hasOwn(states, target)`.
+--- hint
+`can(event)` is `Object.hasOwn(states[current].on ?? {}, event)`; `send` uses it, and pushes the new state onto a `visited` list.
+--- hint
+Write `can` as a local function so `send` can call it without relying on `this`.
+--- check case | The door starts closed
+createMachine(doorConfig).state
+=> 'closed'
+--- check case | Transitions follow the table; others are ignored
+(() => { const m = createMachine(doorConfig); return [m.send('OPEN'), m.send('LOCK'), m.send('CLOSE'), m.send('LOCK'), m.send('OPEN'), m.send('UNLOCK')] })()
+=> ['open', 'open', 'closed', 'locked', 'locked', 'closed']
+--- check case | can reports what is possible now
+(() => { const m = createMachine(doorConfig); return [m.can('OPEN'), m.can('CLOSE'), m.can('UNLOCK'), m.can('toString')] })()
+=> [true, false, false, false]
+--- check case | history records real transitions only
+(() => { const m = createMachine(doorConfig); m.send('OPEN'); m.send('OPEN'); m.send('CLOSE'); m.send('LOCK'); const h = m.history(); h.push('hacked'); return m.history() })()
+=> ['closed', 'open', 'closed', 'locked']
+--- check case | A bad config fails when the machine is created
+(() => { const msg = (c) => { try { createMachine(c); return 'no error' } catch (e) { return e.message } }; return [msg({ initial: 'nowhere', states: { a: {} } }), msg({ initial: 'a', states: { a: { on: { GO: 'b' } } } })] })()
+=> ['unknown state: nowhere', 'unknown state: b']
+--- check case | A state with no transitions ignores everything
+createMachine({ initial: 'end', states: { end: {} } }).send('ANY')
+=> 'end'
+--- check case | Two machines are independent
+(() => { const a = createMachine(doorConfig); const b = createMachine(doorConfig); a.send('OPEN'); return b.state })()
+=> 'closed'
+
+=== jsp-06 | Adventure engine 2: guards, actions and context
+--- teach
+Plain transitions cannot express rules like "you can only open the vault **if you have the key**" or "after three wrong passwords, lock the account". Real state machines add three things.
+
+**Context** — data that travels with the machine: a count of attempts, coins inserted, an inventory. The *state* says which mode you are in; the *context* holds the numbers.
+
+**Guards** — a transition can carry a `guard(context, payload)` function. The transition is only taken if the guard returns something truthy. `send` gains a second argument, the event's **payload** (the password typed, the coin's value), which guards and actions receive.
+
+**Actions** — a transition can carry an `action(context, payload)` that runs when the transition is taken: increment a counter, record a time. Because guards and actions are optional, call them with optional chaining: `t.action?.(ctx, payload)` calls `action` only if the transition has one.
+
+A transition can therefore be written three ways, and a good engine accepts all of them by **normalising** them into one form before doing anything else:
+
+```js
+const forms = [
+  'open',                                                  // a plain target
+  { target: 'open', guard: (ctx) => ctx.hasKey },          // one guarded transition
+  [{ target: 'in', guard: (c, p) => p === 'secret' }, { target: 'out' }],   // options
+]
+```
+
+With an **array**, the engine tries the options in order and takes the **first whose guard passes** (an option without a guard always passes). That is how you write "if the password is right, log in; otherwise, if too many attempts, lock; otherwise stay out" as pure data.
+
+States can have an **`enter(context, payload)` hook** too, run whenever the machine enters that state — including the initial state when the machine is created, and including a transition from a state back to itself.
+
+Two design points. The machine should **copy** the context it is given, so two machines built from one config never share counters. And the order of operations should be predictable and documented: pick the transition (guards), run its action, change state, then run the new state's `enter`.
+--- task
+Extend `createMachine` so that it also takes an optional `context` (default `{}`), and:
+
+- a transition may be a target string, an object `{ target, guard?, action? }`, or an array of those; `send(event, payload)` takes the first option whose `guard(context, payload)` passes (no guard means it passes). If none passes, nothing happens.
+- when a transition is taken: run its `action(context, payload)`, change state, then run the new state's `enter(context, payload)` if it has one. The initial state's `enter(context)` runs when the machine is created.
+- `can(event, payload)` — `true` if some option would be taken.
+- a `context` getter returns the machine's context, which starts as a shallow **copy** of the one in the config.
+- creation still validates every target, in every form.
+
+Everything from the last lesson must still work.
+--- starter
+function createMachine({ initial, states }) {
+  const known = (name) => Object.hasOwn(states, name)
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const target of Object.values(def.on ?? {})) {
+      if (!known(target)) throw new Error(`unknown state: ${target}`)
+    }
+  }
+
+  let current = initial
+  const visited = [initial]
+  const can = (event) => Object.hasOwn(states[current].on ?? {}, event)
+
+  return {
+    get state() {
+      return current
+    },
+    can,
+    send(event) {
+      if (can(event)) {
+        current = states[current].on[event]
+        visited.push(current)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+--- solution
+function createMachine({ initial, states, context = {} }) {
+  const known = (name) => Object.hasOwn(states, name)
+  const options = (transition) =>
+    (Array.isArray(transition) ? transition : [transition]).map((t) => (typeof t === 'string' ? { target: t } : t))
+
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const transition of Object.values(def.on ?? {})) {
+      for (const { target } of options(transition)) {
+        if (!known(target)) throw new Error(`unknown state: ${target}`)
+      }
+    }
+  }
+
+  const ctx = { ...context }
+  let current = initial
+  const visited = [initial]
+  states[initial].enter?.(ctx)
+
+  function pick(event, payload) {
+    const on = states[current].on ?? {}
+    if (!Object.hasOwn(on, event)) return null
+    return options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null
+  }
+
+  return {
+    get state() {
+      return current
+    },
+    get context() {
+      return ctx
+    },
+    can: (event, payload) => pick(event, payload) !== null,
+    send(event, payload) {
+      const t = pick(event, payload)
+      if (t) {
+        t.action?.(ctx, payload)
+        current = t.target
+        visited.push(current)
+        states[current].enter?.(ctx, payload)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+--- hint
+Write `options(transition)`: turn a string into `[{ target: string }]`, an object into `[object]`, and map an array's string items the same way. Use it for validation and for sending.
+--- hint
+A `pick(event, payload)` helper returns `options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null` — both `can` and `send` use it.
+--- hint
+In `send`: `t.action?.(ctx, payload)`, then `current = t.target`, record it, then `states[current].enter?.(ctx, payload)`.
+--- check case | Plain string transitions still work
+createMachine({ initial: 'a', states: { a: { on: { GO: 'b' } }, b: {} } }).send('GO')
+=> 'b'
+--- check case | A guard holds the machine until it passes; actions update context
+(() => { const m = createMachine({ initial: 'idle', context: { coins: 0 }, states: { idle: { on: { COIN: { target: 'idle', action: (c, p) => { c.coins += p } }, PUSH: { target: 'open', guard: (c) => c.coins >= 2 } } }, open: {} } }); const early = [m.send('PUSH'), m.can('PUSH')]; m.send('COIN', 1); m.send('COIN', 1); return [early, m.context.coins, m.can('PUSH'), m.send('PUSH')] })()
+=> [['idle', false], 2, true, 'open']
+--- check case | The first passing option wins
+(() => { const m = createMachine({ initial: 'out', context: { attempts: 0 }, states: { out: { on: { LOGIN: [{ target: 'in', guard: (c, p) => p === 'secret', action: (c) => { c.attempts = 0 } }, { target: 'locked', guard: (c) => c.attempts >= 2 }, { target: 'out', action: (c) => { c.attempts++ } }] } }, in: { on: { LOGOUT: 'out' } }, locked: {} } }); return [m.send('LOGIN', 'x'), m.send('LOGIN', 'y'), m.context.attempts, m.send('LOGIN', 'z'), m.send('LOGIN', 'secret')] })()
+=> ['out', 'out', 2, 'locked', 'locked']
+--- check case | The right password gets in and resets the count
+(() => { const m = createMachine({ initial: 'out', context: { attempts: 0 }, states: { out: { on: { LOGIN: [{ target: 'in', guard: (c, p) => p === 'secret', action: (c) => { c.attempts = 0 } }, { target: 'out', action: (c) => { c.attempts++ } }] } }, in: {} } }); m.send('LOGIN', 'x'); return [m.send('LOGIN', 'secret'), m.context.attempts, m.history()] })()
+=> ['in', 0, ['out', 'out', 'in']]
+--- check case | enter runs for the initial state and on every entry
+(() => { const seen = []; const m = createMachine({ initial: 'a', states: { a: { enter: () => seen.push('a'), on: { NEXT: 'b', STAY: 'a' } }, b: { enter: (c, p) => seen.push('b:' + p) } } }); m.send('STAY'); m.send('NEXT', 7); return seen })()
+=> ['a', 'a', 'b:7']
+--- check case | The context is copied from the config
+(() => { const context = { n: 1 }; const m = createMachine({ initial: 'a', context, states: { a: { on: { INC: { target: 'a', action: (c) => { c.n++ } } } } } }); m.send('INC'); return [context.n, m.context.n] })()
+=> [1, 2]
+--- check case | Targets inside objects and arrays are validated
+(() => { try { createMachine({ initial: 'a', states: { a: { on: { GO: [{ target: 'a', guard: () => false }, { target: 'zz' }] } } } }); return 'no error' } catch (e) { return e.message } })()
+=> 'unknown state: zz'
+
+=== jsp-07 | Adventure engine 3: the game
+--- teach
+Now the payoff: a playable game in which the machine does the hard part. Map the game onto it:
+
+- each **room** is a **state**;
+- each **direction** (`north`, `east`, …) is an **event**;
+- each room's **exits** are its transitions.
+
+So "go north" is just `machine.send('north')`, and "is there an exit north?" is `machine.can('north')`. The engine you wrote has no idea it is running a game — which is exactly what makes it reusable.
+
+The game layer adds what is specific to adventures:
+
+**A command parser.** Players type loosely: `"  GO   North "`. Normalise first — trim, lowercase, collapse runs of spaces — then split into a verb and the rest:
+
+```js
+const words = '  GO   North '.trim().toLowerCase().split(/\s+/)
+words     // ['go', 'north']
+```
+
+Map verbs to handlers, and answer anything else with a helpful message instead of crashing.
+
+**World state.** Items lie in rooms and move into the player's inventory. The world description passed in is **data you do not own**: copy each room's item list when the game starts, rather than splicing items out of the caller's arrays. Otherwise starting a second game — or a test — finds the lamp already gone.
+
+**Text output.** Each command returns the text to show. Keep the formatting in one `look()` function so every room is described the same way; consistency is what makes a text interface pleasant.
+
+Building a game on top of a general engine — instead of writing one long `if` ladder over room names — is the same move as building a web app on a framework: the engine handles *how* things change, and your code describes *what* your particular world is.
+--- task
+Using your `createMachine` (keep it), write `createGame(world)`, where `world` is shaped like the one in the starter. It returns:
+
+- `input(line)` — normalises the line (trim, lowercase, single spaces) and returns text:
+  - `look` → the room description, then `You see: <items>.` (items in the room's order, only if there are any), then `Exits: <directions>.` (sorted), or `There are no exits.`; lines joined with `\n`.
+  - `go <direction>`, or just the direction (`north`, `south`, `east`, `west`, `up`, `down`) → moves and returns the new room's `look` text, or `You can't go <direction>.`
+  - `take <item>` → `You take the <item>.` or `There is no <item> here.`
+  - `inventory` → `You carry: <items>.` (sorted) or `You carry nothing.`
+  - anything else → `I don't understand "<line, trimmed>".`
+- a `room` getter (the current room's name) and an `inventory` getter (a sorted copy).
+
+The rooms must be the machine's states and the directions its events. Do not change `world`, in the starter or during play.
+--- starter
+function createMachine({ initial, states, context = {} }) {
+  const known = (name) => Object.hasOwn(states, name)
+  const options = (transition) =>
+    (Array.isArray(transition) ? transition : [transition]).map((t) => (typeof t === 'string' ? { target: t } : t))
+
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const transition of Object.values(def.on ?? {})) {
+      for (const { target } of options(transition)) {
+        if (!known(target)) throw new Error(`unknown state: ${target}`)
+      }
+    }
+  }
+
+  const ctx = { ...context }
+  let current = initial
+  const visited = [initial]
+  states[initial].enter?.(ctx)
+
+  function pick(event, payload) {
+    const on = states[current].on ?? {}
+    if (!Object.hasOwn(on, event)) return null
+    return options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null
+  }
+
+  return {
+    get state() {
+      return current
+    },
+    get context() {
+      return ctx
+    },
+    can: (event, payload) => pick(event, payload) !== null,
+    send(event, payload) {
+      const t = pick(event, payload)
+      if (t) {
+        t.action?.(ctx, payload)
+        current = t.target
+        visited.push(current)
+        states[current].enter?.(ctx, payload)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+
+// The checks play in this world. Do not change it.
+const world = {
+  start: 'hall',
+  rooms: {
+    hall: { description: 'A dusty hall.', exits: { north: 'library', east: 'kitchen' }, items: ['lamp'] },
+    library: { description: 'Shelves of old books.', exits: { south: 'hall' }, items: ['key', 'map'] },
+    kitchen: { description: 'A cold kitchen.', exits: { west: 'hall' } },
+  },
+}
+
+function createGame(world) {
+  return {
+    input(line) {
+      return ''
+    },
+  }
+}
+--- solution
+function createMachine({ initial, states, context = {} }) {
+  const known = (name) => Object.hasOwn(states, name)
+  const options = (transition) =>
+    (Array.isArray(transition) ? transition : [transition]).map((t) => (typeof t === 'string' ? { target: t } : t))
+
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const transition of Object.values(def.on ?? {})) {
+      for (const { target } of options(transition)) {
+        if (!known(target)) throw new Error(`unknown state: ${target}`)
+      }
+    }
+  }
+
+  const ctx = { ...context }
+  let current = initial
+  const visited = [initial]
+  states[initial].enter?.(ctx)
+
+  function pick(event, payload) {
+    const on = states[current].on ?? {}
+    if (!Object.hasOwn(on, event)) return null
+    return options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null
+  }
+
+  return {
+    get state() {
+      return current
+    },
+    get context() {
+      return ctx
+    },
+    can: (event, payload) => pick(event, payload) !== null,
+    send(event, payload) {
+      const t = pick(event, payload)
+      if (t) {
+        t.action?.(ctx, payload)
+        current = t.target
+        visited.push(current)
+        states[current].enter?.(ctx, payload)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+
+// The checks play in this world. Do not change it.
+const world = {
+  start: 'hall',
+  rooms: {
+    hall: { description: 'A dusty hall.', exits: { north: 'library', east: 'kitchen' }, items: ['lamp'] },
+    library: { description: 'Shelves of old books.', exits: { south: 'hall' }, items: ['key', 'map'] },
+    kitchen: { description: 'A cold kitchen.', exits: { west: 'hall' } },
+  },
+}
+
+const DIRECTIONS = ['north', 'south', 'east', 'west', 'up', 'down']
+
+function createGame(world) {
+  const items = {}
+  const states = {}
+  for (const [name, room] of Object.entries(world.rooms)) {
+    items[name] = [...(room.items ?? [])]
+    states[name] = { on: { ...room.exits } }
+  }
+  const machine = createMachine({ initial: world.start, states })
+  const inventory = []
+
+  function look() {
+    const room = world.rooms[machine.state]
+    const lines = [room.description]
+    const here = items[machine.state]
+    if (here.length) lines.push(`You see: ${here.join(', ')}.`)
+    const exits = Object.keys(room.exits ?? {}).sort()
+    lines.push(exits.length ? `Exits: ${exits.join(', ')}.` : 'There are no exits.')
+    return lines.join('\n')
+  }
+
+  function go(direction) {
+    if (!machine.can(direction)) return `You can't go ${direction}.`
+    machine.send(direction)
+    return look()
+  }
+
+  function take(item) {
+    const here = items[machine.state]
+    const i = here.indexOf(item)
+    if (i < 0) return `There is no ${item} here.`
+    here.splice(i, 1)
+    inventory.push(item)
+    return `You take the ${item}.`
+  }
+
+  function input(line) {
+    const text = String(line).trim().toLowerCase().replace(/\s+/g, ' ')
+    const [verb, ...rest] = text.split(' ')
+    const noun = rest.join(' ')
+    if (verb === 'look' && !noun) return look()
+    if (verb === 'go' && noun) return go(noun)
+    if (DIRECTIONS.includes(verb) && !noun) return go(verb)
+    if (verb === 'take' && noun) return take(noun)
+    if (verb === 'inventory' && !noun) {
+      return inventory.length ? `You carry: ${[...inventory].sort().join(', ')}.` : 'You carry nothing.'
+    }
+    return `I don't understand "${String(line).trim()}".`
+  }
+
+  return {
+    input,
+    get room() {
+      return machine.state
+    },
+    get inventory() {
+      return [...inventory].sort()
+    },
+  }
+}
+--- hint
+Build the machine's `states` from the world: `states[name] = { on: { ...room.exits } }`. Copy each room's `items` into your own object at the same time.
+--- hint
+`const [verb, ...rest] = text.split(' ')` and `const noun = rest.join(' ')` give you the command. A small `go(direction)` uses `machine.can` and `machine.send`.
+--- hint
+`look()` builds an array of lines: the description, maybe `You see: …`, then the exits from `Object.keys(room.exits ?? {}).sort()`.
+--- check case | look describes the room
+createGame(world).input('look')
+=> 'A dusty hall.\nYou see: lamp.\nExits: east, north.'
+--- check case | Moving, with messy input
+(() => { const g = createGame(world); return [g.input('  GO   North '), g.room] })()
+=> ['Shelves of old books.\nYou see: key, map.\nExits: south.', 'library']
+--- check case | A direction on its own; a room with no items
+(() => { const g = createGame(world); return [g.input('east'), g.input('west'), g.room] })()
+=> ['A cold kitchen.\nExits: west.', 'A dusty hall.\nYou see: lamp.\nExits: east, north.', 'hall']
+--- check case | No exit that way
+(() => { const g = createGame(world); return [g.input('west'), g.input('go up'), g.room] })()
+=> ["You can't go west.", "You can't go up.", 'hall']
+--- check case | Taking items and the inventory
+(() => { const g = createGame(world); const a = g.input('take lamp'); const b = g.input('take lamp'); g.input('north'); g.input('Take MAP'); return [a, b, g.input('inventory'), g.input('look'), g.inventory] })()
+=> ['You take the lamp.', 'There is no lamp here.', 'You carry: lamp, map.', 'Shelves of old books.\nYou see: key.\nExits: south.', ['lamp', 'map']]
+--- check case | Empty inventory and unknown commands
+(() => { const g = createGame(world); return [g.input('inventory'), g.input('  dance wildly '), g.input('take')] })()
+=> ['You carry nothing.', 'I don\'t understand "dance wildly".', 'I don\'t understand "take".']
+--- check case | The world is not changed by playing
+(() => { const g = createGame(world); g.input('take lamp'); return [world.rooms.hall.items, createGame(world).input('look')] })()
+=> [['lamp'], 'A dusty hall.\nYou see: lamp.\nExits: east, north.']
+--- check source | The game runs on your state machine
+=\s*createMachine\(
+
+=== jsp-08 | Adventure engine 4: locked doors and winning
+--- teach
+The last step turns a walking simulator into a game: obstacles and a goal. Both fall out of the machine's features rather than needing special cases in the game.
+
+**Locked doors are guards.** An exit can now be written as `{ to: 'garden', requires: 'key' }`. When you build the machine, turn it into a guarded transition:
+
+```js
+const inventory = ['lamp']
+const exit = { to: 'garden', requires: 'key' }
+const transition = { target: exit.to, guard: () => inventory.includes(exit.requires) }
+transition.guard()      // false — until the key is in the inventory
+```
+
+The guard closes over the game's live `inventory`, so picking up the key opens the door without anyone having to "unlock" it explicitly.
+
+The player deserves a better message than "You can't go east" when there *is* a door but it is locked. So `go` must tell three situations apart: **no exit** that way (check the world's exits), an exit that is **locked** (the exit exists but `machine.can` says no), and a move that **succeeds**.
+
+**Winning is a state check** after each successful move: if the new room is the world's winning room, the game is over. From then on the game refuses further commands. A game — like any program with a lifecycle — should have a clear notion of "finished", and every entry point should respect it.
+
+**Status for the outside world.** Exposing a small `status` object — room, inventory, moves, over — lets a user interface or a test inspect the game without parsing its text output. Designing a program so its state can be observed directly, not only through printed text, is one of the most useful habits for making code testable.
+--- task
+Extend the game (the starter's `world` now has a locked exit and a `win` room):
+
+- an exit may be `{ to, requires }`: the move is only allowed while the inventory holds that item. Use a guarded transition in the machine.
+- `go` answers `You can't go <direction>.` when there is no exit that way, `The way <direction> is locked.` when the exit is locked, and otherwise moves as before.
+- if the world has `win: { room }` and a move enters that room, the answer is the room's look text followed by `\nYou win!`, and the game is over: every later input returns `The game is over.`
+- a `status` getter returns `{ room, inventory, moves, over }` — `moves` counts successful moves; `inventory` is sorted.
+
+A world without `win` never ends. Everything from the last lesson still works.
+--- starter
+function createMachine({ initial, states, context = {} }) {
+  const known = (name) => Object.hasOwn(states, name)
+  const options = (transition) =>
+    (Array.isArray(transition) ? transition : [transition]).map((t) => (typeof t === 'string' ? { target: t } : t))
+
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const transition of Object.values(def.on ?? {})) {
+      for (const { target } of options(transition)) {
+        if (!known(target)) throw new Error(`unknown state: ${target}`)
+      }
+    }
+  }
+
+  const ctx = { ...context }
+  let current = initial
+  const visited = [initial]
+  states[initial].enter?.(ctx)
+
+  function pick(event, payload) {
+    const on = states[current].on ?? {}
+    if (!Object.hasOwn(on, event)) return null
+    return options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null
+  }
+
+  return {
+    get state() {
+      return current
+    },
+    get context() {
+      return ctx
+    },
+    can: (event, payload) => pick(event, payload) !== null,
+    send(event, payload) {
+      const t = pick(event, payload)
+      if (t) {
+        t.action?.(ctx, payload)
+        current = t.target
+        visited.push(current)
+        states[current].enter?.(ctx, payload)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+
+// The checks play in this world. Do not change it.
+const world = {
+  start: 'hall',
+  win: { room: 'garden' },
+  rooms: {
+    hall: { description: 'A dusty hall.', exits: { north: 'library', east: { to: 'garden', requires: 'key' } }, items: ['lamp'] },
+    library: { description: 'Shelves of old books.', exits: { south: 'hall' }, items: ['key'] },
+    garden: { description: 'Sunlight at last.', exits: {} },
+  },
+}
+
+const DIRECTIONS = ['north', 'south', 'east', 'west', 'up', 'down']
+
+function createGame(world) {
+  const items = {}
+  const states = {}
+  for (const [name, room] of Object.entries(world.rooms)) {
+    items[name] = [...(room.items ?? [])]
+    states[name] = { on: { ...room.exits } }
+  }
+  const machine = createMachine({ initial: world.start, states })
+  const inventory = []
+
+  function look() {
+    const room = world.rooms[machine.state]
+    const lines = [room.description]
+    const here = items[machine.state]
+    if (here.length) lines.push(`You see: ${here.join(', ')}.`)
+    const exits = Object.keys(room.exits ?? {}).sort()
+    lines.push(exits.length ? `Exits: ${exits.join(', ')}.` : 'There are no exits.')
+    return lines.join('\n')
+  }
+
+  function go(direction) {
+    if (!machine.can(direction)) return `You can't go ${direction}.`
+    machine.send(direction)
+    return look()
+  }
+
+  function take(item) {
+    const here = items[machine.state]
+    const i = here.indexOf(item)
+    if (i < 0) return `There is no ${item} here.`
+    here.splice(i, 1)
+    inventory.push(item)
+    return `You take the ${item}.`
+  }
+
+  function input(line) {
+    const text = String(line).trim().toLowerCase().replace(/\s+/g, ' ')
+    const [verb, ...rest] = text.split(' ')
+    const noun = rest.join(' ')
+    if (verb === 'look' && !noun) return look()
+    if (verb === 'go' && noun) return go(noun)
+    if (DIRECTIONS.includes(verb) && !noun) return go(verb)
+    if (verb === 'take' && noun) return take(noun)
+    if (verb === 'inventory' && !noun) {
+      return inventory.length ? `You carry: ${[...inventory].sort().join(', ')}.` : 'You carry nothing.'
+    }
+    return `I don't understand "${String(line).trim()}".`
+  }
+
+  return {
+    input,
+    get room() {
+      return machine.state
+    },
+    get inventory() {
+      return [...inventory].sort()
+    },
+  }
+}
+--- solution
+function createMachine({ initial, states, context = {} }) {
+  const known = (name) => Object.hasOwn(states, name)
+  const options = (transition) =>
+    (Array.isArray(transition) ? transition : [transition]).map((t) => (typeof t === 'string' ? { target: t } : t))
+
+  if (!known(initial)) throw new Error(`unknown state: ${initial}`)
+  for (const def of Object.values(states)) {
+    for (const transition of Object.values(def.on ?? {})) {
+      for (const { target } of options(transition)) {
+        if (!known(target)) throw new Error(`unknown state: ${target}`)
+      }
+    }
+  }
+
+  const ctx = { ...context }
+  let current = initial
+  const visited = [initial]
+  states[initial].enter?.(ctx)
+
+  function pick(event, payload) {
+    const on = states[current].on ?? {}
+    if (!Object.hasOwn(on, event)) return null
+    return options(on[event]).find((t) => !t.guard || t.guard(ctx, payload)) ?? null
+  }
+
+  return {
+    get state() {
+      return current
+    },
+    get context() {
+      return ctx
+    },
+    can: (event, payload) => pick(event, payload) !== null,
+    send(event, payload) {
+      const t = pick(event, payload)
+      if (t) {
+        t.action?.(ctx, payload)
+        current = t.target
+        visited.push(current)
+        states[current].enter?.(ctx, payload)
+      }
+      return current
+    },
+    history: () => [...visited],
+  }
+}
+
+// The checks play in this world. Do not change it.
+const world = {
+  start: 'hall',
+  win: { room: 'garden' },
+  rooms: {
+    hall: { description: 'A dusty hall.', exits: { north: 'library', east: { to: 'garden', requires: 'key' } }, items: ['lamp'] },
+    library: { description: 'Shelves of old books.', exits: { south: 'hall' }, items: ['key'] },
+    garden: { description: 'Sunlight at last.', exits: {} },
+  },
+}
+
+const DIRECTIONS = ['north', 'south', 'east', 'west', 'up', 'down']
+
+function createGame(world) {
+  const items = {}
+  const states = {}
+  const inventory = []
+  for (const [name, room] of Object.entries(world.rooms)) {
+    items[name] = [...(room.items ?? [])]
+    const on = {}
+    for (const [direction, exit] of Object.entries(room.exits ?? {})) {
+      on[direction] =
+        typeof exit === 'string' ? exit : { target: exit.to, guard: () => !exit.requires || inventory.includes(exit.requires) }
+    }
+    states[name] = { on }
+  }
+  const machine = createMachine({ initial: world.start, states })
+  let moves = 0
+  let over = false
+
+  function look() {
+    const room = world.rooms[machine.state]
+    const lines = [room.description]
+    const here = items[machine.state]
+    if (here.length) lines.push(`You see: ${here.join(', ')}.`)
+    const exits = Object.keys(room.exits ?? {}).sort()
+    lines.push(exits.length ? `Exits: ${exits.join(', ')}.` : 'There are no exits.')
+    return lines.join('\n')
+  }
+
+  function go(direction) {
+    const exits = world.rooms[machine.state].exits ?? {}
+    if (!Object.hasOwn(exits, direction)) return `You can't go ${direction}.`
+    if (!machine.can(direction)) return `The way ${direction} is locked.`
+    machine.send(direction)
+    moves++
+    if (world.win && machine.state === world.win.room) {
+      over = true
+      return `${look()}\nYou win!`
+    }
+    return look()
+  }
+
+  function take(item) {
+    const here = items[machine.state]
+    const i = here.indexOf(item)
+    if (i < 0) return `There is no ${item} here.`
+    here.splice(i, 1)
+    inventory.push(item)
+    return `You take the ${item}.`
+  }
+
+  function input(line) {
+    if (over) return 'The game is over.'
+    const text = String(line).trim().toLowerCase().replace(/\s+/g, ' ')
+    const [verb, ...rest] = text.split(' ')
+    const noun = rest.join(' ')
+    if (verb === 'look' && !noun) return look()
+    if (verb === 'go' && noun) return go(noun)
+    if (DIRECTIONS.includes(verb) && !noun) return go(verb)
+    if (verb === 'take' && noun) return take(noun)
+    if (verb === 'inventory' && !noun) {
+      return inventory.length ? `You carry: ${[...inventory].sort().join(', ')}.` : 'You carry nothing.'
+    }
+    return `I don't understand "${String(line).trim()}".`
+  }
+
+  return {
+    input,
+    get room() {
+      return machine.state
+    },
+    get inventory() {
+      return [...inventory].sort()
+    },
+    get status() {
+      return { room: machine.state, inventory: [...inventory].sort(), moves, over }
+    },
+  }
+}
+--- hint
+When building the machine's `on` for a room, turn each object exit into `{ target: exit.to, guard: () => inventory.includes(exit.requires) }`. Declare `inventory` before building the states.
+--- hint
+In `go`, first check `Object.hasOwn(world.rooms[machine.state].exits ?? {}, direction)`; if it exists but `machine.can(direction)` is false, the door is locked.
+--- hint
+Keep `let moves = 0` and `let over = false`. `input` returns `'The game is over.'` first thing when `over` is true.
+--- check case | The locked door says so
+(() => { const g = createGame(world); return [g.input('east'), g.input('west'), g.room] })()
+=> ['The way east is locked.', "You can't go west.", 'hall']
+--- check case | look still lists the locked exit
+createGame(world).input('look')
+=> 'A dusty hall.\nYou see: lamp.\nExits: east, north.'
+--- check case | With the key the door opens, and entering the garden wins
+(() => { const g = createGame(world); g.input('north'); g.input('take key'); g.input('south'); return [g.input('east'), g.input('look'), g.status] })()
+=> ['Sunlight at last.\nThere are no exits.\nYou win!', 'The game is over.', { room: 'garden', inventory: ['key'], moves: 3, over: true }]
+--- check case | moves counts only successful moves
+(() => { const g = createGame(world); g.input('west'); g.input('east'); g.input('north'); g.input('south'); g.input('take lamp'); return g.status })()
+=> { room: 'hall', inventory: ['lamp'], moves: 2, over: false }
+--- check case | A world without a win never ends
+(() => { const g = createGame({ ...world, win: undefined }); g.input('north'); g.input('take key'); g.input('south'); g.input('east'); return [g.status.over, g.input('look')] })()
+=> [false, 'Sunlight at last.\nThere are no exits.']
+--- check case | Everything from before still works
+(() => { const g = createGame(world); return [g.input('take lamp'), g.input('inventory'), g.input('jump')] })()
+=> ['You take the lamp.', 'You carry: lamp.', 'I don\'t understand "jump".']
+
+=== jsp-09 | Report pipeline 1: parsing CSV properly
+--- teach
+The third build is a data pipeline: read a CSV export of sales, check it, summarise it, and print a report. Pipelines like this — parse, validate, transform, present — are a large share of all the code written anywhere, and each stage is a small, testable function.
+
+It starts with a trap. CSV *looks* like "split on newlines, then split on commas":
+
+```js
+'a,b\n1,2'.split('\n').map((line) => line.split(','))   // [['a', 'b'], ['1', '2']]
+```
+
+That works until real data arrives. The CSV format lets a field be wrapped in **double quotes**, and inside quotes:
+
+- a comma is just a character: `"Lovelace, Ada"` is one field;
+- a newline is just a character: a quoted address can span lines;
+- a double quote is written twice: `"She said ""hi"""` means `She said "hi"`.
+
+Also, files from Windows end lines with `\r\n`, and most files end with a final newline that does not start a new row.
+
+Splitting cannot handle any of that, because whether a comma matters depends on what came **before** it. The right tool is a tiny **state machine** walking the text one character at a time, with one flag: am I inside quotes?
+
+- Outside quotes: `,` ends the field; `\n` ends the field and the row; `"` enters quotes; `\r` is ignored; anything else is added to the field.
+- Inside quotes: `""` adds one `"`; a single `"` leaves quotes; anything else — commas and newlines included — is added to the field.
+
+At the end, if you are still inside quotes, the file is broken: say so with an error rather than guessing. And be careful about the last row: text that does not end with a newline still has a final row to add, but a trailing newline must not produce an extra empty one.
+
+One pass over the characters, building strings as you go, is linear — fine for files of hundreds of thousands of rows.
+--- task
+Write `parseCSV(text)` returning an array of rows, each an array of field strings:
+
+- fields are separated by `,` and rows by `\n` or `\r\n`;
+- a field in double quotes may contain commas, newlines and `""` (meaning one `"`);
+- empty fields are kept (`a,,b` has three fields);
+- a trailing newline does not add an empty row, and empty text gives `[]`;
+- a quote that is never closed throws `new SyntaxError('unterminated quote')`.
+--- starter
+function parseCSV(text) {
+  return text.split('\n').map((line) => line.split(','))
+}
+--- solution
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+--- hint
+Walk the text with a `for` loop, keeping `row` (the fields so far), `field` (the current text) and `inQuotes`.
+--- hint
+Inside quotes, check for `""` first (`text[i + 1] === '"'`): add one quote and skip a character. A lone `"` leaves quotes.
+--- hint
+Track whether the current row has started (any character, quote or comma seen). After the loop, push the last field and row only if it has.
+--- check case | A simple file
+parseCSV('a,b\n1,2')
+=> [['a', 'b'], ['1', '2']]
+--- check case | Quoted commas and doubled quotes
+parseCSV('name,quote\n"Lovelace, Ada","She said ""hi"""')
+=> [['name', 'quote'], ['Lovelace, Ada', 'She said "hi"']]
+--- check case | Newlines inside quotes, Windows line endings, trailing newline
+parseCSV('a,b\r\n"line one\nline two",x\r\n')
+=> [['a', 'b'], ['line one\nline two', 'x']]
+--- check case | Empty fields are kept
+parseCSV('a,,c\n,,')
+=> [['a', '', 'c'], ['', '', '']]
+--- check case | Empty text, and a quoted empty last field
+[parseCSV(''), parseCSV('x\n'), parseCSV('a\n""')]
+=> [[], [['x']], [['a'], ['']]]
+--- check case | An unclosed quote is a SyntaxError
+(() => { try { parseCSV('a,"oops\nb'); return 'no error' } catch (e) { return [e.name, e.message] } })()
+=> ['SyntaxError', 'unterminated quote']
+--- check case | 100,000 rows, quickly
+(() => { const rows = parseCSV(Array.from({ length: 100000 }, (_, i) => `${i},"item ${i}, boxed",${i % 7}`).join('\n')); return [rows.length, rows[99999]] })()
+=> [100000, ['99999', 'item 99999, boxed', '4']]
+
+=== jsp-10 | Report pipeline 2: from rows to typed records
+--- teach
+`parseCSV` gives you strings. The rest of the program wants **records** — `{ date: '2026-01-05', units: 10, price: 2.5 }` — with real numbers, and it wants to know which rows were bad. This is the **validation boundary**: the one place where untrusted text becomes trusted data. Everything after it can assume the data is clean, which keeps the rest of the pipeline simple.
+
+Drive the conversion with a **schema** — data describing the columns you need and their types:
+
+```js
+const schema = { date: 'date', region: 'string', units: 'int', price: 'number' }
+Object.entries(schema)    // [['date', 'date'], ['region', 'string'], …]
+```
+
+A schema beats hand-written code per column: adding a column is one line, and the same converter works for any file.
+
+Design decisions worth making explicitly:
+
+- **Find columns by header name, not position.** Exports reorder columns and add new ones. Read the header row, trim the names, and look each schema column up; ignore columns you do not need. A *required* column that is missing is not a bad row — the whole file is unusable — so throw.
+- **Be strict about types.** `Number('')` is `0` and `Number(' 12 ')` is `12`, and `parseInt('12abc')` is `12`. Decide what you accept: here, trim the field, then an `int` must be all digits (with an optional minus sign), a `number` must convert to a finite number, and a `date` must be `YYYY-MM-DD` **and** a real day (no 30th of February).
+- **Collect errors, do not stop at the first.** A report that dies on row 3 of 50,000 is useless. Record `{ row, message }` for each bad row and carry on, so a person can fix every problem in one pass. Number rows as a spreadsheet would: the header is row 1, the first data row is row 2.
+- **Skip blank lines** quietly — they are formatting, not data.
+
+A message like `units: "1.5" is not a valid int` names the column, shows the offending value in quotes (so stray spaces are visible), and says what was expected.
+--- task
+Keep `parseCSV`. Write `toRecords(rows, schema)`, where `rows` comes from `parseCSV` (the first row is the header) and `schema` maps column names to `'string'`, `'int'`, `'number'` or `'date'`. Return `{ records, errors }`:
+
+- find each schema column in the (trimmed) header; if one is missing, throw `new Error('missing column: <name>')`. Extra columns are ignored.
+- skip blank rows (a single empty field).
+- a row with a different number of fields from the header is an error: `expected <n> fields, got <m>`.
+- trim each value and convert it: `string` as is; `int` — digits with an optional leading `-`; `number` — non-empty and finite; `date` — `YYYY-MM-DD` and a real calendar date, kept as the string. The first bad value (in schema order) makes the row an error: `<column>: "<value>" is not a valid <type>`.
+- each record has exactly the schema's columns. Errors are `{ row, message }` with the header as row 1. No rows at all gives `{ records: [], errors: [] }`.
+--- starter
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+function toRecords(rows, schema) {
+  return { records: [], errors: [] }
+}
+--- solution
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+const INVALID = Symbol('invalid')
+
+function parseValue(type, raw) {
+  switch (type) {
+    case 'string':
+      return raw
+    case 'int':
+      return /^-?\d+$/.test(raw) ? Number(raw) : INVALID
+    case 'number':
+      return raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : INVALID
+    case 'date': {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+      if (!m) return INVALID
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? raw : INVALID
+    }
+    default:
+      throw new Error(`unknown type: ${type}`)
+  }
+}
+
+function toRecords(rows, schema) {
+  if (rows.length === 0) return { records: [], errors: [] }
+  const header = rows[0].map((h) => h.trim())
+  const index = {}
+  for (const column of Object.keys(schema)) {
+    const i = header.indexOf(column)
+    if (i < 0) throw new Error(`missing column: ${column}`)
+    index[column] = i
+  }
+  const records = []
+  const errors = []
+  rows.slice(1).forEach((cells, k) => {
+    const row = k + 2
+    if (cells.length === 1 && cells[0].trim() === '') return
+    if (cells.length !== header.length) {
+      errors.push({ row, message: `expected ${header.length} fields, got ${cells.length}` })
+      return
+    }
+    const record = {}
+    for (const [column, type] of Object.entries(schema)) {
+      const raw = cells[index[column]].trim()
+      const value = parseValue(type, raw)
+      if (value === INVALID) {
+        errors.push({ row, message: `${column}: "${raw}" is not a valid ${type}` })
+        return
+      }
+      record[column] = value
+    }
+    records.push(record)
+  })
+  return { records, errors }
+}
+--- hint
+Build an `index` object first: for each schema column, `header.indexOf(column)`, throwing if it is `-1`.
+--- hint
+Write a `parseValue(type, raw)` helper that returns the converted value or a special marker (such as a `Symbol`) meaning "invalid".
+--- hint
+For dates, build `new Date(Date.UTC(year, month - 1, day))` and check that its month and day are the ones you asked for — an impossible date rolls over into the next month.
+--- check case | A good row becomes a typed record
+toRecords([['date', 'region', 'units', 'price'], ['2026-01-05', 'north', '10', '2.50']], { date: 'date', region: 'string', units: 'int', price: 'number' })
+=> { records: [{ date: '2026-01-05', region: 'north', units: 10, price: 2.5 }], errors: [] }
+--- check case | Columns are found by name; extras ignored; values trimmed
+toRecords([['price', ' units ', 'note', 'region'], [' 4 ', ' 7 ', 'x', 'south ']], { region: 'string', units: 'int', price: 'number' }).records
+=> [{ region: 'south', units: 7, price: 4 }]
+--- check case | Bad rows are reported with their row numbers
+toRecords([['date', 'units', 'price'], ['2026-01-05', '1.5', '2'], ['2026-01-06', '3'], [''], ['2026-02-30', '3', '2'], ['2026-03-01', '3', 'abc'], ['2026-03-02', '-2', '1e2']], { date: 'date', units: 'int', price: 'number' })
+=> { records: [{ date: '2026-03-02', units: -2, price: 100 }], errors: [{ row: 2, message: 'units: "1.5" is not a valid int' }, { row: 3, message: 'expected 3 fields, got 2' }, { row: 5, message: 'date: "2026-02-30" is not a valid date' }, { row: 6, message: 'price: "abc" is not a valid number' }] }
+--- check case | An empty number is not zero
+toRecords([['n', 'm'], ['  ', 'x']], { n: 'number', m: 'string' }).errors
+=> [{ row: 2, message: 'n: "" is not a valid number' }]
+--- check case | A missing column is an error for the whole file
+(() => { try { toRecords([['date', 'units']], { date: 'date', price: 'number' }); return 'no error' } catch (e) { return e.message } })()
+=> 'missing column: price'
+--- check case | No rows at all
+toRecords([], { a: 'string' })
+=> { records: [], errors: [] }
+--- check case | Straight from parseCSV
+toRecords(parseCSV('item,qty\n"bolts, small",40\n'), { item: 'string', qty: 'int' }).records
+=> [{ item: 'bolts, small', qty: 40 }]
+
+=== jsp-11 | Report pipeline 3: grouping and totals
+--- teach
+With clean records, the pipeline can answer questions: revenue by region, units by product, sales by month. That is **aggregation**, and it is the frequency-counting pattern you already know, with a small object per group instead of a number.
+
+```js
+const groups = new Map()
+for (const r of [{ region: 'north', units: 2 }, { region: 'north', units: 3 }]) {
+  if (!groups.has(r.region)) groups.set(r.region, { key: r.region, units: 0 })
+  groups.get(r.region).units += r.units
+}
+[...groups.values()]    // [{ key: 'north', units: 5 }]
+```
+
+Design choices that make the function reusable:
+
+- **Group by a field name *or* a function.** `summarize(records, 'region')` is the common case, but `summarize(records, (r) => r.date.slice(0, 7))` gives sales by month with no new code. Accepting both is one line: turn a string into `(r) => r[by]`.
+- **Money in integer cents.** Revenue is `units × price`, summed over many rows. With decimal numbers, those sums drift (`0.1 + 0.2` is not `0.3`), and a report whose columns do not add up to its total destroys trust in everything else on the page. Convert each price to cents once — `Math.round(price * 100)` — multiply by units, and add integers. Convert back to dollars only when displaying.
+- **Deterministic order.** Sort by revenue, highest first, and break ties by the key. Without a tie-break, two regions with equal revenue could swap places between runs or machines, and a diff of two reports shows a change that is not there.
+
+Keep `totals(records)` separate from `summarize`: the grand total should be computed from the records, not by adding up the rounded group rows — the same principle as above, one exact source for every number.
+--- task
+Keep the earlier functions. Write:
+
+- `summarize(records, by)` — `by` is a field name or a function of a record. Group the records by it and return an array of `{ key, orders, units, revenue }`: `orders` is how many records, `units` their sum, and `revenue` the sum of `units × price` in **integer cents** (convert each price with `Math.round(price * 100)`). Sort by `revenue` highest first, ties by `key` ascending.
+- `totals(records)` — `{ orders, units, revenue }` over all records, revenue in cents.
+--- starter
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+const INVALID = Symbol('invalid')
+
+function parseValue(type, raw) {
+  switch (type) {
+    case 'string':
+      return raw
+    case 'int':
+      return /^-?\d+$/.test(raw) ? Number(raw) : INVALID
+    case 'number':
+      return raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : INVALID
+    case 'date': {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+      if (!m) return INVALID
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? raw : INVALID
+    }
+    default:
+      throw new Error(`unknown type: ${type}`)
+  }
+}
+
+function toRecords(rows, schema) {
+  if (rows.length === 0) return { records: [], errors: [] }
+  const header = rows[0].map((h) => h.trim())
+  const index = {}
+  for (const column of Object.keys(schema)) {
+    const i = header.indexOf(column)
+    if (i < 0) throw new Error(`missing column: ${column}`)
+    index[column] = i
+  }
+  const records = []
+  const errors = []
+  rows.slice(1).forEach((cells, k) => {
+    const row = k + 2
+    if (cells.length === 1 && cells[0].trim() === '') return
+    if (cells.length !== header.length) {
+      errors.push({ row, message: `expected ${header.length} fields, got ${cells.length}` })
+      return
+    }
+    const record = {}
+    for (const [column, type] of Object.entries(schema)) {
+      const raw = cells[index[column]].trim()
+      const value = parseValue(type, raw)
+      if (value === INVALID) {
+        errors.push({ row, message: `${column}: "${raw}" is not a valid ${type}` })
+        return
+      }
+      record[column] = value
+    }
+    records.push(record)
+  })
+  return { records, errors }
+}
+
+function summarize(records, by) {
+  return []
+}
+
+function totals(records) {
+  return { orders: 0, units: 0, revenue: 0 }
+}
+--- solution
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+const INVALID = Symbol('invalid')
+
+function parseValue(type, raw) {
+  switch (type) {
+    case 'string':
+      return raw
+    case 'int':
+      return /^-?\d+$/.test(raw) ? Number(raw) : INVALID
+    case 'number':
+      return raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : INVALID
+    case 'date': {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+      if (!m) return INVALID
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? raw : INVALID
+    }
+    default:
+      throw new Error(`unknown type: ${type}`)
+  }
+}
+
+function toRecords(rows, schema) {
+  if (rows.length === 0) return { records: [], errors: [] }
+  const header = rows[0].map((h) => h.trim())
+  const index = {}
+  for (const column of Object.keys(schema)) {
+    const i = header.indexOf(column)
+    if (i < 0) throw new Error(`missing column: ${column}`)
+    index[column] = i
+  }
+  const records = []
+  const errors = []
+  rows.slice(1).forEach((cells, k) => {
+    const row = k + 2
+    if (cells.length === 1 && cells[0].trim() === '') return
+    if (cells.length !== header.length) {
+      errors.push({ row, message: `expected ${header.length} fields, got ${cells.length}` })
+      return
+    }
+    const record = {}
+    for (const [column, type] of Object.entries(schema)) {
+      const raw = cells[index[column]].trim()
+      const value = parseValue(type, raw)
+      if (value === INVALID) {
+        errors.push({ row, message: `${column}: "${raw}" is not a valid ${type}` })
+        return
+      }
+      record[column] = value
+    }
+    records.push(record)
+  })
+  return { records, errors }
+}
+
+const cents = (price) => Math.round(price * 100)
+
+function summarize(records, by) {
+  const keyOf = typeof by === 'function' ? by : (r) => r[by]
+  const groups = new Map()
+  for (const r of records) {
+    const key = keyOf(r)
+    if (!groups.has(key)) groups.set(key, { key, orders: 0, units: 0, revenue: 0 })
+    const g = groups.get(key)
+    g.orders++
+    g.units += r.units
+    g.revenue += cents(r.price) * r.units
+  }
+  return [...groups.values()].sort((a, b) => b.revenue - a.revenue || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+}
+
+function totals(records) {
+  return records.reduce(
+    (t, r) => ({ orders: t.orders + 1, units: t.units + r.units, revenue: t.revenue + cents(r.price) * r.units }),
+    { orders: 0, units: 0, revenue: 0 },
+  )
+}
+--- hint
+`const keyOf = typeof by === 'function' ? by : (r) => r[by]` handles both kinds of `by`.
+--- hint
+Use a `Map` from key to `{ key, orders, units, revenue }` and update the group for each record in one pass.
+--- hint
+The comparator: `b.revenue - a.revenue || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)`.
+--- check case | Summarise by a field
+summarize([{ region: 'north', units: 10, price: 2.5 }, { region: 'south', units: 3, price: 10 }, { region: 'north', units: 5, price: 4 }], 'region')
+=> [{ key: 'north', orders: 2, units: 15, revenue: 4500 }, { key: 'south', orders: 1, units: 3, revenue: 3000 }]
+--- check case | Summarise by a function
+summarize([{ date: '2026-01-05', units: 1, price: 1 }, { date: '2026-02-01', units: 2, price: 1 }, { date: '2026-01-20', units: 1, price: 1 }], (r) => r.date.slice(0, 7))
+=> [{ key: '2026-01', orders: 2, units: 2, revenue: 200 }, { key: '2026-02', orders: 1, units: 2, revenue: 200 }]
+--- check case | Cents keep the money exact
+summarize([{ p: 'a', units: 3, price: 0.1 }, { p: 'a', units: 3, price: 19.99 }, { p: 'b', units: 1, price: 0.07 }], 'p').map((g) => g.revenue)
+=> [6027, 7]
+--- check case | totals
+totals([{ units: 10, price: 2.5 }, { units: 3, price: 10 }, { units: 1, price: 0.99 }])
+=> { orders: 3, units: 14, revenue: 5599 }
+--- check case | Nothing to summarise
+[summarize([], 'region'), totals([])]
+=> [[], { orders: 0, units: 0, revenue: 0 }]
+--- check case | 100,000 records, quickly
+(() => { const rs = Array.from({ length: 100000 }, (_, i) => ({ region: 'r' + (i % 10), units: 1 + (i % 3), price: 1.25 })); const s = summarize(rs, 'region'); return [s.length, s[0], totals(rs).revenue] })()
+=> [10, { key: 'r2', orders: 10000, units: 20001, revenue: 2500125 }, 24999875]
+
+=== jsp-12 | Report pipeline 4: the report
+--- teach
+The last stage turns numbers into something a person reads. For a terminal, an email or a log, that means an **aligned text table**:
+
+```
+region  orders  units  revenue
+------  ------  -----  -------
+north        2     15    45.00
+```
+
+The algorithm is two passes. First turn every cell into its final **string** (applying formatting such as two decimals for money), because widths must be measured on what is actually printed. Then each column's width is the longest of its title and its cells, and every cell is padded to that width: `padEnd` for text (left-aligned), `padStart` for numbers (right-aligned, so the digits line up). Join cells with two spaces, and trim the end of each line, since trailing spaces are invisible noise that breaks exact comparisons.
+
+```js
+'45.00'.padStart(7)    // '  45.00'
+'north'.padEnd(6)      // 'north '
+```
+
+Describe the columns as **data** — `{ key, title, align, format }` — so `formatTable` knows nothing about sales, and the same function can print any table.
+
+Then write the function that runs the whole pipeline:
+
+```
+text → parseCSV → toRecords → summarize + totals → formatTable → report text
+```
+
+Each stage is small, pure and already tested, so this final function is short and reads like the diagram. That is the real lesson of the build: when every stage has one job and a clear input and output, the program as a whole is easy to understand, change and trust. A new report — by product, by month — is a new argument, not new code.
+
+Finish with the part that is easiest to forget: **tell the reader what was left out**. A total that silently skipped a bad row is wrong without anyone knowing. List the skipped rows with their reasons, below the table.
+--- task
+Keep everything. Write:
+
+- `formatTable(rows, columns)` — `columns` is an array of `{ key, title, align, format? }` (`align` is `'left'` or `'right'`; `format`, if given, turns a value into its text, otherwise use `String(value)`). Return the title line, a line of dashes as wide as each column, then one line per row. Each column is as wide as its widest text (title included); cells are padded on the right when left-aligned and on the left when right-aligned; columns are separated by two spaces; lines have no trailing spaces; lines are joined with `\n`.
+- `csvReport(text, by)` — parse `text` as sales CSV with the columns `date` (date), `region` (string), `product` (string), `units` (int) and `price` (number); summarise by the field `by`. Return: the line `Sales by <by>`, then a table of the groups followed by a `TOTAL` row, with columns `<by>` (left; the group key), `orders`, `units` and `revenue` (all right; revenue as dollars with 2 decimals). If any rows were skipped, add the line `Skipped <n> row(s):` and one line per error, `  row <row>: <message>` (two leading spaces). Lines joined with `\n`.
+--- starter
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+const INVALID = Symbol('invalid')
+
+function parseValue(type, raw) {
+  switch (type) {
+    case 'string':
+      return raw
+    case 'int':
+      return /^-?\d+$/.test(raw) ? Number(raw) : INVALID
+    case 'number':
+      return raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : INVALID
+    case 'date': {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+      if (!m) return INVALID
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? raw : INVALID
+    }
+    default:
+      throw new Error(`unknown type: ${type}`)
+  }
+}
+
+function toRecords(rows, schema) {
+  if (rows.length === 0) return { records: [], errors: [] }
+  const header = rows[0].map((h) => h.trim())
+  const index = {}
+  for (const column of Object.keys(schema)) {
+    const i = header.indexOf(column)
+    if (i < 0) throw new Error(`missing column: ${column}`)
+    index[column] = i
+  }
+  const records = []
+  const errors = []
+  rows.slice(1).forEach((cells, k) => {
+    const row = k + 2
+    if (cells.length === 1 && cells[0].trim() === '') return
+    if (cells.length !== header.length) {
+      errors.push({ row, message: `expected ${header.length} fields, got ${cells.length}` })
+      return
+    }
+    const record = {}
+    for (const [column, type] of Object.entries(schema)) {
+      const raw = cells[index[column]].trim()
+      const value = parseValue(type, raw)
+      if (value === INVALID) {
+        errors.push({ row, message: `${column}: "${raw}" is not a valid ${type}` })
+        return
+      }
+      record[column] = value
+    }
+    records.push(record)
+  })
+  return { records, errors }
+}
+
+const cents = (price) => Math.round(price * 100)
+
+function summarize(records, by) {
+  const keyOf = typeof by === 'function' ? by : (r) => r[by]
+  const groups = new Map()
+  for (const r of records) {
+    const key = keyOf(r)
+    if (!groups.has(key)) groups.set(key, { key, orders: 0, units: 0, revenue: 0 })
+    const g = groups.get(key)
+    g.orders++
+    g.units += r.units
+    g.revenue += cents(r.price) * r.units
+  }
+  return [...groups.values()].sort((a, b) => b.revenue - a.revenue || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+}
+
+function totals(records) {
+  return records.reduce(
+    (t, r) => ({ orders: t.orders + 1, units: t.units + r.units, revenue: t.revenue + cents(r.price) * r.units }),
+    { orders: 0, units: 0, revenue: 0 },
+  )
+}
+
+function formatTable(rows, columns) {
+  return ''
+}
+
+function csvReport(text, by) {
+  return ''
+}
+--- solution
+function parseCSV(text) {
+  const rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  let started = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (c === '"') {
+        inQuotes = false
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+      started = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+      started = true
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+      started = false
+    } else if (c !== '\r') {
+      field += c
+      started = true
+    }
+  }
+  if (inQuotes) throw new SyntaxError('unterminated quote')
+  if (started) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+const INVALID = Symbol('invalid')
+
+function parseValue(type, raw) {
+  switch (type) {
+    case 'string':
+      return raw
+    case 'int':
+      return /^-?\d+$/.test(raw) ? Number(raw) : INVALID
+    case 'number':
+      return raw !== '' && Number.isFinite(Number(raw)) ? Number(raw) : INVALID
+    case 'date': {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+      if (!m) return INVALID
+      const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? raw : INVALID
+    }
+    default:
+      throw new Error(`unknown type: ${type}`)
+  }
+}
+
+function toRecords(rows, schema) {
+  if (rows.length === 0) return { records: [], errors: [] }
+  const header = rows[0].map((h) => h.trim())
+  const index = {}
+  for (const column of Object.keys(schema)) {
+    const i = header.indexOf(column)
+    if (i < 0) throw new Error(`missing column: ${column}`)
+    index[column] = i
+  }
+  const records = []
+  const errors = []
+  rows.slice(1).forEach((cells, k) => {
+    const row = k + 2
+    if (cells.length === 1 && cells[0].trim() === '') return
+    if (cells.length !== header.length) {
+      errors.push({ row, message: `expected ${header.length} fields, got ${cells.length}` })
+      return
+    }
+    const record = {}
+    for (const [column, type] of Object.entries(schema)) {
+      const raw = cells[index[column]].trim()
+      const value = parseValue(type, raw)
+      if (value === INVALID) {
+        errors.push({ row, message: `${column}: "${raw}" is not a valid ${type}` })
+        return
+      }
+      record[column] = value
+    }
+    records.push(record)
+  })
+  return { records, errors }
+}
+
+const cents = (price) => Math.round(price * 100)
+
+function summarize(records, by) {
+  const keyOf = typeof by === 'function' ? by : (r) => r[by]
+  const groups = new Map()
+  for (const r of records) {
+    const key = keyOf(r)
+    if (!groups.has(key)) groups.set(key, { key, orders: 0, units: 0, revenue: 0 })
+    const g = groups.get(key)
+    g.orders++
+    g.units += r.units
+    g.revenue += cents(r.price) * r.units
+  }
+  return [...groups.values()].sort((a, b) => b.revenue - a.revenue || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+}
+
+function totals(records) {
+  return records.reduce(
+    (t, r) => ({ orders: t.orders + 1, units: t.units + r.units, revenue: t.revenue + cents(r.price) * r.units }),
+    { orders: 0, units: 0, revenue: 0 },
+  )
+}
+
+function formatTable(rows, columns) {
+  const cells = rows.map((r) => columns.map((c) => (c.format ? c.format(r[c.key]) : String(r[c.key]))))
+  const widths = columns.map((c, j) => Math.max(c.title.length, ...cells.map((row) => row[j].length)))
+  const line = (values) =>
+    values
+      .map((v, j) => (columns[j].align === 'right' ? v.padStart(widths[j]) : v.padEnd(widths[j])))
+      .join('  ')
+      .trimEnd()
+  return [line(columns.map((c) => c.title)), line(widths.map((w) => '-'.repeat(w))), ...cells.map(line)].join('\n')
+}
+
+const SALES = { date: 'date', region: 'string', product: 'string', units: 'int', price: 'number' }
+
+function csvReport(text, by) {
+  const { records, errors } = toRecords(parseCSV(text), SALES)
+  const money = (c) => (c / 100).toFixed(2)
+  const rows = [...summarize(records, by), { key: 'TOTAL', ...totals(records) }]
+  const table = formatTable(rows, [
+    { key: 'key', title: by, align: 'left' },
+    { key: 'orders', title: 'orders', align: 'right' },
+    { key: 'units', title: 'units', align: 'right' },
+    { key: 'revenue', title: 'revenue', align: 'right', format: money },
+  ])
+  const out = [`Sales by ${by}`, table]
+  if (errors.length) {
+    out.push(`Skipped ${errors.length} row(s):`)
+    for (const e of errors) out.push(`  row ${e.row}: ${e.message}`)
+  }
+  return out.join('\n')
+}
+--- hint
+In `formatTable`, first build `cells`: a 2-D array of strings. Then `widths[j]` is the max of the title's length and every `cells[i][j].length`.
+--- hint
+A `line(values)` helper pads each value by its column's alignment, joins with two spaces and calls `trimEnd()`. Use it for the titles, the dashes and each row.
+--- hint
+In `csvReport`, the table's rows are `[...summarize(records, by), { key: 'TOTAL', ...totals(records) }]`, and revenue's `format` is `(c) => (c / 100).toFixed(2)`.
+--- check case | A table with alignment
+formatTable([{ name: 'ada', n: 5 }, { name: 'lin', n: 120 }], [{ key: 'name', title: 'who', align: 'left' }, { key: 'n', title: 'count', align: 'right' }])
+=> 'who  count\n---  -----\nada      5\nlin    120'
+--- check case | Widths come from the formatted text
+formatTable([{ p: 1.5 }, { p: 10 }], [{ key: 'p', title: 'p', align: 'right', format: (v) => v.toFixed(2) }])
+=> '    p\n-----\n 1.50\n10.00'
+--- check case | No trailing spaces
+formatTable([{ a: 'x' }, { a: 'long' }], [{ key: 'a', title: 'a', align: 'left' }])
+=> 'a\n----\nx\nlong'
+--- check case | The full report by region, with a skipped row
+csvReport('date,region,product,units,price\n2026-01-05,north,widget,10,2.50\n2026-01-09,south,gadget,3,10.00\n2026-02-01,north,"widget, large",5,4.00\n2026-02-03,east,widget,x,2.50\n2026-02-10,south,widget,4,2.50\n', 'region')
+=> 'Sales by region\nregion  orders  units  revenue\n------  ------  -----  -------\nnorth        2     15    45.00\nsouth        2      7    40.00\nTOTAL        4     22    85.00\nSkipped 1 row(s):\n  row 5: units: "x" is not a valid int'
+--- check case | The same data by product
+csvReport('date,region,product,units,price\n2026-01-05,north,widget,10,2.50\n2026-01-09,south,gadget,3,10.00\n2026-02-01,north,"widget, large",5,4.00\n2026-02-10,south,widget,4,2.50\n', 'product')
+=> 'Sales by product\nproduct        orders  units  revenue\n-------------  ------  -----  -------\nwidget              2     14    35.00\ngadget              1      3    30.00\nwidget, large       1      5    20.00\nTOTAL               4     22    85.00'
+--- check case | A file with only a header
+csvReport('date,region,product,units,price\n', 'region')
+=> 'Sales by region\nregion  orders  units  revenue\n------  ------  -----  -------\nTOTAL        0      0     0.00'
+
+=== jsp-13 | Capstone: a spreadsheet engine
+--- teach
+From here on there are no step-by-step lessons: each capstone is a **specification**, an almost empty editor, and checks that test behaviour only. How you structure the code is up to you. This is the real skill — turning a written spec into a working program on your own.
+
+A method that works for any spec:
+
+1. **Read it twice**, then write the list of behaviours as a checklist, including every error case.
+2. **Design the data** before the code. What do you store? What do you compute on demand?
+3. **Build the thinnest slice first** — here: plain numbers in and out — and try it with `console.log` before adding anything.
+4. **Grow it one behaviour at a time**, re-running your earlier experiments as you go.
+5. **Do the error cases last**, but do all of them.
+
+For this capstone, some things to think about (not a recipe):
+
+- **Store what the user typed, compute values when asked.** Then recalculation is automatic: change A1, and the next time anyone asks for A3, it is computed from the new A1.
+- A formula is a small expression language. You have written a tokenizer and a recursive-descent parser before (in the expert course); the same shape works here, with cell references as a kind of token.
+- **Circular references** (A1 is `=B1`, B1 is `=A1`) would recurse for ever. Keep track of the cells you are in the middle of evaluating; meeting one of them again means a cycle.
+- **Repeated references.** If A2 is `=A1+A1`, A3 is `=A2+A2`, and so on, re-evaluating every reference from scratch doubles the work at each step — forty cells would take a trillion evaluations. Remember each cell's value for the duration of one `get`.
+- **Errors are values.** In a spreadsheet, `=1/0` does not crash; the cell *shows* `#DIV/0!`, and any cell that uses it shows the same error. Representing errors in a way you cannot confuse with text makes propagation easy.
+--- task
+Write `createSheet()`, returning `{ set(ref, input), get(ref) }`.
+
+**Cells** are a column letter `A`–`Z` and a row `1`–`999` (`B7`, `Z999`), case-insensitive. `set` or `get` with anything else throws an `Error`.
+
+**`set(ref, input)`** stores the text the user typed. An empty (or all-space) input clears the cell.
+
+**`get(ref)`** returns the cell's current value:
+- empty → `null`;
+- input that is a number (optional `-`, digits, optional `.` and digits; surrounding spaces allowed) → that number;
+- input starting with `=` → the formula's result;
+- anything else → the text itself.
+
+**Formulas** contain numbers, cell references, `+ - * /` with the usual precedence, parentheses, unary minus, and the functions `SUM`, `AVG`, `MIN` and `MAX`. Function arguments are separated by commas and may be expressions or ranges like `A1:B3` (every cell in the rectangle). References are case-insensitive and spaces are allowed.
+- In arithmetic an empty cell counts as `0`; a text cell gives `#VALUE!`.
+- In a range, only number cells count; empty and text cells are skipped. `SUM` of nothing is 0, `MIN`/`MAX` of nothing is 0, `AVG` of nothing is `#DIV/0!`.
+
+**Errors** are returned by `get` as strings: `#DIV/0!` (division by zero), `#VALUE!` (text used in arithmetic), `#CYCLE!` (the cell is part of, or depends on, a circular reference), `#NAME?` (an unknown function) and `#ERROR!` (a formula that does not parse). A formula that uses a cell holding an error has that same error.
+
+Values always reflect the current inputs, and `get` must stay fast even when cells refer to other cells many times over.
+--- starter
+// Your spreadsheet engine. Design it however you like.
+
+function createSheet() {
+  return {
+    set(ref, input) {},
+    get(ref) {
+      return null
+    },
+  }
+}
+--- solution
+const CELL = /^([A-Z])([1-9]\d{0,2})$/
+
+class CellError extends Error {
+  constructor(code) {
+    super(code)
+    this.code = code
+  }
+}
+
+function createSheet() {
+  const inputs = new Map()
+
+  function normalize(ref) {
+    const r = String(ref).trim().toUpperCase()
+    if (!CELL.test(r)) throw new Error(`bad reference: ${ref}`)
+    return r
+  }
+
+  function set(ref, input) {
+    const r = normalize(ref)
+    const text = String(input ?? '')
+    if (text.trim() === '') inputs.delete(r)
+    else inputs.set(r, text)
+  }
+
+  function tokenize(src) {
+    const tokens = []
+    const re = /\s*(?:(\d+(?:\.\d+)?)|([A-Z]+\d*)|([-+*/(),:]))/y
+    let i = 0
+    while (i < src.length) {
+      if (/^\s*$/.test(src.slice(i))) break
+      re.lastIndex = i
+      const m = re.exec(src)
+      if (!m) throw new CellError('#ERROR!')
+      i = re.lastIndex
+      if (m[1] !== undefined) tokens.push({ type: 'num', value: Number(m[1]) })
+      else if (m[2] !== undefined) tokens.push({ type: CELL.test(m[2]) ? 'ref' : 'name', value: m[2] })
+      else tokens.push({ type: 'op', value: m[3] })
+    }
+    tokens.push({ type: 'end' })
+    return tokens
+  }
+
+  function rangeRefs(a, b) {
+    const [, ca, ra] = CELL.exec(a)
+    const [, cb, rb] = CELL.exec(b)
+    const [c1, c2] = [ca.charCodeAt(0), cb.charCodeAt(0)].sort((x, y) => x - y)
+    const [r1, r2] = [Number(ra), Number(rb)].sort((x, y) => x - y)
+    const refs = []
+    for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) refs.push(String.fromCharCode(c) + r)
+    return refs
+  }
+
+  function evaluate(ref, memo, stack) {
+    if (memo.has(ref)) return memo.get(ref)
+    if (stack.has(ref)) throw new CellError('#CYCLE!')
+    const raw = inputs.get(ref)
+    let value
+    if (raw === undefined) value = null
+    else if (/^\s*-?\d+(\.\d+)?\s*$/.test(raw)) value = Number(raw)
+    else if (!raw.startsWith('=')) value = raw
+    else {
+      stack.add(ref)
+      try {
+        value = formula(raw.slice(1).toUpperCase(), memo, stack)
+      } catch (err) {
+        if (!(err instanceof CellError)) throw err
+        value = err
+      } finally {
+        stack.delete(ref)
+      }
+    }
+    memo.set(ref, value)
+    return value
+  }
+
+  function formula(src, memo, stack) {
+    const tokens = tokenize(src)
+    let pos = 0
+    const peek = () => tokens[pos]
+    const isOp = (v) => peek().type === 'op' && peek().value === v
+    const expect = (v) => {
+      if (!isOp(v)) throw new CellError('#ERROR!')
+      pos++
+    }
+    const cellValue = (ref) => {
+      const v = evaluate(ref, memo, stack)
+      if (v instanceof CellError) throw new CellError(v.code)
+      return v
+    }
+    const asNumber = (v) => {
+      if (v === null) return 0
+      if (typeof v !== 'number') throw new CellError('#VALUE!')
+      return v
+    }
+
+    function expr() {
+      let v = term()
+      while (isOp('+') || isOp('-')) {
+        const op = tokens[pos++].value
+        const r = term()
+        v = op === '+' ? v + r : v - r
+      }
+      return v
+    }
+    function term() {
+      let v = unary()
+      while (isOp('*') || isOp('/')) {
+        const op = tokens[pos++].value
+        const r = unary()
+        if (op === '/' && r === 0) throw new CellError('#DIV/0!')
+        v = op === '*' ? v * r : v / r
+      }
+      return v
+    }
+    function unary() {
+      if (isOp('-')) {
+        pos++
+        return -unary()
+      }
+      if (isOp('+')) {
+        pos++
+        return unary()
+      }
+      return atom()
+    }
+    function atom() {
+      const t = peek()
+      if (t.type === 'num') {
+        pos++
+        return t.value
+      }
+      if (t.type === 'ref') {
+        pos++
+        return asNumber(cellValue(t.value))
+      }
+      if (t.type === 'name') {
+        pos++
+        expect('(')
+        const values = []
+        if (!isOp(')')) {
+          args(values)
+          while (isOp(',')) {
+            pos++
+            args(values)
+          }
+        }
+        expect(')')
+        return call(t.value, values)
+      }
+      if (isOp('(')) {
+        pos++
+        const v = expr()
+        expect(')')
+        return v
+      }
+      throw new CellError('#ERROR!')
+    }
+    function args(values) {
+      const t = peek()
+      if (t.type === 'ref' && tokens[pos + 1].type === 'op' && tokens[pos + 1].value === ':') {
+        const end = tokens[pos + 2]
+        if (end.type !== 'ref') throw new CellError('#ERROR!')
+        pos += 3
+        for (const ref of rangeRefs(t.value, end.value)) {
+          const v = cellValue(ref)
+          if (typeof v === 'number') values.push(v)
+        }
+      } else {
+        values.push(expr())
+      }
+    }
+    function call(name, values) {
+      switch (name) {
+        case 'SUM':
+          return values.reduce((a, b) => a + b, 0)
+        case 'AVG':
+          if (!values.length) throw new CellError('#DIV/0!')
+          return values.reduce((a, b) => a + b, 0) / values.length
+        case 'MIN':
+          return values.length ? Math.min(...values) : 0
+        case 'MAX':
+          return values.length ? Math.max(...values) : 0
+        default:
+          throw new CellError('#NAME?')
+      }
+    }
+
+    const result = expr()
+    if (peek().type !== 'end') throw new CellError('#ERROR!')
+    return result
+  }
+
+  function get(ref) {
+    const v = evaluate(normalize(ref), new Map(), new Set())
+    return v instanceof CellError ? v.code : v
+  }
+
+  return { set, get }
+}
+--- hint
+Start with a `Map` from normalised reference to the raw input, and a `get` that handles empty cells, numbers and text. Then add formulas, beginning with numbers and `+` only.
+--- hint
+Evaluate a cell with a function that takes a memo `Map` and a set of cells in progress. If the cell is in progress, you have found a cycle; when it is done, store its value in the memo.
+--- hint
+Throw a special error class carrying the code (`'#DIV/0!'` and so on) from deep inside the formula evaluator, and catch it at the cell level to turn it into the cell's value.
+--- check case | Numbers, text and empty cells
+(() => { const s = createSheet(); s.set('A1', '5'); s.set('B1', 'hello'); s.set('C1', ' -2.5 '); s.set('D1', '12abc'); return [s.get('A1'), s.get('B1'), s.get('C1'), s.get('D1'), s.get('E1')] })()
+=> [5, 'hello', -2.5, '12abc', null]
+--- check case | Formulas with precedence, brackets and unary minus
+(() => { const s = createSheet(); s.set('A1', '2'); s.set('A2', '3'); s.set('A3', '=A1*A2+1'); s.set('A4', '=-(A1+A2)*2'); s.set('A5', '=(A1 + A2) / 4'); return [s.get('A3'), s.get('A4'), s.get('A5')] })()
+=> [7, -10, 1.25]
+--- check case | Values follow the inputs
+(() => { const s = createSheet(); s.set('A1', '2'); s.set('B1', '=A1*10'); const before = s.get('B1'); s.set('A1', '7'); const after = s.get('B1'); s.set('A1', ''); return [before, after, s.get('B1'), s.get('A1')] })()
+=> [20, 70, 0, null]
+--- check case | References are case-insensitive
+(() => { const s = createSheet(); s.set('a1', '4'); s.set('B2', '= a1 * b1 + 1'); return [s.get('A1'), s.get('b2')] })()
+=> [4, 1]
+--- check case | SUM, AVG, MIN and MAX over ranges and lists
+(() => { const s = createSheet(); s.set('A1', '10'); s.set('A2', '3'); s.set('A3', '=A1*A2+1'); s.set('B1', 'note'); return [s.get('A3'), (s.set('C1', '=SUM(A1:A3)'), s.get('C1')), (s.set('C2', '=SUM(B3:A1, 10)'), s.get('C2')), (s.set('C3', '=AVG(A1:A2)'), s.get('C3')), (s.set('C4', '=MAX(A1:A3) + MIN(A1, A2)'), s.get('C4')), (s.set('C5', '=SUM(Z1:Z9)'), s.get('C5'))] })()
+=> [31, 44, 54, 6.5, 34, 0]
+--- check case | Errors are values
+(() => { const s = createSheet(); s.set('A1', 'text'); s.set('B1', '=1/0'); s.set('B2', '=A1+1'); s.set('B3', '=B1*2'); s.set('B4', '=1+'); s.set('B5', '=FOO(1)'); s.set('B6', '=AVG(Z1:Z3)'); s.set('B7', '=(1+2'); s.set('B8', '=1 2'); return ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'].map((r) => s.get(r)) })()
+=> ['#DIV/0!', '#VALUE!', '#DIV/0!', '#ERROR!', '#NAME?', '#DIV/0!', '#ERROR!', '#ERROR!']
+--- check case | Circular references
+(() => { const s = createSheet(); s.set('A1', '=B1'); s.set('B1', '=A1'); s.set('C1', '=C1'); s.set('D1', '=A1+1'); s.set('E1', '=SUM(E2:E3)'); s.set('E2', '=E1'); return ['A1', 'B1', 'C1', 'D1', 'E1'].map((r) => s.get(r)) })()
+=> ['#CYCLE!', '#CYCLE!', '#CYCLE!', '#CYCLE!', '#CYCLE!']
+--- check case | Bad references throw
+[throws(() => createSheet().set('A0', '1')), throws(() => createSheet().get('AA1')), throws(() => createSheet().set('1A', '1')), throws(() => createSheet().get('A1000'))]
+=> [true, true, true, true]
+--- check case | Fast even with many repeated references
+(() => { const s = createSheet(); s.set('A1', '1'); for (let i = 2; i <= 40; i++) s.set('A' + i, `=A${i - 1}+A${i - 1}`); return s.get('A40') })()
+=> 549755813888
+?? Re-evaluating every reference from scratch doubles the work at each row. Remember each cell's value during one get.
+
+=== jsp-14 | Capstone: a rate-limited job queue
+--- teach
+Every system that talks to an API with limits needs this: a queue that runs jobs **concurrently, but not too concurrently**, respects a **rate limit**, lets urgent work jump ahead, and **retries** flaky failures. It combines almost everything from the advanced and expert courses: closures, promises, timers, the event loop and careful state management.
+
+Before you code, think about the moving parts:
+
+- **The waiting list.** Jobs wait until they can start. With priorities, "next" means the highest priority, and among equals, the one added first. A stable way to break ties is a sequence number given to each job as it is added.
+- **When to start jobs.** There is one moment to try: whenever something changes — a job is added, a job finishes. Write one function (often called `pump` or `drain`) that starts as many waiting jobs as the limits allow, and call it from every such place.
+- **The rate limit.** "At most `limit` starts in any `interval` ms" is a **sliding window**: keep the times of recent starts, forget those older than `interval`, and if `limit` remain, you must wait — until the oldest one leaves the window. That wait is a timer that calls `pump` again. Take care not to set a new timer every time `pump` runs.
+- **Each job's promise.** `add` returns a promise, but the job may not start for a while. Store the promise's `resolve` and `reject` alongside the job, and call them when it finally settles.
+- **Retries.** A failed job with attempts left goes back into the waiting list — keeping its priority and sequence, so it does not lose its place behind newer jobs.
+- **Idle.** `onIdle()` resolves when nothing is running and nothing is waiting — useful for tests and for shutting down cleanly.
+
+A job may be an `async` function, a function returning a plain value, or one that throws before returning a promise. Treat all three the same by starting it inside a promise chain.
+--- task
+Write `createQueue(options)`, where `options` may contain `concurrency` (default 1), `limit` and `interval` (at most `limit` job starts in any `interval` ms; default no limit, interval 1000) and `retries` (default 0). It returns:
+
+- `add(job, { priority = 0 } = {})` — `job` is a function returning a value or a promise. Returns a promise of the job's result.
+  - At most `concurrency` jobs run at once, and at most `limit` start in any `interval` ms window; jobs start as soon as both allow.
+  - Waiting jobs start highest `priority` first, then in the order added.
+  - A job that throws or rejects is tried again, up to `retries` more times (keeping its place); after that, the promise rejects with the last error.
+- `onIdle()` — a promise that resolves once nothing is running or waiting (straight away if already idle).
+- `stats()` — `{ running, waiting, done, failed }`: jobs running now, jobs waiting, jobs that succeeded and jobs that finally failed.
+
+A job added while there is room starts straight away (so `stats()` counts it as running immediately). Keep the test drive at the end.
+--- starter
+// Your job queue. Design it however you like.
+
+function createQueue(options = {}) {
+  return {}
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const attempt = async (fn) => {
+  try {
+    return await fn()
+  } catch (e) {
+    return `error: ${e.message}`
+  }
+}
+const results = {
+  concurrency: await attempt(async () => {
+    const q = createQueue({ concurrency: 2 })
+    let active = 0
+    let max = 0
+    const job = (v) => async () => {
+      active++
+      max = Math.max(max, active)
+      await sleep(20)
+      active--
+      return v
+    }
+    const values = await Promise.all([1, 2, 3, 4, 5].map((v) => q.add(job(v))))
+    return { values, max }
+  }),
+  priority: await attempt(async () => {
+    const q = createQueue({ concurrency: 1 })
+    const order = []
+    const job = (name) => async () => {
+      order.push(name)
+      await sleep(10)
+    }
+    await Promise.all([q.add(job('A')), q.add(job('B')), q.add(job('C'), { priority: 5 }), q.add(job('D'), { priority: 5 })])
+    return order
+  }),
+  rate: await attempt(async () => {
+    const q = createQueue({ concurrency: 10, limit: 2, interval: 100 })
+    const t0 = Date.now()
+    const times = []
+    await Promise.all([1, 2, 3, 4, 5].map(() => q.add(() => times.push(Date.now() - t0))))
+    return times.map((t) => Math.round(t / 100))
+  }),
+  retry: await attempt(async () => {
+    let tries = 0
+    const flaky = await createQueue({ retries: 2 }).add(async () => {
+      tries++
+      if (tries < 3) throw new Error(`fail ${tries}`)
+      return 'ok'
+    })
+    let n = 0
+    const hopeless = await createQueue({ retries: 1 })
+      .add(async () => {
+        n++
+        throw new Error(`fail ${n}`)
+      })
+      .catch((e) => `rejected: ${e.message}`)
+    return { flaky, tries, hopeless, n }
+  }),
+  idle: await attempt(async () => {
+    const q = createQueue({ concurrency: 2 })
+    const before = q.stats()
+    q.add(() => sleep(10))
+    q.add(() => sleep(10))
+    q.add(() => sleep(10))
+    q.add(() => {
+      throw new Error('sync throw')
+    }).catch(() => {})
+    const during = q.stats()
+    await q.onIdle()
+    const after = q.stats()
+    const plain = await q.add(() => 42)
+    await createQueue().onIdle()
+    return { before, during, after, plain }
+  }),
+}
+--- solution
+function createQueue({ concurrency = 1, limit = Infinity, interval = 1000, retries = 0 } = {}) {
+  const waiting = []
+  const starts = []
+  let idleWaiters = []
+  let running = 0
+  let done = 0
+  let failed = 0
+  let seq = 0
+  let timer = null
+
+  function nextIndex() {
+    let best = 0
+    for (let i = 1; i < waiting.length; i++) {
+      const a = waiting[i]
+      const b = waiting[best]
+      if (a.priority > b.priority || (a.priority === b.priority && a.seq < b.seq)) best = i
+    }
+    return best
+  }
+
+  function checkIdle() {
+    if (running === 0 && waiting.length === 0) {
+      const resolvers = idleWaiters
+      idleWaiters = []
+      for (const resolve of resolvers) resolve()
+    }
+  }
+
+  function start(task) {
+    running++
+    task.attempts++
+    Promise.resolve()
+      .then(() => task.job())
+      .then(
+        (value) => {
+          running--
+          done++
+          task.resolve(value)
+          pump()
+        },
+        (error) => {
+          running--
+          if (task.attempts <= retries) {
+            waiting.push(task)
+          } else {
+            failed++
+            task.reject(error)
+          }
+          pump()
+        },
+      )
+  }
+
+  function pump() {
+    while (running < concurrency && waiting.length > 0) {
+      const now = Date.now()
+      while (starts.length && now - starts[0] >= interval) starts.shift()
+      if (starts.length >= limit) {
+        if (!timer) {
+          timer = setTimeout(() => {
+            timer = null
+            pump()
+          }, Math.max(1, starts[0] + interval - now))
+        }
+        return
+      }
+      const [task] = waiting.splice(nextIndex(), 1)
+      if (limit !== Infinity) starts.push(now)
+      start(task)
+    }
+    checkIdle()
+  }
+
+  return {
+    add(job, { priority = 0 } = {}) {
+      return new Promise((resolve, reject) => {
+        waiting.push({ job, priority, seq: seq++, attempts: 0, resolve, reject })
+        pump()
+      })
+    },
+    onIdle() {
+      if (running === 0 && waiting.length === 0) return Promise.resolve()
+      return new Promise((resolve) => idleWaiters.push(resolve))
+    },
+    stats() {
+      return { running, waiting: waiting.length, done, failed }
+    },
+  }
+}
+
+// ---- Test drive: the checks read `results`. Keep this at the end. ----
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const attempt = async (fn) => {
+  try {
+    return await fn()
+  } catch (e) {
+    return `error: ${e.message}`
+  }
+}
+const results = {
+  concurrency: await attempt(async () => {
+    const q = createQueue({ concurrency: 2 })
+    let active = 0
+    let max = 0
+    const job = (v) => async () => {
+      active++
+      max = Math.max(max, active)
+      await sleep(20)
+      active--
+      return v
+    }
+    const values = await Promise.all([1, 2, 3, 4, 5].map((v) => q.add(job(v))))
+    return { values, max }
+  }),
+  priority: await attempt(async () => {
+    const q = createQueue({ concurrency: 1 })
+    const order = []
+    const job = (name) => async () => {
+      order.push(name)
+      await sleep(10)
+    }
+    await Promise.all([q.add(job('A')), q.add(job('B')), q.add(job('C'), { priority: 5 }), q.add(job('D'), { priority: 5 })])
+    return order
+  }),
+  rate: await attempt(async () => {
+    const q = createQueue({ concurrency: 10, limit: 2, interval: 100 })
+    const t0 = Date.now()
+    const times = []
+    await Promise.all([1, 2, 3, 4, 5].map(() => q.add(() => times.push(Date.now() - t0))))
+    return times.map((t) => Math.round(t / 100))
+  }),
+  retry: await attempt(async () => {
+    let tries = 0
+    const flaky = await createQueue({ retries: 2 }).add(async () => {
+      tries++
+      if (tries < 3) throw new Error(`fail ${tries}`)
+      return 'ok'
+    })
+    let n = 0
+    const hopeless = await createQueue({ retries: 1 })
+      .add(async () => {
+        n++
+        throw new Error(`fail ${n}`)
+      })
+      .catch((e) => `rejected: ${e.message}`)
+    return { flaky, tries, hopeless, n }
+  }),
+  idle: await attempt(async () => {
+    const q = createQueue({ concurrency: 2 })
+    const before = q.stats()
+    q.add(() => sleep(10))
+    q.add(() => sleep(10))
+    q.add(() => sleep(10))
+    q.add(() => {
+      throw new Error('sync throw')
+    }).catch(() => {})
+    const during = q.stats()
+    await q.onIdle()
+    const after = q.stats()
+    const plain = await q.add(() => 42)
+    await createQueue().onIdle()
+    return { before, during, after, plain }
+  }),
+}
+--- hint
+Keep `waiting` (an array of `{ job, priority, seq, attempts, resolve, reject }`), `running`, and the counters. `add` pushes onto `waiting` and calls `pump()`.
+--- hint
+`pump()` loops while `running < concurrency` and something is waiting: drop start times older than `interval`; if `limit` remain, set one timer to try again and return; otherwise take the best waiting job and start it.
+--- hint
+Start a job with `Promise.resolve().then(() => task.job())` so throwing jobs become rejections. When it settles, update the counters, resolve, reject or re-queue it, and call `pump()` again.
+--- check case | Never more than the concurrency, results to the right promises
+results.concurrency
+=> { values: [1, 2, 3, 4, 5], max: 2 }
+--- check case | Higher priority first, then in the order added
+results.priority
+=> ['A', 'C', 'D', 'B']
+--- check case | The rate limit spaces the starts out (2 per 100ms)
+results.rate
+=> [0, 0, 1, 1, 2]
+--- check case | Retries: a flaky job succeeds, a hopeless one rejects with its last error
+results.retry
+=> { flaky: 'ok', tries: 3, hopeless: 'rejected: fail 2', n: 2 }
+--- check case | stats and onIdle
+results.idle
+=> { before: { running: 0, waiting: 0, done: 0, failed: 0 }, during: { running: 2, waiting: 2, done: 0, failed: 0 }, after: { running: 0, waiting: 0, done: 3, failed: 1 }, plain: 42 }
+
+=== jsp-15 | Capstone: a template engine
+--- teach
+Template engines — Handlebars, Mustache, Liquid, the ones inside every static site generator — turn a template with placeholders and blocks into text. Building one exercises the full compiler pipeline on a friendly scale: **scan** the template into pieces, **build a tree** from the blocks, then **render** the tree against the data.
+
+Things to think about before you start:
+
+- **Scanning.** A template is literal text with tags between `{{` and `}}` (or `{{{` and `}}}`). Finding each next `{{` with `indexOf` and slicing the text between tags is simpler and faster than one enormous regex.
+- **Blocks nest.** `{{#each}}` inside `{{#if}}` inside `{{#each}}` — so a flat list of pieces is not enough. Use a **stack**: an opening tag pushes a new block node, and its children are collected until the matching closing tag pops it. The stack also tells you when the template is malformed: a closing tag that does not match the top, or blocks still open at the end.
+- **Scope.** Inside `{{#each people}}`, `{{name}}` means the current person's name, but `{{company}}` still means the outer `company`. Render with a **chain of scopes**: look a name up in the innermost scope first, then outwards.
+- **Escaping.** Data often comes from users. Inserting `<script>` unescaped into an HTML page is a security hole (cross-site scripting). So the safe default escapes `& < > " '`, and printing raw HTML needs the deliberate, visibly different triple braces.
+- **Truthiness.** In templates an empty list should count as false — `{{#if items}}` usually means "if there are any" — which is not JavaScript's rule, so decide it explicitly.
+
+Write the scanner, then the tree builder, then the renderer, and test each with `console.log` as you go. Keeping the three stages separate is what keeps each one simple.
+--- task
+Write `render(template, data)`, returning the rendered string.
+
+- `{{ path }}` — the value at `path` (a name, or a dotted path like `user.address.city`), converted with `String` and HTML-escaped (`&` `<` `>` `"` `'` become `&amp;` `&lt;` `&gt;` `&quot;` `&#39;`). A missing value, `null` or `undefined` renders as nothing; `0` renders as `0`. Spaces inside the braces are allowed.
+- `{{{ path }}}` — the same, but not escaped.
+- `{{! anything }}` — a comment; renders as nothing.
+- `{{#if path}} … {{else}} … {{/if}}` — the first part if the value is truthy, otherwise the `else` part (which is optional). An empty array counts as false.
+- `{{#each path}} … {{/each}}` — the inner part once per item of the array (nothing if it is not an array). Inside, `{{this}}` is the item, `{{this.x}}` a property of it, `{{@index}}` its 0-based index, and a plain name is looked up on the item first, then in the enclosing scopes.
+- Blocks nest. A block that is never closed, a closing tag that does not match, an `{{else}}` outside an `if` (or a second one), or a `{{` with no closing braces throws a `SyntaxError`.
+--- starter
+// Your template engine. Design it however you like.
+
+function render(template, data) {
+  return template
+}
+--- solution
+const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ESCAPES[c])
+
+function parseTemplate(template) {
+  const root = { type: 'root', children: [] }
+  const stack = [{ node: root, target: root.children }]
+  const top = () => stack[stack.length - 1]
+  let i = 0
+  while (i < template.length) {
+    const open = template.indexOf('{{', i)
+    if (open < 0) {
+      top().target.push({ type: 'text', value: template.slice(i) })
+      break
+    }
+    if (open > i) top().target.push({ type: 'text', value: template.slice(i, open) })
+    const raw = template[open + 2] === '{'
+    const closer = raw ? '}}}' : '}}'
+    const close = template.indexOf(closer, open + (raw ? 3 : 2))
+    if (close < 0) throw new SyntaxError(`unclosed tag at ${open}`)
+    const tag = template.slice(open + (raw ? 3 : 2), close).trim()
+    i = close + closer.length
+
+    if (raw) {
+      top().target.push({ type: 'var', path: tag, raw: true })
+    } else if (tag.startsWith('!')) {
+      // a comment: nothing to render
+    } else if (tag.startsWith('#')) {
+      const [kind, path = ''] = tag.slice(1).trim().split(/\s+/)
+      if (kind !== 'if' && kind !== 'each') throw new SyntaxError(`unknown block {{#${kind}}}`)
+      const node = { type: kind, path, children: [], otherwise: [] }
+      top().target.push(node)
+      stack.push({ node, target: node.children })
+    } else if (tag.startsWith('/')) {
+      const kind = tag.slice(1).trim()
+      if (stack.length === 1 || top().node.type !== kind) throw new SyntaxError(`unexpected {{/${kind}}}`)
+      stack.pop()
+    } else if (tag === 'else') {
+      const frame = top()
+      if (frame.node.type !== 'if' || frame.target === frame.node.otherwise) throw new SyntaxError('unexpected {{else}}')
+      frame.target = frame.node.otherwise
+    } else {
+      top().target.push({ type: 'var', path: tag, raw: false })
+    }
+  }
+  if (stack.length > 1) throw new SyntaxError(`unclosed {{#${top().node.type}}}`)
+  return root.children
+}
+
+function lookup(path, scopes) {
+  const inner = scopes[scopes.length - 1]
+  if (path === '@index') return inner.index
+  const parts = path.split('.')
+  let value
+  if (parts[0] === 'this') {
+    value = inner.value
+    parts.shift()
+  } else {
+    const scope = [...scopes].reverse().find((s) => s.value !== null && typeof s.value === 'object' && parts[0] in s.value)
+    if (!scope) return undefined
+    value = scope.value
+  }
+  for (const part of parts) {
+    if (value === null || value === undefined) return undefined
+    value = value[part]
+  }
+  return value
+}
+
+function truthy(value) {
+  return Array.isArray(value) ? value.length > 0 : Boolean(value)
+}
+
+function renderNodes(nodes, scopes) {
+  let out = ''
+  for (const node of nodes) {
+    if (node.type === 'text') out += node.value
+    else if (node.type === 'var') {
+      const v = lookup(node.path, scopes)
+      const text = v === null || v === undefined ? '' : String(v)
+      out += node.raw ? text : escapeHtml(text)
+    } else if (node.type === 'if') {
+      out += renderNodes(truthy(lookup(node.path, scopes)) ? node.children : node.otherwise, scopes)
+    } else if (node.type === 'each') {
+      const list = lookup(node.path, scopes)
+      if (Array.isArray(list)) {
+        list.forEach((item, index) => {
+          out += renderNodes(node.children, [...scopes, { value: item, index }])
+        })
+      }
+    }
+  }
+  return out
+}
+
+function render(template, data) {
+  return renderNodes(parseTemplate(template), [{ value: data, index: undefined }])
+}
+--- hint
+Scan with `indexOf('{{', i)`. Text before a tag becomes a text node. Check for a third `{` to spot raw tags, and find the matching `}}}` or `}}`.
+--- hint
+Build a tree with a stack of `{ node, target }` frames, where `target` is the array new children go into. `{{else}}` switches the top `if` frame's target to its else-children.
+--- hint
+Render with a list of scopes, each `{ value, index }`. For `{{#each}}`, render the children once per item with a new scope pushed for that item.
+--- check case | Variables and dotted paths
+render('Hello, {{ name }}! You live in {{user.address.city}}.{{missing}}{{user.nope.deep}}', { name: 'Ada', user: { address: { city: 'London' } } })
+=> 'Hello, Ada! You live in London.'
+--- check case | Escaped by default, raw with triple braces
+render('{{html}} | {{{html}}}', { html: `<b>"hi" & 'bye'</b>` })
+=> '&lt;b&gt;&quot;hi&quot; &amp; &#39;bye&#39;&lt;/b&gt; | <b>"hi" & \'bye\'</b>'
+--- check case | Zero shows; null and comments do not
+render('[{{zero}}][{{nothing}}][{{! a comment }}]', { zero: 0, nothing: null })
+=> '[0][][]'
+--- check case | if and else, and empty lists are false
+render('{{#if a}}yes{{else}}no{{/if}} {{#if list}}has{{else}}empty{{/if}} {{#if z}}Z{{/if}}.', { a: 1, list: [] })
+=> 'yes empty .'
+--- check case | each with this, @index, item fields and outer names
+render('{{#each people}}{{@index}}:{{name}}@{{team}}{{#if admin}}*{{/if}};{{/each}}', { team: 'core', people: [{ name: 'ada', admin: true }, { name: 'lin', team: 'ops' }] })
+=> '0:ada@core*;1:lin@ops;'
+--- check case | Nested each over plain values
+render('{{#each rows}}[{{#each this}}{{this}}{{/each}}]{{/each}}{{#each nope}}x{{/each}}', { rows: [[1, 2], [3]] })
+=> '[12][3]'
+--- check case | Malformed templates are SyntaxErrors
+['{{#if a}}x', '{{#if a}}x{{/each}}', '{{else}}', '{{name', '{{/if}}', '{{#if a}}{{else}}{{else}}{{/if}}'].map((t) => { try { render(t, {}); return 'no error' } catch (e) { return e.name } })
+=> ['SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError', 'SyntaxError']
+--- check case | 50,000 items, quickly
+render('{{#each items}}{{this}},{{/each}}', { items: Array.from({ length: 50000 }, (_, i) => i) }).length
+=> 288890
+
+=== jsp-16 | Capstone: a bank
+--- teach
+The last capstone is a small **domain model**: a bank ledger. There is no clever algorithm here. The difficulty is the one that dominates real business software — getting **every rule** right, **every time**, with **no partial failures**.
+
+Think about these before writing code:
+
+- **Money.** Amounts arrive as text like `'12.50'`. Parse them into integer cents immediately, do all arithmetic in cents, and format back to text only on the way out. Decimal numbers would make balances drift.
+- **Errors callers can act on.** A caller needs to tell "not enough money" from "no such account" — to show the right message, or to retry. A custom error class with a `code` property (`'INSUFFICIENT_FUNDS'`) is far better than matching on message text, which you will want to reword one day.
+- **Validate everything, then change anything.** A transfer touches two accounts. If you take money out of the first and *then* discover the second is closed, you have destroyed money. Check every condition first; only when all pass, apply the changes. This is what "atomic" means, and it is the most important rule in the whole capstone.
+- **A statement is an append-only log.** Each successful operation adds an entry recording what happened and the balance after it. Failed operations leave no trace. Hand out copies, so no caller can rewrite history.
+- **State that only moves one way.** A closed account stays closed. Decide which operations still make sense on it — reading its balance and statement, yes; moving money, no.
+- **Performance by design.** Keep the current balance stored and update it with each entry. Recomputing it from the whole statement on every call would make a busy account slower with every transaction.
+--- task
+Write `class BankError extends Error` (with `name` `'BankError'` and a `code` property) and `createBank()`, returning:
+
+- `open(owner, { overdraft = '0' } = {})` — `owner` must be a non-empty string (else code `INVALID_OWNER`). Returns ids `'ACC-1'`, `'ACC-2'`, … The balance may go down to minus `overdraft`.
+- `deposit(id, amount)` and `withdraw(id, amount)` — return the new balance.
+- `transfer(fromId, toId, amount)` — moves money between two accounts, atomically.
+- `balance(id)` — the balance as a string with 2 decimals (`'12.50'`, `'-5.00'`).
+- `statement(id)` — a copy of the account's entries, oldest first: `{ type, amount, balance }` with `type` one of `'deposit'`, `'withdrawal'`, `'transfer-in'`, `'transfer-out'`, `amount` and `balance` (after the entry) as 2-decimal strings, plus `counterparty` (the other account's id) for transfers only.
+- `close(id)` — closes an account whose balance is exactly zero.
+
+Amounts are strings of digits with an optional `.` and 1 or 2 digits, and must be more than zero. Throw a `BankError` with these codes, and change nothing, when an operation fails:
+
+- `NO_ACCOUNT` — an id that does not exist (for any method taking an id);
+- `ACCOUNT_CLOSED` — moving money in or out of a closed account, or closing it again;
+- `INVALID_AMOUNT` — a malformed, zero or negative amount;
+- `INSUFFICIENT_FUNDS` — the balance would go below minus the overdraft;
+- `SAME_ACCOUNT` — a transfer to the same account;
+- `NONZERO_BALANCE` — closing an account that still holds (or owes) money.
+--- starter
+// Your bank. Design it however you like.
+
+function createBank() {
+  return {}
+}
+--- solution
+class BankError extends Error {
+  constructor(code, message = code) {
+    super(message)
+    this.name = 'BankError'
+    this.code = code
+  }
+}
+
+function toCents(amount) {
+  const m = typeof amount === 'string' ? /^(\d+)(?:\.(\d{1,2}))?$/.exec(amount.trim()) : null
+  if (!m) throw new BankError('INVALID_AMOUNT', `not an amount: ${amount}`)
+  return Number(m[1]) * 100 + Number((m[2] ?? '').padEnd(2, '0'))
+}
+
+function formatCents(cents) {
+  const sign = cents < 0 ? '-' : ''
+  const abs = Math.abs(cents)
+  return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`
+}
+
+function createBank() {
+  const accounts = new Map()
+  let nextId = 1
+
+  function account(id) {
+    const acc = accounts.get(id)
+    if (!acc) throw new BankError('NO_ACCOUNT', `no account ${id}`)
+    return acc
+  }
+
+  function openAccount(id) {
+    const acc = account(id)
+    if (acc.closed) throw new BankError('ACCOUNT_CLOSED', `account ${id} is closed`)
+    return acc
+  }
+
+  function positive(amount) {
+    const cents = toCents(amount)
+    if (cents <= 0) throw new BankError('INVALID_AMOUNT', 'amount must be positive')
+    return cents
+  }
+
+  function record(acc, type, cents, counterparty) {
+    acc.balance += type === 'deposit' || type === 'transfer-in' ? cents : -cents
+    const entry = { type, amount: formatCents(cents), balance: formatCents(acc.balance) }
+    if (counterparty) entry.counterparty = counterparty
+    acc.entries.push(entry)
+  }
+
+  function ensureFunds(acc, cents) {
+    if (acc.balance - cents < -acc.overdraft) throw new BankError('INSUFFICIENT_FUNDS', `insufficient funds in ${acc.id}`)
+  }
+
+  return {
+    open(owner, { overdraft = '0' } = {}) {
+      if (typeof owner !== 'string' || owner.trim() === '') throw new BankError('INVALID_OWNER', 'owner is required')
+      const id = `ACC-${nextId++}`
+      accounts.set(id, { id, owner: owner.trim(), balance: 0, overdraft: toCents(overdraft), closed: false, entries: [] })
+      return id
+    },
+    deposit(id, amount) {
+      const acc = openAccount(id)
+      record(acc, 'deposit', positive(amount))
+      return formatCents(acc.balance)
+    },
+    withdraw(id, amount) {
+      const acc = openAccount(id)
+      const cents = positive(amount)
+      ensureFunds(acc, cents)
+      record(acc, 'withdrawal', cents)
+      return formatCents(acc.balance)
+    },
+    transfer(fromId, toId, amount) {
+      const from = account(fromId)
+      const to = account(toId)
+      if (fromId === toId) throw new BankError('SAME_ACCOUNT', 'cannot transfer to the same account')
+      openAccount(fromId)
+      openAccount(toId)
+      const cents = positive(amount)
+      ensureFunds(from, cents)
+      record(from, 'transfer-out', cents, toId)
+      record(to, 'transfer-in', cents, fromId)
+    },
+    balance: (id) => formatCents(account(id).balance),
+    statement: (id) => account(id).entries.map((e) => ({ ...e })),
+    close(id) {
+      const acc = openAccount(id)
+      if (acc.balance !== 0) throw new BankError('NONZERO_BALANCE', `account ${id} still holds money`)
+      acc.closed = true
+    },
+    accounts: () => [...accounts.values()].map((a) => ({ id: a.id, owner: a.owner, balance: formatCents(a.balance), closed: a.closed })),
+  }
+}
+--- hint
+Store accounts in a `Map` by id: `{ id, owner, balance, overdraft, closed, entries }`, with balances and the overdraft in integer cents.
+--- hint
+Write small helpers that throw the right `BankError`: find an account, find an *open* account, parse a positive amount, check funds. Each operation calls them all before changing anything.
+--- hint
+One `record(account, type, cents, counterparty)` helper can update the balance and append the statement entry, so the two can never disagree.
+--- check test | BankError is an Error with a name and a code
+(() => { const e = new BankError('NO_ACCOUNT'); return e instanceof Error && e.name === 'BankError' && e.code === 'NO_ACCOUNT' })()
+--- check case | Open, deposit and withdraw
+(() => { const b = createBank(); const a = b.open('Ada'); return [a, b.open('Lin'), b.deposit(a, '100'), b.withdraw(a, '0.50'), b.balance(a)] })()
+=> ['ACC-1', 'ACC-2', '100.00', '99.50', '99.50']
+--- check case | Transfers and statements
+(() => { const b = createBank(); const a = b.open('Ada'); const l = b.open('Lin'); b.deposit(a, '100'); b.transfer(a, l, '20.25'); return [b.balance(a), b.balance(l), b.statement(a), b.statement(l)] })()
+=> ['79.75', '20.25', [{ type: 'deposit', amount: '100.00', balance: '100.00' }, { type: 'transfer-out', amount: '20.25', balance: '79.75', counterparty: 'ACC-2' }], [{ type: 'transfer-in', amount: '20.25', balance: '20.25', counterparty: 'ACC-1' }]]
+--- check case | Error codes
+(() => { const b = createBank(); const a = b.open('Ada'); const l = b.open('Lin'); b.deposit(a, '10'); const code = (f) => { try { f(); return 'ok' } catch (e) { return e instanceof BankError ? e.code : 'not a BankError' } }; return [code(() => b.withdraw(a, '10.01')), code(() => b.deposit('ACC-9', '1')), code(() => b.balance('nope')), code(() => b.deposit(a, '-1')), code(() => b.deposit(a, '1.234')), code(() => b.deposit(a, '0')), code(() => b.deposit(a, 'ten')), code(() => b.transfer(a, a, '1')), code(() => b.close(a)), code(() => b.open('  '))] })()
+=> ['INSUFFICIENT_FUNDS', 'NO_ACCOUNT', 'NO_ACCOUNT', 'INVALID_AMOUNT', 'INVALID_AMOUNT', 'INVALID_AMOUNT', 'INVALID_AMOUNT', 'SAME_ACCOUNT', 'NONZERO_BALANCE', 'INVALID_OWNER']
+--- check case | Overdrafts
+(() => { const b = createBank(); const a = b.open('Ada', { overdraft: '50.00' }); const code = (f) => { try { f(); return 'ok' } catch (e) { return e.code } }; return [code(() => b.withdraw(a, '50.01')), b.withdraw(a, '50'), b.statement(a).length] })()
+=> ['INSUFFICIENT_FUNDS', '-50.00', 1]
+--- check case | A failed transfer changes nothing
+(() => { const b = createBank(); const a = b.open('Ada'); const l = b.open('Lin'); b.deposit(a, '5'); b.close(l); const code = (f) => { try { f(); return 'ok' } catch (e) { return e.code } }; return [code(() => b.transfer(a, l, '1')), code(() => b.transfer(a, 'ACC-7', '1')), code(() => b.transfer(a, b.open('Sam'), '6')), b.balance(a), b.statement(a).length] })()
+=> ['ACCOUNT_CLOSED', 'NO_ACCOUNT', 'INSUFFICIENT_FUNDS', '5.00', 1]
+--- check case | Closed accounts stay readable but frozen
+(() => { const b = createBank(); const a = b.open('Ada'); b.deposit(a, '3'); b.withdraw(a, '3'); b.close(a); const code = (f) => { try { f(); return 'ok' } catch (e) { return e.code } }; return [code(() => b.deposit(a, '1')), code(() => b.withdraw(a, '1')), code(() => b.close(a)), b.balance(a), b.statement(a).length] })()
+=> ['ACCOUNT_CLOSED', 'ACCOUNT_CLOSED', 'ACCOUNT_CLOSED', '0.00', 2]
+--- check case | Statements are copies
+(() => { const b = createBank(); const a = b.open('Ada'); b.deposit(a, '1'); const s = b.statement(a); s[0].amount = '1000000.00'; s.push({}); return b.statement(a) })()
+=> [{ type: 'deposit', amount: '1.00', balance: '1.00' }]
+--- check case | 100,000 transactions, exact and fast
+(() => { const b = createBank(); const a = b.open('Ada'); for (let i = 0; i < 100000; i++) b.deposit(a, '0.01'); return [b.balance(a), b.statement(a).length] })()
+=> ['1000.00', 100000]

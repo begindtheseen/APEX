@@ -31,12 +31,11 @@ export type TrackId =
 /** Languages the playground knows how to run or check. */
 export type Lang =
   | 'javascript'
+  | 'typescript'
   | 'python'
   | 'sql'
   | 'cpp'
-  | 'rust'
-  | 'matlab'
-  | 'simulink'
+  | 'html'
   | 'bash'
   | 'text'
 

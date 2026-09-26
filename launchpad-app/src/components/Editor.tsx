@@ -1,5 +1,5 @@
 /* ============================================================================
-   ORBIT — code editor
+   LAUNCHPAD — code editor (ORBIT's)
    ----------------------------------------------------------------------------
    CodeMirror 6, bundled through Vite rather than pulled from a CDN.
 
@@ -8,11 +8,10 @@
    editor dies with "Unrecognized extension value". Letting the bundler resolve
    one copy of each package makes that class of failure impossible.
 
-   Monaco was the alternative and loses on three counts here: it is roughly ten
-   times the bundle on top of an already heavy Python runtime, it instantiates
-   expensively (a notebook wants many editors), and it ships no MATLAB or
-   Octave grammar at all — CodeMirror has Octave in its legacy modes, which is
-   a near-superset of MATLAB for teaching purposes.
+   Monaco was the alternative and loses on two counts here: it is roughly ten
+   times the bundle on top of already heavy language runtimes, and it
+   instantiates expensively (a notebook wants many editors). CodeMirror's
+   JavaScript grammar covers TypeScript too.
    ========================================================================== */
 import { useEffect, useMemo, useRef } from 'react'
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
@@ -23,18 +22,16 @@ import {
   indentWithTab,
 } from '@codemirror/commands'
 import { cpp } from '@codemirror/lang-cpp'
+import { html } from '@codemirror/lang-html'
+import { javascript } from '@codemirror/lang-javascript'
 import { python as pythonLang } from '@codemirror/lang-python'
-import { rust } from '@codemirror/lang-rust'
 import { SQLite, sql } from '@codemirror/lang-sql'
 import {
   HighlightStyle,
-  StreamLanguage,
   bracketMatching,
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language'
-import { octave } from '@codemirror/legacy-modes/mode/octave'
-import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { EditorState, type Extension } from '@codemirror/state'
 import {
   EditorView,
@@ -123,6 +120,68 @@ const highlight = HighlightStyle.define([
   { tag: t.invalid, color: '#f4614e' },
 ])
 
+/*
+ * The playground's IDE window (the Coddy-style one): a neutral charcoal page,
+ * blue keywords and green strings, so code reads the same in every mode.
+ */
+const ideTheme = EditorView.theme(
+  {
+    '&': { color: '#d4d4d4', backgroundColor: '#1e1f22', fontSize: '13.5px', height: '100%' },
+    '.cm-content': {
+      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+      padding: '14px 0 64px',
+      caretColor: '#4fc1ff',
+      lineHeight: '1.75',
+    },
+    '.cm-scroller': { fontFamily: 'inherit', overflow: 'auto' },
+    '&.cm-focused': { outline: 'none' },
+    '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#4fc1ff', borderLeftWidth: '2px' },
+    '&.cm-focused .cm-selectionBackgroundMultiple, .cm-selectionBackground, ::selection': {
+      backgroundColor: 'rgba(79,193,255,0.22)',
+    },
+    '.cm-gutters': {
+      backgroundColor: '#1e1f22',
+      color: '#6b6f78',
+      border: 'none',
+      paddingLeft: '8px',
+      minWidth: '40px',
+    },
+    '.cm-activeLineGutter': { backgroundColor: 'transparent', color: '#b9bec8' },
+    '.cm-activeLine': { backgroundColor: 'rgba(255,255,255,0.03)' },
+    '.cm-matchingBracket, .cm-nonmatchingBracket': {
+      backgroundColor: 'rgba(79,193,255,0.18)',
+      outline: '1px solid rgba(79,193,255,0.4)',
+    },
+    '.cm-placeholder': { color: '#6b6f78', fontStyle: 'italic' },
+    '.cm-tooltip': {
+      backgroundColor: '#26272b',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: '8px',
+      boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+    },
+  },
+  { dark: true },
+)
+
+const ideHighlight = HighlightStyle.define([
+  { tag: [t.keyword, t.controlKeyword, t.moduleKeyword, t.operatorKeyword], color: '#2fa8e6', fontWeight: '600' },
+  { tag: [t.name, t.deleted, t.character, t.propertyName, t.macroName], color: '#d4d4d4' },
+  { tag: [t.function(t.variableName), t.labelName], color: '#dcdcaa' },
+  { tag: [t.typeName, t.className, t.namespace], color: '#4ec9b0' },
+  { tag: [t.tagName], color: '#2fa8e6', fontWeight: '600' },
+  { tag: [t.attributeName], color: '#4fc1ff' },
+  { tag: [t.number, t.bool, t.null, t.constant(t.name), t.standard(t.name)], color: '#2fa8e6' },
+  { tag: [t.string, t.processingInstruction, t.inserted, t.attributeValue], color: '#27b574' },
+  { tag: [t.regexp, t.escape, t.special(t.string)], color: '#d7ba7d' },
+  { tag: [t.operator, t.separator, t.bracket, t.angleBracket], color: '#a9adb6' },
+  { tag: t.meta, color: '#8a8f99' },
+  { tag: t.comment, color: '#6a9955', fontStyle: 'italic' },
+  { tag: t.strong, fontWeight: 'bold' },
+  { tag: t.emphasis, fontStyle: 'italic' },
+  { tag: t.heading, fontWeight: 'bold', color: '#2fa8e6' },
+  { tag: t.invalid, color: '#f14c4c' },
+])
+
 function languageFor(lang: Lang): Extension[] {
   switch (lang) {
     case 'python':
@@ -131,15 +190,12 @@ function languageFor(lang: Lang): Extension[] {
       return [sql({ dialect: SQLite, upperCaseKeywords: true })]
     case 'cpp':
       return [cpp()]
-    case 'rust':
-      return [rust()]
-    case 'matlab':
-    case 'simulink':
-      // Octave's grammar covers MATLAB closely enough for highlighting, and is
-      // the reason CodeMirror won this decision over Monaco.
-      return [StreamLanguage.define(octave)]
-    case 'bash':
-      return [StreamLanguage.define(shell)]
+    case 'javascript':
+      return [javascript()]
+    case 'typescript':
+      return [javascript({ typescript: true })]
+    case 'html':
+      return [html()]
     default:
       return []
   }
@@ -153,6 +209,7 @@ export function Editor({
   placeholder,
   minHeight = 240,
   onRun,
+  ide = false,
 }: {
   value: string
   onChange: (next: string) => void
@@ -162,6 +219,8 @@ export function Editor({
   minHeight?: number
   /** Ctrl/Cmd+Enter. */
   onRun?: () => void
+  /** The playground's IDE look (charcoal, Coddy-style) instead of ORBIT's navy. */
+  ide?: boolean
 }) {
   const host = useRef<HTMLDivElement | null>(null)
   const view = useRef<EditorView | null>(null)
@@ -181,8 +240,8 @@ export function Editor({
       bracketMatching(),
       closeBrackets(),
       autocompletion(),
-      syntaxHighlighting(highlight),
-      theme,
+      syntaxHighlighting(ide ? ideHighlight : highlight),
+      ide ? ideTheme : theme,
       EditorView.lineWrapping,
       ...languageFor(lang),
       ...(placeholder ? [placeholderExt(placeholder)] : []),
@@ -204,7 +263,7 @@ export function Editor({
         if (u.docChanged) onChangeRef.current(u.state.doc.toString())
       }),
     ],
-    [lang, readOnly, placeholder],
+    [lang, readOnly, placeholder, ide],
   )
 
   // Create once per language; the document is synced separately below so that
@@ -233,5 +292,5 @@ export function Editor({
     v.dispatch({ changes: { from: 0, to: current.length, insert: value } })
   }, [value])
 
-  return <div className="editor" ref={host} style={{ minHeight }} />
+  return <div className={ide ? 'editor editor--ide' : 'editor'} ref={host} style={{ minHeight }} />
 }

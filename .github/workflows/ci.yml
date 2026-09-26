@@ -58,7 +58,47 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # The playground's C++ and TypeScript compilers are not in the build:
+      # the browser downloads them from a CDN on first use. The browser suite
+      # serves the same pinned packages locally, so this is the one check
+      # that the files a learner's browser will ask for are really there.
+      - name: The compilers the playground downloads are on the CDN
+        run: |
+          clang=$(sed -n "s/^const CLANG_VERSION = '\(.*\)'/\1/p" src/workers/cpp.worker.ts)
+          ts=$(sed -n "s/^const TS_VERSION = '\(.*\)'/\1/p" src/workers/typescript.worker.ts)
+          test -n "$clang" && test -n "$ts"
+          for f in gen/bundle.js gen/llvm.core.wasm gen/llvm.core2.wasm gen/llvm.core3.wasm gen/llvm.core4.wasm gen/llvm-resources.tar; do
+            curl -sfIL --retry 3 "https://cdn.jsdelivr.net/npm/@yowasp/clang@$clang/$f" > /dev/null || { echo "::error::jsDelivr does not serve @yowasp/clang@$clang/$f"; exit 1; }
+          done
+          for f in lib/typescript.js lib/lib.es2022.d.ts lib/lib.webworker.d.ts; do
+            curl -sfIL --retry 3 "https://cdn.jsdelivr.net/npm/typescript@$ts/$f" > /dev/null || { echo "::error::jsDelivr does not serve typescript@$ts/$f"; exit 1; }
+          done
       - name: The committed build matches the source
         run: |
           git status --porcelain -- ../launchpad
           test -z "$(git status --porcelain -- ../launchpad)"
+
+  # Every Learn-to-code lesson, through the real runtimes in Node: the starter
+  # must not pass and the solution must pass every check. The runtimes
+  # (Pyodide, sql.js, clang in WebAssembly, Playwright's Chromium) are the
+  # root devDependencies; launchpad-app resolves them from there.
+  lessons:
+    name: Every lesson can be passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            launchpad-app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: launchpad-app
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run every lesson's starter and solution
+        working-directory: launchpad-app
+        run: VERIFY=all npx vitest run src/learn/verify.test.ts
