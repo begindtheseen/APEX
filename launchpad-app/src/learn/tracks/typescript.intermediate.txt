@@ -1155,7 +1155,7 @@ const p: Payment = { method: 'bank', amount: 5, iban: 'DE89370400440532013000', 
 --- check source absent | No optional chaining or non-null assertions in describePayment
 \?\.\s*slice|!\.\s*slice
 
-=== ts2-13 | Problem: finding free time
+=== ts2-13 | Problem solving: finding free time
 --- teach
 A problem-solving lesson. The types are part of the solution: they say what goes in and what comes out, so you can think about the algorithm.
 

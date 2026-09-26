@@ -1239,7 +1239,7 @@ br missing
 .price style color == rgb(30, 144, 255)
 .price style font-weight == 700
 
-=== web2-14 | Problem: filter a list as you type
+=== web2-14 | Problem solving: filter a list as you type
 --- teach
 A filter box looks simple and hides several decisions. Work through it like any problem:
 

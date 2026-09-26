@@ -251,7 +251,7 @@ Step: join `categories c` to the tree on `c.parent_id = t.id`, building `t.path 
 ordered
 [["All", 0], ["All > Electronics", 1], ["All > Electronics > Audio", 2], ["All > Electronics > Audio > Headphones", 3], ["All > Electronics > Audio > Headphones > Earbuds", 4], ["All > Electronics > Audio > Speakers", 3], ["All > Electronics > Cables", 2], ["All > Home", 1], ["All > Home > Kitchen", 2]]
 
-=== sql3-18 | Problem: everyone under every manager
+=== sql3-18 | Problem solving: everyone under every manager
 --- teach
 **The problem.** HR wants a table of every manager with the size and cost of the whole team beneath them: for each employee who manages anyone, the number of people below them **at any depth**, and the total salary of those people. Maya, the CEO, has everyone below her; Ivan has only his intern.
 

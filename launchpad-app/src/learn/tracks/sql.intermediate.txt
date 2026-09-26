@@ -761,7 +761,7 @@ Join `orders` to both steps and sum those per customer. Ben's cancelled order ha
 --- check result | Correct totals; Ben paid 58, Eve's refund nets to 0
 [["Ada", 127.6, 127.6], ["Ben", 90.0, 58.0], ["Cleo", 37.8, 37.8], ["Dev", 107.0, 107.0], ["Eve", 45.0, 0.0]]
 
-=== sql2-15 | Problem: the second-highest salary
+=== sql2-15 | Problem solving: the second-highest salary
 --- schema
 CREATE TABLE employees (
   id INTEGER PRIMARY KEY,
@@ -826,7 +826,7 @@ Put the "max below the max" in a scalar subquery in the SELECT list, correlated 
 ordered
 [["design", null], ["eng", 95000], ["ops", null], ["sales", 55000]]
 
-=== sql2-16 | Problem: finding what is missing
+=== sql2-16 | Problem solving: finding what is missing
 --- teach
 **The problem.** Sales wants to win back customers who have never bought anything. "Bought" means an order that is `paid` or `shipped`: a customer whose only order was refunded or cancelled has not really bought.
 

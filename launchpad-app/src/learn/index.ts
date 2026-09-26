@@ -80,13 +80,34 @@ export function langName(lang: string): string {
  * One roadmap per language with more than one course: beginner to expert,
  * every course of that language in order, projects last.
  */
+/**
+ * Courses from another language a ladder leans on, and the step that first
+ * needs each: TypeScript is JavaScript with types, git is typed at the command
+ * line, and the web courses past intermediate script their pages in JavaScript.
+ * A mastery roadmap puts that course just before the step, where this app has it.
+ */
+export const PREREQUISITES: Partial<Record<LearnLang, { before: string; course: string }[]>> = {
+  typescript: [{ before: 'typescript', course: 'javascript' }],
+  git: [{ before: 'git', course: 'bash' }],
+  html: [{ before: 'html-advanced', course: 'javascript' }],
+}
+
+function masterySteps(lang: LearnLang): string[] {
+  const steps = tracksFor(lang).map((t) => t.id)
+  for (const { before, course } of PREREQUISITES[lang] ?? []) {
+    const at = steps.indexOf(before)
+    if (at >= 0 && TRACKS.some((t) => t.id === course) && !steps.includes(course)) steps.splice(at, 0, course)
+  }
+  return steps
+}
+
 export const MASTERY: Roadmap[] = [...new Set(TRACKS.map((t) => t.lang))]
   .filter((lang) => tracksFor(lang).length > 1)
   .map((lang) => ({
     id: `master-${lang}`,
     title: langName(lang),
     blurb: `${langName(lang)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,
-    steps: tracksFor(lang).map((t) => t.id),
+    steps: masterySteps(lang),
   }))
 
 export { parseTrack, ROADMAPS }

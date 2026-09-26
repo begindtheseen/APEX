@@ -844,7 +844,7 @@ SELECT COUNT(*) FROM orders o WHERE NOT EXISTS (SELECT 1 FROM customers c WHERE 
 INSERT OR IGNORE INTO customers (email, name) VALUES (' CY@Mail.com', 'Cy') RETURNING id
 => []
 
-=== sql4-12 | Problem: cohort retention
+=== sql4-12 | Problem solving: cohort retention
 --- schema
 CREATE TABLE users (
   id INTEGER PRIMARY KEY,
@@ -920,7 +920,7 @@ Drive the final query from users (so inactive users count in the size), and for 
 ordered
 [["2024-01", 4, 50.0, 50.0], ["2024-02", 2, 50.0, 100.0], ["2024-03", 1, 100.0, 0.0]]
 
-=== sql4-13 | Problem: a conversion funnel
+=== sql4-13 | Problem solving: a conversion funnel
 --- schema
 CREATE TABLE events (
   user_id INTEGER NOT NULL,
@@ -1006,7 +1006,7 @@ Write `s1` … `s4` as CTEs, each joining the one before. Then stack four count 
 ordered
 [[1, "view", 6, null], [2, "cart", 4, 66.7], [3, "checkout", 3, 75.0], [4, "purchase", 2, 66.7]]
 
-=== sql4-14 | Problem: find and fix a slow query
+=== sql4-14 | Problem solving: find and fix a slow query
 --- schema
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY,

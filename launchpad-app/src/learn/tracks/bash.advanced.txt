@@ -124,7 +124,7 @@ used $count
 
 === term3-04 | Exit codes: && and ||
 --- teach
-Every command finishes with an **exit status**, a number that says how it went: `0` means success, anything else means some kind of failure. Nothing is printed; `echo $?` shows the status of the last command.
+Every command finishes with an **exit status** (also called an **exit code**), a number that says how it went: `0` means success, anything else means some kind of failure. Nothing is printed; `echo $?` shows the status of the last command.
 
 ```
 ~/project $ grep -q ERROR deploy.log

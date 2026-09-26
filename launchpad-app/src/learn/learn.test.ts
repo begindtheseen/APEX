@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildProgram, checkFact, gradeRun, lessonShell, normalize, splitMarks, typeCheckFailures, typeLines } from './grade'
-import { MASTERY, ROADMAPS, TRACKS, findLesson, nextLesson, streak, trackFor, tracksFor } from './index'
+import { MASTERY, PREREQUISITES, ROADMAPS, TRACKS, findLesson, nextLesson, streak, trackFor, tracksFor } from './index'
 import { LEARN_LANGS } from './platform'
 import { run as runShell } from '@/lib/shell'
 import { LessonFormatError, parseTrack } from './parse'
@@ -101,8 +101,22 @@ describe('the tracks', () => {
     for (const lang of LEARN_LANGS) {
       const courses = tracksFor(lang)
       if (courses.length < 2) continue
-      expect(MASTERY.find((r) => r.id === `master-${lang}`)?.steps, lang).toEqual(courses.map((t) => t.id))
+      const steps = MASTERY.find((r) => r.id === `master-${lang}`)?.steps ?? []
+      // Its own courses, all of them, in order…
+      expect(steps.filter((id) => trackFor(id)?.lang === lang), lang).toEqual(courses.map((t) => t.id))
+      // …and another language's course only where the ladder needs it, just before that step.
+      const extra = steps.filter((id) => trackFor(id)?.lang !== lang)
+      const needed = (PREREQUISITES[lang] ?? []).filter((p) => TRACKS.some((t) => t.id === p.course) && courses.some((t) => t.id === p.before))
+      expect(extra, lang).toEqual(needed.map((p) => p.course))
+      for (const p of needed) expect(steps.indexOf(p.course) + 1, lang).toBe(steps.indexOf(p.before))
     }
+  })
+
+  it('a mastery roadmap brings in the basics its ladder leans on', () => {
+    const steps = (lang: string) => MASTERY.find((r) => r.id === `master-${lang}`)?.steps ?? []
+    if (steps('typescript').length) expect(steps('typescript').slice(0, 2)).toEqual(['javascript', 'typescript'])
+    if (steps('git').length) expect(steps('git').slice(0, 2)).toEqual(['bash', 'git'])
+    if (steps('html').includes('html-advanced')) expect(steps('html').slice(0, 4)).toEqual(['html', 'html-intermediate', 'javascript', 'html-advanced'])
   })
 
   it('continue goes to the first lesson not yet passed', () => {

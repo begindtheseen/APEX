@@ -88,7 +88,7 @@ these as "new" tasks (building on them is fine):
 | what a function gives back | **returns** / "hands a value back" | py-08 |
 | Python failure | **raises an exception** (`raise`, `try`/`except`) | py-11 |
 | JS/TS failure | **throws an error** (`throw`, `try`/`catch`/`finally`) | js-11 |
-| C++ failure | no exceptions: return `std::optional`, a code, `std::variant` or an error struct (not yet taught — see C++) | AUTHORING |
+| C++ failure | no exceptions: return `std::optional` (cpp2-09), a `bool`/code, or `std::variant<T, Error>` (cpp3-13) | cpp2-09, cpp3-13 |
 | SQL failure | the database **refuses** the write (a constraint) | sql-09, sql-11 |
 | TS compile failure | **type error** (the compiler's error; nothing runs) | ts-01, ts-02 |
 | C++ compile failure | the **compiler's first error** / clang **warnings** | cpp-01, cpp-05 |
@@ -98,6 +98,10 @@ these as "new" tasks (building on them is fine):
 | text | **string** everywhere (`str` as Python's type name) | py-01, js-01 |
 | the grader | "the **checks**", "the **checker**", button **Run & check** | cpp-03, ts-02 |
 | filesystem container | **folder** (with "directory" explained once) | term-02 |
+| lesson title prefixes on the ladders | **Debugging:**, **Problem solving:**, **Design:**, **Capstone:** (plus Performance:, Build a container:, and web4-14's Problem finding:) | all ladders |
+| a debugging task's framing | "**Bug report:**" then the symptom, then "fix the cause" | cpp2-02, term2-11, … |
+| a command's result code | **exit status** ("also called an exit code") | term3-04 |
+| changing shape, not behaviour | **refactor** | first design lesson of each ladder |
 | option after a command (`-p`, `-r`) | **flag** | term-04 (defined), term-09 |
 | inline unnamed function | **arrow function** (JS/TS/Web), **lambda** (C++; Python `lambda` not yet taught) | js-07, web-10, cpp-10 |
 | program input | C++/Python: the **Input** box (stdin) | cpp-04 |
@@ -159,6 +163,26 @@ language's **basics** course only.
 - **SQL** comes after Python (software, data) or TypeScript (backend,
   ai-product); SQL courses must not require either.
 - **Python** is first in software and data, so Python basics assume nothing.
+
+### Roadmap review (Phase 3; recommendations, platform.ts/index.ts not edited)
+
+The six goal roadmaps are sound for what they reach (basics only): git always
+follows bash, TypeScript always follows JavaScript, and the Web basics carry
+their own JavaScript. The gaps are in the generated **MASTERY** roadmaps
+(`index.ts`), which hold one language's courses and nothing else:
+
+- **master-typescript** needs the JavaScript basics before `typescript`
+  (TS basics assume js-01…js-12; the TS ladder bridges only JS beyond them).
+- **master-git** needs the Terminal basics before `git` (git-01/02/05/09 use
+  `ls -a`, `touch`, `echo >`/`>>`). The Git ladder bridges `printf` (git2-10)
+  and the few Terminal-advanced items git3-06 uses.
+- **master-html** needs the JavaScript basics before `html-advanced`
+  (web3-01 on assumes them; Web basics and intermediate bridge their own).
+
+Suggested fix: a small prerequisite table next to `MASTERY`, e.g.
+`{ typescript: ['javascript'], git: ['bash'], html: [['html-advanced', 'javascript']] }`,
+inserting those basics courses before the named step. All other ladders
+(bash, javascript, python, sql, cpp) are self-sufficient.
 
 ---
 

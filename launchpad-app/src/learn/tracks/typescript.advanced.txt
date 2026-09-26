@@ -1513,7 +1513,7 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B 
 const r = andThen(parsePort('80'), (p) => (p < 1024 ? err('privileged' as const) : ok(p)));
 const no: Equal<typeof r, Result<number, 'not-a-number' | 'out-of-range' | 'privileged'>> = false
 
-=== ts3-14 | Problem: a typed LRU cache
+=== ts3-14 | Problem solving: a typed LRU cache
 --- teach
 A problem-solving lesson with a generic class as the answer.
 

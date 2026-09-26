@@ -1657,7 +1657,7 @@ parseInt|parseFloat|Number\(
 --- check source absent | No listener per button (two listeners at most)
 addEventListener[\s\S]*addEventListener[\s\S]*addEventListener
 
-=== web3-14 | Problem: an autocomplete you can drive with the keyboard
+=== web3-14 | Problem solving: an autocomplete you can drive with the keyboard
 --- teach
 An autocomplete (a *combobox*, in ARIA terms) is a text field with a list of suggestions. It is a good test of everything in this course, because the hard part is not the matching — it is the state.
 

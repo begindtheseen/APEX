@@ -115,14 +115,20 @@ exactly as written.
   text becomes it, and Learn challenges are done in it. `src/lib/run.ts` is
   the one place that says how each language runs.
 - **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
-  as a numbered path of course tiles ending at a certificate — over eight
-  courses of basics (the command line, Git, HTML and CSS, JavaScript,
-  TypeScript, Python, SQL, C++), each lesson done in the same IDE window and
-  graded as test cases. Lessons are plain text in
-  `launchpad-app/src/learn/tracks/*.txt` (the format is described in
-  `src/learn/parse.ts`); the roadmaps are in `src/learn/platform.ts`;
-  `test/browser/learn.js` proves every lesson's solution passes and every
-  starter does not.
+  as a numbered path of course tiles ending at a certificate — and a mastery
+  roadmap per language. 36 courses, 499 lessons: the command line, Git, HTML
+  and CSS, JavaScript, TypeScript, Python, SQL and C++, each from basics
+  through intermediate, advanced and expert (the terminal and git to
+  advanced) to a projects course with capstones, mixing concept, debugging,
+  problem-solving and design lessons. Each lesson is done in the same IDE
+  window and graded as test cases. A course is one plain-text file in
+  `launchpad-app/src/learn/tracks/` (`<lang>.txt` for the basics,
+  `<lang>.<level>.txt` after; the format is described in `src/learn/parse.ts`
+  and how to write one in `src/learn/AUTHORING.md`; `src/learn/CURRICULUM.md`
+  maps what every lesson teaches). The roadmaps are in
+  `src/learn/platform.ts`. `src/learn/verify.test.ts` runs every lesson's
+  starter and solution in the real runtimes in Node (CI: "Every lesson can be
+  passed"), and `test/browser/learn.js` does the same through the app.
 
 ### Changing LAUNCHPAD
 
