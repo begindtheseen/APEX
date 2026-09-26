@@ -89,7 +89,10 @@ async function typeCommands(p, text) {
   const p = await ctx.newPage();
   // Playwright's service-worker block reaches into the sandboxed preview
   // frames, where reading navigator.serviceWorker throws: its noise, not ours.
-  const errs = []; p.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e))) errs.push(String(e)); });
+  // A lesson's own page (a sandboxed srcdoc frame) throwing is the learner's
+  // code at work — an unfinished starter, say — and the lesson shows it in its
+  // console. Only the app's own errors count here.
+  const errs = []; p.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
   await LP.reset(p);
   await LP.open(p, '/learn');
 
