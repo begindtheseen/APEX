@@ -3,6 +3,39 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.2.2
+
+**Focus mode changes how the app looks.** While a block runs, the rail, the top bar and the
+search box are gone, the edges of the screen fall into shadow, and one quiet line at the top says
+what you are doing. There is the lesson and nothing else until you pause or finish.
+
+**Read aloud: every lesson is recorded, so it plays straight away and never runs out of memory.**
+On an iPhone the voice made on the phone could manage only a few sentences before the phone ran
+out of memory. Now LAUNCHPAD's lessons are recorded once, ahead of time, in the same natural voice
+(Heart), and the phone just plays the recording — no model, no workers, no waiting, and no stopping
+halfway to load more. It starts in a fraction of a second, carries on from the lock screen, and a
+speed change applies at once with the voice's pitch kept. A lesson edited since it was recorded is
+read on the device until it is recorded again.
+
+**Read aloud follows along, word by word.** The word being read is lit up in the lesson as it is
+spoken, and the sentence around it faintly, so your eye can keep your place. Scroll away and
+**Back to the word being read** appears; one tap brings you back to it. The timing is exact: it
+comes from the voice model's own durations for every sound it makes, not a guess.
+
+**The voice made on the device is steadier on a Mac.** It makes the lesson well ahead of where you
+are when the computer is fast enough, so it never stops halfway to load more, and it hands its
+memory back every thirty sentences, so a long lesson no longer ends with the tab out of memory.
+
+**Focus blocks keep you on the lesson.** While a block is running, the app will not take you
+anywhere else: a sidebar link, the search box, the back button or a typed address puts you back on
+the lesson, and the strip at the bottom says why and how to leave. Moving between the lessons of
+the same module is fine. To go somewhere else, pause the block or end it.
+
+- **Pause** becomes available once five minutes of the block have run, and again five minutes
+  after each resume; until then the button shows how long is left. While paused you can go
+  anywhere, and **Resume** takes you straight back to the lesson.
+- **I'm done** ends the block at any moment, and every minute it ran still counts.
+
 ## 1.2.1
 
 **Read aloud no longer freezes on iPhone.** It would play for a while, then stop at random, and

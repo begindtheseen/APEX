@@ -76,6 +76,11 @@ self.addEventListener('fetch', (event) => {
   // Large WASM runtimes: let the network and the HTTP cache handle them.
   if (PASSTHROUGH_HOSTS.includes(url.hostname)) return
 
+  // Lesson recordings are streamed by the media player in ranges, which a
+  // cached whole-file answer would break (Safari will not play a file served
+  // without them). The network and the HTTP cache handle them.
+  if (url.pathname.includes('/launchpad-audio/')) return
+
   // Navigations: network first, so a deployed update is picked up immediately,
   // with the cached shell as the offline fallback.
   if (req.mode === 'navigate') {

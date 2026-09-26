@@ -2,7 +2,7 @@
   "name": "launchpad",
   "productName": "LAUNCHPAD",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "description": "LAUNCHPAD — the AI product engineering curriculum, on the ORBIT learning platform. Builds to ../launchpad/.",
   "author": "begindtheseen",
