@@ -3,6 +3,39 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.2.1
+
+**Read aloud no longer freezes on iPhone.** It would play for a while, then stop at random, and
+was harder to start each time. Each voice worker takes about 450 MB of memory to start and more
+with every longer sentence, never giving it back; the iPhone ran two, ran out of memory, and lost a
+worker mid-lesson — and nothing noticed, so the reading waited on it forever, and every restart
+queued behind it.
+
+- An iPhone or iPad now runs one voice worker, and gives it shorter pieces (long sentences are
+  cut at a comma or semicolon, where a reader pauses anyway), so its memory stays small. The
+  worker is let go after 45 seconds of quiet, giving the memory back.
+- A worker that fails, stops answering, or is taken by the system is replaced by a fresh one, and
+  the sentence it was making is made again. If none can start, the reader says so instead of
+  hanging.
+- When iOS stops the page's audio (a call, Siri, another app, the screen locking), the reader
+  starts it again, or shows Paused so one tap on Resume carries on. Play always starts with fresh
+  audio.
+
+**Read aloud reads fluently.** The natural voice paused after almost every comma, semicolon,
+colon and dash, as if it could only say a few words at a time. It was cutting sentences into
+pieces there to start sooner, and every piece came with half a second of silence at each end —
+and on a phone, a wait for the next piece to be made.
+
+- Sentences are now read whole — only a very long one is cut, at a clause — and the voice pauses
+  where a reader would: a breath between sentences, a longer one between paragraphs.
+- The silence the voice model puts around every clip is trimmed, and each sentence is queued on the
+  audio clock to start exactly when the last one ends.
+- Where a computer has a GPU (WebGPU: Safari on Mac, Chrome and Edge), the voice runs there,
+  many times faster than it speaks. It times itself on a sentence as it starts, and a
+  device where the GPU is not faster uses its processor instead, and remembers.
+- Before the first word it waits just long enough, if it needs to, that the reading will not have
+  to stop and wait later; what it reads is kept on the device, so hearing a lesson again is instant.
+
 ## 1.2.0
 
 **More paths in Learn to code, a course on building AI from scratch, and a read-aloud voice that sounds like a person.**

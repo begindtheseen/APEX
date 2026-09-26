@@ -59,10 +59,26 @@ function instrument() {
   };
   const start = AudioBufferSourceNode.prototype.start;
   AudioBufferSourceNode.prototype.start = function (...args) {
+    // The one silent sample that unlocks audio on iOS is not speech.
+    if (this.buffer && this.buffer.length < 240) return start.apply(this, args);
     const data = this.buffer ? this.buffer.getChannelData(0) : new Float32Array(0);
+    const rate = this.buffer ? this.buffer.sampleRate : 24000;
     let peak = 0, sum = 0;
     for (let i = 0; i < data.length; i++) { const x = data[i]; peak = Math.max(peak, Math.abs(x)); sum += x * x; }
-    window.__voice.played.push({ seconds: this.buffer ? this.buffer.duration : 0, peak, rms: Math.sqrt(sum / Math.max(1, data.length)), at: performance.now() });
+    // Dead air at each end: 5 ms windows quieter than 2% of the clip's usual
+    // loudness. The fading tail of a word is sound; this is only silence.
+    const win = Math.round(rate * 0.005), n = Math.floor(data.length / win), lv = [];
+    for (let i = 0; i < n; i++) { let q = 0; for (let j = i * win; j < (i + 1) * win; j++) q += data[j] * data[j]; lv.push(Math.sqrt(q / win)); }
+    const th = ([...lv].sort((a, b) => a - b)[Math.floor(n * 0.95)] || 0) * 0.02;
+    let a = 0; while (a < n && lv[a] < th) a++;
+    let z = 0; while (z < n && lv[n - 1 - z] < th) z++;
+    const lead = a * win, trail = z * win;
+    const ctx = window.__voice.ctx;
+    window.__voice.played.push({
+      seconds: this.buffer ? this.buffer.duration : 0, peak, rms: Math.sqrt(sum / Math.max(1, data.length)),
+      when: typeof args[0] === 'number' && args[0] > 0 ? args[0] : (ctx ? ctx.currentTime : 0),
+      scheduledAt: ctx ? ctx.currentTime : 0, lead: lead / rate, trail: trail / rate,
+    });
     return start.apply(this, args);
   };
 }
@@ -99,11 +115,29 @@ function instrument() {
     const played = await p.evaluate(() => window.__voice.played);
     const speech = played.filter((x) => x.seconds > 0.3 && x.peak > 0.05 && x.rms > 0.005);
     ok('what it plays is speech: long enough and loud enough, piece after piece', speech.length >= 3, played.map((x) => x.seconds.toFixed(1) + 's/' + x.peak.toFixed(2)).join(' '));
-    // Each piece is asked for while the one before it plays. How short the
-    // gaps are depends on the machine — a phone or laptop keeps up, a small
-    // CI runner may not — so this fails only on a stall, and reports the rest.
-    const gaps = played.slice(1).map((x, i) => (x.at - played[i].at) / 1000 - played[i].seconds);
-    ok('it keeps reading, one piece after another, without stalling', gaps.every((g) => g < 30), 'first sound after ' + firstSound + 's; gaps ' + gaps.map((g) => Math.max(0, g).toFixed(1) + 's').join(', '));
+    // The model starts and ends every clip with a third to half a second of
+    // silence; left in, that is a stall at every join. It must be trimmed.
+    ok('each clip carries no dead air at its ends', played.every((x) => x.lead < 0.06 && x.trail < 0.06), played.map((x) => (x.lead * 1000).toFixed(0) + '/' + (x.trail * 1000).toFixed(0) + 'ms').join(' '));
+    // How fast this machine makes speech decides whether it keeps up the first
+    // time through; a small CI runner may not, so this reports, and fails only on a stall.
+    const cold = played.slice(1).map((x, i) => x.when - (played[i].when + played[i].seconds));
+    // The player buffers before the first word so the opening sentences run
+    // on without a stall, even on a machine this slow.
+    ok('the first time through, it waits before the first word, not between sentences', cold.every((g) => g >= 0.02 && g <= 0.6), 'first sound after ' + firstSound + 's; gaps ' + cold.map((g) => g.toFixed(2) + 's').join(', '));
+
+    // The same opening again: now every sentence is already made, so what is
+    // heard is exactly what the player schedules — the fluency of the reading
+    // itself, independent of how fast this machine is.
+    await p.click('.raloud__btn[title="Stop reading"]');
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { window.__voice.played = []; });
+    await p.click('.raloud__btn--go');
+    await p.waitForFunction(() => window.__voice.played.length >= 3, null, { timeout: 120000 });
+    await p.waitForTimeout(500);
+    const warm = await p.evaluate(() => window.__voice.played);
+    const gaps = warm.slice(1).map((x, i) => x.when - (warm[i].when + warm[i].seconds));
+    ok('read again, it flows: between clips only a reader\'s pause, never more than 0.6 s', gaps.length >= 2 && gaps.every((g) => g >= 0.02 && g <= 0.6), 'pauses ' + gaps.map((g) => g.toFixed(2) + 's').join(', '));
+    ok('and the pauses are a breath, not a stall: a quarter of a second or so between sentences', gaps.filter((g) => g > 0.2 && g < 0.35).length >= 1, gaps.map((g) => g.toFixed(2)).join(', '));
 
     await p.click('.raloud__btn:has-text("Pause")');
     await p.waitForTimeout(400);
@@ -120,6 +154,53 @@ function instrument() {
     await p.click('.raloud__btn[title="Stop reading"]');
     await p.waitForTimeout(300);
     ok('stop ends it', (await p.$eval('.raloud', (e) => e.dataset.state)) === 'idle');
+    await p.close();
+
+    // ── On an iPhone: one worker, short pieces, and it survives iOS ────────
+    // Each worker takes about 450 MB and grows with what it says; two of them
+    // ran an iPhone out of memory mid-lesson, and the reading froze. Here the
+    // page believes it is on an iPhone (the model is already downloaded), and
+    // the test does to it what iOS does: takes the worker away mid-reading,
+    // and stops the audio behind the player's back.
+    const q = await ctx.newPage();
+    q.on('pageerror', (e) => errs.push(String(e)));
+    await q.addInitScript(() => {
+      Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
+      Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
+    });
+    await LP.open(q, '/module/M3?lesson=m3-the-module');
+    await q.waitForSelector('.raloud');
+    // Another voice, so nothing it says was made (and kept) by the reading above.
+    const bella = await q.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
+    await q.selectOption('.raloud__voice', bella);
+    await q.click('.raloud__btn--go');
+    await q.waitForFunction(() => window.__voice.played.length >= 1, null, { timeout: 300000 });
+    const voiceWorkers = () => q.workers().filter((w) => /voice\.worker/.test(w.url()));
+    ok('on an iPhone it runs one voice worker, not two', voiceWorkers().length === 1, voiceWorkers().length + ' workers');
+    const first = await q.evaluate(() => window.__voice.played.map((x) => x.seconds));
+    ok('and gives it short pieces, so its memory stays small', first.every((x) => x < 14), first.map((x) => x.toFixed(1) + 's').join(' '));
+
+    // iOS takes the worker. Nothing tells the page; it must notice and go on.
+    // Sentences already made keep playing for a while, so what counts is
+    // speech made after a replacement worker has appeared.
+    const lost = Date.now();
+    const until = (cond, ms) => (async () => { const end = Date.now() + ms; while (Date.now() < end && !cond()) await q.waitForTimeout(500); return cond(); })();
+    await Promise.all(voiceWorkers().map((w) => w.evaluate(() => self.close()).catch(() => {})));
+    const gone = await until(() => voiceWorkers().length === 0, 10000);
+    const replaced = await until(() => voiceWorkers().length === 1, 300000);
+    const tookOver = Math.round((Date.now() - lost) / 1000);
+    const before2 = await q.evaluate(() => window.__voice.played.length);
+    await q.waitForFunction((n) => window.__voice.played.length >= n + 2, before2, { timeout: 300000 }).catch(() => {});
+    const after2 = await q.evaluate(() => window.__voice.played.length);
+    ok('when iOS takes the voice worker mid-reading, a fresh one takes over and the reading carries on', gone && replaced && after2 >= before2 + 2, 'replaced after ' + tookOver + 's; then clips ' + before2 + ' → ' + after2);
+
+    // iOS stops the audio (a call, Siri, the screen locking): not frozen for good.
+    await q.evaluate(() => window.__voice.ctx.suspend());
+    await q.waitForTimeout(1200);
+    const back = await q.evaluate(() => window.__voice.ctx.state);
+    const st = await q.$eval('.raloud', (e) => e.dataset.state);
+    ok('when the system stops the audio, it starts it again (or offers Resume), rather than hang', back === 'running' || st === 'paused', back + ' / ' + st);
+    await q.click('.raloud__btn[title="Stop reading"]').catch(() => {});
     await ctx.close();
   }
 
