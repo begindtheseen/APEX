@@ -108,7 +108,16 @@ exactly as written.
   toolchain), web pages (a sandboxed frame, `src/lib/web.ts`) and a practice
   terminal (an in-page shell with enough git to learn the loop,
   `src/lib/shell.ts`). The compilers are downloaded from a CDN on first use;
-  the browser suite serves the same pinned versions from `node_modules`.
+  the browser suite serves the same pinned versions from `node_modules`. An
+  iPhone or iPad cannot run the 75 MB compiler module in a browser, so there
+  (and wherever it fails to start) C++ is compiled and run on Compiler
+  Explorer, with Wandbox as a fallback (`src/lib/cppRemote.ts`), and the
+  output says so.
+- **Read aloud** uses a natural neural voice, Kokoro-82M, made on the device
+  (`src/lib/voice/`): ONNX Runtime and the phonemiser come from the CDN, the
+  92 MB model from Hugging Face once into Cache Storage, and a small pool of
+  workers makes each next piece of the lesson while the last one plays. The
+  device's own voices stay in the picker and are the fallback.
 - **The playground, embedded.** `components/ide/Embed.tsx` is the playground's
   window as a component: module lessons end with it (Try it here, languages
   per module in `src/lib/practice.ts`), runnable code in any lesson or Learn

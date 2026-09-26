@@ -28,6 +28,7 @@
    The rule underneath all of it: never show a green tick that does not mean
    what it appears to mean.
    ========================================================================== */
+import { REMOTE_NOTE_FALLBACK, REMOTE_NOTE_IOS, inTabCppUnavailable, runCppRemote } from '@/lib/cppRemote'
 import type { Lang } from '@/curriculum/types'
 
 export type RunMode = 'execute' | 'reference'
@@ -69,7 +70,10 @@ export const LANGS: Record<Lang, LangInfo> = {
     id: 'cpp',
     label: 'C++',
     mode: 'execute',
-    note: 'Compiled for real by clang++ (C++20, -Wall) and run in this browser, with the input box as standard input. Exceptions are off in this toolchain, so throw and try do not compile. The compiler is a one-time download of about 105 MB before compression.',
+    note:
+      typeof navigator !== 'undefined' && inTabCppUnavailable()
+        ? 'Compiled for real by clang (C++20, -Wall) on Compiler Explorer (godbolt.org): an iPhone or iPad cannot run the compiler inside the browser, so your code is sent there to compile and run, with the input box as standard input. Exceptions are off, as on every device here, so throw and try do not compile.'
+        : 'Compiled for real by clang++ (C++20, -Wall) and run in this browser, with the input box as standard input. Exceptions are off in this toolchain, so throw and try do not compile. The compiler is a one-time download of about 105 MB before compression.',
   },
   html: {
     id: 'html',
@@ -249,7 +253,18 @@ export async function runCpp(
   const started = Date.now()
   const out: RunOutput = { stdout: '', stderr: '', plots: [], result: null, error: null, ms: 0 }
 
+  // An iPhone or iPad cannot run the compiler in the tab at all; do not make
+  // it download 105 MB to find that out.
+  if (inTabCppUnavailable()) return runCppRemote(code, { stdin: opts.stdin, onStatus: opts.onStatus, note: REMOTE_NOTE_IOS })
+
   const built = await cppCompiler.compile(code, opts.onStatus)
+  // The compiler did not start (not her code failing to compile): compile on
+  // a service instead, and say so, rather than leave C++ dead in this browser.
+  if (built.type === 'failed' && built.stage === 'load') {
+    const remote = await runCppRemote(code, { stdin: opts.stdin, onStatus: opts.onStatus, note: REMOTE_NOTE_FALLBACK })
+    if (remote.error && !remote.error.startsWith('It did not compile')) remote.error = `${built.diagnostics.trim()}\n\n${remote.error}`
+    return remote
+  }
   if (built.type === 'failed' || !built.wasm) {
     out.error =
       built.stage === 'compile'

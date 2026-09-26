@@ -117,12 +117,17 @@ self.onmessage = async (e: MessageEvent) => {
   } catch (err) {
     // A compile error arrives as an Exit with a non-zero code; its message
     // is already in `diagnostics`, which is what the learner needs to read.
+    // Anything else — the compiler's own download or start failing inside
+    // this call, as it does on iPhone, where the 75 MB module cannot be
+    // compiled — is the compiler not loading, not her code being wrong.
     const exit = err as { code?: number; message?: string }
+    const stage = typeof exit.code === 'number' ? 'compile' : 'load'
+    if (stage === 'load') compiler = null
     post({
       type: 'failed',
       id,
-      stage: 'compile',
-      diagnostics: diagnostics || exit.message || String(err),
+      stage,
+      diagnostics: stage === 'compile' ? diagnostics || exit.message || String(err) : `The C++ compiler could not start here (${exit.message || String(err)}).`,
     })
   }
 }

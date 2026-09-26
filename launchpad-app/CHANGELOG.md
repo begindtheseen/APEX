@@ -5,7 +5,7 @@ the version it is running under Settings → What's new.
 
 ## 1.2.0
 
-**More paths in Learn to code, and a course on building AI from scratch.**
+**More paths in Learn to code, a course on building AI from scratch, and a read-aloud voice that sounds like a person.**
 
 - **Five new goals**, each going as deep as the job needs, not just the basics:
   - **Web Developer** — whole sites and web apps, front to back: HTML, CSS and JavaScript all the
@@ -25,6 +25,17 @@ the version it is running under Settings → What's new.
   from one that memorises — every piece built by you in plain Python, so nothing is magic, and
   debugged the way ML engineers debug: gradient checks, exploding losses, leaky validation sets.
   It ends with a capstone: train your own tiny language model to a target loss.
+- **Read aloud sounds like a person now.** Lessons are read by a natural neural voice (Kokoro)
+  instead of the browser's built-in synthesiser, which on many devices still sounds like a
+  robot. It runs on your device, the same voice everywhere: six voices to choose from, American
+  and British. The first time, it downloads once (about 92 MB, with progress shown) and then works
+  offline; the device's own voices stay in the picker for anyone who prefers them, and are used
+  automatically if the natural voice cannot load.
+- **C++ works on iPhone and iPad.** An iPhone or iPad cannot run the 105 MB C++ compiler inside a
+  browser, so C++ never compiled there. Now it is compiled and run on Compiler Explorer
+  (godbolt.org) instead — the code is sent there, and the playground and the output say so.
+  Everywhere else C++ still compiles in the tab, and uses the same service only if the in-tab
+  compiler cannot start.
 
 ## 1.1.0
 
