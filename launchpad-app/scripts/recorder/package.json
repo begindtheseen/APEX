@@ -1,0 +1,15 @@
+{
+  "name": "launchpad-lesson-recorder",
+  "private": true,
+  "description": "Records LAUNCHPAD's lessons in the natural voice, once, so phones play audio files instead of running the model. See record-lessons.mts.",
+  "type": "module",
+  "scripts": {
+    "record": "tsx record-lessons.mts"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "1.2.7",
+    "onnxruntime-node": "1.22.0",
+    "phonemizer": "1.2.1",
+    "tsx": "4.20.3"
+  }
+}

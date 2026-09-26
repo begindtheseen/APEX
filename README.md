@@ -113,21 +113,29 @@ exactly as written.
   (and wherever it fails to start) C++ is compiled and run on Compiler
   Explorer, with Wandbox as a fallback (`src/lib/cppRemote.ts`), and the
   output says so.
-- **Read aloud** uses a natural neural voice, Kokoro-82M, made on the device
-  (`src/lib/voice/`): ONNX Runtime and the phonemiser come from the CDN, the
-  92 MB model from Hugging Face once into Cache Storage. It reads whole
-  sentences (only a very long one is cut, at a clause), trims the model's
-  edge silence and queues each sentence on the audio clock with a reader's
-  pause; it runs on a computer's GPU where there is WebGPU (the model's
-  integer convolutions are rewritten into float ones as it loads,
-  `onnxEdit.ts`), otherwise on a pool of CPU workers, and buffers before the
-  first word just enough not to stall later (`safeStart`). Each worker needs
-  about 450 MB and more with longer inputs, so a phone runs one, with short
-  pieces; a worker that fails, hangs or is taken by the system is replaced
-  and its sentence retried. `test/browser/voice.js` measures the clips' edges
-  and the pauses between them, and on an emulated iPhone kills the worker
-  mid-reading and stops the audio, and checks the reading carries on. The device's own voices stay in the picker and are
-  the fallback.
+- **Read aloud** uses a natural neural voice, Kokoro-82M (`src/lib/voice/`).
+  Every lesson is **recorded** ahead of time in the default voice by
+  `launchpad-app/scripts/recorder/record-lessons.mts` into `launchpad-audio/`
+  (one MP3 per lesson plus the time of every sentence and word), so a phone
+  streams a file — no model, no memory, nothing to wait for — keyed by the
+  lesson's prepared text, so an edited lesson is never played against an old
+  recording (`recordings.test.ts` fails until it is recorded again). Other
+  voices, and edited lessons, are made on the device: ONNX Runtime and the
+  phonemiser from the CDN, the 92 MB model from Hugging Face once into Cache
+  Storage, on a computer's GPU (the model's integer convolutions rewritten
+  into float ones as it loads, `onnxEdit.ts`) or a pool of CPU workers, with
+  whole sentences, trimmed edges, a reader's pauses on the audio clock, a
+  buffer before the first word (`safeStart`), far lookahead on a fast device,
+  and workers swapped for fresh ones every thirty sentences to give their
+  memory back; a phone runs one worker with short pieces, and a worker that
+  fails, hangs or is taken by the system is replaced. Either way the word
+  being read is **lit up in the lesson** (a CSS Custom Highlight,
+  `highlight.ts`), timed from the model's own per-phoneme durations, which
+  `exposeDurations` adds as a second output; scrolling away offers "Back to
+  the word being read". `test/browser/voice.js` checks the recording, the
+  word-by-word light and the jump back, the clips' edges and pauses, and on an
+  emulated iPhone kills the worker mid-reading and stops the audio. The
+  device's own voices stay in the picker and are the fallback.
 - **The playground, embedded.** `components/ide/Embed.tsx` is the playground's
   window as a component: module lessons end with it (Try it here, languages
   per module in `src/lib/practice.ts`), runnable code in any lesson or Learn

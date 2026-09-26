@@ -32,6 +32,15 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
   const pause = p.locator('.fbar__btn', { hasText: /Pause/ });
   ok('Pause is not available at the start of a block, and says when it will be', await pause.isDisabled() && /Pause in 5:00|Pause in 4:5\d/.test(await pause.innerText()), await pause.innerText());
   ok('the ways out are dimmed while the block runs', (await p.evaluate(() => document.documentElement.dataset.focusLock)) === 'true');
+  const look = await p.evaluate(() => ({
+    side: getComputedStyle(document.querySelector('.side')).display,
+    top: getComputedStyle(document.querySelector('.topbar')).display,
+    mast: document.querySelector('.focus-mast')?.innerText ?? '',
+    vignette: getComputedStyle(document.querySelector('.main'), '::before').backgroundImage,
+  }));
+  ok('focus mode: the rail and the top bar are gone, so there is nowhere else to look', look.side === 'none' && look.top === 'none', JSON.stringify({ side: look.side, top: look.top }));
+  ok('and one quiet line at the top names the thing she is doing', /In focus/i.test(look.mast) && look.mast.length > 12, look.mast.replace(/\n/g, ' '));
+  ok('with the edges of the screen in shadow', /radial-gradient/.test(look.vignette));
 
   // Out through the sidebar.
   await tap(p, '.side__nav a[href="#/settings"]');
@@ -66,6 +75,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
   await tap(p, '.side__nav a[href="#/settings"]');
   await p.clock.runFor(800);
   ok('paused, she can go anywhere', (await p.evaluate(() => location.hash)) === '#/settings');
+  ok('and the app looks like itself again', await p.evaluate(() => getComputedStyle(document.querySelector('.side')).display !== 'none' && !document.querySelector('.focus-mast')));
 
   // Resume takes her back, and the next pause waits another five minutes.
   await p.click('.fbar__btn:has-text("Resume")');

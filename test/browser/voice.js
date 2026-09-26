@@ -1,10 +1,16 @@
 var ENV = require('./_env');
 var LP = require('./_launchpad');
-// The natural read-aloud voice, for real: a lesson is read by the neural
-// voice (Kokoro, run on the device), and what it plays is real speech — long
-// enough, loud enough — while pause, skip and stop still do what they say.
-// And when the voice cannot download, the player says so and reads with the
-// device's own voice instead of going silent.
+// The natural read-aloud voice, for real.
+//
+// A recorded lesson (launchpad-audio/, made by scripts/recorder) plays as a
+// file: straight away, lighting each word as it is spoken, and offering to
+// take her back to the word once she has scrolled away from it.
+//
+// A lesson read by the neural voice made on the device (Kokoro) plays real
+// speech — long enough, loud enough, trimmed, with a reader's pauses — and
+// lights its words too, from the model's own durations, while pause, skip and
+// stop still do what they say. And when the voice cannot download, the player
+// says so and reads with the device's own voice instead of going silent.
 //
 // The runtime and the phonemiser are the pinned packages the app downloads,
 // served here from node_modules. The model (92 MB) is fetched from Hugging
@@ -102,7 +108,11 @@ function instrument() {
     const groups = await p.$$eval('.raloud__voice optgroup', (g) => g.map((x) => x.label + ':' + x.querySelectorAll('option').length));
     const chosen = await p.$eval('.raloud__voice', (s) => s.options[s.selectedIndex].textContent);
     ok('the voice picker offers the natural voices first, and one is chosen by default', groups[0] === 'Natural voices:6' && /^Heart/.test(chosen), groups.join(', ') + ' · ' + chosen);
-    ok('it reads with the natural voice', (await p.$eval('.raloud', (e) => e.dataset.engine)) === 'natural');
+    // Only Heart is recorded: another voice is made on the device.
+    const bellaOnDevice = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
+    await p.selectOption('.raloud__voice', bellaOnDevice);
+    await p.waitForTimeout(300);
+    ok('in a voice with no recording, it reads with the natural voice made on the device', (await p.$eval('.raloud', (e) => e.dataset.engine)) === 'natural');
 
     const t0 = Date.now();
     await p.click('.raloud__btn--go');
@@ -139,6 +149,16 @@ function instrument() {
     ok('read again, it flows: between clips only a reader\'s pause, never more than 0.6 s', gaps.length >= 2 && gaps.every((g) => g >= 0.02 && g <= 0.6), 'pauses ' + gaps.map((g) => g.toFixed(2) + 's').join(', '));
     ok('and the pauses are a breath, not a stall: a quarter of a second or so between sentences', gaps.filter((g) => g > 0.2 && g < 0.35).length >= 1, gaps.map((g) => g.toFixed(2)).join(', '));
 
+    // Following along, from the model's own durations.
+    const litWords = [];
+    for (let i = 0; i < 12; i++) {
+      await p.waitForTimeout(250);
+      const w = await p.evaluate(() => { const h = CSS.highlights.get('raloud-word'); return h ? [...h][0]?.toString() : null; });
+      if (w && litWords[litWords.length - 1] !== w) litWords.push(w);
+    }
+    const onPage = await p.evaluate((ws) => { const t = document.querySelector('.reader__md').innerText; return ws.every((w) => t.includes(w)); }, litWords);
+    ok('made on the device, it lights each word as it is spoken, and they are the lesson\'s words', litWords.length >= 4 && onPage, litWords.join(' → '));
+
     await p.click('.raloud__btn:has-text("Pause")');
     await p.waitForTimeout(400);
     ok('pause stops the sound where it is', (await p.evaluate(() => window.__voice.ctx.state)) === 'suspended' && (await p.$eval('.raloud', (e) => e.dataset.state)) === 'paused');
@@ -155,6 +175,67 @@ function instrument() {
     await p.waitForTimeout(300);
     ok('stop ends it', (await p.$eval('.raloud', (e) => e.dataset.state)) === 'idle');
     await p.close();
+
+    // ── A recorded lesson: a file, word by word ──────────────────────────────
+    // Heart again, on a lesson the recorder has done: no model, no workers —
+    // the browser streams the recording, and the timings file lights each word.
+    {
+      const r = await ctx.newPage();
+      r.on('pageerror', (e) => errs.push(String(e)));
+      await LP.open(r, '/module/M0?lesson=m0-the-module');
+      await r.waitForSelector('.raloud');
+      const heart = await r.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Heart/.test(o.textContent)).value);
+      await r.selectOption('.raloud__voice', heart);
+      await r.waitForFunction(() => document.querySelector('.raloud').dataset.engine === 'recorded', null, { timeout: 15000 }).catch(() => {});
+      ok('a recorded lesson plays its recording', (await r.$eval('.raloud', (e) => e.dataset.engine)) === 'recorded');
+      const workersBefore = r.workers().length;
+      const t0 = Date.now();
+      await r.click('.raloud__btn--go');
+      await r.waitForSelector('.raloud[data-state="speaking"]', { timeout: 20000 });
+      ok('and starts at once — nothing to download or make first', Date.now() - t0 < 8000, (Date.now() - t0) + ' ms');
+      ok('with no voice model running on the device', r.workers().filter((w) => /voice\.worker/.test(w.url())).length === 0, workersBefore + ' workers');
+      const seen = [];
+      for (let i = 0; i < 20; i++) {
+        await r.waitForTimeout(200);
+        const w = await r.evaluate(() => {
+          const h = CSS.highlights.get('raloud-word');
+          const a = document.querySelector('audio.raloud-audio');
+          return { word: h ? [...h][0]?.toString() : null, t: a ? a.currentTime : null };
+        });
+        if (w.word && (!seen.length || seen[seen.length - 1].word !== w.word)) seen.push(w);
+      }
+      const text = await r.$eval('.reader__md', (e) => e.innerText);
+      ok('it lights each word as it is spoken, in order, and they are the lesson\'s words', seen.length >= 6 && seen.every((x) => text.includes(x.word) && typeof x.t === 'number') && seen.every((x, i) => i === 0 || x.t > seen[i - 1].t), seen.map((x) => x.word).join(' → '));
+      const sentence = await r.evaluate(() => { const h = CSS.highlights.get('raloud-sentence'); return h ? [...h][0]?.toString() : ''; });
+      ok('and, faintly, the sentence it is in', sentence.length > 20 && sentence.includes(seen[seen.length - 1].word), sentence.slice(0, 60));
+      const at1 = await r.$eval('.raloud__at', (e) => Number(e.textContent.split('/')[0]));
+      await r.click('.raloud__btn[title="On a sentence"]');
+      await r.waitForFunction((n) => Number(document.querySelector('.raloud__at').textContent.split('/')[0]) > n, at1, { timeout: 10000 }).catch(() => {});
+      ok('skip jumps to the next sentence in the recording', (await r.$eval('.raloud__at', (e) => Number(e.textContent.split('/')[0]))) > at1);
+      await r.click('.raloud__btn:has-text("Pause")');
+      await r.waitForTimeout(400);
+      const pausedAt = await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime);
+      await r.waitForTimeout(800);
+      ok('pause holds the recording where it is', (await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime)) === pausedAt && (await r.$eval('.raloud', (e) => e.dataset.state)) === 'paused');
+      await r.click('.raloud__btn:has-text("Resume")');
+      await r.waitForTimeout(600);
+      ok('resume carries on from there', (await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime)) > pausedAt);
+      // Scroll far away from the word being read: the lesson offers to take her back.
+      await r.evaluate(() => { const s = document.querySelector('.scroll'); s.scrollTop = s.scrollHeight; });
+      await r.waitForSelector('.raloud-jump', { timeout: 5000 }).catch(() => {});
+      ok('scrolled away from the word, the lesson offers to go back to it', (await r.locator('.raloud-jump').count()) === 1);
+      await r.click('.raloud-jump');
+      await r.waitForTimeout(900);
+      const back = await r.evaluate(() => {
+        const h = CSS.highlights.get('raloud-word'); const rg = h && [...h][0]; if (!rg) return false;
+        const b = rg.getBoundingClientRect(); return b.top > 0 && b.bottom < innerHeight;
+      });
+      ok('and one tap brings the word being read back into view', back);
+      await r.click('.raloud__btn[title="Stop reading"]');
+      await r.waitForTimeout(300);
+      ok('stop ends it and clears the light', (await r.$eval('.raloud', (e) => e.dataset.state)) === 'idle' && (await r.evaluate(() => !CSS.highlights.get('raloud-word'))));
+      await r.close();
+    }
 
     // ── On an iPhone: one worker, short pieces, and it survives iOS ────────
     // Each worker takes about 450 MB and grows with what it says; two of them
@@ -214,6 +295,9 @@ function instrument() {
     await LP.reset(p);
     await LP.open(p, '/module/M3?lesson=m3-the-module');
     await p.waitForSelector('.raloud');
+    const bellaMissing = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
+    await p.selectOption('.raloud__voice', bellaMissing);
+    await p.waitForTimeout(300);
     await p.click('.raloud__btn--go');
     await p.waitForSelector('.raloud__notice', { timeout: 60000 });
     const notice = await p.$eval('.raloud__notice', (e) => e.textContent);
