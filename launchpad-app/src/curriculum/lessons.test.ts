@@ -24,6 +24,7 @@ import { AI_CURRICULUM } from './generated/launchpad-data'
 import { moduleById } from './index'
 import { LESSON_COVERAGE, LESSON_MANIFEST } from './lessons/manifest'
 import { parseLesson } from './lessons/parse'
+import { noteRefs, notePicture, pictureProblem, splitNotes, stripNoteRefs } from '../lib/contextNotes'
 
 const dir = fileURLToPath(new URL('./lessons', import.meta.url))
 const doc = fs
@@ -83,7 +84,8 @@ describe.each(AI_CURRICULUM.map((m) => m.id))('lessons for %s', (moduleId) => {
   })
 
   it('is the document’s own section for the module, verbatim', () => {
-    const joined = parsed.map((p) => p.body).join('\n')
+    // Context notes sit beside the document's text, never in it.
+    const joined = parsed.map((p) => stripNoteRefs(splitNotes(p.body).body)).join('\n')
     expect(norm(joined)).toBe(norm(sectionOf(moduleId)))
   })
 
@@ -100,6 +102,28 @@ describe.each(AI_CURRICULUM.map((m) => m.id))('lessons for %s', (moduleId) => {
     const hasGate = /^\*\*GATE\*\*/m.test(sectionOf(moduleId))
     expect(parsed.length).toBe(hasGate ? 2 : 1)
     if (hasGate) expect(parsed[1]!.body.trimStart().startsWith('**GATE**')).toBe(true)
+  })
+
+  it('has context notes that are complete, at the end, and safe', () => {
+    for (const p of parsed) {
+      const { body, notes } = splitNotes(p.body)
+      const refs = noteRefs(body)
+      const blocks = [...p.body.matchAll(/^\s*:::\s*context\s+(\S+)/gm)].map((m) => m[1]!)
+      expect(new Set(blocks).size, `${p.file}: note ids are unique`).toBe(blocks.length)
+      expect([...new Set(refs)].filter((id) => !notes.has(id)), `${p.file}: marked phrases with no note`).toEqual([])
+      expect([...notes.keys()].filter((id) => !refs.includes(id)), `${p.file}: notes nothing points to`).toEqual([])
+      if (notes.size) {
+        const first = p.body.search(/^\s*:::\s*context\s/m)
+        expect(p.body.slice(first).replace(/^[ \t]*:::[ \t]*context[\s\S]*?^[ \t]*:::[ \t]*$/gm, '').trim(), `${p.file}: notes go at the very end`).toBe('')
+      }
+      for (const n of notes.values()) {
+        const words = n.body.replace(/```[\s\S]*?```/g, ' ').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length
+        expect(words, `${p.file}: note "${n.id}" 15–260 words`).toBeGreaterThanOrEqual(15)
+        expect(words, `${p.file}: note "${n.id}" 15–260 words`).toBeLessThanOrEqual(260)
+        const svg = notePicture(n.body)
+        if (svg) expect(pictureProblem(svg), `${p.file}: note "${n.id}" picture`).toBeNull()
+      }
+    }
   })
 
   it('uses only the markdown the renderer supports', () => {
