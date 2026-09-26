@@ -115,9 +115,19 @@ exactly as written.
   output says so.
 - **Read aloud** uses a natural neural voice, Kokoro-82M, made on the device
   (`src/lib/voice/`): ONNX Runtime and the phonemiser come from the CDN, the
-  92 MB model from Hugging Face once into Cache Storage, and a small pool of
-  workers makes each next piece of the lesson while the last one plays. The
-  device's own voices stay in the picker and are the fallback.
+  92 MB model from Hugging Face once into Cache Storage. It reads whole
+  sentences (only a very long one is cut, at a clause), trims the model's
+  edge silence and queues each sentence on the audio clock with a reader's
+  pause; it runs on a computer's GPU where there is WebGPU (the model's
+  integer convolutions are rewritten into float ones as it loads,
+  `onnxEdit.ts`), otherwise on a pool of CPU workers, and buffers before the
+  first word just enough not to stall later (`safeStart`). Each worker needs
+  about 450 MB and more with longer inputs, so a phone runs one, with short
+  pieces; a worker that fails, hangs or is taken by the system is replaced
+  and its sentence retried. `test/browser/voice.js` measures the clips' edges
+  and the pauses between them, and on an emulated iPhone kills the worker
+  mid-reading and stops the audio, and checks the reading carries on. The device's own voices stay in the picker and are
+  the fallback.
 - **The playground, embedded.** `components/ide/Embed.tsx` is the playground's
   window as a component: module lessons end with it (Try it here, languages
   per module in `src/lib/practice.ts`), runnable code in any lesson or Learn
