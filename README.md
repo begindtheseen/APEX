@@ -114,9 +114,10 @@ exactly as written.
   per module in `src/lib/practice.ts`), runnable code in any lesson or Learn
   text becomes it, and Learn challenges are done in it. `src/lib/run.ts` is
   the one place that says how each language runs.
-- **Learn to code** (`#/learn`) opens on roadmaps — a goal's courses in order,
-  as a numbered path of course tiles ending at a certificate — and a mastery
-  roadmap per language. 36 courses, 499 lessons: the command line, Git, HTML
+- **Learn to code** (`#/learn`) opens on roadmaps — eleven goals (Web
+  Developer and AI Research Engineer among them), each a path of course tiles
+  ending at a certificate — and a mastery roadmap per language. 37 courses,
+  515 lessons, including a specialty course, AI from scratch: the command line, Git, HTML
   and CSS, JavaScript, TypeScript, Python, SQL and C++, each from basics
   through intermediate, advanced and expert (the terminal and git to
   advanced) to a projects course with capstones, mixing concept, debugging,

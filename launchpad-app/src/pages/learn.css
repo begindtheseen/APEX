@@ -885,6 +885,10 @@ a.rmv-step__name:hover {
   color: #34d399;
 }
 
+.lm-course__level[data-level='specialty'] {
+  color: #c084fc;
+}
+
 /* ── A language's course ladder ──────────────────────────────────────────── */
 .lm-ladder {
   display: flex;

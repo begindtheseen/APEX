@@ -77,10 +77,10 @@ export interface LearnLesson {
   schema?: string
 }
 
-/** Where a course sits on the way from first line to expert. */
-export type LearnLevel = 'basics' | 'intermediate' | 'advanced' | 'expert' | 'projects'
+/** Where a course sits on the way from first line to expert; a specialty course goes deep on one field after the ladder. */
+export type LearnLevel = 'basics' | 'intermediate' | 'advanced' | 'expert' | 'projects' | 'specialty'
 
-export const LEVELS: LearnLevel[] = ['basics', 'intermediate', 'advanced', 'expert', 'projects']
+export const LEVELS: LearnLevel[] = ['basics', 'intermediate', 'advanced', 'expert', 'projects', 'specialty']
 
 export const LEVEL_LABEL: Record<LearnLevel, string> = {
   basics: 'Basics',
@@ -88,6 +88,7 @@ export const LEVEL_LABEL: Record<LearnLevel, string> = {
   advanced: 'Advanced',
   expert: 'Expert',
   projects: 'Projects',
+  specialty: 'Specialty',
 }
 
 export interface LearnTrack {

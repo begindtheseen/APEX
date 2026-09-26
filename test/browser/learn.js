@@ -109,6 +109,16 @@ async function typeCommands(p, text) {
   await p.waitForTimeout(300);
   const dataSteps = await p.$$eval('.rm-step__label', (e) => e.map((t) => t.textContent));
   ok('picking another goal shows its roadmap', dataSteps.join(' / ') === 'Python, a first language / SQL fundamentals / Linux and the command line / Git and version control' && /goal=data/.test(p.url()), dataSteps.join(' / '));
+  // A goal with several courses in one language, then another: each tile is
+  // its own course, so switching must replace the path, not add to it.
+  await p.click('.rm-goals [role=tab]:has-text("Web Developer")');
+  await p.waitForTimeout(300);
+  await p.click('.rm-goals [role=tab]:has-text("AI Research Engineer")');
+  await p.waitForTimeout(400);
+  const aiSteps = await p.$$eval('.rm-step__label', (e) => e.map((t) => t.textContent));
+  ok('a goal can go deep in one language, and switching goals shows only its own courses', aiSteps.length === 11 && aiSteps.filter((t) => /Python/.test(t)).length === 5 && aiSteps.some((t) => /AI from scratch/.test(t)), aiSteps.length + ': ' + aiSteps.join(' / '));
+  await p.click('.rm-goals [role=tab]:has-text("Data & ML")');
+  await p.waitForTimeout(300);
   await p.click('.rm__see');
   await p.waitForTimeout(400);
   const detail = await p.$$eval('.rmv-step', (e) => e.length);

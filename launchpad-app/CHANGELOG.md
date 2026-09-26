@@ -3,6 +3,29 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.2.0
+
+**More paths in Learn to code, and a course on building AI from scratch.**
+
+- **Five new goals**, each going as deep as the job needs, not just the basics:
+  - **Web Developer** — whole sites and web apps, front to back: HTML, CSS and JavaScript all the
+    way to accessible, fast pages, TypeScript, SQL, and three real sites built at the end.
+  - **AI Research Engineer** — for the people who build and improve the models themselves: Python
+    to expert, then the new AI course, then C++ for the code that has to be fast.
+  - **Data Engineer** — SQL from the first SELECT to query plans and schemas that hold up, Python to
+    move and clean data, and the command line to run it.
+  - **DevOps & Platform Engineer** — the command line to real scripts, git from the first commit to
+    rebase and bisect, and Python for the tools you write for everyone else.
+  - **Game & Performance Engineer** — C++ from the basics to move semantics, templates, containers
+    built from raw memory and undefined behaviour, then three real programs.
+- **AI from scratch** (16 lessons), a specialty course after the Python ladder: vectors and
+  gradients, regression, an autograd engine like the one inside PyTorch, neural networks and the
+  loop that trains them, softmax and the log-sum-exp trick, tokenizers and byte-pair encoding, a
+  bigram language model, attention and a transformer block, and how to tell a model that learns
+  from one that memorises — every piece built by you in plain Python, so nothing is magic, and
+  debugged the way ML engineers debug: gradient checks, exploding losses, leaky validation sets.
+  It ends with a capstone: train your own tiny language model to a target loss.
+
 ## 1.1.0
 
 **Learn to code** — roadmaps of guided lessons, connected to the playground — and a playground

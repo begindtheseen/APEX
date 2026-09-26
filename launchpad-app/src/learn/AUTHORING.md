@@ -12,6 +12,11 @@ file there by itself (see `platform.ts`); adding a course is adding a file.
 | `python.advanced.txt`      | `python-advanced`       | advanced     |
 | `python.expert.txt`        | `python-expert`         | expert       |
 | `python.projects.txt`      | `python-projects`       | projects     |
+| `python.ai.txt`            | `python-ai` (`@course`) | specialty    |
+
+A **specialty** course goes deep on one field after the ladder (AI, say). Its
+file is `<lang>.<topic>.txt`, and its header names it: `@level specialty` and
+`@course <lang>-<topic>`. It sorts after the language's projects course.
 
 The header of a non-basics file:
 
