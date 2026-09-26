@@ -104,6 +104,16 @@ describe.each(AI_CURRICULUM.map((m) => m.id))('lessons for %s', (moduleId) => {
     if (hasGate) expect(parsed[1]!.body.trimStart().startsWith('**GATE**')).toBe(true)
   })
 
+  // Every lesson is annotated (src/curriculum/lesson-notes/TEMPLATE.md): at
+  // least two notes in a gate lesson, at least four in a module lesson.
+  it('annotates every lesson', () => {
+    const thin = parsed
+      .map((p) => ({ file: p.file, n: splitNotes(p.body).notes.size, min: /02-the-gate\.md$/.test(p.file) ? 2 : 4 }))
+      .filter((x) => x.n < x.min)
+      .map((x) => `${x.file}: ${x.n} of at least ${x.min}`)
+    expect(thin, 'lessons short of context notes').toEqual([])
+  })
+
   it('has context notes that are complete, at the end, and safe', () => {
     for (const p of parsed) {
       const { body, notes } = splitNotes(p.body)
