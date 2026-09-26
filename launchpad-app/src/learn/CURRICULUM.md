@@ -199,6 +199,55 @@ double quotes", variables and `$VAR`, environment variables, exit status and
 `||`, `2>` / stderr, permissions and `chmod`, scripts and `#!`, `if`/loops in
 the shell, `man`/`--help`, processes.
 
+### Terminal · Intermediate — `bash-intermediate`, prefix `term2-`, 12 lessons
+
+The practice shell is now a real small shell (quoting, variables, `$(…)`,
+pipes, redirection including `2>`, loops, `if`/`test`, scripts, `sed`,
+`xargs`, `find`…). Nothing in the basics text claims otherwise; the list at
+the top of this section describes the shell the basics were written for.
+Bridged: single quotes (term2-10, fully taught term3-01).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| term2-01 | concept | wildcards `* ? [ ]`, the shell expands before the command runs, test with `echo`; opening |
+| term2-02 | concept | pipes `\|`, build a pipeline one stage at a time |
+| term2-03 | concept | `sort -n -r -u`, `uniq -c`, the `sort \| uniq -c \| sort -rn` idiom |
+| term2-04 | concept | `head`/`tail` after `sort`, `tail -n +2` drops a header |
+| term2-05 | concept | `cut -d -f` |
+| term2-06 | concept | `find -name -iname -type`, quote the pattern |
+| term2-07 | concept | `grep -r -n -i -v -c -l`, `^` `$` `.` in patterns |
+| term2-08 | concept | stdout/stderr, `2>`, `/dev/null`, `2>&1`, `&>` |
+| term2-09 | concept | `>` vs `>>`, `tee`, `tee -a` |
+| term2-10 | **problem** (approach taught) | top addresses in an access log |
+| term2-11 | **debugging** (method taught) | `uniq` without `sort`, header line |
+| term2-12 | **debugging** | `sort f > f` empties the file; temp file + `mv` |
+
+### Terminal · Advanced — `bash-advanced`, prefix `term3-`, 12 lessons
+
+Bridged: running a ready-made script with `bash` (term3-02, before term3-07),
+`;` between commands (term3-05), `\.` in a regex (term3-11), input
+redirection `<` (term3-12).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| term3-01 | concept | variables, no spaces around `=`, `${name}`, double vs **single quotes**; opening |
+| term3-02 | concept | environment, `export`, `env`, `NAME=value command`, child processes |
+| term3-03 | concept | command substitution `$(…)`, quote it |
+| term3-04 | concept | exit status, `$?`, `grep -q`, `&&` / `\|\|` (not a true if/else) |
+| term3-05 | concept | `for … in …; do …; done`, quote `"$f"`, `${f%suffix}` `${f#prefix}`, dry run with `echo` |
+| term3-06 | concept | `if`/`then`/`else`/`elif`/`fi`, `[ … ]` tests (`-f -d -e -z`, `=`, `-gt`…), spaces and quotes |
+| term3-07 | concept | scripts, `$1 $# "$@"`, shebang, `chmod +x`, `./`, writing files with `echo '…'` |
+| term3-08 | concept | `sed 's///g'`, `-i`, `/pattern/d`, other separators |
+| term3-09 | concept | `xargs`, `-n 1`, `-I {}`, `find -exec` for names with spaces |
+| term3-10 | **debugging** | `bash -x`, misspelled variable, unquoted `$f`, `set -u` |
+| term3-11 | **problem** | sort a downloads folder by extension, `${f##*.}`, `*.*` |
+| term3-12 | **build** | a script with guard clauses, `exit` codes, errors to `>&2`, test every path |
+
+No explicit design lesson; term3-12 carries the tool-design habits. Not
+covered: `printf` (bridged in git2-10 for the Git ladder), `while read`
+loops, functions in scripts, `case`, arrays, `awk`, job control and
+processes (`ps`, `kill`, `&`), `ssh`, permissions beyond `chmod +x`.
+
 ---
 
 ## Git (`git`) — course `git`, prefix `git-`, 11 lessons
@@ -229,6 +278,55 @@ conflict is. **Not yet:** resolving a conflict, `.gitignore`, `git show`,
 `git log` options beyond `--oneline`, amending, reset/revert, stash, tags,
 remotes and push/pull/PRs, rebase, `HEAD`, hashes as references, blame,
 bisect.
+
+### Git · Intermediate — `git-intermediate`, prefix `git2-`, 12 lessons
+
+The practice git now has real 3-way merges with conflict markers, rebase,
+cherry-pick, stash, reset, revert, bisect, blame and a simulated remote.
+Needs only the Terminal basics; bridged: `HEAD` (git2-02, fully git2-03),
+`git commit -am` (git2-03), `git rm` (git2-04), writing a multi-line file
+with `printf` and `\n` (git2-10 — the conflict resolution depends on it).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| git2-01 | concept | `.gitignore` patterns (comments on their own lines), `check-ignore -v`, only untracked files; opening |
+| git2-02 | concept | `log --oneline --graph --all`, merged branches, `branch -d` / `-D`, `--merged` |
+| git2-03 | concept | `git show`, `HEAD~n`, `show REV:file`, `restore --source` |
+| git2-04 | concept | `main..feature`, `diff main feature`, `--stat`, `--name-only`, review before merging |
+| git2-05 | concept | `commit --amend` (`--no-edit`, `-m`), amend only what you have not shared |
+| git2-06 | concept | `stash`, `list`, `pop`, `apply`, `-u` |
+| git2-07 | concept | `reset --soft / --mixed / --hard` |
+| git2-08 | concept | `revert`, reset vs revert |
+| git2-09 | concept | lightweight and annotated tags, semantic versioning |
+| git2-10 | concept | resolving a merge conflict: markers, edit, `add`, `commit`, `merge --abort` |
+| git2-11 | **debugging** (method taught) | ignored but still tracked: `ls-files`, `rm --cached` |
+| git2-12 | **debugging** | recovering from `reset --hard` with `reflog` |
+
+### Git · Advanced — `git-advanced`, prefix `git3-`, 12 lessons
+
+Bridged: `bash check.sh`, single quotes, `;` and `$?` for git3-06 (the
+Terminal advanced course teaches them in full). Remotes are a bare repo at
+`~/server/rocket.git`.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| git3-01 | concept | `cherry-pick`; opening |
+| git3-02 | concept | `rebase` vs merge, the golden rule |
+| git3-03 | concept | squash with `reset --soft`; `rebase -i` mentioned (no editor) |
+| git3-04 | **debugging** | conflict during a rebase: sides swapped, `--continue`, `--skip`, `--abort` |
+| git3-05 | concept | `bisect` by hand, `refs/bisect/bad` |
+| git3-06 | concept | `bisect run` with an untracked check script, exit codes 0/125/other |
+| git3-07 | concept | `blame`, `log -- file`, blaming past a reformat |
+| git3-08 | concept | bare remote, `clone`, `remote -v`, `push`, `fetch`, `pull`, `origin/main` |
+| git3-09 | **debugging** | rejected push, never `--force`, `pull --rebase` / `--no-rebase` |
+| git3-10 | concept/build | team workflow: `push -u`, pull request, `merge --no-ff`, tag, `push --tags` |
+| git3-11 | **debugging** | commits on a detached HEAD, rescue with `reflog` + `branch` |
+| git3-12 | **debugging** | conflict while cherry-picking onto a release branch |
+
+No problem-solving or design lesson on the Git ladder (git3-10 is the
+workflow design). Not covered: submodules, worktrees, hooks, `git config`
+beyond `user.name` / `pull.rebase`, signing, `filter-repo` for purging
+secrets (git2-11 says to rotate the key), `switch --detach`.
 
 ---
 

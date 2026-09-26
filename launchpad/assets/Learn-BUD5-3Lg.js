@@ -1,9 +1,9 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-DbuIykOW.js";import{t as p}from"./markdown-CCoGxL_Z.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as y,b,c as ee,d as te,g as x,i as S,j as C,k as w,l as T,m as E,p as ne,r as re,s as ie,t as ae,v as oe,x as se,y as D}from"./lessonCode-Na-fefHQ.js";var O=e(),k=`@@LEARN`,ce=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function A(e){return e.replace(/\s*\n\s*/g,` `).trim()}function j(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var le=`const throws = (f) => { try { f(); return false } catch { return true } }
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-fDB50b4_.js";import{t as p}from"./markdown-DSDFZd9q.js";/* empty css              */import{A as m,C as h,F as g,I as _,M as v,N as ee,P as te,S as y,T as ne,_ as b,b as x,c as re,d as S,g as C,i as w,l as T,m as ie,p as ae,r as oe,s as se,t as ce,v as E,w as le,x as ue,y as de}from"./lessonCode-DA9sQrS_.js";var D=e(),O=`@@LEARN`,fe=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var pe=`const throws = (f) => { try { f(); return false } catch { return true } }
   const __eq = (a, b) => { if (Object.is(a, b)) return true; if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => __eq(a[k], b[k])) }
   const __show = (v) => { if (v === undefined) return 'undefined'; if (typeof v === 'function') return '[Function]'; if (typeof v === 'bigint') return v + 'n'; try { const j = JSON.stringify(v); return j === undefined ? String(v) : j } catch { return String(v) } }
   const __err = (e) => (e instanceof Error ? e.name + ': ' + e.message : String(e))
-  const __learn = (i, f) => { try { const r = f(); console.log('${k} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }
-  const __case = (i, f, w) => { try { const got = f(); console.log('${k} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }`,ue=le.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),de=`#include <cmath>
+  const __learn = (i, f) => { try { const r = f(); console.log('${O} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }
+  const __case = (i, f, w) => { try { const got = f(); console.log('${O} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }`,me=pe.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),he=`#include <cmath>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -17,33 +17,38 @@ inline std::string __learn_show(bool v) { return v ? "true" : "false"; }
 inline std::string __learn_show(char v) { return std::string("'") + v + "'"; }
 template <class T> std::string __learn_show(const std::vector<T>& v) { std::string o = "{"; for (std::size_t i = 0; i < v.size(); ++i) o += (i ? ", " : "") + __learn_show(v[i]); return o + "}"; }
 template <class K, class V> std::string __learn_show(const std::map<K, V>& m) { std::string o = "{"; bool first = true; for (const auto& [k, x] : m) { o += (first ? "" : ", ") + std::string("{") + __learn_show(k) + ", " + __learn_show(x) + "}"; first = false; } return o + "}"; }
-template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function fe(e){let t=j(e,`test`),n=j(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?j(e,`type-error`).map(e=>`  // @ts-expect-error ${pe} ${e.i}\n  ;(() => { ${A(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
+template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function ge(e){let t=A(e,`test`),n=A(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?A(e,`type-error`).map(e=>`  // @ts-expect-error ${_e} ${e.i}\n  ;(() => { ${k(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
 `)}\n}\n`:``;let a=r?`  // @ts-ignore
-`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?ue:le}\n${o.join(`
+`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?me:pe}\n${o.join(`
 `)}\n${i.join(`
-`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${k} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${k} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
-`)}case`cpp`:return!t.length&&!n.length?``:`\n${de}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${A(e.c.expr)}); std::cout << "${k} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${A(e.c.expect)})); std::cout << "${k} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
-`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${k}' AS __learn;\n${j(e,`query`).map(e=>`SELECT '${k} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
-`)}\n`;case`html`:case`bash`:case`git`:return``}}var pe=`learn-type-check`;function me(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
-`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${pe} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
-`)}}function he(e,t){let n=fe(e);return n?t.endsWith(`
-`)?t+n.replace(/^\n/,``):t+n:t}function ge(e){return j(e,`dom`).map(e=>e.c.steps)}function M(e){return e.replace(/\r\n?/g,`
+`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${O} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${O} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
+`)}case`cpp`:return!t.length&&!n.length?``:`\n${he}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${k(e.c.expr)}); std::cout << "${O} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${k(e.c.expect)})); std::cout << "${O} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
+`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${O}' AS __learn;\n${A(e,`query`).map(e=>`SELECT '${O} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
+`)}\n`;case`html`:case`bash`:case`git`:return``}}var _e=`learn-type-check`;function ve(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
+`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${_e} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
+`)}}function ye(e,t){let n=ge(e);return n?t.endsWith(`
+`)?t+n.replace(/^\n/,``):t+n:t}function be(e){return A(e,`dom`).map(e=>e.c.steps)}function j(e){return e.replace(/\r\n?/g,`
 `).split(`
 `).map(e=>e.trimEnd()).join(`
-`).replace(/^\n+|\n+$/g,``)}function _e(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
+`).replace(/^\n+|\n+$/g,``)}function xe(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
 `).split(`
-`)){let e=ce.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
-`),marks:t}}function ve(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function N(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>ve(e,a[t][n])))}function P(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
-`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function F(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var I=e=>se(y,e),ye=e=>e.replace(/^\/home\/you/,`~`);function be(e){let t=b();for(let n of e.starter.split(`
-`))n.trim()&&(t=v(t,n).state);return{...t,history:[],transcript:[]}}function xe(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(2).join(` `);switch(r){case`cwd`:return e.cwd===I(i)?null:`you are in ${ye(e.cwd)}, not ${ye(I(i))}`;case`dir`:{let t=D(e,I(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return D(e,I(i))?`${i} should not exist any more`:null;case`file`:{let n=D(e,I(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!a)return null;let r=/^(==|contains)\s+(.*)$/.exec(a);if(!r)return`the check "${t}" could not be read`;let o=n.content.replace(/\n$/,``);return r[1]===`==`?o===r[2]?null:`${i} contains ${JSON.stringify(o)}, not ${JSON.stringify(r[2])}`:o.includes(r[2])?null:`${i} does not contain ${JSON.stringify(r[2])}`}case`ran`:{let t=n.slice(1).join(` `);return e.history.flatMap(e=>e.split(`&&`).map(e=>e.trim().replace(/\s+/g,` `))).some(e=>e===t||e.startsWith(`${t} `))?null:`you have not run ${t} yet`}case`used`:{let t=n.slice(1).join(` `);return e.history.some(e=>e.includes(t))?null:`you have not used ${t} in a command yet`}case`printed-line`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.split(`
-`).includes(t))?null:`nothing has printed the line ${JSON.stringify(t)} yet`}case`printed`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.includes(t))?null:`nothing has printed ${JSON.stringify(t)} yet`}case`git`:{let r=oe(e,I(i)),[,,a,...o]=n;if(!r)return`${i===`.`?`~/project`:i} is not a git repository yet`;switch(a){case`repo`:return null;case`commits`:{let e=Number(o[1]);return(o[0]===`>=`?r.commits>=e:r.commits===e)?null:`the repository has ${r.commits} commit${r.commits===1?``:`s`}`}case`branch`:return r.branch===o[0]?null:`you are on ${r.branch}, not ${o[0]}`;case`has-branch`:return r.branches.includes(o[0])?null:`there is no branch ${o[0]}`;case`staged`:return r.staged.includes(o[0])?null:`${o[0]} is not staged`;case`untracked`:return r.untracked.includes(o[0])?null:`${o[0]} is not an untracked file`;case`modified`:return r.modified.includes(o[0])?null:`${o[0]} has no unstaged changes`;case`commits-on`:{let e=Number(o[2]),t=r.branchCommits[o[0]];return t===void 0?`there is no branch ${o[0]}`:(o[1]===`>=`?t>=e:t===e)?null:`${o[0]} has ${t} commit${t===1?``:`s`}`}case`merges`:{let e=Number(o[1]);return(o[0]===`>=`?r.merges>=e:r.merges===e)?null:`the history has ${r.merges} merge commit${r.merges===1?``:`s`}`}case`log`:{let e=o.slice(1).join(` `);return r.messages.some(t=>t.includes(e))?null:`no commit message contains ${JSON.stringify(e)}`}case`clean`:return r.staged.length?`still staged: ${r.staged.join(`, `)}`:null;default:return`the check "${t}" could not be read`}}default:return`the check "${t}" could not be read`}}function Se(e,t,n){let{clean:r,marks:i}=_e(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(j(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=M(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>xe(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
+`)){let e=fe.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
+`),marks:t}}function Se(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function M(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>Se(e,a[t][n])))}function N(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
+`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function P(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var F=e=>le(b,e),Ce=e=>e.replace(/^\/home\/you/,`~`);function we(e){let t=h();for(let n of e.starter.split(`
+`))n.trim()&&(t=ne(t,n).state);return{...t,history:[],transcript:[]}}function Te(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(1).join(` `),o=t.trim().replace(/^\S+\s*/,``),s=t.trim().replace(/^\S+\s+\S+\s*/,``),c=e.transcript[e.transcript.length-1]?.out??``;switch(r){case`cwd`:return e.cwd===F(i)?null:`you are in ${Ce(e.cwd)}, not ${Ce(F(i))}`;case`dir`:{let t=y(e,F(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return y(e,F(i))?`${i} should not exist any more`:null;case`file`:{let n=y(e,F(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!s)return null;let r=n.content.replace(/\n$/,``);if(s===`empty`)return n.content===``?null:`${i} is not empty: it contains ${JSON.stringify(P(r,80))}`;if(s===`exec`)return n.exec?null:`${i} is not executable yet (chmod +x ${i})`;let a=/^lines\s+(.*)$/.exec(s);if(a){let e=r===``&&n.content===``?0:r.split(`
+`).length;return I(e,a[1].split(/\s+/))?null:`${i} has ${e} line${e===1?``:`s`}`}let o=/^(==|~=|contains|excludes)\s(.*)$/.exec(s);return o?o[1]===`~=`?R(r)===R(L(o[2]))?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(L(o[2]))}`:o[1]===`==`?r===o[2]?null:`${i} contains ${JSON.stringify(r)}, not ${JSON.stringify(o[2])}`:o[1]===`excludes`?r.includes(o[2])?`${i} still contains ${JSON.stringify(o[2])}`:null:r.includes(o[2])?null:`${i} does not contain ${JSON.stringify(o[2])}`:`the check "${t}" could not be read`}case`count`:{let t=ue(e,b,i);return I(t,n.slice(2))?null:`${t} path${t===1?``:`s`} match ${i}`}case`ran`:return e.history.flatMap(e=>e.split(/&&|\|\||;|\|/).map(e=>e.trim().replace(/\s+/g,` `).replace(/^(?:(?:do|then|else|!)\s+)+/,``))).some(e=>e===a||e.startsWith(`${a} `))?null:`you have not run ${a} yet`;case`used`:return e.history.some(e=>e.includes(o))?null:`you have not used ${o} in a command yet`;case`printed-line`:return e.transcript.some(e=>e.out.split(`
+`).includes(o))?null:`nothing has printed the line ${JSON.stringify(o)} yet`;case`printed`:return e.transcript.some(e=>e.out.includes(o))?null:`nothing has printed ${JSON.stringify(o)} yet`;case`printed-exactly`:{let t=R(L(o));return e.transcript.some(e=>R(e.out)===t)?null:`no command printed exactly ${JSON.stringify(t)}`}case`not-printed`:return e.transcript.some(e=>e.out.includes(o))?`something printed ${JSON.stringify(o)}`:null;case`last-printed`:return c.includes(o)?null:`the last command printed ${JSON.stringify(P(c,200))}, without ${JSON.stringify(o)}`;case`last-not-printed`:return c.includes(o)?`the last command still printed ${JSON.stringify(o)}`:null;case`last-printed-exactly`:{let e=R(L(o));return R(c)===e?null:`the last command printed ${JSON.stringify(P(c,200))}, not ${JSON.stringify(e)}`}case`status`:return I(e.status,n.slice(1))?null:`the last command finished with status ${e.status}`;case`var`:case`env`:{let n=e.vars?.[i];if(n===void 0)return`the variable ${i} is not set`;if(r===`env`&&!e.exported?.includes(i))return`${i} is set but not exported (export ${i})`;let a=/^==\s?(.*)$/.exec(s);return s&&!a?`the check "${t}" could not be read`:!a||n===a[1]?null:`${i} is ${JSON.stringify(n)}, not ${JSON.stringify(a[1])}`}case`git`:return Ee(e,t,n);default:return`the check "${t}" could not be read`}}function I(e,t){let[n=``,r=n]=t,i=Number(r);return n===`>=`?e>=i:n===`<=`?e<=i:e===i}var L=e=>e.replace(/\\n/g,`
+`),R=e=>e.split(`
+`).map(e=>e.trim().replace(/\s+/g,` `)).join(`
+`).replace(/^\n+|\n+$/g,``);function Ee(e,t,n){let[,r=``,i,...a]=n,o=F(r),s=de(e,o),c=r===`.`?`~/project`:r;if(!s)return`${c} is not a git repository yet`;let l=(e,t)=>`${e} ${t}${e===1?``:`s`}`;switch(i){case`repo`:return null;case`commits`:return I(s.commits,a)?null:`the history has ${l(s.commits,`commit`)}`;case`branch`:return s.detached?`HEAD is detached (not on any branch), not on ${a[0]}`:s.branch===a[0]?null:`you are on ${s.branch}, not ${a[0]}`;case`has-branch`:return s.branches.includes(a[0])?null:`there is no branch ${a[0]}`;case`no-branch`:return s.branches.includes(a[0])?`the branch ${a[0]} still exists`:null;case`tag`:return s.tags.includes(a[0])?null:`there is no tag ${a[0]}`;case`remote`:return s.remotes.includes(a[0])?null:`there is no remote called ${a[0]}`;case`tracks`:return s.upstream[a[0]]===a[1]?null:`${a[0]} ${s.upstream[a[0]]?`tracks ${s.upstream[a[0]]}`:`tracks nothing`}, not ${a[1]}`;case`staged`:return s.staged.includes(a[0])?null:`${a[0]} is not staged`;case`untracked`:return s.untracked.includes(a[0])?null:`${a[0]} is not an untracked file`;case`modified`:return s.modified.includes(a[0])?null:`${a[0]} has no unstaged changes`;case`tracked`:return s.tracked.includes(a[0])?null:`git is not tracking ${a[0]}`;case`ignored`:return s.tracked.includes(a[0])?`${a[0]} is still tracked, so .gitignore does not apply to it (git rm --cached ${a[0]})`:s.ignored.includes(a[0])?null:`${a[0]} is not ignored`;case`commits-on`:{let e=s.branchCommits[a[0]];return e===void 0?`there is no branch ${a[0]}`:I(e,a.slice(1))?null:`${a[0]} has ${l(e,`commit`)}`}case`merges`:return I(s.merges,a)?null:`the history has ${l(s.merges,`merge commit`)}`;case`stashes`:return I(s.stashes,a)?null:`there ${s.stashes===1?`is`:`are`} ${l(s.stashes,`stash entry`).replace(`entrys`,`entries`)}`;case`conflicts`:return I(s.conflicts.length,a)?null:`still in conflict: ${s.conflicts.join(`, `)||`nothing`}`;case`log`:case`log-of`:{let e=i===`log`?s.messages:s.branchMessages[a.shift()];if(!e)return`there is no branch ${n[3]}`;let[t=``,...r]=a,o=r.join(` `),c=e.some(e=>e.includes(o));return t===`excludes`?c?`a commit message still contains ${JSON.stringify(o)}`:null:c?null:`no commit message contains ${JSON.stringify(o)}`}case`clean`:return s.staged.length?`still staged: ${s.staged.join(`, `)}`:null;case`idle`:return s.pending?`a ${s.pending} is still in progress`:s.bisecting?`a bisect is still in progress (git bisect reset ends it)`:null;case`detached`:return s.detached?null:`HEAD is on the branch ${s.branch}, not detached`;case`bisecting`:return s.bisecting?null:`no bisect is in progress`;case`same`:case`ancestor`:case`not-ancestor`:{let[t=``,n=``]=a,r=E(e,o,t),s=E(e,o,n);if(!r)return`${t} does not name a commit`;if(!s)return`${n} does not name a commit`;if(i===`same`)return r.id===s.id?null:`${t} is ${r.id} but ${n} is ${s.id}`;let c=x(e,o,t,n);return c===(i===`ancestor`)?null:`${t} is ${c?``:`not `}in the history of ${n}`}case`at`:{let[n=``,r,...i]=a,s=E(e,o,n);if(!s)return`${n} does not name a commit`;if(r===`parents`)return I(s.parents.length,i)?null:`${n} has ${l(s.parents.length,`parent`)}`;if(r===`author`)return s.author===i.slice(1).join(` `)?null:`${n} was written by ${s.author}`;if(r===`missing`)return i[0]in s.tree?`${i[0]} is in ${n}`:null;if(r===`message`){let[e,...t]=i,r=t.join(` `),a=s.message;return e===`==`?a===r||a.split(`
+`)[0]===r?null:`the message of ${n} is ${JSON.stringify(a)}`:a.includes(r)?null:`the message of ${n} is ${JSON.stringify(a)}`}if(r===`file`){let[e=``,t,...r]=i,a=s.tree[e];if(a===void 0)return`${n} has no file ${e}`;let o=a.replace(/\n$/,``),c=r.join(` `);return t?t===`==`?o===c?null:`${e} in ${n} is ${JSON.stringify(o)}, not ${JSON.stringify(c)}`:t===`excludes`?o.includes(c)?`${e} in ${n} still contains ${JSON.stringify(c)}`:null:o.includes(c)?null:`${e} in ${n} does not contain ${JSON.stringify(c)}`:null}return`the check "${t}" could not be read`}default:return`the check "${t}" could not be read`}}function De(e,t,n){let{clean:r,marks:i}=xe(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(A(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=j(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>Te(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
 `),...e?{actual:e}:{}})}if(r.kind===`dom`){let e=n.dom?.[s.get(u)??-1];return c?f(!1,{input:r.steps.join(`
 `),detail:c}):e?f(e.pass,{input:r.steps.join(`
 `),...e.detail?{actual:e.detail}:{}}):f(!1,{input:r.steps.join(`
-`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?A(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=M(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:F(t),actual:F(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(M(e)));return f(!e.length,{expected:r.expect.join(`
-`),actual:F(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:A(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=P(r.rows)+(r.ordered?`
-(in this order)`:``);return e?f(N(r.rows,e.rows,r.ordered),{expected:t,actual:P(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(N(t(r.rows),t(e),!0),{input:r.sql,expected:P(t(r.rows)),actual:P(t(e))})}return f(N(r.rows,e,!0),{input:r.sql,expected:P(r.rows),actual:P(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
-`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Ce='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',we=`@track cpp
+`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?k(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=j(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:P(t),actual:P(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(j(e)));return f(!e.length,{expected:r.expect.join(`
+`),actual:P(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:k(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=N(r.rows)+(r.ordered?`
+(in this order)`:``);return e?f(M(r.rows,e.rows,r.ordered),{expected:t,actual:N(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(M(t(r.rows),t(e),!0),{input:r.sql,expected:N(t(r.rows)),actual:N(t(e))})}return f(M(r.rows,e,!0),{input:r.sql,expected:N(r.rows),actual:N(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
+`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Oe='@track bash\n@level advanced\n@title Terminal · Advanced\n@name The command line, advanced: variables, scripts and automation\n@blurb Store values in variables, make decisions with exit codes, loop over files, write scripts that take arguments and check their input, and debug a script that misbehaves.\n\n=== term3-01 | Variables\n--- teach\nThe intermediate course taught you to combine commands into pipelines. This course turns commands into programs: values kept in variables, decisions made from exit codes, loops over files, and scripts that take arguments and check them.\n\nA **variable** gives a name to a piece of text so you can reuse it:\n\n```\n~/project $ planet=mars\n~/project $ echo "Next stop: $planet"\nNext stop: mars\n~/project $ mkdir "${planet}-base"\n```\n\n- Set it with `name=value` — and **no spaces around `=`**. `planet = mars` does not set anything: the shell runs a command called `planet` with the arguments `=` and `mars`, and answers `planet: command not found`.\n- Read it with `$name`. Write `${name}` when letters follow straight after, as in `${planet}s` — `$planets` would look up a different variable.\n- **Double quotes** expand variables: `"Next stop: $planet"`. **Single quotes** keep everything exactly as typed: `\'$planet\'` prints `$planet`.\n- Names are case-sensitive, and a variable that was never set is simply empty — no error, which is why typos in variable names are sneaky.\n\nVariables are how scripts avoid repeating themselves: set a version number or a folder name once at the top, use it everywhere below.\n--- task\nSet a variable `project` to `launchpad` and a variable `version` to `2`. Then, using only the variables (without typing `launchpad` or `2` again), print `launchpad v2 is ready` and make a folder called `launchpad-v2`.\n--- starter\n--- solution\nproject=launchpad\nversion=2\necho "$project v$version is ready"\nmkdir "$project-v$version"\n--- hint\n`project=launchpad` — no spaces around the `=`.\n--- hint\n`echo "$project v$version is ready"`: double quotes let the variables expand.\n--- hint\n`mkdir "$project-v$version"` builds the folder name from both.\n--- check shell | Both variables are set\nvar project == launchpad\nvar version == 2\n--- check shell | You printed the message from the variables\nprinted-line launchpad v2 is ready\nused $project\n--- check shell | The folder is named from the variables\ndir launchpad-v2\nused $version\n\n=== term3-02 | Exporting variables to the programs you run\n--- teach\nEvery command you start — a script, `node`, `git` — runs as a separate **child process**. It gets a copy of your **environment**: the variables you have **exported**. Plain variables stay behind in your shell.\n\n```\n~/project $ NAME=Ada          # set in this shell only\n~/project $ bash greet.sh     # the script cannot see NAME\nHello,\n~/project $ export NAME       # now it goes to every child\n~/project $ bash greet.sh\nHello, Ada\n```\n\n- `export NAME=value` sets and exports in one go.\n- `env` lists everything that is exported.\n- `NAME=value command` sets a variable for that one command only: `DEBUG=1 bash build.sh`.\n- The copy only travels one way. A script that changes a variable changes its own copy; your shell never sees it.\n\n`bash greet.sh` runs the commands saved in the file `greet.sh` in a new shell. Scripts get a full lesson later in this course; here the script is ready-made.\n\nThis is how real configuration reaches programs: API keys, `NODE_ENV=production`, and `PATH`, the list of folders the shell searches for commands.\n--- task\n`greet.sh` prints `Hello, ` followed by `$NAME`. `NAME` is already set to `Ada` in this shell, yet the script does not see it. Run the script with `bash greet.sh` to see the problem, fix it by **exporting** `NAME`, and run the script again so it prints `Hello, Ada`.\n--- starter\necho \'echo "Hello, $NAME"\' > greet.sh\nNAME=Ada\n--- solution\nbash greet.sh\nexport NAME\nbash greet.sh\n--- hint\n`echo $NAME` shows the variable is set; the script still cannot see it, because it was never exported.\n--- hint\n`export NAME`, then `bash greet.sh` again.\n--- check shell | NAME is exported\nenv NAME == Ada\n--- check shell | The script saw it\nprinted-line Hello, Ada\nran bash greet.sh\n\n=== term3-03 | Command substitution: $(…)\n--- teach\n`$(command)` runs a command and puts its output **right there** in the line, as if you had typed it. Trailing new lines are dropped.\n\n```\n~/project $ count=$(ls *.txt | wc -l)\n~/project $ echo "There are $count notes"\nThere are 3 notes\n~/project $ echo "Report for $(whoami)"\nReport for you\n```\n\nIt works anywhere a word could go: in a variable, in an `echo`, in the argument of another command. Put it in double quotes, `"$(…)"`, when the output might contain spaces — otherwise the shell splits it into separate words.\n\nYou will also meet the old spelling with backticks, `` `ls | wc -l` ``. It does the same thing, but `$(…)` is easier to read and can be nested.\n\nTwo mistakes: `count=ls | wc -l` never runs `ls` at all — it prints `0` and leaves `count` unset — and `count=(ls)` is a different feature altogether. The dollar and the brackets go together: `$(ls)`.\n--- task\nStore the number of `.txt` files in this folder in a variable called `count`, using `$(…)`. Then write the sentence `There are 3 notes` into `summary.txt`, using `$count` rather than typing the 3.\n--- starter\ntouch a.txt b.txt c.txt picture.png\n--- solution\ncount=$(ls *.txt | wc -l)\necho "There are $count notes" > summary.txt\n--- hint\n`ls *.txt | wc -l` counts the files; wrap it: `count=$(ls *.txt | wc -l)`.\n--- hint\n`echo "There are $count notes" > summary.txt`.\n--- check shell | count holds the number of notes\nvar count == 3\nused $(\n--- check shell | summary.txt was written from the variable\nfile summary.txt == There are 3 notes\nused $count\n\n=== term3-04 | Exit codes: && and ||\n--- teach\nEvery command finishes with an **exit status**, a number that says how it went: `0` means success, anything else means some kind of failure. Nothing is printed; `echo $?` shows the status of the last command.\n\n```\n~/project $ grep -q ERROR deploy.log\n~/project $ echo $?\n0\n```\n\n`grep` is a good example: `0` when it found a match, `1` when it found none, `2` when something went wrong (like a missing file). `-q` makes it quiet — it prints nothing and just sets the status.\n\n- `a && b` runs `b` only if `a` succeeded.\n- `a || b` runs `b` only if `a` failed.\n\nTogether they make a compact either/or:\n\n```\ngrep -q ERROR deploy.log && echo "failed" || echo "ok"\n```\n\nOne caution: this is not a true if/else. If the middle command fails, the `||` part runs as well. `echo` never fails, so here it is fine; for anything bigger, use `if` (two lessons from now).\n\nExit codes are what scripts, build tools and CI systems use to decide whether to carry on. A failing test runner exits with a non-zero status, and that is how the pipeline knows to stop.\n--- task\nThere are two deploy logs. For each one, write **one line** using `grep -q`, `&&` and `||` that prints `deploy-mon: failed` if `deploy-mon.log` contains `ERROR` and `deploy-mon: ok` if it does not — and the same for `deploy-tue.log` with `deploy-tue`.\n--- starter\necho "build ok" > deploy-mon.log\necho "upload ok" >> deploy-mon.log\necho "ERROR: health check failed" >> deploy-mon.log\necho "build ok" > deploy-tue.log\necho "upload ok" >> deploy-tue.log\necho "health ok" >> deploy-tue.log\n--- solution\ngrep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"\ngrep -q ERROR deploy-tue.log && echo "deploy-tue: failed" || echo "deploy-tue: ok"\n--- hint\n`grep -q ERROR deploy-mon.log` prints nothing; check `echo $?` straight after to see its answer.\n--- hint\n`grep -q ERROR deploy-mon.log && echo "deploy-mon: failed" || echo "deploy-mon: ok"`.\n--- check shell | Monday\'s deploy is reported as failed\nprinted-line deploy-mon: failed\nnot-printed deploy-mon: ok\n--- check shell | Tuesday\'s deploy is reported as ok\nprinted-line deploy-tue: ok\nnot-printed deploy-tue: failed\n--- check shell | One line each, driven by grep\'s exit status\nused grep -q\nused &&\nused ||\n\n=== term3-05 | Loops: for\n--- teach\nA `for` loop runs the same commands once for each item in a list:\n\n```\nfor planet in mercury venus earth; do mkdir "$planet"; done\nfor f in *.txt; do echo "checking $f"; done\n```\n\nEach time round, the variable (`planet`, `f`) holds the next item. The list can be plain words, a wildcard, or `$(…)`. It fits on one line, with `;` before `do` and before `done`, or spread over several lines in a script. The `;` separates commands on one line and runs them one after another, whether or not the first worked (unlike `&&`).\n\n**Quote the variable**: `"$f"`. A file called `old boat.jpeg` is one name, but unquoted `$f` is split at the space into two words, `old` and `boat.jpeg`, and `mv` goes looking for two files that do not exist.\n\nTwo tools make renaming easy. `${f%.jpeg}` is `f` with `.jpeg` cut off the **end**; `${f#IMG_}` cuts `IMG_` off the **start**:\n\n```\nf=beach.jpeg\necho "${f%.jpeg}.jpg"     # beach.jpg\n```\n\nBefore a loop changes anything, do a **dry run**: put `echo` in front of the real command, read the commands it prints, and only then run it for real.\n\n```\nfor f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done\n```\n--- task\nRename every `.jpeg` file in this folder so it ends in `.jpg` instead (`beach.jpeg` becomes `beach.jpg`), with **one** `for` loop. One of the files has a space in its name, and the files\' contents must survive.\n--- starter\necho "pixels" > beach.jpeg\ntouch sunset.jpeg "old boat.jpeg" readme.txt\n--- solution\nfor f in *.jpeg; do mv "$f" "${f%.jpeg}.jpg"; done\n--- hint\nTry a dry run first: `for f in *.jpeg; do echo mv "$f" "${f%.jpeg}.jpg"; done`.\n--- hint\nWhen the printed commands look right, run it again without the `echo`. Keep the quotes around `"$f"`.\n--- check shell | No .jpeg files are left\ncount *.jpeg == 0\n--- check shell | Every photo is now a .jpg, contents and all\ncount *.jpg == 3\nfile beach.jpg == pixels\nfile readme.txt\n--- check shell | Done with a loop\nused for\nused do\nused done\n\n=== term3-06 | Decisions: if and test\n--- teach\n`if` runs a command and looks at its exit status: `0` takes the `then` branch, anything else the `else` branch.\n\n```\nif grep -q ERROR app.log; then echo "look at the log"; else echo "all quiet"; fi\n```\n\nThe command you will put after `if` most often is `[ … ]`, a command (also called `test`) that checks something and exits with 0 for true:\n\n- `[ -f notes.txt ]` — is there a file called that? `-d` asks about a folder, `-e` about either.\n- `[ "$mode" = "prod" ]` — are two strings equal? (`!=` for not equal.)\n- `[ -z "$name" ]` — is the string empty?\n- `[ "$count" -gt 10 ]` — number comparisons: `-eq -ne -lt -le -gt -ge`.\n- `!` in front negates: `[ ! -f config.txt ]`.\n\nThe spaces matter. `[` is a command, so `[-f x]` is an attempt to run a command called `[-f` (command not found), and the closing `]` must be its own word too.\n\nQuote variables inside the brackets. If `$mode` is empty, `[ $mode = prod ]` becomes `[ = prod ]` and fails with `unary operator expected`; `[ "$mode" = prod ]` stays a valid comparison.\n\n`elif` adds more branches, and everything ends with `fi` ("if" backwards).\n--- task\nWrite a one-line `if` that prints `config found` when `config.txt` exists, and otherwise creates it containing `mode=dev` and prints `config created`. Run the same line **twice**: the first run creates the file, the second finds it.\n--- starter\n--- solution\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\nif [ -f config.txt ]; then echo "config found"; else echo "mode=dev" > config.txt; echo "config created"; fi\n--- hint\nThe shape is `if [ -f config.txt ]; then …; else …; fi`.\n--- hint\nThe `else` branch has two commands: `echo "mode=dev" > config.txt; echo "config created"`.\n--- hint\nPress the Up arrow to bring the line back, then Enter to run it again.\n--- check shell | The first run created the file\nprinted-line config created\nfile config.txt == mode=dev\n--- check shell | The second run found it\nprinted-line config found\nused if [ -f\n\n=== term3-07 | Scripts: commands saved in a file\n--- teach\nA **script** is a text file of commands, one per line. Running it runs them in order, so a task you do often becomes one command.\n\n```\n~/project $ bash backup.sh notes.txt\n```\n\nInside the script, `$1` is the first argument, `$2` the second, `$#` how many there are, and `"$@"` all of them. Scripts run in a **child** shell, so a `cd` inside one does not move you.\n\nTo run a script by its name, like a real program:\n\n1. start it with a **shebang** line, `#!/bin/bash`, which says which program runs it;\n2. make it executable: `chmod +x backup.sh`;\n3. run it as `./backup.sh`. The `./` says "the one in this folder" — the shell does not look in the current folder for commands, so plain `backup.sh` gives `command not found`.\n\nThis practice terminal has no text editor, so build files with `echo`. Use **single quotes** around each line: they stop `$1` from being expanded now, when you write the file, so it is expanded later, when the script runs.\n\n```\necho \'#!/bin/bash\' > hello.sh\necho \'echo "Hello, $1"\' >> hello.sh\n```\n--- task\nCreate `backup.sh`, a script that copies the file named in its first argument to the same name with `.bak` added, then prints `backed up <name>`. Run it on `notes.txt` with `bash`. Then make it executable and run it as `./backup.sh todo.txt`.\n--- starter\necho "remember the fuel" > notes.txt\necho "launch" > todo.txt\n--- solution\necho \'#!/bin/bash\' > backup.sh\necho \'cp "$1" "$1.bak"\' >> backup.sh\necho \'echo "backed up $1"\' >> backup.sh\nbash backup.sh notes.txt\nchmod +x backup.sh\n./backup.sh todo.txt\n--- hint\nThree lines, each with `echo \'…\'`: the shebang (`>`), then `cp "$1" "$1.bak"` and `echo "backed up $1"` (`>>`).\n--- hint\n`bash backup.sh notes.txt` runs it. `cat backup.sh` shows what you wrote.\n--- hint\n`chmod +x backup.sh`, then `./backup.sh todo.txt`.\n--- check shell | backup.sh works when run with bash\nfile notes.txt.bak == remember the fuel\nprinted-line backed up notes.txt\n--- check shell | …and on its own, once it is executable\nfile backup.sh exec\nfile todo.txt.bak == launch\nran ./backup.sh todo.txt\n\n=== term3-08 | Find and replace: sed\n--- teach\n`sed` (the **s**tream **ed**itor) changes text as it flows through. Its most used command is `s`, substitute:\n\n```\nsed \'s/localhost/db.internal/\' settings.conf\n```\n\n- That **prints** the changed text. The file itself is unchanged until you add `-i` (in place): `sed -i \'s/a/b/\' file`.\n- `s` changes only the **first** match on each line. Add `g` at the end to change every match: `s/a/b/g`.\n- The pattern is a regular expression: `.` is any character, `^` the start of a line, `$` the end.\n- When the text contains slashes, pick another separator: `s|/usr/local|/opt|`.\n- `/pattern/d` deletes matching lines; `sed -n \'/pattern/p\'` prints only matching lines.\n\nThe two classic surprises are forgetting `g` (only the first match changes) and forgetting `-i` (the output looks right, but the file never changed). Because `-i` really rewrites the file, check the command without `-i` first.\n--- task\nIn `settings.conf`, change **every** `localhost` to `db.internal` — one line has it twice — in the file itself. Then, also with `sed -i`, delete the line that starts with `debug`.\n--- starter\necho "host=localhost" > settings.conf\necho "url=http://localhost:5432/localhost" >> settings.conf\necho "debug=true" >> settings.conf\necho "port=5432" >> settings.conf\n--- solution\nsed -i \'s/localhost/db.internal/g\' settings.conf\nsed -i \'/^debug/d\' settings.conf\n--- hint\nTry it without `-i` first: `sed \'s/localhost/db.internal/g\' settings.conf`. The `g` catches the second match on the url line.\n--- hint\nWhen it looks right, add `-i`. Then `sed -i \'/^debug/d\' settings.conf` removes the debug line.\n--- check shell | Every localhost is now db.internal, and the debug line is gone\nfile settings.conf ~= host=db.internal\\nurl=http://db.internal:5432/db.internal\\nport=5432\n--- check shell | Edited in place with sed\nused sed -i\nused /g\n\n=== term3-09 | Lists into arguments: xargs\n--- teach\nSome commands read their input: `grep`, `sort`, `wc`. Others only take **arguments**: `rm`, `mkdir`, `touch`, `mv`. Piping a list into `rm` does nothing, because `rm` never reads the pipe.\n\n`xargs` bridges the gap. It reads words from the pipe and puts them on the end of a command:\n\n```\nfind . -name "*.tmp" | xargs rm          # rm ./a.tmp ./b/c.tmp …\ncat folders.txt | xargs mkdir -p         # one mkdir, every name\n```\n\n- `-n 1` runs the command once per item instead of once for all of them.\n- `-I {}` puts each item wherever `{}` appears: `ls *.log | xargs -I {} mv {} old/`.\n- `-t` prints each command before running it — handy while you are checking.\n\n`xargs` splits on spaces, so a file called `my notes.tmp` arrives as two words. For names that may contain spaces, `find … -exec rm {} \\;` is the safer tool.\n--- task\nDelete every `.tmp` file anywhere under `build` — they are at several depths — using `find` and `xargs rm`. Then create every folder listed in `dirs.txt` with `xargs mkdir -p`.\n--- starter\nmkdir -p build/css build/js/vendor\ntouch build/a.tmp build/css/b.tmp build/js/vendor/c.tmp build/js/app.js build/css/site.css\necho "assets" > dirs.txt\necho "assets/img" >> dirs.txt\necho "logs" >> dirs.txt\n--- solution\nfind build -name "*.tmp" | xargs rm\ncat dirs.txt | xargs mkdir -p\n--- hint\nCheck the list first: `find build -name "*.tmp"`.\n--- hint\nThen pipe it into `xargs rm`. For the folders, `cat dirs.txt | xargs mkdir -p`.\n--- check shell | Every .tmp file is gone, and nothing else\nmissing build/a.tmp\nmissing build/css/b.tmp\nmissing build/js/vendor/c.tmp\nfile build/js/app.js\nfile build/css/site.css\nused xargs rm\n--- check shell | The folders from dirs.txt exist\ndir assets/img\ndir logs\nused xargs mkdir\n\n=== term3-10 | Debugging a script\n--- teach\nA script that "just doesn\'t work" usually has one small mistake that set off a chain of others. Work through it methodically:\n\n1. **Reproduce**: run it and read the errors **from the top**. The first error is often the cause; the ones after it are knock-on effects.\n2. **Trace it**: `bash -x script.sh` prints every command, with a `+` in front, **after** variables have been filled in — exactly what really ran. This is where hidden problems show up:\n   ```\n   + mkdir -p\n   mkdir: missing operand\n   ```\n   The variable after `-p` was empty.\n3. **Check your assumptions**: is every variable spelled the same everywhere it is used? Is every `"$var"` quoted, so names with spaces stay whole?\n4. **Fix the cause**, then **run it again** and check the result — not just that the errors stopped, but that the files are where they should be.\n\n`set -u` at the top of a script turns a misspelled variable into an immediate error (`unbound variable`) instead of a silent empty string.\n\nThe bug report:\n\n> `archive.sh` should move every `.txt` note into `archive/`. Running `bash archive.sh` prints errors, and the notes stay where they are.\n--- task\nRun the script to see it fail, then trace it with `bash -x archive.sh`. Fix **both** bugs by rewriting `archive.sh` (three lines, built with `echo`, like the original) and run it again: all three notes must end up in `archive`, with no errors.\n--- starter\ntouch "meeting notes.txt" ideas.txt todo.txt\necho \'dest=archive\' > archive.sh\necho \'mkdir -p $dets\' >> archive.sh\necho \'for f in *.txt; do mv $f $dest/; done\' >> archive.sh\n--- solution\nbash archive.sh\nbash -x archive.sh\necho \'dest=archive\' > archive.sh\necho \'mkdir -p "$dest"\' >> archive.sh\necho \'for f in *.txt; do mv "$f" "$dest/"; done\' >> archive.sh\nbash archive.sh\n--- hint\n`cat archive.sh` shows the script. In the `bash -x` trace, look at the line that begins `+ mkdir -p`: what came after `-p`?\n--- hint\nThe variable on line 2 is misspelled. And `mv $f` splits `meeting notes.txt` into two words — quote it: `"$f"`.\n--- hint\nRewrite it: `echo \'dest=archive\' > archive.sh`, then `>>` the fixed `mkdir -p "$dest"` line and the loop with `mv "$f" "$dest/"`.\n--- check shell | You traced the script\nran bash -x archive.sh\nprinted-line + mkdir -p\n--- check shell | Every note is in archive, and none are left behind\ncount archive/*.txt == 3\ncount *.txt == 0\n--- check shell | The script is fixed, and ran cleanly\nfile archive.sh excludes $dets\nfile archive.sh contains "$f"\nstatus 0\n\n=== term3-11 | Problem solving: tidying a downloads folder\n--- teach\nA problem worth automating: a downloads folder with dozens of files of every kind. The goal is one folder per file type.\n\nWork it out in steps before typing a loop:\n\n1. **Restate it**: every file with an extension goes into a folder named after that extension — `photo-1.jpg` into `jpg/`, `invoice-3.pdf` into `pdf/`.\n2. **Survey the data**: `ls | head`, and count the types with `ls | sed \'s/.*\\.//\' | sort | uniq -c`. Are there files **without** an extension? Names with spaces?\n3. **Solve one case by hand** and write down the commands:\n   ```\n   f=photo-1.jpg\n   ext="${f##*.}"        # everything after the last dot: jpg\n   mkdir -p "$ext"\n   mv "$f" "$ext/"\n   ```\n   `${f##*.}` cuts the longest match of `*.` from the start — everything up to and including the last dot. (In the survey command, `\\.` is a backslash before a dot: in a regular expression it means a real dot, not "any character".)\n4. **Generalise** into a loop over the right list. `*.*` matches only names containing a dot, so files without an extension are left alone.\n5. **Dry run** with `echo` in front of `mv`, then run it, then **verify** with a count per folder.\n\n`mkdir -p` is what makes the loop safe to repeat: it does nothing when the folder already exists.\n--- task\nInside `downloads`, move every file **that has an extension** into a folder named after its extension (`photo-1.jpg` goes to `downloads/jpg/`), with one loop. Leave `README`, which has no extension, where it is.\n--- starter\nmkdir downloads\nfor i in $(seq 1 12); do touch "downloads/photo-$i.jpg"; done\nfor i in $(seq 1 9); do touch "downloads/invoice-$i.pdf"; done\nfor i in $(seq 1 5); do touch "downloads/notes-$i.txt"; done\ntouch "downloads/notes final.txt" downloads/backup.zip downloads/fonts.zip downloads/README\n--- solution\ncd downloads\nfor f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done\n--- hint\nWork inside the folder: `cd downloads`. `echo "${f##*.}"` with `f=photo-1.jpg` shows how to get the extension.\n--- hint\nThe loop: `for f in *.*; do ext="${f##*.}"; mkdir -p "$ext"; mv "$f" "$ext/"; done` — try it with `echo mv` first.\n--- check shell | Every file with an extension is in its folder\ncount downloads/jpg/*.jpg == 12\ncount downloads/pdf/*.pdf == 9\ncount downloads/txt/*.txt == 6\ncount downloads/zip/*.zip == 2\n--- check shell | Nothing with an extension is left loose, and README stayed\ncount downloads/*.* == 0\nfile downloads/README\n--- check shell | Done with a loop\nused for\nused mkdir -p\n\n=== term3-12 | Build a tool: a script that checks its input\n--- teach\nA script other people will run has to cope with being run wrongly. Good command-line tools follow three habits:\n\n- **Check the input first** ("guard clauses"): no argument, a file that does not exist — say what is wrong and stop, before doing any work.\n- **Exit with a meaningful status**: `exit 0` for success; a non-zero code for each kind of failure, so other scripts can react. By convention, `2` means "you used it wrong".\n- **Write errors to standard error** with `>&2`, so they do not end up mixed into output someone is piping or saving.\n\n```\nif [ $# -eq 0 ]; then echo "usage: count.sh FILE" >&2; exit 2; fi\nif [ ! -f "$1" ]; then echo "no such file: $1" >&2; exit 1; fi\nwc -l < "$1"\n```\n\n`$#` is the number of arguments. `exit` stops the script there with that status. `< "$1"` is the opposite of `>`: it feeds the file into the command\'s input, so `wc -l` prints just the number, without the file name after it.\n\nThen **test every path**, not just the happy one: run it with no argument, with a bad argument and with a good one, and check `echo $?` after each.\n--- task\nWrite `errors.sh`, which takes the name of a log file:\n\n- with **no argument**, it prints `usage: errors.sh LOGFILE` (to standard error) and exits with status `2`;\n- if the file **does not exist**, it prints `no such log: <name>` (to standard error) and exits with status `1`;\n- otherwise it prints the **number of lines** containing `ERROR`.\n\nThen test it: run it with no argument, with `missing.log`, and with `app.log`, and after each of the first two runs print its status with `echo $?`.\n--- starter\necho "INFO start" > app.log\necho "ERROR disk" >> app.log\necho "INFO retry" >> app.log\necho "ERROR disk" >> app.log\necho "ERROR network" >> app.log\n--- solution\necho \'if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi\' > errors.sh\necho \'if [ ! -f "$1" ]; then echo "no such log: $1" >&2; exit 1; fi\' >> errors.sh\necho \'grep -c ERROR "$1"\' >> errors.sh\nbash errors.sh\necho $?\nbash errors.sh missing.log\necho $?\nbash errors.sh app.log\n--- hint\nLine 1 checks `$#`: `if [ $# -eq 0 ]; then echo "usage: errors.sh LOGFILE" >&2; exit 2; fi`. Write it with `echo \'…\' > errors.sh`.\n--- hint\nLine 2 checks the file: `if [ ! -f "$1" ]; then …; exit 1; fi`. Line 3 is `grep -c ERROR "$1"`.\n--- hint\nTest with `bash errors.sh`, then `echo $?`, and so on for the other two cases.\n--- check shell | With no argument: usage, and status 2\nprinted-line usage: errors.sh LOGFILE\nprinted-exactly 2\n--- check shell | With a missing file: a clear error, and status 1\nprinted-line no such log: missing.log\nprinted-exactly 1\n--- check shell | With a real log: the number of ERROR lines\nprinted-exactly 3\nfile errors.sh contains exit 2\nfile errors.sh contains >&2\n',ke='@track bash\n@level intermediate\n@title Terminal · Intermediate\n@name The command line, intermediate: pipes, patterns and finding things\n@blurb Match many files with one pattern, chain small tools into pipelines that answer real questions, search whole projects, and work out why a command gave the wrong answer.\n\n=== term2-01 | Wildcards: many files, one pattern\n--- teach\nThe basics course had you handling files one at a time and reading them with `head`, `tail`, `wc` and `grep`. This course is about many files and lots of text at once: patterns that match many names, pipes that chain small tools together, and ways to search a whole project.\n\nTyping every file name gets old fast. Instead, you can describe the names you mean with a **pattern**, using **wildcards**:\n\n- `*` matches any run of characters, even none: `*.txt` is every name ending in `.txt`.\n- `?` matches exactly one character: `day?.log` matches `day1.log` and `day9.log`, but not `day10.log`.\n- `[abc]` matches one character from the set: `report-[12].pdf` is `report-1.pdf` and `report-2.pdf`.\n\nThe shell turns the pattern into the list of matching names **before** the command runs. `mv` never sees the `*`: it receives `beach.jpg boat.jpg sunset.jpg`, exactly as if you had typed them. That is why `echo` is the safe way to test a pattern — it just prints what the pattern turned into:\n\n```\n~/project $ echo *.txt\nnotes.txt todo.txt\n~/project $ mv *.txt archive/\n```\n\nThree things catch people out:\n\n- Names starting with a dot are skipped: `*` does not match `.env`.\n- A pattern that matches nothing is passed along unchanged, so with no logs around, `ls *.log` complains `cannot access \'*.log\'`.\n- One stray space changes everything. `rm * .txt` is not "remove the .txt files": it is `rm *` (every file) plus a file called `.txt`. Run `echo` with the same pattern first.\n--- task\nThis folder is a mix of photos and notes. Make a folder called `photos` and move **all** the `.jpg` files into it with a single `mv` and a wildcard. Then list only the single-digit photos (`trip-1.jpg`, `trip-2.jpg`, but not `trip-10.jpg`) with `ls photos/trip-?.jpg`.\n--- starter\ntouch trip-1.jpg trip-2.jpg trip-10.jpg notes.txt todo.txt\n--- solution\nmkdir photos\nmv *.jpg photos\nls photos/trip-?.jpg\n--- hint\n`echo *.jpg` shows which names the pattern matches, without moving anything.\n--- hint\n`mv *.jpg photos` moves every match into the folder in one go.\n--- hint\n`?` stands for exactly one character, so `photos/trip-?.jpg` leaves out `trip-10.jpg`.\n--- check shell | Every photo moved, with one wildcard\ncount *.jpg == 0\ncount photos/*.jpg == 3\nran mv *.jpg\n--- check shell | The notes stayed where they were\nfile notes.txt\nfile todo.txt\n--- check shell | ? matched the single-digit photos\nran ls photos/trip-?.jpg\nprinted photos/trip-1.jpg\nprinted photos/trip-2.jpg\n\n=== term2-02 | Pipes: plugging commands together\n--- teach\nThe **pipe**, `|`, sends everything one command prints straight into the next command, instead of to the screen. Each tool does one small job well, and pipes let you chain them into something bigger:\n\n```\ngrep ERROR server.log | wc -l\n```\n\n`grep` keeps only the error lines; `wc -l` counts whatever lines it is given. When a command like `wc`, `head`, `sort` or `grep` gets no file name, it reads from the pipe instead.\n\nBuild a pipeline **one stage at a time**. Run the first command on its own and look at what it prints, then add `| next-command` and look again. It is the fastest way to write one, and later, when an answer looks wrong, it is how you find which stage is wrong.\n\nTwo classic mistakes:\n\n- Giving the later command a file name as well: `grep ERROR server.log | wc -l server.log` counts every line of the file and ignores the pipe completely.\n- Piping into a command that does not read input: `ls | echo` prints an empty line, because `echo` only ever prints its own arguments.\n--- task\n`server.log` holds a morning of messages. With **one pipeline**, count how many lines contain `ERROR`, using `grep` and `wc -l`. Then, with a second pipeline, show only the **first two** error lines, using `grep` and `head`.\n--- starter\necho "08:00 INFO server started" > server.log\necho "08:01 INFO user ada logged in" >> server.log\necho "08:02 ERROR disk almost full" >> server.log\necho "08:03 WARN slow response" >> server.log\necho "08:05 ERROR payment timeout" >> server.log\necho "08:06 INFO user lin logged in" >> server.log\necho "08:09 ERROR payment timeout" >> server.log\necho "08:12 ERROR disk full" >> server.log\n--- solution\ngrep ERROR server.log | wc -l\ngrep ERROR server.log | head -n 2\n--- hint\nFirst run `grep ERROR server.log` on its own and look at the lines it keeps.\n--- hint\nAdd `| wc -l` to count them. For the second job, `| head -n 2` keeps the first two.\n--- check shell | You counted the errors with a pipeline\nran grep ERROR server.log\nran wc -l\nprinted-exactly 4\n--- check shell | You showed just the first two errors\nran head\nprinted-exactly 08:02 ERROR disk almost full\\n08:05 ERROR payment timeout\n\n=== term2-03 | Sorting and counting: sort and uniq\n--- teach\n`sort` puts lines in order. Three flags you will reach for constantly:\n\n- `-n` sorts **numbers** as numbers. Without it, `10` sorts before `9`, because text is compared one character at a time and `1` comes before `9`.\n- `-r` reverses the order, biggest (or last) first. Flags combine: `sort -rn`.\n- `-u` keeps a single copy of each line.\n\n`uniq` squeezes repeated lines into one, and `uniq -c` writes how many there were in front:\n\n```\n~/project $ sort colours.txt | uniq -c\n      2 blue\n      3 red\n```\n\nThe catch: `uniq` only compares each line with **the one just above it**. Repeats that are not next to each other are not merged — which is why `uniq` nearly always comes straight after `sort`.\n\nRemember this line, because it answers "what is the most common thing in here?" for almost any list:\n\n```\nsort | uniq -c | sort -rn\n```\n\nSort so that repeats sit together, count each run, then sort by the counts, biggest first.\n--- task\n`visitors.txt` has one city per line, one line per visit. Print each city **once**, with its number of visits, **most visits first** — `4 lagos` on the first line — using `sort`, `uniq -c` and `sort -rn` in one pipeline.\n--- starter\necho "lima" > visitors.txt\necho "lagos" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "pune" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\necho "lima" >> visitors.txt\necho "oslo" >> visitors.txt\necho "lagos" >> visitors.txt\n--- solution\nsort visitors.txt | uniq -c | sort -rn\n--- hint\nStart with `sort visitors.txt` and notice the repeats now sit together.\n--- hint\nAdd `| uniq -c` to count each run of repeats, then `| sort -rn` to put the biggest count first.\n--- check shell | Each city once, with its count, most visits first\nprinted-exactly 4 lagos\\n3 oslo\\n2 lima\\n1 pune\n--- check shell | Counted with uniq -c\nused uniq -c\n\n=== term2-04 | The top and the bottom: head, tail and numeric sorts\n--- teach\n`head` and `tail` are at their best at the end of a pipeline: sort, then keep the first few lines.\n\n```\nsort -rn sizes.txt | head -n 3     # the three biggest\nsort -n sizes.txt | head -n 1      # the smallest\n```\n\nReal data often starts with a **header line** naming the column. `tail -n +2` means "start from line 2", which drops the header:\n\n```\ntail -n +2 sizes.txt | sort -n | head -n 1\n```\n\nWhy bother? Because `sort -n` treats a line that is not a number as `0`. A header like `bytes` then sorts as the smallest "number" of all, and `head -n 1` hands you the word `bytes` instead of an answer. Whenever a result looks odd, look at the first lines of your data with `head` — headers, blank lines and stray text are the usual suspects.\n--- task\n`sizes.txt` lists file sizes in bytes, under a header line `bytes`. Print the **three largest** sizes, largest first. Then print the **smallest** size — without the header sneaking in.\n--- starter\necho "bytes" > sizes.txt\necho "640" >> sizes.txt\necho "12" >> sizes.txt\necho "9200" >> sizes.txt\necho "87" >> sizes.txt\necho "870" >> sizes.txt\necho "150" >> sizes.txt\n--- solution\ntail -n +2 sizes.txt | sort -rn | head -n 3\ntail -n +2 sizes.txt | sort -n | head -n 1\n--- hint\nSort as numbers, biggest first, with `sort -rn`, and keep three lines with `head -n 3`.\n--- hint\nFor the smallest, `sort -n` puts `bytes` first. `tail -n +2 sizes.txt` hands the pipeline everything except the header.\n--- check shell | The three largest sizes, largest first\nprinted-exactly 9200\\n870\\n640\n--- check shell | The smallest size, not the header\nprinted-exactly 12\n--- check shell | You used head on a sorted list\nran sort\nran head\n\n=== term2-05 | Columns: cut\n--- teach\nA lot of data comes as **columns**: CSV files, logs, exports from spreadsheets. `cut` picks columns out of every line.\n\n- `-d ,` says what separates the columns (here a comma).\n- `-f 2` says which column (**f**ield) to keep, counting from 1. Several at once: `-f 1,3`. A range: `-f 2-4`.\n\n```\n~/project $ cut -d , -f 2 people.csv\nname\nada\nlin\n```\n\nThe usual mistake is leaving out `-d`. Then `cut` splits on the **tab** character, finds none, and prints every line whole — it looks as if `cut` did nothing.\n\n`cut` shines inside a pipeline. To list the distinct values of one column, drop the header, cut the column, then sort and de-duplicate:\n\n```\ntail -n +2 people.csv | cut -d , -f 3 | sort -u\n```\n--- task\n`orders.csv` has a header and then one order per line: `id,customer,item,qty`. Print the **distinct items** that were ordered, alphabetically, one per line, without the header.\n--- starter\necho "id,customer,item,qty" > orders.csv\necho "1,ada,keyboard,1" >> orders.csv\necho "2,lin,mouse,2" >> orders.csv\necho "3,ada,monitor,1" >> orders.csv\necho "4,sam,mouse,1" >> orders.csv\necho "5,lin,keyboard,3" >> orders.csv\necho "6,kai,cable,4" >> orders.csv\n--- solution\ntail -n +2 orders.csv | cut -d , -f 3 | sort -u\n--- hint\nThe item is the third column: `cut -d , -f 3 orders.csv`.\n--- hint\nPut `tail -n +2` in front to drop the header, and `sort -u` after to sort and keep one of each.\n--- check shell | The distinct items, alphabetically, without the header\nprinted-exactly cable\\nkeyboard\\nmonitor\\nmouse\n--- check shell | You cut the column with -d\nused cut -d\n\n=== term2-06 | Finding files: find\n--- teach\n`ls` shows one folder. `find` searches a folder **and everything inside it**:\n\n```\nfind . -name "*.md"            # every .md file below here\nfind src -name config.json     # every config.json below src\nfind . -type d -name tests     # only folders called tests\nfind . -type f -iname "*.JPG"  # files, ignoring upper/lower case\n```\n\nThe first argument is where to start (`.` is "here"); the rest describe what you want. Tests combine: `-type d -name tests` means both.\n\n**Quote the pattern.** Without quotes, the shell expands `*.md` itself before `find` runs. If this folder happens to contain `a.md` and `b.md`, `find` receives `-name a.md b.md` and stops with `paths must precede expression`. With quotes, the pattern reaches `find` intact and it matches at every depth.\n--- task\nSomewhere in this project there are three files called `config.json`, at different depths. List them all with `find`. Then list every **folder** called `tests` — there is also a *file* called `tests`, which must not appear.\n--- starter\nmkdir -p api/v1/tests web/tests docs\ntouch config.json api/config.json api/v1/config.json web/app.js docs/tests\n--- solution\nfind . -name config.json\nfind . -type d -name tests\n--- hint\n`find . -name config.json` starts here and looks in every folder below.\n--- hint\nAdd `-type d` so that only folders count.\n--- check shell | You found all three config files\nran find\nprinted ./config.json\nprinted ./api/config.json\nprinted ./api/v1/config.json\n--- check shell | You found the tests folders, and only folders\nprinted-exactly ./api/v1/tests\\n./web/tests\nused -type d\n\n=== term2-07 | Searching inside files: grep\'s everyday flags\n--- teach\nYou have used `grep PATTERN file`. A handful of flags turns it into the tool you use to find your way around any codebase:\n\n- `-r` searches a folder and everything in it. Each hit starts with the file it is in.\n- `-n` adds the line number: `src/api.js:3:// TODO`.\n- `-i` ignores upper and lower case.\n- `-v` inverts: keep the lines that do **not** match.\n- `-c` prints how many lines matched instead of the lines themselves.\n- `-l` prints only the names of files that match.\n\nFlags combine: `grep -rn TODO src` lists every TODO in `src` with its file and line.\n\nThe pattern is a **regular expression**, so a few characters are special: `.` matches any character, `^` means "start of line" and `$` "end of line". `grep "^ERROR" app.log` finds lines that begin with ERROR, not lines that mention it.\n\nTwo mistakes: forgetting `-r` on a folder (grep answers `Is a directory`), and expecting `-c` to count words — it counts **lines**.\n--- task\nTwo jobs. First, find every `TODO` in the `src` folder, showing file names and line numbers, with one `grep`. Second, `app.log` is full of `DEBUG` noise: count the lines that are **not** DEBUG lines.\n--- starter\nmkdir -p src/lib\necho "import db" > src/api.js\necho "" >> src/api.js\necho "// TODO: retry on failure" >> src/api.js\necho "export run" >> src/api.js\necho "// helpers" > src/lib/util.js\necho "// TODO: cache results" >> src/lib/util.js\necho "const x = 1" > src/main.js\necho "DEBUG start" > app.log\necho "INFO ready" >> app.log\necho "DEBUG tick" >> app.log\necho "WARN slow" >> app.log\necho "DEBUG tick" >> app.log\necho "ERROR crash" >> app.log\necho "INFO restart" >> app.log\n--- solution\ngrep -rn TODO src\ngrep -vc DEBUG app.log\n--- hint\n`-r` searches the whole folder and `-n` adds line numbers: `grep -rn TODO src`.\n--- hint\n`-v` keeps the lines that do not match; add `-c` to count them (or pipe into `wc -l`).\n--- check shell | Every TODO, with its file and line number\nprinted-line src/api.js:3:// TODO: retry on failure\nprinted-line src/lib/util.js:2:// TODO: cache results\n--- check shell | You counted the lines that are not DEBUG\nused -v\nprinted-exactly 4\n\n=== term2-08 | Two kinds of output: redirecting errors\n--- teach\nEvery command has two separate outputs:\n\n- **standard output** (number 1) for results,\n- **standard error** (number 2) for problems.\n\nBoth appear on your screen, so they look the same — until you redirect. `>` only catches standard output. Errors still land on the screen, and the file does not get them:\n\n```\n~/project $ ls reports missing > out.txt\nls: cannot access \'missing\': No such file or directory\n```\n\nTo send the errors somewhere, name stream 2:\n\n- `2> errors.txt` — errors to a file.\n- `2> /dev/null` — throw errors away (`/dev/null` swallows whatever is written to it).\n- `> all.txt 2>&1` — results to the file, then "send 2 wherever 1 is going", so both end up in `all.txt`. The order matters: `2>&1 > all.txt` points errors at the screen first, then moves only the results. `&> all.txt` is a shorter spelling of the right version.\n\nPipes carry only standard output too, which is why `broken-command | grep x` still shows the error on screen.\n--- task\n`ls reports missing` lists a real folder and a folder that does not exist, so it prints a listing **and** an error. In one command, save the listing in `found.txt` and the error in `errors.txt`. Then, in a second command, save **both** into `all.txt`.\n--- starter\nmkdir reports\ntouch reports/q1.txt reports/q2.txt\n--- solution\nls reports missing > found.txt 2> errors.txt\nls reports missing > all.txt 2>&1\n--- hint\n`>` sends the listing to a file and `2>` sends the error to another, in the same command.\n--- hint\nFor both at once, add `2>&1` after `> all.txt`.\n--- check shell | The listing went to found.txt, and the error did not\nfile found.txt contains q1.txt\nfile found.txt excludes cannot access\n--- check shell | The error went to errors.txt\nfile errors.txt contains cannot access \'missing\'\nused 2>\n--- check shell | all.txt has both\nfile all.txt contains q2.txt\nfile all.txt contains No such file or directory\n\n=== term2-09 | Keeping results: >>, and tee\n--- teach\nYou already know the two ways to save output: `>` replaces a file, `>>` adds to its end. Picking the wrong one is how logs lose their history — each `>` throws away everything that was there.\n\nSometimes you want to **see** a result and **save** it. `tee` does both: it writes what it receives into a file and passes the same text on, to the screen or the next command.\n\n```\nsort -u names.txt | tee unique.txt          # see the list and save it\nsort -u names.txt | tee unique.txt | wc -l  # save it, and count it\necho "run finished" >> run.log              # add a line, keep the rest\n```\n\n`tee -a file` appends instead of replacing, just like `>>`.\n--- task\nPut each name from `logins.txt` once, sorted, into `users.txt` — and see the list on screen at the same time, using `tee`. Then add the line `checked by you` to the **end** of `users.txt` without losing the names.\n--- starter\necho "sam" > logins.txt\necho "ada" >> logins.txt\necho "sam" >> logins.txt\necho "lin" >> logins.txt\necho "ada" >> logins.txt\n--- solution\nsort -u logins.txt | tee users.txt\necho "checked by you" >> users.txt\n--- hint\n`sort -u logins.txt` gives each name once. Pipe it into `tee users.txt` to save it and see it.\n--- hint\n`>>` adds a line to the end; `>` would wipe the names.\n--- check shell | users.txt has each name once, sorted, then your line\nfile users.txt ~= ada\\nlin\\nsam\\nchecked by you\n--- check shell | You saw the names as they were saved\nused tee\nprinted-exactly ada\\nlin\\nsam\n\n=== term2-10 | Problem solving: the busiest visitors\n--- teach\nHere is a real question from a real job: *which addresses are hammering our server?* You have every tool you need. What matters is the approach.\n\n1. **Restate the problem.** "Count requests per IP address; show the three biggest counts."\n2. **Look at the data** before writing anything: `head -n 3 access.log`. Every line starts with the address, then a space:\n   ```\n   10.0.0.7 - - [25/Sep/2026:09:10:00] "GET /home" 200\n   ```\n3. **Solve it stage by stage**, checking the output each time:\n   - get just the addresses: `cut -d \' \' -f 1 access.log` (**single quotes** keep text together just as double quotes do, so `\' \'` is one space character given to `-d`)\n   - bring equal ones together: `| sort`\n   - count each: `| uniq -c`\n   - biggest first: `| sort -rn`\n   - keep three: `| head -n 3`\n4. **Check the answer** against something you can verify another way, like `grep -c "^10.0.0.7 " access.log`.\n\nThink about edge cases too. What if the same address appears in different places in the file — does your pipeline still merge them? (Only if you sort before `uniq`.) What if two addresses tie? Then `sort -rn` puts them next to each other and `head` takes whichever comes first, so say so if it matters.\n--- task\n`access.log` has one line per request, a few hundred of them. Print the **three addresses with the most requests**, with their counts, busiest first. Then save the same three lines into `top3.txt`.\n--- starter\nfor i in $(seq 1 12); do echo "192.168.1.9 - - [25/Sep/2026:09:00:0$((i % 10))] \\"GET /login\\" 401" >> access.log; echo "10.0.0.7 - - [25/Sep/2026:09:10:00] \\"GET /home\\" 200" >> access.log; echo "10.0.0.3 - - [25/Sep/2026:09:11:00] \\"GET /api\\" 200" >> access.log; done\nfor i in $(seq 1 5); do echo "172.16.0.2 - - [25/Sep/2026:09:20:00] \\"GET /about\\" 200" >> access.log; done\nfor i in $(seq 1 28); do echo "10.0.0.7 - - [25/Sep/2026:09:30:00] \\"GET /home\\" 200" >> access.log; done\nfor i in $(seq 1 3); do echo "10.0.0.9 - - [25/Sep/2026:09:40:00] \\"GET /api\\" 500" >> access.log; done\nfor i in $(seq 1 13); do echo "10.0.0.3 - - [25/Sep/2026:09:50:00] \\"GET /api\\" 200" >> access.log; done\n--- solution\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3\ncut -d \' \' -f 1 access.log | sort | uniq -c | sort -rn | head -n 3 > top3.txt\n--- hint\nStart with `cut -d \' \' -f 1 access.log`: the address is the first column, and columns are separated by spaces.\n--- hint\nThen the counting pattern from before: `| sort | uniq -c | sort -rn`.\n--- hint\nFinish with `| head -n 3`, and run the same pipeline again ending in `> top3.txt`.\n--- check shell | The three busiest addresses, busiest first\nprinted-exactly 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Saved in top3.txt\nfile top3.txt ~= 40 10.0.0.7\\n25 10.0.0.3\\n12 192.168.1.9\n--- check shell | Counted with a pipeline\nused uniq -c\nused |\n\n=== term2-11 | Debugging: the count that lied\n--- teach\nWhen a pipeline gives a wrong answer, do not stare at the whole line hoping to spot it. Debug it the way you would any program:\n\n1. **Reproduce** it: run the exact command and look at the output.\n2. **Inspect each stage.** Cut the pipeline back to its first command, then add one stage at a time. The stage where the output stops making sense is the stage with the bug.\n3. **Check your assumptions** about what each tool does. Most pipeline bugs are a tool doing exactly what it was designed to do, which is not what you thought.\n4. **Fix the cause, not the symptom.** Adding up the duplicate lines by hand makes this answer right and leaves the pipeline broken for next time.\n5. **Verify** with a number you can check another way, such as `grep -c north sales.csv`.\n\nHere is the report from a colleague:\n\n> I count sales per region with `cut -d , -f 2 sales.csv | uniq -c`. It says `north` 1 time, then `north` 1 time again, then 2 times… and there is a line for a region called `region`. There are only three regions.\n--- task\nRun the broken pipeline to see the problem for yourself. Then write a correct one that saves each region **once**, with its number of sales, **most sales first**, and **without** the header\'s `region` line, into `region-counts.txt`.\n--- starter\necho "id,region,amount" > sales.csv\necho "1,north,20" >> sales.csv\necho "2,south,15" >> sales.csv\necho "3,north,40" >> sales.csv\necho "4,east,5" >> sales.csv\necho "5,south,10" >> sales.csv\necho "6,north,25" >> sales.csv\necho "7,north,30" >> sales.csv\necho "8,east,12" >> sales.csv\necho "9,south,8" >> sales.csv\n--- solution\ncut -d , -f 2 sales.csv | uniq -c\ntail -n +2 sales.csv | cut -d , -f 2 | sort | uniq -c | sort -rn > region-counts.txt\n--- hint\nRun `cut -d , -f 2 sales.csv` alone. Are all the `north` lines next to each other? What does `uniq` compare each line with?\n--- hint\n`uniq` only merges neighbours, so it needs `sort` in front of it. The `region` line is the header: drop it with `tail -n +2`.\n--- hint\nFinish with `| sort -rn > region-counts.txt`.\n--- check shell | You reproduced the bug first\nprinted 1 region\n--- check shell | Each region once, with its total, most sales first\nfile region-counts.txt ~= 4 north\\n3 south\\n2 east\n\n=== term2-12 | Debugging: the file that emptied itself\n--- teach\nHere is a bug report you will one day write yourself:\n\n> I sorted my list with `sort names.txt > names.txt`. Now `names.txt` is empty.\n\nNothing is wrong with `sort`. The cause is the **order** things happen in. Before running a command, the shell sets up its redirections, and `>` means "empty this file, then send the output here". So the file is already empty by the time `sort` opens it to read. Sorting nothing gives nothing, and nothing is what gets saved.\n\nThe same rule is behind a cousin of this bug: a log written with `>` in each step keeps only its last line, because every `>` wipes what the previous one wrote. That is a job for `>>`.\n\nThe safe pattern for changing a file with a command: write the result to a **new** file, check it, then move it into place:\n\n```\nsort names.txt > names.sorted\ncat names.sorted\nmv names.sorted names.txt\n```\n\nAnd a debugging habit worth keeping: when you are not sure what a command will do to your data, try it on a **copy** first.\n--- task\n`names.txt` has just been emptied by that exact command, but there is a backup in `names.bak`. Put the names back into `names.txt`, **sorted**, safely: through a temporary file and `mv`. Then add the name `zara` to the **end** of `names.txt` without losing the others.\n--- starter\necho "cy" > names.bak\necho "ada" >> names.bak\necho "bo" >> names.bak\ncp names.bak names.txt\nsort names.txt > names.txt\n--- solution\nsort names.bak > sorted.tmp\nmv sorted.tmp names.txt\necho "zara" >> names.txt\n--- hint\n`cat names.txt` shows it is empty and `cat names.bak` shows what you can recover.\n--- hint\nSort the backup into a new file, `sort names.bak > sorted.tmp`, then `mv sorted.tmp names.txt`.\n--- hint\nUse `>>` for `zara`: `>` would empty the file again.\n--- check shell | names.txt is sorted and complete, with zara at the end\nfile names.txt ~= ada\\nbo\\ncy\\nzara\n--- check shell | You moved a finished file into place and appended with >>\nused mv\nused >>\n--- check shell | The backup is untouched\nfile names.bak ~= cy\\nada\\nbo\n',Ae='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',je=`@track cpp
 @level advanced
 @title C++ · Advanced
 @name C++, advanced: ownership, templates and polymorphism
@@ -2059,7 +2064,7 @@ Robot("Idle").act()
 [] { struct Dig : Ability { std::string verb() const override { return "digs"; } }; Robot r("Mole"); r.add(std::make_unique<Dig>()); return r.act() == "Mole: digs"; }()
 --- check source absent | Nothing derives from Robot
 \\b(class|struct)\\s+\\w+\\s*(final\\s*)?:[^{;]*\\bRobot\\b
-`,Te=`@track cpp
+`,Me=`@track cpp
 @level expert
 @title C++ · Expert
 @name C++, expert: generic code, containers and performance
@@ -4339,7 +4344,7 @@ After \`expr()\` returns, check that the position reached the end of the tokens.
 [] { std::string s = "1"; for (int i = 1; i < 100000; ++i) s += "+1"; auto v = evaluate(s); return v && *v == 100000; }()
 --- check test | 100 levels of brackets
 [] { std::string s(100, '('); s += "6"; s += std::string(100, ')'); s += "/4"; auto v = evaluate(s); return v && *v == 1.5; }()
-`,Ee=`@track cpp
+`,Ne=`@track cpp
 @level intermediate
 @title C++ · Intermediate
 @name C++, intermediate: the standard library, classes and careful code
@@ -5831,7 +5836,7 @@ report({2}, {}, {7, 8})
 format_line\\(\\s*"morning"
 --- check source absent | At most one loop in the file
 \\b(for|while)\\s*\\([\\s\\S]*\\b(for|while)\\s*\\(
-`,De=`@track cpp
+`,Pe=`@track cpp
 @level projects
 @title C++ · Projects
 @name C++ projects: build real programs, then prove it with capstones
@@ -8782,7 +8787,7 @@ In \`run\`, skip spaces, try to read a name, skip spaces again: if the next char
 [] { Calculator c; c.run("x = 5"); auto bad = c.run("x = 1 / 0"); auto bad2 = c.run("z = w + 1"); return !bad && !bad2 && c.get("x") == 5.0 && !c.get("z"); }()
 --- check test | Syntax errors
 [] { Calculator c; c.run("x = 1"); return !c.run("") && !c.run("1 +") && !c.run("(1") && !c.run("1)") && !c.run("2 3") && !c.run("1x = 3") && !c.run("= 3") && !c.run("x == 3") && !c.run("3.") && !c.run("x ="); }()
-`,Oe=`@track cpp
+`,Fe=`@track cpp
 @title C++
 @name C++, close to the machine
 @blurb Compiled for real by clang++ in your browser: from main() and std::cout to vectors, strings, references, classes and pointers.
@@ -9510,7 +9515,1350 @@ Check \`if (p != nullptr)\` before \`*p = 0;\`.
 [] { auto p = make_counter(41); *p += 1; return *p == 42; }()
 --- check source absent | Does not use raw new
 \\bnew\\s+int\\b
-`,ke=`@track git
+`,Ie=`@track git
+@level advanced
+@title Git · Advanced
+@name Git, advanced: rewriting history, hunting bugs and working with a team
+@blurb Copy, replay and squash commits, find the commit that broke something in a few steps, trace who changed a line, and share work through a remote the way real teams do — including getting out of the tangles that come with it.
+
+=== git3-01 | Copying one commit: cherry-pick
+--- teach
+The intermediate course taught you to read history and undo mistakes in your own repository. This course goes further: copying and replaying commits, rewriting a branch before you share it, hunting down the commit that broke something, and working with a team through a remote.
+
+Sometimes you need **one** commit from another branch, not the whole branch. A bug fix made on an experimental branch that \`main\` needs today; a fix on \`main\` that an older release branch needs too.
+
+\`git cherry-pick <commit>\` takes the change that commit made and applies it on top of the branch you are on, as a **new** commit with the same message:
+
+\`\`\`
+git log --oneline experiment     # find the commit you want
+git cherry-pick 4be21c9          # or a name like experiment~1
+\`\`\`
+
+- Only that commit's change comes across. Files the other branch added in other commits stay behind.
+- The copy gets a new id, because it has a different parent. Git has no link between the two, so do not cherry-pick when a normal merge would do — later merging both branches can then show the same change twice.
+- If the lines around the change differ on your branch, the cherry-pick stops with a conflict. The last lesson of this course walks through one.
+--- task
+The \`experiment\` branch has a commit \`Fix crash on empty list\` that \`main\` needs now, but the rest of \`experiment\` is not ready. From \`main\`, copy **just that commit** with \`git cherry-pick\`.
+--- starter
+git init
+echo "def mean(xs): return sum(xs) / len(xs)" > stats.py
+git add .
+git commit -m "Add stats"
+git switch -c experiment
+echo "def fancy(): pass" > fancy.py
+git add .
+git commit -m "Start the fancy mode"
+echo "def mean(xs): return sum(xs) / len(xs) if xs else 0" > stats.py
+git commit -am "Fix crash on empty list"
+echo "def fancier(): pass" >> fancy.py
+git commit -am "More fancy mode"
+git switch main
+--- solution
+git log --oneline experiment
+git cherry-pick experiment~1
+--- hint
+\`git log --oneline experiment\` shows the fix and its id. It is one commit before the branch's tip, so \`experiment~1\` names it too.
+--- hint
+From \`main\`: \`git cherry-pick experiment~1\` (or the id).
+--- check shell | main has the fix, as a new commit
+git . branch main
+git . commits == 2
+git . at HEAD message == Fix crash on empty list
+file stats.py contains if xs else 0
+--- check shell | Nothing else came across from experiment
+missing fancy.py
+ran git cherry-pick
+
+=== git3-02 | Rebase: replaying a branch on top of main
+--- teach
+While you worked on \`feature\`, \`main\` moved on. You can bring them together two ways.
+
+**Merge** joins them with a merge commit. The history shows exactly what happened, forks and all.
+
+**Rebase** replays your commits, one by one, on top of the new \`main\`, as if you had started your work today:
+
+\`\`\`
+before:   A---B---C  main            after:   A---B---C  main
+               \\                                       \\
+                D---E  feature                          D'--E'  feature
+\`\`\`
+
+\`\`\`
+git switch feature
+git rebase main
+git switch main
+git merge feature        # now a fast-forward: no merge commit
+\`\`\`
+
+The result is one straight line of history, easy to read and easy to bisect.
+
+The replayed commits \`D'\` and \`E'\` are **new** commits with new ids. That is why the golden rule is: **never rebase commits that other people already have.** Rebase your own local branch before sharing it; once a branch is pushed and others build on it, merge instead. (\`git pull --rebase\`, which you will meet later, is the everyday exception: it only replays commits you have not pushed yet.)
+--- task
+\`main\` has moved on since you started \`feature\`. Rebase \`feature\` onto \`main\`, then fast-forward \`main\` to include it, so that the history is one straight line with **no** merge commits.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+git switch -c feature
+echo "search" > search.js
+git add .
+git commit -m "Add search"
+echo "search v2" > search.js
+git commit -am "Improve search"
+git switch main
+echo "fast" > perf.txt
+git add .
+git commit -m "Speed up start-up"
+git switch feature
+--- solution
+git log --oneline --graph --all
+git rebase main
+git switch main
+git merge feature
+git log --oneline --graph
+--- hint
+You are on \`feature\`: \`git rebase main\` replays its two commits on top of main.
+--- hint
+Then \`git switch main\` and \`git merge feature\` — git reports a fast-forward.
+--- check shell | One straight line: main's work, then yours
+git . branch main
+git . merges == 0
+git . commits == 4
+git . at HEAD~2 message == Speed up start-up
+--- check shell | main and feature point at the same commit
+git . same main feature
+ran git rebase main
+
+=== git3-03 | Squashing: many small commits into one
+--- teach
+While working, small commits are good: \`wip\`, \`wip 2\`, \`fix typo\` are cheap save points. Before you share the branch, though, reviewers want **one commit per idea**, with a message that explains it. Combining commits is called **squashing**.
+
+Squashing the last few commits is two commands:
+
+\`\`\`
+git log --oneline main..feature   # count your commits: say 4
+git reset --soft HEAD~4           # undo the 4 commits, keep every change staged
+git commit -m "Add the search box"
+\`\`\`
+
+\`--soft\` moves the branch back but leaves all the changes staged, so the new commit contains exactly what the four did together.
+
+In a real terminal you will also meet \`git rebase -i\` (interactive rebase), which opens an editor where you mark commits to squash, reorder or reword. This practice terminal has no editor, and \`reset --soft\` is what a squash does underneath anyway.
+
+The same rule as every history rewrite applies: squash commits **before** you push them, not after.
+--- task
+On \`feature\` you made four commits: \`wip\`, \`wip 2\`, \`fix typo\` and \`wip 3\`. Squash them into **one** commit with the message \`Add the search box\`. \`main\` must not change.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Start"
+git switch -c feature
+echo "<input>" > search.html
+git add .
+git commit -m "wip"
+echo "<input type=search>" > search.html
+git commit -am "wip 2"
+echo "input { width: 100% }" > search.css
+git add .
+git commit -m "fix typo"
+echo "<input type=search placeholder=Search>" > search.html
+git commit -am "wip 3"
+--- solution
+git log --oneline main..feature
+git reset --soft HEAD~4
+git commit -m "Add the search box"
+--- hint
+\`git log --oneline main..feature\` lists the four commits to squash.
+--- hint
+\`git reset --soft HEAD~4\` undoes them and keeps everything staged; then commit once.
+--- check shell | feature has one commit on top of main
+git . branch feature
+git . commits-on feature == 2
+git . at feature message == Add the search box
+git . log-of feature excludes wip
+--- check shell | The single commit has all the work
+git . at feature file search.css
+git . at feature file search.html == <input type=search placeholder=Search>
+--- check shell | main is untouched
+git . commits-on main == 1
+
+=== git3-04 | Debugging: a conflict in the middle of a rebase
+--- teach
+A rebase replays your commits one at a time. If one of them changes lines that \`main\` also changed, the rebase **stops** at that commit:
+
+\`\`\`
+CONFLICT (content): Merge conflict in greeting.txt
+error: could not apply 5d1e2f0... Greet space
+\`\`\`
+
+Where are you now? \`git status\` explains: you are in the middle of a rebase, on a **detached HEAD** (no branch, because the branch is only moved when the rebase finishes), with the file marked as unmerged.
+
+Resolve it much like a merge conflict — with two differences that trip people up:
+
+- **The sides look swapped.** In a rebase, \`HEAD\` is \`main\` plus whatever has been replayed so far, and the other side is **your** commit being replayed.
+- **Finish with \`git rebase --continue\`, not \`git commit\`.** After \`git add\`, \`--continue\` records the resolved commit and carries on with the rest.
+
+Two more ways out: \`git rebase --skip\` drops the commit that conflicted, and \`git rebase --abort\` puts everything back as it was before you started. When in doubt, abort and think.
+--- task
+Rebase \`feature\` onto \`main\`. It stops with a conflict in \`greeting.txt\`: \`main\` added punctuation, your commit changed the word. The agreed final text keeps both — resolve the file to exactly \`Hello, space!\`, then finish the rebase.
+--- starter
+git init
+echo "Hello world" > greeting.txt
+git add .
+git commit -m "Add greeting"
+git switch -c feature
+echo "Hello space" > greeting.txt
+git commit -am "Greet space"
+echo "blast off" > launch.txt
+git add .
+git commit -m "Add launch"
+git switch main
+echo "Hello, world!" > greeting.txt
+git commit -am "Punctuate the greeting"
+git switch feature
+--- solution
+git rebase main
+git status
+echo "Hello, space!" > greeting.txt
+git add greeting.txt
+git rebase --continue
+--- hint
+\`git rebase main\`, then \`git status\` and \`cat greeting.txt\` to see where you are.
+--- hint
+Write the agreed line: \`echo "Hello, space!" > greeting.txt\`, then \`git add greeting.txt\`.
+--- hint
+Finish with \`git rebase --continue\`.
+--- check shell | The rebase is finished, and you are back on feature
+git . idle
+git . branch feature
+--- check shell | Your commits now sit on top of main
+git . ancestor main feature
+git . merges == 0
+git . commits == 4
+--- check shell | The conflict was resolved as agreed
+file greeting.txt == Hello, space!
+git . at feature~1 file greeting.txt == Hello, space!
+file launch.txt
+
+=== git3-05 | Hunting a bug: git bisect
+--- teach
+Something that used to work is broken, and there are dozens of commits since it last worked. Reading them all is slow. **\`git bisect\`** finds the guilty commit by **binary search**: it checks out the commit halfway between a known good one and a known bad one, you test it and say which it is, and each answer halves what is left. A thousand commits take about ten steps.
+
+\`\`\`
+git bisect start
+git bisect bad              # the current commit is broken
+git bisect good 3f09a1c     # this old one was fine (an id, a tag, HEAD~12…)
+\`\`\`
+
+Git checks out a commit in the middle (your HEAD is detached while you hunt) and tells you roughly how many steps are left. Test it — here, look at a file — then answer:
+
+\`\`\`
+git bisect good     # this one works
+git bisect bad      # this one is broken
+\`\`\`
+
+Repeat until git announces \`<id> is the first bad commit\`, with its message and the files it changed. Then \`git bisect reset\` returns you to the branch you started on.
+
+Good hunting habits:
+
+- Pick a **reliable test** before you start, and use the same one every step.
+- Answer carefully: one wrong answer sends the search down the wrong half. If you slip, \`git bisect log\` shows your answers and \`git bisect reset\` lets you start again.
+- While bisecting, \`refs/bisect/bad\` names the current "bad" commit — handy for tagging the culprit once it is found.
+--- task
+\`rocket.cfg\` says \`safety = off\`, but the very first commit had \`safety = on\`. Use \`git bisect\` to find the commit that switched it off: start, mark the current commit bad and the first commit (\`HEAD~12\`) good, then at each step look at \`rocket.cfg\` and answer \`good\` or \`bad\`. When git names the first bad commit, tag it \`culprit\`, then finish with \`git bisect reset\`.
+--- starter
+git init
+echo "safety = on" > rocket.cfg
+echo "stage 0" > log.txt
+git add .
+git commit -m "First flight config"
+for i in 1 2 3 4 5 6; do echo "stage $i" > log.txt; git commit -am "Record stage $i"; done
+echo "safety = off" > rocket.cfg
+git commit -am "Tune the thrusters"
+for i in 7 8 9 10 11; do echo "stage $i" > log.txt; git commit -am "Record stage $i"; done
+--- solution
+git bisect start
+git bisect bad
+git bisect good HEAD~12
+cat rocket.cfg
+git bisect good
+cat rocket.cfg
+git bisect bad
+cat rocket.cfg
+git bisect bad
+git tag culprit refs/bisect/bad
+git bisect reset
+--- hint
+\`git bisect start\`, \`git bisect bad\`, \`git bisect good HEAD~12\` — git then checks out a commit in the middle.
+--- hint
+At each step, \`cat rocket.cfg\`: \`safety = on\` means \`git bisect good\`, \`safety = off\` means \`git bisect bad\`.
+--- hint
+When git prints \`… is the first bad commit\`, tag it with \`git tag culprit <that id>\` (or \`refs/bisect/bad\`), then \`git bisect reset\`.
+--- check shell | The culprit is found and tagged
+git . at culprit message == Tune the thrusters
+--- check shell | You bisected by hand
+used git bisect good
+used git bisect bad
+--- check shell | The hunt is over and you are back on main
+git . idle
+git . branch main
+file rocket.cfg == safety = off
+
+=== git3-06 | Automating the hunt: git bisect run
+--- teach
+Answering \`good\` and \`bad\` by hand is fine for a few steps. When the test is something a command can check, let git do all of it:
+
+\`\`\`
+git bisect start HEAD 3f09a1c        # bad first, then good
+git bisect run bash check.sh
+\`\`\`
+
+\`git bisect run\` runs your command at every step and reads its **exit status**:
+
+- \`0\` — this commit is good;
+- \`125\` — this commit cannot be tested (it does not build, say): skip it;
+- any other value from 1 to 127 — bad.
+
+That is exactly how \`grep -q\` answers (\`0\` for found, \`1\` for not found), so a one-line check script is often all you need:
+
+\`\`\`
+echo 'grep -q "units = metric" nav.cfg' > check.sh
+\`\`\`
+
+\`bash check.sh\` runs the commands saved in \`check.sh\`. The **single quotes** around the \`echo\` text write it exactly as typed, inner double quotes included. To see a script's exit status yourself, run \`bash check.sh; echo $?\`: the \`;\` runs the second command after the first, and \`$?\` is the status of the last command. (The Terminal advanced course covers scripts, quotes and exit codes in full.)
+
+Keep the script **untracked** (do not commit it): bisect checks out old commits, and tracked files change with them, but an untracked script stays put the whole time. When bisect run finishes it prints the first bad commit; \`git bisect reset\` as usual.
+
+This is how teams track regressions across hundreds of commits: write the test once, then walk away while git does the searching.
+--- task
+This repository has 42 commits. \`nav.cfg\` should say \`units = metric\`, as it did in the first commit (\`HEAD~41\`), but now it does not. Write \`check.sh\`, a one-line script that exits 0 only when \`nav.cfg\` contains \`units = metric\`. Run \`git bisect start\` with the current commit as bad and \`HEAD~41\` as good, then \`git bisect run bash check.sh\`. Tag the first bad commit \`culprit\` and finish with \`git bisect reset\`.
+--- starter
+git init
+echo "units = metric" > nav.cfg
+echo "0" > flights.txt
+git add .
+git commit -m "Set up navigation"
+for i in $(seq 1 23); do echo "$i" > flights.txt; git commit -am "Log flight $i"; done
+echo "units = imperial" > nav.cfg
+git commit -am "Refactor navigation constants"
+for i in $(seq 24 40); do echo "$i" > flights.txt; git commit -am "Log flight $i"; done
+--- solution
+echo 'grep -q "units = metric" nav.cfg' > check.sh
+git bisect start HEAD HEAD~41
+git bisect run bash check.sh
+git tag culprit refs/bisect/bad
+git bisect reset
+--- hint
+\`echo 'grep -q "units = metric" nav.cfg' > check.sh\` — the single quotes keep the inner double quotes. Try \`bash check.sh; echo $?\`.
+--- hint
+\`git bisect start HEAD HEAD~41\`, then \`git bisect run bash check.sh\`.
+--- hint
+Tag the commit it reports (\`git tag culprit refs/bisect/bad\`), then \`git bisect reset\`.
+--- check shell | The culprit is found and tagged
+git . at culprit message == Refactor navigation constants
+--- check shell | git did the searching
+used git bisect run
+file check.sh contains grep -q
+git . untracked check.sh
+--- check shell | The hunt is over and you are back on main
+git . idle
+git . branch main
+
+=== git3-07 | Who changed this line? git blame
+--- teach
+You have found a suspicious line. Before changing it, find out **why** it is there — it may be fixing a problem you cannot see. \`git blame\` shows, for every line of a file, the last commit that changed it and who made that commit:
+
+\`\`\`
+~/project $ git blame server.conf
+5ac2e11 (Sam 1) port = 9090
+7d03b9a (Lin 2) timeout = 5
+02fd8e1 (Sam 3) workers = 8
+\`\`\`
+
+Then read that commit for the reason: \`git show 7d03b9a\`. The message (and the rest of the diff) usually explains the intent.
+
+- \`git log -- server.conf\` lists every commit that touched the file, newest first. Useful, but the newest one may have changed a different line — blame goes straight to the line.
+- Blame shows the **last** change to a line, not necessarily who first wrote it. A reformatting commit can "own" lines it did not really change; then blame again on the commit before it: \`git blame HEAD~1 -- server.conf\`.
+
+Despite the name, it is a tool for finding context and the right person to ask — not for blaming anyone.
+--- task
+\`server.conf\` says \`timeout = 5\`, which is far too low. Find the commit that set it with \`git blame\`, read that commit with \`git show\`, and tag it \`timeout-change\` so the team can discuss it. (Careful: the most recent commit touched this file too.)
+--- starter
+git init
+git config user.name "Ada"
+printf "port = 8080\\ntimeout = 30\\nworkers = 4\\n" > server.conf
+git add .
+git commit -m "Add the server config"
+git config user.name "Sam"
+printf "port = 8080\\ntimeout = 30\\nworkers = 8\\n" > server.conf
+git commit -am "Use more workers"
+git config user.name "Lin"
+printf "port = 8080\\ntimeout = 5\\nworkers = 8\\n" > server.conf
+git commit -am "Fail fast on slow clients"
+git config user.name "Sam"
+printf "port = 9090\\ntimeout = 5\\nworkers = 8\\n" > server.conf
+git commit -am "Move to port 9090"
+git config --unset user.name
+--- solution
+git blame server.conf
+git show HEAD~1
+git tag timeout-change HEAD~1
+--- hint
+\`git blame server.conf\` — look at the id at the start of the \`timeout\` line.
+--- hint
+\`git show <that id>\` explains the change. Then \`git tag timeout-change <that id>\`.
+--- check shell | You used blame to find the line's commit
+ran git blame server.conf
+printed Lin
+ran git show
+--- check shell | The right commit is tagged
+git . at timeout-change message == Fail fast on slow clients
+git . at timeout-change author == Lin
+
+=== git3-08 | Working with a remote: clone and push
+--- teach
+So far every repository has lived in one folder. Teams share work through a **remote**: another copy of the repository, usually on a server like GitHub or GitLab. In this practice terminal the "server" is a folder, \`~/server/rocket.git\`. It is a **bare** repository (made with \`git init --bare\`): history only, no working files, exactly like the copy on a real server.
+
+\`\`\`
+git clone ~/server/rocket.git ~/rocket   # copy it; the source is remembered as "origin"
+git remote -v                            # where origin is
+git push                                 # send your new commits to origin
+git fetch                                # download new commits, change nothing else
+git pull                                 # fetch, then merge them into your branch
+\`\`\`
+
+After cloning, your \`main\` **tracks** \`origin/main\`. \`origin/main\` is a **remote-tracking branch**: your copy of what \`main\` looked like on the server the last time you talked to it. That is what \`git status\` compares against:
+
+\`\`\`
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+\`\`\`
+
+Nothing is sent until you push, and nothing arrives until you fetch or pull. The remote is not live; it is a copy you synchronise with.
+--- task
+Clone \`~/server/rocket.git\` into \`~/rocket\`. In your clone, add a file \`checklist.txt\` containing \`fuel: check\`, commit it as \`Add the launch checklist\`, and push it to \`origin\`.
+--- starter
+cd ~
+git init --bare server/rocket.git
+git clone server/rocket.git seed
+cd seed
+echo "# Rocket" > README.md
+git add .
+git commit -m "Start the rocket"
+git push
+cd ~
+rm -r seed
+cd ~/project
+--- solution
+cd ~
+git clone server/rocket.git rocket
+cd rocket
+echo "fuel: check" > checklist.txt
+git add checklist.txt
+git commit -m "Add the launch checklist"
+git status
+git push
+--- hint
+\`cd ~\`, then \`git clone server/rocket.git rocket\` and \`cd rocket\`.
+--- hint
+Make the file, \`git add\` it and commit. \`git status\` then says you are one commit ahead of \`origin/main\`.
+--- hint
+\`git push\` sends it.
+--- check shell | You have a clone that tracks origin
+git ~/rocket remote origin
+git ~/rocket tracks main origin/main
+--- check shell | Your commit reached the server
+git ~/server/rocket.git log contains Add the launch checklist
+git ~/server/rocket.git at main file checklist.txt == fuel: check
+--- check shell | Nothing is left to push
+git ~/rocket same main origin/main
+
+=== git3-09 | Debugging: a rejected push
+--- teach
+You push, and git refuses:
+
+\`\`\`
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to '/home/you/server/rocket.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally.
+\`\`\`
+
+**Read the whole message** — git usually tells you what to do. Here: a teammate pushed while you were working. The server's \`main\` has a commit you do not have, and accepting your push would throw it away.
+
+What **not** to do: \`git push --force\`. It makes the server match you by deleting your teammate's work.
+
+What to do: bring their work in, then push. \`git pull\` fetches and integrates, and you choose how:
+
+- \`git pull --rebase\` replays your unpushed commits on top of theirs: a straight line of history. Safe here, because the commits being replayed are only yours.
+- \`git pull --no-rebase\` merges, adding a merge commit.
+
+Modern git makes you choose. Plain \`git pull\` on diverged branches stops with \`Need to specify how to reconcile divergent branches\` — pass one of the flags, or set a default once with \`git config pull.rebase true\`. If the pull hits a conflict, resolve it as usual (\`git add\`, then \`git rebase --continue\`), and then push.
+--- task
+In \`~/rocket\` you committed the checklist, but \`git push\` is rejected. See the rejection, bring in your teammate's work with \`git pull --rebase\` so the history stays one straight line, and push again.
+--- starter
+cd ~
+git init --bare server/rocket.git
+git clone server/rocket.git sam
+cd sam
+git config user.name "Sam"
+echo "# Rocket" > README.md
+git add .
+git commit -m "Start the rocket"
+git push
+cd ~
+git clone server/rocket.git rocket
+cd ~/sam
+echo "wind: calm" > weather.txt
+git add .
+git commit -m "Add the weather report"
+git push
+cd ~/rocket
+echo "fuel: check" > checklist.txt
+git add .
+git commit -m "Add the launch checklist"
+--- solution
+git push
+git pull --rebase
+git log --oneline --graph
+git push
+--- hint
+Run \`git push\` and read every line of the answer.
+--- hint
+\`git pull --rebase\` brings Sam's commit in and puts yours on top. Check with \`git log --oneline --graph\`.
+--- hint
+Then \`git push\` again.
+--- check shell | You met the rejection
+printed [rejected]
+--- check shell | Both commits are on the server, in one straight line
+git ~/server/rocket.git log contains Add the weather report
+git ~/server/rocket.git log contains Add the launch checklist
+git ~/server/rocket.git merges == 0
+--- check shell | Your clone matches the server
+git ~/rocket same main origin/main
+git ~/rocket idle
+
+=== git3-10 | A team workflow: branch, share, merge, release
+--- teach
+Put it all together and you have the workflow most teams use:
+
+1. **Branch** from an up-to-date \`main\` for each piece of work, named for what it does: \`git switch -c feature/countdown\`.
+2. **Commit** small, clear steps.
+3. **Push the branch** so others can see and review it: \`git push -u origin feature/countdown\`. \`-u\` sets the upstream, so later a plain \`git push\` or \`git pull\` knows where to go. On GitHub this is when you open a **pull request**.
+4. **Merge** into \`main\` once it is reviewed. Many teams use \`git merge --no-ff\`, which always makes a merge commit, so the history shows the feature as one unit even when a fast-forward was possible.
+5. **Tag the release** on \`main\` with an annotated tag.
+6. **Push \`main\` and the tag.** A plain push does not send tags; name them (\`git push origin v1.1\`) or send them all with \`git push --tags\`.
+
+\`main\` stays releasable the whole time, because unfinished work lives on branches until it is ready.
+--- task
+In \`~/rocket\`: create the branch \`feature/countdown\`, add \`countdown.txt\` containing \`10 9 8\`, commit it, and push the branch to \`origin\` with an upstream. Then merge it into \`main\` with \`--no-ff\`, tag that merge \`v1.1\` (annotated), and push both \`main\` and the tag.
+--- starter
+cd ~
+git init --bare server/rocket.git
+git clone server/rocket.git seed
+cd seed
+echo "# Rocket" > README.md
+git add .
+git commit -m "Start the rocket"
+git push
+cd ~
+rm -r seed
+git clone server/rocket.git rocket
+cd ~/rocket
+--- solution
+git switch -c feature/countdown
+echo "10 9 8" > countdown.txt
+git add countdown.txt
+git commit -m "Add the countdown"
+git push -u origin feature/countdown
+git switch main
+git merge --no-ff feature/countdown
+git tag -a v1.1 -m "Countdown release"
+git push
+git push origin v1.1
+--- hint
+\`git switch -c feature/countdown\`, make and commit the file, then \`git push -u origin feature/countdown\`.
+--- hint
+\`git switch main\`, \`git merge --no-ff feature/countdown\`, \`git tag -a v1.1 -m "…"\`.
+--- hint
+\`git push\` sends \`main\`; \`git push origin v1.1\` sends the tag.
+--- check shell | The feature branch was shared, with an upstream
+git ~/server/rocket.git has-branch feature/countdown
+git ~/rocket tracks feature/countdown origin/feature/countdown
+--- check shell | main has a merge commit, tagged v1.1
+git ~/rocket merges == 1
+git ~/rocket same v1.1 main
+--- check shell | The server has the new main and the tag
+git ~/server/rocket.git tag v1.1
+git ~/server/rocket.git same main v1.1
+
+=== git3-11 | Debugging: commits made on a detached HEAD
+--- teach
+Normally \`HEAD\` points at a **branch**, and a new commit moves that branch forward. After \`git checkout <commit id>\` (or during a bisect or a rebase), \`HEAD\` points straight at a commit instead: a **detached HEAD**. \`git status\` says so on its first line:
+
+\`\`\`
+HEAD detached at 7ac44b2
+\`\`\`
+
+You can commit there, but the commits belong to **no branch**. Switch back to \`main\` and nothing points at them any more. Git warns you as you leave, but the warning scrolls past easily:
+
+\`\`\`
+Warning: you are leaving 2 commits behind, not connected to
+any of your branches
+\`\`\`
+
+They are not deleted — yet. To rescue them:
+
+1. \`git reflog\` — find the last commit you made while detached (just below the \`checkout: moving from … to main\` line).
+2. \`git branch wings <id>\` — give it a branch; \`HEAD@{1}\` works too if it is the entry just below.
+3. Merge that branch, or carry on working on it.
+
+To avoid it next time: if you check out an old commit and decide to keep working there, first run \`git switch -c some-name\`, so your commits have a branch to live on.
+--- task
+Yesterday you checked out an old commit to experiment, made two commits there (\`Sketch the wings\` and \`Sweep the wings back\`), then switched back to \`main\` — and the work seems to be gone. Find it with \`git reflog\`, put it on a new branch called \`wings\`, and merge \`wings\` into \`main\`.
+--- starter
+git init
+echo "fins: 3" > design.txt
+git add .
+git commit -m "First design"
+echo "fins: 4" > design.txt
+git commit -am "Try four fins"
+git checkout HEAD~1
+echo "wings: 2" > wings.txt
+git add .
+git commit -m "Sketch the wings"
+echo "wings: 2, swept" > wings.txt
+git commit -am "Sweep the wings back"
+git switch main
+--- solution
+git reflog
+git branch wings HEAD@{1}
+git merge wings
+--- hint
+In \`git reflog\`, the entry just below \`checkout: moving from … to main\` is \`Sweep the wings back\`.
+--- hint
+\`git branch wings HEAD@{1}\` (or that entry's id), then \`git merge wings\`.
+--- check shell | You searched the reflog
+ran git reflog
+--- check shell | The lost commits are on a branch called wings
+git . has-branch wings
+git . log-of wings contains Sketch the wings
+git . log-of wings contains Sweep the wings back
+--- check shell | …and merged into main, alongside main's own work
+git . branch main
+git . merges == 1
+file wings.txt == wings: 2, swept
+file design.txt == fins: 4
+
+=== git3-12 | Debugging: a conflict while cherry-picking
+--- teach
+Cherry-pick applies a commit's **change** to a different starting point. When the lines around that change are different on your branch, git cannot place it, and the cherry-pick stops:
+
+\`\`\`
+CONFLICT (content): Merge conflict in launch.sh
+error: could not apply 9e8b7a6... Require 25% fuel
+hint: Resolve the conflicts in the file(s), mark each resolved with
+hint: "git add <file>", then run "git cherry-pick --continue".
+\`\`\`
+
+This happens all the time when back-porting fixes to an older **release branch**: \`main\` has moved on, so the fix was written against code the release does not have.
+
+- In the markers, \`HEAD\` is your branch (the release), and the other side is the commit being picked.
+- Resolve the file to what the release should contain — usually the fix, adapted to the older code — then \`git add\` it.
+- \`git cherry-pick --continue\` makes the commit, keeping the original message and author. \`git cherry-pick --abort\` backs out completely.
+
+Before continuing, make sure the resolved file makes sense **on this branch**: a back-port that drags in unrelated changes from \`main\` is a new bug.
+--- task
+Release branch \`release-1\` needs the safety fix \`Require 25% fuel\` from \`main\` (the latest commit there). On \`release-1\`, cherry-pick it. It stops on a conflict in \`launch.sh\`: resolve it so that the file reads exactly
+\`\`\`
+check fuel >= 25
+launch
+\`\`\`
+and finish with \`git cherry-pick --continue\`.
+--- starter
+git init
+printf "check fuel\\nlaunch\\n" > launch.sh
+git add .
+git commit -m "Add launch steps"
+git branch release-1
+printf "check fuel >= 10\\nlaunch\\n" > launch.sh
+git commit -am "Require 10% fuel"
+printf "check fuel >= 25\\nlaunch\\n" > launch.sh
+git commit -am "Require 25% fuel"
+git switch release-1
+--- solution
+git log --oneline main
+git cherry-pick main
+cat launch.sh
+printf "check fuel >= 25\\nlaunch\\n" > launch.sh
+git add launch.sh
+git cherry-pick --continue
+--- hint
+The fix is the tip of \`main\`, so \`git cherry-pick main\` picks it.
+--- hint
+\`cat launch.sh\` shows the markers. Write the resolved file with \`printf "check fuel >= 25\\nlaunch\\n" > launch.sh\`.
+--- hint
+\`git add launch.sh\`, then \`git cherry-pick --continue\`.
+--- check shell | The cherry-pick is finished, on release-1
+git . idle
+git . branch release-1
+git . at HEAD message == Require 25% fuel
+--- check shell | launch.sh has the fix and no markers
+file launch.sh ~= check fuel >= 25\\nlaunch
+git . at HEAD file launch.sh excludes =======
+--- check shell | main is untouched
+git . commits-on main == 3
+`,Le=`@track git
+@level intermediate
+@title Git · Intermediate
+@name Git, intermediate: reading history, undoing mistakes and resolving conflicts
+@blurb Keep junk and secrets out of your repository, read and compare history, fix and undo commits the right way for each situation, set work aside, tag releases, and resolve merge conflicts yourself.
+
+=== git2-01 | Ignoring files: .gitignore
+--- teach
+The basics course gave you the everyday local loop: status, add, commit, diff, branches and merges. This course is about the moments that loop does not cover: keeping files out, reading and comparing history, undoing mistakes the right way for each situation, and resolving a conflict yourself.
+
+Some files must never be committed:
+
+- **secrets** — \`.env\` files full of passwords and API keys;
+- **dependencies** — \`node_modules/\`, thousands of files anyone can reinstall;
+- **generated files** — build output, logs, caches, editor settings.
+
+A file called \`.gitignore\` at the top of the repository lists them, one pattern per line:
+
+\`\`\`
+# this name, in any folder
+.env
+# a trailing / means folders only
+node_modules/
+# wildcards work: every .log file
+*.log
+# a leading / means only at the top level
+/build
+# ! makes an exception to an earlier rule
+!keep.log
+\`\`\`
+
+A line that starts with \`#\` is a comment. A \`#\` later in a line is not, so keep comments on lines of their own.
+
+Ignored files disappear from \`git status\`, and \`git add .\` skips them. When you are not sure why a file is (or is not) ignored, \`git check-ignore -v file\` names the rule that matched.
+
+Commit the \`.gitignore\` itself, so everyone on the project ignores the same things. And know its limit: it only affects files git is **not yet tracking**. A file that was committed before it was ignored stays tracked — that is a debugging lesson of its own, later in this course.
+--- task
+This new project has a secrets file \`.env\`, a \`node_modules\` folder and a \`debug.log\`. Create a \`.gitignore\` so that \`git status\` shows **only** \`.gitignore\` and \`app.js\` as untracked, then commit both with \`git add .\` and a message of your choice.
+--- starter
+git init
+echo "API_KEY=secret" > .env
+mkdir -p node_modules/lodash
+echo "module.exports = {}" > node_modules/lodash/index.js
+echo "boot ok" > debug.log
+echo "console.log('hi')" > app.js
+--- solution
+echo ".env" > .gitignore
+echo "node_modules/" >> .gitignore
+echo "*.log" >> .gitignore
+git status
+git add .
+git commit -m "Add the app and ignore rules"
+--- hint
+One pattern per line: \`echo ".env" > .gitignore\`, then add \`node_modules/\` and \`*.log\` with \`>>\`.
+--- hint
+Run \`git status\` — only \`.gitignore\` and \`app.js\` should be listed. Then \`git add .\` and commit.
+--- check shell | The secrets, dependencies and logs are ignored
+git . ignored .env
+git . ignored node_modules/lodash/index.js
+git . ignored debug.log
+--- check shell | app.js and .gitignore are committed, and nothing else
+git . commits == 1
+git . at HEAD file app.js
+git . at HEAD file .gitignore
+git . at HEAD missing .env
+
+=== git2-02 | Reading history: log --graph
+--- teach
+\`git log --oneline\` lists commits. Add \`--graph\` and it **draws** how they connect, and \`--all\` shows every branch, not just the one you are on:
+
+\`\`\`
+*   9f2c1ab (HEAD -> main) Merge branch 'docs'
+|\\
+| * 51d0e3c Write the guide
+* | 7ac44b2 Fix the start-up crash
+|/
+* 03be9f1 Start the app
+\`\`\`
+
+- Each \`*\` is a commit; newest at the top.
+- Lines lead from each commit down to its parent. \`|\\\` is where a merge commit's second parent joins in; \`|/\` is where two lines of work split.
+- The names in brackets are where branches and tags point. \`HEAD -> main\` means you are on \`main\` (\`HEAD\` is git's name for the commit you are on).
+
+A branch whose tip already appears in \`main\`'s history is **merged**: deleting it loses nothing. \`git branch -d name\` deletes a branch only if it is merged, and refuses otherwise, which makes it the safe way to clean up. (\`-D\` deletes anyway — for work you really want to throw away.) \`git branch --merged\` lists the branches that are safe to delete.
+--- task
+This repository has three branches besides \`main\`. Draw the history with \`git log --oneline --graph --all\`. Two of the branches are merged into \`main\`; one is not. Delete the **two merged** branches with \`git branch -d\`, and keep the unmerged one.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start the app"
+git switch -c docs
+echo "how to launch" > GUIDE.md
+git add .
+git commit -m "Write the guide"
+git switch main
+git switch -c fix
+echo "v1.1" > app.txt
+git commit -am "Fix the start-up crash"
+git switch main
+git merge fix
+git merge docs
+git switch -c experiment
+echo "wild" > idea.txt
+git add .
+git commit -m "Try a wild idea"
+git switch main
+--- solution
+git log --oneline --graph --all
+git branch -d docs
+git branch -d fix
+--- hint
+In the graph, find each branch name and follow its line: does it lead into \`main\`'s history?
+--- hint
+\`docs\` and \`fix\` are part of \`main\`. \`git branch -d experiment\` would refuse, because that work exists nowhere else.
+--- check shell | You drew the whole history
+ran git log
+used --graph
+used --all
+--- check shell | The merged branches are gone
+git . no-branch docs
+git . no-branch fix
+--- check shell | The unmerged work is kept
+git . has-branch experiment
+git . branch main
+
+=== git2-03 | Looking inside a commit: git show
+--- teach
+\`git show\` prints a commit: its id, author and message, then the diff of what it changed.
+
+\`\`\`
+git show            # the commit you are on (HEAD)
+git show 7ac44b2    # a commit by its id, as git log shows it
+git show HEAD~1     # one before HEAD; HEAD~2 is two before, and so on
+\`\`\`
+
+\`HEAD~n\` works anywhere git wants a commit, and so do branch names: \`main~3\` is three commits before the tip of \`main\`.
+
+With a colon, \`git show\` prints **a file as it was** in that commit:
+
+\`\`\`
+git show HEAD~2:config.txt
+\`\`\`
+
+To bring that old version back into your working folder, restore it from that commit:
+
+\`\`\`
+git restore --source=HEAD~2 config.txt
+\`\`\`
+
+That only changes the file in your folder; commit it like any other change. A shortcut you will see from here on: \`git commit -am "…"\` stages every change to files git already tracks and commits them in one step (\`-a\` skips new, untracked files, so those still need \`git add\`). The history keeps every version, so you have undone a change without losing the record of it.
+--- task
+\`config.txt\` was changed in each of the last three commits, and the newest value is wrong. Look at the version from **two commits ago** with \`git show HEAD~2:config.txt\`, bring that version back into your working folder, and commit it with the message \`Restore the stable config\`.
+--- starter
+git init
+echo "retries = 3" > config.txt
+git add .
+git commit -m "Add config"
+echo "retries = 5" > config.txt
+git commit -am "Try more retries"
+echo "retries = 50" > config.txt
+git commit -am "Retry forever"
+--- solution
+git show HEAD~2:config.txt
+git restore --source=HEAD~2 config.txt
+git commit -am "Restore the stable config"
+--- hint
+\`git show HEAD~2:config.txt\` prints the old file. \`git log --oneline\` helps you count back.
+--- hint
+\`git restore --source=HEAD~2 config.txt\` puts that version in your folder; then \`git commit -am "Restore the stable config"\`.
+--- check shell | You looked at the old version
+used HEAD~2
+printed-line retries = 3
+--- check shell | The stable config is committed
+git . commits == 4
+git . at HEAD message == Restore the stable config
+git . at HEAD file config.txt == retries = 3
+
+=== git2-04 | Before you merge: comparing branches
+--- teach
+Before merging a branch, look at what it would bring in. Two ranges answer the two questions:
+
+\`\`\`
+git log --oneline main..feature   # commits on feature that main does not have
+git diff main feature             # how the files differ between the two tips
+git diff --stat main feature      # just which files, and how much
+\`\`\`
+
+\`A..B\` reads as "reachable from B, but not from A" — the new work on B. It is the list a reviewer reads in a pull request.
+
+\`git diff\` compares any two commits: \`git diff HEAD~1 HEAD\` is what the last commit changed, and \`git diff HEAD~3\` compares your working folder with three commits ago. Add \`--name-only\` for just the file names.
+
+To take a file out of the project, \`git rm file\` deletes it and stages the deletion in one step; commit it like any other change.
+
+Reviewing first is how you catch the debug file, the stray print statement or the accidental deletion **before** it lands in \`main\`, instead of after.
+--- task
+Review the \`feature\` branch before merging it: list the commits \`main\` does not have with \`git log --oneline main..feature\`, and see which files differ with \`git diff --stat main feature\`. One of feature's commits added a scratch file, \`debug.txt\`, by mistake. Remove it on \`feature\` (with \`git rm\` and a commit), then merge \`feature\` into \`main\`.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+git switch -c feature
+echo "about" > about.html
+git add .
+git commit -m "Add the about page"
+echo "home, about" > index.html
+echo "x = 1" > debug.txt
+git add .
+git commit -m "Link the about page"
+git switch main
+--- solution
+git log --oneline main..feature
+git diff --stat main feature
+git switch feature
+git rm debug.txt
+git commit -m "Remove the scratch file"
+git switch main
+git merge feature
+--- hint
+The two review commands are in the task. \`debug.txt\` shows up in the \`--stat\` list.
+--- hint
+\`git switch feature\`, \`git rm debug.txt\`, \`git commit -m "…"\`, then back to \`main\` and \`git merge feature\`.
+--- check shell | You reviewed the branch first
+used main..feature
+used git diff
+printed debug.txt
+--- check shell | The feature is merged, without the scratch file
+git . branch main
+git . at main file about.html
+git . at main missing debug.txt
+git . log contains Link the about page
+
+=== git2-05 | Fixing the last commit: --amend
+--- teach
+Just committed and immediately spotted a forgotten file or a typo in the message? \`--amend\` **replaces** the last commit with a corrected one:
+
+\`\`\`
+git add forgotten.css
+git commit --amend --no-edit              # same message, now with the file
+git commit --amend -m "Better message"    # new message
+\`\`\`
+
+\`--no-edit\` keeps the message as it was. (In a real terminal, \`--amend\` without \`-m\` opens an editor with the old message; this practice terminal simply keeps it.)
+
+Amending does not edit the old commit — commits never change. It makes a **new** commit, with a new id, and moves the branch to it. That is harmless for a commit only you have, and a problem for a commit you have already pushed and others have built on: their history would no longer match yours. The rule: **amend only what you have not shared**. For shared commits, make a new commit on top.
+--- task
+You just committed the login page, but forgot \`login.css\`. Put it into **that same commit**: the history must still have two commits, and the message stays \`Add the login page\`.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+echo "<form>" > login.html
+echo "form { margin: 0 }" > login.css
+git add login.html
+git commit -m "Add the login page"
+--- solution
+git add login.css
+git commit --amend --no-edit
+--- hint
+\`git status\` shows \`login.css\` is still untracked. Stage it first.
+--- hint
+Then \`git commit --amend --no-edit\` folds it into the last commit.
+--- check shell | Still two commits, with the same message
+git . commits == 2
+git . at HEAD message == Add the login page
+--- check shell | The login commit now has both files
+git . at HEAD file login.css
+git . at HEAD file login.html
+git . clean
+
+=== git2-06 | Putting work aside: git stash
+--- teach
+You are halfway through a change when something urgent comes up on another branch. Git will not let you switch while your changes would be lost:
+
+\`\`\`
+error: Your local changes to the following files would be overwritten by checkout:
+	app.js
+\`\`\`
+
+You do not want to commit half-finished work. \`git stash\` puts it aside instead: it saves your uncommitted changes and returns your files to the last commit, clean.
+
+\`\`\`
+git stash            # save and clean up
+git stash list       # see what is stashed: stash@{0}: WIP on main: …
+git stash pop        # bring the newest stash back, and remove it from the list
+git stash apply      # bring it back, but keep it in the list too
+git stash -u         # include untracked (new) files as well
+\`\`\`
+
+Stashes are a stack: the newest is \`stash@{0}\`. The common mistakes are forgetting you stashed something (check \`git stash list\` when work seems to be missing) and popping onto a different branch than you meant — pop applies to whichever branch you are on.
+--- task
+You are halfway through a change to \`app.js\` on \`main\` when a typo report arrives. Put your work aside with \`git stash\`, switch to the existing \`hotfix\` branch, fix the typo in \`README.md\` so it says \`Rocket launcher\`, commit that, then come back to \`main\` and bring your work back with \`git stash pop\`.
+--- starter
+git init
+echo "Rocket lanucher" > README.md
+echo "start()" > app.js
+git add .
+git commit -m "Start"
+git branch hotfix
+echo "start(); fly()" > app.js
+--- solution
+git stash
+git switch hotfix
+echo "Rocket launcher" > README.md
+git commit -am "Fix the typo in the README"
+git switch main
+git stash pop
+--- hint
+\`git stash\` first; \`git status\` should then say the working tree is clean.
+--- hint
+\`git switch hotfix\`, fix the file with \`echo … > README.md\`, commit, and \`git switch main\`.
+--- hint
+\`git stash pop\` brings \`start(); fly()\` back.
+--- check shell | The typo is fixed, on hotfix
+git . commits-on hotfix == 2
+git . at hotfix file README.md == Rocket launcher
+--- check shell | You are back on main, with your work in progress
+git . branch main
+file app.js == start(); fly()
+git . modified app.js
+git . stashes == 0
+
+=== git2-07 | Undoing commits: git reset
+--- teach
+\`git reset <commit>\` moves your branch back to an earlier commit, as if the later ones had not been made. What happens to their **changes** depends on the mode:
+
+| Command | The commits | Their changes |
+| --- | --- | --- |
+| \`git reset --soft HEAD~2\` | undone | kept, and staged |
+| \`git reset HEAD~2\` (same as \`--mixed\`) | undone | kept in your files, not staged |
+| \`git reset --hard HEAD~2\` | undone | **thrown away** |
+
+\`--mixed\`, the default, is the one for "I committed too early, let me redo that properly": nothing is lost, and you can stage and commit the pieces the way they should have been.
+
+\`--hard\` also wipes uncommitted changes in your files. It is useful and dangerous; a later lesson shows how to recover from one used by mistake.
+
+Like \`--amend\`, reset rewrites history. Use it on commits you have **not pushed** yet. For commits other people already have, there is \`git revert\` — the next lesson.
+--- task
+The last two commits were made too early: they mix a finished feature (\`feature.js\`) with half-done notes (\`notes.txt\`). Undo both commits with \`git reset\` so that their changes stay in your files, but nothing is committed or staged. Then commit **only** \`feature.js\`, with the message \`Add the feature\`.
+--- starter
+git init
+echo "# App" > README.md
+git add .
+git commit -m "Start"
+echo "export function feature() {}" > feature.js
+git add .
+git commit -m "WIP"
+echo "half an idea" > notes.txt
+git add .
+git commit -m "More WIP"
+--- solution
+git reset HEAD~2
+git add feature.js
+git commit -m "Add the feature"
+--- hint
+\`git reset HEAD~2\` goes back two commits and leaves both files in your folder, untracked.
+--- hint
+Then \`git add feature.js\` and \`git commit -m "Add the feature"\`. Leave \`notes.txt\` out.
+--- check shell | The WIP commits are gone, replaced by one real commit
+git . commits == 2
+git . at HEAD message == Add the feature
+git . log excludes WIP
+--- check shell | Only the feature was committed; the notes are still here
+git . at HEAD file feature.js
+git . at HEAD missing notes.txt
+git . untracked notes.txt
+
+=== git2-08 | Undoing a shared commit: git revert
+--- teach
+Once a commit is shared — pushed, pulled by teammates, maybe deployed — rewriting history with \`reset\` would pull the floor from under everyone else. The safe undo is \`git revert\`:
+
+\`\`\`
+git revert HEAD~2
+\`\`\`
+
+Revert makes a **new** commit that does the exact opposite of the one you name: lines it added are removed, lines it removed come back. The history keeps both, which is a feature: anyone reading the log can see what happened and when it was undone.
+
+- You can revert any commit, not just the last one. Later commits stay as they are.
+- The new commit's message is \`Revert "…original message…"\`.
+- If later commits changed the same lines, the revert can conflict; you resolve it like a merge conflict (coming up in this course).
+
+| Situation | Use |
+| --- | --- |
+| Commit only you have | \`reset\` or \`--amend\` |
+| Commit others have | \`revert\` |
+--- task
+The commit \`Make the button red\` is two commits before the latest, and everyone already has it. Undo just that change with \`git revert\`, keeping the two newer commits.
+--- starter
+git init
+echo "colour: blue" > style.css
+git add .
+git commit -m "Add styles"
+echo "colour: red" > style.css
+git commit -am "Make the button red"
+echo "footer" > footer.html
+git add .
+git commit -m "Add a footer"
+echo "header" > header.html
+git add .
+git commit -m "Add a header"
+--- solution
+git log --oneline
+git revert HEAD~2
+--- hint
+\`git log --oneline\` shows the commit; \`HEAD~2\` names it (or use its id).
+--- hint
+\`git revert HEAD~2\`.
+--- check shell | A new commit undoes the red button
+git . commits == 5
+git . at HEAD message contains Revert "Make the button red"
+file style.css == colour: blue
+--- check shell | The history and the newer work are kept
+git . log contains Make the button red
+file footer.html
+file header.html
+
+=== git2-09 | Marking releases: tags
+--- teach
+A **tag** is a name stuck to one commit forever. Branches move every time you commit; a tag never does, which makes it the way to mark releases: \`v1.0\` always means exactly the code you shipped.
+
+\`\`\`
+git tag v1.0                                  # lightweight: just a name
+git tag -a v1.0 -m "First public release"     # annotated: name, message, who, when
+git tag v0.9 7ac44b2                          # tag an older commit
+git tag                                       # list tags
+git show v1.0                                 # the tag's message and its commit
+\`\`\`
+
+Use **annotated** tags for releases: they record a message and who made the tag. Lightweight tags are fine for private bookmarks.
+
+Most projects name releases with **semantic versioning**, \`MAJOR.MINOR.PATCH\`: bump PATCH for fixes, MINOR for new features, MAJOR for changes that break existing users.
+
+Tags are not sent by a plain \`git push\`; you push them on purpose (\`git push origin v1.0\`) — the advanced course covers that.
+--- task
+Mark the current commit as release \`v1.0\` with an **annotated** tag whose message is \`First public release\`, and check it with \`git show v1.0\`. Then tag the older commit \`Add login\` as \`v0.9\` (a lightweight tag is fine).
+--- starter
+git init
+echo "app" > app.txt
+git add .
+git commit -m "Start"
+echo "login" > login.txt
+git add .
+git commit -m "Add login"
+echo "login, polished" > login.txt
+git commit -am "Polish the login page"
+--- solution
+git tag -a v1.0 -m "First public release"
+git show v1.0
+git log --oneline
+git tag v0.9 HEAD~1
+--- hint
+\`git tag -a v1.0 -m "First public release"\`, then \`git show v1.0\`.
+--- hint
+\`Add login\` is one commit before HEAD: \`git tag v0.9 HEAD~1\` (or use its id from \`git log --oneline\`).
+--- check shell | v1.0 marks the current commit, with its message
+git . tag v1.0
+git . same v1.0 HEAD
+printed First public release
+--- check shell | v0.9 marks the Add login commit
+git . at v0.9 message == Add login
+
+=== git2-10 | Resolving a merge conflict
+--- teach
+When both branches changed **the same lines**, git cannot know which version you want. The merge stops half-way and tells you:
+
+\`\`\`
+CONFLICT (content): Merge conflict in engine.txt
+Automatic merge failed; fix conflicts and then commit the result.
+\`\`\`
+
+\`git status\` lists the file under **Unmerged paths**, and the file itself now contains both versions between **conflict markers**:
+
+\`\`\`
+<<<<<<< HEAD
+thrust = 120
+=======
+thrust = 150
+>>>>>>> tuning
+fuel = full
+\`\`\`
+
+- Between \`<<<<<<< HEAD\` and \`=======\` is your side — the branch you are on.
+- Between \`=======\` and \`>>>>>>> tuning\` is the side being merged in.
+- Everything outside the markers merged cleanly.
+
+To resolve it:
+
+1. **Edit the file** into the version you actually want: one side, the other, or a mix. Delete all three marker lines.
+2. **\`git add\` the file** — that marks the conflict as resolved.
+3. **\`git commit\`** to finish the merge. Without \`-m\`, git uses its prepared message, \`Merge branch 'tuning'\`.
+
+Before committing, search for leftovers: \`grep -n "<<<<<<<" engine.txt\` should find nothing. And if you get lost, \`git merge --abort\` puts everything back to how it was before the merge. This practice terminal has no editor, so you write the resolved file yourself. For one line, \`echo "…" > file\` does it (add more lines with \`echo "…" >> file\`). For several lines at once, use \`printf\`: it prints its text as given, turns each \`\\n\` into a line break, and adds no line break of its own. So \`printf "one\\ntwo\\n" > file\` writes two lines. Then \`cat\` the file to check it.
+--- task
+Merge \`tuning\` into \`main\`. Both branches changed the thrust line of \`engine.txt\`, so the merge stops with a conflict. The team agreed on \`thrust = 150\`, tuning's value. Resolve the conflict so that \`engine.txt\` reads exactly:
+\`\`\`
+thrust = 150
+fuel = full
+\`\`\`
+and finish the merge.
+--- starter
+git init
+printf "thrust = 100\\nfuel = full\\n" > engine.txt
+git add .
+git commit -m "Add the engine"
+git switch -c tuning
+printf "thrust = 150\\nfuel = full\\n" > engine.txt
+git commit -am "Tune thrust to 150"
+git switch main
+printf "thrust = 120\\nfuel = full\\n" > engine.txt
+git commit -am "Raise thrust to 120"
+--- solution
+git merge tuning
+cat engine.txt
+printf "thrust = 150\\nfuel = full\\n" > engine.txt
+git add engine.txt
+git commit
+--- hint
+Run \`git merge tuning\`, then \`cat engine.txt\` to see the markers.
+--- hint
+Write the resolved file in one go: \`printf "thrust = 150\\nfuel = full\\n" > engine.txt\`.
+--- hint
+Then \`git add engine.txt\` and \`git commit\`.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in engine.txt
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+--- check shell | The agreed values were committed, without markers
+file engine.txt ~= thrust = 150\\nfuel = full
+git . at HEAD file engine.txt contains thrust = 150
+git . at HEAD file engine.txt excludes <<<<<<<
+
+=== git2-11 | Debugging: ignored, but still tracked
+--- teach
+The bug report:
+
+> I added \`.env\` to \`.gitignore\`, but \`git status\` still shows it as modified. Isn't it supposed to be ignored?
+
+Work it through:
+
+1. **Reproduce**: \`git status\` shows \`modified: .env\`. Git is comparing it with a committed version — so git is **tracking** it.
+2. **Check the assumption.** \`.gitignore\` only stops git from picking up **untracked** files. \`git ls-files\` lists what git tracks, and \`.env\` is in it. \`git check-ignore -v .env\` prints nothing, because tracked files are never treated as ignored.
+3. **Fix the cause**: tell git to stop tracking the file, without deleting your copy:
+   \`\`\`
+   git rm --cached .env
+   git commit -m "Stop tracking .env"
+   \`\`\`
+   \`--cached\` removes it from what git tracks and leaves the file on your disk. From then on, \`.gitignore\` applies to it.
+4. **Verify**: \`git status\` is clean, and \`git check-ignore -v .env\` now names the rule.
+
+One more real-world step: the secret is still in the **old** commits. Anyone with the repository can read it there, so a leaked key must be treated as leaked — revoke it and make a new one.
+--- task
+\`git status\` keeps reporting \`.env\` as modified even though \`.gitignore\` lists it. Make git stop tracking \`.env\` — **without** deleting your local file — and commit that as \`Stop tracking .env\`. Afterwards \`git status\` must be clean, and \`.env\` must count as ignored.
+--- starter
+git init
+echo "console.log('app')" > app.js
+echo "API_KEY=abc123" > .env
+git add .
+git commit -m "Add the app"
+echo ".env" > .gitignore
+git add .gitignore
+git commit -m "Ignore .env"
+echo "API_KEY=new456" > .env
+--- solution
+git status
+git ls-files
+git rm --cached .env
+git commit -m "Stop tracking .env"
+git status
+--- hint
+\`git ls-files\` lists the files git tracks. Is \`.env\` among them?
+--- hint
+\`git rm --cached .env\` stops tracking it and keeps your file. Then commit.
+--- check shell | .env is ignored now, and still on your disk
+git . ignored .env
+file .env == API_KEY=new456
+--- check shell | The change is committed
+git . at HEAD message == Stop tracking .env
+git . at HEAD missing .env
+git . at HEAD file app.js
+--- check shell | git status is clean
+printed nothing to commit, working tree clean
+
+=== git2-12 | Debugging: recovering from a bad reset
+--- teach
+The bug report, from you, late at night:
+
+> I ran \`git reset --hard HEAD~2\` and two commits of work vanished. Also, one of them was called \`wip asdf\`.
+
+First: **stop, and do not run anything else destructive**. The commits are almost certainly still there.
+
+A reset does not delete commits; it only moves the branch away from them. Git keeps a diary of everywhere \`HEAD\` has been, the **reflog**:
+
+\`\`\`
+~/project $ git reflog
+03be9f1 (HEAD -> main) HEAD@{0}: reset: moving to HEAD~2
+c41d2a0 HEAD@{1}: commit: wip asdf
+7ac44b2 HEAD@{2}: commit: Add the parser
+\`\`\`
+
+Read it from the top: the reset is the newest entry, and the line just below it is where you were before — with all your work. \`HEAD@{1}\` means "where HEAD was one move ago". Put the branch back there:
+
+\`\`\`
+git reset --hard HEAD@{1}      # or the id: git reset --hard c41d2a0
+\`\`\`
+
+(If you would rather not move the branch, \`git branch rescue HEAD@{1}\` puts the lost commits on a new branch instead.)
+
+Then fix the other problem. \`wip asdf\` is the last commit and has not been shared, so \`git commit --amend -m "…"\` gives it a proper message.
+
+The reflog lives only on your machine and forgets entries after about 90 days — but for "I just did something terrible", it is almost always the way back.
+--- task
+Get both lost commits back onto \`main\` using the reflog. Then rename the last of them from \`wip asdf\` to \`Add parser tests\`.
+--- starter
+git init
+echo "v0" > app.txt
+git add .
+git commit -m "Start"
+echo "export function parse() {}" > parser.js
+git add .
+git commit -m "Add the parser"
+echo "test(parse)" > parser.test.js
+git add .
+git commit -m "wip asdf"
+git reset --hard HEAD~2
+--- solution
+git reflog
+git reset --hard HEAD@{1}
+git commit --amend -m "Add parser tests"
+--- hint
+\`git reflog\`: the entry just below the reset is where your work was.
+--- hint
+\`git reset --hard HEAD@{1}\` brings it back. Check with \`git log --oneline\`.
+--- hint
+\`git commit --amend -m "Add parser tests"\` renames the last commit.
+--- check shell | You found your work in the reflog
+ran git reflog
+--- check shell | The lost work is back on main
+git . branch main
+git . commits == 3
+file parser.js
+file parser.test.js
+git . log contains Add the parser
+--- check shell | The last commit has a real message
+git . at HEAD message == Add parser tests
+git . log excludes asdf
+`,Re=`@track git
 @title Git
 @name Git and version control
 @blurb Save every version of your work, see exactly what changed, undo mistakes, and build on branches that merge back together.
@@ -9801,7 +11149,7 @@ git . commits == 2
 --- teach
 If \`main\` got new commits while you worked on a branch, a merge cannot just move forward. Git combines both sides from the commit where they split and makes a **merge commit** with two parents — \`git log\` shows it as *Merge branch '…'*.
 
-When both sides changed **different** files, or different parts of the project, this is automatic. When both changed the **same** lines, that is a **conflict**: git stops and asks you to choose. (In a real terminal you would edit the file and commit; this practice terminal stops and changes nothing.)
+When both sides changed **different** files, or different parts of the project, this is automatic. When both changed the **same** lines, that is a **conflict**: git stops, marks the clashing lines in the file, and asks you to choose. Resolving a conflict has a lesson of its own in the next Git course.
 --- task
 \`main\` and \`docs\` both have new commits, in different files. On \`main\`, merge \`docs\`, then look at \`git log --oneline\`.
 --- starter
@@ -9830,7 +11178,7 @@ git . merges == 1
 git . log contains Merge branch 'docs'
 --- check shell | You looked at the history
 ran git log
-`,Ae=`@track html
+`,ze=`@track html
 @level advanced
 @title Web · Advanced
 @name Web, advanced: interactive widgets, state and accessible behaviour
@@ -11653,7 +13001,7 @@ click #suggestions li:nth-child(2)
 type #city zz
 #suggestions li count == 0
 #city attr aria-expanded == false
-`,je=`@track html
+`,Be=`@track html
 @level expert
 @title Web · Expert
 @name Web, expert: architecture, performance and front-end debugging
@@ -14047,7 +15395,7 @@ type #amount 0
 click #add-btn
 #expenses li count == 2
 #total text == Total: $52
-`,Me=`@track html
+`,Ve=`@track html
 @level intermediate
 @title Web · Intermediate
 @name Web, intermediate: real layouts, accessible forms and a page that responds
@@ -15407,7 +16755,7 @@ type #search zzz
 type #search o
 #empty[hidden] exists
 #count text == 2 shown
-`,Ne=`@track html
+`,He=`@track html
 @level projects
 @title Web · Projects
 @name Web projects: three apps, then capstones you design yourself
@@ -18487,7 +19835,7 @@ click #contacts .contact:nth-child(2) .remove
 #count text == Showing 7 of 7 contacts
 type #search chris
 #contacts .contact count == 0
-`,Pe=`@track html
+`,Ue=`@track html
 @title Web
 @name HTML and CSS: building pages
 @blurb HTML, CSS and a little JavaScript, with a live preview: from your first heading to a page that reacts to clicks.
@@ -19012,7 +20360,7 @@ Pages are usually built from data. Loop over an array and create an element for 
 #planets li:last-child text == Mars
 --- check source | Built with a loop
 \\b(for|forEach|map)\\b
-`,Fe=`@track javascript
+`,We=`@track javascript
 @level advanced
 @title JavaScript · Advanced
 @name JavaScript, advanced: this, prototypes, async and algorithms
@@ -20615,7 +21963,7 @@ lowerBound([1, 3, 3, 7], 3)
 (() => { const a = Array.from({ length: 1000000 }, (_, i) => i * 2); return [hasPairWithSum(a, 1999999), hasPairWithSum(a, 3999994)] })()
 => [false, true]
 ?? Trying every pair is half a trillion checks. Walk in from both ends instead.
-`,Ie=`@track javascript
+`,Ge=`@track javascript
 @level expert
 @title JavaScript · Expert
 @name JavaScript, expert: metaprogramming, concurrency and building your own tools
@@ -22574,7 +23922,7 @@ results.early
 => 'rejected: early'
 --- check test | run returns a promise
 run(function* () { return 1 }) instanceof Promise
-`,Le=`@track javascript
+`,Ke=`@track javascript
 @level intermediate
 @title JavaScript · Intermediate
 @name JavaScript, intermediate: idioms, data and clean functions
@@ -24006,7 +25354,7 @@ formatReport([])
 ^let\\s
 --- check source | report composes the three functions
 formatReport\\(\\s*totalsByCustomer\\(\\s*validOrders\\(
-`,Re=`@track javascript
+`,qe=`@track javascript
 @level projects
 @title JavaScript · Projects
 @name JavaScript projects: three builds and four capstones
@@ -27428,7 +28776,7 @@ One \`record(account, type, cents, counterparty)\` helper can update the balance
 --- check case | 100,000 transactions, exact and fast
 (() => { const b = createBank(); const a = b.open('Ada'); for (let i = 0; i < 100000; i++) b.deposit(a, '0.01'); return [b.balance(a), b.statement(a).length] })()
 => ['1000.00', 100000]
-`,ze=`@track javascript
+`,Je=`@track javascript
 @title JavaScript
 @name JavaScript, the language of the web
 @blurb The language of the web, from console.log to async/await — the ground M1 to M3 build on.
@@ -27999,7 +29347,7 @@ console.log(await totalScore([1, 2, 3]))
 --- check source | Uses Promise.all
 Promise\\.all\\(
 ?? Awaiting inside the loop runs the calls one after another. Promise.all runs them together.
-`,Be=`@track python
+`,Ye=`@track python
 @level advanced
 @title Python · Advanced
 @name Python, advanced: iterators, decorators, data models and algorithms
@@ -29599,7 +30947,7 @@ int_sqrt(10 ** 30) == 10 ** 15 and int_sqrt(10 ** 30 - 1) == 10 ** 15 - 1 and in
 ?? Floats have about 16 significant digits, so n ** 0.5 is wrong here. Search on whole numbers.
 --- check source absent | Does not use bisect or math.isqrt
 \\bbisect\\b|\\bisqrt\\s*\\(
-`,Ve=`@track python
+`,Xe=`@track python
 @level expert
 @title Python · Expert
 @name Python, expert: the machinery, concurrency, testing and hard problems
@@ -31319,7 +32667,7 @@ all(raises(ValueError, lambda e=e: evaluate(e)) for e in ["", "2 +", "(1 + 2", "
 evaluate("1+" * 20000 + "1") == 20001 and evaluate("2*" * 30 + "1") == 2 ** 30
 --- check source absent | Does not use eval
 \\beval\\s*\\(
-`,He=`@track python
+`,Ze=`@track python
 @level intermediate
 @title Python · Intermediate
 @name Python, intermediate: idioms, errors, classes and the standard library
@@ -32777,7 +34125,7 @@ report("# only a comment\\n")
 --- check test | report is built from the four helpers
 {"parse_line", "average", "format_row"} <= set(report.__code__.co_names)
 ?? report should call parse_line, average and format_row (and format_row calls letter).
-`,Ue=`@track python
+`,Qe=`@track python
 @level projects
 @title Python · Projects
 @name Python projects: real programs, built step by step, then designed by you
@@ -35888,7 +37236,7 @@ Game(WORLD).do("look")
 --- check case | A room with no exits
 (lambda g: [g.do("take rope"), g.do("go up")])(Game({"start": "pit", "goal": "star", "rooms": {"pit": {"description": "A deep pit.", "exits": {"up": "rim"}, "items": ["rope"], "locked": {"up": "rope"}}, "rim": {"description": "The rim.", "exits": {}, "items": ["star"]}}}))
 => ["Taken: rope.", "The rim. Exits: none. You see: star."]
-`,We=`@track python
+`,$e=`@track python
 @title Python
 @name Python, a first language
 @blurb From print() to classes: the twelve ideas every Python program is built from.
@@ -36469,7 +37817,7 @@ Counter(5).value
 (lambda c: (c.increment(), c.increment()) == (1, 2) and c.value == 2)(Counter())
 --- check test | reset goes back to 0
 (lambda c: (c.increment(), c.reset(), c.value)[2] == 0)(Counter(9))
-`,Ge=`@track sql
+`,et=`@track sql
 @level advanced
 @title SQL · Advanced
 @name SQL, advanced: window functions, schema design and the database's own rules
@@ -37658,7 +39006,7 @@ End the \`UPDATE\` with \`RETURNING id, title\`.
 --- check query | Exactly those two changed
 SELECT id, status, closed FROM tickets ORDER BY id
 => [[1, "closed", "2024-07-10"], [2, "closed", "2024-07-10"], [3, "closed", "2024-06-06"], [4, "open", null], [5, "pending", null]]
-`,Ke=`@track sql
+`,tt=`@track sql
 @level expert
 @title SQL · Expert
 @name SQL, expert: fast queries, hard questions and trustworthy data
@@ -38732,7 +40080,7 @@ SELECT email, order_id, created, total FROM customer_month ORDER BY order_id
 --- check query | Both tables are searched, nothing scanned
 EXPLAIN QUERY PLAN SELECT * FROM customer_month
 => [[4, 0, 45, "SEARCH c USING COVERING INDEX sqlite_autoindex_customers_1 (email=?)"], [8, 0, 50, "SEARCH o USING INDEX idx_orders_customer_id_created (customer_id=? AND created>? AND created<?)"]]
-`,qe=`@track sql
+`,nt=`@track sql
 @level intermediate
 @title SQL · Intermediate
 @name SQL, intermediate: joins, subqueries and honest numbers
@@ -39666,7 +41014,7 @@ The status filter belongs in the orders join's \`ON\`, not in \`WHERE\`.
 --- check result | All seven customers, with NULLs and zeros where nothing matched
 ordered
 [["Ada", null, 3, "2024-06-01"], ["Ben", "Ada", 1, "2024-04-07"], ["Cleo", "Ada", 1, "2024-04-07"], ["Dev", "Ben", 1, "2024-05-15"], ["Eve", null, 0, null], ["Finn", "Dev", 0, null], ["Gus", null, 0, null]]
-`,Je=`@track sql
+`,rt=`@track sql
 @level projects
 @title SQL · Projects
 @name SQL projects: three real databases, then your own designs
@@ -41049,7 +42397,7 @@ FROM pragma_index_list('appointments') il
 JOIN pragma_index_info(il.name) a ON a.seqno = 0 AND a.name = 'staff_id'
 JOIN pragma_index_info(il.name) b ON b.seqno = 1 AND b.name = 'starts_at'
 => [[1]]
-`,Ye=`@track sql
+`,it=`@track sql
 @title SQL
 @name SQL fundamentals
 @blurb Asking a database questions: SELECT through joins, grouping, changing data and CTEs — on a users-and-requests schema like the one your product will have.
@@ -41455,7 +42803,7 @@ Compare against \`(SELECT AVG(total) FROM spend)\`, and join \`users\` for the e
 [["lin@example.com", 0.0771]]
 --- check source | Uses WITH
 \\b[Ww][Ii][Tt][Hh]\\s+\\w+\\s+[Aa][Ss]\\s*\\(
-`,Xe=`@track typescript
+`,at=`@track typescript
 @level advanced
 @title TypeScript · Advanced
 @name TypeScript, advanced: computing types from types
@@ -43089,7 +44437,7 @@ new LRUCache<string, number>(2).set('a', 'x')
 new LRUCache<string, number>(2).set(1, 1)
 --- check type-error | get admits a miss
 const v: number = new LRUCache<string, number>(2).get('a')
-`,Ze=`@track typescript
+`,ot=`@track typescript
 @level expert
 @title TypeScript · Expert
 @name TypeScript, expert: type-level programming and APIs that cannot be misused
@@ -44908,7 +46256,7 @@ const client = createClient(() => null);
 const u = client.request('GET /users/:id', { params: { id: '1' } });
 const no: Equal<typeof u, User> = false
 ?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
-`,Qe=`@track typescript
+`,st=`@track typescript
 @level intermediate
 @title TypeScript · Intermediate
 @name TypeScript, intermediate: modelling data and narrowing it safely
@@ -46333,7 +47681,7 @@ const r: BorrowResult = { ok: true, error: 'limit-reached' }
 new Library().addMember({ id: 'm', name: 'Ada', tier: 'gold' })
 --- check type-error | Callers must check ok before reading the loan
 new Library().borrow('m', 'b', 1).loan
-`,$e=`@track typescript
+`,ct=`@track typescript
 @level projects
 @title TypeScript · Projects
 @name TypeScript projects: three typed systems and three capstones
@@ -50141,7 +51489,7 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B 
 const r = defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse([]);
 if (r.ok) { const no: Equal<typeof r.value, { env: string; replicas: number; dryRun: boolean; tag?: string; service: string }> = false }
 ?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
-`,et=`@track typescript
+`,lt=`@track typescript
 @title TypeScript
 @name TypeScript: types that catch bugs
 @blurb JavaScript with a checker that reads your code before it runs. Strict mode, from annotations to generics.
@@ -50684,17 +52032,17 @@ applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontS
 LIMITS.free === 100 && LIMITS.pro === 1000
 --- check source | LIMITS is a Record over the two plans
 LIMITS\\s*:\\s*Record\\s*<
-`,tt=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],nt=Object.assign({"./tracks/bash.txt":Ce,"./tracks/cpp.advanced.txt":we,"./tracks/cpp.expert.txt":Te,"./tracks/cpp.intermediate.txt":Ee,"./tracks/cpp.projects.txt":De,"./tracks/cpp.txt":Oe,"./tracks/git.txt":ke,"./tracks/html.advanced.txt":Ae,"./tracks/html.expert.txt":je,"./tracks/html.intermediate.txt":Me,"./tracks/html.projects.txt":Ne,"./tracks/html.txt":Pe,"./tracks/javascript.advanced.txt":Fe,"./tracks/javascript.expert.txt":Ie,"./tracks/javascript.intermediate.txt":Le,"./tracks/javascript.projects.txt":Re,"./tracks/javascript.txt":ze,"./tracks/python.advanced.txt":Be,"./tracks/python.expert.txt":Ve,"./tracks/python.intermediate.txt":He,"./tracks/python.projects.txt":Ue,"./tracks/python.txt":We,"./tracks/sql.advanced.txt":Ge,"./tracks/sql.expert.txt":Ke,"./tracks/sql.intermediate.txt":qe,"./tracks/sql.projects.txt":Je,"./tracks/sql.txt":Ye,"./tracks/typescript.advanced.txt":Xe,"./tracks/typescript.expert.txt":Ze,"./tracks/typescript.intermediate.txt":Qe,"./tracks/typescript.projects.txt":$e,"./tracks/typescript.txt":et}),rt=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function L(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[tt.indexOf(t),rt.indexOf(n)]}var it=Object.entries(nt).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>L(e)[0]>=0).sort((e,t)=>{let[n,r]=L(e[0]),[i,a]=L(t[0]);return n-i||r-a}),at=tt.filter(e=>it.some(([t])=>t.split(`.`)[0]===e)),R=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function z(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var ot=3e4;async function st(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await x(t,ge(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
+`,ut=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],dt=Object.assign({"./tracks/bash.advanced.txt":Oe,"./tracks/bash.intermediate.txt":ke,"./tracks/bash.txt":Ae,"./tracks/cpp.advanced.txt":je,"./tracks/cpp.expert.txt":Me,"./tracks/cpp.intermediate.txt":Ne,"./tracks/cpp.projects.txt":Pe,"./tracks/cpp.txt":Fe,"./tracks/git.advanced.txt":Ie,"./tracks/git.intermediate.txt":Le,"./tracks/git.txt":Re,"./tracks/html.advanced.txt":ze,"./tracks/html.expert.txt":Be,"./tracks/html.intermediate.txt":Ve,"./tracks/html.projects.txt":He,"./tracks/html.txt":Ue,"./tracks/javascript.advanced.txt":We,"./tracks/javascript.expert.txt":Ge,"./tracks/javascript.intermediate.txt":Ke,"./tracks/javascript.projects.txt":qe,"./tracks/javascript.txt":Je,"./tracks/python.advanced.txt":Ye,"./tracks/python.expert.txt":Xe,"./tracks/python.intermediate.txt":Ze,"./tracks/python.projects.txt":Qe,"./tracks/python.txt":$e,"./tracks/sql.advanced.txt":et,"./tracks/sql.expert.txt":tt,"./tracks/sql.intermediate.txt":nt,"./tracks/sql.projects.txt":rt,"./tracks/sql.txt":it,"./tracks/typescript.advanced.txt":at,"./tracks/typescript.expert.txt":ot,"./tracks/typescript.intermediate.txt":st,"./tracks/typescript.projects.txt":ct,"./tracks/typescript.txt":lt}),ft=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function z(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[ut.indexOf(t),ft.indexOf(n)]}var pt=Object.entries(dt).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>z(e)[0]>=0).sort((e,t)=>{let[n,r]=z(e[0]),[i,a]=z(t[0]);return n-i||r-a}),mt=ut.filter(e=>pt.some(([t])=>t.split(`.`)[0]===e)),B=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function V(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var ht=3e4;async function gt(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await C(t,be(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
 `),stderr:r.join(`
-`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return z(await m(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=me(t,e.error);return n?{...z(await g(n.program,{onStatus:r})),typeFails:n.fails}:z(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
-`);return z(await h.run(t,{onStatus:r,limitMs:ot,...n?{stdin:n}:{}}))}case`cpp`:return z(await w(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await C(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function ct(e){return e===`git`?`bash`:e}function lt(e){e===`python`&&!h.isBooted&&h.preload(),e===`typescript`&&_.preload()}var ut=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],dt=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],ft=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),pt=class extends Error{};function B(e,t){throw new pt(`${e}: ${t}`)}function V(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
-`)}function H(e){let t=V(e);return t?`${t}\n`:``}function mt(e,t){let n;try{n=JSON.parse(e)}catch{return B(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||B(t,`rows must be an array of arrays of strings, numbers or null`),n}function ht(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||B(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=V(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||B(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=V(c).split(`
-`).filter(e=>e.trim()!==``);return e.length||B(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||B(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&B(d,`a case needs the call, then a "=> expected" line`);let t=V(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
-`).slice(3).trim();return(!t||!n)&&B(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=V(c).split(`
-`).map(e=>e.trim()).filter(Boolean);return e.length||B(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&B(d,`unknown source flag "${a}"`),l||B(d,`a source check needs a pattern`);try{new RegExp(l)}catch{B(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=V(c).split(`
+`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return V(await ee(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=ve(t,e.error);return n?{...V(await g(n.program,{onStatus:r})),typeFails:n.fails}:V(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
+`);return V(await m.run(t,{onStatus:r,limitMs:ht,...n?{stdin:n}:{}}))}case`cpp`:return V(await v(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await te(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function _t(e){return e===`git`?`bash`:e}function vt(e){e===`python`&&!m.isBooted&&m.preload(),e===`typescript`&&_.preload()}var yt=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],bt=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],xt=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),St=class extends Error{};function H(e,t){throw new St(`${e}: ${t}`)}function U(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
+`)}function W(e){let t=U(e);return t?`${t}\n`:``}function Ct(e,t){let n;try{n=JSON.parse(e)}catch{return H(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||H(t,`rows must be an array of arrays of strings, numbers or null`),n}function wt(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||H(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=U(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||H(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=U(c).split(`
+`).filter(e=>e.trim()!==``);return e.length||H(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||H(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a case needs the call, then a "=> expected" line`);let t=U(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
+`).slice(3).trim();return(!t||!n)&&H(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=U(c).split(`
+`).map(e=>e.trim()).filter(Boolean);return e.length||H(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&H(d,`unknown source flag "${a}"`),l||H(d,`a source check needs a pattern`);try{new RegExp(l)}catch{H(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=U(c).split(`
 `),t=e[0]?.trim()===`ordered`,n=(t?e.slice(1):e).join(`
-`).trim();return{...u,kind:`result`,rows:mt(n,d),ordered:t}}case`type-error`:return l||B(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&B(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=V(c.slice(0,e));return t||B(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:mt(c.slice(e).join(`
-`).slice(3).trim(),d)}}default:return B(d,`unknown check kind "${i}"`)}}function gt(e,t=`track`){let n=e.replace(/\r\n?/g,`
+`).trim();return{...u,kind:`result`,rows:Ct(n,d),ordered:t}}case`type-error`:return l||H(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=U(c.slice(0,e));return t||H(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:Ct(c.slice(e).join(`
+`).slice(3).trim(),d)}}default:return H(d,`unknown check kind "${i}"`)}}function Tt(e,t=`track`){let n=e.replace(/\r\n?/g,`
 `).split(`
-`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&B(t,`"@schema" without a closing "@end"`),o=V(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(dt.includes(s)||B(t,`"@track" must be one of ${dt.join(`, `)}`),r.title||B(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||B(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&ft.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&B(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&B(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&B(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>ht(e.header,e.body,c));h.length||B(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?V(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:V(d),task:V(f),starter:p?H(p):``,solution:H(m),hints:l.filter(e=>e.header===`hint`).map(e=>V(e.body)),checks:h,...g?{stdin:H(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&B(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||B(t,`no lessons`);let l=r.level??`basics`;ut.includes(l)||B(t,`"@level" must be one of ${ut.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&B(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var U=it.map(([e,t])=>gt(t,e)),_t=new Map;for(let e of U)e.lessons.forEach((t,n)=>_t.set(t.id,{track:e,lesson:t,index:n}));function vt(e){return U.find(t=>t.id===e)??U.find(t=>t.lang===e)}function W(e){return U.filter(t=>t.lang===e)}function yt(e,t){let n=W(e);return n.find(e=>K(e,t)<e.lessons.length)??n[n.length-1]}function bt(e){return _t.get(e)}function G(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function K(e,t){return e.lessons.filter(e=>t[e.id]).length}function xt(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var St={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function q(e){return St[e]??e}var J=[...new Set(U.map(e=>e.lang))].filter(e=>W(e).length>1).map(e=>({id:`master-${e}`,title:q(e),blurb:`${q(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:W(e).map(e=>e.id)})),Y={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},X=t();function Ct({lessonId:e}){if(!e)return(0,X.jsx)(Q,{});let t=e.startsWith(`roadmap-`)?wt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,X.jsx)(Dt,{roadmap:t});let n=vt(e);if(n)return(0,X.jsx)(Ot,{track:n});let r=bt(e);return r?(0,X.jsx)(kt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,X.jsx)(Q,{missing:e})}function Z(){let{state:e}=o(),t=xt(e.learn);return t?(0,X.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,X.jsx)(r,{size:14}),t,`-day streak`]}):null}var wt=[...R,...J];function Q({missing:e}){let{state:t}=o(),n=d(),r=wt.find(e=>e.id===n.query.goal)??R[0],i=(e,t=e.title)=>(0,X.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,X.jsx)(T,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,X.jsxs)(`header`,{className:`rm-hero`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,X.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,X.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,X.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,X.jsx)(`div`,{className:`rm-goals__row`,children:R.map(e=>i(e))}),J.length?(0,X.jsxs)(X.Fragment,{children:[(0,X.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,X.jsx)(`div`,{className:`rm-goals__row`,children:J.map(e=>i(e))})]}):null]}),(0,X.jsxs)(`section`,{className:`rm`,children:[(0,X.jsxs)(`header`,{className:`rm__head`,children:[(0,X.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,X.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,X.jsx)(Et,{roadmap:r,passed:t.learn})]}),(0,X.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),at.map(e=>(0,X.jsxs)(`section`,{className:`lm-lang`,"aria-label":q(e),children:[(0,X.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,X.jsx)(T,{lang:e,size:20}),q(e),(0,X.jsxs)(`span`,{className:`lm-lang__count`,children:[W(e).length,` course`,W(e).length===1?``:`s`,` · `,W(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,X.jsx)(`div`,{className:`lm-courses`,children:W(e).map(e=>{let n=K(e,t.learn);return(0,X.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,X.jsx)(`span`,{className:`lm-course__icon`,children:(0,X.jsx)(T,{lang:e.lang,size:30})}),(0,X.jsxs)(`span`,{className:`lm-course__text`,children:[(0,X.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Y[e.level]}),(0,X.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,X.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,X.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,X.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function Tt(e){let[t,n]=(0,O.useState)(3);return(0,O.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function $(e,t){let n=e.steps.map(e=>vt(e)).filter(e=>!!e),r=n.map(e=>K(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function Et({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=$(e,t),o=(0,O.useRef)(null),s=Tt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,X.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=K(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,X.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,X.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,X.jsx)(T,{lang:e.lang,size:34}),(0,X.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,X.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,X.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,X.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,X.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,X.jsx)(S,{size:32})}),a?(0,X.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Dt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=$(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${G(e,t.learn).id}`);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,X.jsx)(i,{size:13}),`Roadmaps`]}),(0,X.jsxs)(`div`,{className:`rmv-head`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,X.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,X.jsxs)(`div`,{className:`lm-course-go`,children:[(0,X.jsx)(c,{value:u/n.length,height:6}),(0,X.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&K(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,X.jsx)(l,{size:13})]})]})]}),(0,X.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=K(e,t.learn);return(0,X.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,X.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,X.jsx)(T,{lang:e.lang,size:30}),(0,X.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,X.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,X.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,X.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,X.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,X.jsx)(c,{value:i/e.lessons.length,height:4}),(0,X.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,X.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,X.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,X.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,X.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,X.jsx)(S,{size:28})}),(0,X.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,X.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,X.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function Ot({track:e}){let{state:t}=o(),r=K(e,t.learn),a=e.lessons.length,s=G(e,t.learn);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,X.jsx)(i,{size:13}),`Roadmaps`]}),(0,X.jsxs)(`div`,{className:`lm-course-head`,children:[(0,X.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,X.jsx)(T,{lang:e.lang,size:40})}),(0,X.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[Y[e.level],` · `,a,` lessons `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,X.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),W(e.lang).length>1?(0,X.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${q(e.lang)} courses`,children:W(e.lang).map((n,r)=>(0,X.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":K(n,t.learn)===n.lessons.length,children:[(0,X.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Y[n.level]]},n.id))}):null,(0,X.jsxs)(`div`,{className:`lm-course-go`,children:[(0,X.jsx)(c,{value:r/a,height:6}),(0,X.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,X.jsx)(l,{size:13})]})]}),(0,X.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,X.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,X.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,X.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,X.jsx)(n,{size:13}):i+1}),(0,X.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,X.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,X.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function kt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,O.useState)(!1),[g,_]=(0,O.useState)(0),[v,y]=(0,O.useState)(!1),b=(0,O.useRef)(null),ee=ae(`learn:${t.id}:example`,t.teach,t.schema),te=!!a.learn[t.id],x=e.lessons[r-1],S=e.lessons[r+1],C=W(e.lang),w=S?void 0:C[C.findIndex(t=>t.id===e.id)+1];(0,O.useEffect)(()=>lt(t.lang),[t.lang]);let E=(0,O.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>b.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),ne=(0,O.useCallback)(async(e,n,r)=>{let i=Se(t,e,await st(t,he(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`div`,{className:`lm-top`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,X.jsx)(i,{size:13}),e.title]}),(0,X.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,X.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,X.jsx)(Z,{})]}),(0,X.jsxs)(`article`,{className:`lm-flow`,children:[(0,X.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,X.jsx)(T,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,te?(0,X.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,X.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,X.jsx)(`div`,{className:`lm-teach`,children:(0,X.jsx)(p,{renderCode:ee,children:t.teach})}),(0,X.jsxs)(`section`,{className:`lm-challenge`,children:[(0,X.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,X.jsx)(p,{children:t.task}),t.stdin?(0,X.jsxs)(`div`,{className:`lm-stdin`,children:[(0,X.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,X.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,X.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,X.jsx)(`div`,{className:`lm-work`,children:d?(0,X.jsx)(At,{lesson:t,onPass:E}):(0,X.jsx)(re,{lang:ct(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:ne,onPass:E,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,X.jsx)(`div`,{ref:b,children:m?(0,X.jsxs)(`div`,{className:`lm-win`,children:[(0,X.jsx)(n,{size:16}),(0,X.jsx)(`span`,{className:`grow`,children:S?`Lesson passed. Next: ${S.title}`:w?`That is the whole ${e.name} course. Next: ${w.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(S?`/learn/${S.id}`:w?`/learn/${w.lessons[0].id}`:`/learn/${e.id}`),children:[S?`Continue`:w?`Start the next course`:`Back to the course`,(0,X.jsx)(l,{size:13})]})]}):null}),(0,X.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,X.jsxs)(`div`,{className:`lm-hint`,children:[(0,X.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,X.jsx)(p,{children:e})]},t)),(0,X.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,X.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,X.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>y(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,X.jsxs)(`div`,{className:`lm-solution`,children:[(0,X.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,X.jsx)(p,{children:"```"+jt(t.lang)+`
-`+t.solution+"```"})]}):null]}),(0,X.jsxs)(`div`,{className:`lm-nav`,children:[x?(0,X.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[(0,X.jsx)(i,{size:13}),x.title]}):(0,X.jsx)(`span`,{}),S?(0,X.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${S.id}`),children:[S.title,(0,X.jsx)(l,{size:13})]}):null]})]})]})}function At({lesson:e,onPass:t}){let[n,r]=(0,O.useState)(()=>be(e)),[i,o]=(0,O.useState)(0),[s,c]=(0,O.useState)(null),[l,u]=(0,O.useState)(!1),d=async()=>{u(!0),c(null);try{let r=Se(e,``,await st(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,X.jsx)(`div`,{className:`embed`,children:(0,X.jsxs)(ee,{lang:`bash`,file:`~/project`,right:(0,X.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(be(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,X.jsx)(a,{size:13}),`Reset`]}),children:[(0,X.jsx)(ne,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,X.jsx)(`div`,{className:`lm-termbar`,children:(0,X.jsx)(te,{onClick:()=>void d(),running:l,label:`Check`})}),(0,X.jsx)(ie,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,X.jsx)(E,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function jt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Mt(e){let{state:t}=o();return(0,O.useMemo)(()=>{let n=yt(e,t.learn);return n?{lesson:G(n,t.learn),done:K(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{Ct as Learn,Mt as useNextLesson};
+`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&H(t,`"@schema" without a closing "@end"`),o=U(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(bt.includes(s)||H(t,`"@track" must be one of ${bt.join(`, `)}`),r.title||H(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||H(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&xt.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&H(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&H(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&H(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>wt(e.header,e.body,c));h.length||H(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?U(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:U(d),task:U(f),starter:p?W(p):``,solution:W(m),hints:l.filter(e=>e.header===`hint`).map(e=>U(e.body)),checks:h,...g?{stdin:W(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&H(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||H(t,`no lessons`);let l=r.level??`basics`;yt.includes(l)||H(t,`"@level" must be one of ${yt.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&H(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var G=pt.map(([e,t])=>Tt(t,e)),Et=new Map;for(let e of G)e.lessons.forEach((t,n)=>Et.set(t.id,{track:e,lesson:t,index:n}));function Dt(e){return G.find(t=>t.id===e)??G.find(t=>t.lang===e)}function K(e){return G.filter(t=>t.lang===e)}function Ot(e,t){let n=K(e);return n.find(e=>J(e,t)<e.lessons.length)??n[n.length-1]}function kt(e){return Et.get(e)}function q(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function J(e,t){return e.lessons.filter(e=>t[e.id]).length}function At(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var jt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function Y(e){return jt[e]??e}var X=[...new Set(G.map(e=>e.lang))].filter(e=>K(e).length>1).map(e=>({id:`master-${e}`,title:Y(e),blurb:`${Y(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:K(e).map(e=>e.id)})),Z={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},Q=t();function Mt({lessonId:e}){if(!e)return(0,Q.jsx)(Pt,{});let t=e.startsWith(`roadmap-`)?Nt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(Rt,{roadmap:t});let n=Dt(e);if(n)return(0,Q.jsx)(zt,{track:n});let r=kt(e);return r?(0,Q.jsx)(Bt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(Pt,{missing:e})}function $(){let{state:e}=o(),t=At(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var Nt=[...B,...X];function Pt({missing:e}){let{state:t}=o(),n=d(),r=Nt.find(e=>e.id===n.query.goal)??B[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(T,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:B.map(e=>i(e))}),X.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:X.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(Lt,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),mt.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":Y(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(T,{lang:e,size:20}),Y(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[K(e).length,` course`,K(e).length===1?``:`s`,` · `,K(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:K(e).map(e=>{let n=J(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(T,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Z[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function Ft(e){let[t,n]=(0,D.useState)(3);return(0,D.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function It(e,t){let n=e.steps.map(e=>Dt(e)).filter(e=>!!e),r=n.map(e=>J(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function Lt({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=It(e,t),o=(0,D.useRef)(null),s=Ft(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=J(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(T,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(w,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Rt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=It(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${q(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&J(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=J(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(T,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(w,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function zt({track:e}){let{state:t}=o(),r=J(e,t.learn),a=e.lessons.length,s=q(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(T,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Z[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),K(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${Y(e.lang)} courses`,children:K(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":J(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Z[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function Bt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,D.useState)(!1),[g,_]=(0,D.useState)(0),[v,ee]=(0,D.useState)(!1),te=(0,D.useRef)(null),y=ce(`learn:${t.id}:example`,t.teach,t.schema),ne=!!a.learn[t.id],b=e.lessons[r-1],x=e.lessons[r+1],re=K(e.lang),S=x?void 0:re[re.findIndex(t=>t.id===e.id)+1];(0,D.useEffect)(()=>vt(t.lang),[t.lang]);let C=(0,D.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>te.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),w=(0,D.useCallback)(async(e,n,r)=>{let i=De(t,e,await gt(t,ye(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(T,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,ne?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:y,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(Vt,{lesson:t,onPass:C}):(0,Q.jsx)(oe,{lang:_t(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:w,onPass:C,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:te,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:x?`Lesson passed. Next: ${x.title}`:S?`That is the whole ${e.name} course. Next: ${S.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(x?`/learn/${x.id}`:S?`/learn/${S.lessons[0].id}`:`/learn/${e.id}`),children:[x?`Continue`:S?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+Ht(t.lang)+`
+`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[b?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${b.id}`),children:[(0,Q.jsx)(i,{size:13}),b.title]}):(0,Q.jsx)(`span`,{}),x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[x.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function Vt({lesson:e,onPass:t}){let[n,r]=(0,D.useState)(()=>we(e)),[i,o]=(0,D.useState)(0),[s,c]=(0,D.useState)(null),[l,u]=(0,D.useState)(!1),d=async()=>{u(!0),c(null);try{let r=De(e,``,await gt(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(re,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(we(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(ae,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(S,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(se,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(ie,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function Ht(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Ut(e){let{state:t}=o();return(0,D.useMemo)(()=>{let n=Ot(e,t.learn);return n?{lesson:q(n,t.learn),done:J(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{Mt as Learn,Ut as useNextLesson};
