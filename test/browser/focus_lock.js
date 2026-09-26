@@ -95,6 +95,28 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
   await p.clock.runFor(800);
   ok('with the block over, she is free again', (await p.evaluate(() => location.hash)) === '#/settings' && !(await p.evaluate(() => document.documentElement.dataset.focusLock)));
 
+  // Learn to code has its own focus: started from a course, the block is on
+  // that language's lessons and courses, and nowhere else.
+  await LP.open(p, '/learn/javascript');
+  await p.clock.runFor(800);
+  await p.click('.lm-focus');
+  await p.clock.runFor(800);
+  ok('a course offers its own focus, and the Focus page opens on Learn to code', (await p.getAttribute('.focus-on button:nth-child(2)', 'aria-pressed')) === 'true');
+  const codeTitle = (await p.textContent('.focus-pick__title')).trim();
+  ok('the pick is the lesson she is up to', /^Code: /.test(codeTitle), codeTitle);
+  await p.click('.focus-start button');
+  await p.clock.runFor(1500);
+  const codeHome = await p.evaluate(() => location.hash);
+  ok('the block opens the coding lesson, in the focus look', /^#\/learn\/js-01$/.test(codeHome) && (await p.evaluate(() => document.documentElement.dataset.focusLock)) === 'true', codeHome);
+  await p.evaluate(() => { location.hash = '#/learn/js-02'; });
+  await p.clock.runFor(800);
+  ok('the next lesson of the course is part of the block', (await p.evaluate(() => location.hash)) === '#/learn/js-02', await p.evaluate(() => location.hash));
+  await p.evaluate(() => { location.hash = '#/learn/py-01'; });
+  await p.clock.runFor(800);
+  ok('another language is not', (await p.evaluate(() => location.hash)) === codeHome, await p.evaluate(() => location.hash));
+  await p.click('.fbar__btn--end');
+  await p.clock.runFor(800);
+
   ok('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
   await b.close();
   console.log(fails ? `\n${fails} FAILED` : '\nA FOCUS BLOCK HOLDS HER ON THE LESSON');

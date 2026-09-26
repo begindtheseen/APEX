@@ -28,6 +28,7 @@ import { Notifications } from '@/components/Notifications'
 import { Search } from '@/components/Search'
 import { useLearner } from '@/hooks/useLearner'
 import { navigate, useRoute, useScrollReset } from '@/lib/router'
+import { useAwakeWhileActive } from '@/lib/wakeLock'
 import './shell.css'
 
 /**
@@ -117,6 +118,8 @@ export function Shell({
   }, [])
 
   useEffect(() => () => void (hideTimer.current && clearTimeout(hideTimer.current)), [])
+  // The screen stays on while she is using the app (src/lib/wakeLock.ts).
+  useAwakeWhileActive()
 
   useScrollReset(route.path, scrollRef)
 

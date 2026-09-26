@@ -3,6 +3,22 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.2.3
+
+**Learn to code has its own focus mode.** Every course and coding lesson has a **Focus** button.
+It starts a block on the lesson you are up to, in the same focus look as the rest of the app, and
+keeps you on that language — the next lesson and the next course are fine, anything else waits
+until you pause or finish. The Focus page now lets you choose between your path and Learn to code.
+
+**The screen stays on while you use LAUNCHPAD.** It no longer dims and locks in the middle of a
+long read: it stays on while a focus block runs, while a lesson is read aloud, and for fifteen
+minutes after you last scroll, tap or type.
+
+**Read aloud says equations properly.** A centred dot is "times" (still "dot" between two vectors),
+powers are "to the power of", degrees are degrees, matrices are read row by row, and ×, ² and
+10^6 in ordinary text come out as words. Lists separated by dots now get a short pause between
+items instead of running together, so every lesson has been recorded again.
+
 ## 1.2.2
 
 **Focus mode changes how the app looks.** While a block runs, the rail, the top bar and the
