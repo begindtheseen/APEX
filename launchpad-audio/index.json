@@ -121,6 +121,24 @@
    "json": "1x053qz1oq7w95vr.json",
    "duration": 72.72,
    "lesson": "M17/02-the-gate.md"
+  },
+  "1pbn3yn12px1sh2ta": {
+   "mp3": "1pbn3yn12px1sh2ta.mp3",
+   "json": "1pbn3yn12px1sh2ta.json",
+   "duration": 250.085,
+   "lesson": "M18/01-the-module.md"
+  },
+  "e5y36mw3xu7u1jk": {
+   "mp3": "e5y36mw3xu7u1jk.mp3",
+   "json": "e5y36mw3xu7u1jk.json",
+   "duration": 128.65,
+   "lesson": "M18/02-the-gate.md"
+  },
+  "to28kyskf48m39l": {
+   "mp3": "to28kyskf48m39l.mp3",
+   "json": "to28kyskf48m39l.json",
+   "duration": 274.635,
+   "lesson": "M19/01-the-module.md"
   }
  }
 }
