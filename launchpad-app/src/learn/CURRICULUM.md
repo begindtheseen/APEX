@@ -892,3 +892,106 @@ operator overloading, destructors and RAII as a topic, copy vs move,
 namespaces, header files, `<iomanip>` formatting (`std::setprecision`,
 `std::fixed`), `std::string_view`, `std::span`, `<ranges>`, recursion in
 practice.
+
+### C++ · Intermediate — `cpp-intermediate`, prefix `cpp2-`, 15 lessons
+
+Leans only on cpp.txt; the gaps in it are bridged where first used: `size_t`
+and `std::min_element` (cpp2-01), the conditional operator `?:` and
+`std::greater` (cpp2-03), `->` and range constructors (cpp2-05),
+`std::to_string` and `static` / `static constexpr` members (cpp2-06),
+`switch` (cpp2-08), `std::ostringstream` + `<iomanip>` (cpp2-11),
+`std::pair` and `emplace` (cpp2-14). Lambdas are *read* from cpp2-03 and
+*written* from cpp2-10. Error signalling starts with **`std::optional`**
+(cpp2-09).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| cpp2-01 | concept | `const` references and `const` member functions; opening |
+| cpp2-02 | **debugging** (method taught) | working on a copy: by-value parameter and loop variable |
+| cpp2-03 | concept | `<algorithm>`/`<numeric>`: `sort`, `find_if`, `count_if`, `transform`, `accumulate` (start type); reading lambdas |
+| cpp2-04 | concept | iterators, `[begin, end)`, range-for forms, `std::distance`, `rbegin` |
+| cpp2-05 | concept | `map` vs `unordered_map` vs `set`, `contains`, `find`; `m[k]` inserts |
+| cpp2-06 | concept/build | invariants, member initialiser list, `explicit`, wrapping with `%` (Clock) |
+| cpp2-07 | concept | overload resolution, the `const char*` → `bool` trap, default arguments |
+| cpp2-08 | concept | `enum class`, `switch`, `static_cast` to/from the underlying int |
+| cpp2-09 | concept | `std::optional`, `std::nullopt`, `value_or`, decide edge cases first |
+| cpp2-10 | concept | writing lambdas: captures, init capture, `mutable`, comparators, `copy_if` + `back_inserter` |
+| cpp2-11 | concept | `istringstream`, `getline` (with delimiter), `find`/`substr`, trimming, `ostringstream` |
+| cpp2-12 | **debugging** | off by one, `at()`, unsigned wrap-around of `size() - k` |
+| cpp2-13 | **debugging** | signed overflow (`accumulate` start value), uninitialised variables |
+| cpp2-14 | **problem** (approach taught) | two-sum in one pass with `unordered_map`; 200,002 numbers |
+| cpp2-15 | **design** | refactor duplication: name the idea, return a struct, compute vs present |
+
+### C++ · Advanced — `cpp-advanced`, prefix `cpp3-`, 16 lessons
+
+Bridged: destructor syntax (cpp3-01); raw `new[]`/`delete[]` shown on purpose
+and static data members (cpp3-02); recursion in practice and `->` on
+pointers (cpp3-04); `std::deque` (cpp3-06); inheritance syntax (cpp3-08);
+`using` aliases, the `overloaded` recipe (explained in cpp4-03), generic
+lambdas, `decltype`/`decay_t`/`is_same_v`, `if constexpr` (cpp3-11);
+`std::array` (cpp3-12); `protected` and inherited constructors (cpp3-16).
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| cpp3-01 | concept | RAII, destructors, reverse order, `= delete` copying; opening |
+| cpp3-02 | concept | rule of three: deep copy constructor and copy assignment, self-assignment |
+| cpp3-03 | concept | move constructor/assignment, `&&`, `std::move`, `noexcept`, rule of five, **rule of zero** |
+| cpp3-04 | concept | `unique_ptr` trees, `shared_ptr`, `use_count`, `weak_ptr` (mentioned) |
+| cpp3-05 | concept | function templates, deduction, `std::type_identity_t` |
+| cpp3-06 | concept | class templates, value parameters, `static_assert`, optional/pointer returns |
+| cpp3-07 | concept | operator overloading: non-member binary operators, `<<`, invariant makes `==` simple |
+| cpp3-08 | concept | interfaces, pure virtual, `override`, virtual destructor |
+| cpp3-09 | **debugging** | object slicing (by-value parameters, `vector<Base>`) |
+| cpp3-10 | concept | `std::function`, callbacks, event bus, returning callables |
+| cpp3-11 | concept | `std::variant`, `get_if`, `std::visit`, closed vs open sets |
+| cpp3-12 | concept | `constexpr`, `static_assert`, `consteval` (mentioned) |
+| cpp3-13 | concept/build | errors without exceptions: `bool`, `optional`, `variant<T, Error>`, `[[nodiscard]]` |
+| cpp3-14 | concept | comparators, `std::tie`, strict weak ordering, `stable_sort`, `partial_sort` |
+| cpp3-15 | **problem** | binary search on the answer, `lower_bound`/`upper_bound`; big inputs |
+| cpp3-16 | **design** | composition over inheritance |
+
+### C++ · Expert — `cpp-expert`, prefix `cpp4-`, 16 lessons
+
+Bridged: bit operators `>> & | ^ <<` (cpp4-05), `std::swap`/`std::exchange`
+(cpp4-06), `const_cast` for the const overload (cpp4-08), `INT_MAX`/`INT_MIN`
+(cpp4-11), `std::list` (cpp4-14). `std::string_view` first appears in
+cpp4-05.
+
+| Lesson | Kind | Teaches |
+| --- | --- | --- |
+| cpp4-01 | concept | value categories, sink parameters, NRVO, `const` blocks moves, ref-qualifiers; opening |
+| cpp4-02 | concept | forwarding references, reference collapsing, `std::forward`, `decltype(auto)` |
+| cpp4-03 | concept | variadic templates, packs, fold expressions |
+| cpp4-04 | concept | concepts, `requires`, standard concepts |
+| cpp4-05 | concept | compile-time tables: `std::array`, `string_view`, templates with sizes |
+| cpp4-06 | **build** | growable array: allocator, `construct_at`/`destroy_at`, doubling, aliasing, copy-and-swap |
+| cpp4-07 | **build** | ring buffer with a forward iterator (`std::forward_iterator`) |
+| cpp4-08 | **build** | chained hash map, load factor, rehash (starter times out on purpose) |
+| cpp4-09 | concept | ranges, views, `iota`, projections, `views::split` |
+| cpp4-10 | **debugging** | iterator invalidation, `erase_if`, hold an index |
+| cpp4-11 | **debugging** | signed overflow is UB; the optimiser deletes the check at `-O1` (mechanics depend on it) |
+| cpp4-12 | performance | cache lines, row-major, 2-D prefix sums (starter times out on purpose) |
+| cpp4-13 | **design** | type erasure (Concept/Model, `clone`), CRTP mentioned |
+| cpp4-14 | **problem** | LRU cache: `list` + `unordered_map`, `splice` |
+| cpp4-15 | **problem** | tokenizer: positions, errors as data |
+| cpp4-16 | **problem** | recursive-descent calculator, left associativity, leftover tokens |
+
+### C++ · Projects — `cpp-projects`, prefix `cppp-`, 15 lessons
+
+| Lessons | Project | Uses |
+| --- | --- | --- |
+| cppp-01…04 | **Matrix**: row-major storage, `operator()`, `initializer_list` → `optional` for operations that can fail → `<<` without leaking stream settings, determinant by Gaussian elimination → exponentiation by squaring | cpp3-07, cpp2-09, cpp4-05 (bits) |
+| cppp-05…08 | **Bank**: cents in `long long`, protected balance, virtual hooks → checking/savings overrides → `Bank` owning `unique_ptr`s, all-or-nothing transfers → transaction log and statements | cpp3-04/08, cpp2-08 |
+| cppp-09…12 | **Text stats** (whole programs with `main`, `output` checks): `wc` counts → normalised word frequencies → sentences, average, longest → `setw` histogram | cpp2-05/11, cpp3-14 |
+| cppp-13 | **Capstone**: priority task scheduler (`priority_queue`, dependency counts; 100,000 tasks) | cpp3-07, cpp2-05 |
+| cppp-14 | **Capstone**: JSON value type (recursive `variant`, rule of zero, `const char*` constructor) | cpp3-03/11, cpp2-07 |
+| cppp-15 | **Capstone**: expression evaluator with variables (`^` right-associative, `std::pow`, `std::isfinite`) | cpp4-15/16 |
+
+Conventions added on the ladder: constants are `kName` (`kDay`, `kPi`);
+`static` helpers inside classes; function lessons still end "No `main`."
+(only cppp-09…12 are whole programs). Mechanics not to change: the
+deliberately slow starters of cpp2-12, cpp3-15, cpp4-08 and cpp4-12, and
+cpp4-11's reliance on `-O1` deleting the overflow check. Not covered:
+namespaces, header files and separate compilation, `std::span`, threads
+and atomics, `std::any` beyond a mention, allocators beyond `std::allocator`,
+modules, coroutines.

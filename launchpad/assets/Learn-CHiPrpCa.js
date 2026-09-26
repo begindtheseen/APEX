@@ -1,9 +1,9 @@
-import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-0HOqBNBB.js";import{t as p}from"./markdown-BQQ-i3Z9.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as ee,b as y,c as te,d as ne,g as b,i as x,j as S,k as C,l as w,m as T,p as re,r as ie,s as ae,t as oe,v as se,x as ce,y as E}from"./lessonCode-7NUZ6Lcb.js";var D=e(),O=`@@LEARN`,le=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function k(e){return e.replace(/\s*\n\s*/g,` `).trim()}function A(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var ue=`const throws = (f) => { try { f(); return false } catch { return true } }
+import{r as e,t}from"./react-D6Jy4RLT.js";import{E as n,L as r,O as i,X as a,g as o,r as s,t as c,v as l}from"./ui-5JSjpmHC.js";import{g as u}from"./engine-BhleXMOO.js";import{_ as d,g as f}from"./index-DbuIykOW.js";import{t as p}from"./markdown-CCoGxL_Z.js";/* empty css              */import{A as m,D as h,M as g,N as _,S as v,_ as y,b,c as ee,d as te,g as x,i as S,j as C,k as w,l as T,m as E,p as ne,r as re,s as ie,t as ae,v as oe,x as se,y as D}from"./lessonCode-Na-fefHQ.js";var O=e(),k=`@@LEARN`,ce=/^@@LEARN (\d+) (PASS|FAIL|ERROR)(?: (.*))?$/;function A(e){return e.replace(/\s*\n\s*/g,` `).trim()}function j(e,t){return e.checks.map((e,t)=>({c:e,i:t})).filter(e=>e.c.kind===t)}var le=`const throws = (f) => { try { f(); return false } catch { return true } }
   const __eq = (a, b) => { if (Object.is(a, b)) return true; if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => __eq(a[k], b[k])) }
   const __show = (v) => { if (v === undefined) return 'undefined'; if (typeof v === 'function') return '[Function]'; if (typeof v === 'bigint') return v + 'n'; try { const j = JSON.stringify(v); return j === undefined ? String(v) : j } catch { return String(v) } }
   const __err = (e) => (e instanceof Error ? e.name + ': ' + e.message : String(e))
-  const __learn = (i, f) => { try { const r = f(); console.log('${O} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }
-  const __case = (i, f, w) => { try { const got = f(); console.log('${O} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${O} ' + i + ' ERROR ' + __err(e)) } }`,de=ue.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),fe=`#include <cmath>
+  const __learn = (i, f) => { try { const r = f(); console.log('${k} ' + i + (r ? ' PASS ' : ' FAIL ') + __show(r)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }
+  const __case = (i, f, w) => { try { const got = f(); console.log('${k} ' + i + (__eq(got, w()) ? ' PASS ' : ' FAIL ') + __show(got)) } catch (e) { console.log('${k} ' + i + ' ERROR ' + __err(e)) } }`,ue=le.replace(`(f) =>`,`(f: () => unknown): boolean =>`).replace(`const __eq = (a, b) =>`,`const __eq = (a: any, b: any): boolean =>`).replace(`const __show = (v) =>`,`const __show = (v: unknown): string =>`).replace(`const __err = (e) =>`,`const __err = (e: unknown): string =>`).replace(`const __learn = (i, f) =>`,`const __learn = (i: number, f: () => unknown): void =>`).replace(`const __case = (i, f, w) =>`,`const __case = (i: number, f: () => unknown, w: () => unknown): void =>`).replace(`.every((k) =>`,`.every((k: string) =>`),de=`#include <cmath>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -17,33 +17,8772 @@ inline std::string __learn_show(bool v) { return v ? "true" : "false"; }
 inline std::string __learn_show(char v) { return std::string("'") + v + "'"; }
 template <class T> std::string __learn_show(const std::vector<T>& v) { std::string o = "{"; for (std::size_t i = 0; i < v.size(); ++i) o += (i ? ", " : "") + __learn_show(v[i]); return o + "}"; }
 template <class K, class V> std::string __learn_show(const std::map<K, V>& m) { std::string o = "{"; bool first = true; for (const auto& [k, x] : m) { o += (first ? "" : ", ") + std::string("{") + __learn_show(k) + ", " + __learn_show(x) + "}"; first = false; } return o + "}"; }
-template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function pe(e){let t=A(e,`test`),n=A(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?A(e,`type-error`).map(e=>`  // @ts-expect-error ${me} ${e.i}\n  ;(() => { ${k(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
+template <class T> std::string __learn_show(const T& v) { if constexpr (requires(std::ostream& os) { os << v; }) { std::ostringstream o; o << v; return o.str(); } else { return "(a value)"; } }`;function fe(e){let t=j(e,`test`),n=j(e,`case`);switch(e.lang){case`javascript`:case`typescript`:{let r=e.lang===`typescript`,i=r?j(e,`type-error`).map(e=>`  // @ts-expect-error ${pe} ${e.i}\n  ;(() => { ${A(e.c.code)} })`):[];if(!t.length&&!n.length)return i.length?`\n;{\n${i.join(`
 `)}\n}\n`:``;let a=r?`  // @ts-ignore
-`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?de:ue}\n${o.join(`
+`:``,o=[...t.map(e=>({i:e.i,line:`${a}  __learn(${e.i}, () => (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`${a}  __case(${e.i}, () => (${e.c.call}), () => (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return`\n;{\n  ${r?ue:le}\n${o.join(`
 `)}\n${i.join(`
-`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${k(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${k(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${O} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${O} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${O} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
-`)}case`cpp`:return!t.length&&!n.length?``:`\n${fe}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${k(e.c.expr)}); std::cout << "${O} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${k(e.c.expect)})); std::cout << "${O} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
-`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${O}' AS __learn;\n${A(e,`query`).map(e=>`SELECT '${O} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
-`)}\n`;case`html`:case`bash`:case`git`:return``}}var me=`learn-type-check`;function he(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
-`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${me} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
-`)}}function ge(e,t){let n=pe(e);return n?t.endsWith(`
-`)?t+n.replace(/^\n/,``):t+n:t}function _e(e){return A(e,`dom`).map(e=>e.c.steps)}function j(e){return e.replace(/\r\n?/g,`
+`)}\n}\n`}case`python`:{if(!t.length&&!n.length)return``;let e=[...t.map(e=>({i:e.i,line:`__learn_test(${e.i}, lambda: (${A(e.c.expr)}))`})),...n.map(e=>({i:e.i,line:`__learn_case(${e.i}, lambda: (${e.c.call}), lambda: (${A(e.c.expect)}))`}))].sort((e,t)=>e.i-t.i).map(e=>e.line);return[``,``,`def raises(exc, fn):`,`    try:`,`        fn()`,`    except exc:`,`        return True`,`    return False`,``,`def __learn_same(a, b):`,`    if isinstance(b, bool) or b is None:`,`        return a is b`,`    return type(a) is not bool and a == b`,``,`def __learn_test(i, f):`,`    try:`,`        r = f()`,`        print("${k} %d %s %r" % (i, "PASS" if r else "FAIL", r))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,`def __learn_case(i, f, w):`,`    try:`,`        got = f()`,`        print("${k} %d %s %r" % (i, "PASS" if __learn_same(got, w()) else "FAIL", got))`,`    except Exception as e:`,`        print("${k} %d ERROR %s: %s" % (i, type(e).__name__, e))`,``,...e,``].join(`
+`)}case`cpp`:return!t.length&&!n.length?``:`\n${de}\nint main() {\n${[...t.map(e=>({i:e.i,line:`    { bool __r = (${A(e.c.expr)}); std::cout << "${k} ${e.i} " << (__r ? "PASS " : "FAIL ") << __learn_show(__r) << std::endl; }`})),...n.map(e=>({i:e.i,line:`    { auto __v = (${e.c.call}); bool __ok = (__v == (${A(e.c.expect)})); std::cout << "${k} ${e.i} " << (__ok ? "PASS " : "FAIL ") << __learn_show(__v) << std::endl; }`}))].sort((e,t)=>e.i-t.i).map(e=>e.line).join(`
+`)}\n    return 0;\n}\n`;case`sql`:return`\n;\nSELECT '${k}' AS __learn;\n${j(e,`query`).map(e=>`SELECT '${k} ${e.i}' AS __learn;\n${e.c.sql.replace(/;\s*$/,``)};`).join(`
+`)}\n`;case`html`:case`bash`:case`git`:return``}}var pe=`learn-type-check`;function me(e,t){if(!t)return null;let n=[...t.matchAll(/main\.ts\((\d+),\d+\): error (TS\d+)/g)];if(!n.length)return null;let r=e.split(`
+`),i=[],a=new Set;for(let[,e,t]of n){let n=Number(e)-1,o=RegExp(`// @ts-expect-error ${pe} (\\d+)`).exec(r[n]??``);if(t!==`TS2578`||!o)return null;i.push(Number(o[1])),a.add(n)}return{fails:i,program:r.map((e,t)=>a.has(t)?``:e).join(`
+`)}}function he(e,t){let n=fe(e);return n?t.endsWith(`
+`)?t+n.replace(/^\n/,``):t+n:t}function ge(e){return j(e,`dom`).map(e=>e.c.steps)}function M(e){return e.replace(/\r\n?/g,`
 `).split(`
 `).map(e=>e.trimEnd()).join(`
-`).replace(/^\n+|\n+$/g,``)}function ve(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
+`).replace(/^\n+|\n+$/g,``)}function _e(e){let t=new Map,n=[];for(let r of e.replace(/\r\n?/g,`
 `).split(`
-`)){let e=le.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
-`),marks:t}}function ye(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function M(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>ye(e,a[t][n])))}function N(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
-`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function P(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var F=e=>ce(ee,e),I=e=>e.replace(/^\/home\/you/,`~`);function L(e){let t=y();for(let n of e.starter.split(`
-`))n.trim()&&(t=v(t,n).state);return{...t,history:[],transcript:[]}}function be(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(2).join(` `);switch(r){case`cwd`:return e.cwd===F(i)?null:`you are in ${I(e.cwd)}, not ${I(F(i))}`;case`dir`:{let t=E(e,F(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return E(e,F(i))?`${i} should not exist any more`:null;case`file`:{let n=E(e,F(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!a)return null;let r=/^(==|contains)\s+(.*)$/.exec(a);if(!r)return`the check "${t}" could not be read`;let o=n.content.replace(/\n$/,``);return r[1]===`==`?o===r[2]?null:`${i} contains ${JSON.stringify(o)}, not ${JSON.stringify(r[2])}`:o.includes(r[2])?null:`${i} does not contain ${JSON.stringify(r[2])}`}case`ran`:{let t=n.slice(1).join(` `);return e.history.flatMap(e=>e.split(`&&`).map(e=>e.trim().replace(/\s+/g,` `))).some(e=>e===t||e.startsWith(`${t} `))?null:`you have not run ${t} yet`}case`used`:{let t=n.slice(1).join(` `);return e.history.some(e=>e.includes(t))?null:`you have not used ${t} in a command yet`}case`printed-line`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.split(`
-`).includes(t))?null:`nothing has printed the line ${JSON.stringify(t)} yet`}case`printed`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.includes(t))?null:`nothing has printed ${JSON.stringify(t)} yet`}case`git`:{let r=se(e,F(i)),[,,a,...o]=n;if(!r)return`${i===`.`?`~/project`:i} is not a git repository yet`;switch(a){case`repo`:return null;case`commits`:{let e=Number(o[1]);return(o[0]===`>=`?r.commits>=e:r.commits===e)?null:`the repository has ${r.commits} commit${r.commits===1?``:`s`}`}case`branch`:return r.branch===o[0]?null:`you are on ${r.branch}, not ${o[0]}`;case`has-branch`:return r.branches.includes(o[0])?null:`there is no branch ${o[0]}`;case`staged`:return r.staged.includes(o[0])?null:`${o[0]} is not staged`;case`untracked`:return r.untracked.includes(o[0])?null:`${o[0]} is not an untracked file`;case`modified`:return r.modified.includes(o[0])?null:`${o[0]} has no unstaged changes`;case`commits-on`:{let e=Number(o[2]),t=r.branchCommits[o[0]];return t===void 0?`there is no branch ${o[0]}`:(o[1]===`>=`?t>=e:t===e)?null:`${o[0]} has ${t} commit${t===1?``:`s`}`}case`merges`:{let e=Number(o[1]);return(o[0]===`>=`?r.merges>=e:r.merges===e)?null:`the history has ${r.merges} merge commit${r.merges===1?``:`s`}`}case`log`:{let e=o.slice(1).join(` `);return r.messages.some(t=>t.includes(e))?null:`no commit message contains ${JSON.stringify(e)}`}case`clean`:return r.staged.length?`still staged: ${r.staged.join(`, `)}`:null;default:return`the check "${t}" could not be read`}}default:return`the check "${t}" could not be read`}}function R(e,t,n){let{clean:r,marks:i}=ve(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(A(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=j(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>be(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
+`)){let e=ce.exec(r);e?t.set(Number(e[1]),{status:e[2],...e[3]?{message:e[3]}:{}}):n.push(r)}return{clean:n.join(`
+`),marks:t}}function ve(e,t){return typeof e==`number`&&typeof t==`number`?Math.abs(e-t)<=1e-9*Math.max(1,Math.abs(e),Math.abs(t)):e===t}function N(e,t,n){if(e.length!==t.length)return!1;let r=e=>JSON.stringify(e.map(e=>typeof e==`number`?Number(e.toPrecision(12)):e)),i=n?e:[...e].sort((e,t)=>r(e).localeCompare(r(t))),a=n?t:[...t].sort((e,t)=>r(e).localeCompare(r(t)));return i.every((e,t)=>e.length===a[t].length&&e.every((e,n)=>ve(e,a[t][n])))}function P(e){return e.length?e.slice(0,8).map(e=>e.map(e=>e===null?`NULL`:String(e)).join(` | `)).join(`
+`)+(e.length>8?`\n… ${e.length-8} more`:``):`(no rows)`}function F(e,t=600){return e.length>t?`${e.slice(0,t)}…`:e}var I=e=>se(y,e),ye=e=>e.replace(/^\/home\/you/,`~`);function be(e){let t=b();for(let n of e.starter.split(`
+`))n.trim()&&(t=v(t,n).state);return{...t,history:[],transcript:[]}}function xe(e,t){let n=t.trim().split(/\s+/),[r,i=``]=n,a=n.slice(2).join(` `);switch(r){case`cwd`:return e.cwd===I(i)?null:`you are in ${ye(e.cwd)}, not ${ye(I(i))}`;case`dir`:{let t=D(e,I(i));return t?.kind===`dir`?null:t?`${i} is a file, not a folder`:`there is no folder ${i}`}case`missing`:return D(e,I(i))?`${i} should not exist any more`:null;case`file`:{let n=D(e,I(i));if(!n)return`there is no file ${i}`;if(n.kind!==`file`)return`${i} is a folder, not a file`;if(!a)return null;let r=/^(==|contains)\s+(.*)$/.exec(a);if(!r)return`the check "${t}" could not be read`;let o=n.content.replace(/\n$/,``);return r[1]===`==`?o===r[2]?null:`${i} contains ${JSON.stringify(o)}, not ${JSON.stringify(r[2])}`:o.includes(r[2])?null:`${i} does not contain ${JSON.stringify(r[2])}`}case`ran`:{let t=n.slice(1).join(` `);return e.history.flatMap(e=>e.split(`&&`).map(e=>e.trim().replace(/\s+/g,` `))).some(e=>e===t||e.startsWith(`${t} `))?null:`you have not run ${t} yet`}case`used`:{let t=n.slice(1).join(` `);return e.history.some(e=>e.includes(t))?null:`you have not used ${t} in a command yet`}case`printed-line`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.split(`
+`).includes(t))?null:`nothing has printed the line ${JSON.stringify(t)} yet`}case`printed`:{let t=n.slice(1).join(` `);return e.transcript.some(e=>e.out.includes(t))?null:`nothing has printed ${JSON.stringify(t)} yet`}case`git`:{let r=oe(e,I(i)),[,,a,...o]=n;if(!r)return`${i===`.`?`~/project`:i} is not a git repository yet`;switch(a){case`repo`:return null;case`commits`:{let e=Number(o[1]);return(o[0]===`>=`?r.commits>=e:r.commits===e)?null:`the repository has ${r.commits} commit${r.commits===1?``:`s`}`}case`branch`:return r.branch===o[0]?null:`you are on ${r.branch}, not ${o[0]}`;case`has-branch`:return r.branches.includes(o[0])?null:`there is no branch ${o[0]}`;case`staged`:return r.staged.includes(o[0])?null:`${o[0]} is not staged`;case`untracked`:return r.untracked.includes(o[0])?null:`${o[0]} is not an untracked file`;case`modified`:return r.modified.includes(o[0])?null:`${o[0]} has no unstaged changes`;case`commits-on`:{let e=Number(o[2]),t=r.branchCommits[o[0]];return t===void 0?`there is no branch ${o[0]}`:(o[1]===`>=`?t>=e:t===e)?null:`${o[0]} has ${t} commit${t===1?``:`s`}`}case`merges`:{let e=Number(o[1]);return(o[0]===`>=`?r.merges>=e:r.merges===e)?null:`the history has ${r.merges} merge commit${r.merges===1?``:`s`}`}case`log`:{let e=o.slice(1).join(` `);return r.messages.some(t=>t.includes(e))?null:`no commit message contains ${JSON.stringify(e)}`}case`clean`:return r.staged.length?`still staged: ${r.staged.join(`, `)}`:null;default:return`the check "${t}" could not be read`}}default:return`the check "${t}" could not be read`}}function Se(e,t,n){let{clean:r,marks:i}=_e(n.stdout),a=n.tables??[],o=new Map;if(e.lang===`sql`){let e=a.findIndex(e=>e.columns.length===1&&e.columns[0]===`__learn`&&e.rows[0]?.[0]===`@@LEARN`),t=e>=0?a.slice(e+1):[];for(let e=0;e<t.length;e++){let n=t[e],r=n.columns[0]===`__learn`?/^@@LEARN (\d+)$/.exec(String(n.rows[0]?.[0]??``)):null;if(!r)continue;let i=t[e+1],a=i&&i.columns[0]===`__learn`;o.set(Number(r[1]),i&&!a?i.rows:[])}e>=0&&(a=a.slice(0,e))}let s=new Map(j(e,`dom`).map((e,t)=>[e.i,t])),c=n.error?`Did not run — fix the error shown in the console first.`:null,l=M(r),u=e.checks.map((r,u)=>{let d={name:r.name,...r.hint?{hint:r.hint}:{}},f=(e,t={})=>({...d,status:e?`pass`:`fail`,...t});if(r.kind===`source`)return f(new RegExp(r.pattern,`m`).test(t)!==r.absent);if(r.kind===`shell`){if(!n.shell)return f(!1,{detail:`The terminal has not been used yet.`});let e=r.facts.map(e=>xe(n.shell,e)).find(e=>e!==null);return f(!e,{input:r.facts.join(`
 `),...e?{actual:e}:{}})}if(r.kind===`dom`){let e=n.dom?.[s.get(u)??-1];return c?f(!1,{input:r.steps.join(`
 `),detail:c}):e?f(e.pass,{input:r.steps.join(`
 `),...e.detail?{actual:e.detail}:{}}):f(!1,{input:r.steps.join(`
-`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?k(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=j(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:P(t),actual:P(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(j(e)));return f(!e.length,{expected:r.expect.join(`
-`),actual:P(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:k(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=N(r.rows)+(r.ordered?`
-(in this order)`:``);return e?f(M(r.rows,e.rows,r.ordered),{expected:t,actual:N(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(M(t(r.rows),t(e),!0),{input:r.sql,expected:N(t(r.rows)),actual:N(t(e))})}return f(M(r.rows,e,!0),{input:r.sql,expected:N(r.rows),actual:N(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
-`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var xe='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',Se=`@track cpp
+`),detail:`The page did not finish loading, so this was not checked.`})}if(r.kind===`type-error`){if(c)return f(!1,{input:r.code,detail:c});let e=n.typeFails?.includes(u);return f(!e,{input:r.code,expected:`a type error`,actual:e?`it type-checks`:`a type error`,...e?{detail:`The compiler accepts this, so the type still lets it through. Tighten the type until this line is rejected.`}:{}})}if(c){let t=r.kind===`case`?r.call:r.kind===`test`?A(r.expr):r.kind===`query`?r.sql:e.stdin?.trim();return f(!1,{detail:c,...t?{input:t}:{}})}switch(r.kind){case`output`:{let t=M(r.expect);return f(t===l,{input:e.stdin?.trim()||`(no input)`,expected:F(t),actual:F(l)||`(nothing printed)`})}case`includes`:{let e=r.expect.filter(e=>!l.includes(M(e)));return f(!e.length,{expected:r.expect.join(`
+`),actual:F(l)||`(nothing printed)`,...e.length?{detail:`Not in the output: ${e.map(e=>`“${e}”`).join(`, `)}`}:{}})}case`test`:case`case`:{let e=i.get(u),t=r.kind===`case`?r.call:A(r.expr),n=r.kind===`case`?r.expect:`true`;return e?e.status===`ERROR`?f(!1,{input:t,expected:n,actual:e.message??`an error`}):f(e.status===`PASS`,{input:t,expected:n,actual:e.message??``}):f(!1,{input:t,expected:n,detail:`This check never ran: the program stopped before it got there.`})}case`result`:{let e=a[a.length-1],t=P(r.rows)+(r.ordered?`
+(in this order)`:``);return e?f(N(r.rows,e.rows,r.ordered),{expected:t,actual:P(e.rows)}):f(!1,{expected:t,actual:`(no rows)`,detail:`Your SQL did not return any rows. The last statement should be a SELECT.`})}case`query`:{let e=o.get(u);if(!e)return f(!1,{input:r.sql,detail:`This check never ran.`});if(/^\s*EXPLAIN\s+QUERY\s+PLAN\b/i.test(r.sql)){let t=e=>e.map(e=>[e[e.length-1]??null]);return f(N(t(r.rows),t(e),!0),{input:r.sql,expected:P(t(r.rows)),actual:P(t(e))})}return f(N(r.rows,e,!0),{input:r.sql,expected:P(r.rows),actual:P(e)})}}});return{passed:u.every(e=>e.status===`pass`),results:u,output:r.replace(/\n+$/,e.lang===`sql`?``:`
+`).replace(/^\n$/,``),stderr:n.stderr,error:n.error,tables:a,ms:n.ms}}var Ce='@track bash\n@title Terminal\n@name Linux and the command line\n@blurb The command line every developer lives in: moving around, making, reading and changing files, without a mouse.\n\n=== term-01 | Where am I?\n--- teach\nThe **terminal** is a way to talk to your computer in text. You type a **command**, press Enter, and it answers.\n\nThe line before your cursor is the **prompt**: `~/project $` means you are in a folder called `project` inside your home folder (`~`). Two commands you will use every day:\n\n- `pwd` — **p**rint **w**orking **d**irectory: the full path of the folder you are in.\n- `ls` — **l**i**s**t what is in it. Folders show with a `/` at the end.\n\nThis terminal is a practice one: it lives in the page, so nothing you type can touch your real files.\n--- task\nRun `pwd` to see where you are, then `ls` to see what is in this folder.\n--- starter\nmkdir src\ntouch README.md\n--- solution\npwd\nls\n--- hint\nType `pwd` and press Enter. Then type `ls` and press Enter.\n--- check shell | You printed where you are\nran pwd\nprinted /home/you/project\n--- check shell | You listed the folder\nran ls\nprinted README.md\n\n=== term-02 | Making folders and moving into them\n--- teach\n`mkdir name` **m**a**k**es a **dir**ectory (a folder). `cd name` **c**hanges **d**irectory — it moves you into it, and the prompt changes to show where you are.\n\n```\n~/project $ mkdir notes\n~/project $ cd notes\n~/project/notes $\n```\n\n`cd ..` goes back up one level, and `cd` on its own takes you home.\n--- task\nMake a folder called `notes` and move into it.\n--- starter\n--- solution\nmkdir notes\ncd notes\n--- hint\nFirst `mkdir notes`, then `cd notes`.\n--- check shell | The notes folder exists\ndir notes\n--- check shell | You are inside it\ncwd notes\n\n=== term-03 | Files: create, write, read\n--- teach\n`touch name` makes an empty file. To put text in a file, `echo` it and **redirect** the output with `>`:\n\n```\necho "Launch at dawn" > plan.txt\n```\n\n`echo` prints its text; `> plan.txt` sends that text into the file instead of the screen. Careful: `>` **replaces** whatever the file held.\n\nPut the text in double quotes. The quotes keep it together as one piece, and stop characters such as `>` or `&` inside it from being read as part of the command.\n\n`cat plan.txt` prints a file\'s contents, so you can check what you wrote.\n--- task\nCreate `hello.txt` containing exactly `Hello, terminal!`, then show it with `cat`.\n--- starter\n--- solution\necho "Hello, terminal!" > hello.txt\ncat hello.txt\n--- hint\nPut the text in quotes: `echo "Hello, terminal!" > hello.txt`.\n--- hint\nThen `cat hello.txt`.\n--- check shell | hello.txt holds the greeting\nfile hello.txt == Hello, terminal!\n--- check shell | You read it back with cat\nran cat\nprinted Hello, terminal!\n\n=== term-04 | Paths\n--- teach\nA **path** says where something is. `docs/guides` means "the `guides` folder inside `docs`, inside where I am now" — a **relative** path. `..` means "the folder above", so `../..` is two levels up. `~` is your home folder, and a path starting with `/` is **absolute**: it starts from the very top.\n\nAn option that starts with `-`, like the `-p` below, is a **flag**: it changes how a command behaves. `mkdir -p` makes every folder along a path at once, so you do not need one `mkdir` per level:\n\n```\nmkdir -p src/components/buttons\ncd src/components\ncd ../..\n```\n--- task\nWith one command, make the folders `docs/guides`. Move into `docs/guides`, then come back up to `project` using `..`.\n--- starter\n--- solution\nmkdir -p docs/guides\ncd docs/guides\ncd ../..\n--- hint\n`mkdir -p docs/guides` makes both folders.\n--- hint\nFrom `docs/guides`, two levels up is `cd ../..`.\n--- check shell | docs/guides exists\ndir docs/guides\n--- check shell | You went into it\nran cd docs/guides\n--- check shell | You came back up with ..\nused ..\ncwd .\n\n=== term-05 | Copying and moving\n--- teach\n`cp source destination` **c**o**p**ies a file. `mv source destination` **m**o**v**es it — and because moving a file to a new name in the same folder is renaming, `mv` is also how you rename:\n\n```\ncp report.txt report-backup.txt\nmv report.txt final-report.txt\n```\n\nIf the destination is a folder, the file goes inside it with the same name: `mv notes.txt archive/`. Copying a whole folder needs `cp -r` (**r**ecursive).\n--- task\nThere is a file called `draft.txt`. Copy it to `backup.txt`, then rename `draft.txt` to `final.txt`.\n--- starter\necho "Our first mission plan" > draft.txt\n--- solution\ncp draft.txt backup.txt\nmv draft.txt final.txt\n--- hint\n`cp draft.txt backup.txt` first; then `mv draft.txt final.txt`.\n--- check shell | backup.txt is a copy\nfile backup.txt == Our first mission plan\n--- check shell | draft.txt is now final.txt\nfile final.txt == Our first mission plan\nmissing draft.txt\n\n=== term-06 | Deleting\n--- teach\n`rm file` **r**e**m**oves a file. There is no bin to get it back from, so read the command before you press Enter.\n\nA folder needs `rm -r folder`: `-r` removes it and everything inside it. (`rmdir` only removes a folder that is already empty.)\n\n```\nrm old-notes.txt\nrm -r build\n```\n--- task\nDelete the file `junk.txt` and the whole `old` folder (it has files inside). Leave `keep.txt` alone.\n--- starter\ntouch junk.txt\ntouch keep.txt\nmkdir -p old/logs\necho "stale" > old/logs/app.log\n--- solution\nrm junk.txt\nrm -r old\n--- hint\n`rm junk.txt` for the file, `rm -r old` for the folder.\n--- check shell | junk.txt is gone\nmissing junk.txt\n--- check shell | old/ and everything in it is gone\nmissing old\n--- check shell | keep.txt is still there\nfile keep.txt\n\n=== term-07 | Looking inside files\n--- teach\nReal files can be long, so there are commands that show just part of one:\n\n- `head -n 3 file` — the first 3 lines. `tail -n 3 file` — the last 3.\n- `wc -l file` — **w**ord **c**ount; with `-l`, how many **l**ines.\n- `grep text file` — only the lines that contain `text`. Add `-i` to ignore case, `-n` to show line numbers.\n\n`grep` is how developers dig through logs: `grep ERROR server.log` pulls every error out of thousands of lines.\n--- task\n`launch.log` is the log from a test launch. Count its lines with `wc -l`, then use `grep` to show only the lines containing `ERROR`.\n--- starter\necho "09:00 INFO systems check" > launch.log\necho "09:01 INFO fuel loaded" >> launch.log\necho "09:02 ERROR valve 3 stuck" >> launch.log\necho "09:03 INFO valve 3 reset" >> launch.log\necho "09:04 ERROR telemetry dropout" >> launch.log\necho "09:05 INFO liftoff" >> launch.log\n--- solution\nwc -l launch.log\ngrep ERROR launch.log\n--- hint\n`wc -l launch.log` counts the lines.\n--- hint\n`grep ERROR launch.log` prints only the error lines.\n--- check shell | You counted the lines\nran wc -l\nprinted 6 launch.log\n--- check shell | You found both errors\nran grep\nprinted 09:02 ERROR valve 3 stuck\nprinted 09:04 ERROR telemetry dropout\n\n=== term-08 | Chaining and appending\n--- teach\n`&&` joins two commands: the second runs only if the first worked. It is how you write a sequence on one line:\n\n```\nmkdir build && cd build\n```\n\n`>>` is like `>`, but it **adds** to the end of the file instead of replacing it:\n\n```\necho "first" > list.txt\necho "second" >> list.txt\n```\n--- task\nIn a single line, make a folder `logs` and move into it using `&&`. Then build `todo.txt` with two lines, `buy fuel` then `check engines`, using `>` for the first and `>>` for the second.\n--- starter\n--- solution\nmkdir logs && cd logs\necho "buy fuel" > todo.txt\necho "check engines" >> todo.txt\n--- hint\n`mkdir logs && cd logs` does both steps.\n--- hint\n`echo "buy fuel" > todo.txt`, then `echo "check engines" >> todo.txt`.\n--- check shell | You used && to make and enter logs\nused &&\ndir logs\ncwd logs\n--- check shell | todo.txt has both lines, in order\nfile logs/todo.txt contains buy fuel\nfile logs/todo.txt contains check engines\nused >>\n\n=== term-09 | Hidden files, and the long listing\n--- teach\nA file or folder whose name starts with a dot is **hidden**: plain `ls` skips it. Settings live in files like that — `.env`, `.gitignore`, `.config` — so you need to be able to see them.\n\n- `ls -a` shows **a**ll of them, hidden ones included (plus `.` for this folder and `..` for the one above).\n- `ls -l` is the **l**ong listing: one line per entry, with whether it is a folder (`d`) or a file (`-`), and its size.\n\nFlags combine: `ls -la` is both at once.\n--- task\nSomething in this folder is hidden. Find it with `ls -a`, then look at the sizes with `ls -l`.\n--- starter\necho "API_KEY=demo" > .env\nmkdir src\necho "print(\'hi\')" > main.py\n--- solution\nls -a\nls -l\n--- hint\n`ls -a` shows the hidden file.\n--- hint\n`ls -l` shows one line per file, starting with `-rw-r--r--` for files.\n--- check shell | You found the hidden file\nprinted .env\n--- check shell | You used the long listing\nprinted -rw-r--r--\n\n=== term-10 | Getting home, and back again\n--- teach\nDeep in a project, three shortcuts save a lot of typing:\n\n- `cd ~` (or just `cd`) jumps straight to your **home** folder, wherever you are.\n- `cd -` jumps back to wherever you were **before** the last `cd`.\n- An **absolute** path works from anywhere: `cd /home/you/project`.\n\nRun `pwd` whenever you want to be sure where you have landed.\n--- task\nYou are three folders deep, in `src/app/components`. Jump to your home folder, check with `pwd` that you are there, then come straight back with `cd -`.\n--- starter\nmkdir -p src/app/components\ncd src/app/components\n--- solution\ncd ~\npwd\ncd -\n--- hint\n`cd ~` goes home; `pwd` then prints `/home/you`.\n--- hint\n`cd -` takes you back to `src/app/components` in one step.\n--- check shell | You checked that you were home\nprinted-line /home/you\n--- check shell | You came back with cd -\nran cd -\ncwd src/app/components\n',we=`@track cpp
+@level advanced
+@title C++ · Advanced
+@name C++, advanced: ownership, templates and polymorphism
+@blurb Design types that manage their own resources and behave like built-ins: RAII, copy and move, smart pointers, templates, operators, interfaces, variants, compile-time code and error handling without exceptions.
+
+=== cpp3-01 | RAII: let destructors clean up
+--- teach
+The intermediate course had you *using* types that look after themselves: vectors, strings, maps, \`unique_ptr\`. This course is about *writing* them. You will build types that own resources, copy and move correctly, work for any element type and behave like built-ins, starting with the idea underneath all of them.
+
+Every resource a program takes — memory, a file, a lock, a network connection — has to be given back exactly once, on **every** path out of the code: the normal end, an early \`return\`, a \`break\` out of a loop. Doing that by hand is where leaks come from:
+
+\`\`\`cpp
+bool process(const std::string& name) {
+    open_file(name);
+    if (name.empty()) return false;   // oops: never closed
+    // ...
+    close_file(name);
+    return true;
+}
+\`\`\`
+
+C++'s answer is **RAII** — *Resource Acquisition Is Initialisation*. Tie the resource to an object: the **constructor** acquires it, the **destructor** (written \`~ClassName()\`, with no parameters and no return type) releases it. A local object's destructor runs automatically when it goes out of scope, however that happens, so cleanup can no longer be forgotten:
+
+\`\`\`cpp
+class Lock {
+public:
+    explicit Lock(Mutex& m) : m_(m) { m_.lock(); }
+    ~Lock() { m_.unlock(); }
+private:
+    Mutex& m_;
+};
+
+void work(Mutex& m) {
+    Lock guard(m);        // locked here
+    if (bad()) return;    // unlocked here
+}                         // ... and here
+\`\`\`
+
+Destructors run in **reverse order** of construction, so nested guards unwind like a stack.
+
+One more rule. A class that owns something usually must not be **copied** by accident — two copies would both release the same resource. Say so by deleting the copy operations:
+
+\`\`\`cpp
+Lock(const Lock&) = delete;
+Lock& operator=(const Lock&) = delete;
+\`\`\`
+
+You have already used RAII types all along: \`std::vector\` frees its memory, \`std::unique_ptr\` deletes its object, a file stream closes its file.
+--- task
+The starter has a global \`open_handles\` counter and \`open_file\` / \`close_file\` functions that change it.
+
+1. Make \`FileHandle\` an RAII type: its constructor calls \`open_file(name)\`, its destructor calls \`close_file(name)\`, \`name()\` returns the name, and it cannot be copied.
+2. Write \`class ValueGuard\` with a constructor \`ValueGuard(int& target, int temporary)\` that saves \`target\`'s current value and sets it to \`temporary\`, and a destructor that puts the saved value back. It cannot be copied either.
+
+No \`main\`.
+--- starter
+#include <string>
+#include <type_traits>
+
+int open_handles = 0;   // how many files are open right now
+void open_file(const std::string&) { ++open_handles; }
+void close_file(const std::string&) { --open_handles; }
+
+class FileHandle {
+public:
+    explicit FileHandle(const std::string& name) : name_(name) {}
+    const std::string& name() const { return name_; }
+private:
+    std::string name_;
+};
+--- solution
+#include <string>
+#include <type_traits>
+
+int open_handles = 0;   // how many files are open right now
+void open_file(const std::string&) { ++open_handles; }
+void close_file(const std::string&) { --open_handles; }
+
+class FileHandle {
+public:
+    explicit FileHandle(const std::string& name) : name_(name) { open_file(name_); }
+    ~FileHandle() { close_file(name_); }
+    FileHandle(const FileHandle&) = delete;
+    FileHandle& operator=(const FileHandle&) = delete;
+    const std::string& name() const { return name_; }
+private:
+    std::string name_;
+};
+
+class ValueGuard {
+public:
+    ValueGuard(int& target, int temporary) : target_(target), saved_(target) { target_ = temporary; }
+    ~ValueGuard() { target_ = saved_; }
+    ValueGuard(const ValueGuard&) = delete;
+    ValueGuard& operator=(const ValueGuard&) = delete;
+private:
+    int& target_;
+    int saved_;
+};
+--- hint
+The constructor body is the place to acquire (\`open_file(name_);\`); \`~FileHandle()\` releases.
+--- hint
+\`ValueGuard\` needs two members: a reference \`int& target_\` to the variable, and an \`int saved_\` holding its old value.
+--- hint
+Delete copying with \`ClassName(const ClassName&) = delete;\` and the same for \`operator=\`.
+--- check test | A handle is open while it lives, closed after
+[] { bool during; { FileHandle f("log.txt"); during = open_handles == 1 && f.name() == "log.txt"; } return during && open_handles == 0; }()
+--- check test | An early return still closes every handle
+[] { auto work = [] { FileHandle a("a"); FileHandle b("b"); if (open_handles == 2) return true; return false; }; bool ok = work(); return ok && open_handles == 0; }()
+--- check test | FileHandle cannot be copied
+!std::is_copy_constructible_v<FileHandle> && !std::is_copy_assignable_v<FileHandle>
+--- check test | ValueGuard sets and restores
+[] { int level = 1; bool inside; { ValueGuard g(level, 5); inside = level == 5; } return inside && level == 1; }()
+--- check test | Nested guards unwind in reverse order
+[] { int x = 0; bool ok = true; { ValueGuard a(x, 1); { ValueGuard b(x, 2); ok = ok && x == 2; } ok = ok && x == 1; } return ok && x == 0; }()
+
+=== cpp3-02 | Copying: the rule of three
+--- teach
+When you copy an object, C++ copies each member. For \`int\`s, \`std::string\`s and \`std::vector\`s that is exactly right. For a **raw pointer** it is a disaster: the copy gets the same address, so two objects now "own" one block of memory.
+
+\`\`\`cpp
+class Bad {
+public:
+    Bad() : data_(new int[3]()) {}
+    ~Bad() { delete[] data_; }
+private:
+    int* data_;
+};
+
+Bad a;
+Bad b = a;   // b.data_ == a.data_
+             // writing through b changes a; at the end both destructors
+             // delete the same block — a double free
+\`\`\`
+
+The basics told you never to write raw \`new\` and \`delete\`. This lesson and the next break that rule on purpose, to show what \`std::vector\` and \`std::unique_ptr\` do for you. \`new int[3]()\` allocates three \`int\`s (the \`()\` sets them to zero) and returns a pointer to the first one; \`delete[]\` gives an array back. \`std::copy(from_begin, from_end, to)\` copies a range, and plain pointers work as its iterators.
+
+The starter also has \`static inline int copies = 0;\`. A **static data member** belongs to the class rather than to each object: it is one counter shared by every \`Buffer\`, reached as \`Buffer::copies\`. The word \`inline\` lets you give it a value right there in the class.
+
+The **rule of three**: if a class needs a custom destructor, it almost certainly needs a custom **copy constructor** and **copy assignment operator** too, because all three deal with the same owned resource.
+
+\`\`\`cpp
+Bad(const Bad& other)                  // copy constructor: build a new object
+    : data_(new int[3]) {
+    std::copy(other.data_, other.data_ + 3, data_);
+}
+
+Bad& operator=(const Bad& other) {     // copy assignment: overwrite an existing one
+    if (this != &other) {              // a = a must not destroy a's own data
+        int* fresh = new int[3];
+        std::copy(other.data_, other.data_ + 3, fresh);
+        delete[] data_;
+        data_ = fresh;
+    }
+    return *this;
+}
+\`\`\`
+
+Assignment is the harder one: the object already owns something, which must be released, and self-assignment must be safe. Allocating the new block **before** freeing the old one keeps the object valid at every step.
+
+In real code you would use \`std::vector<int>\` and write none of this (lesson after next). Writing it once by hand is how you understand what those types do for you.
+--- task
+\`Buffer\` owns an \`int\` array and frees it in its destructor, but copies share the array. Give it a **deep** copy constructor and copy assignment operator. Both must add 1 to the static counter \`Buffer::copies\`, and assigning a buffer to itself must leave it unchanged. No \`main\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+
+class Buffer {
+public:
+    static inline int copies = 0;
+
+    explicit Buffer(std::size_t size) : size_(size), data_(new int[size]()) {}
+    ~Buffer() { delete[] data_; }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int value) { data_[i] = value; }
+
+private:
+    std::size_t size_;
+    int* data_;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+
+class Buffer {
+public:
+    static inline int copies = 0;
+
+    explicit Buffer(std::size_t size) : size_(size), data_(new int[size]()) {}
+    ~Buffer() { delete[] data_; }
+
+    Buffer(const Buffer& other) : size_(other.size_), data_(new int[other.size_]) {
+        std::copy(other.data_, other.data_ + size_, data_);
+        ++copies;
+    }
+
+    Buffer& operator=(const Buffer& other) {
+        if (this != &other) {
+            int* fresh = new int[other.size_];
+            std::copy(other.data_, other.data_ + other.size_, fresh);
+            delete[] data_;
+            data_ = fresh;
+            size_ = other.size_;
+            ++copies;
+        }
+        return *this;
+    }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int value) { data_[i] = value; }
+
+private:
+    std::size_t size_;
+    int* data_;
+};
+--- hint
+The copy constructor allocates its own \`new int[other.size_]\` and copies the values across with \`std::copy\`.
+--- hint
+In \`operator=\`, check \`this != &other\` first; allocate and fill the new array, then \`delete[]\` the old one, then update \`data_\` and \`size_\`. Return \`*this\`.
+--- check test | A copy has its own data
+[] { Buffer a(3); a.set(0, 7); Buffer b = a; b.set(0, 9); return a.get(0) == 7 && b.get(0) == 9 && b.size() == 3; }()
+--- check test | Assignment copies deeply, even between sizes
+[] { Buffer a(2); a.set(1, 4); Buffer b(5); b = a; a.set(1, 8); return b.size() == 2 && b.get(1) == 4; }()
+--- check test | Self-assignment is harmless
+[] { Buffer a(2); a.set(0, 3); Buffer& same = a; a = same; return a.size() == 2 && a.get(0) == 3; }()
+--- check test | Every copy is counted
+[] { Buffer::copies = 0; Buffer a(1); Buffer b = a; Buffer c(4); c = a; return Buffer::copies == 2; }()
+
+=== cpp3-03 | Moving, and the rule of zero
+--- teach
+Copying a big buffer means allocating and copying every element. But very often the source is about to die anyway — a temporary, or a local being returned. Then it is far cheaper to **steal** its memory: take the pointer, and leave the source empty. That is a **move**.
+
+\`\`\`cpp
+Buffer(Buffer&& other) noexcept               // move constructor
+    : size_(other.size_), data_(other.data_) {
+    other.size_ = 0;
+    other.data_ = nullptr;                    // the source must still be safe to destroy
+}
+\`\`\`
+
+\`Buffer&&\` is an **rvalue reference**: it binds to things that are about to go away. \`std::move(x)\` does not move anything by itself — it is a cast that says "you may treat \`x\` as expendable". After a move, \`x\` is valid but unspecified: you may assign to it or destroy it, nothing more.
+
+Adding the move constructor and move assignment to the three from last lesson gives the **rule of five**.
+
+Why \`noexcept\`? When a \`std::vector\` grows it must move its elements to new memory. It will only use your move constructor if it is marked \`noexcept\`; otherwise, to stay safe, it **copies** every element instead. Forgetting \`noexcept\` silently makes vectors of your type slow.
+
+And now the best news, the **rule of zero**: a class whose members already manage themselves — \`std::string\`, \`std::vector\`, \`std::unique_ptr\`, or a class like your finished \`Buffer\` — should declare **none** of the five. The compiler writes all of them correctly, member by member:
+
+\`\`\`cpp
+struct Track {
+    std::string title;
+    std::vector<int> samples;
+};   // copies, moves and cleans up correctly with no code at all
+\`\`\`
+
+So the rule of five is for the few low-level types that own a raw resource; everything built on top of them follows the rule of zero.
+--- task
+Give \`Buffer\` a move constructor and a move assignment operator, both \`noexcept\`. Each adds 1 to \`Buffer::moves\`, and leaves the source with size 0 and no data. Moving a buffer onto itself must leave it unchanged.
+
+Then write \`struct Album { std::string title; Buffer art; };\` with **no** special member functions of its own — the rule of zero. No \`main\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Buffer {
+public:
+    static inline int copies = 0;
+    static inline int moves = 0;
+
+    explicit Buffer(std::size_t size) : size_(size), data_(new int[size]()) {}
+    ~Buffer() { delete[] data_; }
+
+    Buffer(const Buffer& other) : size_(other.size_), data_(new int[other.size_]) {
+        std::copy(other.data_, other.data_ + size_, data_);
+        ++copies;
+    }
+
+    Buffer& operator=(const Buffer& other) {
+        if (this != &other) {
+            int* fresh = new int[other.size_];
+            std::copy(other.data_, other.data_ + other.size_, fresh);
+            delete[] data_;
+            data_ = fresh;
+            size_ = other.size_;
+            ++copies;
+        }
+        return *this;
+    }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int value) { data_[i] = value; }
+
+private:
+    std::size_t size_;
+    int* data_;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Buffer {
+public:
+    static inline int copies = 0;
+    static inline int moves = 0;
+
+    explicit Buffer(std::size_t size) : size_(size), data_(new int[size]()) {}
+    ~Buffer() { delete[] data_; }
+
+    Buffer(const Buffer& other) : size_(other.size_), data_(new int[other.size_]) {
+        std::copy(other.data_, other.data_ + size_, data_);
+        ++copies;
+    }
+
+    Buffer& operator=(const Buffer& other) {
+        if (this != &other) {
+            int* fresh = new int[other.size_];
+            std::copy(other.data_, other.data_ + other.size_, fresh);
+            delete[] data_;
+            data_ = fresh;
+            size_ = other.size_;
+            ++copies;
+        }
+        return *this;
+    }
+
+    Buffer(Buffer&& other) noexcept : size_(other.size_), data_(other.data_) {
+        other.size_ = 0;
+        other.data_ = nullptr;
+        ++moves;
+    }
+
+    Buffer& operator=(Buffer&& other) noexcept {
+        if (this != &other) {
+            delete[] data_;
+            data_ = other.data_;
+            size_ = other.size_;
+            other.data_ = nullptr;
+            other.size_ = 0;
+            ++moves;
+        }
+        return *this;
+    }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int value) { data_[i] = value; }
+
+private:
+    std::size_t size_;
+    int* data_;
+};
+
+struct Album {
+    std::string title;
+    Buffer art;
+};
+--- hint
+The move constructor takes \`Buffer&& other\`, copies the two members across, then sets \`other.data_ = nullptr; other.size_ = 0;\`.
+--- hint
+Move assignment frees its own array first (after the \`this != &other\` check), then steals.
+--- hint
+\`Album\` is just the two members — declare nothing else, and the compiler moves \`art\` with your move constructor.
+--- check test | Moving steals, the source is left empty
+[] { Buffer::copies = 0; Buffer::moves = 0; Buffer a(3); a.set(2, 5); Buffer b = std::move(a); return b.size() == 3 && b.get(2) == 5 && a.size() == 0 && Buffer::moves == 1 && Buffer::copies == 0; }()
+--- check test | Move assignment
+[] { Buffer::moves = 0; Buffer a(2); a.set(0, 1); Buffer b(9); b = std::move(a); return b.size() == 2 && b.get(0) == 1 && a.size() == 0 && Buffer::moves == 1; }()
+--- check test | Self-move leaves the buffer as it was
+[] { Buffer a(2); a.set(1, 6); Buffer& same = a; a = std::move(same); return a.size() == 2 && a.get(1) == 6; }()
+--- check test | A growing vector moves, never copies (noexcept)
+[] { Buffer::copies = 0; std::vector<Buffer> v; for (int i = 0; i < 20; ++i) v.push_back(Buffer(4)); return Buffer::copies == 0 && v.size() == 20; }()
+--- check test | Album follows the rule of zero
+[] { Buffer::copies = 0; Buffer::moves = 0; Album a{"Blue", Buffer(8)}; Album b = std::move(a); Album c = b; return b.art.size() == 8 && a.art.size() == 0 && Buffer::copies == 1 && Buffer::moves >= 1 && c.title == "Blue"; }()
+
+=== cpp3-04 | Smart pointers: unique_ptr and shared_ptr
+--- teach
+Writing the rule of five for every owning type would be tiring. Smart pointers are RAII for single heap objects, already written:
+
+**\`std::unique_ptr<T>\`** — exactly one owner. It cannot be copied, only moved, and deletes the object when it goes away. This is the default.
+
+\`\`\`cpp
+auto p = std::make_unique<Node>();    // p owns a Node
+std::unique_ptr<Node> q = std::move(p);   // ownership moves to q; p is now null
+\`\`\`
+
+Trees are the classic fit: each parent owns its children.
+
+\`\`\`cpp
+struct Node {
+    int value;
+    std::vector<std::unique_ptr<Node>> children;
+};
+\`\`\`
+
+Destroying the root destroys the whole tree, with no cleanup code.
+
+Walking a tree is naturally **recursive**: a function calls itself on each child, and nodes with no children end the recursion. The basics only mentioned recursion; here it earns its keep, because a tree's shape is itself recursive. \`*child\` turns a child's \`unique_ptr\` into the \`Node&\` it owns, and \`p->value\` reads a member through a pointer.
+
+**\`std::shared_ptr<T>\`** — shared ownership. It keeps a reference count; the object is deleted when the **last** \`shared_ptr\` to it goes away. \`use_count()\` tells you how many there are.
+
+\`\`\`cpp
+auto tex = std::make_shared<Texture>();
+auto a = tex;          // count 2
+auto b = tex;          // count 3
+\`\`\`
+
+Use it when there genuinely is no single owner — several sprites sharing one loaded texture. Two cautions. Shared ownership makes lifetimes hard to reason about, so do not reach for it by default. And two objects holding \`shared_ptr\`s to **each other** never reach a count of zero — a leak; break such cycles with \`std::weak_ptr\`, which watches without owning.
+
+Code that only *uses* an object takes a plain reference or raw pointer (\`const Node&\`, \`Node*\`) — ownership is the smart pointer's job, not every function's.
+--- task
+The starter declares \`Node\` and \`Texture\`. Write, with no \`main\`:
+
+- \`std::unique_ptr<Node> make_node(int value)\` — a new node with no children.
+- \`Node& add_child(Node& parent, int value)\` — appends a new child and returns a reference to it (so you can add grandchildren).
+- \`int tree_sum(const Node& root)\` — the sum of every value in the tree.
+- \`int tree_depth(const Node& root)\` — the number of nodes on the longest path from the root down (a lone node has depth 1).
+- \`std::vector<std::shared_ptr<Texture>> share_texture(const std::string& file, int n)\` — \`n\` pointers that all share **one** new \`Texture\` whose \`file\` is \`file\`.
+--- starter
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
+struct Node {
+    int value;
+    std::vector<std::unique_ptr<Node>> children;
+};
+
+struct Texture {
+    std::string file;
+};
+
+std::unique_ptr<Node> make_node(int value) {
+    return nullptr;
+}
+
+Node& add_child(Node& parent, int value) {
+    return parent;
+}
+
+int tree_sum(const Node& root) {
+    return root.value;
+}
+
+int tree_depth(const Node& root) {
+    return 1;
+}
+
+std::vector<std::shared_ptr<Texture>> share_texture(const std::string& file, int n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
+struct Node {
+    int value;
+    std::vector<std::unique_ptr<Node>> children;
+};
+
+struct Texture {
+    std::string file;
+};
+
+std::unique_ptr<Node> make_node(int value) {
+    auto node = std::make_unique<Node>();
+    node->value = value;
+    return node;
+}
+
+Node& add_child(Node& parent, int value) {
+    parent.children.push_back(make_node(value));
+    return *parent.children.back();
+}
+
+int tree_sum(const Node& root) {
+    int total = root.value;
+    for (const auto& child : root.children) total += tree_sum(*child);
+    return total;
+}
+
+int tree_depth(const Node& root) {
+    int deepest = 0;
+    for (const auto& child : root.children) deepest = std::max(deepest, tree_depth(*child));
+    return deepest + 1;
+}
+
+std::vector<std::shared_ptr<Texture>> share_texture(const std::string& file, int n) {
+    std::vector<std::shared_ptr<Texture>> out;
+    if (n <= 0) return out;
+    auto tex = std::make_shared<Texture>(Texture{file});
+    for (int i = 0; i < n; ++i) out.push_back(tex);
+    return out;
+}
+--- hint
+\`add_child\`: \`parent.children.push_back(make_node(value));\` then return \`*parent.children.back()\`.
+--- hint
+\`tree_sum\` and \`tree_depth\` are recursive: combine the answers for each child (\`*child\` turns the pointer into a \`Node&\`).
+--- hint
+Make **one** texture with \`std::make_shared\`, then push that same \`shared_ptr\` \`n\` times — copying it shares, it does not duplicate.
+--- check test | make_node makes a leaf
+[] { auto n = make_node(4); return n != nullptr && n->value == 4 && n->children.empty(); }()
+--- check test | Building a tree and summing it
+[] { auto root = make_node(1); Node& a = add_child(*root, 2); add_child(*root, 3); add_child(a, 10); return tree_sum(*root) == 16 && root->children.size() == 2; }()
+--- check test | Depth counts the longest path
+[] { auto root = make_node(0); Node& a = add_child(*root, 0); Node& b = add_child(a, 0); add_child(b, 0); add_child(*root, 0); return tree_depth(*root) == 4 && tree_depth(b) == 2; }()
+--- check test | A lone node has depth 1 and its own value as sum
+[] { auto n = make_node(-5); return tree_depth(*n) == 1 && tree_sum(*n) == -5; }()
+--- check test | One texture, shared three ways
+[] { auto v = share_texture("grass.png", 3); return v.size() == 3 && v[0].get() == v[2].get() && v[0].use_count() == 3 && v[1]->file == "grass.png"; }()
+--- check test | Sharing zero times makes nothing
+share_texture("x.png", 0).empty()
+
+=== cpp3-05 | Function templates
+--- teach
+Writing \`largest\` once for \`int\`, again for \`double\` and again for \`std::string\` is copy-paste. A **function template** writes it once for any type:
+
+\`\`\`cpp
+template <typename T>
+T largest(const std::vector<T>& v) {
+    T best = v[0];
+    for (const T& x : v) if (best < x) best = x;
+    return best;
+}
+
+largest(std::vector<int>{3, 8, 1});            // T is int
+largest(std::vector<std::string>{"b", "a"});   // T is std::string
+\`\`\`
+
+The compiler **deduces** \`T\` from the arguments and generates a real function for each type you use. The template only requires what its body does: here, that \`T\` can be copied and compared with \`<\`. Call it with a type that has no \`<\` and you get a compile error (C++20 *concepts* make those errors readable — that comes in the expert course).
+
+Deduction has one trap. Every place \`T\` appears must deduce the **same** type:
+
+\`\`\`cpp
+template <typename T>
+int count_equal(const std::vector<T>& v, const T& x);
+
+std::vector<std::string> names = {"ada", "lin"};
+count_equal(names, "ada");   // error: T is std::string from names,
+                             // but const char[4] from "ada"
+\`\`\`
+
+Two fixes: give the second parameter its own template parameter (\`template <typename T, typename U>\`), or tell the compiler not to deduce from it with \`std::type_identity_t<T>\` (from \`<type_traits>\`): \`const std::type_identity_t<T>& x\`. Then \`T\` comes only from the vector, and \`"ada"\` simply converts to \`std::string\`.
+
+You can also name the type explicitly: \`largest<double>(…)\`.
+--- task
+Write three function templates. No \`main\`.
+
+- \`T largest(const std::vector<T>& v)\` — the largest element (\`v\` is never empty).
+- \`count_equal(v, x)\` — how many elements of the vector equal \`x\`, returned as \`int\`. It must work for \`count_equal(names, "ada")\` where \`names\` is a \`std::vector<std::string>\`.
+- \`void clamp_all(std::vector<T>& v, const T& lo, const T& hi)\` — change every element below \`lo\` to \`lo\` and above \`hi\` to \`hi\`, in place.
+--- starter
+#include <string>
+#include <type_traits>
+#include <vector>
+
+int largest(const std::vector<int>& v) {
+    return v[0];
+}
+--- solution
+#include <string>
+#include <type_traits>
+#include <vector>
+
+template <typename T>
+T largest(const std::vector<T>& v) {
+    T best = v[0];
+    for (const T& x : v) {
+        if (best < x) best = x;
+    }
+    return best;
+}
+
+template <typename T>
+int count_equal(const std::vector<T>& v, const std::type_identity_t<T>& x) {
+    int n = 0;
+    for (const T& item : v) {
+        if (item == x) ++n;
+    }
+    return n;
+}
+
+template <typename T>
+void clamp_all(std::vector<T>& v, const T& lo, const T& hi) {
+    for (T& x : v) {
+        if (x < lo) x = lo;
+        else if (hi < x) x = hi;
+    }
+}
+--- hint
+Start each with \`template <typename T>\` and write \`T\` wherever the element type goes.
+--- hint
+For \`count_equal\`, make the second parameter \`const std::type_identity_t<T>& x\` so \`T\` is deduced from the vector only.
+--- hint
+\`clamp_all\` needs \`T&\` in its loop so the changes stick.
+--- check case | largest of ints
+largest(std::vector<int>{3, 8, -1, 8})
+=> 8
+--- check test | largest of doubles
+std::abs(largest(std::vector<double>{1.5, -2.0, 9.25}) - 9.25) < 1e-12
+--- check case | largest of strings
+largest(std::vector<std::string>{"pear", "apple", "zucchini", "fig"})
+=> "zucchini"
+--- check case | count_equal with a string literal
+[] { std::vector<std::string> names{"ada", "lin", "ada"}; return count_equal(names, "ada"); }()
+=> 2
+--- check case | count_equal with ints
+count_equal(std::vector<int>{1, 2, 1, 1}, 1)
+=> 3
+--- check test | clamp_all works in place
+[] { std::vector<int> v{-5, 3, 12, 10}; clamp_all(v, 0, 10); std::vector<double> d{0.5, 2.5}; clamp_all(d, 1.0, 2.0); return v == std::vector<int>{0, 3, 10, 10} && d == std::vector<double>{1.0, 2.0}; }()
+
+=== cpp3-06 | Class templates
+--- teach
+A **class template** is a blueprint for a family of classes. \`std::vector<T>\` is one; so is \`std::optional<T>\`. Writing your own looks like this:
+
+\`\`\`cpp
+template <typename T>
+class Box {
+public:
+    explicit Box(T value) : value_(std::move(value)) {}
+    const T& get() const { return value_; }
+private:
+    T value_;
+};
+
+Box<int> a(5);
+Box<std::string> b("hi");
+Box c(2.5);          // C++17: T deduced as double from the constructor
+\`\`\`
+
+Member functions written inside the class body need no extra syntax. Only the members you actually call are compiled for each \`T\`, so a \`Box<T>\` whose \`print()\` needs \`<<\` still works for a \`T\` without \`<<\`, as long as nobody calls \`print()\`.
+
+Template parameters can also be **values** known at compile time:
+
+\`\`\`cpp
+template <typename T, std::size_t N>
+class Recent { /* keeps at most N items */ };
+
+Recent<int, 3> last_three;
+\`\`\`
+
+\`N\` is part of the type: \`Recent<int, 3>\` and \`Recent<int, 4>\` are different classes. A \`static_assert(N > 0);\` inside the class turns a nonsense size into a clear compile error.
+
+For "take the top item" operations that can fail on an empty container, returning \`std::optional<T>\` is a clean design: the caller cannot forget that it might be empty. For "look at the top" without removing, returning a \`const T*\` (null when empty) avoids a copy.
+
+One more standard container helps with the task. \`std::deque<T>\` (from \`<deque>\`) is like a vector that is also cheap to change at the **front**: \`push_back\`, \`pop_front\`, \`front()\` and \`back()\`.
+--- task
+Write two class templates. No \`main\`.
+
+\`Stack<T>\`: \`void push(const T& x)\`, \`std::optional<T> pop()\` (removes and returns the top, or \`std::nullopt\` when empty), \`const T* top() const\` (the top item, or \`nullptr\` when empty), \`std::size_t size() const\`, \`bool empty() const\`.
+
+\`Recent<T, N>\`: keeps the last \`N\` items added. \`void add(const T& x)\` — when it already holds \`N\`, the oldest is dropped. \`std::vector<T> items() const\` — oldest first.
+--- starter
+#include <cstddef>
+#include <deque>
+#include <optional>
+#include <string>
+#include <vector>
+
+template <typename T>
+class Stack {
+public:
+    void push(const T& x) {}
+    std::optional<T> pop() { return std::nullopt; }
+    const T* top() const { return nullptr; }
+    std::size_t size() const { return 0; }
+    bool empty() const { return true; }
+};
+--- solution
+#include <cstddef>
+#include <deque>
+#include <optional>
+#include <string>
+#include <vector>
+
+template <typename T>
+class Stack {
+public:
+    void push(const T& x) { items_.push_back(x); }
+    std::optional<T> pop() {
+        if (items_.empty()) return std::nullopt;
+        T top = std::move(items_.back());
+        items_.pop_back();
+        return top;
+    }
+    const T* top() const { return items_.empty() ? nullptr : &items_.back(); }
+    std::size_t size() const { return items_.size(); }
+    bool empty() const { return items_.empty(); }
+private:
+    std::vector<T> items_;
+};
+
+template <typename T, std::size_t N>
+class Recent {
+    static_assert(N > 0, "Recent needs room for at least one item");
+public:
+    void add(const T& x) {
+        if (items_.size() == N) items_.pop_front();
+        items_.push_back(x);
+    }
+    std::vector<T> items() const { return std::vector<T>(items_.begin(), items_.end()); }
+private:
+    std::deque<T> items_;
+};
+--- hint
+Keep the stack's items in a \`std::vector<T>\` member: the back of the vector is the top.
+--- hint
+In \`pop\`, check for empty first, then move the back element out, \`pop_back()\`, and return it.
+--- hint
+\`Recent\` can hold a \`std::deque<T>\`: \`pop_front()\` drops the oldest when the size reaches \`N\`.
+--- check test | Push, top and pop, last in first out
+[] { Stack<int> s; s.push(1); s.push(2); bool top2 = s.top() && *s.top() == 2; auto a = s.pop(); auto b = s.pop(); return top2 && a == 2 && b == 1 && s.empty(); }()
+--- check test | An empty stack says so
+[] { Stack<std::string> s; return s.pop() == std::nullopt && s.top() == nullptr && s.size() == 0 && s.empty(); }()
+--- check test | Stack works with strings
+[] { Stack<std::string> s; s.push("a"); s.push("b"); s.push("c"); s.pop(); return s.size() == 2 && *s.top() == "b"; }()
+--- check case | Recent keeps the last three
+[] { Recent<int, 3> r; for (int i = 1; i <= 5; ++i) r.add(i); return r.items(); }()
+=> std::vector<int>{3, 4, 5}
+--- check case | Recent with fewer than N items
+[] { Recent<std::string, 4> r; r.add("x"); r.add("y"); return r.items(); }()
+=> std::vector<std::string>{"x", "y"}
+
+=== cpp3-07 | Operator overloading: a Fraction type
+--- teach
+Operator overloading lets your own types read like built-in ones: \`a + b\` instead of \`add(a, b)\`. An operator is just a function with a special name:
+
+\`\`\`cpp
+struct Vec2 { double x, y; };
+
+Vec2 operator+(const Vec2& a, const Vec2& b) { return {a.x + b.x, a.y + b.y}; }
+bool operator==(const Vec2& a, const Vec2& b) { return a.x == b.x && a.y == b.y; }
+
+std::ostream& operator<<(std::ostream& out, const Vec2& v) {
+    return out << "(" << v.x << ", " << v.y << ")";
+}
+\`\`\`
+
+Guidelines that keep operators pleasant:
+
+- **Mean what the symbol means.** \`+\` adds, \`==\` compares, \`<\` orders. An \`operator+\` that prints is a trap.
+- **Write binary operators as non-member functions.** Then conversions work on *both* sides. If \`Fraction\` has a non-\`explicit\` constructor from a whole number, \`1 + half\` works with a non-member \`operator+\`, but not with a member one (the left side of a member call is never converted).
+- **\`<<\` returns the stream** so calls chain: \`out << a << b\`.
+- **Keep an invariant** so \`==\` can be simple. For a fraction: always stored in lowest terms, with a positive denominator. Then 2/4 and 1/2 are stored identically, and equality is just comparing two numbers.
+
+\`std::gcd\` (in \`<numeric>\`) gives the greatest common divisor for reducing. To compare \`a/b < c/d\` with positive denominators, cross-multiply: \`a * d < c * b\` — no floating point, no rounding.
+
+C++20 can also generate all six comparisons from one \`operator<=>\`, but writing \`==\` and \`<\` yourself first is the best way to see what they mean.
+--- task
+Write \`class Fraction\`:
+
+- \`Fraction(long long num = 0, long long den = 1)\` — not \`explicit\`. Store it in lowest terms with a positive denominator (\`den\` is never 0). \`num()\` and \`den()\` return the parts.
+- Non-member \`+\`, \`-\`, \`*\` and \`/\` (dividing by a non-zero fraction), \`==\` and \`<\`.
+- \`operator<<\` printing \`num/den\`, or just \`num\` when the denominator is 1.
+
+No \`main\`.
+--- starter
+#include <numeric>
+#include <ostream>
+
+class Fraction {
+public:
+    Fraction(long long num = 0, long long den = 1) : num_(num), den_(den) {}
+    long long num() const { return num_; }
+    long long den() const { return den_; }
+private:
+    long long num_;
+    long long den_;
+};
+--- solution
+#include <numeric>
+#include <ostream>
+
+class Fraction {
+public:
+    Fraction(long long num = 0, long long den = 1) : num_(num), den_(den) {
+        if (den_ < 0) {
+            num_ = -num_;
+            den_ = -den_;
+        }
+        long long g = std::gcd(num_, den_);
+        if (g > 1) {
+            num_ /= g;
+            den_ /= g;
+        }
+    }
+    long long num() const { return num_; }
+    long long den() const { return den_; }
+private:
+    long long num_;
+    long long den_;
+};
+
+Fraction operator+(const Fraction& a, const Fraction& b) {
+    return Fraction(a.num() * b.den() + b.num() * a.den(), a.den() * b.den());
+}
+Fraction operator-(const Fraction& a, const Fraction& b) {
+    return Fraction(a.num() * b.den() - b.num() * a.den(), a.den() * b.den());
+}
+Fraction operator*(const Fraction& a, const Fraction& b) {
+    return Fraction(a.num() * b.num(), a.den() * b.den());
+}
+Fraction operator/(const Fraction& a, const Fraction& b) {
+    return Fraction(a.num() * b.den(), a.den() * b.num());
+}
+bool operator==(const Fraction& a, const Fraction& b) {
+    return a.num() == b.num() && a.den() == b.den();
+}
+bool operator<(const Fraction& a, const Fraction& b) {
+    return a.num() * b.den() < b.num() * a.den();
+}
+std::ostream& operator<<(std::ostream& out, const Fraction& f) {
+    out << f.num();
+    if (f.den() != 1) out << "/" << f.den();
+    return out;
+}
+--- hint
+Normalise in the constructor: flip both signs if \`den\` is negative, then divide both by \`std::gcd(num, den)\`.
+--- hint
+Each arithmetic operator builds a new \`Fraction\` from cross products and lets the constructor reduce it: \`a/b + c/d = (a*d + c*b) / (b*d)\`.
+--- hint
+Because every fraction is stored reduced, \`==\` just compares \`num()\` and \`den()\`.
+--- check test | Stored in lowest terms with a positive denominator
+Fraction(6, -4).num() == -3 && Fraction(6, -4).den() == 2 && Fraction(0, 5).den() == 1
+--- check case | 1/2 + 1/3 is 5/6
+Fraction(1, 2) + Fraction(1, 3)
+=> Fraction(5, 6)
+--- check case | Subtraction can go negative
+Fraction(1, 4) - Fraction(1, 2)
+=> Fraction(-1, 4)
+--- check case | Multiply and divide
+(Fraction(2, 3) * Fraction(3, 4)) / Fraction(1, 2)
+=> Fraction(1, 1)
+--- check test | A whole number on the left converts
+1 + Fraction(1, 2) == Fraction(3, 2)
+--- check test | Ordering by value, not by parts
+Fraction(1, 3) < Fraction(1, 2) && !(Fraction(1, 2) < Fraction(2, 4)) && Fraction(-1, 2) < Fraction(1, 100)
+--- check case | Printing, including whole numbers
+[] { std::ostringstream o; o << Fraction(6, -4) << " " << Fraction(8, 4) << " " << Fraction(0, 3); return o.str(); }()
+=> "-3/2 2 0"
+
+=== cpp3-08 | Virtual functions and interfaces
+--- teach
+Sometimes you want one piece of code to work with many kinds of thing: "add up the area of these shapes", whatever shapes they are. That is **runtime polymorphism**, and in C++ it takes three ingredients.
+
+**An interface**: a base class with **pure virtual** functions (\`= 0\`). It cannot be instantiated; it only states what every shape can do.
+
+\`\`\`cpp
+class Shape {
+public:
+    virtual ~Shape() = default;               // essential, see below
+    virtual double area() const = 0;
+    virtual std::string name() const = 0;
+};
+\`\`\`
+
+**Implementations** that derive from it and **\`override\`** each function:
+
+\`\`\`cpp
+class Circle : public Shape {
+public:
+    explicit Circle(double r) : r_(r) {}
+    double area() const override { return 3.141592653589793 * r_ * r_; }
+    std::string name() const override { return "circle"; }
+private:
+    double r_;
+};
+\`\`\`
+
+\`class Circle : public Shape\` means \`Circle\` **derives from** \`Shape\`: it is a kind of \`Shape\` and has everything a \`Shape\` has. A derived constructor can pass arguments to its base's constructor in the initialiser list, for example \`Square(double side) : Rectangle(side, side) {}\`.
+
+**Access through a pointer or reference** to the base. A call to a \`virtual\` function then runs the version for the object's *real* type:
+
+\`\`\`cpp
+std::vector<std::unique_ptr<Shape>> shapes;
+shapes.push_back(std::make_unique<Circle>(1.0));
+for (const auto& s : shapes) total += s->area();   // Circle::area
+\`\`\`
+
+Why each detail matters:
+
+- \`override\` makes the compiler check that you really are overriding something. Misspell the name or forget a \`const\` and it is an error instead of a silent new function that never gets called.
+- A **virtual destructor** in the base means deleting a \`Circle\` through a \`Shape*\` (which \`unique_ptr<Shape>\` does) runs \`Circle\`'s destructor too. Without it, that is undefined behaviour.
+- A derived class can derive further: a \`Square\` *is a* \`Rectangle\` with equal sides, and can reuse its constructor, overriding only \`name()\`.
+--- task
+Complete the shapes. No \`main\`.
+
+- \`Shape\` is the interface in the starter: make \`area()\`, \`perimeter()\` and \`name()\` pure virtual, and give it a virtual destructor.
+- \`Circle(double r)\` — name \`"circle"\`. Use \`3.141592653589793\` for π.
+- \`Rectangle(double w, double h)\` — name \`"rectangle"\`.
+- \`Square(double side)\` derives from \`Rectangle\` — name \`"square"\`.
+- \`double total_area(const std::vector<std::unique_ptr<Shape>>& shapes)\`.
+- \`std::string largest_name(const std::vector<std::unique_ptr<Shape>>& shapes)\` — the name of the shape with the largest area (the first one on a tie), or \`""\` if there are none.
+--- starter
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+class Shape {
+public:
+    double area() const { return 0; }
+    double perimeter() const { return 0; }
+    std::string name() const { return "shape"; }
+};
+--- solution
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;
+    virtual double perimeter() const = 0;
+    virtual std::string name() const = 0;
+};
+
+class Circle : public Shape {
+public:
+    explicit Circle(double r) : r_(r) {}
+    double area() const override { return kPi * r_ * r_; }
+    double perimeter() const override { return 2 * kPi * r_; }
+    std::string name() const override { return "circle"; }
+private:
+    static constexpr double kPi = 3.141592653589793;
+    double r_;
+};
+
+class Rectangle : public Shape {
+public:
+    Rectangle(double w, double h) : w_(w), h_(h) {}
+    double area() const override { return w_ * h_; }
+    double perimeter() const override { return 2 * (w_ + h_); }
+    std::string name() const override { return "rectangle"; }
+private:
+    double w_;
+    double h_;
+};
+
+class Square : public Rectangle {
+public:
+    explicit Square(double side) : Rectangle(side, side) {}
+    std::string name() const override { return "square"; }
+};
+
+double total_area(const std::vector<std::unique_ptr<Shape>>& shapes) {
+    double total = 0;
+    for (const auto& s : shapes) total += s->area();
+    return total;
+}
+
+std::string largest_name(const std::vector<std::unique_ptr<Shape>>& shapes) {
+    const Shape* best = nullptr;
+    for (const auto& s : shapes) {
+        if (!best || s->area() > best->area()) best = s.get();
+    }
+    return best ? best->name() : "";
+}
+--- hint
+Pure virtual: \`virtual double area() const = 0;\`. Add \`virtual ~Shape() = default;\`.
+--- hint
+Each derived class writes \`double area() const override { … }\` — the \`const\` must match the base exactly.
+--- hint
+\`Square(double side) : Rectangle(side, side) {}\` reuses the rectangle; it only needs its own \`name()\`.
+--- check test | Shape is an abstract interface with a virtual destructor
+std::is_abstract_v<Shape> && std::has_virtual_destructor_v<Shape>
+--- check test | Areas and perimeters
+[] { Circle c(1); Rectangle r(2, 3); Square s(4); return std::abs(c.area() - 3.141592653589793) < 1e-9 && std::abs(c.perimeter() - 6.283185307179586) < 1e-9 && r.area() == 6 && r.perimeter() == 10 && s.area() == 16 && s.perimeter() == 16; }()
+--- check test | Names through a base pointer
+[] { std::unique_ptr<Shape> s = std::make_unique<Square>(2); std::unique_ptr<Shape> r = std::make_unique<Rectangle>(1, 2); return s->name() == "square" && r->name() == "rectangle"; }()
+--- check test | total_area over a mixed collection
+[] { std::vector<std::unique_ptr<Shape>> v; v.push_back(std::make_unique<Rectangle>(2, 5)); v.push_back(std::make_unique<Square>(3)); v.push_back(std::make_unique<Circle>(1)); return std::abs(total_area(v) - (19 + 3.141592653589793)) < 1e-9; }()
+--- check test | largest_name picks the biggest, first on a tie
+[] { std::vector<std::unique_ptr<Shape>> v; v.push_back(std::make_unique<Rectangle>(2, 8)); v.push_back(std::make_unique<Square>(4)); v.push_back(std::make_unique<Circle>(1)); std::vector<std::unique_ptr<Shape>> none; return largest_name(v) == "rectangle" && largest_name(none) == ""; }()
+
+=== cpp3-09 | Debugging: object slicing
+--- teach
+Here is a bug that confuses people who come to C++ from Java, Python or C#: a \`Dog\` that suddenly forgets it is a dog.
+
+\`\`\`cpp
+Dog rex("Rex");
+Animal a = rex;        // copies only the Animal part of rex
+a.sound();             // "..." — Animal's version, not Dog's
+\`\`\`
+
+This is **object slicing**. A variable of type \`Animal\` has room for exactly an \`Animal\`. Copying a \`Dog\` into it keeps the \`Animal\` part and slices off the rest — including the "I am really a Dog" information that virtual calls rely on. No error, no warning: just the wrong function.
+
+Slicing hides in three places:
+
+- **By-value parameters:** \`void describe(Animal a)\` slices every \`Dog\` passed in.
+- **Containers of the base type:** \`std::vector<Animal>\` stores \`Animal\`s; \`push_back(Dog(...))\` slices.
+- **Assignments** like \`Animal a = rex;\`.
+
+Debugging it follows the usual method. Reproduce with one \`Dog\`. Check the assumption "this call is virtual, so it will use \`Dog\`'s version" — it is only true through a **pointer or reference**. Look for every place a derived object is converted to a base **value**.
+
+The fix is to keep polymorphic objects behind references and pointers: \`const Animal&\` parameters, and \`std::vector<std::unique_ptr<Animal>>\` for collections.
+
+To stop it happening again, a base class meant for polymorphism can forbid copying (\`Animal(const Animal&) = delete;\`) — then any accidental slice becomes a compile error.
+--- task
+**Bug report:** "\`describe(Dog("Rex"))\` returns \`"Rex says ..."\` instead of \`"Rex says woof"\`, and \`chorus()\` returns \`"..., ..., ..."\` instead of \`"woof, meow, ..."\`."
+
+Find where the dogs and cats lose their type and fix it. Keep the classes and the names and return types of \`describe\` and \`chorus\`. No \`main\`.
+--- starter
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Animal {
+public:
+    explicit Animal(std::string name) : name_(std::move(name)) {}
+    virtual ~Animal() = default;
+    virtual std::string sound() const { return "..."; }
+    const std::string& name() const { return name_; }
+private:
+    std::string name_;
+};
+
+class Dog : public Animal {
+public:
+    explicit Dog(std::string name) : Animal(std::move(name)) {}
+    std::string sound() const override { return "woof"; }
+};
+
+class Cat : public Animal {
+public:
+    explicit Cat(std::string name) : Animal(std::move(name)) {}
+    std::string sound() const override { return "meow"; }
+};
+
+std::string describe(Animal a) {
+    return a.name() + " says " + a.sound();
+}
+
+std::string chorus() {
+    std::vector<Animal> zoo;
+    zoo.push_back(Dog("Rex"));
+    zoo.push_back(Cat("Tom"));
+    zoo.push_back(Animal("Blob"));
+    std::string out;
+    for (const Animal& a : zoo) {
+        if (!out.empty()) out += ", ";
+        out += a.sound();
+    }
+    return out;
+}
+--- solution
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Animal {
+public:
+    explicit Animal(std::string name) : name_(std::move(name)) {}
+    virtual ~Animal() = default;
+    virtual std::string sound() const { return "..."; }
+    const std::string& name() const { return name_; }
+private:
+    std::string name_;
+};
+
+class Dog : public Animal {
+public:
+    explicit Dog(std::string name) : Animal(std::move(name)) {}
+    std::string sound() const override { return "woof"; }
+};
+
+class Cat : public Animal {
+public:
+    explicit Cat(std::string name) : Animal(std::move(name)) {}
+    std::string sound() const override { return "meow"; }
+};
+
+std::string describe(const Animal& a) {
+    return a.name() + " says " + a.sound();
+}
+
+std::string chorus() {
+    std::vector<std::unique_ptr<Animal>> zoo;
+    zoo.push_back(std::make_unique<Dog>("Rex"));
+    zoo.push_back(std::make_unique<Cat>("Tom"));
+    zoo.push_back(std::make_unique<Animal>("Blob"));
+    std::string out;
+    for (const auto& a : zoo) {
+        if (!out.empty()) out += ", ";
+        out += a->sound();
+    }
+    return out;
+}
+--- hint
+\`describe\` takes an \`Animal\` by value. What happens to a \`Dog\` when it is copied into an \`Animal\`?
+--- hint
+\`std::vector<Animal>\` can only hold \`Animal\`s. Store owning pointers instead: \`std::vector<std::unique_ptr<Animal>>\` and \`std::make_unique<Dog>("Rex")\`.
+--- check case | describe keeps the dog a dog
+describe(Dog("Rex"))
+=> "Rex says woof"
+--- check case | describe keeps the cat a cat
+describe(Cat("Tom"))
+=> "Tom says meow"
+--- check case | A plain animal still says ...
+describe(Animal("Blob"))
+=> "Blob says ..."
+--- check case | chorus has every voice
+chorus()
+=> "woof, meow, ..."
+
+=== cpp3-10 | std::function and callbacks
+--- teach
+A **callback** is code you hand to someone else to run later: "when a message arrives, call this". The receiver needs to store callables of many kinds — lambdas with different captures, plain functions, function objects — in one container. Each lambda has its own unique type, so you need a common type that can hold any of them.
+
+That is \`std::function<Signature>\` (from \`<functional>\`):
+
+\`\`\`cpp
+#include <functional>
+
+std::function<int(int, int)> op = [](int a, int b) { return a + b; };
+op(2, 3);                      // 5
+op = [](int a, int b) { return a * b; };
+op(2, 3);                      // 6
+
+std::function<void()> empty;
+if (!empty) { /* nothing stored: calling it would be an error */ }
+\`\`\`
+
+It is a small example of **type erasure**: whatever you put in, from the outside it is just "something callable with this signature". It costs a little — usually a heap allocation and an indirect call — so use a template parameter instead when the callable is only passed straight through, and \`std::function\` when you need to **store** callables.
+
+A typical design: an event bus mapping event names to lists of handlers.
+
+\`\`\`cpp
+std::map<std::string, std::vector<std::function<void(int)>>> handlers;
+\`\`\`
+
+Two warnings. A handler that captures a local **by reference** must not outlive that local. And returning a handle (an id) from \`subscribe\` is what lets callers unsubscribe later — a lambda cannot be compared with \`==\`, so you cannot find it again by value.
+
+Functions can also **return** callables: \`compose(f, g)\` returns a new function that runs \`g\`, then \`f\` on the result.
+--- task
+Write \`class EventBus\`, no \`main\`:
+
+- \`int subscribe(const std::string& event, std::function<void(int)> handler)\` — registers a handler and returns a new id (1, 2, 3, … in order).
+- \`bool unsubscribe(int id)\` — removes that handler; false if there was no such id.
+- \`int publish(const std::string& event, int value)\` — calls every handler for \`event\`, in the order they subscribed, passing \`value\`; returns how many were called.
+
+Also write \`std::function<int(int)> compose(std::function<int(int)> f, std::function<int(int)> g)\` returning a function that computes \`f(g(x))\`.
+--- starter
+#include <functional>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+class EventBus {
+public:
+    int subscribe(const std::string& event, std::function<void(int)> handler) { return 0; }
+    bool unsubscribe(int id) { return false; }
+    int publish(const std::string& event, int value) { return 0; }
+};
+
+std::function<int(int)> compose(std::function<int(int)> f, std::function<int(int)> g) {
+    return f;
+}
+--- solution
+#include <functional>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+class EventBus {
+public:
+    int subscribe(const std::string& event, std::function<void(int)> handler) {
+        int id = next_id_++;
+        subs_.push_back({id, event, std::move(handler)});
+        return id;
+    }
+
+    bool unsubscribe(int id) {
+        for (auto it = subs_.begin(); it != subs_.end(); ++it) {
+            if (it->id == id) {
+                subs_.erase(it);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int publish(const std::string& event, int value) {
+        int called = 0;
+        for (const auto& s : subs_) {
+            if (s.event == event) {
+                s.handler(value);
+                ++called;
+            }
+        }
+        return called;
+    }
+
+private:
+    struct Subscription {
+        int id;
+        std::string event;
+        std::function<void(int)> handler;
+    };
+    std::vector<Subscription> subs_;
+    int next_id_ = 1;
+};
+
+std::function<int(int)> compose(std::function<int(int)> f, std::function<int(int)> g) {
+    return [f = std::move(f), g = std::move(g)](int x) { return f(g(x)); };
+}
+--- hint
+Store each subscription as a small struct \`{ id, event, handler }\` in a vector — the vector keeps subscription order for free.
+--- hint
+\`publish\` walks the vector and calls \`s.handler(value)\` for each matching event.
+--- hint
+\`compose\` returns a lambda that captures \`f\` and \`g\` **by value** — they must outlive the call to \`compose\`.
+--- check test | Handlers run in order with the value
+[] { EventBus bus; std::vector<int> log; bus.subscribe("tick", [&log](int v) { log.push_back(v); }); bus.subscribe("tick", [&log](int v) { log.push_back(v * 10); }); int n = bus.publish("tick", 3); return n == 2 && log == std::vector<int>{3, 30}; }()
+--- check test | Only the named event's handlers run
+[] { EventBus bus; int a = 0, b = 0; bus.subscribe("a", [&a](int v) { a += v; }); bus.subscribe("b", [&b](int v) { b += v; }); bus.publish("a", 5); return a == 5 && b == 0 && bus.publish("nobody", 1) == 0; }()
+--- check test | Ids count up and unsubscribe removes one handler
+[] { EventBus bus; int hits = 0; int id1 = bus.subscribe("x", [&hits](int) { hits += 1; }); int id2 = bus.subscribe("x", [&hits](int) { hits += 100; }); bool gone = bus.unsubscribe(id1); bus.publish("x", 0); return id1 == 1 && id2 == 2 && gone && hits == 100 && !bus.unsubscribe(id1) && !bus.unsubscribe(42); }()
+--- check test | compose runs g, then f
+[] { auto add1 = [](int x) { return x + 1; }; auto twice = [](int x) { return x * 2; }; auto h = compose(add1, twice); auto k = compose(twice, add1); return h(5) == 11 && k(5) == 12; }()
+
+=== cpp3-11 | std::variant and std::visit
+--- teach
+\`std::optional<T>\` is "a T or nothing". \`std::variant<A, B, C>\` is "**exactly one** of A, B or C" — a type-safe union that remembers which one it holds.
+
+\`\`\`cpp
+#include <variant>
+
+using Value = std::variant<int, double, std::string>;
+
+Value v = 42;          // holds an int
+v = "hello";           // now holds a std::string
+
+v.index();                          // 2: the position of the held type
+std::holds_alternative<int>(v);     // false
+std::get_if<std::string>(&v);       // pointer to the string, or nullptr
+\`\`\`
+
+\`using Value = …;\` gives a type a shorter name, so \`Value\` now means that whole variant.
+
+(\`std::get<T>(v)\` also exists, but with exceptions switched off a wrong guess ends the program — prefer \`get_if\` or \`holds_alternative\`.)
+
+The real power is **\`std::visit\`**: call a function with whatever the variant holds, and have the compiler check you handled every case. A common idiom builds the visitor from several lambdas:
+
+\`\`\`cpp
+template <class... Fs> struct overloaded : Fs... { using Fs::operator()...; };
+
+std::string describe(const Value& v) {
+    return std::visit(overloaded{
+        [](int i)                { return "int " + std::to_string(i); },
+        [](double d)             { return std::string("a double"); },
+        [](const std::string& s) { return "text " + s; },
+    }, v);
+}
+\`\`\`
+
+For now, treat \`overloaded\` as a recipe to copy: it bundles several lambdas into one object that has all of their call operators. How its \`class... Fs\` works (variadic templates) is covered in the expert course.
+
+Leave out a case and it does not compile. That makes a variant the right tool for a **closed** set of alternatives that you know up front — tokens in a parser, the kinds of value in a spreadsheet cell. (Virtual functions suit the opposite: an **open** set of types that others will add later.)
+
+\`std::visit\` can also take two variants at once; the visitor then gets both values, which is handy for "combine two values of mixed kinds".
+
+Instead of one lambda per type, you can write a single **generic lambda**, \`[](const auto& x) { … }\`, which the compiler stamps out once for each type. Inside it you can ask what \`x\` really is:
+
+- \`std::decay_t<decltype(x)>\` is its plain type. \`decltype\` gives the declared type, and \`decay_t\` strips the \`const\` and \`&\`.
+- \`std::is_same_v<A, B>\` (from \`<type_traits>\`) is true when two types match.
+- **\`if constexpr (…)\`** keeps only the branch that applies to this type; the other branches are not even compiled.
+
+Writing \`-> std::optional<Value>\` after the parameters states the lambda's return type, for when its branches would otherwise return different types.
+--- task
+With \`using Value = std::variant<int, double, std::string>;\`, write — no \`main\`:
+
+- \`std::string type_name(const Value& v)\` — \`"int"\`, \`"double"\` or \`"string"\`.
+- \`std::string to_text(const Value& v)\` — ints as digits, doubles as a default-formatted \`std::ostringstream\` prints them (\`2.5\`), strings in double quotes (\`"hi"\` becomes \`"\\"hi\\""\`).
+- \`std::optional<Value> add(const Value& a, const Value& b)\` — int + int is an int; any other mix of int and double is a double; string + string joins them; a string with a number is \`std::nullopt\`.
+--- starter
+#include <optional>
+#include <sstream>
+#include <string>
+#include <variant>
+
+using Value = std::variant<int, double, std::string>;
+
+std::string type_name(const Value& v) {
+    return "";
+}
+
+std::string to_text(const Value& v) {
+    return "";
+}
+
+std::optional<Value> add(const Value& a, const Value& b) {
+    return std::nullopt;
+}
+--- solution
+#include <optional>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <variant>
+
+using Value = std::variant<int, double, std::string>;
+
+template <class... Fs> struct overloaded : Fs... { using Fs::operator()...; };
+
+std::string type_name(const Value& v) {
+    return std::visit(overloaded{
+        [](int) { return std::string("int"); },
+        [](double) { return std::string("double"); },
+        [](const std::string&) { return std::string("string"); },
+    }, v);
+}
+
+std::string to_text(const Value& v) {
+    return std::visit(overloaded{
+        [](int i) { return std::to_string(i); },
+        [](double d) {
+            std::ostringstream out;
+            out << d;
+            return out.str();
+        },
+        [](const std::string& s) { return "\\"" + s + "\\""; },
+    }, v);
+}
+
+std::optional<Value> add(const Value& a, const Value& b) {
+    return std::visit([](const auto& x, const auto& y) -> std::optional<Value> {
+        using X = std::decay_t<decltype(x)>;
+        using Y = std::decay_t<decltype(y)>;
+        constexpr bool xs = std::is_same_v<X, std::string>;
+        constexpr bool ys = std::is_same_v<Y, std::string>;
+        if constexpr (xs && ys) {
+            return Value(x + y);
+        } else if constexpr (xs || ys) {
+            return std::nullopt;
+        } else if constexpr (std::is_same_v<X, int> && std::is_same_v<Y, int>) {
+            return Value(x + y);
+        } else {
+            return Value(static_cast<double>(x) + static_cast<double>(y));
+        }
+    }, a, b);
+}
+--- hint
+\`type_name\` and \`to_text\` are one \`std::visit\` each with three lambdas (use the \`overloaded\` helper from the lesson).
+--- hint
+For \`add\`, \`std::visit\` can take both values: \`std::visit([](const auto& x, const auto& y) -> std::optional<Value> { … }, a, b)\`.
+--- hint
+Inside that generic lambda, \`std::is_same_v<std::decay_t<decltype(x)>, std::string>\` tells you what \`x\` is, and \`if constexpr\` picks a branch at compile time.
+--- check test | type_name
+type_name(Value(3)) == "int" && type_name(Value(2.5)) == "double" && type_name(Value(std::string("a"))) == "string"
+--- check test | to_text formats each kind
+to_text(Value(42)) == "42" && to_text(Value(2.5)) == "2.5" && to_text(Value(std::string("hi"))) == "\\"hi\\""
+--- check test | int + int stays an int
+[] { auto r = add(Value(2), Value(3)); return r && std::holds_alternative<int>(*r) && *std::get_if<int>(&*r) == 5; }()
+--- check test | int + double becomes a double
+[] { auto r = add(Value(1), Value(0.5)); auto s = add(Value(0.25), Value(2)); return r && std::holds_alternative<double>(*r) && *std::get_if<double>(&*r) == 1.5 && s && *std::get_if<double>(&*s) == 2.25; }()
+--- check test | Strings join
+[] { auto r = add(Value(std::string("ab")), Value(std::string("cd"))); return r && std::holds_alternative<std::string>(*r) && *std::get_if<std::string>(&*r) == "abcd"; }()
+--- check test | A string and a number do not add
+!add(Value(std::string("a")), Value(1)).has_value() && !add(Value(2.0), Value(std::string("b"))).has_value()
+
+=== cpp3-12 | constexpr: work done by the compiler
+--- teach
+A \`constexpr\` function **can** run at compile time. When it is called where a constant is required — the size of a \`std::array\`, a \`static_assert\`, a \`constexpr\` variable — the compiler evaluates it while compiling, and the program just contains the answer.
+
+\`\`\`cpp
+constexpr int square(int x) { return x * x; }
+
+constexpr int nine = square(3);        // computed by the compiler
+std::array<int, square(4)> grid{};     // an array of 16
+static_assert(square(5) == 25);        // checked at compile time: a wrong answer
+                                       // is a compile error, not a runtime bug
+int n = read_number();
+int m = square(n);                     // the same function, now at run time
+\`\`\`
+
+\`std::array<T, N>\` (from \`<array>\`) is a fixed-size array whose size \`N\` is part of its type, so \`N\` must be a compile-time constant.
+
+Modern \`constexpr\` functions can contain loops, \`if\`, local variables and even \`std::array\` — most ordinary code. What they cannot do includes: I/O, \`static\` locals, and anything with undefined behaviour (which the compiler **rejects** during constant evaluation — a nice bonus: overflow inside \`static_assert\` is a compile error instead of garbage).
+
+Why bother?
+
+- **Speed**: the work is done once, when you build, not every time the program runs.
+- **Safety**: \`static_assert\` turns facts about your code into checks that run on every build.
+- **Types need constants**: array sizes and template arguments must be known at compile time.
+
+\`consteval\` goes further: the function *must* run at compile time. \`constexpr\` is the flexible default.
+
+A useful shape for compile-time maths is iteration rather than deep recursion — for example Fibonacci with two running values, not the exponential recursive version.
+--- task
+The starter's three functions are correct, but they only run at run time, so the checks — which use them in \`static_assert\`s, \`constexpr\` variables and an array size — do not compile. Make them usable at compile time, keeping their results. No \`main\`.
+
+- \`long long fib(int n)\` — \`fib(0) = 0\`, \`fib(1) = 1\`, each next is the sum of the two before.
+- \`bool is_prime(int n)\` — false for anything below 2.
+- \`int count_primes_below(int n)\` — how many primes are less than \`n\`.
+--- starter
+#include <array>
+
+long long fib(int n) {
+    long long a = 0, b = 1;
+    for (int i = 0; i < n; ++i) {
+        long long next = a + b;
+        a = b;
+        b = next;
+    }
+    return a;
+}
+
+bool is_prime(int n) {
+    if (n < 2) return false;
+    for (int d = 2; d * d <= n; ++d) {
+        if (n % d == 0) return false;
+    }
+    return true;
+}
+
+int count_primes_below(int n) {
+    int count = 0;
+    for (int k = 2; k < n; ++k) {
+        if (is_prime(k)) ++count;
+    }
+    return count;
+}
+--- solution
+#include <array>
+
+constexpr long long fib(int n) {
+    long long a = 0, b = 1;
+    for (int i = 0; i < n; ++i) {
+        long long next = a + b;
+        a = b;
+        b = next;
+    }
+    return a;
+}
+
+constexpr bool is_prime(int n) {
+    if (n < 2) return false;
+    for (int d = 2; d * d <= n; ++d) {
+        if (n % d == 0) return false;
+    }
+    return true;
+}
+
+constexpr int count_primes_below(int n) {
+    int count = 0;
+    for (int k = 2; k < n; ++k) {
+        if (is_prime(k)) ++count;
+    }
+    return count;
+}
+--- hint
+It is one word in front of each function.
+--- hint
+\`count_primes_below\` calls \`is_prime\`, so \`is_prime\` must be \`constexpr\` too for the compile-time call to work.
+--- check test | fib(50) as a compile-time constant
+[] { constexpr long long f = fib(50); return f == 12586269025LL; }()
+--- check test | fib at the edges
+[] { static_assert(fib(0) == 0); static_assert(fib(1) == 1); static_assert(fib(2) == 1); return fib(10) == 55; }()
+--- check test | is_prime checked by static_assert
+[] { static_assert(is_prime(2) && is_prime(97) && !is_prime(1) && !is_prime(91) && !is_prime(-7)); return is_prime(7919); }()
+--- check test | count_primes_below sizes an array
+[] { std::array<int, count_primes_below(30)> a{}; return a.size() == 10 && count_primes_below(2) == 0; }()
+
+=== cpp3-13 | Errors without exceptions
+--- teach
+Many C++ codebases — games, embedded systems, this checker — are built with exceptions **switched off**. Errors then travel in the return value, and the type system makes sure the caller deals with them.
+
+Three shapes, from simplest to richest:
+
+1. **\`bool\` or an error code** — fine for "it worked or it did not" when the caller cannot do anything smarter anyway.
+2. **\`std::optional<T>\`** — a value or nothing. Right when there is only one way to fail ("not found"), or the reason does not matter.
+3. **A result type: \`std::variant<T, Error>\`** — a value *or* an explanation. Right when the caller needs to know *what* went wrong: which line, which field, what message.
+
+\`\`\`cpp
+struct ParseError {
+    int line;
+    std::string message;
+};
+
+std::variant<Settings, ParseError> load(const std::string& text);
+
+auto result = load(text);
+if (auto* err = std::get_if<ParseError>(&result)) {
+    std::cout << "line " << err->line << ": " << err->message << "\\n";
+} else {
+    const Settings& s = std::get<Settings>(result);
+    // ...
+}
+\`\`\`
+
+Habits that make this style work:
+
+- **Return early on the first error**, with as much context as you have (line numbers are gold).
+- **Validate everything once, at the boundary**, so the rest of the program can trust a \`Settings\` it receives.
+- **Mark such functions \`[[nodiscard]]\`** so ignoring the result is a warning.
+- **Separate parsing from using.** A function that returns a result does not print or exit; its caller decides.
+--- task
+Write \`std::variant<Config, ConfigError> parse_config(const std::string& text)\` using the types in the starter. The text has one setting per line, \`key = value\`, with any spaces around key and value (use the starter's \`trim\`). Blank lines and lines starting with \`#\` are skipped. Lines are numbered from 1.
+
+- \`host\` — any non-empty value. Required.
+- \`port\` — a whole number from 1 to 65535. Defaults to 80.
+- \`verbose\` — \`true\` or \`false\`. Defaults to false.
+
+The **first** problem found is returned as a \`ConfigError\`: a line with no \`=\` → \`"expected key = value"\`; an unknown key → \`"unknown key: <key>"\`; a bad port → \`"bad port"\`; a bad verbose value → \`"bad verbose"\`; an empty host → \`"empty host"\`. If every line is fine but no host was given, return line \`0\` with \`"missing host"\`. No \`main\`.
+--- starter
+#include <cctype>
+#include <sstream>
+#include <string>
+#include <variant>
+
+struct Config {
+    std::string host;
+    int port = 80;
+    bool verbose = false;
+};
+
+struct ConfigError {
+    int line;
+    std::string message;
+};
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0, b = s.size();
+    while (a < b && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+    while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+    return s.substr(a, b - a);
+}
+
+[[nodiscard]] std::variant<Config, ConfigError> parse_config(const std::string& text) {
+    return ConfigError{0, "not written yet"};
+}
+--- solution
+#include <cctype>
+#include <sstream>
+#include <string>
+#include <variant>
+
+struct Config {
+    std::string host;
+    int port = 80;
+    bool verbose = false;
+};
+
+struct ConfigError {
+    int line;
+    std::string message;
+};
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0, b = s.size();
+    while (a < b && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+    while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+    return s.substr(a, b - a);
+}
+
+bool parse_port(const std::string& s, int& out) {
+    if (s.empty() || s.size() > 5) return false;
+    int n = 0;
+    for (char c : s) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) return false;
+        n = n * 10 + (c - '0');
+    }
+    if (n < 1 || n > 65535) return false;
+    out = n;
+    return true;
+}
+
+[[nodiscard]] std::variant<Config, ConfigError> parse_config(const std::string& text) {
+    Config config;
+    bool have_host = false;
+    std::istringstream in(text);
+    std::string raw;
+    int line = 0;
+    while (std::getline(in, raw)) {
+        ++line;
+        std::string l = trim(raw);
+        if (l.empty() || l[0] == '#') continue;
+        std::size_t eq = l.find('=');
+        if (eq == std::string::npos) return ConfigError{line, "expected key = value"};
+        std::string key = trim(l.substr(0, eq));
+        std::string value = trim(l.substr(eq + 1));
+        if (key == "host") {
+            if (value.empty()) return ConfigError{line, "empty host"};
+            config.host = value;
+            have_host = true;
+        } else if (key == "port") {
+            if (!parse_port(value, config.port)) return ConfigError{line, "bad port"};
+        } else if (key == "verbose") {
+            if (value == "true") config.verbose = true;
+            else if (value == "false") config.verbose = false;
+            else return ConfigError{line, "bad verbose"};
+        } else {
+            return ConfigError{line, "unknown key: " + key};
+        }
+    }
+    if (!have_host) return ConfigError{0, "missing host"};
+    return config;
+}
+--- hint
+Read line by line with \`std::getline\`, counting lines as you go. Trim, skip blanks and \`#\` comments, then split at the first \`=\`.
+--- hint
+Return a \`ConfigError{line, "…"}\` the moment something is wrong; the \`std::variant\` return type converts it for you.
+--- hint
+Parse the port by hand: only digits, at most five of them, and then check the range 1–65535.
+--- check test | A full, valid config
+[] { auto r = parse_config("# server\\nhost = example.org\\nport=8080\\n\\nverbose = true\\n"); auto* c = std::get_if<Config>(&r); return c && c->host == "example.org" && c->port == 8080 && c->verbose; }()
+--- check test | Defaults apply
+[] { auto r = parse_config("host=localhost"); auto* c = std::get_if<Config>(&r); return c && c->port == 80 && !c->verbose; }()
+--- check test | A line with no = names its line
+[] { auto r = parse_config("host = a\\nport 80\\n"); auto* e = std::get_if<ConfigError>(&r); return e && e->line == 2 && e->message == "expected key = value"; }()
+--- check test | Unknown keys are reported by name
+[] { auto r = parse_config("\\n\\ncolour = red\\nhost = a\\n"); auto* e = std::get_if<ConfigError>(&r); return e && e->line == 3 && e->message == "unknown key: colour"; }()
+--- check test | Bad ports: zero, too big, not a number
+[] { auto a = parse_config("host=a\\nport=0"); auto b = parse_config("host=a\\nport=70000"); auto c = parse_config("port=8o\\nhost=a"); auto* ea = std::get_if<ConfigError>(&a); auto* eb = std::get_if<ConfigError>(&b); auto* ec = std::get_if<ConfigError>(&c); return ea && ea->message == "bad port" && eb && eb->line == 2 && ec && ec->line == 1 && ec->message == "bad port"; }()
+--- check test | Bad verbose and empty host
+[] { auto a = parse_config("host=a\\nverbose=yes"); auto b = parse_config("host =   "); auto* ea = std::get_if<ConfigError>(&a); auto* eb = std::get_if<ConfigError>(&b); return ea && ea->message == "bad verbose" && eb && eb->line == 1 && eb->message == "empty host"; }()
+--- check test | No host at all
+[] { auto r = parse_config("port = 22\\n# no host\\n"); auto* e = std::get_if<ConfigError>(&r); return e && e->line == 0 && e->message == "missing host"; }()
+
+=== cpp3-14 | Custom comparators and sorting
+--- teach
+\`std::sort\` orders with \`<\` unless you give it a **comparator**: a function \`comp(a, b)\` that returns true when \`a\` must come **before** \`b\`.
+
+Sorting by several keys is where people get tangled. The clean way is to compare **tuples** — \`std::tie\` builds a tuple of references, and tuples compare left to right, like words in a dictionary:
+
+\`\`\`cpp
+std::sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+    return std::tie(a.last, a.first) < std::tie(b.last, b.first);
+});
+\`\`\`
+
+To sort one key **descending**, swap \`a\` and \`b\` for that key only: \`std::tie(a.dept, b.salary, a.name) < std::tie(b.dept, a.salary, b.name)\` means dept ascending, salary descending, name ascending.
+
+A comparator must be a **strict weak ordering**, which in practice means: it behaves like \`<\`, never like \`<=\`. \`comp(x, x)\` must be false. Break that rule — say with \`a.salary <= b.salary\` — and \`std::sort\` has undefined behaviour: wrong orders, or reading outside the vector.
+
+Related tools:
+
+- **\`std::stable_sort\`** keeps equal elements in their original order. Sort by length with it and words of the same length stay in input order.
+- **\`std::partial_sort\`** puts only the first \`k\` in order — cheaper when you want a top 10 out of a million.
+- **Containers take comparators too**: \`std::set<std::string, ByLength>\` orders by your rule — and treats two strings of equal length as the *same* key, because "neither comes before the other" means equal. Choose comparators for containers with care.
+--- task
+With the starter's \`Employee\`, write — no \`main\`:
+
+- \`void sort_staff(std::vector<Employee>& staff)\` — by \`dept\` A→Z, then \`salary\` highest first, then \`name\` A→Z.
+- \`std::vector<std::string> top_earners(std::vector<Employee> staff, std::size_t k)\` — the names of the \`k\` highest-paid (ties by name A→Z), highest first; all of them if \`k\` is larger than the list.
+- \`std::vector<std::string> by_length(std::vector<std::string> words)\` — shortest first; words of equal length keep their original order.
+--- starter
+#include <algorithm>
+#include <string>
+#include <tuple>
+#include <vector>
+
+struct Employee {
+    std::string name;
+    std::string dept;
+    int salary;
+};
+
+void sort_staff(std::vector<Employee>& staff) {
+}
+
+std::vector<std::string> top_earners(std::vector<Employee> staff, std::size_t k) {
+    return {};
+}
+
+std::vector<std::string> by_length(std::vector<std::string> words) {
+    std::sort(words.begin(), words.end(), [](const std::string& a, const std::string& b) {
+        return a.size() <= b.size();
+    });
+    return words;
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <tuple>
+#include <vector>
+
+struct Employee {
+    std::string name;
+    std::string dept;
+    int salary;
+};
+
+void sort_staff(std::vector<Employee>& staff) {
+    std::sort(staff.begin(), staff.end(), [](const Employee& a, const Employee& b) {
+        return std::tie(a.dept, b.salary, a.name) < std::tie(b.dept, a.salary, b.name);
+    });
+}
+
+std::vector<std::string> top_earners(std::vector<Employee> staff, std::size_t k) {
+    k = std::min(k, staff.size());
+    std::partial_sort(staff.begin(), staff.begin() + k, staff.end(), [](const Employee& a, const Employee& b) {
+        return std::tie(b.salary, a.name) < std::tie(a.salary, b.name);
+    });
+    std::vector<std::string> names;
+    for (std::size_t i = 0; i < k; ++i) names.push_back(staff[i].name);
+    return names;
+}
+
+std::vector<std::string> by_length(std::vector<std::string> words) {
+    std::stable_sort(words.begin(), words.end(), [](const std::string& a, const std::string& b) {
+        return a.size() < b.size();
+    });
+    return words;
+}
+--- hint
+\`std::tie(a.dept, b.salary, a.name) < std::tie(b.dept, a.salary, b.name)\` — the swapped middle key sorts salary descending.
+--- hint
+For \`top_earners\`, clamp \`k\` to the size, then \`std::partial_sort(begin, begin + k, end, comp)\` and take the first \`k\` names.
+--- hint
+\`by_length\` has two problems: \`<=\` is not a valid comparator, and plain \`std::sort\` does not keep equal elements in order.
+--- check test | sort_staff orders by dept, salary down, name
+[] { std::vector<Employee> s{{"cy", "ops", 50}, {"al", "dev", 70}, {"bo", "dev", 90}, {"ab", "dev", 70}, {"di", "ops", 60}}; sort_staff(s); std::vector<std::string> names; for (const auto& e : s) names.push_back(e.name); return names == std::vector<std::string>{"bo", "ab", "al", "di", "cy"}; }()
+--- check case | top_earners, ties by name
+top_earners({{"cy", "ops", 50}, {"al", "dev", 70}, {"bo", "dev", 90}, {"ab", "dev", 70}}, 3)
+=> std::vector<std::string>{"bo", "ab", "al"}
+--- check case | top_earners with k past the end
+top_earners({{"x", "a", 1}, {"y", "a", 2}}, 10)
+=> std::vector<std::string>{"y", "x"}
+--- check case | by_length is stable
+by_length({"pear", "fig", "kiwi", "apple", "yam", "plum"})
+=> std::vector<std::string>{"fig", "yam", "pear", "kiwi", "plum", "apple"}
+
+=== cpp3-15 | Problem solving: binary search on the answer
+--- teach
+Binary search finds things in **sorted** data in O(log n): look at the middle, throw away the half that cannot contain the answer, repeat. A million items take about 20 steps.
+
+The standard library has it ready:
+
+\`\`\`cpp
+std::vector<int> v = {1, 3, 3, 3, 8};
+std::lower_bound(v.begin(), v.end(), 3);   // first element >= 3  (index 1)
+std::upper_bound(v.begin(), v.end(), 3);   // first element >  3  (index 4)
+// how many 3s: upper - lower = 3
+\`\`\`
+
+The bigger idea is **binary search on the answer**. Many problems ask for "the smallest X that works", where checking whether a given X works is easy, and the answers have a shape: every X below some point fails, every X from there on works.
+
+Example: packages must ship **in order** within D days; each day's load cannot exceed the ship's capacity. What is the smallest capacity that makes it?
+
+- Checking a capacity is easy: fill each day greedily until the next package would not fit, and count the days. O(n).
+- A capacity below the heaviest package never works; the sum of all packages always works in one day.
+- If capacity C works, C + 1 works too. So "works?" goes fail, fail, …, fail, **work**, work, work.
+
+Brute force tries every capacity from the heaviest up: with 200,000 packages of 10,000 kg that can be a billion capacities × 200,000 packages. Binary search over \`[heaviest, total]\` needs about 31 checks.
+
+\`\`\`
+lo = heaviest, hi = total
+while lo < hi:
+    mid = lo + (hi - lo) / 2
+    if works(mid): hi = mid       # mid might be the answer
+    else:          lo = mid + 1   # mid is too small
+answer = lo
+\`\`\`
+
+Watch the types: 200,000 × 10,000 is two billion, past \`int\`. Use \`long long\` for sums.
+--- task
+Write two functions. No \`main\`.
+
+- \`long long min_capacity(const std::vector<int>& weights, int days)\` — the smallest ship capacity that delivers every package, in order, within \`days\` days. Weights are positive; \`days >= 1\`; there is at least one package.
+- \`int count_in_range(const std::vector<int>& sorted, int lo, int hi)\` — how many values of the sorted vector lie in \`[lo, hi]\` (0 if \`lo > hi\`).
+
+Both are checked on big inputs, so they need binary search.
+--- starter
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
+long long min_capacity(const std::vector<int>& weights, int days) {
+    long long cap = *std::max_element(weights.begin(), weights.end());
+    while (true) {
+        int used = 1;
+        long long load = 0;
+        for (int w : weights) {
+            if (load + w > cap) {
+                ++used;
+                load = 0;
+            }
+            load += w;
+        }
+        if (used <= days) return cap;
+        ++cap;
+    }
+}
+
+int count_in_range(const std::vector<int>& sorted, int lo, int hi) {
+    int n = 0;
+    for (int x : sorted) {
+        if (x >= lo && x <= hi) ++n;
+    }
+    return n;
+}
+--- solution
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
+bool fits(const std::vector<int>& weights, int days, long long cap) {
+    int used = 1;
+    long long load = 0;
+    for (int w : weights) {
+        if (load + w > cap) {
+            ++used;
+            load = 0;
+        }
+        load += w;
+    }
+    return used <= days;
+}
+
+long long min_capacity(const std::vector<int>& weights, int days) {
+    long long lo = *std::max_element(weights.begin(), weights.end());
+    long long hi = std::accumulate(weights.begin(), weights.end(), 0LL);
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (fits(weights, days, mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+
+int count_in_range(const std::vector<int>& sorted, int lo, int hi) {
+    if (lo > hi) return 0;
+    auto first = std::lower_bound(sorted.begin(), sorted.end(), lo);
+    auto last = std::upper_bound(sorted.begin(), sorted.end(), hi);
+    return static_cast<int>(last - first);
+}
+--- hint
+Keep the starter's inner loop as a \`fits(weights, days, cap)\` check; replace the \`++cap\` search with a binary search between the heaviest package and the total.
+--- hint
+In the binary search, when \`mid\` fits keep it (\`hi = mid\`); when it does not, \`lo = mid + 1\`. Stop when \`lo == hi\`.
+--- hint
+\`count_in_range\` is \`upper_bound(hi) - lower_bound(lo)\`.
+--- check case | The classic: ten packages in five days
+min_capacity({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 5)
+=> 15LL
+--- check case | One day means the total
+min_capacity({3, 2, 2, 4, 1, 4}, 1)
+=> 16LL
+--- check case | More days than packages means the heaviest
+min_capacity({1, 2, 3, 1, 1}, 10)
+=> 3LL
+--- check test | 200,000 heavy packages in two days
+[] { std::vector<int> w(200000, 10000); return min_capacity(w, 2) == 1000000000LL; }()
+--- check case | count_in_range counts both ends
+count_in_range({1, 3, 3, 3, 8, 9}, 3, 8)
+=> 4
+--- check test | count_in_range with nothing inside, and lo > hi
+count_in_range({1, 5, 9}, 6, 8) == 0 && count_in_range({1, 5, 9}, 9, 1) == 0 && count_in_range({}, 0, 10) == 0
+--- check test | 100,000 queries over a million values
+[] { std::vector<int> v(1000000); for (int i = 0; i < 1000000; ++i) v[i] = i / 2; long long total = 0; for (int q = 0; q < 100000; ++q) total += count_in_range(v, q, q + 9); return total == 2000000; }()
+
+=== cpp3-16 | Design: composition over inheritance
+--- teach
+Inheritance says "**is a**": a \`Circle\` is a \`Shape\`. It is tempting to use it for "**has**" or "**can do**" too — and that is where designs rot.
+
+Suppose robots can fly or swim. With inheritance you write \`FlyingRobot\` and \`SwimmingRobot\`. Then someone needs a robot that does both: \`FlyingSwimmingRobot\`, copying code from the other two. Add driving and you need \`DrivingRobot\`, \`FlyingDrivingRobot\`, \`SwimmingDrivingRobot\`, \`FlyingSwimmingDrivingRobot\`… Each new ability **doubles** the number of classes, and every copy is a chance for the copies to drift apart.
+
+**Composition** says "**has**": a robot *has* a list of abilities. Each ability is a small object behind an interface, and a robot is assembled from parts at run time:
+
+\`\`\`cpp
+class Ability {
+public:
+    virtual ~Ability() = default;
+    virtual std::string verb() const = 0;
+};
+
+class Robot {
+public:
+    Robot& add(std::unique_ptr<Ability> a) {
+        abilities_.push_back(std::move(a));
+        return *this;               // returning *this lets calls chain
+    }
+private:
+    std::vector<std::unique_ptr<Ability>> abilities_;
+};
+
+Robot r("Otto");
+r.add(std::make_unique<Fly>()).add(std::make_unique<Swim>());
+\`\`\`
+
+Now three abilities are three small classes, and any combination is free. Inheritance has not gone away — it is used for what it is good at, a narrow **interface** (\`Ability\`) with interchangeable implementations. What went away is inheritance used to **share code** between concrete classes.
+
+A rule of thumb: inherit to be *used as* the base (polymorphism); compose to *reuse* behaviour. When you catch yourself naming a class after a combination of features, that is the signal.
+
+The starter uses two things you may not have met. \`protected\` members can be used by derived classes but not by outside code. \`using Robot::Robot;\` lets a derived class reuse its base's constructors. Neither survives the redesign.
+--- task
+Replace the starter's class hierarchy with composition. No \`main\`.
+
+- \`class Ability\` — an interface with \`virtual std::string verb() const = 0;\` and a virtual destructor.
+- \`Fly\`, \`Swim\` and \`Drive\` — their verbs are \`"flies"\`, \`"swims"\` and \`"drives"\`.
+- \`class Robot\` — \`explicit Robot(std::string name)\`; \`Robot& add(std::unique_ptr<Ability> ability)\` (returns \`*this\`); \`std::size_t ability_count() const\`; \`std::string act() const\` returning \`"Name: flies, swims"\` with the verbs in the order added, or \`"Name: idles"\` with none.
+
+No class may derive from \`Robot\`.
+--- starter
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Robot {
+public:
+    explicit Robot(std::string name) : name_(std::move(name)) {}
+    virtual ~Robot() = default;
+    virtual std::string act() const { return name_ + ": idles"; }
+protected:
+    std::string name_;
+};
+
+class FlyingRobot : public Robot {
+public:
+    using Robot::Robot;
+    std::string act() const override { return name_ + ": flies"; }
+};
+
+class SwimmingRobot : public Robot {
+public:
+    using Robot::Robot;
+    std::string act() const override { return name_ + ": swims"; }
+};
+
+class FlyingSwimmingRobot : public Robot {
+public:
+    using Robot::Robot;
+    std::string act() const override { return name_ + ": flies, swims"; }
+};
+--- solution
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Ability {
+public:
+    virtual ~Ability() = default;
+    virtual std::string verb() const = 0;
+};
+
+class Fly : public Ability {
+public:
+    std::string verb() const override { return "flies"; }
+};
+
+class Swim : public Ability {
+public:
+    std::string verb() const override { return "swims"; }
+};
+
+class Drive : public Ability {
+public:
+    std::string verb() const override { return "drives"; }
+};
+
+class Robot {
+public:
+    explicit Robot(std::string name) : name_(std::move(name)) {}
+
+    Robot& add(std::unique_ptr<Ability> ability) {
+        abilities_.push_back(std::move(ability));
+        return *this;
+    }
+
+    std::size_t ability_count() const { return abilities_.size(); }
+
+    std::string act() const {
+        if (abilities_.empty()) return name_ + ": idles";
+        std::string out = name_ + ": ";
+        for (std::size_t i = 0; i < abilities_.size(); ++i) {
+            if (i > 0) out += ", ";
+            out += abilities_[i]->verb();
+        }
+        return out;
+    }
+
+private:
+    std::string name_;
+    std::vector<std::unique_ptr<Ability>> abilities_;
+};
+--- hint
+\`Robot\` stops being a base class: it holds \`std::vector<std::unique_ptr<Ability>> abilities_;\`.
+--- hint
+\`add\` moves the pointer into the vector and returns \`*this\`, so \`r.add(…).add(…)\` chains.
+--- hint
+\`act\` joins each ability's \`verb()\` with \`", "\` after \`"Name: "\`.
+--- check case | A robot with no abilities idles
+Robot("Idle").act()
+=> "Idle: idles"
+--- check case | Abilities combine in the order added
+[] { Robot r("Otto"); r.add(std::make_unique<Fly>()).add(std::make_unique<Swim>()); return r.act(); }()
+=> "Otto: flies, swims"
+--- check test | Any combination, with no new classes
+[] { Robot r("Tank"); r.add(std::make_unique<Drive>()).add(std::make_unique<Swim>()).add(std::make_unique<Fly>()); return r.act() == "Tank: drives, swims, flies" && r.ability_count() == 3; }()
+--- check test | Your own ability plugs in
+[] { struct Dig : Ability { std::string verb() const override { return "digs"; } }; Robot r("Mole"); r.add(std::make_unique<Dig>()); return r.act() == "Mole: digs"; }()
+--- check source absent | Nothing derives from Robot
+\\b(class|struct)\\s+\\w+\\s*(final\\s*)?:[^{;]*\\bRobot\\b
+`,Te=`@track cpp
+@level expert
+@title C++ · Expert
+@name C++, expert: generic code, containers and performance
+@blurb Think like a library author: value categories and perfect forwarding, variadic templates, concepts and compile-time code, containers and hash maps built from scratch, ranges, undefined behaviour, performance, type erasure, and two classic problems solved end to end.
+
+=== cpp4-01 | Move semantics in depth
+--- teach
+The advanced course taught you to write types that own resources, copy and move, and work for any element type. The expert course looks under the hood: exactly when C++ copies or moves, how templates reason about types, how standard containers are built, and the bugs and costs that only show up at scale.
+
+To use moves well you need the vocabulary the compiler uses. Every expression has a **value category**:
+
+- An **lvalue** has a name or an address you can take: \`x\`, \`v[3]\`, \`*p\`. It will still be there after this line, so it may only be **copied** from.
+- A **prvalue** is a pure temporary: \`Probe("a")\`, \`x + 1\`, a function returning by value. Nobody else can see it, so it may be **moved** from — and since C++17, a prvalue used to initialise an object of the same type is not moved at all: it is built directly in place (**guaranteed copy elision**).
+- An **xvalue** is an lvalue you have declared expendable — which is all \`std::move(x)\` does. It is a cast to \`T&&\`; it moves nothing by itself.
+
+Four rules follow.
+
+**1. Sink parameters: take by value, then move.** A function that stores its argument should take it by value and \`std::move\` it into place. Callers passing a temporary pay one move; callers passing an lvalue pay exactly the one copy they must.
+
+\`\`\`cpp
+class Person {
+public:
+    explicit Person(std::string name) : name_(std::move(name)) {}
+private:
+    std::string name_;
+};
+\`\`\`
+
+**2. Return locals plainly.** \`return result;\` lets the compiler build \`result\` directly in the caller's space (**NRVO**) — zero moves. \`return std::move(result);\` *disables* that and forces a move; clang even warns about it (\`-Wpessimizing-move\`).
+
+**3. \`const\` blocks moves.** \`std::move\` on a \`const\` object yields \`const T&&\`, which binds to the copy constructor. Moving from a \`const\` silently copies.
+
+**4. Ref-qualifiers pick by the object's category.** A member function can have one version for lvalue objects (\`&\`) and one for expiring ones (\`&&\`):
+
+\`\`\`cpp
+const Probe& get() const& { return p_; }       // look at it
+Probe take() && { return std::move(p_); }      // only on an expiring object
+\`\`\`
+
+\`std::move(holder).take()\` compiles; \`holder.take()\` on a named holder does not — the type system stops you from gutting an object someone still uses.
+
+A moved-from object is valid but unspecified: destroy it or assign to it, and do not read it.
+--- task
+The starter's \`Probe\` counts its copies and moves. Fix \`Holder\` and \`make_probe\` so they make **no unnecessary copies**. No \`main\`.
+
+- \`explicit Holder(Probe p)\` and \`void set(Probe p)\` — sink parameters: an lvalue argument costs exactly one copy, a temporary costs none.
+- \`const Probe& get() const&\`.
+- \`Probe take() &&\` — callable only on an expiring \`Holder\`; moves the probe out.
+- \`Probe make_probe(const std::string& label)\` — returns a new probe with no copies and no moves.
+--- starter
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Holder {
+public:
+    explicit Holder(const Probe& p) : p_(p) {}
+    void set(const Probe& p) { p_ = p; }
+    const Probe& get() const { return p_; }
+    Probe take() { return p_; }
+private:
+    Probe p_;
+};
+
+Probe make_probe(const std::string& label) {
+    Probe p(label);
+    return std::move(p);
+}
+--- solution
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Holder {
+public:
+    explicit Holder(Probe p) : p_(std::move(p)) {}
+    void set(Probe p) { p_ = std::move(p); }
+    const Probe& get() const& { return p_; }
+    Probe take() && { return std::move(p_); }
+private:
+    Probe p_;
+};
+
+Probe make_probe(const std::string& label) {
+    Probe p(label);
+    return p;
+}
+--- hint
+Sink parameters take \`Probe p\` by value, then \`std::move(p)\` into the member — in the initialiser list for the constructor, with move assignment in \`set\`.
+--- hint
+Add \`&&\` after \`take()\`'s parameter list and return \`std::move(p_)\`; add \`const&\` after \`get()\`'s.
+--- hint
+In \`make_probe\`, the \`std::move\` is the problem: a plain \`return p;\` lets the compiler build \`p\` in the caller's space.
+--- check test | A temporary goes in with no copies
+[] { Probe::reset(); Holder h(Probe("a")); return Probe::copies == 0 && h.get().label == "a"; }()
+--- check test | An lvalue costs exactly one copy and stays intact
+[] { Probe p("b"); Probe::reset(); Holder h(p); return Probe::copies == 1 && p.label == "b" && h.get().label == "b"; }()
+--- check test | set with a temporary copies nothing
+[] { Holder h(Probe("a")); Probe::reset(); h.set(Probe("c")); return Probe::copies == 0 && h.get().label == "c"; }()
+--- check test | take moves the probe out of an expiring Holder
+[] { Holder h(Probe("a")); Probe::reset(); Probe out = std::move(h).take(); return Probe::copies == 0 && out.label == "a"; }()
+--- check test | take cannot be called on a named Holder
+[] { Holder h(Probe("x")); return ![]<class H>(H& held) { return requires { held.take(); }; }(h); }()
+--- check test | make_probe copies and moves nothing
+[] { Probe::reset(); Probe p = make_probe("x"); return p.label == "x" && Probe::copies == 0 && Probe::moves == 0; }()
+
+=== cpp4-02 | Perfect forwarding
+--- teach
+A wrapper function — a logger around a call, a factory, \`emplace_back\` — should pass its arguments on **exactly as it received them**: lvalues as lvalues (copied), temporaries as rvalues (moved). That is **perfect forwarding**.
+
+It needs two pieces. The first is a **forwarding reference**: \`T&&\` where \`T\` is a template parameter of *this* function being deduced.
+
+\`\`\`cpp
+template <typename T>
+void wrapper(T&& arg);
+\`\`\`
+
+This is not an rvalue reference. Deduction plus **reference collapsing** make it bind to anything:
+
+- called with an lvalue \`Probe p\` → \`T\` is \`Probe&\`, and \`Probe& &&\` collapses to \`Probe&\`;
+- called with a temporary → \`T\` is \`Probe\`, so the parameter is \`Probe&&\`.
+
+The second piece: inside the function, \`arg\` has a name, so it is **always an lvalue**. To pass it on with its original category, use \`std::forward<T>(arg)\` — it casts to an rvalue only when \`T\` says the caller gave one:
+
+\`\`\`cpp
+template <typename T>
+void add(std::vector<Probe>& v, T&& item) {
+    v.push_back(std::forward<T>(item));
+}
+\`\`\`
+
+The classic mistakes:
+
+- \`std::move(item)\` in a forwarding function **steals from the caller's lvalue** — their object is emptied behind their back.
+- Plain \`item\` always copies, even from temporaries.
+- \`auto\` return types drop references. If the wrapped function returns a reference, return \`decltype(auto)\` to pass it through unchanged.
+
+The same pattern extends to any number of arguments — \`template <typename... Args> f(Args&&... args)\` with \`std::forward<Args>(args)...\` — which is exactly how \`std::make_unique\` and \`emplace_back\` are written. Variadic templates are next.
+--- task
+Using the starter's \`Probe\` and \`calls\` counter, write — no \`main\`:
+
+- \`template <typename T> void add_item(std::vector<Probe>& v, T&& item)\` — appends \`item\`, copying from lvalues (leaving them intact) and moving from temporaries.
+- \`template <typename F, typename A> decltype(auto) invoke_logged(F&& f, A&& a)\` — adds 1 to \`calls\`, then returns \`f(a)\` with both forwarded perfectly. If \`f\` returns a reference, so does \`invoke_logged\`.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+inline int calls = 0;
+
+template <typename T>
+void add_item(std::vector<Probe>& v, T&& item) {
+    v.push_back(std::move(item));
+}
+
+template <typename F, typename A>
+auto invoke_logged(F f, A a) {
+    ++calls;
+    return f(a);
+}
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+inline int calls = 0;
+
+template <typename T>
+void add_item(std::vector<Probe>& v, T&& item) {
+    v.push_back(std::forward<T>(item));
+}
+
+template <typename F, typename A>
+decltype(auto) invoke_logged(F&& f, A&& a) {
+    ++calls;
+    return std::forward<F>(f)(std::forward<A>(a));
+}
+--- hint
+\`std::move\` always casts to an rvalue; \`std::forward<T>\` only does when \`T\` says the caller passed one.
+--- hint
+\`invoke_logged\` must take \`F&& f, A&& a\` (forwarding references, not copies) and return \`decltype(auto)\`.
+--- check test | An lvalue is copied and left intact
+[] { Probe p("keep"); std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, p); return p.label == "keep" && v[0].label == "keep" && Probe::copies == 1 && Probe::moves == 0; }()
+--- check test | A temporary is moved, not copied
+[] { std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, Probe("tmp")); return v[0].label == "tmp" && Probe::copies == 0 && Probe::moves == 1; }()
+--- check test | A const lvalue works and is copied
+[] { const Probe c("c"); std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, c); return v[0].label == "c" && Probe::copies == 1; }()
+--- check test | invoke_logged passes a returned reference straight through
+[] { Probe p("r"); calls = 0; Probe& same = invoke_logged([](Probe& x) -> Probe& { return x; }, p); return &same == &p && calls == 1; }()
+--- check test | invoke_logged moves a temporary argument
+[] { Probe::reset(); std::string s = invoke_logged([](Probe x) { return x.label; }, Probe("z")); return s == "z" && Probe::copies == 0; }()
+
+=== cpp4-03 | Variadic templates and fold expressions
+--- teach
+A **variadic template** takes any number of arguments. The \`...\` makes a **parameter pack**:
+
+\`\`\`cpp
+template <typename... Ts>          // Ts is a pack of types
+void log_all(const Ts&... args);   // args is a pack of values
+
+sizeof...(Ts)                      // how many there are
+\`\`\`
+
+You cannot index a pack or loop over it at run time. You **expand** it with \`...\` after a pattern, and the compiler repeats the pattern once per element:
+
+\`\`\`cpp
+f(g(args)...);                     // f(g(a1), g(a2), g(a3))
+std::vector<std::string> v{to_label(args)...};
+\`\`\`
+
+C++17 **fold expressions** combine a pack with a binary operator — the tidy way to "loop":
+
+\`\`\`cpp
+template <typename... Ts>
+auto sum(Ts... xs) {
+    return (xs + ... + 0);         // ((x1 + (x2 + (x3 + 0))))
+}
+
+template <typename... Ts>
+bool all_positive(Ts... xs) {
+    return ((xs > 0) && ...);      // true for an empty pack
+}
+\`\`\`
+
+The \`+ 0\` makes the fold work with zero arguments: an empty \`+\` fold with no starting value does not compile (only \`&&\`, \`||\` and \`,\` have defaults — \`true\`, \`false\` and \`void()\`).
+
+The **comma fold** runs an expression once per element, left to right — perfect for streaming each argument:
+
+\`\`\`cpp
+((out << args << ' '), ...);
+\`\`\`
+
+For "something between elements" (a separator), keep a flag or a counter inside that folded expression.
+
+Combined with forwarding, packs give you the shape of every factory in the standard library:
+
+\`\`\`cpp
+template <typename T, typename... Args>
+std::unique_ptr<T> create(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+\`\`\`
+--- task
+Write four variadic function templates. No \`main\`.
+
+- \`sum(xs...)\` — the total of any number of numbers; \`sum()\` is \`0\`. Mixed types follow the usual rules (\`sum(1, 2.5)\` is \`3.5\`).
+- \`std::string join(const std::string& sep, const Ts&... xs)\` — each value written as \`<<\` writes it, with \`sep\` between; \`join(", ")\` is \`""\`.
+- \`bool is_one_of(const T& x, const Ts&... options)\` — true if \`x == \` any option; false with no options.
+- \`std::size_t total_size(const Cs&... containers)\` — the sum of their \`.size()\`s; \`0\` for none.
+--- starter
+#include <cstddef>
+#include <sstream>
+#include <string>
+
+template <typename A, typename B>
+auto sum(A a, B b) {
+    return a + b;
+}
+
+template <typename A, typename B>
+std::string join(const std::string& sep, const A& a, const B& b) {
+    std::ostringstream out;
+    out << a << sep << b;
+    return out.str();
+}
+--- solution
+#include <cstddef>
+#include <sstream>
+#include <string>
+
+template <typename... Ts>
+auto sum(Ts... xs) {
+    return (xs + ... + 0);
+}
+
+template <typename... Ts>
+std::string join(const std::string& sep, const Ts&... xs) {
+    std::ostringstream out;
+    bool first = true;
+    ((out << (first ? "" : sep) << xs, first = false), ...);
+    return out.str();
+}
+
+template <typename T, typename... Ts>
+bool is_one_of(const T& x, const Ts&... options) {
+    return ((x == options) || ...);
+}
+
+template <typename... Cs>
+std::size_t total_size(const Cs&... containers) {
+    return (std::size_t{0} + ... + containers.size());
+}
+--- hint
+\`sum\` is a single binary fold with \`0\` as its starting value: \`(xs + ... + 0)\`.
+--- hint
+\`join\`: a comma fold over \`(out << (first ? "" : sep) << xs, first = false)\`.
+--- hint
+\`is_one_of\` folds \`||\` over \`(x == options)\`; \`total_size\` folds \`+\` over \`containers.size()\` starting from \`std::size_t{0}\`.
+--- check test | sum of many, of mixed types, of none
+sum(1, 2, 3, 4) == 10 && std::abs(sum(1, 2.5) - 3.5) < 1e-12 && sum() == 0 && sum(7) == 7
+--- check case | join with mixed types
+join(", ", 1, "a", 2.5, std::string("b"))
+=> "1, a, 2.5, b"
+--- check test | join with one and with no values
+join("-", 42) == "42" && join(", ") == ""
+--- check test | is_one_of
+is_one_of(3, 1, 2, 3) && !is_one_of(9, 1, 2, 3) && !is_one_of(3) && is_one_of(std::string("b"), "a", "b")
+--- check test | total_size across different containers
+total_size(std::vector<int>{1, 2}, std::string("abc"), std::map<int, int>{{1, 1}}) == 6 && total_size() == 0
+
+=== cpp4-04 | Concepts and requires
+--- teach
+Templates accept any type and complain only when something inside fails — often in a wall of errors from deep inside library code. C++20 **concepts** state the requirements up front, as part of the signature.
+
+A concept is a named compile-time predicate on types:
+
+\`\`\`cpp
+#include <concepts>
+
+template <typename T>
+concept Numeric = (std::integral<T> && !std::same_as<T, bool>) || std::floating_point<T>;
+
+template <Numeric T>
+T twice(T x) { return x * 2; }
+
+twice(4);        // fine
+twice("hi");     // error: "the constraints of Numeric are not satisfied" — at the call
+\`\`\`
+
+A **requires-expression** describes what must compile, and what its result must be:
+
+\`\`\`cpp
+template <typename T>
+concept Drawable = requires(const T& t, std::ostream& out) {
+    t.draw(out);                                     // this must compile
+    { t.bounds() } -> std::convertible_to<Rect>;     // ...and give something Rect-like
+};
+\`\`\`
+
+Concepts earn their place three ways:
+
+- **Errors at the call site**, in terms of what the caller did wrong.
+- **Overloading on capabilities**: two templates with different constraints; the compiler picks the one that fits (and the more constrained one when both do).
+- **Documentation that is checked**: \`template <Shape S>\` says what a shape is, and the compiler enforces it.
+
+Concepts are true or false, so you can test them: \`static_assert(Numeric<double>);\`, \`static_assert(!Numeric<bool>);\`. And a requires-expression inside a template asks "would this call compile?" without breaking the build when the answer is no — which is how the checks below prove your constraints reject what they should.
+
+Standard concepts to build on live in \`<concepts>\` (\`std::integral\`, \`std::same_as\`, \`std::convertible_to\`, \`std::totally_ordered\`…) and \`<iterator>\`/\`<ranges>\` (\`std::forward_iterator\`, \`std::ranges::range\`).
+--- task
+Using the starter's \`Square\` and \`Rect\`, write — no \`main\`:
+
+- \`concept Shape\` — a type \`T\` whose \`const T&\` has an \`area()\` convertible to \`double\` and a \`name()\` convertible to \`std::string\`.
+- \`concept Numeric\` — integral or floating-point types, but **not** \`bool\`.
+- \`template <Shape S> std::string describe(const S& s)\` — the name, \`": "\`, then the area written by a default \`std::ostringstream\` (so \`Square{2}\` gives \`"square: 4"\`).
+- \`template <Numeric T> double mean(const std::vector<T>& v)\` — the average, \`0.0\` for an empty vector.
+--- starter
+#include <concepts>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+};
+
+struct Rect {
+    double w, h;
+    double area() const { return w * h; }
+    std::string name() const { return "rect"; }
+};
+
+template <typename S>
+std::string describe(const S& s) {
+    return s.name();
+}
+
+template <typename T>
+double mean(const std::vector<T>& v) {
+    return 0.0;
+}
+--- solution
+#include <concepts>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+};
+
+struct Rect {
+    double w, h;
+    double area() const { return w * h; }
+    std::string name() const { return "rect"; }
+};
+
+template <typename T>
+concept Shape = requires(const T& s) {
+    { s.area() } -> std::convertible_to<double>;
+    { s.name() } -> std::convertible_to<std::string>;
+};
+
+template <typename T>
+concept Numeric = (std::integral<T> && !std::same_as<T, bool>) || std::floating_point<T>;
+
+template <Shape S>
+std::string describe(const S& s) {
+    std::ostringstream out;
+    out << s.name() << ": " << s.area();
+    return out.str();
+}
+
+template <Numeric T>
+double mean(const std::vector<T>& v) {
+    if (v.empty()) return 0.0;
+    double total = 0;
+    for (const T& x : v) total += static_cast<double>(x);
+    return total / static_cast<double>(v.size());
+}
+--- hint
+\`concept Shape = requires(const T& s) { { s.area() } -> std::convertible_to<double>; … };\`
+--- hint
+\`bool\` is an integral type, so \`Numeric\` needs \`std::integral<T> && !std::same_as<T, bool>\`, or'd with \`std::floating_point<T>\`.
+--- hint
+Replace \`typename\` with the concept name in each template head: \`template <Shape S>\`.
+--- check test | Shape accepts shapes and rejects the rest
+Shape<Square> && Shape<Rect> && !Shape<int> && !Shape<std::string>
+--- check test | An area that is not a number is not a Shape
+[] { struct Liar { std::string area() const { return "big"; } std::string name() const { return "liar"; } }; return !Shape<Liar>; }()
+--- check test | Numeric includes numbers but not bool or strings
+Numeric<int> && Numeric<long long> && Numeric<double> && !Numeric<bool> && !Numeric<std::string>
+--- check test | describe formats a shape
+describe(Square{2}) == "square: 4" && describe(Rect{1.5, 3}) == "rect: 4.5"
+--- check test | describe refuses a non-shape
+![]<class T>(T t) { return requires { describe(t); }; }(5)
+--- check test | mean works for numbers, and empty is 0
+std::abs(mean(std::vector<int>{1, 2}) - 1.5) < 1e-12 && mean(std::vector<double>{}) == 0.0 && std::abs(mean(std::vector<float>{0.5f, 1.5f}) - 1.0) < 1e-6
+--- check test | mean refuses strings and bools
+![]<class V>(V v) { return requires { mean(v); }; }(std::vector<std::string>{}) && ![]<class V>(V v) { return requires { mean(v); }; }(std::vector<bool>{})
+
+=== cpp4-05 | Compile-time computation
+--- teach
+Anything a program computes from fixed data can be computed **by the compiler** instead, and baked into the program as a constant. Lookup tables, prime lists, parsed literals: the work happens once, at build time.
+
+The tools, all \`constexpr\`-friendly in C++20:
+
+- **\`std::array\`** — a fixed-size array usable at compile time, with \`constexpr\` \`operator[]\` and \`==\`.
+- **\`std::string_view\`** — a read-only view of text, so string literals can be inspected in constant expressions.
+- **Loops, local variables, \`if\`** inside \`constexpr\` functions.
+
+\`\`\`cpp
+constexpr std::array<int, 10> squares() {
+    std::array<int, 10> out{};
+    for (int i = 0; i < 10; ++i) out[i] = i * i;
+    return out;
+}
+
+inline constexpr auto kSquares = squares();   // a table built by the compiler
+static_assert(kSquares[9] == 81);
+\`\`\`
+
+Templates with value parameters let the **size** of the result be a compile-time input: \`template <std::size_t N> constexpr std::array<int, N> first_primes();\`.
+
+Table-building code often uses the **bit operators**. \`i >> 1\` shifts \`i\` right by one bit, which is \`i / 2\` for a non-negative number. \`i & 1\` keeps only the lowest bit, so it is 1 when \`i\` is odd. \`|\`, \`^\` and \`<<\` are bitwise or, exclusive or, and shift left.
+
+Things worth knowing:
+
+- A \`constexpr\` **variable** forces compile-time evaluation. So does using a value as an array size, a template argument, or inside \`static_assert\`. Otherwise the compiler *may* do it at compile time or at run time.
+- Undefined behaviour is **rejected** during constant evaluation: overflow, reading out of bounds or an uninitialised value become compile errors. That is a free sanitizer for your compile-time code — keep inputs within safe limits (for instance, cap how many hex digits you parse).
+- Compilers limit how much work one constant evaluation may do. Prefer iterative algorithms, and do not ask for a million primes at compile time.
+- \`consteval\` insists on compile time; \`constinit\` guarantees a global is initialised at compile time without making it \`const\`.
+--- task
+Write, all usable at compile time — no \`main\`:
+
+- \`constexpr std::array<int, 256> make_popcounts()\` — entry \`i\` is the number of 1 bits in \`i\`; and \`inline constexpr std::array<int, 256> kPopcount = make_popcounts();\`.
+- \`template <std::size_t N> constexpr std::array<int, N> first_primes()\` — the first \`N\` primes, in order.
+- \`constexpr int parse_hex(std::string_view s)\` — the value of 1 to 7 hex digits (\`0-9\`, \`a-f\`, \`A-F\`); \`-1\` if \`s\` is empty, longer than 7, or has any other character.
+--- starter
+#include <array>
+#include <cstddef>
+#include <string_view>
+
+constexpr std::array<int, 256> make_popcounts() {
+    return {};
+}
+
+inline constexpr std::array<int, 256> kPopcount = make_popcounts();
+
+template <std::size_t N>
+constexpr std::array<int, N> first_primes() {
+    return {};
+}
+
+constexpr int parse_hex(std::string_view s) {
+    return -1;
+}
+--- solution
+#include <array>
+#include <cstddef>
+#include <string_view>
+
+constexpr std::array<int, 256> make_popcounts() {
+    std::array<int, 256> table{};
+    for (int i = 1; i < 256; ++i) table[i] = table[i >> 1] + (i & 1);
+    return table;
+}
+
+inline constexpr std::array<int, 256> kPopcount = make_popcounts();
+
+template <std::size_t N>
+constexpr std::array<int, N> first_primes() {
+    std::array<int, N> primes{};
+    std::size_t found = 0;
+    for (int candidate = 2; found < N; ++candidate) {
+        bool prime = true;
+        for (std::size_t k = 0; k < found && primes[k] * primes[k] <= candidate; ++k) {
+            if (candidate % primes[k] == 0) {
+                prime = false;
+                break;
+            }
+        }
+        if (prime) primes[found++] = candidate;
+    }
+    return primes;
+}
+
+constexpr int parse_hex(std::string_view s) {
+    if (s.empty() || s.size() > 7) return -1;
+    int value = 0;
+    for (char c : s) {
+        int digit;
+        if (c >= '0' && c <= '9') digit = c - '0';
+        else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+        else return -1;
+        value = value * 16 + digit;
+    }
+    return value;
+}
+--- hint
+Popcounts build on themselves: the count for \`i\` is the count for \`i >> 1\`, plus 1 if \`i\` is odd.
+--- hint
+For \`first_primes\`, test each candidate only against the primes already found (up to its square root), filling the array until it has \`N\`.
+--- hint
+\`parse_hex\`: check the length first, then turn each character into 0–15 (or return -1) and accumulate \`value * 16 + digit\`.
+--- check test | The popcount table is built by the compiler
+[] { static_assert(kPopcount[0] == 0 && kPopcount[1] == 1 && kPopcount[255] == 8 && kPopcount[0b10110] == 3); return kPopcount[128] == 1; }()
+--- check test | first_primes at compile time, including the 1000th
+[] { static_assert(first_primes<5>() == std::array<int, 5>{2, 3, 5, 7, 11}); constexpr auto p = first_primes<1000>(); return p[999] == 7919 && first_primes<1>()[0] == 2; }()
+--- check test | parse_hex in static_assert and as an array size
+[] { static_assert(parse_hex("ff") == 255 && parse_hex("1A") == 26 && parse_hex("0") == 0 && parse_hex("fffffff") == 268435455); std::array<char, parse_hex("10")> a{}; return a.size() == 16; }()
+--- check test | parse_hex rejects bad input
+[] { static_assert(parse_hex("") == -1 && parse_hex("g1") == -1 && parse_hex("12345678") == -1 && parse_hex("0x1") == -1); return parse_hex(std::string("7f")) == 127; }()
+
+=== cpp4-06 | Build a container: a growable array
+--- teach
+\`std::vector\` is not magic, and writing a small one teaches more about C++ than almost anything else. Three ideas carry it.
+
+**Separate memory from objects.** \`new T[n]\` allocates *and* constructs \`n\` objects — impossible if \`T\` has no default constructor, and wasteful for capacity you have not used. A real container gets raw memory and constructs each object only when it is added:
+
+\`\`\`cpp
+std::allocator<T> alloc;
+T* p = alloc.allocate(8);          // room for 8 T, no objects yet
+std::construct_at(p, value);       // build one object in slot 0   (<memory>)
+std::destroy_at(p);                // run its destructor
+alloc.deallocate(p, 8);            // give the memory back
+\`\`\`
+
+The rule: every constructed object is destroyed exactly once, and only constructed slots are destroyed.
+
+**Grow geometrically.** When full, allocate *double* the capacity, move the elements across, destroy the old ones, free the old block. Growing by a constant (capacity + 1) makes n pushes cost O(n²) element moves; doubling makes them O(n) in total — amortised O(1) each.
+
+**Watch for aliasing.** \`v.push_back(v[0])\` passes a reference *into your own storage*. If that push has to grow, the old block is destroyed while you still need the value. Copy (or build) the new element **before** releasing the old memory.
+
+The rest is the rule of five, done once properly. **Copy-and-swap** gives both assignments at once: take the parameter *by value* (the copy or move happens there), then swap with it:
+
+\`\`\`cpp
+DynArray& operator=(DynArray other) noexcept {
+    swap(other);          // other now holds our old contents, and frees them
+    return *this;
+}
+\`\`\`
+
+For iterators, a contiguous container can simply use pointers: \`begin()\` is \`data_\`, \`end()\` is \`data_ + size_\`. Every standard algorithm and range-for then work.
+
+Two helpers from \`<utility>\` shorten this code. \`std::swap(a, b)\` exchanges two values. \`std::exchange(x, v)\` sets \`x\` to \`v\` and returns the old value, which is just what a move constructor needs: \`data_(std::exchange(other.data_, nullptr))\`.
+--- task
+Complete \`template <typename T> class DynArray\`. No \`main\`.
+
+- \`push_back(const T&)\` and \`push_back(T&&)\`; \`pop_back()\` (never called when empty).
+- \`size()\` and \`capacity()\`; capacity goes 0, 1, 2, 4, 8, … (doubling when full).
+- \`operator[]\` (const and non-const), and \`begin()\` / \`end()\` as pointers (const and non-const).
+- Destructor, copy constructor (deep), move constructor (\`noexcept\`, leaves the source empty), and assignment.
+
+It must work for types **without a default constructor** (like the starter's \`Tracked\`, which counts live objects), destroy every element it built, and handle \`a.push_back(a[0])\`.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    int id;
+    explicit Tracked(int i) : id(i) { ++alive; }
+    Tracked(const Tracked& o) : id(o.id) { ++alive; }
+    Tracked(Tracked&& o) noexcept : id(o.id) { ++alive; }
+    Tracked& operator=(const Tracked&) = default;
+    ~Tracked() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+
+    void push_back(const T& x) {}
+    void push_back(T&& x) {}
+    void pop_back() {}
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+    T* begin() { return data_; }
+    T* end() { return data_ + size_; }
+    const T* begin() const { return data_; }
+    const T* end() const { return data_ + size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    int id;
+    explicit Tracked(int i) : id(i) { ++alive; }
+    Tracked(const Tracked& o) : id(o.id) { ++alive; }
+    Tracked(Tracked&& o) noexcept : id(o.id) { ++alive; }
+    Tracked& operator=(const Tracked&) = default;
+    ~Tracked() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+
+    ~DynArray() { release(); }
+
+    DynArray(const DynArray& other) : data_(allocate(other.size_)), size_(0), cap_(other.size_) {
+        for (const T& x : other) {
+            std::construct_at(data_ + size_, x);
+            ++size_;
+        }
+    }
+
+    DynArray(DynArray&& other) noexcept
+        : data_(std::exchange(other.data_, nullptr)),
+          size_(std::exchange(other.size_, 0)),
+          cap_(std::exchange(other.cap_, 0)) {}
+
+    DynArray& operator=(DynArray other) noexcept {
+        swap(other);
+        return *this;
+    }
+
+    void swap(DynArray& other) noexcept {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+        std::swap(cap_, other.cap_);
+    }
+
+    void push_back(const T& x) {
+        if (size_ == cap_) {
+            T copy(x);   // x may live in our own storage
+            grow();
+            std::construct_at(data_ + size_, std::move(copy));
+        } else {
+            std::construct_at(data_ + size_, x);
+        }
+        ++size_;
+    }
+
+    void push_back(T&& x) {
+        if (size_ == cap_) {
+            T moved(std::move(x));
+            grow();
+            std::construct_at(data_ + size_, std::move(moved));
+        } else {
+            std::construct_at(data_ + size_, std::move(x));
+        }
+        ++size_;
+    }
+
+    void pop_back() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+    T* begin() { return data_; }
+    T* end() { return data_ + size_; }
+    const T* begin() const { return data_; }
+    const T* end() const { return data_ + size_; }
+
+private:
+    static T* allocate(std::size_t n) { return n ? std::allocator<T>().allocate(n) : nullptr; }
+
+    void release() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = nullptr;
+        size_ = cap_ = 0;
+    }
+
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Write a private \`grow()\` first: allocate double the capacity with \`std::allocator<T>\`, \`construct_at\` each element there from \`std::move(data_[i])\`, \`destroy_at\` the old one, deallocate the old block.
+--- hint
+In \`push_back\`, when full, make a local copy of the argument *before* calling \`grow()\`, then construct the new element from that copy.
+--- hint
+The destructor destroys \`size_\` elements and deallocates \`cap_\` slots. Copy-and-swap: \`DynArray& operator=(DynArray other) noexcept { swap(other); return *this; }\`.
+--- check test | Pushing ints, capacity doubles
+[] { DynArray<int> a; std::vector<std::size_t> caps; for (int i = 0; i < 9; ++i) { a.push_back(i * i); caps.push_back(a.capacity()); } return a.size() == 9 && a[8] == 64 && caps == std::vector<std::size_t>{1, 2, 4, 4, 8, 8, 8, 8, 16}; }()
+--- check test | No default constructor needed, and every element destroyed
+[] { Tracked::alive = 0; bool ok; { DynArray<Tracked> a; for (int i = 0; i < 10; ++i) a.push_back(Tracked(i)); ok = Tracked::alive == 10 && a[9].id == 9; a.pop_back(); ok = ok && Tracked::alive == 9 && a.size() == 9; DynArray<Tracked> b = a; ok = ok && Tracked::alive == 18; } return ok && Tracked::alive == 0; }()
+--- check test | Copies are deep; moves leave the source empty
+[] { DynArray<std::string> a; a.push_back("x"); a.push_back("y"); DynArray<std::string> b = a; b[0] = "changed"; DynArray<std::string> c = std::move(a); DynArray<std::string> d; d = c; return b[0] == "changed" && c[0] == "x" && a.size() == 0 && d.size() == 2 && d[1] == "y"; }()
+--- check test | Pushing an element of itself is safe
+[] { DynArray<std::string> a; a.push_back("a string long enough to live on the heap"); for (int i = 0; i < 6; ++i) a.push_back(a[0]); return a.size() == 7 && a[6] == "a string long enough to live on the heap"; }()
+--- check test | Works with range-for and standard algorithms
+[] { DynArray<int> a; for (int x : {5, 3, 9, 1}) a.push_back(x); std::sort(a.begin(), a.end()); int total = 0; for (int x : a) total += x; return total == 18 && a[0] == 1 && a[3] == 9; }()
+--- check test | A million pushes, quickly
+[] { DynArray<int> a; for (int i = 0; i < 1000000; ++i) a.push_back(i % 10); long long total = 0; for (int x : a) total += x; return a.size() == 1000000 && total == 4500000; }()
+
+=== cpp4-07 | Build a container: a ring buffer with its own iterator
+--- teach
+A **ring buffer** keeps the last N items in a fixed array. A \`head\` index marks the oldest item and a \`size\` counts how many there are; positions wrap around with \`% N\`. Pushing when full overwrites the oldest and moves \`head\` on. It never allocates — which is why logs, audio and network code love it.
+
+Its elements are not contiguous in order (the oldest may sit in the middle of the array), so a raw pointer cannot be its iterator. You write an **iterator class**: a small object that remembers the buffer and a *logical* position (0 = oldest), and turns that into an array slot when dereferenced.
+
+To work with the standard library, an iterator provides:
+
+\`\`\`cpp
+class iterator {
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = T;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = const T*;
+    using reference         = const T&;
+
+    iterator() = default;                             // forward iterators must be default-constructible
+    reference operator*() const;                      // the element
+    iterator& operator++();                           // ++it
+    iterator operator++(int);                         // it++ (returns the old position)
+    bool operator==(const iterator&) const = default; // C++20 writes != for you
+};
+\`\`\`
+
+C++20 can check your work: \`std::forward_iterator<It>\` is a concept that is true only if all of that is present and well-behaved. If \`begin()\` and \`end()\` return such iterators, your class is a **range**: range-for, \`std::vector<T>(rb.begin(), rb.end())\` and the \`std::ranges\` algorithms all accept it.
+
+Two details catch people. \`operator*\` must be a \`const\` member function (the concept dereferences const iterators). And \`end()\` is one past the last *logical* element — position \`size\`, not an array slot.
+--- task
+The starter's \`RingBuffer<T, N>\` stores and pops correctly. Add, with no \`main\`:
+
+- \`const T& operator[](std::size_t i) const\` — the \`i\`-th oldest item.
+- A nested \`iterator\` class that satisfies \`std::forward_iterator\`, visiting items oldest to newest (read-only: \`reference\` is \`const T&\`).
+- \`iterator begin() const\` and \`iterator end() const\`.
+--- starter
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+
+    std::optional<T> pop() {
+        if (size_ == 0) return std::nullopt;
+        T x = data_[head_];
+        head_ = (head_ + 1) % N;
+        --size_;
+        return x;
+    }
+
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    bool full() const { return size_ == N; }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+
+    std::optional<T> pop() {
+        if (size_ == 0) return std::nullopt;
+        T x = data_[head_];
+        head_ = (head_ + 1) % N;
+        --size_;
+        return x;
+    }
+
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    bool full() const { return size_ == N; }
+
+    const T& operator[](std::size_t i) const { return data_[(head_ + i) % N]; }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const RingBuffer* rb, std::size_t i) : rb_(rb), i_(i) {}
+
+        reference operator*() const { return (*rb_)[i_]; }
+        pointer operator->() const { return &(*rb_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const RingBuffer* rb_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, size_); }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- hint
+The \`i\`-th oldest item lives at slot \`(head_ + i) % N\`.
+--- hint
+The iterator holds a \`const RingBuffer*\` and a logical index; \`operator*\` returns \`(*rb_)[i_]\`, \`++\` just increments the index, and a defaulted \`operator==\` compares both members.
+--- hint
+\`begin()\` is position 0 and \`end()\` is position \`size_\`. Do not forget the five \`using\` type names and a default constructor.
+--- check test | The iterator is a real forward iterator
+std::forward_iterator<RingBuffer<int, 3>::iterator>
+--- check case | Oldest to newest after wrapping
+[] { RingBuffer<int, 3> rb; for (int i = 1; i <= 5; ++i) rb.push(i); return std::vector<int>(rb.begin(), rb.end()); }()
+=> std::vector<int>{3, 4, 5}
+--- check test | operator[] and range-for agree after pops and pushes
+[] { RingBuffer<int, 4> rb; for (int i = 1; i <= 6; ++i) rb.push(i); rb.pop(); rb.push(7); int total = 0; for (int x : rb) total += x; return rb[0] == 4 && rb[3] == 7 && total == 4 + 5 + 6 + 7; }()
+--- check test | An empty buffer has begin() == end()
+[] { RingBuffer<std::string, 2> rb; bool empty = rb.begin() == rb.end(); rb.push("a"); rb.pop(); return empty && rb.begin() == rb.end(); }()
+--- check test | std::ranges algorithms accept it
+[] { RingBuffer<int, 5> rb; for (int x : {4, 9, 2, 7}) rb.push(x); return *std::ranges::max_element(rb) == 9 && std::ranges::count(rb, 2) == 1 && std::ranges::distance(rb) == 4; }()
+
+=== cpp4-08 | A hash map from scratch
+--- teach
+\`std::unordered_map\` answers "what is the value for this key?" in O(1) on average. Building one shows where that promise comes from, and when it breaks.
+
+**Hash, then bucket.** A hash function turns a key into a big number (\`std::hash<std::string>{}(key)\`). Modulo the number of buckets, that picks a **bucket**. Only keys in that bucket need comparing.
+
+**Collisions are normal.** Different keys can land in one bucket. **Separate chaining** keeps a small list per bucket:
+
+\`\`\`cpp
+std::vector<std::vector<std::pair<std::string, int>>> buckets_;
+
+auto& bucket = buckets_[std::hash<std::string>{}(key) % buckets_.size()];
+for (auto& [k, v] : bucket) if (k == key) { /* found */ }
+\`\`\`
+
+(The other big family, **open addressing**, stores entries in the array itself and probes neighbouring slots on a collision — faster in practice, fiddlier to delete from.)
+
+**Load factor** is \`size / bucket_count\`: the average chain length. Lookups cost about that much. So when it passes a limit (0.75 is typical), **rehash**: allocate twice as many buckets and re-insert every entry, because each key's bucket depends on the bucket count. Rehashing is O(n), but it happens so rarely — each time the table doubles — that the cost per insert stays O(1) on average.
+
+Without rehashing, a table with 8 buckets holding 200,000 keys has chains of 25,000: every lookup is a slow linear search, and "O(1)" has quietly become O(n).
+
+The average-case promise also depends on the hash spreading keys evenly. A terrible hash (say, string length) piles keys into a few buckets — the same O(n) collapse. That is why you use a well-tested hash, and why hash tables iterate in no particular order.
+
+One C++ detail for the task: you need both a \`const\` and a non-\`const\` \`find\`. You can write the loop twice. Or the \`const\` one can call the other through \`const_cast<StringIntMap*>(this)->find(key)\`: \`const_cast\` removes \`const\`, which is safe here only because that \`find\` changes nothing.
+--- task
+Finish \`class StringIntMap\`, a chained hash table from \`std::string\` to \`int\`, without using any standard map or set. No \`main\`.
+
+- It starts with 8 buckets. After an insert makes \`size() > 0.75 × bucket_count()\`, it doubles the bucket count and rehashes.
+- \`void insert_or_assign(const std::string& key, int value)\` — adds the key, or overwrites its value.
+- \`int* find(const std::string& key)\` and a \`const\` version — a pointer to the value, or \`nullptr\`.
+- \`bool erase(const std::string& key)\` — true if something was removed.
+- \`size()\`, \`bucket_count()\`, \`load_factor()\`.
+--- starter
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        bucket_for(key).emplace_back(key, value);
+        ++size_;
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key)) {
+            if (k == key) return &v;
+        }
+        return nullptr;
+    }
+
+    const int* find(const std::string& key) const {
+        return const_cast<StringIntMap*>(this)->find(key);
+    }
+
+    bool erase(const std::string& key) {
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+    double load_factor() const { return static_cast<double>(size_) / buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) {
+        return buckets_[std::hash<std::string>{}(key) % buckets_.size()];
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) {
+                v = value;
+                return;
+            }
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key)) {
+            if (k == key) return &v;
+        }
+        return nullptr;
+    }
+
+    const int* find(const std::string& key) const {
+        return const_cast<StringIntMap*>(this)->find(key);
+    }
+
+    bool erase(const std::string& key) {
+        Bucket& b = bucket_for(key);
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i].first == key) {
+                b[i] = std::move(b.back());
+                b.pop_back();
+                --size_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+    double load_factor() const { return static_cast<double>(size_) / buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) {
+        return buckets_[std::hash<std::string>{}(key) % buckets_.size()];
+    }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old) {
+            for (auto& entry : b) {
+                bucket_for(entry.first).push_back(std::move(entry));
+            }
+        }
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+\`insert_or_assign\` must first look through the key's bucket and overwrite if the key is there; only a new key increases the size.
+--- hint
+Rehash: build a new vector of twice as many buckets, swap it in, then move every entry of the old buckets into \`bucket_for(entry.first)\` — the bucket depends on the new count.
+--- hint
+To erase from a bucket quickly, move the last entry into the removed one's place and \`pop_back()\` — order inside a bucket does not matter.
+--- check test | Insert, find and overwrite
+[] { StringIntMap m; m.insert_or_assign("a", 1); m.insert_or_assign("b", 2); m.insert_or_assign("a", 10); return m.size() == 2 && m.find("a") && *m.find("a") == 10 && *m.find("b") == 2 && m.find("zzz") == nullptr; }()
+--- check test | find through a const map
+[] { StringIntMap m; m.insert_or_assign("k", 7); const StringIntMap& c = m; return c.find("k") && *c.find("k") == 7 && c.find("q") == nullptr; }()
+--- check test | erase removes exactly one key
+[] { StringIntMap m; m.insert_or_assign("x", 1); m.insert_or_assign("y", 2); bool gone = m.erase("x"); return gone && !m.erase("x") && m.size() == 1 && m.find("x") == nullptr && *m.find("y") == 2; }()
+--- check test | Grows from 8 to 16 buckets on the 7th key
+[] { StringIntMap m; for (int i = 0; i < 6; ++i) m.insert_or_assign("k" + std::to_string(i), i); bool eight = m.bucket_count() == 8; m.insert_or_assign("k6", 6); return eight && m.bucket_count() == 16 && *m.find("k0") == 0 && *m.find("k6") == 6; }()
+--- check test | 200,000 keys: fast, and the load factor stays low
+[] { StringIntMap m; for (int i = 0; i < 200000; ++i) m.insert_or_assign("key" + std::to_string(i), i); long long total = 0; for (int i = 0; i < 200000; ++i) { const int* v = m.find("key" + std::to_string(i)); if (v) total += *v; } return m.size() == 200000 && total == 19999900000LL && m.load_factor() <= 0.75; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap)\\s*<
+
+=== cpp4-09 | Ranges and views
+--- teach
+C++20 **ranges** let you pass a whole container to an algorithm and build **lazy pipelines** with \`|\`.
+
+\`\`\`cpp
+#include <ranges>
+#include <algorithm>
+
+std::ranges::sort(v);                           // no begin()/end() pairs
+auto it = std::ranges::find(v, 42);
+
+auto evens_squared = v
+    | std::views::filter([](int x) { return x % 2 == 0; })
+    | std::views::transform([](int x) { return x * x; });
+for (int x : evens_squared) { /* ... */ }
+\`\`\`
+
+A **view** does no work when you build it. \`evens_squared\` holds no numbers; each one is computed when the loop asks for it. That makes some things possible that are awkward with plain algorithms:
+
+- **Stopping early**: \`views::take(3)\` stops the whole pipeline after three results, however long the input.
+- **Infinite sequences**: \`std::views::iota(1)\` is 1, 2, 3, … forever. It is fine as long as something downstream (\`take\`, or reading only the first element) stops.
+
+**Projections** let algorithms look at one member without writing a comparator:
+
+\`\`\`cpp
+std::ranges::sort(people, {}, &Person::age);          // sort by age
+std::ranges::stable_sort(people, {}, &Person::age);   // ...keeping ties in order
+auto oldest = std::ranges::max_element(people, {}, &Person::age);
+\`\`\`
+
+\`{}\` means "the default comparison" (\`std::ranges::less\`).
+
+\`std::views::split(' ')\` cuts a string into pieces; each piece is a small range you can turn into a string with \`std::string(piece.begin(), piece.end())\`. Two spaces in a row produce an empty piece.
+
+Two cautions. A view **refers** to its source — never return a view of a local container. And in C++20 there is no one-liner to collect a view into a vector (that is C++23's \`std::ranges::to\`), so loop over it and \`push_back\`, or use \`std::ranges::copy\` with \`std::back_inserter\`.
+--- task
+Write four functions with ranges and views. No \`main\`.
+
+- \`std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n)\` — the squares of the odd values, in order, at most \`n\` of them.
+- \`int first_square_above(int limit)\` — the smallest perfect square (1, 4, 9, …) greater than \`limit\` (for \`limit >= 0\`), found from an infinite \`views::iota\`.
+- \`std::vector<std::string> names_by_age(std::vector<Person> people)\` — names, youngest first; equal ages keep their input order.
+- \`std::vector<std::string> long_words(const std::string& text, std::size_t min_len)\` — the space-separated words of length \`>= min_len\`, in order (\`min_len\` is at least 1).
+--- starter
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n) {
+    return {};
+}
+
+int first_square_above(int limit) {
+    return 0;
+}
+
+std::vector<std::string> names_by_age(std::vector<Person> people) {
+    return {};
+}
+
+std::vector<std::string> long_words(const std::string& text, std::size_t min_len) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n) {
+    auto view = v
+        | std::views::filter([](int x) { return x % 2 != 0; })
+        | std::views::transform([](int x) { return x * x; })
+        | std::views::take(static_cast<std::ptrdiff_t>(n));
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+
+int first_square_above(int limit) {
+    auto squares = std::views::iota(1)
+        | std::views::transform([](int i) { return i * i; })
+        | std::views::filter([limit](int s) { return s > limit; });
+    return *squares.begin();
+}
+
+std::vector<std::string> names_by_age(std::vector<Person> people) {
+    std::ranges::stable_sort(people, {}, &Person::age);
+    std::vector<std::string> names;
+    std::ranges::copy(people | std::views::transform(&Person::name), std::back_inserter(names));
+    return names;
+}
+
+std::vector<std::string> long_words(const std::string& text, std::size_t min_len) {
+    std::vector<std::string> out;
+    for (auto piece : text | std::views::split(' ')) {
+        std::string word(piece.begin(), piece.end());
+        if (word.size() >= min_len) out.push_back(word);
+    }
+    return out;
+}
+--- hint
+\`v | std::views::filter(odd) | std::views::transform(square) | std::views::take(n)\`, then copy it into a vector with \`std::ranges::copy(view, std::back_inserter(out))\`.
+--- hint
+\`std::views::iota(1)\` never ends; transform it into squares, filter those above \`limit\`, and read only \`*view.begin()\`.
+--- hint
+\`std::ranges::stable_sort(people, {}, &Person::age)\` sorts by a member and keeps ties in order. Iterate \`text | std::views::split(' ')\` and build a \`std::string\` from each piece.
+--- check case | squares_of_odds stops after n
+squares_of_odds({1, 2, 3, 4, 5, 7, 9}, 3)
+=> std::vector<int>{1, 9, 25}
+--- check case | squares_of_odds with fewer than n odds
+squares_of_odds({2, 4, -3}, 5)
+=> std::vector<int>{9}
+--- check test | first_square_above
+first_square_above(0) == 1 && first_square_above(15) == 16 && first_square_above(16) == 25 && first_square_above(1000000) == 1002001
+--- check case | names_by_age is stable
+names_by_age({{"ada", 36}, {"lin", 20}, {"sam", 36}, {"bo", 20}, {"cy", 5}})
+=> std::vector<std::string>{"cy", "lin", "bo", "ada", "sam"}
+--- check case | long_words skips short and empty pieces
+long_words("the quick  brown fox jumps", 4)
+=> std::vector<std::string>{"quick", "brown", "jumps"}
+--- check source | Uses views
+std::views::
+--- check source | Uses a ranges algorithm
+std::ranges::
+
+=== cpp4-10 | Debugging: iterator invalidation
+--- teach
+An iterator, pointer or reference into a container is only valid until the container **changes shape**. Keep one across the wrong change and it silently points at the wrong element — or at freed memory. The program often keeps running with wrong data, which makes this one of the hardest bugs to see.
+
+The rules for \`std::vector\`:
+
+| Operation | What it invalidates |
+| --- | --- |
+| \`push_back\`, \`insert\` that **reallocates** | every iterator, pointer and reference |
+| \`insert\` without reallocating | everything at or after the insertion point |
+| \`erase\` | everything at or after the erased element |
+| \`reserve\` beyond capacity | everything |
+
+Node-based containers (\`std::list\`, \`std::map\`) are gentler: only iterators to erased elements die.
+
+Two classic shapes:
+
+**Erasing inside a loop.** After \`v.erase(it)\`, \`it\` is invalid; the elements have shifted left, so \`++it\` skips the element that moved into its place — and if you erased the last one, \`++it\` walks off the end.
+
+\`\`\`cpp
+for (auto it = v.begin(); it != v.end(); ) {
+    if (bad(*it)) it = v.erase(it);   // erase returns the next valid iterator
+    else ++it;
+}
+// or, in C++20, all of it in one line:
+std::erase_if(v, bad);
+\`\`\`
+
+**Holding a reference across an insert.** \`int& top = v[2]; v.insert(v.begin(), 0);\` — \`top\` now refers to *whatever element moved into slot 2*.
+
+The debugging method: when data comes out wrong **near** a container change, list every iterator, pointer and reference alive across that change. Each is a suspect. Fixes, in order of preference: restructure so nothing is held across the change (do the change last, or use \`std::erase_if\`); hold an **index** instead of a reference, and adjust it; or \`reserve\` in advance when you control every insertion.
+--- task
+**Bug report:** "\`remove_short({"a", "b", "cat"}, 2)\` leaves \`{"b", "cat"}\` — it should be \`{"cat"}\`. And \`mark_and_boost({3, 9, 4}, 10)\` gives \`{0, 13, 9, 4}\` instead of \`{0, 3, 19, 4}\`."
+
+- \`void remove_short(std::vector<std::string>& words, std::size_t min_len)\` — removes every word shorter than \`min_len\`, keeping the order of the rest.
+- \`void mark_and_boost(std::vector<int>& v, int bonus)\` — inserts a \`0\` at the front, and adds \`bonus\` to the largest of the original values (the first one on a tie). \`v\` is never empty.
+
+Fix both at the cause. No \`main\`.
+--- starter
+#include <algorithm>
+#include <string>
+#include <vector>
+
+// Removes every word shorter than min_len.
+void remove_short(std::vector<std::string>& words, std::size_t min_len) {
+    for (auto it = words.begin(); it != words.end(); ++it) {
+        if (it->size() < min_len) {
+            words.erase(it);
+        }
+    }
+}
+
+// Puts a 0 marker at the front, then adds \`bonus\` to the largest value.
+void mark_and_boost(std::vector<int>& v, int bonus) {
+    int& largest = *std::max_element(v.begin(), v.end());
+    v.insert(v.begin(), 0);
+    largest += bonus;
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <vector>
+
+// Removes every word shorter than min_len.
+void remove_short(std::vector<std::string>& words, std::size_t min_len) {
+    std::erase_if(words, [min_len](const std::string& w) { return w.size() < min_len; });
+}
+
+// Puts a 0 marker at the front, then adds \`bonus\` to the largest value.
+void mark_and_boost(std::vector<int>& v, int bonus) {
+    auto index = std::max_element(v.begin(), v.end()) - v.begin();
+    v.insert(v.begin(), 0);
+    v[index + 1] += bonus;
+}
+--- hint
+After \`words.erase(it)\`, what does \`it\` point at, and what does \`++it\` then skip?
+--- hint
+\`std::erase_if(words, predicate)\` removes every match safely in one pass.
+--- hint
+In \`mark_and_boost\`, remember the largest value's **index** instead of a reference, and remember that inserting at the front shifts every index by one.
+--- check case | Neighbouring short words are all removed
+[] { std::vector<std::string> w{"a", "b", "cat"}; remove_short(w, 2); return w; }()
+=> std::vector<std::string>{"cat"}
+--- check case | Order of the rest is kept
+[] { std::vector<std::string> w{"hello", "x", "yy", "z", "world"}; remove_short(w, 2); return w; }()
+=> std::vector<std::string>{"hello", "yy", "world"}
+--- check case | A short word at the very end
+[] { std::vector<std::string> w{"keep", "no", "x"}; remove_short(w, 3); return w; }()
+=> std::vector<std::string>{"keep"}
+--- check case | mark_and_boost with spare capacity
+[] { std::vector<int> v; v.reserve(16); v.insert(v.end(), {3, 9, 4}); mark_and_boost(v, 10); return v; }()
+=> std::vector<int>{0, 3, 19, 4}
+--- check case | mark_and_boost boosts the first of equal largest
+[] { std::vector<int> v; v.reserve(16); v.insert(v.end(), {7, 2, 7}); mark_and_boost(v, 1); return v; }()
+=> std::vector<int>{0, 8, 2, 7}
+--- check case | mark_and_boost when the vector must grow
+[] { std::vector<int> v{5}; v.shrink_to_fit(); mark_and_boost(v, 5); return v; }()
+=> std::vector<int>{0, 10}
+
+=== cpp4-11 | Debugging: signed overflow and undefined behaviour
+--- teach
+Most languages define what happens when an integer overflows. C++ does not: overflowing a **signed** integer is **undefined behaviour**, and that has a consequence people do not expect. The optimiser is allowed to assume it *never happens* — and reason from there.
+
+Look at this overflow check:
+
+\`\`\`cpp
+int sum = a + b;
+if (b > 0 && sum < a) { /* overflowed */ }
+\`\`\`
+
+The compiler reasons: "if \`b > 0\`, then \`a + b > a\`, because overflow cannot happen. So \`sum < a\` is always false." It deletes the check. The code looked careful, it may even work without optimisation, and at \`-O1\` it silently does nothing. (This checker compiles with \`-O1\`. Try it.)
+
+The rule: **check before you compute**, using only operations that cannot overflow.
+
+\`\`\`cpp
+#include <limits>
+constexpr int MAX = std::numeric_limits<int>::max();
+constexpr int MIN = std::numeric_limits<int>::min();
+
+if (b > 0 && a > MAX - b) { /* a + b would overflow */ }
+if (b < 0 && a < MIN - b) { /* a + b would underflow */ }
+\`\`\`
+
+(\`INT_MAX\` and \`INT_MIN\` from \`<climits>\` are the same two numbers under their older C names.)
+
+Or let the compiler do it: \`__builtin_add_overflow(a, b, &result)\` (GCC and clang) returns true on overflow and never invokes undefined behaviour.
+
+Other well-known traps:
+
+- **Midpoints**: \`(lo + hi) / 2\` overflows for large values. \`lo + (hi - lo) / 2\` does not (for \`lo <= hi\`), and C++20 has \`std::midpoint\`.
+- **Differences**: \`a - b\` overflows when the signs differ and the values are large. Widen first: \`static_cast<long long>(a) - b\`.
+- **\`abs(INT_MIN)\`** has no \`int\` answer.
+- **Unsigned** arithmetic, by contrast, is defined to wrap around — which fixes nothing when a negative result was expected.
+
+Tools that catch these while you test: \`-fsanitize=undefined\` (reports UB as it happens), and \`-ftrapv\`. Read "impossible" results near arithmetic as a hint that UB is in play.
+--- task
+**Bug report:** "\`checked_add(INT_MAX, 1)\` returns a huge negative number instead of \`std::nullopt\`, \`midpoint(2000000000, 2100000000)\` is negative, and \`gap(INT_MIN, INT_MAX)\` is 1."
+
+Fix all three without relying on undefined behaviour anywhere. No \`main\`.
+
+- \`std::optional<int> checked_add(int a, int b)\` — the sum, or \`std::nullopt\` if it does not fit in an \`int\`.
+- \`int midpoint(int lo, int hi)\` — the middle of \`[lo, hi]\`, rounded down, for \`0 <= lo <= hi\`.
+- \`long long gap(int a, int b)\` — how far apart \`a\` and \`b\` are (never negative).
+--- starter
+#include <climits>
+#include <limits>
+#include <optional>
+
+// The sum, or nullopt if it does not fit in an int.
+std::optional<int> checked_add(int a, int b) {
+    int sum = a + b;
+    if (b > 0 && sum < a) return std::nullopt;   // wrapped upwards
+    if (b < 0 && sum > a) return std::nullopt;   // wrapped downwards
+    return sum;
+}
+
+// The middle of [lo, hi], rounded down (0 <= lo <= hi).
+int midpoint(int lo, int hi) {
+    return (lo + hi) / 2;
+}
+
+// How far apart a and b are.
+long long gap(int a, int b) {
+    return a > b ? a - b : b - a;
+}
+--- solution
+#include <climits>
+#include <limits>
+#include <optional>
+
+// The sum, or nullopt if it does not fit in an int.
+std::optional<int> checked_add(int a, int b) {
+    constexpr int kMax = std::numeric_limits<int>::max();
+    constexpr int kMin = std::numeric_limits<int>::min();
+    if (b > 0 && a > kMax - b) return std::nullopt;
+    if (b < 0 && a < kMin - b) return std::nullopt;
+    return a + b;
+}
+
+// The middle of [lo, hi], rounded down (0 <= lo <= hi).
+int midpoint(int lo, int hi) {
+    return lo + (hi - lo) / 2;
+}
+
+// How far apart a and b are.
+long long gap(int a, int b) {
+    long long d = static_cast<long long>(a) - static_cast<long long>(b);
+    return d < 0 ? -d : d;
+}
+--- hint
+The sum must never be computed when it could overflow. Compare \`a\` with \`INT_MAX - b\` (for positive \`b\`) and with \`INT_MIN - b\` (for negative \`b\`) first.
+--- hint
+\`lo + (hi - lo) / 2\` cannot overflow when \`0 <= lo <= hi\`.
+--- hint
+Convert to \`long long\` **before** subtracting in \`gap\`.
+--- check test | Overflow upwards is caught
+checked_add(INT_MAX, 1) == std::nullopt && checked_add(2000000000, 2000000000) == std::nullopt
+--- check test | Overflow downwards is caught
+checked_add(INT_MIN, -1) == std::nullopt && checked_add(-2000000000, -2000000000) == std::nullopt
+--- check test | Sums that fit still work, right up to the edge
+checked_add(INT_MAX, 0) == INT_MAX && checked_add(INT_MAX, INT_MIN) == -1 && checked_add(-5, 3) == -2 && checked_add(INT_MIN, 0) == INT_MIN
+--- check test | midpoint of large values
+midpoint(2000000000, 2100000000) == 2050000000 && midpoint(0, INT_MAX) == 1073741823 && midpoint(7, 7) == 7 && midpoint(0, 1) == 0
+--- check test | gap across the whole int range
+gap(INT_MIN, INT_MAX) == 4294967295LL && gap(INT_MAX, INT_MIN) == 4294967295LL && gap(5, -5) == 10 && gap(3, 3) == 0
+
+=== cpp4-12 | Performance: data layout and algorithmic cost
+--- teach
+Two things decide how fast code runs: **how much work** it does (the algorithm) and **how it touches memory** (the layout). The first usually dominates; the second is where the remaining factor of 2–10 hides.
+
+**Memory is fetched in cache lines**, usually 64 bytes at a time. Reading \`v[i]\` also brings \`v[i+1]\` … \`v[i+15]\` (for \`int\`) into cache nearly for free. Code that walks memory **in order** runs at full speed; code that jumps around waits on memory for almost every access.
+
+- A 2-D grid stored **row-major** in one \`std::vector\` (\`data[r * cols + c]\`) is contiguous. Loop rows on the outside and columns on the inside, and every access is the next one in memory. Swap the loops and each access jumps a whole row ahead.
+- \`std::vector<std::vector<int>>\` puts each row in its own allocation, scattered through memory. One flat vector is faster and simpler.
+- **Array of structs vs struct of arrays**: if a hot loop reads only \`x\` from a million \`{x, y, z, name}\` records, storing \`std::vector<float> xs\` separately packs 16 useful values per cache line instead of one or two.
+
+**But first, count the work.** The fastest memory layout cannot rescue an algorithm that does a billion unnecessary additions. The classic example is repeated range sums. Adding up a rectangle of a grid cell by cell costs its area; answering 100,000 such questions on a 1000 × 1000 grid is around 10¹¹ additions.
+
+A **2-D prefix sum** does the work once. Let \`P[r][c]\` be the sum of everything above and to the left of \`(r, c)\` (exclusive), in a \`(rows + 1) × (cols + 1)\` table:
+
+\`\`\`
+P[r+1][c+1] = value(r, c) + P[r][c+1] + P[r+1][c] - P[r][c]
+
+sum of rows r1..r2, cols c1..c2 =
+    P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] + P[r1][c1]
+\`\`\`
+
+Building it is one pass over the grid (in memory order); each query is then four lookups — O(1). Use \`long long\`: sums of a million values overflow \`int\`.
+--- task
+Rewrite \`RegionSums\` so it answers each query in constant time. No \`main\`.
+
+- \`RegionSums(const std::vector<int>& values, int rows, int cols)\` — \`values\` holds the grid row-major: cell \`(r, c)\` is \`values[r * cols + c]\`.
+- \`long long sum(int r1, int c1, int r2, int c2) const\` — the sum of the rectangle from \`(r1, c1)\` to \`(r2, c2)\` inclusive (always valid, with \`r1 <= r2\` and \`c1 <= c2\`).
+
+The last check runs 100,000 queries on a 1000 × 1000 grid.
+--- starter
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols) : grid_(rows, std::vector<int>(cols)) {
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) grid_[r][c] = values[r * cols + c];
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        long long total = 0;
+        for (int c = c1; c <= c2; ++c)
+            for (int r = r1; r <= r2; ++r) total += grid_[r][c];
+        return total;
+    }
+
+private:
+    std::vector<std::vector<int>> grid_;
+};
+--- solution
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols)
+        : stride_(cols + 1), prefix_(static_cast<std::size_t>(rows + 1) * (cols + 1), 0) {
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                at(r + 1, c + 1) = values[static_cast<std::size_t>(r) * cols + c] + at(r, c + 1) + at(r + 1, c) - at(r, c);
+            }
+        }
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        return at(r2 + 1, c2 + 1) - at(r1, c2 + 1) - at(r2 + 1, c1) + at(r1, c1);
+    }
+
+private:
+    long long& at(int r, int c) { return prefix_[static_cast<std::size_t>(r) * stride_ + c]; }
+    long long at(int r, int c) const { return prefix_[static_cast<std::size_t>(r) * stride_ + c]; }
+
+    int stride_;
+    std::vector<long long> prefix_;
+};
+--- hint
+Store one flat \`std::vector<long long>\` of size \`(rows + 1) * (cols + 1)\`, where entry \`(r, c)\` is the sum of all cells above and to the left of \`(r, c)\`.
+--- hint
+Fill it row by row: \`P[r+1][c+1] = value(r, c) + P[r][c+1] + P[r+1][c] - P[r][c]\`.
+--- hint
+A query is four lookups: \`P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] + P[r1][c1]\`.
+--- check test | Small grid: single cells, rows, columns, everything
+[] { RegionSums s({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 3, 4); return s.sum(0, 0, 0, 0) == 1 && s.sum(2, 3, 2, 3) == 12 && s.sum(1, 0, 1, 3) == 26 && s.sum(0, 2, 2, 2) == 21 && s.sum(0, 0, 2, 3) == 78 && s.sum(1, 1, 2, 2) == 34; }()
+--- check test | Negative values
+[] { RegionSums s({-5, 3, 2, -1}, 2, 2); return s.sum(0, 0, 1, 1) == -1 && s.sum(0, 0, 1, 0) == -3 && s.sum(0, 1, 1, 1) == 2; }()
+--- check test | One row, one column
+[] { RegionSums row({4, 5, 6}, 1, 3); RegionSums col({4, 5, 6}, 3, 1); return row.sum(0, 1, 0, 2) == 11 && col.sum(1, 0, 2, 0) == 11; }()
+--- check test | 100,000 queries on a million cells
+[] { const int n = 1000; std::vector<int> vals(n * n); for (int i = 0; i < n * n; ++i) vals[i] = i % 1009; RegionSums rs(vals, n, n); long long total = 0; for (int q = 0; q < 100000; ++q) total += rs.sum(q % 10, q % 13, n - 1 - q % 17, n - 1 - q % 11); return total == 49212463632833LL; }()
+
+=== cpp4-13 | Design: type erasure
+--- teach
+You have seen two ways to handle "many kinds of shape":
+
+- **Virtual functions** — open to new types, but every type must *inherit* from your base class, and you juggle \`unique_ptr\`s instead of values.
+- **\`std::variant\`** — values, no inheritance, but a **closed** list: a new shape means editing the variant.
+
+**Type erasure** gets the best of both: a value type that holds *any* type with the right member functions, no inheritance required. \`std::function\` is type erasure for callables; \`std::any\` for anything. Here is the pattern, which you will recognise inside many libraries:
+
+\`\`\`cpp
+class AnyShape {
+    struct Concept {                                   // the interface, private
+        virtual ~Concept() = default;
+        virtual double area() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+    template <typename S>
+    struct Model : Concept {                           // wraps one concrete type
+        S s;
+        explicit Model(S x) : s(std::move(x)) {}
+        double area() const override { return s.area(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(*this); }
+    };
+    std::unique_ptr<Concept> self_;
+public:
+    template <typename S>
+    AnyShape(S s) : self_(std::make_unique<Model<S>>(std::move(s))) {}
+    AnyShape(const AnyShape& o) : self_(o.self_->clone()) {}   // deep copy
+    // ...
+};
+\`\`\`
+
+The template constructor is where the concrete type is "erased": after it runs, only the \`Concept\` interface is visible. Users write plain structs with \`area()\`; the library does the inheritance *internally*. And \`AnyShape\` is a **value**: copy it, store it in a \`std::vector<AnyShape>\`, no pointers in sight.
+
+Details that make it solid: \`clone()\` gives deep copies; moves can be defaulted (they just move the \`unique_ptr\`); and copy assignment can reuse the copy constructor via copy-and-swap. One trap to know: a template constructor taking a *forwarding reference* (\`S&&\`) would also match \`AnyShape&\` itself and hijack copying; taking \`S\` by value, as here, avoids that.
+
+(Its compile-time cousin, **CRTP** — \`class Square : public ShapeBase<Square>\` — shares code with no virtual calls at all, but everything is fixed at compile time: you cannot keep different shapes in one vector.)
+--- task
+The starter's \`AnyShape\` wraps a \`std::variant<Square, Circle>\`, so a new shape type needs an edit here. Redesign it with type erasure so it accepts **any** type with \`double area() const\`, \`std::string name() const\` and \`void scale(double)\`. No \`main\`.
+
+- \`AnyShape\` is a value type: copies are deep (scaling a copy leaves the original alone), assignment works, and moving is \`noexcept\`.
+- Keep \`area()\`, \`name()\` and \`scale(double)\`, and \`double total_area(const std::vector<AnyShape>& shapes)\`.
+- \`Square\` and \`Circle\` stay plain structs with no base class.
+--- starter
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+    void scale(double f) { side *= f; }
+};
+
+struct Circle {
+    double r;
+    double area() const { return 3.141592653589793 * r * r; }
+    std::string name() const { return "circle"; }
+    void scale(double f) { r *= f; }
+};
+
+class AnyShape {
+public:
+    AnyShape(Square s) : v_(s) {}
+    AnyShape(Circle c) : v_(c) {}
+    double area() const { return std::visit([](const auto& s) { return s.area(); }, v_); }
+    std::string name() const { return std::visit([](const auto& s) { return s.name(); }, v_); }
+    void scale(double f) { std::visit([f](auto& s) { s.scale(f); }, v_); }
+private:
+    std::variant<Square, Circle> v_;
+};
+
+double total_area(const std::vector<AnyShape>& shapes) {
+    double total = 0;
+    for (const auto& s : shapes) total += s.area();
+    return total;
+}
+--- solution
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+    void scale(double f) { side *= f; }
+};
+
+struct Circle {
+    double r;
+    double area() const { return 3.141592653589793 * r * r; }
+    std::string name() const { return "circle"; }
+    void scale(double f) { r *= f; }
+};
+
+class AnyShape {
+public:
+    template <typename S>
+    AnyShape(S shape) : self_(std::make_unique<Model<S>>(std::move(shape))) {}
+
+    AnyShape(const AnyShape& other) : self_(other.self_->clone()) {}
+    AnyShape(AnyShape&&) noexcept = default;
+    AnyShape& operator=(AnyShape other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double area() const { return self_->area(); }
+    std::string name() const { return self_->name(); }
+    void scale(double f) { self_->scale(f); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double area() const = 0;
+        virtual std::string name() const = 0;
+        virtual void scale(double f) = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename S>
+    struct Model final : Concept {
+        S s;
+        explicit Model(S x) : s(std::move(x)) {}
+        double area() const override { return s.area(); }
+        std::string name() const override { return s.name(); }
+        void scale(double f) override { s.scale(f); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(s); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+double total_area(const std::vector<AnyShape>& shapes) {
+    double total = 0;
+    for (const auto& s : shapes) total += s.area();
+    return total;
+}
+--- hint
+Inside \`AnyShape\`, declare a private abstract \`Concept\` (area, name, scale, clone) and a \`template <typename S> struct Model : Concept\` that holds an \`S\` and forwards each call to it.
+--- hint
+The template constructor makes a \`std::make_unique<Model<S>>(std::move(shape))\`; the copy constructor calls \`other.self_->clone()\`.
+--- hint
+Default the move constructor (\`noexcept\`); write assignment as copy-and-swap on the \`unique_ptr\`.
+--- check test | Squares and circles still work
+[] { AnyShape s = Square{2}; AnyShape c = Circle{1}; return s.name() == "square" && s.area() == 4 && c.name() == "circle" && std::abs(c.area() - 3.141592653589793) < 1e-12; }()
+--- check test | A brand-new shape type works with no changes to AnyShape
+[] { struct Tri { double b, h; double area() const { return b * h / 2; } std::string name() const { return "triangle"; } void scale(double f) { b *= f; h *= f; } }; AnyShape t = Tri{4, 3}; t.scale(2); return t.name() == "triangle" && t.area() == 24; }()
+--- check test | Copies are deep
+[] { AnyShape a = Square{2}; AnyShape b = a; b.scale(3); AnyShape c = Circle{1}; c = a; c.scale(0.5); return a.area() == 4 && b.area() == 36 && c.area() == 1 && c.name() == "square"; }()
+--- check test | A vector of values, and total_area
+[] { std::vector<AnyShape> v{Square{1}, Square{3}}; v.push_back(Circle{2}); return std::abs(total_area(v) - (10 + 4 * 3.141592653589793)) < 1e-9; }()
+--- check test | Moving is noexcept
+std::is_nothrow_move_constructible_v<AnyShape>
+
+=== cpp4-14 | Problem solving: an LRU cache
+--- teach
+A cache keeps recent answers so they need not be recomputed. When it is full, something must go. **Least recently used** (LRU) evicts whichever entry was touched longest ago — a simple policy that works well for most real access patterns.
+
+The operations:
+
+- \`get(key)\` — the value if present, and the entry becomes **most** recently used.
+- \`put(key, value)\` — insert or update, becoming most recently used; if that makes the cache too big, evict the **least** recently used.
+
+**Brute force first.** Keep a vector of \`(key, value)\` in recency order. Every \`get\` and \`put\` searches the vector (O(n)) and moves an entry to the front (O(n)). With a capacity of 50,000 and a million operations that is around 10¹⁰ steps — far too slow.
+
+**Find the structure.** We need two things at once, each in O(1):
+
+1. **Find** an entry by key → a hash map.
+2. **Move** an entry to the front, and **remove** from the back → a doubly linked list.
+
+Combine them: a \`std::list<std::pair<int, int>>\` in recency order (front = most recent), and an \`std::unordered_map<int, std::list<…>::iterator>\` pointing at each key's node.
+
+\`std::list<T>\` (from \`<list>\`) is a doubly linked list. It has \`push_front\`/\`emplace_front\`, \`front()\`, \`back()\` and \`pop_back()\`, and its iterators stay valid until their own node is erased. With \`using Order = std::list<…>;\`, the name \`Order::iterator\` is that list's iterator type.
+
+The key trick is \`std::list::splice\`: it moves a node to another position **without** copying it or invalidating any iterator — so the iterators stored in the map stay valid forever:
+
+\`\`\`cpp
+order_.splice(order_.begin(), order_, it);   // move node \`it\` to the front, O(1)
+\`\`\`
+
+Evicting is \`order_.back()\` (to learn its key, so you can erase it from the map) then \`order_.pop_back()\`.
+
+Edge cases to decide before coding: updating an existing key must not grow the size; \`get\` of a missing key returns nothing and changes nothing; a capacity of 1 evicts on every new key.
+--- task
+Write \`class LRUCache\` with O(1) operations. No \`main\`.
+
+- \`explicit LRUCache(std::size_t capacity)\` (capacity is at least 1).
+- \`std::optional<int> get(int key)\` — the value, or \`std::nullopt\`; a hit makes the key most recent.
+- \`void put(int key, int value)\` — insert or update, making it most recent; evict the least recent if over capacity.
+- \`std::size_t size() const\`.
+- \`std::vector<int> keys() const\` — keys from most to least recent.
+
+The last check makes a million calls on a cache of 50,000.
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        return std::nullopt;
+    }
+
+    void put(int key, int value) {
+    }
+
+    std::size_t size() const { return 0; }
+
+    std::vector<int> keys() const { return {}; }
+
+private:
+    std::size_t capacity_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, int value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = value;
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.emplace_front(key, value);
+        index_[key] = order_.begin();
+        if (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+    }
+
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<int> keys() const {
+        std::vector<int> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    using Order = std::list<std::pair<int, int>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- hint
+Two members: a \`std::list<std::pair<int, int>>\` in recency order, and an \`std::unordered_map<int, std::list<std::pair<int, int>>::iterator>\` from key to its node.
+--- hint
+Both a hit in \`get\` and an update in \`put\` move the node to the front with \`order_.splice(order_.begin(), order_, node)\`.
+--- hint
+After inserting a new key at the front, if the list is too long, erase \`order_.back().first\` from the map, then \`pop_back()\`.
+--- check test | Basic get and put
+[] { LRUCache c(2); c.put(1, 10); c.put(2, 20); return c.get(1) == 10 && c.get(2) == 20 && c.get(3) == std::nullopt && c.size() == 2; }()
+--- check case | get refreshes, so the other key is evicted
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.get(1); c.put(3, 3); return c.keys(); }()
+=> std::vector<int>{3, 1}
+--- check test | Updating an existing key refreshes it and does not grow
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.put(1, 100); c.put(3, 3); return c.size() == 2 && c.get(1) == 100 && c.get(2) == std::nullopt && c.keys() == std::vector<int>{1, 3}; }()
+--- check test | A miss changes nothing
+[] { LRUCache c(3); c.put(1, 1); c.put(2, 2); c.get(9); return c.keys() == std::vector<int>{2, 1} && c.size() == 2; }()
+--- check test | Capacity 1
+[] { LRUCache c(1); c.put(1, 1); c.put(2, 2); return c.get(1) == std::nullopt && c.get(2) == 2 && c.size() == 1; }()
+--- check test | A million operations on a cache of 50,000
+[] { LRUCache c(50000); long long s = 0; for (int i = 0; i < 1000000; ++i) { int k = static_cast<int>((1LL * i * 7919) % 70001); if (i % 3 == 0) { auto v = c.get(k); if (v) s += *v; } else c.put(k, i); } return s == 21465079944LL && c.size() == 50000; }()
+
+=== cpp4-15 | Problem solving: a tokenizer
+--- teach
+Every calculator, compiler and config reader starts the same way: turn a string of characters into a list of **tokens** — the words of the language. \`12 + (3.5*4)\` becomes \`Number(12) Plus LParen Number(3.5) Star Number(4) RParen\`. Splitting the work this way means the next stage, the parser, never thinks about spaces or digits again.
+
+A tokenizer (or **lexer**) is a loop with a position \`i\` and one decision per step, based on the current character:
+
+- **Whitespace**: skip it.
+- **A digit**: a number starts here. Keep consuming digits; if a \`.\` follows, it must be followed by at least one more digit, then keep consuming. The text from start to \`i\` is the number.
+- **One of \`+ - * / ( )\`**: a one-character token.
+- **Anything else**: an error, at this position.
+
+\`\`\`
+i = 0
+while i < n:
+    c = src[i]
+    if space:  i += 1
+    elif digit: start = i; consume digits [. digits]; emit Number(src[start:i])
+    elif c in "+-*/()": emit token for c; i += 1
+    else: error at i
+\`\`\`
+
+Design choices that pay off later:
+
+- **Record each token's position** in the source. Error messages can then point at the exact character.
+- **Report errors as data**, not by printing: return the position of the first bad character, and let the caller decide what to show.
+- **Do not decide meaning here.** \`-\` is just \`Minus\`; whether it means subtraction or a negative number is the parser's business, where the context is known.
+
+Converting the number's text to a \`double\` is \`std::strtod(text.c_str(), nullptr)\` (from \`<cstdlib>\`). \`std::string_view\` is a good parameter type: it accepts literals and \`std::string\`s without copying.
+--- task
+Using the starter's \`Tok\`, \`Token\` and \`LexResult\`, write \`LexResult tokenize(std::string_view src)\`. No \`main\`.
+
+- Spaces, tabs and newlines are skipped.
+- A number is one or more digits, optionally followed by a \`.\` and one or more digits. Its token has \`kind\` \`Tok::Number\` and the parsed \`value\`.
+- \`+ - * / ( )\` become \`Plus Minus Star Slash LParen RParen\` (their \`value\` is 0).
+- Each token's \`pos\` is the index where it starts.
+- On the first bad character — anything else, or a \`.\` not followed by a digit — return an empty \`tokens\` list and set \`error_at\` to that character's index.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- hint
+Loop with an index \`i\`. Skip spaces; on a digit, remember \`start\` and advance past the number; otherwise map the character with a \`switch\`.
+--- hint
+After the digits, if the next character is \`.\`, the one after it must be a digit — otherwise the error is at the \`.\`.
+--- hint
+Build the number with \`std::strtod(std::string(src.substr(start, i - start)).c_str(), nullptr)\`.
+--- check test | Kinds and positions of a simple expression
+[] { auto r = tokenize("1 + 2"); std::vector<Tok> k; std::vector<std::size_t> p; for (const auto& t : r.tokens) { k.push_back(t.kind); p.push_back(t.pos); } return !r.error_at && k == std::vector<Tok>{Tok::Number, Tok::Plus, Tok::Number} && p == std::vector<std::size_t>{0, 2, 4}; }()
+--- check test | Every operator and parentheses
+[] { auto r = tokenize("(8-3)*2/1"); std::vector<Tok> k; for (const auto& t : r.tokens) k.push_back(t.kind); return !r.error_at && k == std::vector<Tok>{Tok::LParen, Tok::Number, Tok::Minus, Tok::Number, Tok::RParen, Tok::Star, Tok::Number, Tok::Slash, Tok::Number}; }()
+--- check test | Numbers with decimals keep their value
+[] { auto r = tokenize("  12.75*\\t3.5\\n"); return !r.error_at && r.tokens.size() == 3 && std::abs(r.tokens[0].value - 12.75) < 1e-12 && r.tokens[0].pos == 2 && std::abs(r.tokens[2].value - 3.5) < 1e-12 && r.tokens[2].pos == 9; }()
+--- check test | Multi-digit integers
+[] { auto r = tokenize("1234"); return r.tokens.size() == 1 && r.tokens[0].value == 1234 && r.tokens[0].kind == Tok::Number; }()
+--- check test | An unknown character is an error at its position
+[] { auto r = tokenize("12+(3.5*x)"); return r.error_at == std::size_t{8} && r.tokens.empty(); }()
+--- check test | A dot with no digit after it is an error at the dot
+[] { auto a = tokenize("3.+1"); auto b = tokenize("7."); auto c = tokenize(".5"); return a.error_at == std::size_t{1} && b.error_at == std::size_t{1} && c.error_at == std::size_t{0}; }()
+--- check test | Empty and blank input give no tokens and no error
+[] { auto a = tokenize(""); auto b = tokenize("   "); return a.tokens.empty() && !a.error_at && b.tokens.empty() && !b.error_at; }()
+
+=== cpp4-16 | Problem solving: a recursive-descent calculator
+--- teach
+With tokens in hand, a **parser** turns them into meaning. For arithmetic the classic hand-written technique is **recursive descent**: write down the grammar, then write one function per rule.
+
+Operator precedence lives *in the grammar*. Lower precedence rules sit higher up and call the higher-precedence rules beneath them:
+
+\`\`\`
+expr   := term   (('+' | '-') term)*
+term   := factor (('*' | '/') factor)*
+factor := NUMBER | '(' expr ')' | '-' factor
+\`\`\`
+
+Read it aloud: an expression is terms joined by \`+\`/\`-\`; a term is factors joined by \`*\`/\`/\`; a factor is a number, a bracketed expression, or a negated factor. Because \`expr\` only sees whole \`term\`s, \`1 + 2 * 3\` groups as \`1 + (2 * 3)\` with no special code.
+
+Each rule becomes a function that consumes tokens from a shared position:
+
+\`\`\`cpp
+std::optional<double> expr() {
+    auto left = term();
+    if (!left) return std::nullopt;
+    while (at(Tok::Plus) || at(Tok::Minus)) {
+        Tok op = tokens_[pos_++].kind;
+        auto right = term();
+        if (!right) return std::nullopt;
+        *left = (op == Tok::Plus) ? *left + *right : *left - *right;
+    }
+    return left;
+}
+\`\`\`
+
+Details that matter:
+
+- **The \`while\` loop gives left associativity.** \`8 - 3 - 2\` is \`(8 - 3) - 2 = 3\`. Recursing on the right instead would compute \`8 - (3 - 2) = 7\`.
+- **Recursion happens only on brackets and unary minus**, so a long flat expression like \`1 + 1 + … + 1\` uses a loop, not deep recursion.
+- **Errors propagate as \`std::nullopt\`**: a missing factor, a missing \`)\`, division by zero, a lexer error.
+- **After parsing, every token must be used.** \`1 2\` parses \`1\` as a complete expression and leaves \`2\` behind — that is an error, not the answer 1.
+--- task
+The starter is your tokenizer. Add \`std::optional<double> evaluate(std::string_view expr)\` implementing the grammar in the lesson, with \`+ - * /\`, brackets, unary minus, the usual precedence and left associativity. It returns \`std::nullopt\` for a lexer error, a syntax error (including leftover tokens and empty input), or division by zero. No \`main\`.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+std::optional<double> evaluate(std::string_view expr) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- hint
+Make a small \`Parser\` class holding the tokens and a position, with one member function per grammar rule: \`expr\`, \`term\`, \`factor\`.
+--- hint
+\`expr\` and \`term\` loop while the next token is one of their operators; \`factor\` handles a number, a \`-\` followed by a factor, or \`(\` expr \`)\`.
+--- hint
+After \`expr()\` returns, check that the position reached the end of the tokens. Division by a zero right-hand side returns \`std::nullopt\`.
+--- check test | Precedence
+[] { auto a = evaluate("1 + 2 * 3"); auto b = evaluate("(1 + 2) * 3"); return a && *a == 7 && b && *b == 9; }()
+--- check test | Left associativity
+[] { auto a = evaluate("8 - 3 - 2"); auto b = evaluate("8 / 4 / 2"); return a && *a == 3 && b && *b == 1; }()
+--- check test | Unary minus
+[] { auto a = evaluate("-(2 + 3) * -2"); auto b = evaluate("2 * -3"); auto c = evaluate("--4"); return a && *a == 10 && b && *b == -6 && c && *c == 4; }()
+--- check test | Decimals and nesting
+[] { auto a = evaluate("3.5 * (2 - (0.5 + 0.5)) / 7"); return a && std::abs(*a - 0.5) < 1e-12; }()
+--- check test | Syntax errors
+!evaluate("") && !evaluate("2 +") && !evaluate("(1") && !evaluate("1)") && !evaluate("2 3") && !evaluate("*4") && !evaluate("()")
+--- check test | Lexer errors and division by zero
+!evaluate("x + 1") && !evaluate("4 / 0") && !evaluate("4 / (2 - 2)") && !evaluate("1.")
+--- check test | 100,000 terms in a row
+[] { std::string s = "1"; for (int i = 1; i < 100000; ++i) s += "+1"; auto v = evaluate(s); return v && *v == 100000; }()
+--- check test | 100 levels of brackets
+[] { std::string s(100, '('); s += "6"; s += std::string(100, ')'); s += "/4"; auto v = evaluate(s); return v && *v == 1.5; }()
+`,Ee=`@track cpp
+@level intermediate
+@title C++ · Intermediate
+@name C++, intermediate: the standard library, classes and careful code
+@blurb Write everyday modern C++ with confidence: const-correct references, vectors and algorithms, maps and sets, small classes, optional and lambdas, plus the debugging habits that catch copies, off-by-ones, overflow and garbage values.
+
+=== cpp2-01 | const correctness
+--- teach
+The basics course had you writing functions, vectors, strings, maps and small classes. This course turns that into careful, everyday modern C++: the standard library's containers and algorithms, classes that guard their own rules, and the debugging habits that catch C++'s quiet bugs. It starts with the keyword that makes code safe to pass around.
+
+\`const\` is a promise the compiler holds you to. You met it on variables; it matters far more on **references** and **member functions**.
+
+A \`const\` reference parameter says "I need to look at your object, I will not change it, and I will not copy it":
+
+\`\`\`cpp
+int total(const std::vector<int>& v);   // reads v, never copies it
+\`\`\`
+
+Inside a class, putting \`const\` after a member function's parameter list promises that calling it leaves the object unchanged:
+
+\`\`\`cpp
+class Wallet {
+public:
+    void add(int cents) { cents_ += cents; }        // changes the object
+    int cents() const { return cents_; }            // only looks
+private:
+    int cents_ = 0;
+};
+\`\`\`
+
+Here is why it matters. Through a \`const Wallet&\`, the compiler only lets you call \`const\` member functions:
+
+\`\`\`cpp
+void show(const Wallet& w) {
+    std::cout << w.cents();   // fine: cents() is const
+    w.add(5);                 // compile error: add() is not const
+}
+\`\`\`
+
+So the most common mistake is the reverse: writing a getter and **forgetting** the \`const\`. The class still works on its own, but the moment someone passes it around the normal way, by \`const&\`, every call to that getter fails to compile. The rule of thumb:
+
+- Parameters you only read: \`const T&\` (or a plain copy for small things like \`int\`).
+- Member functions that only read: mark them \`const\`.
+- Loops that only read: \`for (const auto& x : items)\`.
+
+A \`const\` member function cannot change members, and it can only call other \`const\` member functions. Inside one, \`this\` points at a \`const\` object.
+
+Two small things you will meet in the solution and all through this course. \`v.size()\` returns a \`std::size_t\`, an **unsigned** whole-number type (it can never be negative); when a function returns \`int\`, convert with \`static_cast<int>(v.size())\`. And \`std::min_element(v.begin(), v.end())\` from \`<algorithm>\` finds the smallest element for you. It returns an **iterator** (a position in the vector, used like a pointer), so put \`*\` in front to get the value. The next lessons cover algorithms and iterators properly.
+--- task
+Finish the \`Thermometer\` class so it is const-correct:
+
+- \`void record(int reading)\` adds a reading.
+- \`int count() const\` returns how many readings there are.
+- \`int lowest() const\` and \`int highest() const\` return the smallest and largest reading (you may assume there is at least one).
+
+Then write a free function \`int range_of(const Thermometer& t)\` that returns \`highest - lowest\`. The checks use your class through a \`const Thermometer&\`. No \`main\`.
+--- starter
+#include <vector>
+
+class Thermometer {
+public:
+    void record(int reading) { readings_.push_back(reading); }
+    int count() { return 0; }
+    int lowest() { return 0; }
+    int highest() { return 0; }
+private:
+    std::vector<int> readings_;
+};
+
+int range_of(Thermometer t) {
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <vector>
+
+class Thermometer {
+public:
+    void record(int reading) { readings_.push_back(reading); }
+    int count() const { return static_cast<int>(readings_.size()); }
+    int lowest() const { return *std::min_element(readings_.begin(), readings_.end()); }
+    int highest() const { return *std::max_element(readings_.begin(), readings_.end()); }
+private:
+    std::vector<int> readings_;
+};
+
+int range_of(const Thermometer& t) {
+    return t.highest() - t.lowest();
+}
+--- hint
+Put \`const\` after the parameter list of each function that only reads: \`int count() const { … }\`.
+--- hint
+\`std::min_element(v.begin(), v.end())\` (from \`<algorithm>\`) returns an iterator to the smallest element; \`*\` it to get the value.
+--- hint
+\`range_of\` should take \`const Thermometer& t\`, so it neither copies nor changes it.
+--- check test | count, lowest and highest work through a const reference
+[] { Thermometer t; t.record(12); t.record(-3); t.record(7); const Thermometer& view = t; return view.count() == 3 && view.lowest() == -3 && view.highest() == 12; }()
+--- check case | range_of 12, -3, 7 is 15
+[] { Thermometer t; t.record(12); t.record(-3); t.record(7); return range_of(t); }()
+=> 15
+--- check case | One reading has a range of 0
+[] { Thermometer t; t.record(5); return range_of(t); }()
+=> 0
+--- check case | A fresh thermometer has no readings
+[] { const Thermometer t; return t.count(); }()
+=> 0
+
+=== cpp2-02 | Debugging: the function that changed a copy
+--- teach
+Some bugs make no noise at all: the program compiles, runs, and simply does nothing. Those call for a method, not guesswork.
+
+1. **Reproduce** it with the smallest input you can: one or two items, numbers you can check in your head.
+2. **Check your assumptions** one at a time. "The function runs" — does it? Print inside it. "It changes my data" — print the data inside the function *and* straight after the call.
+3. **Narrow down** to the first place where what you see differs from what you expect.
+4. **Fix the cause**, not the symptom. Returning the changed vector and assigning it back would make the output right, but it hides a design mistake that will bite again.
+
+In C++ the classic silent bug is **working on a copy**. Two places make copies without saying so:
+
+\`\`\`cpp
+void reset(std::vector<int> v) {     // 1. a by-value parameter copies the caller's vector
+    for (int x : v) {                // 2. a by-value loop variable copies each element
+        x = 0;
+    }
+}
+\`\`\`
+
+Both copies are changed and then thrown away. Printing \`x\` inside the loop shows zeros, printing the caller's vector afterwards shows nothing changed — that gap is exactly where the copy is.
+
+The fix is a reference at *each* copy point: \`std::vector<int>& v\` and \`for (int& x : v)\`. Fixing only one of the two still leaves the bug, which is why step 2 (checking after every change) matters.
+--- task
+**Bug report:** "After \`apply_discount(cart, 10)\` every price in \`cart\` is still the old one. No error, no warning."
+
+\`apply_discount\` should lower each item's \`price_cents\` by \`percent\` percent, rounding down (so 10% off 250 is 225). Find why the caller's items never change and fix the cause, keeping the function's name and \`void\` return. No \`main\`.
+--- starter
+#include <string>
+#include <vector>
+
+struct Item {
+    std::string name;
+    int price_cents;
+};
+
+// Lowers every price by \`percent\` percent, rounding down.
+void apply_discount(std::vector<Item> items, int percent) {
+    for (auto item : items) {
+        item.price_cents = item.price_cents * (100 - percent) / 100;
+    }
+}
+--- solution
+#include <string>
+#include <vector>
+
+struct Item {
+    std::string name;
+    int price_cents;
+};
+
+// Lowers every price by \`percent\` percent, rounding down.
+void apply_discount(std::vector<Item>& items, int percent) {
+    for (auto& item : items) {
+        item.price_cents = item.price_cents * (100 - percent) / 100;
+    }
+}
+--- hint
+Print \`items[0].price_cents\` inside the function and \`cart[0].price_cents\` right after the call. They disagree — why?
+--- hint
+There are two copies: the parameter and the loop variable. Each needs an \`&\`.
+--- check test | 10% off changes the caller's cart
+[] { std::vector<Item> cart{{"tea", 1000}, {"jam", 250}}; apply_discount(cart, 10); return cart[0].price_cents == 900 && cart[1].price_cents == 225; }()
+--- check test | 0% leaves prices alone
+[] { std::vector<Item> cart{{"tea", 1000}}; apply_discount(cart, 0); return cart[0].price_cents == 1000; }()
+--- check test | 100% makes everything free
+[] { std::vector<Item> cart{{"tea", 1000}, {"jam", 250}}; apply_discount(cart, 100); return cart[0].price_cents == 0 && cart[1].price_cents == 0; }()
+--- check test | An empty cart is fine
+[] { std::vector<Item> cart; apply_discount(cart, 50); return cart.empty(); }()
+
+=== cpp2-03 | std::vector and <algorithm>
+--- teach
+\`<algorithm>\` and \`<numeric>\` hold tested, named loops. Using them makes code say *what* it does instead of *how*, and removes a whole class of off-by-one mistakes. They all work on a **range**: a \`begin()\` and an \`end()\` iterator.
+
+\`\`\`cpp
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
+std::vector<int> v = {5, 1, 4, 2};
+
+std::sort(v.begin(), v.end());                          // {1, 2, 4, 5}
+std::sort(v.begin(), v.end(), std::greater<int>());     // {5, 4, 2, 1}
+
+auto it = std::find_if(v.begin(), v.end(), [](int x) { return x > 3; });
+if (it != v.end()) { /* *it is the first element over 3 */ }
+
+auto n = std::count_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; });   // 2
+
+std::vector<int> out(v.size());
+std::transform(v.begin(), v.end(), out.begin(), [](int x) { return x * 10; });
+
+long long total = std::accumulate(v.begin(), v.end(), 0LL);   // 12
+\`\`\`
+
+The \`[](int x) { return x > 3; }\` parts are **lambdas**: small unnamed functions written in place. You will meet them properly soon; for now read them as "given x, return this".
+
+Two traps:
+
+- \`find_if\` returns \`end()\` when nothing matches. Always compare before you use \`*it\`.
+- \`accumulate\` adds in the type of its **starting value**. \`0\` means \`int\`, which overflows past about 2 billion; \`0LL\` means \`long long\`.
+
+\`std::greater<int>()\` (from \`<functional>\`) is a ready-made "is a greater than b?", so sorting with it puts the largest first.
+
+One more piece of syntax that the solutions use from here on is the **conditional operator**. \`condition ? a : b\` gives \`a\` when the condition is true and \`b\` when it is false, so \`return it == v.end() ? -1 : *it;\` is a short if/else that produces a value.
+--- task
+Write these five functions **without writing any loops** — use the algorithms. No \`main\`.
+
+- \`std::vector<int> sorted_descending(std::vector<int> v)\` — the values, largest first.
+- \`int count_at_least(const std::vector<int>& v, int bar)\` — how many values are \`>= bar\`.
+- \`long long sum_of(const std::vector<int>& v)\` — the total, without overflowing.
+- \`std::vector<int> doubled(const std::vector<int>& v)\` — each value times two, in order.
+- \`int first_over(const std::vector<int>& v, int limit)\` — the first value \`> limit\`, or \`-1\` if there is none.
+--- starter
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
+std::vector<int> sorted_descending(std::vector<int> v) {
+    return v;
+}
+
+int count_at_least(const std::vector<int>& v, int bar) {
+    return 0;
+}
+
+long long sum_of(const std::vector<int>& v) {
+    return 0;
+}
+
+std::vector<int> doubled(const std::vector<int>& v) {
+    return v;
+}
+
+int first_over(const std::vector<int>& v, int limit) {
+    return -1;
+}
+--- solution
+#include <algorithm>
+#include <functional>
+#include <numeric>
+#include <vector>
+
+std::vector<int> sorted_descending(std::vector<int> v) {
+    std::sort(v.begin(), v.end(), std::greater<int>());
+    return v;
+}
+
+int count_at_least(const std::vector<int>& v, int bar) {
+    return static_cast<int>(std::count_if(v.begin(), v.end(), [bar](int x) { return x >= bar; }));
+}
+
+long long sum_of(const std::vector<int>& v) {
+    return std::accumulate(v.begin(), v.end(), 0LL);
+}
+
+std::vector<int> doubled(const std::vector<int>& v) {
+    std::vector<int> out(v.size());
+    std::transform(v.begin(), v.end(), out.begin(), [](int x) { return x * 2; });
+    return out;
+}
+
+int first_over(const std::vector<int>& v, int limit) {
+    auto it = std::find_if(v.begin(), v.end(), [limit](int x) { return x > limit; });
+    return it == v.end() ? -1 : *it;
+}
+--- hint
+\`sorted_descending\` takes its vector by value on purpose: sort that copy with \`std::greater<int>()\` and return it.
+--- hint
+A lambda can use a parameter if you name it in the brackets: \`[bar](int x) { return x >= bar; }\`.
+--- hint
+\`transform\` needs somewhere to write: create \`std::vector<int> out(v.size());\` first. For the sum, start from \`0LL\`.
+--- check case | sorted_descending({3, 1, 2})
+sorted_descending({3, 1, 2})
+=> std::vector<int>{3, 2, 1}
+--- check case | sorted_descending of nothing is nothing
+sorted_descending({})
+=> std::vector<int>{}
+--- check case | count_at_least counts the boundary too
+count_at_least({50, 70, 69, 90, 70}, 70)
+=> 3
+--- check case | sum_of does not overflow
+sum_of({2000000000, 2000000000, 5})
+=> 4000000005LL
+--- check case | doubled keeps the order
+doubled({4, -1, 0})
+=> std::vector<int>{8, -2, 0}
+--- check case | first_over finds the first match
+first_over({3, 9, 4, 12}, 5)
+=> 9
+--- check case | first_over with no match is -1
+first_over({1, 2, 3}, 10)
+=> -1
+--- check source absent | No hand-written loops
+\\b(for|while)\\s*\\(
+
+=== cpp2-04 | Iterators and range-for
+--- teach
+An **iterator** is a position in a container. It behaves like a pointer: \`*it\` is the element, \`++it\` moves to the next one. Every container gives you two:
+
+- \`begin()\` — the first element.
+- \`end()\` — one **past** the last. It is a stopping mark, never an element: do not \`*\` it.
+
+That half-open shape \`[begin, end)\` is why an empty container has \`begin() == end()\`, and why loops read "while not at the end":
+
+\`\`\`cpp
+std::vector<int> v = {7, 3, 9};
+for (auto it = v.begin(); it != v.end(); ++it) {
+    std::cout << *it << "\\n";
+}
+\`\`\`
+
+The **range-for** loop is exactly that loop, written for you:
+
+\`\`\`cpp
+for (int x : v)          // x is a copy of each element
+for (int& x : v)         // x IS each element: changes stick
+for (const auto& s : names)   // no copy, read-only: the default for strings and bigger things
+\`\`\`
+
+Iterators are what algorithms return, so you often turn one back into a position with \`std::distance\`:
+
+\`\`\`cpp
+auto it = std::max_element(v.begin(), v.end());   // points at 9
+auto index = std::distance(v.begin(), it);        // 2
+\`\`\`
+
+\`rbegin()\` and \`rend()\` walk backwards, which makes "is it the same both ways?" a one-liner: \`std::equal(s.begin(), s.end(), s.rbegin())\` compares the start going forwards with the end going backwards.
+--- task
+Write three functions. No \`main\`.
+
+- \`int index_of_max(const std::vector<int>& v)\` — the position of the largest value (the first one if it appears more than once), or \`-1\` for an empty vector.
+- \`bool is_palindrome(const std::string& s)\` — true if \`s\` reads the same backwards (\`"level"\`, \`""\`, \`"a"\`). Compare characters exactly.
+- \`void capitalize_all(std::vector<std::string>& words)\` — uppercase the first letter of every non-empty word, **in place**.
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <iterator>
+#include <string>
+#include <vector>
+
+int index_of_max(const std::vector<int>& v) {
+    return 0;
+}
+
+bool is_palindrome(const std::string& s) {
+    return false;
+}
+
+void capitalize_all(std::vector<std::string>& words) {
+    for (auto w : words) {
+        w[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(w[0])));
+    }
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iterator>
+#include <string>
+#include <vector>
+
+int index_of_max(const std::vector<int>& v) {
+    if (v.empty()) return -1;
+    auto it = std::max_element(v.begin(), v.end());
+    return static_cast<int>(std::distance(v.begin(), it));
+}
+
+bool is_palindrome(const std::string& s) {
+    return std::equal(s.begin(), s.end(), s.rbegin());
+}
+
+void capitalize_all(std::vector<std::string>& words) {
+    for (auto& w : words) {
+        if (!w.empty()) {
+            w[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(w[0])));
+        }
+    }
+}
+--- hint
+\`std::max_element\` already returns the *first* largest; \`std::distance(v.begin(), it)\` turns it into an index.
+--- hint
+\`std::equal(s.begin(), s.end(), s.rbegin())\` walks forwards through \`s\` and backwards at the same time.
+--- hint
+In \`capitalize_all\`, the loop variable must be a reference, and \`w[0]\` on an empty string is not a letter you may change — check \`w.empty()\` first.
+--- check case | index_of_max finds the first largest
+index_of_max({4, 9, 2, 9})
+=> 1
+--- check case | index_of_max of an empty vector is -1
+index_of_max({})
+=> -1
+--- check test | Palindromes and not
+is_palindrome("level") && is_palindrome("") && is_palindrome("a") && !is_palindrome("ab") && !is_palindrome("Level")
+--- check test | capitalize_all changes the words in place
+[] { std::vector<std::string> w{"ada", "", "grace", "Linus"}; capitalize_all(w); return w == std::vector<std::string>{"Ada", "", "Grace", "Linus"}; }()
+
+=== cpp2-05 | std::map, std::unordered_map and std::set
+--- teach
+Three containers cover most "look it up" problems:
+
+| Container | Holds | Order | Lookup |
+| --- | --- | --- | --- |
+| \`std::map<K, V>\` | key → value | sorted by key | O(log n) |
+| \`std::unordered_map<K, V>\` | key → value | none you can rely on | O(1) on average |
+| \`std::set<T>\` | unique values | sorted | O(log n) |
+
+\`\`\`cpp
+#include <map>
+#include <set>
+#include <unordered_map>
+
+std::set<std::string> seen = {"b", "a", "b"};   // {"a", "b"}: duplicates vanish
+seen.insert("c");
+seen.contains("a");                             // true (C++20)
+
+std::unordered_map<std::string, int> count;
+for (const auto& w : words) count[w]++;         // missing keys start at 0
+
+auto it = count.find("pear");
+if (it != count.end()) {
+    // it->first is the key, it->second the value
+}
+\`\`\`
+
+\`it->first\` is short for \`(*it).first\`: follow the iterator (or pointer), then take the member. A map's elements are pairs, so \`first\` is the key and \`second\` the value. Containers can also be built straight from a range: \`std::set<std::string> s(words.begin(), words.end());\` makes a set from a vector, and a vector can be made from a set in the same way.
+
+How to choose: reach for \`unordered_map\` when you only need fast lookups, \`map\` when you also need the keys in order (printing a sorted report, "the smallest key over 10"), and \`set\` when you only care whether something is there.
+
+Two things trip people up. \`m[key]\` **inserts** the key when it is missing, so use \`find\` or \`contains\` to only look. And an \`unordered_map\` iterates in an unpredictable order, so if your answer depends on order (say, breaking ties alphabetically), you have to decide that order yourself.
+--- task
+Write three functions. No \`main\`.
+
+- \`std::vector<std::string> unique_sorted(const std::vector<std::string>& words)\` — each distinct word once, in sorted order.
+- \`std::map<char, int> letter_counts(const std::string& text)\` — how often each letter appears, counting upper and lower case as the same (keys are lowercase); ignore everything that is not a letter.
+- \`std::string most_common(const std::vector<std::string>& words)\` — the word that appears most often; if several tie, the alphabetically smallest of them; \`""\` for an empty list.
+--- starter
+#include <cctype>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+std::vector<std::string> unique_sorted(const std::vector<std::string>& words) {
+    return words;
+}
+
+std::map<char, int> letter_counts(const std::string& text) {
+    return {};
+}
+
+std::string most_common(const std::vector<std::string>& words) {
+    return "";
+}
+--- solution
+#include <cctype>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+std::vector<std::string> unique_sorted(const std::vector<std::string>& words) {
+    std::set<std::string> s(words.begin(), words.end());
+    return std::vector<std::string>(s.begin(), s.end());
+}
+
+std::map<char, int> letter_counts(const std::string& text) {
+    std::map<char, int> counts;
+    for (char c : text) {
+        unsigned char u = static_cast<unsigned char>(c);
+        if (std::isalpha(u)) counts[static_cast<char>(std::tolower(u))]++;
+    }
+    return counts;
+}
+
+std::string most_common(const std::vector<std::string>& words) {
+    std::unordered_map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::string best;
+    int best_count = 0;
+    for (const auto& [word, n] : counts) {
+        if (n > best_count || (n == best_count && word < best)) {
+            best = word;
+            best_count = n;
+        }
+    }
+    return best;
+}
+--- hint
+A \`std::set\` built from the words (\`std::set<std::string> s(words.begin(), words.end());\`) is already unique and sorted; turn it back into a vector the same way.
+--- hint
+For letters: \`std::isalpha\` and \`std::tolower\` from \`<cctype>\` — pass them an \`unsigned char\`.
+--- hint
+For \`most_common\`, count first, then walk the counts keeping the best so far: replace it when the count is higher, or equal with a smaller word.
+--- check case | unique_sorted drops duplicates and sorts
+unique_sorted({"pear", "apple", "pear", "fig"})
+=> std::vector<std::string>{"apple", "fig", "pear"}
+--- check case | letter_counts ignores case and non-letters
+letter_counts("Aa b!")
+=> std::map<char, int>{{'a', 2}, {'b', 1}}
+--- check case | most_common picks the most frequent
+most_common({"b", "a", "b", "c", "b", "a"})
+=> "b"
+--- check case | Ties go to the alphabetically smallest
+most_common({"kiwi", "fig", "kiwi", "fig", "plum"})
+=> "fig"
+--- check case | Nothing in, empty string out
+most_common({})
+=> ""
+
+=== cpp2-06 | Classes that keep their own rules
+--- teach
+A class earns its keep by holding an **invariant**: a rule that is true of every object, always. The constructor establishes it; every member function preserves it; the data is \`private\` so nobody else can break it.
+
+Take a clock. The rule: the time is always between 00:00 and 23:59. If the data were public, any code could set the minutes to 75. With a class, the only ways in are the constructor and the member functions, so those are the only places the rule has to be enforced:
+
+\`\`\`cpp
+class Timer {
+public:
+    explicit Timer(int seconds) : seconds_(seconds < 0 ? 0 : seconds) {}
+    void tick() { if (seconds_ > 0) --seconds_; }
+    bool done() const { return seconds_ == 0; }
+private:
+    int seconds_;   // rule: never negative
+};
+\`\`\`
+
+Things worth knowing:
+
+- The **member initialiser list** (\`: seconds_(…)\`) initialises members before the constructor body runs. Prefer it to assigning in the body.
+- \`explicit\` on a one-argument constructor stops surprise conversions like \`Timer t = 5;\`.
+- A good trick is to store the data in whatever shape makes the rule easy. For a clock, store **total minutes since midnight** in \`[0, 1440)\`; hours and minutes are then just \`/ 60\` and \`% 60\`.
+- \`%\` in C++ keeps the sign of the left side: \`-1 % 1440\` is \`-1\`, not \`1439\`. To wrap a possibly negative number into \`[0, n)\`, use \`((x % n) + n) % n\`.
+- \`std::to_string(7)\` (from \`<string>\`) turns a number into text: \`"7"\`.
+- A member marked \`static\` belongs to the class, not to any one object. \`static int wrap(int m)\` is a helper that needs no object. \`static constexpr int kDay = 24 * 60;\` is one constant that every \`Clock\` shares; \`constexpr\` means its value is known while compiling (the advanced course covers it), and constants are named \`kLikeThis\`.
+--- task
+Write \`class Clock\`:
+
+- \`Clock(int hours, int minutes)\` — any values are allowed and are wrapped onto a 24-hour clock: \`Clock(25, 70)\` is 02:10, \`Clock(0, -1)\` is 23:59.
+- \`void add_minutes(int m)\` — moves the time forward (or back, if \`m\` is negative), wrapping around midnight.
+- \`int hours() const\` and \`int minutes() const\`.
+- \`std::string to_string() const\` — always \`HH:MM\` with two digits each, like \`"07:05"\`.
+
+No \`main\`.
+--- starter
+#include <string>
+
+class Clock {
+public:
+    Clock(int hours, int minutes) : hours_(hours), minutes_(minutes) {}
+    void add_minutes(int m) { minutes_ += m; }
+    int hours() const { return hours_; }
+    int minutes() const { return minutes_; }
+    std::string to_string() const { return std::to_string(hours_) + ":" + std::to_string(minutes_); }
+private:
+    int hours_;
+    int minutes_;
+};
+--- solution
+#include <string>
+
+class Clock {
+public:
+    Clock(int hours, int minutes) : total_(wrap(hours * 60 + minutes)) {}
+    void add_minutes(int m) { total_ = wrap(total_ + m); }
+    int hours() const { return total_ / 60; }
+    int minutes() const { return total_ % 60; }
+    std::string to_string() const { return two(hours()) + ":" + two(minutes()); }
+private:
+    static constexpr int kDay = 24 * 60;
+    static int wrap(int m) { return ((m % kDay) + kDay) % kDay; }
+    static std::string two(int n) { return (n < 10 ? "0" : "") + std::to_string(n); }
+    int total_;   // minutes since midnight, always in [0, kDay)
+};
+--- hint
+Store one number: minutes since midnight. Wrap it every time it changes.
+--- hint
+\`((m % 1440) + 1440) % 1440\` wraps any int, negative or not, into \`[0, 1440)\`.
+--- hint
+Two-digit formatting: add a \`"0"\` in front when the number is below 10.
+--- check case | Clock(8, 5) shows 08:05
+Clock(8, 5).to_string()
+=> "08:05"
+--- check case | Clock(25, 70) wraps to 02:10
+Clock(25, 70).to_string()
+=> "02:10"
+--- check case | Clock(0, -1) is 23:59
+Clock(0, -1).to_string()
+=> "23:59"
+--- check test | add_minutes wraps forwards and backwards
+[] { Clock c(23, 30); c.add_minutes(45); bool fwd = c.to_string() == "00:15"; c.add_minutes(-1500); return fwd && c.to_string() == "23:15" && c.hours() == 23 && c.minutes() == 15; }()
+--- check case | A negative start many days back
+Clock(-49, 0).to_string()
+=> "23:00"
+
+=== cpp2-07 | Overloading and default arguments
+--- teach
+C++ lets several functions share a name as long as their parameter lists differ. The compiler picks one — **overload resolution** — by how well each argument matches:
+
+\`\`\`cpp
+std::string area(int side)           { return "square"; }
+std::string area(int w, int h)       { return "rectangle"; }
+std::string area(double radius)      { return "circle"; }
+
+area(3);       // "square"    — exact match for int
+area(3, 4);    // "rectangle"
+area(1.5);     // "circle"
+\`\`\`
+
+Roughly, from best to worst: an exact match, a small promotion (\`char\` → \`int\`, \`float\` → \`double\`), a standard conversion (\`int\` → \`double\`, *anything pointer-like* → \`bool\`), and last a user-defined conversion (like \`const char*\` → \`std::string\`). If two candidates tie, the call is **ambiguous** and does not compile.
+
+That ranking hides a famous trap. A string literal like \`"hi"\` is a \`const char*\`. If you have overloads for \`bool\` and for \`const std::string&\`, the pointer-to-\`bool\` standard conversion **beats** the user-defined conversion to \`std::string\`, so \`f("hi")\` quietly calls the \`bool\` version. The cure is an overload that takes \`const char*\` exactly.
+
+**Default arguments** fill in trailing parameters the caller leaves out:
+
+\`\`\`cpp
+std::string greet(const std::string& name, const std::string& greeting = "Hello") {
+    return greeting + ", " + name;
+}
+greet("Ada");            // "Hello, Ada"
+greet("Ada", "Hi");      // "Hi, Ada"
+\`\`\`
+
+Defaults go on the rightmost parameters only, and are written once (on the declaration). Use them for the common case; use overloads when the *work* differs by type.
+--- task
+The starter has \`describe\` for \`int\`, \`double\`, \`bool\` and \`const std::string&\`, each returning the type name, a space and the value (\`"int 42"\`, \`"double 2.5"\`, \`"bool true"\`, \`"string hi"\`). But \`describe("hi")\` returns \`"bool true"\`. Add the overload that makes a string literal give \`"string hi"\`.
+
+Then write \`std::string pad_left(const std::string& s, std::size_t width, char fill = ' ')\`: \`s\` with \`fill\` characters added in front until it is \`width\` long (unchanged if it is already that long or longer). No \`main\`.
+--- starter
+#include <sstream>
+#include <string>
+
+std::string describe(int n) { return "int " + std::to_string(n); }
+std::string describe(double d) {
+    std::ostringstream out;
+    out << "double " << d;
+    return out.str();
+}
+std::string describe(bool b) { return std::string("bool ") + (b ? "true" : "false"); }
+std::string describe(const std::string& s) { return "string " + s; }
+
+std::string pad_left(const std::string& s, std::size_t width, char fill) {
+    return s;
+}
+--- solution
+#include <sstream>
+#include <string>
+
+std::string describe(int n) { return "int " + std::to_string(n); }
+std::string describe(double d) {
+    std::ostringstream out;
+    out << "double " << d;
+    return out.str();
+}
+std::string describe(bool b) { return std::string("bool ") + (b ? "true" : "false"); }
+std::string describe(const std::string& s) { return "string " + s; }
+std::string describe(const char* s) { return describe(std::string(s)); }
+
+std::string pad_left(const std::string& s, std::size_t width, char fill = ' ') {
+    if (s.size() >= width) return s;
+    return std::string(width - s.size(), fill) + s;
+}
+--- hint
+A string literal is a \`const char*\`. Give \`describe\` an overload taking exactly that, and have it call the \`std::string\` version.
+--- hint
+\`std::string(n, c)\` is \`n\` copies of the character \`c\`.
+--- hint
+The default goes in the parameter list: \`char fill = ' '\`. Check \`s.size() >= width\` before subtracting — \`std::size_t\` cannot go negative.
+--- check case | describe("hi") is a string
+describe("hi")
+=> "string hi"
+--- check test | The other overloads still work
+describe(42) == "int 42" && describe(2.5) == "double 2.5" && describe(false) == "bool false" && describe(std::string("yo")) == "string yo"
+--- check case | pad_left uses spaces by default
+pad_left("7", 3)
+=> "  7"
+--- check case | pad_left with a fill character
+pad_left("42", 5, '0')
+=> "00042"
+--- check case | pad_left never cuts
+pad_left("toolong", 3)
+=> "toolong"
+
+=== cpp2-08 | enum class
+--- teach
+When a value can only be one of a few named things — a direction, a suit, a state — say so with an **enumeration**. Modern C++ uses \`enum class\`:
+
+\`\`\`cpp
+enum class Light { Red, Amber, Green };
+
+Light next(Light l) {
+    switch (l) {
+        case Light::Red:   return Light::Green;
+        case Light::Green: return Light::Amber;
+        case Light::Amber: return Light::Red;
+    }
+    return Light::Red;   // not reached; keeps the compiler happy
+}
+\`\`\`
+
+A **\`switch\`** compares one value with its \`case\` labels and jumps to the one that matches. End each case with \`return\` or \`break\`; without one, the code *falls through* into the next case. A \`default:\` label catches any value that is not listed.
+
+Why \`enum class\` rather than the older plain \`enum\`:
+
+- The names are **scoped**: you write \`Light::Red\`, so two enums can both have a \`Red\`.
+- It does **not** silently turn into an \`int\`. \`if (l == 2)\` is a compile error, which catches real mistakes. When you do want the number, ask for it: \`static_cast<int>(l)\`, and back again with \`static_cast<Light>(n)\`.
+
+A \`switch\` over an enum class is the natural way to act on each value. Leave out the \`default:\` label and clang warns (\`-Wswitch\`) when you forget a case — a free check every time someone adds a new value later.
+
+Turning left or right through four directions in order is arithmetic on the underlying number, wrapped with \`% 4\` (add 3 instead of subtracting 1, so it never goes negative).
+--- task
+The starter declares \`enum class Direction { North, East, South, West };\` and \`struct Position { int x; int y; Direction facing; };\`. Write:
+
+- \`Direction turn_right(Direction d)\` and \`Direction turn_left(Direction d)\`.
+- \`std::string direction_name(Direction d)\` — \`"North"\`, \`"East"\`, \`"South"\` or \`"West"\`.
+- \`Position follow(const std::string& commands)\` — a robot starts at (0, 0) facing North. \`'L'\` and \`'R'\` turn it; \`'F'\` moves one step forward (North is \`y + 1\`, East is \`x + 1\`). Ignore any other character.
+
+No \`main\`.
+--- starter
+#include <string>
+
+enum class Direction { North, East, South, West };
+
+struct Position {
+    int x;
+    int y;
+    Direction facing;
+};
+
+Direction turn_right(Direction d) { return d; }
+Direction turn_left(Direction d) { return d; }
+std::string direction_name(Direction d) { return ""; }
+
+Position follow(const std::string& commands) {
+    return Position{0, 0, Direction::North};
+}
+--- solution
+#include <string>
+
+enum class Direction { North, East, South, West };
+
+struct Position {
+    int x;
+    int y;
+    Direction facing;
+};
+
+Direction turn_right(Direction d) { return static_cast<Direction>((static_cast<int>(d) + 1) % 4); }
+Direction turn_left(Direction d) { return static_cast<Direction>((static_cast<int>(d) + 3) % 4); }
+
+std::string direction_name(Direction d) {
+    switch (d) {
+        case Direction::North: return "North";
+        case Direction::East:  return "East";
+        case Direction::South: return "South";
+        case Direction::West:  return "West";
+    }
+    return "";
+}
+
+Position follow(const std::string& commands) {
+    Position p{0, 0, Direction::North};
+    for (char c : commands) {
+        if (c == 'L') {
+            p.facing = turn_left(p.facing);
+        } else if (c == 'R') {
+            p.facing = turn_right(p.facing);
+        } else if (c == 'F') {
+            switch (p.facing) {
+                case Direction::North: p.y++; break;
+                case Direction::East:  p.x++; break;
+                case Direction::South: p.y--; break;
+                case Direction::West:  p.x--; break;
+            }
+        }
+    }
+    return p;
+}
+--- hint
+Turning right is "next in the list": \`static_cast<Direction>((static_cast<int>(d) + 1) % 4)\`. Turning left adds 3.
+--- hint
+\`follow\` keeps one \`Position\` and updates it for each character; a \`switch\` on \`facing\` decides which coordinate an \`'F'\` changes.
+--- check test | Turning right goes round the compass
+turn_right(Direction::North) == Direction::East && turn_right(Direction::West) == Direction::North
+--- check test | Turning left goes the other way
+turn_left(Direction::North) == Direction::West && turn_left(Direction::East) == Direction::North
+--- check case | direction_name
+direction_name(turn_left(Direction::South))
+=> "East"
+--- check test | FFRFF ends at (2, 2) facing East
+[] { Position p = follow("FFRFF"); return p.x == 2 && p.y == 2 && p.facing == Direction::East; }()
+--- check test | A full square comes home
+[] { Position p = follow("FRFRFRFR"); return p.x == 0 && p.y == 0 && p.facing == Direction::North; }()
+--- check test | Other characters are ignored
+[] { Position p = follow("L?F F"); return p.x == -2 && p.y == 0 && p.facing == Direction::West; }()
+
+=== cpp2-09 | std::optional: maybe a value
+--- teach
+Some functions cannot always answer. "Parse this text as a number" fails on \`"abc"\`. "Find this name" fails when it is not there. Old C++ code signals that with a magic value — \`-1\`, \`0\`, an empty string — which works until \`-1\` is a real answer.
+
+\`std::optional<T>\` says it in the type: either a \`T\`, or nothing.
+
+\`\`\`cpp
+#include <optional>
+
+std::optional<int> find_age(const std::string& name) {
+    if (name == "Ada") return 36;
+    return std::nullopt;             // "no value"
+}
+
+auto age = find_age("Bob");
+if (age) {                           // true when there is a value
+    std::cout << *age;               // * gets it out
+}
+int years = find_age("Bob").value_or(0);   // a fallback when empty
+\`\`\`
+
+An optional compares directly with a value: \`find_age("Ada") == 36\` is true, and \`find_age("Bob") == std::nullopt\` is true.
+
+Two rules keep you safe. Never \`*\` an optional you have not checked — with no value inside that is undefined behaviour. And decide the edge cases *before* writing code: for a parser, is \`""\` a number? Is \`"-"\`? Is \`" 7"\`? Writing them down first is half the work.
+--- task
+Write three functions. No \`main\`.
+
+- \`std::optional<int> parse_int(const std::string& s)\` — an optional \`-\` followed by one to nine digits and nothing else. Anything else (empty, \`"-"\`, spaces, letters, ten or more digits) is \`std::nullopt\`.
+- \`std::optional<std::size_t> index_of(const std::vector<std::string>& v, const std::string& target)\` — the position of the first \`target\`, or \`std::nullopt\`.
+- \`int sum_valid(const std::vector<std::string>& items)\` — the sum of the items that \`parse_int\` accepts, skipping the rest.
+--- starter
+#include <cctype>
+#include <optional>
+#include <string>
+#include <vector>
+
+std::optional<int> parse_int(const std::string& s) {
+    return 0;
+}
+
+std::optional<std::size_t> index_of(const std::vector<std::string>& v, const std::string& target) {
+    return 0;
+}
+
+int sum_valid(const std::vector<std::string>& items) {
+    return 0;
+}
+--- solution
+#include <cctype>
+#include <optional>
+#include <string>
+#include <vector>
+
+std::optional<int> parse_int(const std::string& s) {
+    std::size_t i = 0;
+    bool negative = false;
+    if (i < s.size() && s[i] == '-') {
+        negative = true;
+        ++i;
+    }
+    std::size_t digits = s.size() - i;
+    if (digits == 0 || digits > 9) return std::nullopt;
+    int value = 0;
+    for (; i < s.size(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+        value = value * 10 + (s[i] - '0');
+    }
+    return negative ? -value : value;
+}
+
+std::optional<std::size_t> index_of(const std::vector<std::string>& v, const std::string& target) {
+    for (std::size_t i = 0; i < v.size(); ++i) {
+        if (v[i] == target) return i;
+    }
+    return std::nullopt;
+}
+
+int sum_valid(const std::vector<std::string>& items) {
+    int total = 0;
+    for (const auto& item : items) {
+        total += parse_int(item).value_or(0);
+    }
+    return total;
+}
+--- hint
+Deal with the optional \`-\` first, then check how many characters are left (1 to 9) before looking at them.
+--- hint
+Build the number digit by digit: \`value = value * 10 + (c - '0')\`. Return \`std::nullopt\` the moment a character is not a digit.
+--- hint
+\`sum_valid\` is one line inside the loop with \`value_or(0)\`.
+--- check test | Plain and negative numbers parse
+parse_int("42") == 42 && parse_int("-7") == -7 && parse_int("0") == 0
+--- check test | Empty, a lone minus and letters do not
+parse_int("") == std::nullopt && parse_int("-") == std::nullopt && parse_int("4x2") == std::nullopt && parse_int(" 5") == std::nullopt
+--- check test | Nine digits parse, ten do not
+parse_int("999999999") == 999999999 && parse_int("1234567890") == std::nullopt
+--- check test | index_of finds the first match, or nothing
+index_of({"a", "b", "a"}, "a") == std::size_t{0} && index_of({"a", "b"}, "b") == std::size_t{1} && index_of({"a"}, "z") == std::nullopt
+--- check case | sum_valid skips what does not parse
+sum_valid({"3", "x", "-1", "", "10"})
+=> 12
+
+=== cpp2-10 | Lambdas and captures
+--- teach
+A **lambda** is a function you write where you need it:
+
+\`\`\`cpp
+auto square = [](int x) { return x * x; };
+square(5);   // 25
+\`\`\`
+
+The \`[]\` part is the **capture list**: which variables from around the lambda it can use.
+
+| Capture | Meaning |
+| --- | --- |
+| \`[]\` | nothing |
+| \`[limit]\` | a copy of \`limit\`, taken when the lambda is created |
+| \`[&total]\` | a reference to \`total\`: the lambda can change it |
+| \`[=]\` / \`[&]\` | everything it uses, by copy / by reference |
+| \`[n = 0]\` | a new variable living inside the lambda |
+
+\`\`\`cpp
+int limit = 10;
+auto big = std::count_if(v.begin(), v.end(), [limit](int x) { return x > limit; });
+
+int calls = 0;
+std::sort(v.begin(), v.end(), [&calls](int a, int b) { ++calls; return a < b; });
+\`\`\`
+
+A lambda's own captured copies are read-only unless you mark it \`mutable\`. That, plus an init capture, gives a lambda **state** that survives between calls:
+
+\`\`\`cpp
+auto next_id = [id = 100]() mutable { return id++; };
+next_id();   // 100
+next_id();   // 101
+\`\`\`
+
+The mistake to avoid: capturing a local **by reference** and then keeping the lambda after that local is gone. The reference dangles. When a lambda outlives the function that made it — for instance when you return it — capture by value.
+
+Sorting with a lambda is the everyday use: the comparator returns true when \`a\` should come **before** \`b\`. Compare \`std::abs(a - target)\` values to sort by closeness, and break ties explicitly.
+--- task
+Write three functions. No \`main\`.
+
+- \`std::vector<int> keep_above(const std::vector<int>& v, int limit)\` — the values greater than \`limit\`, in order (use \`std::copy_if\` with a lambda).
+- \`void sort_by_distance(std::vector<int>& v, int target)\` — sort in place so values closest to \`target\` come first; on a tie, the smaller value first.
+- \`make_counter()\` — returns a lambda that returns 1 the first time it is called, then 2, 3, … Each counter made counts on its own. (Declare it \`auto make_counter()\`.)
+--- starter
+#include <algorithm>
+#include <cstdlib>
+#include <iterator>
+#include <vector>
+
+std::vector<int> keep_above(const std::vector<int>& v, int limit) {
+    return v;
+}
+
+void sort_by_distance(std::vector<int>& v, int target) {
+}
+
+auto make_counter() {
+    return [] { return 0; };
+}
+--- solution
+#include <algorithm>
+#include <cstdlib>
+#include <iterator>
+#include <vector>
+
+std::vector<int> keep_above(const std::vector<int>& v, int limit) {
+    std::vector<int> out;
+    std::copy_if(v.begin(), v.end(), std::back_inserter(out), [limit](int x) { return x > limit; });
+    return out;
+}
+
+void sort_by_distance(std::vector<int>& v, int target) {
+    std::sort(v.begin(), v.end(), [target](int a, int b) {
+        int da = std::abs(a - target);
+        int db = std::abs(b - target);
+        if (da != db) return da < db;
+        return a < b;
+    });
+}
+
+auto make_counter() {
+    return [n = 0]() mutable { return ++n; };
+}
+--- hint
+\`std::copy_if(v.begin(), v.end(), std::back_inserter(out), …)\` appends each match to \`out\`.
+--- hint
+The comparator captures \`target\` and compares distances first; only when they are equal does it compare the values.
+--- hint
+The counter needs its own variable that it may change: an init capture plus \`mutable\`.
+--- check case | keep_above keeps order
+keep_above({5, 12, 3, 40, 10}, 10)
+=> std::vector<int>{12, 40}
+--- check test | sort_by_distance puts the closest first, ties smaller first
+[] { std::vector<int> v{1, 9, 6, 4, 5}; sort_by_distance(v, 5); return v == std::vector<int>{5, 4, 6, 1, 9}; }()
+--- check test | A counter counts
+[] { auto c = make_counter(); c(); c(); return c() == 3; }()
+--- check test | Two counters are independent
+[] { auto a = make_counter(); auto b = make_counter(); a(); a(); return b() == 1 && a() == 3; }()
+
+=== cpp2-11 | Processing text with string streams
+--- teach
+Real input is messy text. Three tools handle most of it.
+
+**\`std::istringstream\`** (from \`<sstream>\`) lets you read from a string exactly as you would from \`std::cin\`:
+
+\`\`\`cpp
+std::istringstream in("3 apples 4.5");
+int n; std::string what; double w;
+in >> n >> what >> w;        // 3, "apples", 4.5
+\`\`\`
+
+**\`std::getline(stream, line)\`** reads up to a newline; \`std::getline(stream, field, ',')\` reads up to any character you choose. Reading every line of a block of text:
+
+\`\`\`cpp
+std::istringstream text("first\\nsecond\\n");
+std::string line;
+while (std::getline(text, line)) { /* one line at a time */ }
+\`\`\`
+
+The reverse direction is **\`std::ostringstream\`**: write to it with \`<<\` just as you write to \`std::cout\`, then take the text out with \`.str()\`. With \`<iomanip>\`, \`out << std::fixed << std::setprecision(1) << 3.14159\` writes \`3.1\`, a fixed number of decimal places.
+
+**\`find\` and \`substr\`** cut strings by hand when you need exact control:
+
+\`\`\`cpp
+std::string s = "key=value";
+auto eq = s.find('=');                 // 3, or std::string::npos
+std::string key = s.substr(0, eq);     // "key"
+std::string val = s.substr(eq + 1);    // "value"
+\`\`\`
+
+Know the edges. \`getline\` with a delimiter drops a trailing empty field: splitting \`"a,b,"\` that way gives two fields, not three. And checking that a whole field was a number takes two steps: \`in >> n\` must succeed, **and** there must be nothing left afterwards (\`in >> std::ws\` then \`in.eof()\`), or \`"12abc"\` sneaks through as 12.
+
+Whitespace to trim is spaces, tabs and newlines: \`std::isspace\` from \`<cctype>\` recognises all of them.
+--- task
+Write three functions. No \`main\`.
+
+- \`std::vector<std::string> split(const std::string& s, char sep)\` — every field, **including empty ones**: \`split("a,,b", ',')\` is \`{"a", "", "b"}\`, \`split("a,", ',')\` is \`{"a", ""}\`, and \`split("", ',')\` is \`{""}\`.
+- \`std::string trim(const std::string& s)\` — \`s\` without leading and trailing whitespace.
+- \`std::map<std::string, int> parse_scores(const std::string& text)\` — each line looks like \`name: score\`, with any amount of whitespace around the name and the score. Store \`name → score\`. Skip lines that are blank, have no \`:\`, have an empty name, or whose score is not a whole number.
+--- starter
+#include <cctype>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<std::string> split(const std::string& s, char sep) {
+    std::vector<std::string> out;
+    std::istringstream in(s);
+    std::string field;
+    while (std::getline(in, field, sep)) out.push_back(field);
+    return out;
+}
+
+std::string trim(const std::string& s) {
+    return s;
+}
+
+std::map<std::string, int> parse_scores(const std::string& text) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<std::string> split(const std::string& s, char sep) {
+    std::vector<std::string> out;
+    std::size_t start = 0;
+    while (true) {
+        std::size_t at = s.find(sep, start);
+        if (at == std::string::npos) {
+            out.push_back(s.substr(start));
+            return out;
+        }
+        out.push_back(s.substr(start, at - start));
+        start = at + 1;
+    }
+}
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0;
+    std::size_t b = s.size();
+    while (a < b && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+    while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+    return s.substr(a, b - a);
+}
+
+std::map<std::string, int> parse_scores(const std::string& text) {
+    std::map<std::string, int> scores;
+    std::istringstream lines(text);
+    std::string line;
+    while (std::getline(lines, line)) {
+        std::size_t colon = line.find(':');
+        if (colon == std::string::npos) continue;
+        std::string name = trim(line.substr(0, colon));
+        if (name.empty()) continue;
+        std::istringstream num(line.substr(colon + 1));
+        int score;
+        if (!(num >> score)) continue;
+        num >> std::ws;
+        if (!num.eof()) continue;
+        scores[name] = score;
+    }
+    return scores;
+}
+--- hint
+For \`split\`, loop with \`s.find(sep, start)\`: take the piece from \`start\` up to the separator, then carry on after it. When there are no more separators, the rest of the string is the last field — even if it is empty.
+--- hint
+For \`trim\`, move one index forward past whitespace and another backward, then \`substr\` between them.
+--- hint
+In \`parse_scores\`, read the score from its own \`std::istringstream\`; after \`>> score\` succeeds, \`num >> std::ws\` then \`num.eof()\` tells you nothing else was there.
+--- check case | split keeps empty fields in the middle
+split("a,,b", ',')
+=> std::vector<std::string>{"a", "", "b"}
+--- check case | split keeps a trailing empty field
+split("a,", ',')
+=> std::vector<std::string>{"a", ""}
+--- check case | split of an empty string is one empty field
+split("", ',')
+=> std::vector<std::string>{""}
+--- check case | trim removes spaces, tabs and newlines at both ends
+trim(" \\t hello world \\n")
+=> "hello world"
+--- check case | trim of only spaces is empty
+trim("   ")
+=> ""
+--- check case | parse_scores reads good lines and skips bad ones
+parse_scores("  ada : 90\\n\\nlin:75 \\nno colon here\\n: 5\\nsam: 7x\\n")
+=> std::map<std::string, int>{{"ada", 90}, {"lin", 75}}
+
+=== cpp2-12 | Debugging: off by one, out of range
+--- teach
+An **off-by-one** error means a loop runs one time too many or too few. In C++ it is dangerous, because \`v[i]\` does no checking: reading one past the end does not stop the program — it reads whatever memory happens to be there and carries on with a wrong number.
+
+A method for loops that misbehave:
+
+1. **Reproduce small.** Pick an input where you can write the right answer by hand.
+2. **Trace the boundaries.** Write down the first and last value of every loop variable, and the largest index it will touch. For \`v\` of size 4, valid indexes are 0 to 3; anything that reaches 4 is a bug.
+3. **Check the edge inputs**: empty, one element, and the sizes where the loop condition flips.
+4. **Make out-of-range loud while you look.** \`v.at(i)\` checks the index; out of range it stops the program at once instead of returning garbage.
+
+There is a second, sneakier trap in C++: **unsigned wrap-around**. \`v.size()\` is a \`std::size_t\`, which cannot be negative. So when \`v.size()\` is 2 and \`k\` is 3, \`v.size() - k\` is not -1 — it wraps round to a *huge* number, and a loop like \`for (i = 0; i <= v.size() - k; ++i)\` runs almost forever, reading far outside the vector.
+
+The cause-level fix is to write the condition so it never subtracts below zero — for example \`i + k <= v.size()\` — and to handle the impossible cases (like \`k == 0\`) up front.
+--- task
+**Bug report:** "\`window_sums({1, 2, 3, 4}, 2)\` should be \`{3, 5, 7}\` — the sums of each two neighbours — but the numbers are wrong. And with \`k\` bigger than the list, the program crashes."
+
+\`window_sums(v, k)\` returns the sum of every run of \`k\` consecutive values, in order. If \`k\` is 0 or larger than \`v.size()\`, it returns an empty vector. Find both bugs and fix their causes. No \`main\`.
+--- starter
+#include <vector>
+
+// The sum of every run of k consecutive values:
+// window_sums({1, 2, 3, 4}, 2) is {3, 5, 7}.
+std::vector<int> window_sums(const std::vector<int>& v, std::size_t k) {
+    std::vector<int> out;
+    for (std::size_t i = 0; i <= v.size() - k; ++i) {
+        int sum = 0;
+        for (std::size_t j = 0; j <= k; ++j) {
+            sum += v[i + j];
+        }
+        out.push_back(sum);
+    }
+    return out;
+}
+--- solution
+#include <vector>
+
+// The sum of every run of k consecutive values:
+// window_sums({1, 2, 3, 4}, 2) is {3, 5, 7}.
+std::vector<int> window_sums(const std::vector<int>& v, std::size_t k) {
+    std::vector<int> out;
+    if (k == 0) return out;
+    for (std::size_t i = 0; i + k <= v.size(); ++i) {
+        int sum = 0;
+        for (std::size_t j = 0; j < k; ++j) {
+            sum += v[i + j];
+        }
+        out.push_back(sum);
+    }
+    return out;
+}
+--- hint
+Trace \`window_sums({1, 2, 3, 4}, 2)\` by hand: how many values does the inner loop add each time?
+--- hint
+When \`k > v.size()\`, what is \`v.size() - k\` for an unsigned type? Rewrite the condition so nothing is subtracted.
+--- hint
+\`k == 0\` would produce "windows" of nothing; return early.
+--- check case | Pairs of neighbours
+window_sums({1, 2, 3, 4}, 2)
+=> std::vector<int>{3, 5, 7}
+--- check case | k equal to the size gives one sum
+window_sums({1, 2, 3, 4}, 4)
+=> std::vector<int>{10}
+--- check case | k of 1 gives the values back
+window_sums({5, -2, 8}, 1)
+=> std::vector<int>{5, -2, 8}
+--- check case | k of 0 gives nothing
+window_sums({1, 2, 3}, 0)
+=> std::vector<int>{}
+--- check case | k bigger than the list gives nothing
+window_sums({1, 2}, 3)
+=> std::vector<int>{}
+
+=== cpp2-13 | Debugging: overflow and uninitialised values
+--- teach
+Two bugs produce numbers that are simply **wrong**, with no crash to point at them.
+
+**Integer overflow.** An \`int\` holds up to 2,147,483,647. Go past it and a signed integer's behaviour is *undefined* — in practice you usually get a large negative number, but the compiler is allowed to assume it never happens at all. The cure is to pick a type big enough for the *result*, not just the inputs: \`long long\` goes to about 9 × 10¹⁸.
+
+A classic hiding place is \`std::accumulate\`, which adds in the type of its starting value:
+
+\`\`\`cpp
+std::vector<int> v = {2000000000, 2000000000};
+std::accumulate(v.begin(), v.end(), 0);     // int arithmetic: overflows
+std::accumulate(v.begin(), v.end(), 0LL);   // long long: 4000000000
+\`\`\`
+
+Declaring the function as returning \`long long\` does not help — the damage is done inside, before the result is converted.
+
+**Uninitialised variables.** \`int lowest;\` does not mean zero. A local without an initialiser holds whatever was in that memory, and reading it is undefined behaviour: the program may seem to work today and fail tomorrow.
+
+Debugging both:
+
+- **Read the warnings.** Compile with \`-Wall -Wextra\` (this checker does); clang flags many uninitialised reads.
+- **Test the edges** where these bugs live: very large values, all-negative or all-positive inputs, a single element.
+- **Fix the cause.** For "smallest so far", start from the first real element, not from 0 (which breaks on all-positive data) and not from a guess.
+--- task
+**Bug report:** "\`total_bytes\` of three 1.5 GB files comes out negative. And \`coldest({5, 7, 9})\` returns nonsense instead of 5."
+
+Fix both functions at the cause:
+
+- \`long long total_bytes(const std::vector<int>& sizes)\` — the sum of the sizes (0 for none).
+- \`int coldest(const std::vector<int>& temps)\` — the smallest temperature (the list is never empty).
+
+No \`main\`.
+--- starter
+#include <numeric>
+#include <vector>
+
+// Total size of all files, in bytes. A single file can be up to 2 GB.
+long long total_bytes(const std::vector<int>& sizes) {
+    return std::accumulate(sizes.begin(), sizes.end(), 0);
+}
+
+// The lowest temperature in the list (never empty).
+int coldest(const std::vector<int>& temps) {
+    int lowest;
+    for (int t : temps) {
+        if (t < lowest) lowest = t;
+    }
+    return lowest;
+}
+--- solution
+#include <numeric>
+#include <vector>
+
+// Total size of all files, in bytes. A single file can be up to 2 GB.
+long long total_bytes(const std::vector<int>& sizes) {
+    return std::accumulate(sizes.begin(), sizes.end(), 0LL);
+}
+
+// The lowest temperature in the list (never empty).
+int coldest(const std::vector<int>& temps) {
+    int lowest = temps[0];
+    for (int t : temps) {
+        if (t < lowest) lowest = t;
+    }
+    return lowest;
+}
+--- hint
+What type is the \`0\` passed to \`accumulate\`? That is the type the adding happens in.
+--- hint
+What value does \`lowest\` have before the loop? Start it from something that is really in the list.
+--- check case | Three 1.5 GB files
+total_bytes({1500000000, 1500000000, 1500000000})
+=> 4500000000LL
+--- check case | No files is 0 bytes
+total_bytes({})
+=> 0LL
+--- check case | coldest of all-positive temperatures
+coldest({5, 7, 9})
+=> 5
+--- check case | coldest of all-negative temperatures
+coldest({-3, -8, -1})
+=> -8
+--- check case | coldest of one reading
+coldest({42})
+=> 42
+
+=== cpp2-14 | Problem solving: two that add up
+--- teach
+Problem-solving lessons ask you to design the algorithm. A reliable way in:
+
+1. **Restate** the problem in your own words and pin down the output exactly.
+2. **Work examples** by hand, including awkward ones: duplicates, negatives, no answer.
+3. **Brute force first.** What is the obvious solution, and how slow is it?
+4. **Find the pattern** that removes the wasted work.
+
+Here: given numbers and a target, find two different positions whose values add up to the target.
+
+The brute force checks every pair — two nested loops, about n²/2 pairs. For 10 numbers that is nothing; for 200,000 numbers it is 20 **billion** pairs, far too slow.
+
+The pattern: walk through the numbers once. When you are standing on value \`x\` at position \`j\`, you need some *earlier* value equal to \`target - x\`. If you remember every earlier value and where you saw it, that question takes O(1) with a hash map:
+
+\`\`\`
+seen = {}                         value -> first position it appeared
+for j, x in numbers:
+    if (target - x) in seen: answer is (seen[target - x], j)
+    if x not in seen: seen[x] = j
+\`\`\`
+
+Checking *before* inserting \`x\` is what stops you pairing a number with itself. Keeping only the **first** position of each value gives the smallest \`i\` for that \`j\`. One pass, O(n) — 200,000 numbers take a blink.
+
+\`std::unordered_map<int, int>\` is the tool; \`find\` or \`contains\` looks without inserting.
+
+The answer is two numbers, so the function returns a **\`std::pair<int, int>\`** (from \`<utility>\`). \`return {i, j};\` builds one, and \`.first\` and \`.second\` read it back. To remember a position, \`m.emplace(key, value)\` inserts only when the key is missing. It never overwrites.
+--- task
+Write \`std::pair<int, int> two_sum(const std::vector<int>& nums, int target)\` returning positions \`{i, j}\` with \`i < j\` and \`nums[i] + nums[j] == target\`.
+
+If there are several answers, return the one with the **smallest \`j\`**, and for that \`j\` the smallest \`i\`. If there is none, return \`{-1, -1}\`. The last check has 200,002 numbers, so it needs the one-pass idea. No \`main\`.
+--- starter
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+std::pair<int, int> two_sum(const std::vector<int>& nums, int target) {
+    return {-1, -1};
+}
+--- solution
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+std::pair<int, int> two_sum(const std::vector<int>& nums, int target) {
+    std::unordered_map<int, int> first_seen;
+    for (int j = 0; j < static_cast<int>(nums.size()); ++j) {
+        auto it = first_seen.find(target - nums[j]);
+        if (it != first_seen.end()) return {it->second, j};
+        first_seen.emplace(nums[j], j);
+    }
+    return {-1, -1};
+}
+--- hint
+For each position \`j\`, the question is "have I already seen \`target - nums[j]\`, and where?"
+--- hint
+Look up before you insert, so a number never pairs with itself. \`emplace\` does not overwrite an existing key, so the first position of each value is kept.
+--- check case | The classic example
+two_sum({2, 7, 11, 15}, 9)
+=> std::pair<int, int>{0, 1}
+--- check case | Not the first element
+two_sum({3, 2, 4}, 6)
+=> std::pair<int, int>{1, 2}
+--- check case | The same value twice
+two_sum({3, 3}, 6)
+=> std::pair<int, int>{0, 1}
+--- check case | Smallest j wins, then smallest i
+two_sum({2, 2, 2, 5, 3}, 4)
+=> std::pair<int, int>{0, 1}
+--- check case | Negative numbers
+two_sum({-4, 10, 7, 1}, -3)
+=> std::pair<int, int>{0, 3}
+--- check case | No answer
+two_sum({1, 2, 3}, 100)
+=> std::pair<int, int>{-1, -1}
+--- check case | Empty input
+two_sum({}, 0)
+=> std::pair<int, int>{-1, -1}
+--- check test | 200,002 numbers, answer at the very end
+[] { std::vector<int> v; for (int i = 0; i < 200000; ++i) v.push_back(10 + i * 10); v.push_back(1); v.push_back(2); return two_sum(v, 3) == std::pair<int, int>{200000, 200001}; }()
+
+=== cpp2-15 | Design: give repeated work a name
+--- teach
+Copy-pasted code is a bug waiting to happen. Three blocks that "do the same thing" drift apart the first time someone edits one and forgets the others — and the one they forgot is usually wrong.
+
+Refactoring means changing the **shape** of code without changing what it does. For duplicated blocks:
+
+1. **Find what varies.** Line the copies up side by side. Here only the data and a label differ.
+2. **Name the idea.** A function name should say what it computes, not how: \`summarize\`, not \`loop_and_min_max\`.
+3. **Return a meaningful type.** When a function produces several related values, a small \`struct\` with named fields beats three output parameters or a \`std::pair\` of a \`std::pair\`.
+4. **Replace each copy with a call**, then re-run the checks. They are your safety net: behaviour must not change (except for fixing bugs the duplication was hiding).
+
+\`\`\`cpp
+struct Range { int low; int high; };
+
+Range range_of(const std::vector<int>& v) {        // one place to get it right
+    auto [lo, hi] = std::minmax_element(v.begin(), v.end());
+    return {*lo, *hi};
+}
+\`\`\`
+
+A good split has one function for **computing** (\`summarize\` returns numbers) and one for **presenting** (\`format_line\` turns them into text). You can then test each alone, and reuse the numbers somewhere that does not want text.
+--- task
+\`report\` works, mostly — but its three copied blocks hide a copy-paste bug. Refactor it:
+
+- \`struct Summary { int min; int max; double mean; };\`
+- \`Summary summarize(const std::vector<int>& readings)\` — for a non-empty list.
+- \`std::string format_line(const std::string& label, const std::vector<int>& readings)\` — \`"label: min 1, max 5, mean 3.0\\n"\` (mean to one decimal place), or \`"label: no readings\\n"\` for an empty list.
+- \`report\` returns the three lines, morning then noon then night, built with \`format_line\`.
+
+Keep at most one loop in the whole file. No \`main\`.
+--- starter
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string report(const std::vector<int>& morning, const std::vector<int>& noon, const std::vector<int>& night) {
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1);
+
+    int lo = morning[0], hi = morning[0];
+    long long sum = 0;
+    for (int x : morning) { if (x < lo) lo = x; if (x > hi) hi = x; sum += x; }
+    out << "morning: min " << lo << ", max " << hi << ", mean " << static_cast<double>(sum) / morning.size() << "\\n";
+
+    lo = noon[0]; hi = noon[0];
+    sum = 0;
+    for (int x : noon) { if (x < lo) lo = x; if (x > hi) hi = x; sum += x; }
+    out << "noon: min " << lo << ", max " << hi << ", mean " << static_cast<double>(sum) / noon.size() << "\\n";
+
+    lo = night[0]; hi = night[0];
+    sum = 0;
+    for (int x : night) { if (x < lo) lo = x; if (x > hi) hi = x; sum += x; }
+    out << "night: min " << lo << ", max " << hi << ", mean " << static_cast<double>(sum) / noon.size() << "\\n";
+
+    return out.str();
+}
+--- solution
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Summary {
+    int min;
+    int max;
+    double mean;
+};
+
+Summary summarize(const std::vector<int>& readings) {
+    Summary s{readings[0], readings[0], 0.0};
+    long long sum = 0;
+    for (int x : readings) {
+        if (x < s.min) s.min = x;
+        if (x > s.max) s.max = x;
+        sum += x;
+    }
+    s.mean = static_cast<double>(sum) / readings.size();
+    return s;
+}
+
+std::string format_line(const std::string& label, const std::vector<int>& readings) {
+    if (readings.empty()) return label + ": no readings\\n";
+    Summary s = summarize(readings);
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1);
+    out << label << ": min " << s.min << ", max " << s.max << ", mean " << s.mean << "\\n";
+    return out.str();
+}
+
+std::string report(const std::vector<int>& morning, const std::vector<int>& noon, const std::vector<int>& night) {
+    return format_line("morning", morning) + format_line("noon", noon) + format_line("night", night);
+}
+--- hint
+Compare the three blocks line by line. What is different in the last one, and is it meant to be?
+--- hint
+Move one block into \`summarize\`, returning a \`Summary{min, max, mean}\`. Then \`format_line\` calls it and does the text.
+--- hint
+\`report\` becomes a single line: three \`format_line\` calls joined with \`+\`.
+--- check case | report gives the three lines, with the night mean right
+report({1, 5, 3}, {10, 20}, {-2, 4, 1, 1})
+=> "morning: min 1, max 5, mean 3.0\\nnoon: min 10, max 20, mean 15.0\\nnight: min -2, max 4, mean 1.0\\n"
+--- check test | summarize returns the numbers
+[] { Summary s = summarize({4, -1, 9}); return s.min == -1 && s.max == 9 && std::abs(s.mean - 4.0) < 1e-9; }()
+--- check case | format_line with no readings
+format_line("noon", {})
+=> "noon: no readings\\n"
+--- check case | report copes with an empty period
+report({2}, {}, {7, 8})
+=> "morning: min 2, max 2, mean 2.0\\nnoon: no readings\\nnight: min 7, max 8, mean 7.5\\n"
+--- check source | report uses format_line
+format_line\\(\\s*"morning"
+--- check source absent | At most one loop in the file
+\\b(for|while)\\s*\\([\\s\\S]*\\b(for|while)\\s*\\(
+`,De=`@track cpp
+@level projects
+@title C++ · Projects
+@name C++ projects: build real programs, then prove it with capstones
+@blurb Three programs built step by step — a matrix library, a bank with polymorphic accounts and a text-statistics tool — then three capstones where you get only a specification and design everything yourself.
+
+=== cppp-01 | Matrix 1: storage and element access
+--- teach
+This course puts the whole C++ ladder to work on bigger programs. Three projects grow over four steps each: a matrix library, a bank and a text-statistics tool. Then three capstones give you only a specification.
+
+The first project is a small **matrix library** — the kind of type that sits under graphics, physics and machine learning code. Over four steps you will build it up to arithmetic, printing, determinants and fast powers. Each step starts from where the last one finished.
+
+Every good type starts with a decision about **representation**. A matrix with \`rows × cols\` numbers could be a \`std::vector<std::vector<double>>\`, but that scatters each row in its own allocation and allows ragged rows. The better choice is one flat \`std::vector<double>\` in **row-major** order: row 0, then row 1, and so on. Element \`(r, c)\` lives at index \`r * cols + c\`.
+
+\`\`\`
+| 1 2 3 |
+| 4 5 6 |   ->   data = {1, 2, 3, 4, 5, 6},   (1, 2) is data[1 * 3 + 2] = 6
+\`\`\`
+
+Access goes through \`operator()\`, the conventional choice for matrices because it takes two indexes (\`m(1, 2)\`). You need two versions:
+
+\`\`\`cpp
+double& operator()(std::size_t r, std::size_t c);        // m(1, 2) = 7.0;  lets you write
+double operator()(std::size_t r, std::size_t c) const;   // reading a const matrix
+\`\`\`
+
+For convenience, a constructor taking \`std::initializer_list<std::initializer_list<double>>\` lets you write a matrix literally:
+
+\`\`\`cpp
+Matrix m{{1, 2, 3},
+         {4, 5, 6}};   // 2 rows, 3 columns
+\`\`\`
+
+The outer list's size is the number of rows; the first inner list's size is the number of columns. Construct with **parentheses** for sizes (\`Matrix(2, 3)\`) and **braces** for values — braces prefer the initializer-list constructor.
+
+A **static member function** makes a named constructor: \`Matrix::identity(3)\` reads better than a flag argument.
+--- task
+Write \`class Matrix\`, storing its values row-major in one \`std::vector<double>\`. No \`main\`.
+
+- \`Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)\` — every element is \`fill\`.
+- \`Matrix(std::initializer_list<std::initializer_list<double>> rows)\` — values row by row (all rows are the same length).
+- \`static Matrix identity(std::size_t n)\` — \`n × n\` with 1 on the diagonal, 0 elsewhere.
+- \`std::size_t rows() const\`, \`std::size_t cols() const\`.
+- \`double& operator()(std::size_t r, std::size_t c)\` and a \`const\` version returning \`double\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+// Step 1 of the matrix project: storage and element access.
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0) {}
+
+    std::size_t rows() const { return 0; }
+    std::size_t cols() const { return 0; }
+
+private:
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+Keep three members: \`rows_\`, \`cols_\` and \`std::vector<double> data_\`. The sized constructor can build \`data_(rows * cols, fill)\` directly.
+--- hint
+In the initializer-list constructor, \`rows.size()\` is the row count and \`rows.begin()->size()\` the column count (guard against an empty list); then push every value in order.
+--- hint
+Both \`operator()\` versions return \`data_[r * cols_ + c]\`.
+--- check test | A sized matrix is filled
+[] { Matrix m(2, 3, 1.5); return m.rows() == 2 && m.cols() == 3 && m(0, 0) == 1.5 && m(1, 2) == 1.5; }()
+--- check test | The default fill is zero
+[] { Matrix m(3, 1); return m.rows() == 3 && m.cols() == 1 && m(2, 0) == 0.0; }()
+--- check test | A literal matrix is row-major
+[] { Matrix m{{1, 2, 3}, {4, 5, 6}}; return m.rows() == 2 && m.cols() == 3 && m(0, 2) == 3 && m(1, 0) == 4 && m(1, 2) == 6; }()
+--- check test | Elements can be written
+[] { Matrix m(2, 2); m(1, 0) = 7.5; const Matrix& c = m; return c(1, 0) == 7.5 && c(0, 1) == 0.0; }()
+--- check test | identity(3)
+[] { Matrix i = Matrix::identity(3); bool ok = i.rows() == 3 && i.cols() == 3; for (std::size_t r = 0; r < 3; ++r) for (std::size_t c = 0; c < 3; ++c) ok = ok && i(r, c) == (r == c ? 1.0 : 0.0); return ok; }()
+
+=== cppp-02 | Matrix 2: arithmetic, and operations that can fail
+--- teach
+Now the matrix learns arithmetic. Here the project meets a real design question: **what should happen when an operation makes no sense?** Adding a 2 × 3 matrix to a 3 × 2 one, or multiplying when the inner sizes differ, has no answer.
+
+With exceptions off, the options are: crash (an \`assert\`), return a garbage value, or make the failure visible in the type. This library splits the operations by whether they can fail:
+
+- Operations that **always** work get operators: \`m * 2.0\`, \`2.0 * m\`, \`a == b\`, \`m.transpose()\`.
+- Operations that **can** fail return \`std::optional<Matrix>\`: \`add(a, b)\` and \`multiply(a, b)\`. The caller has to look inside, so a size mismatch can never be silently ignored.
+
+Operators should be **non-member** functions (so \`2.0 * m\` works as well as \`m * 2.0\`), written in terms of the public \`rows()\`, \`cols()\` and \`operator()\`.
+
+**Matrix multiplication**: for \`A\` (n × m) and \`B\` (m × p), the result is n × p, and
+
+\`\`\`
+C(i, j) = sum over k of A(i, k) * B(k, j)
+\`\`\`
+
+The loop order matters for speed. The textbook \`i, j, k\` order walks down a column of \`B\` in the innermost loop — jumping a whole row each step. Ordering the loops \`i, k, j\` makes the innermost loop walk along rows of both \`B\` and \`C\`, which is contiguous in row-major storage. Same result, friendlier to the cache.
+
+\`==\` compares shapes first; two matrices of different shape are simply not equal.
+--- task
+Add to your matrix — no \`main\`:
+
+- \`Matrix transpose() const\` — rows become columns.
+- \`bool operator==(const Matrix&, const Matrix&)\` — same shape and every element equal.
+- \`std::optional<Matrix> add(const Matrix& a, const Matrix& b)\` — element by element; \`std::nullopt\` if the shapes differ.
+- \`Matrix operator*(const Matrix&, double)\` and \`Matrix operator*(double, const Matrix&)\` — scale every element.
+- \`std::optional<Matrix> multiply(const Matrix& a, const Matrix& b)\` — the matrix product; \`std::nullopt\` unless \`a.cols() == b.rows()\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- hint
+\`transpose\` builds a \`Matrix(cols_, rows_)\` and copies \`(r, c)\` to \`(c, r)\`.
+--- hint
+For the optional-returning functions, check the shapes first and \`return std::nullopt;\` on a mismatch, otherwise build and return the result (it converts to an optional).
+--- hint
+\`multiply\`: start from a zero \`Matrix(a.rows(), b.cols())\` and add \`a(i, k) * b(k, j)\` into \`out(i, j)\`, looping \`i\`, then \`k\`, then \`j\`.
+--- check test | transpose
+Matrix{{1, 2, 3}, {4, 5, 6}}.transpose() == Matrix{{1, 4}, {2, 5}, {3, 6}}
+--- check test | == compares shape and values
+Matrix{{1, 2}} == Matrix{{1, 2}} && !(Matrix{{1, 2}} == Matrix{{1, 3}}) && !(Matrix{{1, 2}} == Matrix{{1}, {2}})
+--- check test | add, and add with mismatched shapes
+[] { auto s = add(Matrix{{1, 2}, {3, 4}}, Matrix{{10, 20}, {30, 40}}); return s && *s == Matrix{{11, 22}, {33, 44}} && !add(Matrix(2, 2), Matrix(2, 3)); }()
+--- check test | Scaling from either side
+Matrix{{1, -2}} * 3.0 == Matrix{{3, -6}} && 0.5 * Matrix{{4}, {8}} == Matrix{{2}, {4}}
+--- check test | multiply a 2x3 by a 3x2
+[] { auto p = multiply(Matrix{{1, 2, 3}, {4, 5, 6}}, Matrix{{7, 8}, {9, 10}, {11, 12}}); return p && *p == Matrix{{58, 64}, {139, 154}}; }()
+--- check test | multiply by the identity changes nothing
+[] { Matrix m{{2, 7}, {1, 8}}; auto p = multiply(m, Matrix::identity(2)); return p && *p == m; }()
+--- check test | multiply with mismatched sizes fails
+!multiply(Matrix(2, 3), Matrix(2, 3)) && multiply(Matrix(2, 3), Matrix(3, 5))->cols() == 5
+
+=== cppp-03 | Matrix 3: printing and the determinant
+--- teach
+Two more features make the library usable: a way to **see** a matrix, and a real algorithm on it.
+
+**Printing.** \`operator<<\` should print one row per line, values separated by single spaces, each with exactly two decimal places. \`std::fixed << std::setprecision(2)\` does the formatting — but those settings *stick* to the stream afterwards, which would surprise whoever prints to it next. A tidy trick is to format into a local \`std::ostringstream\` and then write its text to the real stream, leaving the caller's stream untouched.
+
+**The determinant** of a square matrix is a single number that says, among other things, whether the matrix can be inverted (it can exactly when the determinant is not zero). The formula you may have seen for 2 × 2 — \`ad - bc\` — generalises badly: expanding by cofactors costs O(n!) operations.
+
+**Gaussian elimination** does it in O(n³). Turn the matrix into upper-triangular form by subtracting multiples of rows from the rows below; the determinant of a triangular matrix is the product of its diagonal. Two facts keep the answer right:
+
+- Subtracting a multiple of one row from another does **not** change the determinant.
+- **Swapping** two rows flips its sign.
+
+For each column, choose the row with the largest absolute value in that column as the **pivot** and swap it up (*partial pivoting*). That avoids dividing by zero when the natural pivot is 0, and keeps rounding errors small. If the best pivot is (almost) zero, the matrix is singular and the determinant is 0.
+
+Work on a **copy** of the data — \`determinant()\` is \`const\`.
+--- task
+Add to your matrix — no \`main\`:
+
+- \`std::ostream& operator<<(std::ostream& out, const Matrix& m)\` — each row on its own line ending in \`\\n\`, values separated by one space, each printed with two decimal places (\`1.00 -2.50\`). Leave the stream's formatting settings as they were.
+- \`std::optional<double> determinant() const\` — \`std::nullopt\` if the matrix is not square; otherwise the determinant, by Gaussian elimination with partial pivoting (0 for a singular matrix).
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+--- hint
+Print into a local \`std::ostringstream text;\` with \`text << std::fixed << std::setprecision(2);\`, then \`return out << text.str();\`.
+--- hint
+For each column: find the row (from the current one down) with the largest \`std::abs\` value in that column; if it is below \`1e-12\`, return 0; otherwise swap it up and flip the sign of your running determinant.
+--- hint
+Multiply the running determinant by the pivot, then subtract \`factor * pivot row\` from each row below, with \`factor = a[r][col] / a[col][col]\`.
+--- check case | Printing a matrix
+[] { std::ostringstream o; o << Matrix{{1, -2.5}, {0, 10}}; return o.str(); }()
+=> "1.00 -2.50\\n0.00 10.00\\n"
+--- check test | Printing leaves the stream settings alone
+[] { std::ostringstream o; o << Matrix{{1}} << 2.5; return o.str() == "1.00\\n2.5"; }()
+--- check test | Determinant of a 2x2
+[] { auto d = Matrix{{1, 2}, {3, 4}}.determinant(); return d && std::abs(*d - (-2.0)) < 1e-9; }()
+--- check test | Determinant of a 3x3
+[] { auto d = Matrix{{2, -3, 1}, {2, 0, -1}, {1, 4, 5}}.determinant(); return d && std::abs(*d - 49.0) < 1e-9; }()
+--- check test | A zero in the corner needs a row swap
+[] { auto d = Matrix{{0, 1}, {1, 0}}.determinant(); auto e = Matrix{{0, 2, 1}, {1, 0, 0}, {0, 0, 3}}.determinant(); return d && std::abs(*d + 1.0) < 1e-9 && e && std::abs(*e + 6.0) < 1e-9; }()
+--- check test | A singular matrix has determinant 0
+[] { auto d = Matrix{{1, 2}, {2, 4}}.determinant(); return d && std::abs(*d) < 1e-9; }()
+--- check test | Non-square has no determinant; identity has 1
+[] { auto d = Matrix::identity(5).determinant(); return !Matrix(2, 3).determinant() && d && std::abs(*d - 1.0) < 1e-12; }()
+
+=== cppp-04 | Matrix 4: fast powers
+--- teach
+The last feature shows why a matrix type is worth having: **raising a matrix to a power** solves problems that look nothing like matrices.
+
+Fibonacci numbers, for example, satisfy
+
+\`\`\`
+| 1 1 | ^ k     | F(k+1)  F(k)   |
+| 1 0 |      =  | F(k)    F(k-1) |
+\`\`\`
+
+so \`F(70)\` is one entry of a matrix power. The same trick counts paths in graphs and steps linear recurrences forward.
+
+Multiplying \`k\` times costs \`k\` matrix products — hopeless for \`k = 1,000,000,000\`. **Exponentiation by squaring** needs only about \`2 log₂ k\`:
+
+\`\`\`
+result = identity
+while k > 0:
+    if k is odd: result = result * base
+    base = base * base
+    k = k / 2
+\`\`\`
+
+In C++, \`k & 1\` tests "k is odd" and \`k >>= 1\` halves \`k\` (the bit operators from the expert course).
+
+It works because of the binary digits of \`k\`: \`M^13 = M^8 · M^4 · M^1\`, and \`M, M², M⁴, M⁸\` come from repeated squaring. A billion needs about 30 squarings instead of a billion multiplications.
+
+Two design notes:
+
+- \`power(m, 0)\` is the identity — the "empty product", just as \`x⁰ = 1\`.
+- Only square matrices have powers, so \`power\` returns \`std::optional<Matrix>\`. Inside it, once you have checked the shape, every \`multiply\` is guaranteed to succeed, so dereferencing its result with \`*\` is safe — and a comment saying why is worth writing.
+
+Doubles hold integers exactly up to 2⁵³ (about 9 × 10¹⁵), so \`F(70) = 190392490709135\` comes out exact.
+--- task
+Add \`std::optional<Matrix> power(const Matrix& m, unsigned long long k)\` — \`m\` multiplied by itself \`k\` times, using exponentiation by squaring; the identity when \`k\` is 0; \`std::nullopt\` if \`m\` is not square. No \`main\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+
+std::optional<Matrix> power(const Matrix& m, unsigned long long k) {
+    if (m.rows() != m.cols()) return std::nullopt;
+    Matrix result = Matrix::identity(m.rows());
+    Matrix base = m;
+    while (k > 0) {
+        if (k & 1) result = *multiply(result, base);
+        k >>= 1;
+        if (k > 0) base = *multiply(base, base);
+    }
+    return result;
+}
+--- hint
+Check \`m.rows() == m.cols()\` first. Then keep \`result\` (starting as the identity) and \`base\` (starting as \`m\`).
+--- hint
+Loop while \`k > 0\`: if \`k & 1\`, multiply \`result\` by \`base\`; square \`base\`; shift \`k >>= 1\`.
+--- hint
+\`multiply\` returns an optional; after the shape check it always has a value, so \`*multiply(result, base)\` is safe here.
+--- check test | Small powers
+[] { Matrix m{{1, 1}, {1, 0}}; auto p = power(m, 5); return p && *p == Matrix{{8, 5}, {5, 3}}; }()
+--- check test | Power 0 is the identity, power 1 is the matrix
+[] { Matrix m{{2, 3}, {4, 5}}; auto a = power(m, 0); auto b = power(m, 1); return a && *a == Matrix::identity(2) && b && *b == m; }()
+--- check test | Fibonacci 70 from a matrix power
+[] { auto p = power(Matrix{{1, 1}, {1, 0}}, 70); return p && std::abs((*p)(0, 1) - 190392490709135.0) < 0.5; }()
+--- check test | A billion-th power in a blink
+[] { auto p = power(Matrix{{1, 1}, {0, 1}}, 1000000000ULL); return p && *p == Matrix{{1, 1000000000.0}, {0, 1}}; }()
+--- check test | Non-square matrices have no powers
+!power(Matrix(2, 3), 2) && !power(Matrix(1, 2), 0)
+
+=== cppp-05 | Bank 1: an account that keeps its rules
+--- teach
+The second project is a small **bank**: accounts of different kinds, a bank that owns them, transfers, and statements. It is a classic exercise in classes, invariants and polymorphism, built over four steps.
+
+Start with money. **Never store money in a \`double\`.** \`0.1 + 0.2\` is not exactly \`0.3\` in binary floating point, and those tiny errors add up to real discrepancies. Store whole **cents** in an integer type — \`long long\` holds amounts up to about 92 thousand trillion dollars — and convert to text only for display.
+
+Next, the account itself. Its rules — its **invariant** — are:
+
+- Deposits and withdrawals must be positive amounts.
+- A basic account can never go below zero.
+
+The data is private (or protected, see below) so that the only way to change a balance is through \`deposit\` and \`withdraw\`, which enforce those rules and report failure by returning \`false\`.
+
+This account is also going to be a **base class**: next lesson adds checking and savings accounts that withdraw differently. Plan for it now:
+
+- \`withdraw\` is \`virtual\`, so derived accounts can replace the rule.
+- \`end_month\` is a \`virtual\` hook that does nothing here; savings accounts will pay interest in it.
+- \`kind\` is \`virtual\` and names the account type.
+- The destructor is \`virtual\`, because accounts will be owned through \`Account\` pointers.
+- \`balance_\` is **protected**: derived classes may adjust it, outside code may not.
+
+Formatting cents for people: \`123456\` is \`$1234.56\`, \`5\` is \`$0.05\`, and \`-507\` is \`-$5.07\`. Work with the absolute value, then put the sign in front of the \`$\`.
+--- task
+Rewrite the starter's \`Account\` so it keeps its rules, and write \`format_cents\`. No \`main\`.
+
+- \`std::string format_cents(long long cents)\` — \`"$1234.56"\`, \`"$0.05"\`, \`"-$5.07"\`.
+- \`Account(int id, std::string owner)\`; \`id()\`, \`owner()\`, \`balance()\` (in cents, starting at 0).
+- \`bool deposit(long long cents)\` — false (and no change) unless \`cents > 0\`.
+- \`virtual bool withdraw(long long cents)\` — false (and no change) unless \`cents > 0\` and the balance covers it.
+- \`virtual void end_month()\` — does nothing for a basic account.
+- \`virtual std::string kind() const\` — \`"basic"\`.
+- A virtual destructor, and \`long long balance_\` as a **protected** member.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Step 1 of the bank project: one account that keeps its own rules.
+std::string format_cents(long long cents) {
+    return std::to_string(cents);
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        balance_ += cents;
+        return true;
+    }
+
+    bool withdraw(long long cents) {
+        balance_ -= cents;
+        return true;
+    }
+
+private:
+    int id_;
+    std::string owner_;
+    long long balance_ = 0;
+};
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- hint
+\`format_cents\`: take the absolute value \`v\`, print \`v / 100\`, a \`.\`, and \`v % 100\` padded to two digits; prefix \`-$\` or \`$\`.
+--- hint
+Both \`deposit\` and \`withdraw\` start with a guard that returns \`false\` before touching the balance.
+--- hint
+Move \`balance_\` into a \`protected:\` section and mark \`withdraw\`, \`end_month\`, \`kind\` and the destructor \`virtual\`.
+--- check test | format_cents
+format_cents(123456) == "$1234.56" && format_cents(5) == "$0.05" && format_cents(0) == "$0.00" && format_cents(-507) == "-$5.07" && format_cents(100) == "$1.00"
+--- check test | A new account
+[] { Account a(7, "Ada"); return a.id() == 7 && a.owner() == "Ada" && a.balance() == 0 && a.kind() == "basic"; }()
+--- check test | Deposits must be positive
+[] { Account a(1, "A"); bool ok = a.deposit(2500); bool zero = a.deposit(0); bool neg = a.deposit(-100); return ok && !zero && !neg && a.balance() == 2500; }()
+--- check test | Withdrawals cannot overdraw
+[] { Account a(1, "A"); a.deposit(1000); bool ok = a.withdraw(400); bool too_much = a.withdraw(601); bool neg = a.withdraw(-1); bool exact = a.withdraw(600); return ok && !too_much && !neg && exact && a.balance() == 0; }()
+--- check test | Account is ready to be a base class
+std::has_virtual_destructor_v<Account> && std::is_polymorphic_v<Account>
+
+=== cppp-06 | Bank 2: account types
+--- teach
+Real banks have several kinds of account, which share most things and differ in a few rules. That is exactly what inheritance with virtual functions is for: the shared parts live in \`Account\`, and each derived class **overrides** only what differs.
+
+**A checking account** may go overdrawn, down to an agreed limit. With a limit of $100.00 (10000 cents), the balance may fall to -10000 but no further. Its \`withdraw\` replaces the base rule entirely.
+
+**A savings account** pays interest and limits withdrawals:
+
+- At most 3 withdrawals per month; the 4th fails until \`end_month()\`.
+- It never goes negative — the base rule — so its \`withdraw\` can **reuse** the base version: check the monthly limit, then call \`Account::withdraw(cents)\`, and count the withdrawal only if that succeeded. Calling the base version explicitly like this is how an override extends, rather than replaces, behaviour.
+- \`end_month()\` pays interest and resets the monthly count.
+
+Interest rates are given in **basis points** (hundredths of a percent): 250 bp is 2.5%. Keeping to integers, the monthly interest is \`balance * rate_bp / 10000\`, rounded down by integer division, and only on a positive balance.
+
+Because \`balance_\` is \`protected\`, both derived classes can adjust it directly. Code outside the hierarchy still cannot.
+
+Always write \`override\`. If a signature does not match the base exactly — a missing \`const\`, a different parameter type — the compiler says so, instead of silently creating a new, never-called function.
+--- task
+Add two account types. No \`main\`.
+
+- \`CheckingAccount(int id, std::string owner, long long overdraft_limit)\` — \`withdraw\` succeeds for a positive amount as long as the balance stays \`>= -overdraft_limit\`. \`kind()\` is \`"checking"\`.
+- \`SavingsAccount(int id, std::string owner, int rate_bp)\` — \`withdraw\` follows the basic rule, but at most 3 successful withdrawals per month. \`end_month()\` adds \`balance * rate_bp / 10000\` (only when the balance is positive) and resets the monthly count. \`kind()\` is \`"savings"\`.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- hint
+\`CheckingAccount::withdraw\`: fail if \`cents <= 0\` or \`balance_ - cents < -overdraft_limit_\`; otherwise subtract.
+--- hint
+\`SavingsAccount::withdraw\`: if the monthly count has reached 3, fail; otherwise \`if (!Account::withdraw(cents)) return false;\` then count it.
+--- hint
+Both derived constructors pass \`id\` and \`owner\` on to \`Account(id, std::move(owner))\` in the initialiser list.
+--- check test | Checking can go overdrawn up to the limit
+[] { CheckingAccount c(1, "A", 10000); c.deposit(5000); bool ok = c.withdraw(15000); bool beyond = c.withdraw(1); return ok && !beyond && c.balance() == -10000 && c.kind() == "checking"; }()
+--- check test | Savings allows three withdrawals a month
+[] { SavingsAccount s(2, "B", 0); s.deposit(1000); bool three = s.withdraw(10) && s.withdraw(10) && s.withdraw(10); bool fourth = s.withdraw(10); s.end_month(); bool again = s.withdraw(10); return three && !fourth && again && s.balance() == 960; }()
+--- check test | A failed savings withdrawal does not use up the allowance
+[] { SavingsAccount s(2, "B", 0); s.deposit(100); bool big = s.withdraw(5000); bool three = s.withdraw(1) && s.withdraw(1) && s.withdraw(1); return !big && three && !s.withdraw(1); }()
+--- check test | Savings pays interest, rounded down
+[] { SavingsAccount s(3, "C", 250); s.deposit(10000); s.end_month(); bool first = s.balance() == 10250; s.end_month(); return first && s.balance() == 10506 && s.kind() == "savings"; }()
+--- check test | Virtual calls through an Account reference
+[] { CheckingAccount c(1, "A", 500); SavingsAccount s(2, "B", 100); Account& a = c; Account& b = s; b.deposit(1000); bool ok = a.withdraw(300); b.end_month(); return ok && a.balance() == -300 && a.kind() == "checking" && b.balance() == 1010 && b.kind() == "savings"; }()
+
+=== cppp-07 | Bank 3: the bank owns the accounts
+--- teach
+Now a \`Bank\` to hold the accounts. The central question is **ownership**: who creates the accounts, who destroys them, and who merely uses them?
+
+The bank owns them. Because accounts are polymorphic — a checking account and a savings account have different sizes and behaviour — they cannot sit in a \`std::vector<Account>\` (that would slice them). The bank keeps **owning pointers**:
+
+\`\`\`cpp
+std::map<int, std::unique_ptr<Account>> accounts_;
+\`\`\`
+
+A map from id to account gives fast lookup by id, and the \`unique_ptr\`s destroy every account when the bank goes away. Callers who want to look at an account get a **non-owning** \`Account*\` from \`find\` — \`nullptr\` when there is no such id. They must not delete it; it stays valid as long as the bank does.
+
+The bank also hands out the ids (1, 2, 3, …), so two accounts can never share one.
+
+**Transfers must be all-or-nothing.** Money must never vanish or appear. Do every check that can fail first — both ids exist, they are different, the amount is positive, the withdrawal succeeds — and only then deposit. Because a positive deposit cannot fail, "withdraw, then deposit" is safe; the reverse order is not.
+
+\`end_month\` on the bank calls \`end_month\` on every account. Thanks to the virtual hook from lesson 1, the bank does not need to know which accounts are savings accounts — each one does the right thing. That is polymorphism paying off: no \`if (kind == …)\` chains, and a new account type later needs no change here.
+--- task
+Add \`class Bank\`. No \`main\`.
+
+- \`int open_checking(const std::string& owner, long long overdraft_limit)\` and \`int open_savings(const std::string& owner, int rate_bp)\` — create the account and return its id (1, 2, 3, … in order).
+- \`Account* find(int id)\` and a \`const\` version — \`nullptr\` for an unknown id.
+- \`bool deposit(int id, long long cents)\` and \`bool withdraw(int id, long long cents)\` — false for an unknown id, otherwise the account's own answer.
+- \`bool transfer(int from, int to, long long cents)\` — all or nothing; false (and nothing changes) for an unknown or equal id, a non-positive amount, or a refused withdrawal.
+- \`long long total_balance() const\` and \`void end_month()\`.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!a->withdraw(cents)) return false;
+        b->deposit(cents);
+        return true;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+Store \`std::map<int, std::unique_ptr<Account>> accounts_\` and an \`int next_id_ = 1\`; \`open_…\` does \`accounts_[id] = std::make_unique<CheckingAccount>(id, owner, limit);\`.
+--- hint
+\`find\` uses \`accounts_.find(id)\` and returns \`it->second.get()\`, or \`nullptr\`.
+--- hint
+In \`transfer\`, check everything that can fail before any money moves: equal ids, the amount, both accounts found, then \`withdraw\`; only after that, \`deposit\`.
+--- check test | Opening accounts hands out ids in order
+[] { Bank b; int a = b.open_checking("Ada", 0); int s = b.open_savings("Lin", 100); return a == 1 && s == 2 && b.find(1)->kind() == "checking" && b.find(2)->owner() == "Lin" && b.find(3) == nullptr; }()
+--- check test | Deposits and withdrawals by id
+[] { Bank b; int a = b.open_checking("Ada", 1000); bool d = b.deposit(a, 500); bool w = b.withdraw(a, 1200); bool nobody = b.deposit(42, 100); return d && w && !nobody && b.find(a)->balance() == -700; }()
+--- check test | A transfer moves money
+[] { Bank b; int a = b.open_checking("Ada", 0); int c = b.open_checking("Cy", 0); b.deposit(a, 1000); bool ok = b.transfer(a, c, 400); return ok && b.find(a)->balance() == 600 && b.find(c)->balance() == 400 && b.total_balance() == 1000; }()
+--- check test | Failed transfers change nothing
+[] { Bank b; int a = b.open_checking("Ada", 0); int c = b.open_savings("Cy", 0); b.deposit(a, 1000); bool poor = b.transfer(a, c, 5000); bool same = b.transfer(a, a, 10); bool unknown = b.transfer(a, 99, 10); bool zero = b.transfer(a, c, 0); return !poor && !same && !unknown && !zero && b.find(a)->balance() == 1000 && b.find(c)->balance() == 0; }()
+--- check test | end_month pays interest on savings only
+[] { Bank b; int a = b.open_checking("Ada", 0); int s = b.open_savings("Lin", 500); b.deposit(a, 10000); b.deposit(s, 10000); b.end_month(); return b.find(a)->balance() == 10000 && b.find(s)->balance() == 10500 && b.total_balance() == 20500; }()
+--- check test | find works on a const bank
+[] { Bank b; b.open_savings("Lin", 0); const Bank& c = b; return c.find(1) != nullptr && c.find(2) == nullptr; }()
+
+=== cppp-08 | Bank 4: the transaction log and statements
+--- teach
+A bank that cannot say what happened is not a bank. The last step records every operation in a **transaction log** and prints statements from it.
+
+**Model the data first.** A transaction is a plain record:
+
+\`\`\`cpp
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;        // 0 for a deposit
+    int to;          // 0 for a withdrawal
+    long long cents;
+    bool ok;         // did it succeed?
+};
+\`\`\`
+
+Using \`0\` for "no account" works because ids start at 1. An \`enum class\` names the kinds instead of magic strings.
+
+**Decide what gets logged.** Failed attempts matter to an auditor — a refused withdrawal is worth seeing — so they are logged with \`ok = false\`. But calls that never referred to a real operation (an unknown account, a zero amount, a transfer to itself) are simply rejected and **not** logged.
+
+**Keep one source of truth.** A statement is *derived* from the log: filter the transactions that involve the account and format each one. Nothing is stored twice, so the statement cannot disagree with the history.
+
+**Separate data from presentation.** \`history()\` returns the raw records (by \`const&\`, so no copy and no way to edit them); \`statement()\` turns them into text. Tests, reports and a future user interface can all use the same data.
+
+A transfer appears in **both** accounts' statements, as \`transfer out\` for one and \`transfer in\` for the other.
+--- task
+Replace \`Bank\` with a version that keeps a log. No \`main\`.
+
+- \`enum class TxKind { Deposit, Withdraw, Transfer };\` and \`struct Transaction { TxKind kind; int from; int to; long long cents; bool ok; };\` (\`from\` is 0 for deposits, \`to\` is 0 for withdrawals).
+- \`deposit\`, \`withdraw\` and \`transfer\` behave as before, and append a \`Transaction\` — successful or not — whenever the accounts exist, the amount is positive and (for transfers) the ids differ. Other calls are rejected without logging.
+- \`const std::vector<Transaction>& history() const\`.
+- \`std::string statement(int id) const\` — \`"no such account\\n"\` for an unknown id; otherwise:
+
+\`\`\`
+Statement for #1 (Ada, checking)
+deposit +$100.00
+withdraw -$20.00
+transfer out -$30.00 to #2
+transfer in +$5.00 from #2
+withdraw -$500.00 FAILED
+balance $55.00
+\`\`\`
+
+One line per logged transaction involving the account, oldest first, with \` FAILED\` added to failed ones, then the balance.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!a->withdraw(cents)) return false;
+        b->deposit(cents);
+        return true;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        if (!a || cents <= 0) return false;
+        bool ok = a->deposit(cents);
+        log_.push_back({TxKind::Deposit, 0, id, cents, ok});
+        return ok;
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        if (!a || cents <= 0) return false;
+        bool ok = a->withdraw(cents);
+        log_.push_back({TxKind::Withdraw, id, 0, cents, ok});
+        return ok;
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        bool ok = a->withdraw(cents);
+        if (ok) b->deposit(cents);
+        log_.push_back({TxKind::Transfer, from, to, cents, ok});
+        return ok;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+    const std::vector<Transaction>& history() const { return log_; }
+
+    std::string statement(int id) const {
+        const Account* a = find(id);
+        if (!a) return "no such account\\n";
+        std::ostringstream out;
+        out << "Statement for #" << id << " (" << a->owner() << ", " << a->kind() << ")\\n";
+        for (const Transaction& t : log_) {
+            std::string line;
+            if (t.kind == TxKind::Deposit && t.to == id) {
+                line = "deposit +" + format_cents(t.cents);
+            } else if (t.kind == TxKind::Withdraw && t.from == id) {
+                line = "withdraw -" + format_cents(t.cents);
+            } else if (t.kind == TxKind::Transfer && t.from == id) {
+                line = "transfer out -" + format_cents(t.cents) + " to #" + std::to_string(t.to);
+            } else if (t.kind == TxKind::Transfer && t.to == id) {
+                line = "transfer in +" + format_cents(t.cents) + " from #" + std::to_string(t.from);
+            } else {
+                continue;
+            }
+            if (!t.ok) line += " FAILED";
+            out << line << "\\n";
+        }
+        out << "balance " << format_cents(a->balance()) << "\\n";
+        return out.str();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    std::vector<Transaction> log_;
+    int next_id_ = 1;
+};
+--- hint
+Add a \`std::vector<Transaction> log_\` member. In each operation, do the "reject without logging" checks first, then perform it, then \`log_.push_back({kind, from, to, cents, ok})\`.
+--- hint
+In \`transfer\`, a refused withdrawal is logged with \`ok = false\`; on success deposit and log \`ok = true\`.
+--- hint
+\`statement\` loops over \`log_\`, builds a line for each transaction where the account is \`from\` or \`to\` (using \`format_cents\`), appends \`" FAILED"\` when \`!t.ok\`, and ends with the balance line.
+--- check case | Ada's statement
+[] { Bank b; int ada = b.open_checking("Ada", 0); int lin = b.open_savings("Lin", 100); b.deposit(ada, 10000); b.withdraw(ada, 2000); b.transfer(ada, lin, 3000); b.transfer(lin, ada, 500); b.withdraw(ada, 50000); return b.statement(ada); }()
+=> "Statement for #1 (Ada, checking)\\ndeposit +$100.00\\nwithdraw -$20.00\\ntransfer out -$30.00 to #2\\ntransfer in +$5.00 from #2\\nwithdraw -$500.00 FAILED\\nbalance $55.00\\n"
+--- check case | The other side of the transfers
+[] { Bank b; int ada = b.open_checking("Ada", 0); int lin = b.open_savings("Lin", 100); b.deposit(ada, 10000); b.transfer(ada, lin, 3000); b.transfer(lin, ada, 500); return b.statement(lin); }()
+=> "Statement for #2 (Lin, savings)\\ntransfer in +$30.00 from #1\\ntransfer out -$5.00 to #1\\nbalance $25.00\\n"
+--- check test | Failed transfers are logged; rejected calls are not
+[] { Bank b; int a = b.open_checking("A", 0); int c = b.open_checking("C", 0); b.transfer(a, c, 100); b.deposit(99, 100); b.deposit(a, -5); b.transfer(a, a, 10); b.withdraw(a, 0); const auto& h = b.history(); return h.size() == 1 && h[0].kind == TxKind::Transfer && !h[0].ok && h[0].from == a && h[0].to == c && h[0].cents == 100; }()
+--- check test | Deposits and withdrawals record their accounts
+[] { Bank b; int a = b.open_savings("A", 0); b.deposit(a, 700); b.withdraw(a, 200); const auto& h = b.history(); return h.size() == 2 && h[0].kind == TxKind::Deposit && h[0].from == 0 && h[0].to == a && h[0].ok && h[1].kind == TxKind::Withdraw && h[1].from == a && h[1].to == 0 && h[1].cents == 200; }()
+--- check case | An unknown account
+Bank().statement(3)
+=> "no such account\\n"
+--- check case | A statement with no transactions
+[] { Bank b; b.open_checking("Bo", 5000); return b.statement(1); }()
+=> "Statement for #1 (Bo, checking)\\nbalance $0.00\\n"
+
+=== cppp-09 | Text stats 1: counting lines, words and characters
+--- teach
+The third project is a **command-line tool**: a complete program that reads text from standard input and prints statistics about it, in the spirit of the Unix \`wc\` command. Over four steps it grows word frequencies, sentence statistics and a histogram. In this project you write whole programs with \`main\`, and they are checked on their exact output.
+
+Reading all of standard input line by line is a loop you will write many times:
+
+\`\`\`cpp
+std::string line;
+while (std::getline(std::cin, line)) {
+    // one line, without its '\\n'
+}
+\`\`\`
+
+\`std::getline\` returns the stream, which converts to \`false\` once there is nothing left to read. Every line counts — blank ones too.
+
+Counting words inside a line is where \`std::istringstream\` shines: \`>>\` into a \`std::string\` skips any amount of whitespace and reads one run of non-space characters, so double spaces and tabs are handled for you:
+
+\`\`\`cpp
+std::istringstream in(line);
+std::string word;
+while (in >> word) ++words;
+\`\`\`
+
+Decide definitions before you write code — tools are only useful when their numbers mean something precise:
+
+- **lines**: how many lines were read.
+- **words**: whitespace-separated pieces, punctuation included (\`"summer."\` is one word).
+- **chars**: characters on the lines, **not** counting the line breaks.
+
+Use \`long long\` for counts that grow with input size; a tool should not break on a big file.
+--- task
+Write a complete program that reads all of standard input and prints exactly:
+
+\`\`\`
+lines: <number of lines>
+words: <number of whitespace-separated words>
+chars: <number of characters, not counting line breaks>
+\`\`\`
+--- starter
+#include <iostream>
+#include <string>
+
+// Step 1 of the text-statistics tool: read all of standard input and count it.
+int main() {
+    std::cout << "lines: 0\\n";
+    std::cout << "words: 0\\n";
+    std::cout << "chars: 0\\n";
+    return 0;
+}
+--- solution
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- hint
+\`while (std::getline(std::cin, line))\` runs once per line, blank lines included.
+--- hint
+Add \`line.size()\` to the character count, and count words with a \`std::istringstream\` over the line.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | Counts the sample text
+lines: 5
+words: 52
+chars: 261
+
+=== cppp-10 | Text stats 2: word frequencies
+--- teach
+Counting words is easy; counting **the same** word needs a decision about what "the same" means. In the sample text, \`The\`, \`the\` and \`the,\` should all count as one word. So before counting, **normalise** each word:
+
+1. Trim punctuation from both ends — anything that is not a letter or digit (\`std::isalnum\`). \`"summer."\` becomes \`"summer"\`, \`"(yes)"\` becomes \`"yes"\`. Punctuation *inside* a word, like the apostrophe in \`don't\`, stays.
+2. Lowercase what is left (\`std::tolower\`).
+3. If nothing is left (the "word" was just \`--\`), skip it.
+
+Put that in its own function, \`normalize\`. It has one job, it is easy to test on its own, and the next two lessons reuse it.
+
+Then counting is the \`std::map<std::string, int>\` pattern from the basics. To rank the words, copy the map's entries into a \`std::vector<std::pair<std::string, int>>\` and sort it with a comparator: **higher count first, and alphabetical order to break ties**. Without a tie-breaker, words with equal counts could come out in any order, and the output would not be reliable — a tool's output should be the same every time for the same input.
+
+\`std::isalnum\` and \`std::tolower\` expect an \`unsigned char\` value; pass \`static_cast<unsigned char>(c)\` to stay safe with non-ASCII bytes.
+
+The raw word count from step 1 stays as it was: it counts pieces of text, not normalised words.
+--- task
+Keep the three lines from step 1, then print the five most frequent **normalised** words (lowercased, with non-letter/digit characters trimmed from both ends; skip words that become empty):
+
+\`\`\`
+top words:
+  <word>: <count>
+\`\`\`
+
+Most frequent first; equal counts in alphabetical order; fewer than five lines if there are fewer distinct words.
+--- starter
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- hint
+Write \`std::string normalize(const std::string& raw)\`: move a start index forward and an end index backward past non-\`std::isalnum\` characters, take the \`substr\`, then lowercase it.
+--- hint
+Collect the normalised words in a vector while you read, count them in a \`std::map<std::string, int>\`, then copy the map into a vector of pairs.
+--- hint
+Sort with \`if (a.second != b.second) return a.second > b.second; return a.first < b.first;\` and print the first five.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | Counts and the top five words
+lines: 5
+words: 52
+chars: 261
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+
+=== cppp-11 | Text stats 3: sentences and word lengths
+--- teach
+Three more statistics, each with a definition to pin down first.
+
+**Sentences.** A sentence ends with \`.\`, \`!\` or \`?\`. But \`"there..."\` has three dots and ends *one* sentence, and \`"Wait?!"\` is one sentence too. So count **runs** of ending characters: a new sentence ends whenever an ending character follows something that was not one. Keep a flag \`previous_was_end\` as you walk each line's characters. (A colon, as in \`"said yes:"\`, does not end a sentence.)
+
+**Average word length.** Over the normalised words from step 2 — so punctuation does not count toward length — divide the total number of characters by the number of words. Print it with exactly two decimal places:
+
+\`\`\`cpp
+#include <iomanip>
+std::cout << std::fixed << std::setprecision(2) << average << "\\n";
+\`\`\`
+
+\`std::fixed\` stays set on \`std::cout\` afterwards. That is harmless here — it affects only floating-point output, and everything printed after it is text or whole numbers — but it is the kind of side effect worth knowing about.
+
+**Longest word.** The first normalised word of the greatest length. "First" matters: several words may tie, and a precise rule makes the output predictable. Replace your current best only when a word is strictly longer.
+
+Put the sentence counter in its own small function, as you did with \`normalize\`. As the tool grows, \`main\` should read like a summary of what the program does, with the details in named helpers.
+--- task
+Extend the tool. After the \`chars\` line and before \`top words:\`, print:
+
+\`\`\`
+sentences: <count>
+average word length: <two decimal places>
+longest word: <word>
+\`\`\`
+
+A sentence ends at each run of one or more \`.\`, \`!\` or \`?\` characters within a line. The average and the longest word use the normalised words; the longest is the first one of maximal length.
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- hint
+Write \`int count_sentences(const std::string& line)\` that walks the characters with a \`previous_was_end\` flag, counting only when an ending character follows a non-ending one.
+--- hint
+While reading, add \`count_sentences(line)\` to a running total.
+--- hint
+Loop over the normalised words once, summing their lengths and keeping the longest (replace only when strictly longer). Print the average with \`std::fixed << std::setprecision(2)\`.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | All the statistics so far
+lines: 5
+words: 52
+chars: 261
+sentences: 6
+average word length: 3.85
+longest word: children
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+
+=== cppp-12 | Text stats 4: a word-length histogram
+--- teach
+The last step adds a text-mode **histogram** — a bar chart made of characters — of how long the words are. It is a small exercise in layout, the part of command-line tools people notice first.
+
+Count words by length in a \`std::map<std::size_t, int>\`: the map keeps the lengths in increasing order, so printing is a single loop. Only lengths that actually occur get a line.
+
+Each line has three parts: the length, **right-aligned** in a column 4 characters wide; a bar of \`#\` characters, one per word; and the count. \`std::setw\` sets the width of the *next* thing printed (it does not stick, unlike \`std::fixed\`), and a \`std::string(n, '#')\` builds the bar:
+
+\`\`\`cpp
+std::cout << std::setw(4) << length << " | " << std::string(n, '#') << " " << n << "\\n";
+\`\`\`
+
+\`\`\`
+   3 | ####### 7
+  12 | ## 2
+\`\`\`
+
+Right-aligning numbers keeps the bars lined up even when lengths reach two digits.
+
+With four features in place, look back at the shape of the program. Reading happens once; every statistic is computed from the same list of normalised words; each non-trivial rule — normalising, counting sentences — is a named function. Adding the histogram took one new block. That is the payoff of the structure you built step by step: new features slot in without disturbing the old ones, and the output check proves nothing earlier changed.
+--- task
+Extend the tool one last time. After the top words, print:
+
+\`\`\`
+word lengths:
+\`\`\`
+
+followed by one line per word length that occurs among the normalised words, shortest first: the length right-aligned in 4 characters, then \` | \`, then one \`#\` per word of that length, a space, and the count.
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    std::map<std::size_t, int> by_length;
+    for (const auto& w : words) by_length[w.size()]++;
+    std::cout << "word lengths:\\n";
+    for (const auto& [length, n] : by_length) {
+        std::cout << std::setw(4) << length << " | " << std::string(n, '#') << " " << n << "\\n";
+    }
+    return 0;
+}
+--- hint
+Count lengths in a \`std::map<std::size_t, int>\` from the normalised words.
+--- hint
+\`std::setw(4) << length\` right-aligns the length; \`std::string(n, '#')\` is the bar.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | The full report with the histogram
+lines: 5
+words: 52
+chars: 261
+sentences: 6
+average word length: 3.85
+longest word: children
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+word lengths:
+   1 | # 1
+   2 | ### 3
+   3 | ####################### 23
+   4 | ############# 13
+   5 | ##### 5
+   6 | #### 4
+   7 | # 1
+   8 | ## 2
+
+=== cppp-13 | Capstone: a priority task scheduler
+--- teach
+From here on there are no step-by-step instructions: each capstone is a **specification**, an empty file and a set of behaviour checks. You choose the data structures, the helper types and the algorithms. This is the part that proves you can build things on your own.
+
+A way to work that holds up on real projects:
+
+1. **Read the spec twice** and write down the rules as a list. Note the edge cases it mentions.
+2. **Work examples by hand**, especially the tricky ones — here, ties in priority and tasks that wait on others.
+3. **Pick data structures from the operations.** List what must be fast. "Give me the highest-priority ready task" over and over is exactly what a heap (\`std::priority_queue\`) does in O(log n). "When a task finishes, which tasks were waiting for it?" suggests each task keeps a list of its dependents and a count of unfinished dependencies.
+4. **Build the simplest version that passes the small checks, then make it fast.** The big checks use 100,000 tasks and a 50,000-long chain of dependencies; anything that rescans every task on every call will run out of time.
+
+This scheduler is a small version of what build systems, package managers and job queues do: run things in priority order, but never before what they depend on. Because a task can only depend on tasks that already exist, there can be no cycles.
+
+A \`std::priority_queue\` puts the "largest" element on top, so its ordering must say what "larger" means for you: higher priority, and on equal priority the task **added earlier**. \`std::priority_queue<T>\` (from \`<queue>\`) has \`push(x)\`, \`top()\` (the largest) and \`pop()\`. It compares with \`<\` on \`T\` unless you give it a comparator, so a small struct with its own \`operator<\` is the easiest way to say what "larger" means.
+--- task
+Write \`class Scheduler\`. No \`main\`.
+
+- \`bool add(const std::string& name, int priority, const std::vector<std::string>& deps = {})\` — adds a task that depends on the tasks named in \`deps\`. Returns false, adding nothing, if the name is already used or any dependency is not a known task.
+- \`std::optional<std::string> next()\` — among tasks that are not finished and whose dependencies are all finished, returns the one with the **highest priority** (on a tie, the one added first) and marks it finished. \`std::nullopt\` if no task is ready.
+- \`std::size_t pending() const\` — tasks added but not yet finished.
+- \`bool is_done(const std::string& name) const\` — true if that task has been returned by \`next()\`.
+
+\`next()\` and \`add()\` must be fast: well under O(n) each.
+--- starter
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+// Capstone: design and write class Scheduler to the specification.
+--- solution
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+class Scheduler {
+public:
+    bool add(const std::string& name, int priority, const std::vector<std::string>& deps = {}) {
+        if (index_.count(name)) return false;
+        for (const auto& d : deps) {
+            if (!index_.count(d)) return false;
+        }
+        std::size_t id = tasks_.size();
+        tasks_.push_back(Task{name, priority, 0, {}, false});
+        index_.emplace(name, id);
+        for (const auto& d : deps) {
+            Task& dep = tasks_[index_.find(d)->second];
+            if (!dep.done) {
+                dep.dependents.push_back(id);
+                ++tasks_[id].waiting;
+            }
+        }
+        if (tasks_[id].waiting == 0) ready_.push(Ready{priority, id});
+        ++pending_;
+        return true;
+    }
+
+    std::optional<std::string> next() {
+        if (ready_.empty()) return std::nullopt;
+        std::size_t id = ready_.top().id;
+        ready_.pop();
+        tasks_[id].done = true;
+        --pending_;
+        for (std::size_t d : tasks_[id].dependents) {
+            if (--tasks_[d].waiting == 0) ready_.push(Ready{tasks_[d].priority, d});
+        }
+        return tasks_[id].name;
+    }
+
+    std::size_t pending() const { return pending_; }
+
+    bool is_done(const std::string& name) const {
+        auto it = index_.find(name);
+        return it != index_.end() && tasks_[it->second].done;
+    }
+
+private:
+    struct Task {
+        std::string name;
+        int priority;
+        int waiting;                          // unfinished dependencies
+        std::vector<std::size_t> dependents;  // tasks waiting on this one
+        bool done;
+    };
+
+    struct Ready {
+        int priority;
+        std::size_t id;
+        // priority_queue puts the "largest" on top: higher priority, then earlier id.
+        bool operator<(const Ready& o) const { return priority != o.priority ? priority < o.priority : id > o.id; }
+    };
+
+    std::vector<Task> tasks_;
+    std::unordered_map<std::string, std::size_t> index_;
+    std::priority_queue<Ready> ready_;
+    std::size_t pending_ = 0;
+};
+--- hint
+Store tasks in a vector (index = order added) with a map from name to index. Each task keeps its priority, a count of unfinished dependencies, and a list of the tasks that depend on it.
+--- hint
+Keep ready tasks in a \`std::priority_queue\` of small structs whose \`operator<\` makes higher priority — then lower index — come out first.
+--- hint
+When \`next()\` finishes a task, decrement the waiting count of each dependent; any that reach zero go into the queue. A dependency that is already finished when a task is added does not count as waiting.
+--- check test | Highest priority first
+[] { Scheduler s; s.add("a", 1); s.add("b", 5); s.add("c", 3); auto x = s.next(); auto y = s.next(); auto z = s.next(); return x == "b" && y == "c" && z == "a" && s.next() == std::nullopt; }()
+--- check test | Ties go to the task added first
+[] { Scheduler s; s.add("x", 2); s.add("y", 2); s.add("z", 2); auto a = s.next(); auto b = s.next(); auto c = s.next(); return a == "x" && b == "y" && c == "z"; }()
+--- check test | A task waits for its dependencies
+[] { Scheduler s; s.add("build", 1); s.add("test", 9, {"build"}); s.add("lint", 5); auto a = s.next(); auto b = s.next(); auto c = s.next(); return a == "lint" && b == "build" && c == "test"; }()
+--- check test | Several dependencies must all finish
+[] { Scheduler s; s.add("a", 1); s.add("b", 2); s.add("ship", 100, {"a", "b"}); auto first = s.next(); bool waiting = !s.is_done("ship") && s.pending() == 2; auto second = s.next(); auto third = s.next(); return first == "b" && waiting && second == "a" && third == "ship" && s.pending() == 0; }()
+--- check test | Duplicates and unknown dependencies are refused
+[] { Scheduler s; bool a = s.add("a", 1); bool dup = s.add("a", 2); bool unknown = s.add("b", 1, {"nope"}); bool self = s.add("c", 1, {"c"}); return a && !dup && !unknown && !self && s.pending() == 1; }()
+--- check test | Depending on a finished task means ready at once
+[] { Scheduler s; s.add("a", 1); s.next(); bool added = s.add("b", 0, {"a"}); return added && s.is_done("a") && s.next() == "b" && s.is_done("b"); }()
+--- check test | 100,000 tasks come out in order
+[] { Scheduler s; for (int i = 0; i < 100000; ++i) s.add("t" + std::to_string(i), i % 1000); for (int p = 999; p >= 0; --p) for (int i = p; i < 100000; i += 1000) { auto n = s.next(); if (!n || *n != "t" + std::to_string(i)) return false; } return !s.next() && s.pending() == 0; }()
+--- check test | A chain of 50,000 dependencies
+[] { Scheduler s; s.add("c0", 0); for (int i = 1; i < 50000; ++i) s.add("c" + std::to_string(i), i, {"c" + std::to_string(i - 1)}); for (int i = 0; i < 50000; ++i) { auto n = s.next(); if (!n || *n != "c" + std::to_string(i)) return false; } return s.pending() == 0; }()
+
+=== cppp-14 | Capstone: a JSON value type
+--- teach
+JSON is how most programs exchange data: \`null\`, \`true\`/\`false\`, numbers, strings, arrays \`[…]\` and objects \`{"key": value}\`, nested to any depth. This capstone asks you to design a C++ type that can hold **any** JSON value, be built up in code, and print itself as compact JSON text.
+
+The design questions are yours to answer, but here are the forces at work:
+
+- **One type, six shapes.** You met two ways to say "one of several kinds": a class hierarchy with virtual functions, and \`std::variant\`. The set of JSON kinds is fixed forever — a **closed** set — which is the textbook case for a variant.
+- **It is recursive.** An array holds values, which may be arrays. A class can contain a \`std::vector\` or \`std::map\` of itself, even before the class is complete, because those containers store their elements elsewhere.
+- **It should behave like a value.** Copying a document should copy all of it; changing the copy must not change the original. If every member manages itself (vectors, maps, strings, variants), the **rule of zero** gives you correct copies for free.
+- **Constructors decide how natural it feels.** \`Json(3)\`, \`Json(2.5)\`, \`Json(true)\`, \`Json("hi")\` should each do the obvious thing. Remember the trap from the intermediate course: without a \`const char*\` constructor, a string literal quietly prefers \`bool\`.
+
+Printing is a recursive walk: each kind knows how to print itself, and arrays and objects print their children. Strings need escaping (\`"\` and \`\\\` and control characters), and object keys come out sorted (a \`std::map\` does that).
+
+Numbers: JSON has one number type, so store a \`double\`, but print whole numbers without a decimal point — \`3\`, not \`3.000000\`.
+--- task
+Write \`class Json\`. No \`main\`.
+
+- Constructors: \`Json()\` and \`Json(std::nullptr_t)\` make null; \`Json(bool)\`, \`Json(int)\`, \`Json(double)\`, \`Json(const char*)\`, \`Json(std::string)\`. \`static Json array()\` and \`static Json object()\` make empty ones.
+- \`is_null()\`, \`is_bool()\`, \`is_number()\`, \`is_string()\`, \`is_array()\`, \`is_object()\`; \`std::size_t size() const\` — elements of an array or members of an object, 0 for anything else.
+- \`Json& push_back(Json v)\` — appends to an array (a null value becomes an empty array first); returns \`*this\` so calls chain.
+- \`Json& operator[](const std::string& key)\` — the member with that key, inserting null if it is missing (a null value becomes an empty object first).
+- \`const Json* get(const std::string& key) const\` — the member, or \`nullptr\` if this is not an object or has no such key.
+- \`std::string dump() const\` — compact JSON with no spaces: \`null\`, \`true\`, \`false\`; numbers that are whole (and smaller than 10¹⁵ in size) as integers, others as \`std::ostringstream\` prints them with \`std::setprecision(15)\`; strings in double quotes with \`"\` \`\\\` newline and tab escaped as \`\\"\` \`\\\\\` \`\\n\` \`\\t\`; arrays \`[a,b]\`; objects \`{"k":v}\` with keys in sorted order.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+// Capstone: design and write class Json to the specification.
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+class Json {
+public:
+    using Array = std::vector<Json>;
+    using Object = std::map<std::string, Json>;
+
+    Json() = default;
+    Json(std::nullptr_t) {}
+    Json(bool b) : value_(b) {}
+    Json(int n) : value_(static_cast<double>(n)) {}
+    Json(double d) : value_(d) {}
+    Json(const char* s) : value_(std::string(s)) {}
+    Json(std::string s) : value_(std::move(s)) {}
+
+    static Json array() {
+        Json j;
+        j.value_ = Array{};
+        return j;
+    }
+
+    static Json object() {
+        Json j;
+        j.value_ = Object{};
+        return j;
+    }
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_bool() const { return std::holds_alternative<bool>(value_); }
+    bool is_number() const { return std::holds_alternative<double>(value_); }
+    bool is_string() const { return std::holds_alternative<std::string>(value_); }
+    bool is_array() const { return std::holds_alternative<Array>(value_); }
+    bool is_object() const { return std::holds_alternative<Object>(value_); }
+
+    std::size_t size() const {
+        if (const auto* a = std::get_if<Array>(&value_)) return a->size();
+        if (const auto* o = std::get_if<Object>(&value_)) return o->size();
+        return 0;
+    }
+
+    Json& push_back(Json v) {
+        if (is_null()) value_ = Array{};
+        if (auto* a = std::get_if<Array>(&value_)) a->push_back(std::move(v));
+        return *this;
+    }
+
+    Json& operator[](const std::string& key) {
+        if (is_null()) value_ = Object{};
+        return (*std::get_if<Object>(&value_))[key];
+    }
+
+    const Json* get(const std::string& key) const {
+        const auto* o = std::get_if<Object>(&value_);
+        if (!o) return nullptr;
+        auto it = o->find(key);
+        return it == o->end() ? nullptr : &it->second;
+    }
+
+    std::string dump() const {
+        std::string out;
+        write(out);
+        return out;
+    }
+
+private:
+    static std::string number(double d) {
+        if (std::floor(d) == d && std::abs(d) < 1e15) return std::to_string(static_cast<long long>(d));
+        std::ostringstream o;
+        o << std::setprecision(15) << d;
+        return o.str();
+    }
+
+    static void quote(std::string& out, const std::string& s) {
+        out += '"';
+        for (char c : s) {
+            switch (c) {
+                case '"': out += "\\\\\\""; break;
+                case '\\\\': out += "\\\\\\\\"; break;
+                case '\\n': out += "\\\\n"; break;
+                case '\\t': out += "\\\\t"; break;
+                default: out += c;
+            }
+        }
+        out += '"';
+    }
+
+    void write(std::string& out) const {
+        std::visit([&out](const auto& v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                out += "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                out += v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                out += number(v);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                quote(out, v);
+            } else if constexpr (std::is_same_v<T, Array>) {
+                out += '[';
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    if (i > 0) out += ',';
+                    v[i].write(out);
+                }
+                out += ']';
+            } else {
+                out += '{';
+                bool first = true;
+                for (const auto& [key, item] : v) {
+                    if (!first) out += ',';
+                    first = false;
+                    quote(out, key);
+                    out += ':';
+                    item.write(out);
+                }
+                out += '}';
+            }
+        }, value_);
+    }
+
+    std::variant<std::nullptr_t, bool, double, std::string, Array, Object> value_;
+};
+--- hint
+One member does it: a \`std::variant<std::nullptr_t, bool, double, std::string, std::vector<Json>, std::map<std::string, Json>>\`. Default-constructing it gives null.
+--- hint
+\`dump\` can call a private recursive \`write(std::string& out) const\` that uses \`std::visit\` with \`if constexpr\` on the held type.
+--- hint
+For numbers: \`if (std::floor(d) == d && std::abs(d) < 1e15)\` print \`static_cast<long long>(d)\`; otherwise use an \`std::ostringstream\` with \`std::setprecision(15)\`.
+--- check test | Scalars dump as JSON
+Json().dump() == "null" && Json(nullptr).dump() == "null" && Json(true).dump() == "true" && Json(false).dump() == "false" && Json(3).dump() == "3" && Json(-2.5).dump() == "-2.5" && Json(0.1).dump() == "0.1" && Json(1e20).dump() == "1e+20"
+--- check test | A string literal is a string, not a bool
+Json("hi").is_string() && Json("hi").dump() == "\\"hi\\"" && Json(std::string("x")).is_string() && Json(3).is_number() && Json(2.5).is_number() && Json(true).is_bool()
+--- check case | Strings are escaped
+Json("say \\"hi\\"\\n\\\\\\t").dump()
+=> "\\"say \\\\\\"hi\\\\\\"\\\\n\\\\\\\\\\\\t\\""
+--- check case | Building a nested document
+[] { Json doc = Json::object(); doc["name"] = "Ada"; doc["age"] = 36; doc["langs"] = Json::array(); doc["langs"].push_back("C++").push_back(true).push_back(nullptr); return doc.dump(); }()
+=> "{\\"age\\":36,\\"langs\\":[\\"C++\\",true,null],\\"name\\":\\"Ada\\"}"
+--- check test | Empty containers, and nesting them
+Json::array().dump() == "[]" && Json::object().dump() == "{}" && Json::array().push_back(Json::array()).push_back(Json::object()).dump() == "[[],{}]"
+--- check test | Null becomes an array or object on first use
+[] { Json a; a.push_back(1); a.push_back(2); Json o; o["x"] = 1.5; return a.is_array() && a.size() == 2 && a.dump() == "[1,2]" && o.is_object() && o.dump() == "{\\"x\\":1.5}"; }()
+--- check test | Copies are independent
+[] { Json a = Json::object(); a["list"] = Json::array(); Json b = a; b["list"].push_back(1); b["new"] = "yes"; return a.dump() == "{\\"list\\":[]}" && b.dump() == "{\\"list\\":[1],\\"new\\":\\"yes\\"}"; }()
+--- check test | get looks without inserting
+[] { Json doc = Json::object(); doc["k"] = 7; const Json& c = doc; const Json* k = c.get("k"); return k && k->dump() == "7" && c.get("missing") == nullptr && doc.size() == 1 && Json(5).get("k") == nullptr && Json(5).size() == 0; }()
+--- check test | A big array dumps quickly
+[] { Json a = Json::array(); for (int i = 0; i < 20000; ++i) a.push_back(i % 10); std::string d = a.dump(); return a.size() == 20000 && d.size() == 2 + 20000 + 19999 && d.substr(0, 8) == "[0,1,2,3"; }()
+
+=== cppp-15 | Capstone: an expression evaluator with variables
+--- teach
+The final capstone is a small **interpreter**: a calculator that remembers variables across lines, like the prompt of a scripting language.
+
+\`\`\`
+> rate = 0.05
+0.05
+> years = 10
+10
+> 1000 * (1 + rate) ^ years
+1628.894626777442
+\`\`\`
+
+You built the core of this in the expert course: a tokenizer and a recursive-descent parser. This time there is no scaffolding. Design decisions to make:
+
+- **Tokenize first, or parse characters directly?** Both work. A separate tokenizer keeps the parser simpler; parsing characters directly keeps everything in one place. Choose one and be consistent.
+- **Where does \`^\` go in the grammar?** Power binds tighter than \`*\` and unary minus on its **left**, and it is **right-associative**: \`2 ^ 3 ^ 2\` is \`2 ^ 9 = 512\`, and \`-2 ^ 2\` is \`-(2 ^ 2) = -4\`. But a minus on its right belongs to the exponent: \`2 ^ -1\` is \`0.5\`. A rule like \`power := primary ('^' unary)?\` with \`unary := '-' unary | power\` captures all three — work through why.
+- **How do you tell an assignment from an expression?** A line is an assignment when it starts with a name followed by \`=\`. Anything else is an expression.
+- **Failure must not leave a mess.** If the right-hand side of \`x = …\` fails, \`x\` keeps its old value (or stays undefined). Evaluate completely, then store.
+
+Errors — unknown variables, division by zero, bad syntax, leftover input, results that are not finite numbers (\`(-8) ^ 0.5\`) — are all reported as \`std::nullopt\`. \`std::pow(a, b)\` from \`<cmath>\` computes a power, and \`std::isfinite(x)\` tells you whether a result is a real, finite number (not infinity or NaN).
+
+Keep the evaluator separate from any printing, as you did with the bank's statements: \`run\` returns a value, and whoever calls it decides what to show.
+--- task
+Write \`class Calculator\`. No \`main\`.
+
+- \`std::optional<double> run(const std::string& line)\` — if the line is \`name = expression\`, evaluates the expression, stores it in the variable \`name\` and returns it; otherwise evaluates the whole line as an expression. Returns \`std::nullopt\` on any error, and a failed line changes no variable.
+- \`std::optional<double> get(const std::string& name) const\` — a variable's value, or \`std::nullopt\`.
+
+Expressions contain numbers (\`3\`, \`2.5\`), variable names (a letter or \`_\`, then letters, digits or \`_\`), \`+ - * /\`, \`^\` (power), parentheses and unary minus, with spaces allowed anywhere between them. Precedence from lowest: \`+ -\`, then \`* /\`, then unary minus, then \`^\` (right-associative, and its exponent may start with a unary minus). Errors: bad syntax or leftover input, an unknown variable, division by zero, or a result that is not a finite number.
+--- starter
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+
+// Capstone: design and write class Calculator to the specification.
+--- solution
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+
+class Calculator {
+public:
+    std::optional<double> run(const std::string& line) {
+        std::size_t i = 0;
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+        const std::size_t start = i;
+        if (i < line.size() && name_start(line[i])) {
+            while (i < line.size() && name_char(line[i])) ++i;
+            std::string name = line.substr(start, i - start);
+            while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+            if (i < line.size() && line[i] == '=') {
+                auto value = Parser{line, i + 1, vars_}.parse();
+                if (value) vars_[name] = *value;
+                return value;
+            }
+        }
+        return Parser{line, start, vars_}.parse();
+    }
+
+    std::optional<double> get(const std::string& name) const {
+        auto it = vars_.find(name);
+        if (it == vars_.end()) return std::nullopt;
+        return it->second;
+    }
+
+private:
+    static bool name_start(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
+    static bool name_char(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
+
+    // expr := term (('+'|'-') term)*    term := unary (('*'|'/') unary)*
+    // unary := '-' unary | power        power := primary ('^' unary)?
+    // primary := number | name | '(' expr ')'
+    struct Parser {
+        const std::string& s;
+        std::size_t i;
+        const std::map<std::string, double>& vars;
+
+        std::optional<double> parse() {
+            auto v = expr();
+            skip();
+            if (!v || i != s.size() || !std::isfinite(*v)) return std::nullopt;
+            return v;
+        }
+
+        void skip() {
+            while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+        }
+
+        bool eat(char c) {
+            skip();
+            if (i < s.size() && s[i] == c) {
+                ++i;
+                return true;
+            }
+            return false;
+        }
+
+        std::optional<double> expr() {
+            auto left = term();
+            while (left) {
+                if (eat('+')) {
+                    auto right = term();
+                    if (!right) return std::nullopt;
+                    *left += *right;
+                } else if (eat('-')) {
+                    auto right = term();
+                    if (!right) return std::nullopt;
+                    *left -= *right;
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        std::optional<double> term() {
+            auto left = unary();
+            while (left) {
+                if (eat('*')) {
+                    auto right = unary();
+                    if (!right) return std::nullopt;
+                    *left *= *right;
+                } else if (eat('/')) {
+                    auto right = unary();
+                    if (!right || *right == 0) return std::nullopt;
+                    *left /= *right;
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        std::optional<double> unary() {
+            if (eat('-')) {
+                auto v = unary();
+                if (!v) return std::nullopt;
+                return -*v;
+            }
+            return power();
+        }
+
+        std::optional<double> power() {
+            auto base = primary();
+            if (!base) return std::nullopt;
+            if (eat('^')) {
+                auto exponent = unary();
+                if (!exponent) return std::nullopt;
+                return std::pow(*base, *exponent);
+            }
+            return base;
+        }
+
+        std::optional<double> primary() {
+            skip();
+            if (i >= s.size()) return std::nullopt;
+            if (eat('(')) {
+                auto v = expr();
+                if (!v || !eat(')')) return std::nullopt;
+                return v;
+            }
+            if (std::isdigit(static_cast<unsigned char>(s[i]))) {
+                std::size_t start = i;
+                while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+                if (i < s.size() && s[i] == '.') {
+                    ++i;
+                    if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+                    while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+                }
+                return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+            }
+            if (name_start(s[i])) {
+                std::size_t start = i;
+                while (i < s.size() && name_char(s[i])) ++i;
+                auto it = vars.find(s.substr(start, i - start));
+                if (it == vars.end()) return std::nullopt;
+                return it->second;
+            }
+            return std::nullopt;
+        }
+    };
+
+    std::map<std::string, double> vars_;
+};
+--- hint
+Write a small parser (a struct holding the text, a position and a reference to the variables) with one function per grammar level: expression, term, unary, power, primary.
+--- hint
+\`power := primary ('^' unary)?\` and \`unary := '-' unary | power\` give right associativity, \`-2^2 = -4\` and \`2^-1 = 0.5\`.
+--- hint
+In \`run\`, skip spaces, try to read a name, skip spaces again: if the next character is \`=\`, parse the rest as the expression; otherwise parse the whole line from the start. Store only after the parse succeeds.
+--- check test | Arithmetic with precedence
+[] { Calculator c; auto a = c.run("1 + 2 * 3"); auto b = c.run("(1 + 2) * 3"); auto d = c.run("8 - 3 - 2"); auto e = c.run("7 / 2"); return a == 7.0 && b == 9.0 && d == 3.0 && e == 3.5; }()
+--- check test | Assign, then use
+[] { Calculator c; auto x = c.run("x = 4"); auto y = c.run("x * x + 1"); return x == 4.0 && y == 17.0 && c.get("x") == 4.0 && c.get("y") == std::nullopt; }()
+--- check test | A variable can update itself
+[] { Calculator c; c.run("total = 0"); for (int i = 1; i <= 10000; ++i) c.run("total = total + 1"); return c.get("total") == 10000.0; }()
+--- check test | Power: right-associative, and unary minus
+[] { Calculator c; auto a = c.run("2 ^ 3 ^ 2"); auto b = c.run("-2 ^ 2"); auto d = c.run("2 ^ -1"); auto e = c.run("(-2) ^ 2"); return a == 512.0 && b == -4.0 && d == 0.5 && e == 4.0; }()
+--- check test | Names with digits and underscores
+[] { Calculator c; c.run("_rate2 = 0.5"); c.run("years = 10"); auto v = c.run("  years*_rate2  "); return v == 5.0; }()
+--- check test | Unknown variables and division by zero
+[] { Calculator c; c.run("x = 1"); return !c.run("y + 1") && !c.run("x / 0") && !c.run("x / (x - 1)") && !c.run("(0 - 8) ^ 0.5"); }()
+--- check test | A failed line changes nothing
+[] { Calculator c; c.run("x = 5"); auto bad = c.run("x = 1 / 0"); auto bad2 = c.run("z = w + 1"); return !bad && !bad2 && c.get("x") == 5.0 && !c.get("z"); }()
+--- check test | Syntax errors
+[] { Calculator c; c.run("x = 1"); return !c.run("") && !c.run("1 +") && !c.run("(1") && !c.run("1)") && !c.run("2 3") && !c.run("1x = 3") && !c.run("= 3") && !c.run("x == 3") && !c.run("3.") && !c.run("x ="); }()
+`,Oe=`@track cpp
 @title C++
 @name C++, close to the machine
 @blurb Compiled for real by clang++ in your browser: from main() and std::cout to vectors, strings, references, classes and pointers.
@@ -771,7 +9510,7 @@ Check \`if (p != nullptr)\` before \`*p = 0;\`.
 [] { auto p = make_counter(41); *p += 1; return *p == 42; }()
 --- check source absent | Does not use raw new
 \\bnew\\s+int\\b
-`,Ce=`@track git
+`,ke=`@track git
 @title Git
 @name Git and version control
 @blurb Save every version of your work, see exactly what changed, undo mistakes, and build on branches that merge back together.
@@ -1091,7 +9830,7 @@ git . merges == 1
 git . log contains Merge branch 'docs'
 --- check shell | You looked at the history
 ran git log
-`,we=`@track html
+`,Ae=`@track html
 @level advanced
 @title Web · Advanced
 @name Web, advanced: interactive widgets, state and accessible behaviour
@@ -2914,7 +11653,7 @@ click #suggestions li:nth-child(2)
 type #city zz
 #suggestions li count == 0
 #city attr aria-expanded == false
-`,Te=`@track html
+`,je=`@track html
 @level expert
 @title Web · Expert
 @name Web, expert: architecture, performance and front-end debugging
@@ -5308,7 +14047,7 @@ type #amount 0
 click #add-btn
 #expenses li count == 2
 #total text == Total: $52
-`,Ee=`@track html
+`,Me=`@track html
 @level intermediate
 @title Web · Intermediate
 @name Web, intermediate: real layouts, accessible forms and a page that responds
@@ -6668,7 +15407,7 @@ type #search zzz
 type #search o
 #empty[hidden] exists
 #count text == 2 shown
-`,De=`@track html
+`,Ne=`@track html
 @level projects
 @title Web · Projects
 @name Web projects: three apps, then capstones you design yourself
@@ -9748,7 +18487,7 @@ click #contacts .contact:nth-child(2) .remove
 #count text == Showing 7 of 7 contacts
 type #search chris
 #contacts .contact count == 0
-`,Oe=`@track html
+`,Pe=`@track html
 @title Web
 @name HTML and CSS: building pages
 @blurb HTML, CSS and a little JavaScript, with a live preview: from your first heading to a page that reacts to clicks.
@@ -10273,7 +19012,7 @@ Pages are usually built from data. Loop over an array and create an element for 
 #planets li:last-child text == Mars
 --- check source | Built with a loop
 \\b(for|forEach|map)\\b
-`,ke=`@track javascript
+`,Fe=`@track javascript
 @level advanced
 @title JavaScript · Advanced
 @name JavaScript, advanced: this, prototypes, async and algorithms
@@ -11876,7 +20615,7 @@ lowerBound([1, 3, 3, 7], 3)
 (() => { const a = Array.from({ length: 1000000 }, (_, i) => i * 2); return [hasPairWithSum(a, 1999999), hasPairWithSum(a, 3999994)] })()
 => [false, true]
 ?? Trying every pair is half a trillion checks. Walk in from both ends instead.
-`,Ae=`@track javascript
+`,Ie=`@track javascript
 @level expert
 @title JavaScript · Expert
 @name JavaScript, expert: metaprogramming, concurrency and building your own tools
@@ -13835,7 +22574,7 @@ results.early
 => 'rejected: early'
 --- check test | run returns a promise
 run(function* () { return 1 }) instanceof Promise
-`,je=`@track javascript
+`,Le=`@track javascript
 @level intermediate
 @title JavaScript · Intermediate
 @name JavaScript, intermediate: idioms, data and clean functions
@@ -15267,7 +24006,7 @@ formatReport([])
 ^let\\s
 --- check source | report composes the three functions
 formatReport\\(\\s*totalsByCustomer\\(\\s*validOrders\\(
-`,Me=`@track javascript
+`,Re=`@track javascript
 @level projects
 @title JavaScript · Projects
 @name JavaScript projects: three builds and four capstones
@@ -18689,7 +27428,7 @@ One \`record(account, type, cents, counterparty)\` helper can update the balance
 --- check case | 100,000 transactions, exact and fast
 (() => { const b = createBank(); const a = b.open('Ada'); for (let i = 0; i < 100000; i++) b.deposit(a, '0.01'); return [b.balance(a), b.statement(a).length] })()
 => ['1000.00', 100000]
-`,Ne=`@track javascript
+`,ze=`@track javascript
 @title JavaScript
 @name JavaScript, the language of the web
 @blurb The language of the web, from console.log to async/await — the ground M1 to M3 build on.
@@ -19260,7 +27999,7 @@ console.log(await totalScore([1, 2, 3]))
 --- check source | Uses Promise.all
 Promise\\.all\\(
 ?? Awaiting inside the loop runs the calls one after another. Promise.all runs them together.
-`,Pe=`@track python
+`,Be=`@track python
 @level advanced
 @title Python · Advanced
 @name Python, advanced: iterators, decorators, data models and algorithms
@@ -20860,7 +29599,7 @@ int_sqrt(10 ** 30) == 10 ** 15 and int_sqrt(10 ** 30 - 1) == 10 ** 15 - 1 and in
 ?? Floats have about 16 significant digits, so n ** 0.5 is wrong here. Search on whole numbers.
 --- check source absent | Does not use bisect or math.isqrt
 \\bbisect\\b|\\bisqrt\\s*\\(
-`,Fe=`@track python
+`,Ve=`@track python
 @level expert
 @title Python · Expert
 @name Python, expert: the machinery, concurrency, testing and hard problems
@@ -22580,7 +31319,7 @@ all(raises(ValueError, lambda e=e: evaluate(e)) for e in ["", "2 +", "(1 + 2", "
 evaluate("1+" * 20000 + "1") == 20001 and evaluate("2*" * 30 + "1") == 2 ** 30
 --- check source absent | Does not use eval
 \\beval\\s*\\(
-`,Ie=`@track python
+`,He=`@track python
 @level intermediate
 @title Python · Intermediate
 @name Python, intermediate: idioms, errors, classes and the standard library
@@ -24038,7 +32777,7 @@ report("# only a comment\\n")
 --- check test | report is built from the four helpers
 {"parse_line", "average", "format_row"} <= set(report.__code__.co_names)
 ?? report should call parse_line, average and format_row (and format_row calls letter).
-`,Le=`@track python
+`,Ue=`@track python
 @level projects
 @title Python · Projects
 @name Python projects: real programs, built step by step, then designed by you
@@ -27149,7 +35888,7 @@ Game(WORLD).do("look")
 --- check case | A room with no exits
 (lambda g: [g.do("take rope"), g.do("go up")])(Game({"start": "pit", "goal": "star", "rooms": {"pit": {"description": "A deep pit.", "exits": {"up": "rim"}, "items": ["rope"], "locked": {"up": "rope"}}, "rim": {"description": "The rim.", "exits": {}, "items": ["star"]}}}))
 => ["Taken: rope.", "The rim. Exits: none. You see: star."]
-`,Re=`@track python
+`,We=`@track python
 @title Python
 @name Python, a first language
 @blurb From print() to classes: the twelve ideas every Python program is built from.
@@ -27730,7 +36469,7 @@ Counter(5).value
 (lambda c: (c.increment(), c.increment()) == (1, 2) and c.value == 2)(Counter())
 --- check test | reset goes back to 0
 (lambda c: (c.increment(), c.reset(), c.value)[2] == 0)(Counter(9))
-`,ze=`@track sql
+`,Ge=`@track sql
 @level advanced
 @title SQL · Advanced
 @name SQL, advanced: window functions, schema design and the database's own rules
@@ -28919,7 +37658,7 @@ End the \`UPDATE\` with \`RETURNING id, title\`.
 --- check query | Exactly those two changed
 SELECT id, status, closed FROM tickets ORDER BY id
 => [[1, "closed", "2024-07-10"], [2, "closed", "2024-07-10"], [3, "closed", "2024-06-06"], [4, "open", null], [5, "pending", null]]
-`,Be=`@track sql
+`,Ke=`@track sql
 @level expert
 @title SQL · Expert
 @name SQL, expert: fast queries, hard questions and trustworthy data
@@ -29993,7 +38732,7 @@ SELECT email, order_id, created, total FROM customer_month ORDER BY order_id
 --- check query | Both tables are searched, nothing scanned
 EXPLAIN QUERY PLAN SELECT * FROM customer_month
 => [[4, 0, 45, "SEARCH c USING COVERING INDEX sqlite_autoindex_customers_1 (email=?)"], [8, 0, 50, "SEARCH o USING INDEX idx_orders_customer_id_created (customer_id=? AND created>? AND created<?)"]]
-`,Ve=`@track sql
+`,qe=`@track sql
 @level intermediate
 @title SQL · Intermediate
 @name SQL, intermediate: joins, subqueries and honest numbers
@@ -30927,7 +39666,7 @@ The status filter belongs in the orders join's \`ON\`, not in \`WHERE\`.
 --- check result | All seven customers, with NULLs and zeros where nothing matched
 ordered
 [["Ada", null, 3, "2024-06-01"], ["Ben", "Ada", 1, "2024-04-07"], ["Cleo", "Ada", 1, "2024-04-07"], ["Dev", "Ben", 1, "2024-05-15"], ["Eve", null, 0, null], ["Finn", "Dev", 0, null], ["Gus", null, 0, null]]
-`,He=`@track sql
+`,Je=`@track sql
 @level projects
 @title SQL · Projects
 @name SQL projects: three real databases, then your own designs
@@ -32310,7 +41049,7 @@ FROM pragma_index_list('appointments') il
 JOIN pragma_index_info(il.name) a ON a.seqno = 0 AND a.name = 'staff_id'
 JOIN pragma_index_info(il.name) b ON b.seqno = 1 AND b.name = 'starts_at'
 => [[1]]
-`,Ue=`@track sql
+`,Ye=`@track sql
 @title SQL
 @name SQL fundamentals
 @blurb Asking a database questions: SELECT through joins, grouping, changing data and CTEs — on a users-and-requests schema like the one your product will have.
@@ -32716,7 +41455,7 @@ Compare against \`(SELECT AVG(total) FROM spend)\`, and join \`users\` for the e
 [["lin@example.com", 0.0771]]
 --- check source | Uses WITH
 \\b[Ww][Ii][Tt][Hh]\\s+\\w+\\s+[Aa][Ss]\\s*\\(
-`,We=`@track typescript
+`,Xe=`@track typescript
 @level advanced
 @title TypeScript · Advanced
 @name TypeScript, advanced: computing types from types
@@ -34350,7 +43089,7 @@ new LRUCache<string, number>(2).set('a', 'x')
 new LRUCache<string, number>(2).set(1, 1)
 --- check type-error | get admits a miss
 const v: number = new LRUCache<string, number>(2).get('a')
-`,Ge=`@track typescript
+`,Ze=`@track typescript
 @level expert
 @title TypeScript · Expert
 @name TypeScript, expert: type-level programming and APIs that cannot be misused
@@ -36169,7 +44908,7 @@ const client = createClient(() => null);
 const u = client.request('GET /users/:id', { params: { id: '1' } });
 const no: Equal<typeof u, User> = false
 ?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
-`,Ke=`@track typescript
+`,Qe=`@track typescript
 @level intermediate
 @title TypeScript · Intermediate
 @name TypeScript, intermediate: modelling data and narrowing it safely
@@ -37594,7 +46333,7 @@ const r: BorrowResult = { ok: true, error: 'limit-reached' }
 new Library().addMember({ id: 'm', name: 'Ada', tier: 'gold' })
 --- check type-error | Callers must check ok before reading the loan
 new Library().borrow('m', 'b', 1).loan
-`,qe=`@track typescript
+`,$e=`@track typescript
 @level projects
 @title TypeScript · Projects
 @name TypeScript projects: three typed systems and three capstones
@@ -41402,7 +50141,7 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B 
 const r = defineCli({ options: { env: { type: 'string', required: true }, replicas: { type: 'number', default: 1 }, dryRun: { type: 'boolean' }, tag: { type: 'string' } }, positionals: ['service'] }).parse([]);
 if (r.ok) { const no: Equal<typeof r.value, { env: string; replicas: number; dryRun: boolean; tag?: string; service: string }> = false }
 ?? Passes when the types are exactly equal: then \`false\` cannot be assigned.
-`,Je=`@track typescript
+`,et=`@track typescript
 @title TypeScript
 @name TypeScript: types that catch bugs
 @blurb JavaScript with a checker that reads your code before it runs. Strict mode, from annotations to generics.
@@ -41945,17 +50684,17 @@ applyPatch({ theme: 'dark', fontSize: 13, beta: false }, { fontSize: 15 }).fontS
 LIMITS.free === 100 && LIMITS.pro === 1000
 --- check source | LIMITS is a Record over the two plans
 LIMITS\\s*:\\s*Record\\s*<
-`,Ye=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],Xe=Object.assign({"./tracks/bash.txt":xe,"./tracks/cpp.txt":Se,"./tracks/git.txt":Ce,"./tracks/html.advanced.txt":we,"./tracks/html.expert.txt":Te,"./tracks/html.intermediate.txt":Ee,"./tracks/html.projects.txt":De,"./tracks/html.txt":Oe,"./tracks/javascript.advanced.txt":ke,"./tracks/javascript.expert.txt":Ae,"./tracks/javascript.intermediate.txt":je,"./tracks/javascript.projects.txt":Me,"./tracks/javascript.txt":Ne,"./tracks/python.advanced.txt":Pe,"./tracks/python.expert.txt":Fe,"./tracks/python.intermediate.txt":Ie,"./tracks/python.projects.txt":Le,"./tracks/python.txt":Re,"./tracks/sql.advanced.txt":ze,"./tracks/sql.expert.txt":Be,"./tracks/sql.intermediate.txt":Ve,"./tracks/sql.projects.txt":He,"./tracks/sql.txt":Ue,"./tracks/typescript.advanced.txt":We,"./tracks/typescript.expert.txt":Ge,"./tracks/typescript.intermediate.txt":Ke,"./tracks/typescript.projects.txt":qe,"./tracks/typescript.txt":Je}),Ze=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function z(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[Ye.indexOf(t),Ze.indexOf(n)]}var Qe=Object.entries(Xe).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>z(e)[0]>=0).sort((e,t)=>{let[n,r]=z(e[0]),[i,a]=z(t[0]);return n-i||r-a}),$e=Ye.filter(e=>Qe.some(([t])=>t.split(`.`)[0]===e)),B=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function V(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var et=3e4;async function tt(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await b(t,_e(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
+`,tt=[`bash`,`git`,`html`,`javascript`,`typescript`,`python`,`sql`,`cpp`],nt=Object.assign({"./tracks/bash.txt":Ce,"./tracks/cpp.advanced.txt":we,"./tracks/cpp.expert.txt":Te,"./tracks/cpp.intermediate.txt":Ee,"./tracks/cpp.projects.txt":De,"./tracks/cpp.txt":Oe,"./tracks/git.txt":ke,"./tracks/html.advanced.txt":Ae,"./tracks/html.expert.txt":je,"./tracks/html.intermediate.txt":Me,"./tracks/html.projects.txt":Ne,"./tracks/html.txt":Pe,"./tracks/javascript.advanced.txt":Fe,"./tracks/javascript.expert.txt":Ie,"./tracks/javascript.intermediate.txt":Le,"./tracks/javascript.projects.txt":Re,"./tracks/javascript.txt":ze,"./tracks/python.advanced.txt":Be,"./tracks/python.expert.txt":Ve,"./tracks/python.intermediate.txt":He,"./tracks/python.projects.txt":Ue,"./tracks/python.txt":We,"./tracks/sql.advanced.txt":Ge,"./tracks/sql.expert.txt":Ke,"./tracks/sql.intermediate.txt":qe,"./tracks/sql.projects.txt":Je,"./tracks/sql.txt":Ye,"./tracks/typescript.advanced.txt":Xe,"./tracks/typescript.expert.txt":Ze,"./tracks/typescript.intermediate.txt":Qe,"./tracks/typescript.projects.txt":$e,"./tracks/typescript.txt":et}),rt=[`basics`,`intermediate`,`advanced`,`expert`,`projects`];function L(e){let[t=``,n=`basics`]=e.replace(/\.txt$/,``).split(`.`);return[tt.indexOf(t),rt.indexOf(n)]}var it=Object.entries(nt).map(([e,t])=>[e.split(`/`).pop(),t]).filter(([e])=>L(e)[0]>=0).sort((e,t)=>{let[n,r]=L(e[0]),[i,a]=L(t[0]);return n-i||r-a}),at=tt.filter(e=>it.some(([t])=>t.split(`.`)[0]===e)),R=[{id:`ai-product`,title:`AI Product Engineer`,blurb:`The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.`,steps:[`bash`,`git`,`javascript`,`typescript`,`html`,`sql`,`python`]},{id:`software`,title:`Software Engineer`,blurb:`The ground every software job stands on: one language learned properly, the command line and git, SQL, and then C++ to see what the machine is really doing.`,steps:[`python`,`bash`,`git`,`sql`,`cpp`]},{id:`frontend`,title:`Frontend Developer`,blurb:`Pages people use: HTML and CSS first, then the JavaScript that makes them react, TypeScript to keep it correct as it grows, and the tools every team works in.`,steps:[`html`,`javascript`,`typescript`,`bash`,`git`]},{id:`backend`,title:`Backend Developer`,blurb:`The server side: the command line and git it runs on, JavaScript and TypeScript for the code that answers requests, and SQL for the data it keeps.`,steps:[`bash`,`git`,`javascript`,`typescript`,`sql`]},{id:`data`,title:`Data & ML`,blurb:`Python, the language of data work and machine learning, SQL to get the data out of where it lives, and the command line and git to keep the work reproducible.`,steps:[`python`,`sql`,`bash`,`git`]},{id:`systems`,title:`Systems & C++`,blurb:`Close to the machine: the command line and git, Python to learn to think in code, then C++ for programs that are fast and exact about memory.`,steps:[`bash`,`git`,`python`,`cpp`]}];function z(e){return{stdout:e.stdout,stderr:e.stderr,error:e.error,ms:e.ms}}var ot=3e4;async function st(e,t,n={}){let{onStatus:r}=n;switch(e.lang){case`bash`:case`git`:return{stdout:``,stderr:``,error:null,...n.shell?{shell:n.shell}:{},ms:0};case`html`:{let n=await x(t,ge(e)),r=n.logs.filter(e=>e.level===`error`).map(e=>e.text);return{stdout:n.logs.filter(e=>e.level!==`error`).map(e=>e.text).join(`
 `),stderr:r.join(`
-`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return V(await m(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=he(t,e.error);return n?{...V(await g(n.program,{onStatus:r})),typeFails:n.fails}:V(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
-`);return V(await h.run(t,{onStatus:r,limitMs:et,...n?{stdin:n}:{}}))}case`cpp`:return V(await C(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await S(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function nt(e){return e===`git`?`bash`:e}function rt(e){e===`python`&&!h.isBooted&&h.preload(),e===`typescript`&&_.preload()}var it=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],at=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],ot=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),st=class extends Error{};function H(e,t){throw new st(`${e}: ${t}`)}function U(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
-`)}function W(e){let t=U(e);return t?`${t}\n`:``}function ct(e,t){let n;try{n=JSON.parse(e)}catch{return H(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||H(t,`rows must be an array of arrays of strings, numbers or null`),n}function lt(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||H(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=U(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||H(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=U(c).split(`
-`).filter(e=>e.trim()!==``);return e.length||H(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||H(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a case needs the call, then a "=> expected" line`);let t=U(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
-`).slice(3).trim();return(!t||!n)&&H(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=U(c).split(`
-`).map(e=>e.trim()).filter(Boolean);return e.length||H(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&H(d,`unknown source flag "${a}"`),l||H(d,`a source check needs a pattern`);try{new RegExp(l)}catch{H(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=U(c).split(`
+`),error:null,dom:n.results,ms:n.ms}}case`javascript`:return z(await m(t));case`typescript`:{let e=await g(t,{onStatus:r}),n=me(t,e.error);return n?{...z(await g(n.program,{onStatus:r})),typeFails:n.fails}:z(e)}case`python`:{let n=e.stdin?.replace(/\n$/,``).split(`
+`);return z(await h.run(t,{onStatus:r,limitMs:ot,...n?{stdin:n}:{}}))}case`cpp`:return z(await w(t,{stdin:e.stdin??``,onStatus:r}));case`sql`:{let n=await C(t,e.schema);return{stdout:``,stderr:``,error:n.error,tables:n.tables,ms:n.ms}}}}function ct(e){return e===`git`?`bash`:e}function lt(e){e===`python`&&!h.isBooted&&h.preload(),e===`typescript`&&_.preload()}var ut=[`basics`,`intermediate`,`advanced`,`expert`,`projects`],dt=[`javascript`,`typescript`,`python`,`sql`,`cpp`,`html`,`bash`,`git`],ft=new Set([`teach`,`task`,`starter`,`solution`,`hint`,`stdin`,`schema`,`check`]),pt=class extends Error{};function B(e,t){throw new pt(`${e}: ${t}`)}function V(e){let t=0,n=e.length;for(;t<n&&e[t].trim()===``;)t++;for(;n>t&&e[n-1].trim()===``;)n--;return e.slice(t,n).join(`
+`)}function H(e){let t=V(e);return t?`${t}\n`:``}function mt(e,t){let n;try{n=JSON.parse(e)}catch{return B(t,`expected rows as JSON, got: ${e.slice(0,60)}`)}return Array.isArray(n)&&n.every(e=>Array.isArray(e)&&e.every(e=>e===null||typeof e==`string`||typeof e==`number`))||B(t,`rows must be an array of arrays of strings, numbers or null`),n}function ht(e,t,n){let r=/^check\s+([\w-]+)(?:\s+(\w+))?\s*\|\s*(.+)$/.exec(e);r||B(n,`a check needs "--- check <kind> | <name>", got "--- ${e}"`);let[,i,a,o]=r,s=t.filter(e=>e.startsWith(`?? `)).map(e=>e.slice(3).trim()).join(` `)||void 0,c=t.filter(e=>!e.startsWith(`?? `)),l=V(c),u={name:o.trim(),...s?{hint:s}:{}},d=`${n} "${u.name}"`;switch(i){case`output`:return l||B(d,`an output check needs the expected output`),{...u,kind:`output`,expect:l};case`includes`:{let e=V(c).split(`
+`).filter(e=>e.trim()!==``);return e.length||B(d,`an includes check needs at least one line`),{...u,kind:`includes`,expect:e}}case`test`:return l||B(d,`a test check needs an expression`),{...u,kind:`test`,expr:l};case`case`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&B(d,`a case needs the call, then a "=> expected" line`);let t=V(c.slice(0,e)).replace(/\s*\n\s*/g,` `),n=c.slice(e).join(`
+`).slice(3).trim();return(!t||!n)&&B(d,`a case needs both a call and an expected value`),{...u,kind:`case`,call:t,expect:n}}case`dom`:case`shell`:{let e=V(c).split(`
+`).map(e=>e.trim()).filter(Boolean);return e.length||B(d,`a ${i} check needs at least one line`),i===`dom`?{...u,kind:`dom`,steps:e}:{...u,kind:`shell`,facts:e}}case`source`:a&&a!==`absent`&&B(d,`unknown source flag "${a}"`),l||B(d,`a source check needs a pattern`);try{new RegExp(l)}catch{B(d,`not a valid pattern: ${l}`)}return{...u,kind:`source`,pattern:l,absent:a===`absent`};case`result`:{let e=V(c).split(`
 `),t=e[0]?.trim()===`ordered`,n=(t?e.slice(1):e).join(`
-`).trim();return{...u,kind:`result`,rows:ct(n,d),ordered:t}}case`type-error`:return l||H(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&H(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=U(c.slice(0,e));return t||H(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:ct(c.slice(e).join(`
-`).slice(3).trim(),d)}}default:return H(d,`unknown check kind "${i}"`)}}function ut(e,t=`track`){let n=e.replace(/\r\n?/g,`
+`).trim();return{...u,kind:`result`,rows:mt(n,d),ordered:t}}case`type-error`:return l||B(d,`a type-error check needs the code that must not type-check`),{...u,kind:`type-error`,code:l};case`query`:{let e=c.findIndex(e=>e.startsWith(`=> `));e<0&&B(d,`a query check needs a "=> [[...]]" line with the expected rows`);let t=V(c.slice(0,e));return t||B(d,`a query check needs a query`),{...u,kind:`query`,sql:t,rows:mt(c.slice(e).join(`
+`).slice(3).trim(),d)}}default:return B(d,`unknown check kind "${i}"`)}}function gt(e,t=`track`){let n=e.replace(/\r\n?/g,`
 `).split(`
-`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&H(t,`"@schema" without a closing "@end"`),o=U(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(at.includes(s)||H(t,`"@track" must be one of ${at.join(`, `)}`),r.title||H(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||H(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&ot.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&H(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&H(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&H(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>lt(e.header,e.body,c));h.length||H(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?U(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:U(d),task:U(f),starter:p?W(p):``,solution:W(m),hints:l.filter(e=>e.header===`hint`).map(e=>U(e.body)),checks:h,...g?{stdin:W(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&H(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||H(t,`no lessons`);let l=r.level??`basics`;it.includes(l)||H(t,`"@level" must be one of ${it.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&H(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var G=Qe.map(([e,t])=>ut(t,e)),dt=new Map;for(let e of G)e.lessons.forEach((t,n)=>dt.set(t.id,{track:e,lesson:t,index:n}));function ft(e){return G.find(t=>t.id===e)??G.find(t=>t.lang===e)}function K(e){return G.filter(t=>t.lang===e)}function pt(e,t){let n=K(e);return n.find(e=>J(e,t)<e.lessons.length)??n[n.length-1]}function mt(e){return dt.get(e)}function q(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function J(e,t){return e.lessons.filter(e=>t[e.id]).length}function ht(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var gt={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function Y(e){return gt[e]??e}var X=[...new Set(G.map(e=>e.lang))].filter(e=>K(e).length>1).map(e=>({id:`master-${e}`,title:Y(e),blurb:`${Y(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:K(e).map(e=>e.id)})),Z={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},Q=t();function _t({lessonId:e}){if(!e)return(0,Q.jsx)(yt,{});let t=e.startsWith(`roadmap-`)?vt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,Q.jsx)(Ct,{roadmap:t});let n=ft(e);if(n)return(0,Q.jsx)(wt,{track:n});let r=mt(e);return r?(0,Q.jsx)(Tt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,Q.jsx)(yt,{missing:e})}function $(){let{state:e}=o(),t=ht(e.learn);return t?(0,Q.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,Q.jsx)(r,{size:14}),t,`-day streak`]}):null}var vt=[...B,...X];function yt({missing:e}){let{state:t}=o(),n=d(),r=vt.find(e=>e.id===n.query.goal)??B[0],i=(e,t=e.title)=>(0,Q.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,Q.jsx)(w,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,Q.jsxs)(`header`,{className:`rm-hero`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,Q.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,Q.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:B.map(e=>i(e))}),X.length?(0,Q.jsxs)(Q.Fragment,{children:[(0,Q.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,Q.jsx)(`div`,{className:`rm-goals__row`,children:X.map(e=>i(e))})]}):null]}),(0,Q.jsxs)(`section`,{className:`rm`,children:[(0,Q.jsxs)(`header`,{className:`rm__head`,children:[(0,Q.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,Q.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,Q.jsx)(St,{roadmap:r,passed:t.learn})]}),(0,Q.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),$e.map(e=>(0,Q.jsxs)(`section`,{className:`lm-lang`,"aria-label":Y(e),children:[(0,Q.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,Q.jsx)(w,{lang:e,size:20}),Y(e),(0,Q.jsxs)(`span`,{className:`lm-lang__count`,children:[K(e).length,` course`,K(e).length===1?``:`s`,` · `,K(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,Q.jsx)(`div`,{className:`lm-courses`,children:K(e).map(e=>{let n=J(e,t.learn);return(0,Q.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-course__icon`,children:(0,Q.jsx)(w,{lang:e.lang,size:30})}),(0,Q.jsxs)(`span`,{className:`lm-course__text`,children:[(0,Q.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Z[e.level]}),(0,Q.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,Q.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,Q.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,Q.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function bt(e){let[t,n]=(0,D.useState)(3);return(0,D.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function xt(e,t){let n=e.steps.map(e=>ft(e)).filter(e=>!!e),r=n.map(e=>J(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function St({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=xt(e,t),o=(0,D.useRef)(null),s=bt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,Q.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=J(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,Q.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,Q.jsx)(w,{lang:e.lang,size:34}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,Q.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,Q.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,Q.jsx)(x,{size:32})}),a?(0,Q.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Ct({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=xt(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${q(e,t.learn).id}`);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`rmv-head`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:u/n.length,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&J(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,Q.jsx)(l,{size:13})]})]})]}),(0,Q.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=J(e,t.learn);return(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,Q.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,Q.jsx)(w,{lang:e.lang,size:30}),(0,Q.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,Q.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,Q.jsx)(c,{value:i/e.lessons.length,height:4}),(0,Q.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,Q.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,Q.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,Q.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,Q.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,Q.jsx)(x,{size:28})}),(0,Q.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,Q.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,Q.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function wt({track:e}){let{state:t}=o(),r=J(e,t.learn),a=e.lessons.length,s=q(e,t.learn);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,Q.jsx)(i,{size:13}),`Roadmaps`]}),(0,Q.jsxs)(`div`,{className:`lm-course-head`,children:[(0,Q.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,Q.jsx)(w,{lang:e.lang,size:40})}),(0,Q.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,Q.jsxs)(`div`,{className:`page-head__kicker`,children:[Z[e.level],` · `,a,` lessons `,(0,Q.jsx)($,{})]}),(0,Q.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,Q.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),K(e.lang).length>1?(0,Q.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${Y(e.lang)} courses`,children:K(e.lang).map((n,r)=>(0,Q.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":J(n,t.learn)===n.lessons.length,children:[(0,Q.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Z[n.level]]},n.id))}):null,(0,Q.jsxs)(`div`,{className:`lm-course-go`,children:[(0,Q.jsx)(c,{value:r/a,height:6}),(0,Q.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,Q.jsx)(l,{size:13})]})]}),(0,Q.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,Q.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,Q.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,Q.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,Q.jsx)(n,{size:13}):i+1}),(0,Q.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,Q.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,Q.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function Tt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,D.useState)(!1),[g,_]=(0,D.useState)(0),[v,ee]=(0,D.useState)(!1),y=(0,D.useRef)(null),te=oe(`learn:${t.id}:example`,t.teach,t.schema),ne=!!a.learn[t.id],b=e.lessons[r-1],x=e.lessons[r+1],S=K(e.lang),C=x?void 0:S[S.findIndex(t=>t.id===e.id)+1];(0,D.useEffect)(()=>rt(t.lang),[t.lang]);let T=(0,D.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>y.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),re=(0,D.useCallback)(async(e,n,r)=>{let i=R(t,e,await tt(t,ge(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,Q.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,Q.jsxs)(`div`,{className:`lm-top`,children:[(0,Q.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,Q.jsx)(i,{size:13}),e.title]}),(0,Q.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,Q.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,Q.jsx)($,{})]}),(0,Q.jsxs)(`article`,{className:`lm-flow`,children:[(0,Q.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,Q.jsx)(w,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,ne?(0,Q.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,Q.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,Q.jsx)(`div`,{className:`lm-teach`,children:(0,Q.jsx)(p,{renderCode:te,children:t.teach})}),(0,Q.jsxs)(`section`,{className:`lm-challenge`,children:[(0,Q.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,Q.jsx)(p,{children:t.task}),t.stdin?(0,Q.jsxs)(`div`,{className:`lm-stdin`,children:[(0,Q.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,Q.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,Q.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,Q.jsx)(`div`,{className:`lm-work`,children:d?(0,Q.jsx)(Et,{lesson:t,onPass:T}):(0,Q.jsx)(ie,{lang:nt(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:re,onPass:T,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,Q.jsx)(`div`,{ref:y,children:m?(0,Q.jsxs)(`div`,{className:`lm-win`,children:[(0,Q.jsx)(n,{size:16}),(0,Q.jsx)(`span`,{className:`grow`,children:x?`Lesson passed. Next: ${x.title}`:C?`That is the whole ${e.name} course. Next: ${C.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,Q.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(x?`/learn/${x.id}`:C?`/learn/${C.lessons[0].id}`:`/learn/${e.id}`),children:[x?`Continue`:C?`Start the next course`:`Back to the course`,(0,Q.jsx)(l,{size:13})]})]}):null}),(0,Q.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,Q.jsxs)(`div`,{className:`lm-hint`,children:[(0,Q.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,Q.jsx)(p,{children:e})]},t)),(0,Q.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,Q.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>ee(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,Q.jsxs)(`div`,{className:`lm-solution`,children:[(0,Q.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,Q.jsx)(p,{children:"```"+Dt(t.lang)+`
-`+t.solution+"```"})]}):null]}),(0,Q.jsxs)(`div`,{className:`lm-nav`,children:[b?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${b.id}`),children:[(0,Q.jsx)(i,{size:13}),b.title]}):(0,Q.jsx)(`span`,{}),x?(0,Q.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[x.title,(0,Q.jsx)(l,{size:13})]}):null]})]})]})}function Et({lesson:e,onPass:t}){let[n,r]=(0,D.useState)(()=>L(e)),[i,o]=(0,D.useState)(0),[s,c]=(0,D.useState)(null),[l,u]=(0,D.useState)(!1),d=async()=>{u(!0),c(null);try{let r=R(e,``,await tt(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,Q.jsx)(`div`,{className:`embed`,children:(0,Q.jsxs)(te,{lang:`bash`,file:`~/project`,right:(0,Q.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(L(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,Q.jsx)(a,{size:13}),`Reset`]}),children:[(0,Q.jsx)(re,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,Q.jsx)(`div`,{className:`lm-termbar`,children:(0,Q.jsx)(ne,{onClick:()=>void d(),running:l,label:`Check`})}),(0,Q.jsx)(ae,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,Q.jsx)(T,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function Dt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Ot(e){let{state:t}=o();return(0,D.useMemo)(()=>{let n=pt(e,t.learn);return n?{lesson:q(n,t.learn),done:J(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{_t as Learn,Ot as useNextLesson};
+`),r={},i=[],a=0,o;for(;a<n.length&&!n[a].startsWith(`=== `);a++){if(n[a].trim()===`@schema`){let e=++a;for(;a<n.length&&n[a].trim()!==`@end`;)a++;a>=n.length&&B(t,`"@schema" without a closing "@end"`),o=V(n.slice(e,a));continue}let e=/^@(\w+)\s+(.*)$/.exec(n[a]);e&&(r[e[1]]=e[2].trim())}let s=r.track;for(dt.includes(s)||B(t,`"@track" must be one of ${dt.join(`, `)}`),r.title||B(t,`missing "@title"`);a<n.length;){let e=/^=== (\S+)\s*\|\s*(.+)$/.exec(n[a]);e||B(t,`expected "=== <id> | <title>" at line ${a+1}`);let r=e[1],c=`${t} ${r}`;a++;let l=[];for(;a<n.length&&!n[a].startsWith(`=== `);a++){let e=n[a],t=/^--- (.+)$/.exec(e),r=t?.[1].split(/\s/)[0];t&&r&&ft.has(r)?l.push({header:t[1].trim(),body:[]}):l.length?l[l.length-1].body.push(e):e.trim()&&B(c,`text before the first "--- " section: ${e.slice(0,40)}`)}let u=e=>{let t=l.filter(t=>t.header===e);return t.length>1&&B(c,`more than one "--- ${e}"`),t[0]?.body},d=u(`teach`),f=u(`task`),p=u(`starter`),m=u(`solution`);(!d||!f||!m)&&B(c,`needs teach, task and solution`);let h=l.filter(e=>e.header.startsWith(`check`)).map(e=>ht(e.header,e.body,c));h.length||B(c,`needs at least one check`);let g=u(`stdin`),_=u(`schema`),v=_?V(_):o;i.push({id:r,lang:s,title:e[2].trim(),teach:V(d),task:V(f),starter:p?H(p):``,solution:H(m),hints:l.filter(e=>e.header===`hint`).map(e=>V(e.body)),checks:h,...g?{stdin:H(g)}:{},...v?{schema:v}:{}})}let c=new Set;for(let e of i)c.has(e.id)&&B(t,`duplicate lesson id ${e.id}`),c.add(e.id);i.length||B(t,`no lessons`);let l=r.level??`basics`;ut.includes(l)||B(t,`"@level" must be one of ${ut.join(`, `)}`);let u=r.course??(l===`basics`?s:`${s}-${l}`);return i.some(e=>e.checks.some(e=>e.kind===`type-error`))&&s!==`typescript`&&B(t,`type-error checks are for TypeScript tracks`),{id:u,lang:s,level:l,title:r.title,name:r.name??r.title,blurb:r.blurb??``,lessons:i}}var U=it.map(([e,t])=>gt(t,e)),_t=new Map;for(let e of U)e.lessons.forEach((t,n)=>_t.set(t.id,{track:e,lesson:t,index:n}));function vt(e){return U.find(t=>t.id===e)??U.find(t=>t.lang===e)}function W(e){return U.filter(t=>t.lang===e)}function yt(e,t){let n=W(e);return n.find(e=>K(e,t)<e.lessons.length)??n[n.length-1]}function bt(e){return _t.get(e)}function G(e,t){return e.lessons.find(e=>!t[e.id])??e.lessons[e.lessons.length-1]}function K(e,t){return e.lessons.filter(e=>t[e.id]).length}function xt(e,t=new Date){let n=e=>`${e.getFullYear()}-${e.getMonth()+1}-${e.getDate()}`,r=new Set(Object.values(e).map(e=>n(new Date(e)))),i=new Date(t);r.has(n(i))||i.setDate(i.getDate()-1);let a=0;for(;r.has(n(i));)a++,i.setDate(i.getDate()-1);return a}var St={bash:`The command line`,git:`Git`,html:`HTML & CSS`,javascript:`JavaScript`,typescript:`TypeScript`,python:`Python`,sql:`SQL`,cpp:`C++`};function q(e){return St[e]??e}var J=[...new Set(U.map(e=>e.lang))].filter(e=>W(e).length>1).map(e=>({id:`master-${e}`,title:q(e),blurb:`${q(e)} from the first line to expert: the basics, then the idioms, the design and debugging skills and the problem solving that let you build anything in it on your own, then real projects.`,steps:W(e).map(e=>e.id)})),Y={basics:`Basics`,intermediate:`Intermediate`,advanced:`Advanced`,expert:`Expert`,projects:`Projects`},X=t();function Ct({lessonId:e}){if(!e)return(0,X.jsx)(Q,{});let t=e.startsWith(`roadmap-`)?wt.find(t=>`roadmap-${t.id}`===e):void 0;if(t)return(0,X.jsx)(Dt,{roadmap:t});let n=vt(e);if(n)return(0,X.jsx)(Ot,{track:n});let r=bt(e);return r?(0,X.jsx)(kt,{track:r.track,lesson:r.lesson,index:r.index},r.lesson.id):(0,X.jsx)(Q,{missing:e})}function Z(){let{state:e}=o(),t=xt(e.learn);return t?(0,X.jsxs)(`span`,{className:`lm-streak`,title:`Days in a row with a lesson passed`,children:[(0,X.jsx)(r,{size:14}),t,`-day streak`]}):null}var wt=[...R,...J];function Q({missing:e}){let{state:t}=o(),n=d(),r=wt.find(e=>e.id===n.query.goal)??R[0],i=(e,t=e.title)=>(0,X.jsxs)(`button`,{type:`button`,role:`tab`,"aria-selected":e.id===r.id,"data-active":e.id===r.id,className:`rm-goals__pill`,onClick:()=>f(`/learn?goal=${e.id}`,{replace:!0}),children:[e.id.startsWith(`master-`)?(0,X.jsx)(T,{lang:e.id.slice(7),size:16}):null,t]},e.id);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap lm-home`,children:[(0,X.jsxs)(`header`,{className:`rm-hero`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[`Learn to code `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`rm-hero__title`,children:`Choose where you want to end up. Each roadmap lines up the courses that get you there, one step at a time.`})]}),e?(0,X.jsxs)(`p`,{className:`lm-missing`,children:[`There is no lesson called “`,e,`”. Pick a course below.`]}):null,(0,X.jsxs)(`div`,{className:`rm-goals`,role:`tablist`,"aria-label":`Roadmap`,children:[(0,X.jsx)(`span`,{className:`rm-goals__label`,children:`Reach a goal`}),(0,X.jsx)(`div`,{className:`rm-goals__row`,children:R.map(e=>i(e))}),J.length?(0,X.jsxs)(X.Fragment,{children:[(0,X.jsx)(`span`,{className:`rm-goals__label`,children:`Or master one language, beginner to expert`}),(0,X.jsx)(`div`,{className:`rm-goals__row`,children:J.map(e=>i(e))})]}):null]}),(0,X.jsxs)(`section`,{className:`rm`,children:[(0,X.jsxs)(`header`,{className:`rm__head`,children:[(0,X.jsx)(`span`,{className:`rm__goal`,children:r.title}),(0,X.jsx)(`button`,{type:`button`,className:`rm__see`,onClick:()=>f(`/learn/roadmap-${r.id}`),children:`View every step`})]}),(0,X.jsx)(Et,{roadmap:r,passed:t.learn})]}),(0,X.jsx)(`h2`,{className:`lm-h2`,children:`Browse every course`}),at.map(e=>(0,X.jsxs)(`section`,{className:`lm-lang`,"aria-label":q(e),children:[(0,X.jsxs)(`h3`,{className:`lm-lang__name`,children:[(0,X.jsx)(T,{lang:e,size:20}),q(e),(0,X.jsxs)(`span`,{className:`lm-lang__count`,children:[W(e).length,` course`,W(e).length===1?``:`s`,` · `,W(e).reduce((e,t)=>e+t.lessons.length,0),` lessons`]})]}),(0,X.jsx)(`div`,{className:`lm-courses`,children:W(e).map(e=>{let n=K(e,t.learn);return(0,X.jsxs)(`a`,{className:`lm-course`,href:`#/learn/${e.id}`,children:[(0,X.jsx)(`span`,{className:`lm-course__icon`,children:(0,X.jsx)(T,{lang:e.lang,size:30})}),(0,X.jsxs)(`span`,{className:`lm-course__text`,children:[(0,X.jsx)(`span`,{className:`lm-course__level`,"data-level":e.level,children:Y[e.level]}),(0,X.jsx)(`span`,{className:`lm-course__title`,children:e.name}),(0,X.jsx)(`span`,{className:`lm-course__meta`,children:n===e.lessons.length?`Complete`:`${n} of ${e.lessons.length} lessons`}),(0,X.jsx)(c,{value:n/e.lessons.length,height:4})]})]},e.id)})})]},e)),(0,X.jsx)(`p`,{className:`track-note`,children:`Learn to code is practice, and it counts for nothing else: passing a lesson does not change your modules, your readiness or your review queue.`})]})}function Tt(e){let[t,n]=(0,O.useState)(3);return(0,O.useLayoutEffect)(()=>{let t=e.current;if(!t)return;let r=()=>{let e=t.clientWidth;n(e>=900?5:e>=620?4:3)};r();let i=new ResizeObserver(r);return i.observe(t),()=>i.disconnect()},[e]),t}function $(e,t){let n=e.steps.map(e=>vt(e)).filter(e=>!!e),r=n.map(e=>K(e,t)===e.lessons.length),i=r.indexOf(!1);return{tracks:n,done:r,current:i,allDone:i<0}}function Et({roadmap:e,passed:t}){let{tracks:n,done:r,current:i,allDone:a}=$(e,t),o=(0,O.useRef)(null),s=Tt(o),c=n.length+1,l=e=>{let t=Math.floor(e/s),n=e%s;return{row:t,col:t%2?s-1-n:n}},u=e=>{if(e>=c-1)return;let t=l(e),n=l(e+1);return n.row===t.row?n.col>t.col?`right`:`left`:t.col===s-1?`turn-right`:`turn-left`};return(0,X.jsxs)(`div`,{className:`rm__path`,ref:o,style:{gridTemplateColumns:`repeat(${s}, minmax(0, 1fr))`},children:[n.map((e,n)=>{let a=K(e,t),o=r[n]||n===i,{row:s,col:c}=l(n);return(0,X.jsxs)(`div`,{className:`rm-step`,style:{gridRow:s+1,gridColumn:c+1},children:[(0,X.jsxs)(`a`,{href:`#/learn/${e.lang}`,className:`rm-tile`,"data-lit":o,"data-state":r[n]?`done`:n===i?`current`:`todo`,"aria-label":`Step ${n+1}: ${e.name}, ${a} of ${e.lessons.length} lessons passed`,title:`${e.name} · ${a}/${e.lessons.length} lessons`,children:[(0,X.jsx)(T,{lang:e.lang,size:34}),(0,X.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,X.jsx)(`span`,{className:`rm-step__label`,children:e.name}),u(n)?(0,X.jsx)(`span`,{className:`rm-link`,"data-dir":u(n),"data-lit":r[n],"aria-hidden":`true`}):null]},e.lang)}),(()=>{let{row:t,col:r}=l(n.length);return(0,X.jsxs)(`div`,{className:`rm-step`,style:{gridRow:t+1,gridColumn:r+1},children:[(0,X.jsx)(`span`,{className:`rm-tile rm-tile--end`,"data-lit":a,role:`img`,"aria-label":a?`${e.title}: every course complete`:`Finish line: complete every course on the ${e.title} roadmap`,children:(0,X.jsx)(S,{size:32})}),a?(0,X.jsx)(`span`,{className:`rm-step__label`,children:`Goal reached`}):null]})})()]})}function Dt({roadmap:e}){let{state:t}=o(),{tracks:n,done:r,current:a,allDone:s}=$(e,t.learn),u=r.filter(Boolean).length,d=e=>f(`/learn/${G(e,t.learn).id}`);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn?goal=${e.id}`,children:[(0,X.jsx)(i,{size:13}),`Roadmaps`]}),(0,X.jsxs)(`div`,{className:`rmv-head`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[`Roadmap · `,n.length,` courses `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`h-page`,children:e.title}),(0,X.jsx)(`p`,{className:`page-head__sub`,children:e.blurb}),(0,X.jsxs)(`div`,{className:`lm-course-go`,children:[(0,X.jsx)(c,{value:u/n.length,height:6}),(0,X.jsxs)(`span`,{className:`lm-course-go__n`,children:[u,`/`,n.length]}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>d(n[s?0:a]),children:[s?`Review`:u===0&&K(n[0],t.learn)===0?`Start step 1`:`Continue step ${a+1}`,(0,X.jsx)(l,{size:13})]})]})]}),(0,X.jsxs)(`ol`,{className:`rmv`,children:[n.map((e,n)=>{let i=K(e,t.learn);return(0,X.jsxs)(`li`,{className:`rmv-step`,"data-state":r[n]?`done`:n===a?`current`:`todo`,children:[(0,X.jsxs)(`span`,{className:`rm-tile rmv-step__tile`,"data-lit":r[n]||n===a,children:[(0,X.jsx)(T,{lang:e.lang,size:30}),(0,X.jsx)(`span`,{className:`rm-tile__n`,"aria-hidden":`true`,children:n+1})]}),(0,X.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,X.jsx)(`a`,{className:`rmv-step__name`,href:`#/learn/${e.lang}`,children:e.name}),(0,X.jsx)(`p`,{className:`rmv-step__blurb`,children:e.blurb}),(0,X.jsxs)(`div`,{className:`rmv-step__row`,children:[(0,X.jsx)(c,{value:i/e.lessons.length,height:4}),(0,X.jsxs)(`span`,{className:`rmv-step__n`,children:[i,`/`,e.lessons.length,` lessons`]}),(0,X.jsxs)(`button`,{type:`button`,className:`rmv-step__go`,onClick:()=>d(e),children:[i===0?`Start`:i===e.lessons.length?`Review`:`Continue`,(0,X.jsx)(l,{size:12})]})]})]})]},e.lang)}),(0,X.jsxs)(`li`,{className:`rmv-step`,"data-state":s?`done`:`todo`,children:[(0,X.jsx)(`span`,{className:`rm-tile rm-tile--end rmv-step__tile`,"data-lit":s,children:(0,X.jsx)(S,{size:28})}),(0,X.jsxs)(`div`,{className:`rmv-step__body`,children:[(0,X.jsx)(`span`,{className:`rmv-step__name`,children:s?`Goal reached`:`Finish line`}),(0,X.jsx)(`p`,{className:`rmv-step__blurb`,children:s?`Every course on the ${e.title} roadmap, complete. The basics are yours; more lessons past them will follow.`:`Complete every course above to reach it.`})]})]})]})]})}function Ot({track:e}){let{state:t}=o(),r=K(e,t.learn),a=e.lessons.length,s=G(e,t.learn);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn`,children:[(0,X.jsx)(i,{size:13}),`Roadmaps`]}),(0,X.jsxs)(`div`,{className:`lm-course-head`,children:[(0,X.jsx)(`span`,{className:`rm-tile`,style:{"--tile":`72px`},children:(0,X.jsx)(T,{lang:e.lang,size:40})}),(0,X.jsxs)(`div`,{style:{minWidth:0},className:`grow`,children:[(0,X.jsxs)(`div`,{className:`page-head__kicker`,children:[Y[e.level],` · `,a,` lessons `,(0,X.jsx)(Z,{})]}),(0,X.jsx)(`h1`,{className:`h-page`,children:e.name}),(0,X.jsx)(`p`,{className:`page-head__sub`,children:e.blurb})]})]}),W(e.lang).length>1?(0,X.jsx)(`nav`,{className:`lm-ladder`,"aria-label":`${q(e.lang)} courses`,children:W(e.lang).map((n,r)=>(0,X.jsxs)(`a`,{href:`#/learn/${n.id}`,className:`lm-ladder__step`,"data-here":n.id===e.id,"data-done":K(n,t.learn)===n.lessons.length,children:[(0,X.jsx)(`span`,{className:`lm-ladder__n`,children:r+1}),Y[n.level]]},n.id))}):null,(0,X.jsxs)(`div`,{className:`lm-course-go`,children:[(0,X.jsx)(c,{value:r/a,height:6}),(0,X.jsxs)(`span`,{className:`lm-course-go__n`,children:[r,`/`,a]}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(`/learn/${s.id}`),children:[r===0?`Start course`:r===a?`Review`:`Continue`,(0,X.jsx)(l,{size:13})]})]}),(0,X.jsx)(`ol`,{className:`lm-outline`,children:e.lessons.map((e,i)=>{let o=!!t.learn[e.id],c=e.id===s.id&&r<a;return(0,X.jsx)(`li`,{"data-done":o,"data-next":c,children:(0,X.jsxs)(`a`,{href:`#/learn/${e.id}`,children:[(0,X.jsx)(`span`,{className:`lm-outline__n`,"aria-hidden":`true`,children:o?(0,X.jsx)(n,{size:13}):i+1}),(0,X.jsx)(`span`,{className:`lm-outline__title`,children:e.title}),o?(0,X.jsx)(`span`,{className:`lm-outline__tag`,children:`Passed`}):c?(0,X.jsx)(`span`,{className:`lm-outline__tag lm-outline__tag--next`,children:`Next`}):null]})},e.id)})})]})}function kt({track:e,lesson:t,index:r}){let{state:a,setState:c}=o(),d=t.lang===`bash`||t.lang===`git`,[m,h]=(0,O.useState)(!1),[g,_]=(0,O.useState)(0),[v,y]=(0,O.useState)(!1),b=(0,O.useRef)(null),ee=ae(`learn:${t.id}:example`,t.teach,t.schema),te=!!a.learn[t.id],x=e.lessons[r-1],S=e.lessons[r+1],C=W(e.lang),w=S?void 0:C[C.findIndex(t=>t.id===e.id)+1];(0,O.useEffect)(()=>lt(t.lang),[t.lang]);let E=(0,O.useCallback)(()=>{c(e=>u(e,t.id)),h(!0),requestAnimationFrame(()=>b.current?.scrollIntoView({block:`nearest`,behavior:`smooth`}))},[t.id,c]),ne=(0,O.useCallback)(async(e,n,r)=>{let i=Se(t,e,await st(t,he(t,e),{onStatus:r}));return{run:{stdout:i.output,stderr:i.stderr,error:i.error,plots:[],result:null,tables:i.tables,ms:i.ms},tests:i.results}},[t]);return(0,X.jsxs)(`div`,{className:`page page--padtop ide-wrap`,children:[(0,X.jsxs)(`div`,{className:`lm-top`,children:[(0,X.jsxs)(`a`,{className:`lm-back`,href:`#/learn/${e.id}`,children:[(0,X.jsx)(i,{size:13}),e.title]}),(0,X.jsx)(`div`,{className:`lm-dots`,"aria-label":`Lesson ${r+1} of ${e.lessons.length}`,children:e.lessons.map((e,t)=>(0,X.jsx)(`a`,{href:`#/learn/${e.id}`,className:`lm-dots__dot`,"data-done":!!a.learn[e.id],"data-here":t===r,title:`${t+1}. ${e.title}`,"aria-label":`Lesson ${t+1}: ${e.title}${a.learn[e.id]?` (passed)`:``}`},e.id))}),(0,X.jsx)(Z,{})]}),(0,X.jsxs)(`article`,{className:`lm-flow`,children:[(0,X.jsxs)(`div`,{className:`lm-text__kicker`,children:[(0,X.jsx)(T,{lang:e.lang,size:18}),`Lesson `,r+1,` of `,e.lessons.length,te?(0,X.jsx)(`span`,{className:`lm-passed-tag`,children:`Passed`}):null]}),(0,X.jsx)(`h1`,{className:`lm-text__title`,children:t.title}),(0,X.jsx)(`div`,{className:`lm-teach`,children:(0,X.jsx)(p,{renderCode:ee,children:t.teach})}),(0,X.jsxs)(`section`,{className:`lm-challenge`,children:[(0,X.jsx)(`div`,{className:`lm-challenge__label`,children:`Your turn`}),(0,X.jsx)(p,{children:t.task}),t.stdin?(0,X.jsxs)(`div`,{className:`lm-stdin`,children:[(0,X.jsx)(`div`,{className:`lm-stdin__label`,children:`Input the program reads`}),(0,X.jsx)(`pre`,{children:t.stdin})]}):null,d?(0,X.jsx)(`p`,{className:`lm-challenge__how`,children:`Type the commands into the terminal below, then press Check.`}):null]}),(0,X.jsx)(`div`,{className:`lm-work`,children:d?(0,X.jsx)(At,{lesson:t,onPass:E}):(0,X.jsx)(re,{lang:ct(t.lang),code:t.starter,saveKey:`learn:${t.id}`,grade:ne,onPass:E,runLabel:`Run Code`,input:!1,minHeight:260,testsHint:`Press Run Code to run your code against the tests.`,eager:!0})}),(0,X.jsx)(`div`,{ref:b,children:m?(0,X.jsxs)(`div`,{className:`lm-win`,children:[(0,X.jsx)(n,{size:16}),(0,X.jsx)(`span`,{className:`grow`,children:S?`Lesson passed. Next: ${S.title}`:w?`That is the whole ${e.name} course. Next: ${w.name}.`:`Lesson passed — that is the whole ${e.name} course.`}),(0,X.jsxs)(`button`,{type:`button`,className:`ide-run`,onClick:()=>f(S?`/learn/${S.id}`:w?`/learn/${w.lessons[0].id}`:`/learn/${e.id}`),children:[S?`Continue`:w?`Start the next course`:`Back to the course`,(0,X.jsx)(l,{size:13})]})]}):null}),(0,X.jsxs)(`div`,{className:`lm-help`,children:[t.hints.slice(0,g).map((e,t)=>(0,X.jsxs)(`div`,{className:`lm-hint`,children:[(0,X.jsxs)(`span`,{className:`lm-hint__n`,children:[`Hint `,t+1]}),(0,X.jsx)(p,{children:e})]},t)),(0,X.jsxs)(`div`,{className:`lm-help__row`,children:[g<t.hints.length?(0,X.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>_(e=>e+1),children:g===0?`Show a hint`:`Another hint`}):null,(0,X.jsx)(`button`,{type:`button`,className:`lm-link`,onClick:()=>y(e=>!e),children:v?`Hide the solution`:`Show the solution`})]}),v?(0,X.jsxs)(`div`,{className:`lm-solution`,children:[(0,X.jsx)(`p`,{children:`One way to do it. Try typing it yourself rather than copying — that is where it sticks.`}),(0,X.jsx)(p,{children:"```"+jt(t.lang)+`
+`+t.solution+"```"})]}):null]}),(0,X.jsxs)(`div`,{className:`lm-nav`,children:[x?(0,X.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${x.id}`),children:[(0,X.jsx)(i,{size:13}),x.title]}):(0,X.jsx)(`span`,{}),S?(0,X.jsxs)(s,{variant:`ghost`,size:`sm`,onClick:()=>f(`/learn/${S.id}`),children:[S.title,(0,X.jsx)(l,{size:13})]}):null]})]})]})}function At({lesson:e,onPass:t}){let[n,r]=(0,O.useState)(()=>be(e)),[i,o]=(0,O.useState)(0),[s,c]=(0,O.useState)(null),[l,u]=(0,O.useState)(!1),d=async()=>{u(!0),c(null);try{let r=Se(e,``,await st(e,``,{shell:n}));c(r),r.passed&&t()}finally{u(!1)}};return(0,X.jsx)(`div`,{className:`embed`,children:(0,X.jsxs)(ee,{lang:`bash`,file:`~/project`,right:(0,X.jsxs)(`button`,{type:`button`,className:`ide__tool`,onClick:()=>{r(be(e)),o(e=>e+1),c(null)},title:`Start this lesson over`,children:[(0,X.jsx)(a,{size:13}),`Reset`]}),children:[(0,X.jsx)(ne,{shell:n,onShell:r,height:300,banner:`Practice terminal for this lesson. Type help to see the commands.`},i),(0,X.jsx)(`div`,{className:`lm-termbar`,children:(0,X.jsx)(te,{onClick:()=>void d(),running:l,label:`Check`})}),(0,X.jsx)(ie,{tabs:[{id:`tests`,label:`Test cases`,...s?{mark:s.passed?`pass`:`fail`}:{}}],active:`tests`,onTab:()=>{},children:(0,X.jsx)(E,{results:s?.results??null,empty:`Do the challenge in the terminal, then press Check.`})})]})})}function jt(e){return e===`javascript`?`js`:e===`typescript`?`ts`:e}function Mt(e){let{state:t}=o();return(0,O.useMemo)(()=>{let n=yt(e,t.learn);return n?{lesson:G(n,t.learn),done:K(n,t.learn),total:n.lessons.length}:null},[e,t.learn])}export{Ct as Learn,Mt as useNextLesson};
