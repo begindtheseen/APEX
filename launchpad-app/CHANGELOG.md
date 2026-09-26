@@ -3,6 +3,18 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.2.2
+
+**Focus blocks keep you on the lesson.** While a block is running, the app will not take you
+anywhere else: a sidebar link, the search box, the back button or a typed address puts you back on
+the lesson, and the strip at the bottom says why and how to leave. Moving between the lessons of
+the same module is fine. To go somewhere else, pause the block or end it.
+
+- **Pause** becomes available once five minutes of the block have run, and again five minutes
+  after each resume; until then the button shows how long is left. While paused you can go
+  anywhere, and **Resume** takes you straight back to the lesson.
+- **I'm done** ends the block at any moment, and every minute it ran still counts.
+
 ## 1.2.1
 
 **Read aloud no longer freezes on iPhone.** It would play for a while, then stop at random, and
