@@ -7,6 +7,7 @@
    ========================================================================== */
 import type { LpSetup } from '@/curriculum/generated/launchpad-data'
 import { coerceClaims, coerceFlagship, coerceSetup, type Claim } from './claims'
+import { coercePlacement, type PlacementResult } from './placement'
 import type { Memory } from './fsrs'
 import { newCard } from './fsrs'
 import { coerceParked, coerceRun, type FocusRun, type ParkedNote } from './focus'
@@ -202,6 +203,12 @@ export interface LearnerState {
    * intruding thought has somewhere to go that is not "stop studying".
    */
   parked: ParkedNote[]
+  /**
+   * The placement test, if she has taken it: what she answered and how each
+   * skill came out. Its plan (src/engine/placement.ts) decides where Next up
+   * starts and which foundation lessons are marked as tested out.
+   */
+  placement?: PlacementResult
 }
 
 export const ATTEMPT_LOG_LIMIT = 4000
@@ -296,6 +303,8 @@ export function migrateState(raw: unknown, now: Date = new Date()): LearnerState
   if (live) out.live = live
   const focus = coerceRun(r.focus)
   if (focus) out.focus = focus
+  const placement = coercePlacement(r.placement)
+  if (placement) out.placement = placement
   if (r.media && typeof r.media === 'object') {
     for (const [k, v] of Object.entries(r.media)) {
       const m = coerceMedia(v)
