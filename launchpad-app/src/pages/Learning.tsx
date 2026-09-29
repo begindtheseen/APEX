@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    The whole curriculum in one place, with ORBIT's ways in — what is open now,
    everything, pinned, gated, and search — and LAUNCHPAD's own: the ladder, all
-   thirty-three modules layer by layer in the order they are climbed, with the
+   every module layer by layer in the order they are climbed, with the
    hard gate drawn where it actually bites, between Layer 3 and Layer 4.
    ========================================================================== */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
@@ -294,7 +294,7 @@ export function Learning() {
   )
 }
 
-/** All thirty-three, in the curriculum file's order — the order they are climbed. */
+/** All of them, in the curriculum file's order — the order they are climbed. */
 function ladder(): Module[] {
   return AI_CURRICULUM.map((m) => moduleById(m.id)).filter((m): m is Module => !!m)
 }

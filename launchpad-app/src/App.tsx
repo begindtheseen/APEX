@@ -103,6 +103,7 @@ function Page({ path, segments }: { path: string; segments: string[] }) {
     case 'product':
     case 'market':
     case 'employed':
+    case 'frontier':
       return <Track track={head as TrackId} />
     case 'playground':
       return <Playground />

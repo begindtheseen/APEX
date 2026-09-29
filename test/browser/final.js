@@ -18,7 +18,7 @@ const { chromium } = require('playwright');
     const ov=()=>pg.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
 
     ok('four realms', (await pg.$$eval('.ls-panel',e=>e.length))===4);
-    ok('the panel counts gates', (await pg.$eval('#lsSubLp',e=>e.textContent)).trim()==='0/33 PASSED');
+    ok('the panel counts gates', (await pg.$eval('#lsSubLp',e=>e.textContent)).trim()==='0/41 PASSED');
     await Promise.all([pg.waitForURL(/\/launchpad\//,{timeout:8000}), pg.click('.lsLp')]).catch(()=>{});
     await pg.waitForSelector('.shell .route',{timeout:8000}).catch(()=>{});
     ok('the app opens', !!(await pg.$('.shell .route')));
@@ -29,7 +29,7 @@ const { chromium } = require('playwright');
     ok('home no overflow', !(await ov()));
 
     await LP.go(pg,'/learning');
-    ok('33 modules on the ladder', (await pg.$$eval('.mcard',e=>e.length))===33);
+    ok('41 modules on the ladder', (await pg.$$eval('.mcard',e=>e.length))===41);
     ok('32 locked on a fresh install', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===32);
     ok('only M0 open', (await pg.$$eval('.mcard[data-locked="false"] .mcard__tier',e=>e.map(x=>x.textContent.trim().slice(0,2)).join()))==='M0');
     ok('hard gate', (await pg.$$eval('#hard-gate .tick',e=>e.length))===4);
@@ -89,7 +89,7 @@ const { chromium } = require('playwright');
     await Promise.all([pg.waitForURL(u=>!/\/launchpad\//.test(String(u)),{timeout:8000}), pg.evaluate(()=>document.querySelector('.nav-item--realms').click())]).catch(()=>{});
     await pg.waitForTimeout(600);
     ok('returns to launcher', await pg.$eval('#launcherScreen',e=>e.classList.contains('active')).catch(()=>false));
-    ok('the panel carries the count', (await pg.$eval('#lsSubLp',e=>e.textContent)).startsWith('1/33'));
+    ok('the panel carries the count', (await pg.$eval('#lsSubLp',e=>e.textContent)).startsWith('1/41'));
     ok('no page errors', errs.length===0, errs.join('|'));
     await ctx.close();
   }

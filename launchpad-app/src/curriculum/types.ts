@@ -14,7 +14,7 @@ import type { LpModule } from './generated/launchpad-data'
 import type { LessonMeta } from './lessons/types'
 
 /**
- * The pillars shown on the dashboard. In LAUNCHPAD these are the nine layers
+ * The pillars shown on the dashboard. In LAUNCHPAD these are the ten layers
  * of the curriculum, in order, each keyed by the slug its page lives at.
  */
 export type TrackId =
@@ -27,6 +27,7 @@ export type TrackId =
   | 'product'
   | 'market'
   | 'employed'
+  | 'frontier'
 
 /** Languages the playground knows how to run or check. */
 export type Lang =

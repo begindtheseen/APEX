@@ -561,7 +561,7 @@ function QuickTools() {
 /* ── Resources ───────────────────────────────────────────────────────────── */
 
 const RESOURCES: { icon: (p: IconProps) => ReactNode; label: string; href: string }[] = [
-  { icon: IconDoc, label: 'The ladder — all 33 modules', href: '#/learning' },
+  { icon: IconDoc, label: `The ladder — all ${AI_CURRICULUM.length} modules`, href: '#/learning' },
   { icon: IconShield, label: 'The hard gate — Layer 3 to Layer 4', href: '#/learning?show=gate' },
   { icon: IconCompass, label: 'The five rules, and how to read this', href: '#/guide' },
   { icon: IconBook, label: 'Glossary, the cut list, the honest limit', href: '#/resources' },

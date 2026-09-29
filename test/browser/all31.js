@@ -14,7 +14,7 @@ const {chromium}=require('playwright');
   await LP.open(p,'/');
   const ids=await p.evaluate(()=>Array.from(document.querySelectorAll('.side .nav-item')).length>0);
   if(!ids) errs.push('the app did not draw');
-  const all=Array.from({length:33},(_, i)=>'M'+i);
+  const all=Array.from({length:41},(_, i)=>'M'+i);
   const bad=[];
   for(const id of all){
     await LP.go(p,'/module/'+id+'?step=learn');
