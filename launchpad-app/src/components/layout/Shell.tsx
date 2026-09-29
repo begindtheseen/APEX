@@ -47,7 +47,7 @@ export interface NavDef {
 }
 
 /*
- * ORBIT's rail, with LAUNCHPAD's nine layers where ORBIT has its four tracks,
+ * ORBIT's rail, with LAUNCHPAD's ten layers where ORBIT has its four tracks,
  * and the realm's two tools — The Plan and the parallel tracks — beside them.
  */
 export const NAV: NavDef[] = [

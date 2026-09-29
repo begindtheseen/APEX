@@ -75,7 +75,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     count: (document.getElementById('lsSubLp') || {}).textContent
   }));
   console.log('        offline: ' + JSON.stringify(off));
-  ok('the app loads with no network', off.hasApp && off.launcher && !off.booting && /\/33 PASSED/.test(off.count || ''), JSON.stringify(off));
+  ok('the app loads with no network', off.hasApp && off.launcher && !off.booting && /\/41 PASSED/.test(off.count || ''), JSON.stringify(off));
 
   // And LAUNCHPAD opens from the launcher and works offline.
   await Promise.all([p.waitForURL(/\/launchpad\//, { timeout: 8000 }), p.click('.lsLp')]).catch(e => errs.push('launch: ' + e.message));
@@ -85,7 +85,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     drawn: !!document.querySelector('.shell .route'),
     layers: document.querySelectorAll('.dcard').length
   }));
-  ok('LAUNCHPAD renders offline', realm.drawn && realm.layers === 9, JSON.stringify(realm));
+  ok('LAUNCHPAD renders offline', realm.drawn && realm.layers === 10, JSON.stringify(realm));
 
   await LP.go(p, '/module/M0?step=build');
   await p.waitForSelector('.tick', { timeout: 6000 }).catch(() => {});

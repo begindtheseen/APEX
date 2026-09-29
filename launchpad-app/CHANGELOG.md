@@ -3,6 +3,31 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.3.0
+
+**A new layer: The Frontier.** Eight modules, M33 to M40, for understanding AI the way working AI
+developers do, across the whole field and not just one provider:
+
+- **M33 How a Language Model Works.** Tokens, attention, training, and how a text predictor becomes
+  an assistant and then a reasoning model. You build a tiny GPT from scratch.
+- **M34 Reading the Model Landscape.** How to judge any model in an afternoon: model cards,
+  benchmarks and how they mislead, licenses, and your own eval set as the deciding vote.
+- **M35 One Feature, Three Providers.** The same feature on three providers' APIs, what really
+  differs, and failover that works.
+- **M36 Open Weights on Your Own Hardware.** Running downloaded models locally and on a rented GPU,
+  with the memory worked out before you measure it.
+- **M37 Beyond Text.** Vision, speech, realtime voice, image generation and embeddings as product
+  features.
+- **M38 Adapting a Model.** Fine-tuning with LoRA, and the evidence for when not to.
+- **M39 MCP and the Agent Platform.** A remote MCP server with proper sign-in, agent SDKs, and
+  what attackers do through tools.
+- **M40 The Frontier Capstone.** A new product shipped to real users, and a way to test any new
+  model inside 48 hours of its release.
+
+**Track 11, the Model Watch:** thirty minutes a week to keep up after the program ends.
+**Appendix D** is a dated snapshot of the major model families. The program is now 41 modules and
+1,860 hours, and The Plan works out your own dates from that.
+
 ## 1.2.3
 
 **Learn to code has its own focus mode.** Every course and coding lesson has a **Focus** button.

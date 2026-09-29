@@ -87,7 +87,7 @@ export function howRows(passedM0: boolean): [string, string][] {
   return [
     [
       'Module',
-      `A unit of work. The biggest is ${LONGEST} hours — four weeks at the 18-hour ceiling, six at twelve. A few are paced by a date instead and say so on their own page. 33 of them, each opening when the ones before it are passed.`,
+      `A unit of work. The biggest is ${LONGEST} hours — four weeks at the 18-hour ceiling, six at twelve. A few are paced by a date instead and say so on their own page. ${AI_CURRICULUM.length} of them, each opening when the ones before it are passed.`,
     ],
     ['Lab', 'A module whose result stays private. It is for learning, not for showing.'],
     ['Evidence', 'A module whose result a stranger can open and judge. These are what get you hired.'],

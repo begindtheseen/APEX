@@ -36,7 +36,7 @@ import { phaseFor, type Phase } from '@/components/layout/Shell'
 import { LAYER_ICON } from '@/components/layerIcons'
 import { Button, Card, Chip, Stat, Tile, prefersReducedMotion } from '@/components/ui'
 import { TRACKS, TRACK_ORDER, corpusStats } from '@/curriculum'
-import { AI_COMPRESSED_SPINE, AI_CURRICULUM_API, AI_TRACKS } from '@/curriculum/generated/launchpad-data'
+import { AI_COMPRESSED_SPINE, AI_CURRICULUM_API, AI_LAYERS, AI_TRACKS } from '@/curriculum/generated/launchpad-data'
 import type { LpDocSection } from '@/curriculum/generated/launchpad-doc'
 import { setOnboarded } from '@/engine/apply'
 import { isPassed, progressOf } from '@/engine/claims'
@@ -211,7 +211,7 @@ export function Guide() {
           <div className="sect guide-prose">
             <p>
               LAUNCHPAD is a curriculum for becoming a hireable remote AI product engineer, from an empty
-              file to hired: <strong>{stats.modules} modules</strong> on nine layers, arranged as a
+              file to hired: <strong>{stats.modules} modules</strong> on {AI_LAYERS.length} layers, arranged as a
               dependency graph, each one ending in something you built and can explain out loud, and in a
               gate — a named person who checks it and says yes. Beside the modules run{' '}
               <strong>{AI_TRACKS.length} parallel tracks</strong>, the continuous habits — the job search,
@@ -294,7 +294,7 @@ export function Guide() {
           </div>
 
           <div className="sect">
-            <div className="sect__title">The nine layers</div>
+            <div className="sect__title">The {AI_LAYERS.length} layers</div>
             {TRACK_ORDER.map((t) => {
               const Icon = LAYER_ICON[t]
               return (

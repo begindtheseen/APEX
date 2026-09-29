@@ -2,7 +2,8 @@
    LAUNCHPAD — one icon per layer
    ----------------------------------------------------------------------------
    The realm gave every layer its own glyph (a page, a chip, a wrench, a spark,
-   a branch, a network, a server, a briefcase, a badge). These are the nearest
+   a branch, a network, a server, a briefcase, a badge, and a compass for the
+   frontier). These are the nearest
    in ORBIT's icon set, so a layer looks the same on the dashboard, its own
    page, the sidebar and the guide.
    ========================================================================== */
@@ -11,6 +12,7 @@ import {
   IconBlocks,
   IconBriefcase,
   IconBulb,
+  IconCompass,
   IconDoc,
   IconLayers,
   IconRoute,
@@ -31,4 +33,5 @@ export const LAYER_ICON: Record<TrackId, (p: IconProps) => ReactNode> = {
   product: IconLayers,
   market: IconBriefcase,
   employed: IconStar,
+  frontier: IconCompass,
 }

@@ -110,7 +110,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     }), [route, sel, n]);
     await timeRoute('/', '.dcard', 9); // warm the lazy chunks
     const home = await timeRoute('/', '.dcard', 9);
-    const ladder = await timeRoute('/learning', '.mcard', 33);
+    const ladder = await timeRoute('/learning', '.mcard', 41);
     const mod = await timeRoute('/module/M12?step=build', '.gate-row', 1);
     console.log('        median route draw: home ' + home + 'ms · ladder ' + ladder + 'ms · module ' + mod + 'ms');
     ok('Home draws in a reasonable time', home < 250, home + 'ms');

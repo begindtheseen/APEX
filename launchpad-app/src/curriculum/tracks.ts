@@ -1,5 +1,5 @@
 /* ============================================================================
-   LAUNCHPAD — the nine layers, as dashboard pillars
+   LAUNCHPAD — the ten layers, as dashboard pillars
    ----------------------------------------------------------------------------
    ORBIT's dashboard is built from pillars: icon, title, a short pitch, five
    bullet lines, a Continue action and a completion bar. LAUNCHPAD's pillars
@@ -21,13 +21,14 @@ export const LAYER_SLUGS: TrackId[] = [
   'product',
   'market',
   'employed',
+  'frontier',
 ]
 
 /*
- * ORBIT's four domain colours, spread across the nine layers so the ladder
+ * ORBIT's four domain colours, spread across the ten layers so the ladder
  * reads as it is climbed: the contract and the market (the money and the job)
- * in amber, the machine and the craft in blue, the AI work in violet, platform
- * work in cyan.
+ * in amber, the machine and the craft in blue, the AI work (the frontier
+ * included) in violet, platform work in cyan.
  */
 const ACCENT: Record<TrackId, string> = {
   contract: 'var(--d-career)',
@@ -39,6 +40,7 @@ const ACCENT: Record<TrackId, string> = {
   product: 'var(--d-coding)',
   market: 'var(--d-career)',
   employed: 'var(--d-career)',
+  frontier: 'var(--d-gnc)',
 }
 
 export function layerOf(track: TrackId): number {

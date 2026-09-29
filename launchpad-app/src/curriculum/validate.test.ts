@@ -16,7 +16,7 @@
    ========================================================================== */
 import { describe, expect, it } from 'vitest'
 import { MODULES, TRACK_ORDER, corpusStats, dag, modulesInTrack, searchModules } from './index'
-import { AI_CURRICULUM, AI_CURRICULUM_API } from './generated/launchpad-data'
+import { AI_CURRICULUM, AI_CURRICULUM_API, AI_LAYERS } from './generated/launchpad-data'
 import { findGraphProblems, topoSort } from '@/engine/graph'
 import { itemId, parseItemId } from './types'
 
@@ -205,8 +205,8 @@ describe('corpus scale', () => {
     expect(s.hours).toBe(AI_CURRICULUM_API.totalHours().modules)
   })
 
-  it('covers all nine layers', () => {
-    expect(TRACK_ORDER).toHaveLength(9)
+  it('covers every layer', () => {
+    expect(TRACK_ORDER).toHaveLength(AI_LAYERS.length)
     for (const track of TRACK_ORDER) {
       expect(modulesInTrack(track).length, `${track} is empty`).toBeGreaterThan(0)
     }

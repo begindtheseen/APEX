@@ -81,8 +81,11 @@ the launcher. Each realm keeps fully separate progress.
 
 ## LAUNCHPAD — AI engineering, from zero to employed
 
-**LAUNCHPAD** is a 33-module AI-engineering curriculum (nine layers, ten
-parallel tracks, a hard gate before the AI layers). It runs as its own app at
+**LAUNCHPAD** is a 41-module AI-engineering curriculum (ten layers, eleven
+parallel tracks, a hard gate before the AI layers). Its last layer, The Frontier,
+covers how models work inside, the major model families, open models on your
+own hardware, images and speech, fine-tuning, MCP and the agent platform, and a
+capstone product built with all of it. It runs as its own app at
 **`launchpad/`**: the ORBIT learning platform — the same layout, navigation,
 module pages (Learn → Build → Recall), spaced-repetition review, focus
 sessions, search, and coding playground — carrying the LAUNCHPAD curriculum

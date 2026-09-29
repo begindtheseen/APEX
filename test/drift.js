@@ -73,7 +73,7 @@ mdHas(v.hours.modules, 'module-hour total');
 mdHas(v.hours.tracks, 'track-hour total');
 mdHas(v.hours.total, 'grand total');
 // and the stale figures must be gone, not merely outnumbered
-[[1108, v.hours.modules], [1578, v.hours.total]].forEach(function (p) {
+[[1108, v.hours.modules], [1578, v.hours.total], [1114, v.hours.modules], [1584, v.hours.total]].forEach(function (p) {
   if (p[0] !== p[1] && MD.indexOf(p[0].toLocaleString('en-US')) !== -1) {
     fail('stale hour figure still in the markdown', String(p[0]));
   }
