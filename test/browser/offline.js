@@ -85,7 +85,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     drawn: !!document.querySelector('.shell .route'),
     layers: document.querySelectorAll('.dcard').length
   }));
-  ok('LAUNCHPAD renders offline', realm.drawn && realm.layers === 9, JSON.stringify(realm));
+  ok('LAUNCHPAD renders offline', realm.drawn && realm.layers === 10, JSON.stringify(realm));
 
   await LP.go(p, '/module/M0?step=build');
   await p.waitForSelector('.tick', { timeout: 6000 }).catch(() => {});

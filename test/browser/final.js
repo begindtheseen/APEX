@@ -23,14 +23,14 @@ const { chromium } = require('playwright');
     await pg.waitForSelector('.shell .route',{timeout:8000}).catch(()=>{});
     ok('the app opens', !!(await pg.$('.shell .route')));
     ok('sidebar nav', (await pg.$$eval('.side .nav-item',e=>e.length))>=15);
-    ok('9 layer cards', (await pg.$$eval('.dcard',e=>e.length))===9);
-    ok('9 layers in mission progress', (await pg.$$eval('.mrow',e=>e.length))===9);
+    ok('10 layer cards', (await pg.$$eval('.dcard',e=>e.length))===10);
+    ok('10 layers in mission progress', (await pg.$$eval('.mrow',e=>e.length))===10);
     ok('readiness ring', !!(await pg.$('.mission__ring')));
     ok('home no overflow', !(await ov()));
 
     await LP.go(pg,'/learning');
     ok('41 modules on the ladder', (await pg.$$eval('.mcard',e=>e.length))===41);
-    ok('32 locked on a fresh install', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===32);
+    ok('40 locked on a fresh install', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===40);
     ok('only M0 open', (await pg.$$eval('.mcard[data-locked="false"] .mcard__tier',e=>e.map(x=>x.textContent.trim().slice(0,2)).join()))==='M0');
     ok('hard gate', (await pg.$$eval('#hard-gate .tick',e=>e.length))===4);
     ok('ladder no overflow', !(await ov()));
@@ -52,7 +52,7 @@ const { chromium } = require('playwright');
     ok('plan no overflow', !(await ov()));
 
     await LP.go(pg,'/tracks');
-    ok('10 tracks', (await pg.$$eval('.lp-track',e=>e.length))===10);
+    ok('11 tracks', (await pg.$$eval('.lp-track',e=>e.length))===11);
     ok('tracks has the rail', (await pg.$$eval('.read > .stack',e=>e.length))===2);
 
     await LP.go(pg,'/module/M0?step=learn');
@@ -72,11 +72,11 @@ const { chromium } = require('playwright');
     await LP.pass(pg,'M0');
     ok('the claim track fills', (await pg.$$eval('.claimtrack__step[data-on="true"]',e=>e.length))===3);
     await LP.go(pg,'/learning');
-    ok('M0 gate opens the ramp', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===28);
+    ok('M0 gate opens the ramp', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===36);
 
     await pg.reload({waitUntil:'networkidle'});
     await pg.waitForTimeout(400);
-    ok('progress persists', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===28);
+    ok('progress persists', (await pg.$$eval('.mcard[data-locked="true"]',e=>e.length))===36);
     await LP.go(pg,'/');
     ok('ring reflects progress', (await pg.$eval('.mission__ring',e=>e.textContent.trim()))!=='0%');
 

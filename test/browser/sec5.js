@@ -138,7 +138,7 @@ const ok = (n, c, d) => { console.log((c ? '  PASS  ' : '  FAIL  ') + n + (d ? '
     await LP.open(p, '/learning');
     const locked = await p.$$eval('.mcard[data-locked="true"]', e => e.length);
     const rec = await LP.record(p);
-    ok('progress is intact once the curriculum loads again', rec.passed === 2 && locked < 32, 'passed=' + rec.passed + ' locked=' + locked);
+    ok('progress is intact once the curriculum loads again', rec.passed === 2 && locked < 40, 'passed=' + rec.passed + ' locked=' + locked);
     await ctx.close();
   }
 
