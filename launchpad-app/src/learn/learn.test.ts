@@ -573,7 +573,7 @@ describe('context notes in Learn to code', () => {
  * list only shrinks: rewrite the example on different names and data, or show
  * the pieces instead of the finished answer, then take the id out.
  */
-const GIVES_AWAY = new Set<string>(['js-01'])
+const GIVES_AWAY = new Set<string>([])
 
 describe('examples leave the task to her', () => {
   const lessons = TRACKS.flatMap((t) => t.lessons)
