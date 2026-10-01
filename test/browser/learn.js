@@ -118,8 +118,27 @@ async function passGates(p, ids) {
   watch(p);
   // Each course gets a fresh page: hundreds of runs in one page (Pyodide, clang,
   // the TypeScript compiler) grow it until the browser kills it on a small runner.
+  // Lessons passed on this page that the app has not yet been seen to save.
+  let unsaved = [];
+  const learned = (pg) => pg.evaluate(() => new Promise((done) => {
+    const q = indexedDB.open('launchpad');
+    q.onerror = () => done([]);
+    q.onsuccess = () => {
+      const g = q.result.transaction('state').objectStore('state').get('learner');
+      g.onsuccess = () => { done(Object.keys((g.result || {}).learn || {})); q.result.close(); };
+      g.onerror = () => { done([]); q.result.close(); };
+    };
+  })).catch(() => []);
   const freshPage = async () => {
-    await p.goto('about:blank').catch(() => {}); // leaving the app saves its record
+    // The app saves a moment after a pass; on a slow runner, leaving straight away
+    // lost it. Wait (up to 10 s) until every pass made on this page is on disk.
+    for (let t = 0; t < 40 && unsaved.length; t++) {
+      const have = await learned(p);
+      unsaved = unsaved.filter((id) => !have.includes(id));
+      if (unsaved.length) await p.waitForTimeout(250);
+    }
+    unsaved = [];
+    await p.goto('about:blank').catch(() => {});
     await p.close().catch(() => {});
     p = await ctx.newPage();
     watch(p);
@@ -182,10 +201,11 @@ async function passGates(p, ids) {
     const sample = track.level === 'basics' || process.env.LEARN_ALL ? lessons : [lessons[0], lessons[lessons.length - 1]];
     for (const [i, lesson] of sample.entries()) {
       if (i && i % 6 === 0) await freshPage();
-      try {
+      // A page that crashes (clang's compiler is large) gets one more go on a fresh page.
+      for (let attempt = 0; attempt < 2; attempt++) try {
         await LP.go(p, '/learn/' + lesson.id);
         const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
-        if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); continue; }
+        if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); break; }
         if (track.lang === 'bash' || track.lang === 'git') {
           await p.waitForSelector('#termInput');
           const s = await check(p);
@@ -200,10 +220,14 @@ async function passGates(p, ids) {
         }
         const r = await check(p);
         if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
+        else unsaved.push(lesson.id);
+        break;
       } catch (e) {
-        // Say where, and carry on with the next lesson on a new page.
-        bad.push(lesson.id + ': ' + String(e && e.message).split('\n')[0]);
+        const why = String(e && e.message).split('\n')[0];
         await freshPage();
+        if (attempt === 0 && /Target crashed/.test(why)) { console.log('  note  ' + lesson.id + ': the page crashed; once more on a fresh page'); continue; }
+        // Say where, and carry on with the next lesson.
+        bad.push(lesson.id + ': ' + why);
       }
     }
     ok(track.title + ': every starter needs work and every solution passes (' + sample.length + ' of ' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
