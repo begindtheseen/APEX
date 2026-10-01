@@ -5,6 +5,18 @@ var LP = require('./_launchpad');
 // the reference solution MUST pass every check (the lesson can be passed).
 // The runtimes (Pyodide, sql.js, the TypeScript compiler and clang) are the
 // same pinned packages the app downloads, served here from node_modules.
+// The browser's own log (Playwright's pw:browser channel), kept rather than printed, so a
+// page crash can say what Chromium said about it.
+const browserLog = [];
+process.env.DEBUG = [process.env.DEBUG, 'pw:browser'].filter(Boolean).join(',');
+const stderrWrite = process.stderr.write.bind(process.stderr);
+process.stderr.write = (chunk, ...rest) => {
+  const text = String(chunk);
+  if (!/ pw:browser /.test(text)) return stderrWrite(chunk, ...rest);
+  for (const line of text.split('\n')) if (line.trim() && !/dbus|<launch/.test(line)) browserLog.push(line.replace(/^\S+ pw:browser /, '').slice(0, 300));
+  if (browserLog.length > 400) browserLog.splice(0, browserLog.length - 400);
+  return true;
+};
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -104,7 +116,7 @@ async function passGates(p, ids) {
     .sort((a, b) => key(a)[0] - key(b)[0] || key(a)[1] - key(b)[1])
     .map((f) => parseTrack(fs.readFileSync(path.join(src, 'tracks', f), 'utf8'), f));
 
-  const b = await chromium.launch(ENV.launchOpts);
+  const b = await chromium.launch(Object.assign({}, ENV.launchOpts, { args: ['--enable-logging=stderr', '--v=0'] }));
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' });
   await serveCdn(ctx);
   let p = await ctx.newPage();
@@ -238,9 +250,10 @@ async function passGates(p, ids) {
       } catch (e) {
         const why = String(e && e.message).split('\n')[0] + ' (during the ' + step + ' run; workers: ' + trail.slice(-8).join(' ') + ')';
         await freshPage();
+        const said = /Target crashed/.test(why) ? '\n          the browser said: ' + browserLog.slice(-25).join('\n          | ') : '';
         if (attempt === 0 && /Target crashed/.test(why)) { console.log('  note  ' + lesson.id + ': the page crashed; once more on a fresh page'); continue; }
         // Say where, and carry on with the next lesson.
-        bad.push(lesson.id + ': ' + why);
+        bad.push(lesson.id + ': ' + why + said);
       }
     }
     ok(track.title + ': every starter needs work and every solution passes (' + sample.length + ' of ' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
