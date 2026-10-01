@@ -59,7 +59,15 @@ function run(label, file, env) {
   var last = out[out.length - 1] || '(no output)';
   var ok = r.status === 0 && !/FAIL/.test(last);
   process.stdout.write('  ' + (ok ? 'PASS' : 'FAIL') + '  ' + label.padEnd(14) + last.slice(0, 96) + '\n');
-  if (!ok && r.status !== 0) out.slice(-12).forEach(function (l) { process.stdout.write('        ' + l + '\n'); });
+  // Every failing check with its detail, then the end of the output (where a crash shows).
+  if (!ok && r.status !== 0) {
+    var on = false;
+    out.forEach(function (l, i) {
+      if (/^\s*FAIL\b/.test(l)) on = true;
+      else if (/^\s*PASS\b/.test(l)) on = false;
+      if (on || i >= out.length - 12) process.stdout.write('        ' + l + '\n');
+    });
+  }
   return ok;
 }
 
