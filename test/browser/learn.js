@@ -114,7 +114,17 @@ async function passGates(p, ids) {
   // code at work — an unfinished starter, say — and the lesson shows it in its
   // console. Only the app's own errors count here.
   const errs = [];
-  const watch = (pg) => pg.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+  // What the page was doing, for a crash report: the step, and its workers coming and going
+  // (cpp.worker compiles, wasi.worker runs the program).
+  let step = '', trail = [];
+  const watch = (pg) => {
+    pg.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+    pg.on('worker', (w) => {
+      const name = w.url().split('/').pop().replace(/-[\w-]{8}\.js$/, '');
+      trail.push('+' + name);
+      w.on('close', () => trail.push('-' + name));
+    });
+  };
   watch(p);
   // Each course gets a fresh page: hundreds of runs in one page (Pyodide, clang,
   // the TypeScript compiler) grow it until the browser kills it on a small runner.
@@ -203,6 +213,7 @@ async function passGates(p, ids) {
       if (i && i % 6 === 0) await freshPage();
       // A page that crashes (clang's compiler is large) gets one more go on a fresh page.
       for (let attempt = 0; attempt < 2; attempt++) try {
+        step = 'opening'; trail = [];
         await LP.go(p, '/learn/' + lesson.id);
         const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
         if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); break; }
@@ -214,16 +225,18 @@ async function passGates(p, ids) {
         } else {
           await p.waitForSelector(WORK + ' .cm-content');
           await setCode(p, lesson.starter);
+          step = 'starter';
           const s = await check(p);
           if (s.passed) bad.push(lesson.id + ': the starter already passes');
           await setCode(p, lesson.solution);
         }
+        step = 'solution';
         const r = await check(p);
         if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
         else unsaved.push(lesson.id);
         break;
       } catch (e) {
-        const why = String(e && e.message).split('\n')[0];
+        const why = String(e && e.message).split('\n')[0] + ' (during the ' + step + ' run; workers: ' + trail.slice(-8).join(' ') + ')';
         await freshPage();
         if (attempt === 0 && /Target crashed/.test(why)) { console.log('  note  ' + lesson.id + ': the page crashed; once more on a fresh page'); continue; }
         // Say where, and carry on with the next lesson.
