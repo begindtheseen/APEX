@@ -739,6 +739,18 @@
    "json": "n1r3fw1qyxpe41mp.json",
    "duration": 130.125,
    "lesson": "M34/02-the-gate.md"
+  },
+  "1c4mlgx1cfzbsf7x4": {
+   "mp3": "1c4mlgx1cfzbsf7x4.mp3",
+   "json": "1c4mlgx1cfzbsf7x4.json",
+   "duration": 692.72,
+   "lesson": "M35/01-the-module.md"
+  },
+  "1s91bx11chhup51ju": {
+   "mp3": "1s91bx11chhup51ju.mp3",
+   "json": "1s91bx11chhup51ju.json",
+   "duration": 132.87,
+   "lesson": "M35/02-the-gate.md"
   }
  }
 }

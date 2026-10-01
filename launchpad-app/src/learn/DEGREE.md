@@ -529,7 +529,7 @@ last, so later labs extend earlier ones.
 | Course | File | Requires |
 |---|---|---|
 | `cs-dist1` Distributed Systems I | `cs.18-dist1.txt` | `cs-par` |
-| `cs-dist2` Distributed Systems II | `cs.19-dist2.txt` | `cs-dist1` |
+| `cs-dist2` Distributed Systems II (deferred: Phase 3, written when needed) | `cs.19-dist2.txt` | `cs-dist1` |
 | `cs-cloud` Cloud Infrastructure | `cs.20-cloud.txt` | `cs-dist1` |
 | `cs-mlsys1` ML Systems I: training | `cs.21-mlsys-train.txt` | `cs-par`, `python-ai` |
 | `cs-mlsys2` ML Systems II: inference and serving | `cs.22-mlsys-serve.txt` | `cs-mlsys1`, `cs-dist1` |
@@ -570,6 +570,10 @@ clocks, quorums, a first Raft): a two-page refresher, then depth.
 16. **Mastery gate.**
 
 ### Distributed Systems II: syllabus (`dist2`, `cs.19-dist2.txt`)
+
+*Deferred.* Not needed for internship or junior roles; its essentials are already covered (Raft basics in
+Parallel Computing, isolation and lost updates in module M5, replication and consistency in Distributed
+Systems I). The plan below stays for when the work calls for it.
 
 1. **Consensus, stated.** Agreement, validity, termination; FLP in plain steps; why partial
    synchrony is the way out.
