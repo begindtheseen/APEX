@@ -1110,7 +1110,7 @@ game day your systems reviewer (Track 5) is already in the room for: acknowledge
 severity call plus *what I know / what I am doing / when I will update next*; update on that interval
 whether or not there is news; escalate at a trip-wire written down *before* the window opens, **not during it**. 24h
 detection is a *solo* baseline (the starting number) — a real rotation measures acknowledgment in minutes. Runbooks and the
-blameless postmortem. **Profiling: CPU flame graphs, heap profiles, benchmarks that report variance — find the bottleneck before fixing it.**
+blameless postmortem. **Profiling: CPU and heap profiles, benchmarks that report variance — find the bottleneck before fixing it.**
 
 **Checkpoints** ① read one real stack trace to its actual cause · ② a bug found with a conditional
 breakpoint you could not have printed your way to · ③ structured logs with correlation IDs surviving one

@@ -2,7 +2,7 @@
 [[specific lock type|lock-type]] 1
 [[preview environments|preview-env]] 1
 [[liveness and readiness|liveness-readiness]] 1
-[[The Kubernetes rabbit hole|kubernetes]] 1
+[[Kubernetes|kubernetes]] 2
 
 ::: context lock-type Why a schema change can freeze a site
 Databases use locks so two operations do not trample each other. In PostgreSQL, most `ALTER TABLE` commands take an **ACCESS EXCLUSIVE** lock, which blocks every read and write on that table until it finishes.
@@ -23,7 +23,7 @@ Use one endpoint for both and include a database check, and a brief database hic
 :::
 
 ::: context kubernetes The system for running many containers
-Kubernetes (often "K8s") is an open-source system, originally from Google, for running and scaling large numbers of containers across many machines. It is powerful and widely used at big companies.
+Kubernetes (often "K8s") is an open-source system for running and scaling containers across many machines: you declare what should run, and controllers keep reality matching it. Most large backend and AI-infrastructure teams run on it.
 
-It is also a huge topic. For a solo product and for this job search, a managed host that runs your container is enough; learning Kubernetes deeply now would cost weeks that matter more elsewhere.
+It is also a huge topic. The bar here is one workload run, scaled and debugged: a Deployment and a Service, config and a secret, separate readiness and liveness probes, requests and limits, an autoscaler, and a broken rollout read from its events. Operators, service meshes and the certification can wait until a job asks for them.
 :::

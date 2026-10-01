@@ -13,6 +13,17 @@ export const COMMANDS: CommandRef[] = [
     seeAlso: ['math.log', 'math.expm1', 'numpy.exp'],
   },
   {
+    name: 'math.frexp',
+    aliases: ['frexp'],
+    lang: 'python',
+    kind: 'function',
+    official: 'Return the mantissa and exponent of x, as pair (m, e). m is a float and e is an int, such that x = m * 2.**e.',
+    source: 'Python standard library docstring',
+    when: 'You want to see how a float is stored: its mantissa between 0.5 and 1 and its power of two. Useful when reasoning about precision and range, as in comparing fp32, bf16 and fp16, where the exponent sets the range and the mantissa bits set the precision.',
+    example: { command: 'math.frexp(12.0)', says: '(0.75, 4): 12 is 0.75 times 2 to the 4th.' },
+    seeAlso: ['math.ldexp', 'float.hex'],
+  },
+  {
     name: 'math.tanh',
     aliases: ['tanh'],
     lang: 'python',
