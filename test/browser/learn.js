@@ -107,13 +107,24 @@ async function passGates(p, ids) {
   const b = await chromium.launch(ENV.launchOpts);
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' });
   await serveCdn(ctx);
-  const p = await ctx.newPage();
+  let p = await ctx.newPage();
   // Playwright's service-worker block reaches into the sandboxed preview
   // frames, where reading navigator.serviceWorker throws: its noise, not ours.
   // A lesson's own page (a sandboxed srcdoc frame) throwing is the learner's
   // code at work — an unfinished starter, say — and the lesson shows it in its
   // console. Only the app's own errors count here.
-  const errs = []; p.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+  const errs = [];
+  const watch = (pg) => pg.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+  watch(p);
+  // Each course gets a fresh page: hundreds of runs in one page (Pyodide, clang,
+  // the TypeScript compiler) grow it until the browser kills it on a small runner.
+  const freshPage = async () => {
+    await p.goto('about:blank').catch(() => {}); // leaving the app saves its record
+    await p.close().catch(() => {});
+    p = await ctx.newPage();
+    watch(p);
+    await LP.open(p, '/learn');
+  };
   await LP.reset(p);
   await LP.open(p, '/learn');
 
@@ -163,29 +174,37 @@ async function passGates(p, ids) {
   await LP.open(p, '/learn');
   for (const track of tracks) {
     if (only && !only.includes(track.id) && !only.includes(track.lang)) continue;
+    await freshPage();
     const bad = [];
     const t0 = Date.now();
     // A course exam is unseen problems, not a lesson: the Node checker solves those.
     const lessons = track.lessons.filter((l) => !l.gate);
     const sample = track.level === 'basics' || process.env.LEARN_ALL ? lessons : [lessons[0], lessons[lessons.length - 1]];
-    for (const lesson of sample) {
-      await LP.go(p, '/learn/' + lesson.id);
-      const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
-      if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); continue; }
-      if (track.lang === 'bash' || track.lang === 'git') {
-        await p.waitForSelector('#termInput');
-        const s = await check(p);
-        if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
-        await typeCommands(p, lesson.solution);
-      } else {
-        await p.waitForSelector(WORK + ' .cm-content');
-        await setCode(p, lesson.starter);
-        const s = await check(p);
-        if (s.passed) bad.push(lesson.id + ': the starter already passes');
-        await setCode(p, lesson.solution);
+    for (const [i, lesson] of sample.entries()) {
+      if (i && i % 6 === 0) await freshPage();
+      try {
+        await LP.go(p, '/learn/' + lesson.id);
+        const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
+        if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); continue; }
+        if (track.lang === 'bash' || track.lang === 'git') {
+          await p.waitForSelector('#termInput');
+          const s = await check(p);
+          if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
+          await typeCommands(p, lesson.solution);
+        } else {
+          await p.waitForSelector(WORK + ' .cm-content');
+          await setCode(p, lesson.starter);
+          const s = await check(p);
+          if (s.passed) bad.push(lesson.id + ': the starter already passes');
+          await setCode(p, lesson.solution);
+        }
+        const r = await check(p);
+        if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
+      } catch (e) {
+        // Say where, and carry on with the next lesson on a new page.
+        bad.push(lesson.id + ': ' + String(e && e.message).split('\n')[0]);
+        await freshPage();
       }
-      const r = await check(p);
-      if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
     }
     ok(track.title + ': every starter needs work and every solution passes (' + sample.length + ' of ' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
   }
