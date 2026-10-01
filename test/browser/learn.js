@@ -194,9 +194,12 @@ async function passGates(p, ids) {
   await LP.go(p, '/learn');
   const metas = await p.$$eval('.lm-course', (e) => e.filter((c) => /Basics/.test((c.querySelector('.lm-course__level') || {}).textContent || '')).map((c) => c.querySelector('.lm-course__meta').textContent.trim()));
   ok('every basics course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
+  // Past the basics only a course's first and last lessons are run here, so
+  // only the basics steps (and, with LEARN_ALL, the certificate) can light.
+  const basics = tracks.filter((t) => t.level === 'basics').map((t) => t.name);
   const end = await p.$eval('.rm-tile--end', (e) => e.dataset.lit).catch(() => '');
-  const lit = await p.$$eval('.rm-tile:not(.rm-tile--end)', (e) => e.every((t) => t.dataset.lit === 'true'));
-  ok('and every step lights up, through to the certificate', only ? true : end === 'true' && lit, end);
+  const lit = await p.$$eval('.rm-step', (e, names) => e.filter((s) => names.includes((s.querySelector('.rm-step__label') || {}).textContent)).map((s) => (s.querySelector('.rm-tile') || {}).dataset?.lit), basics);
+  ok('and its basics steps light up' + (process.env.LEARN_ALL ? ', through to the certificate' : ''), only ? true : lit.length >= 4 && lit.every((x) => x === 'true') && (!process.env.LEARN_ALL || end === 'true'), lit.join(',') + ' · ' + end);
   await LP.go(p, '/learn/javascript');
   const outline = await p.$$eval('.lm-outline li', (e) => e.map((li) => li.dataset.done));
   ok('a course page lists its lessons with what was passed', outline.length === tracks.find((t) => t.id === 'javascript').lessons.length && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
