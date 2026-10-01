@@ -89,6 +89,16 @@ function instrument() {
   };
 }
 
+// The voice is chosen in Settings, as she would: one picker for the whole app.
+const VOICE = 'select[aria-label="Voice"]';
+async function pickVoice(page, name) {
+  await LP.open(page, '/settings');
+  await page.waitForSelector(VOICE);
+  const v = await page.$eval(VOICE, (s, n) => [...s.options].find((o) => o.textContent.startsWith(n)).value, name);
+  await page.selectOption(VOICE, v);
+  await page.waitForTimeout(300);
+}
+
 (async () => {
   localModel = await serveLocalModel();
   const b = await chromium.launch(Object.assign({}, ENV.launchOpts, { args: ['--autoplay-policy=no-user-gesture-required'] }));
@@ -102,20 +112,19 @@ function instrument() {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errs.push(String(e)));
     await LP.reset(p);
-    await LP.open(p, '/module/M3?lesson=m3-the-module');
-    await p.waitForSelector('.raloud');
-
-    const groups = await p.$$eval('.raloud__voice optgroup', (g) => g.map((x) => x.label + ':' + x.querySelectorAll('option').length));
-    const chosen = await p.$eval('.raloud__voice', (s) => s.options[s.selectedIndex].textContent);
+    await LP.open(p, '/settings');
+    await p.waitForSelector(VOICE);
+    const groups = await p.$$eval(VOICE + ' optgroup', (g) => g.map((x) => x.label + ':' + x.querySelectorAll('option').length));
+    const chosen = await p.$eval(VOICE, (s) => s.options[s.selectedIndex].textContent);
     ok('the voice picker offers the natural voices first, and one is chosen by default', groups[0] === 'Natural voices:6' && /^Heart/.test(chosen), groups.join(', ') + ' · ' + chosen);
     // Only Heart is recorded: another voice is made on the device.
-    const bellaOnDevice = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await p.selectOption('.raloud__voice', bellaOnDevice);
-    await p.waitForTimeout(300);
+    await pickVoice(p, 'Bella');
+    await LP.open(p, '/module/M3?lesson=m3-the-module');
+    await p.waitForSelector('.raloud');
     ok('in a voice with no recording, it reads with the natural voice made on the device', (await p.$eval('.raloud', (e) => e.dataset.engine)) === 'natural');
 
     const t0 = Date.now();
-    await p.click('.raloud__btn--go');
+    await p.click('.raloud__pill .raloud__go');
     await p.waitForSelector('.raloud[data-state="preparing"]', { timeout: 5000 }).catch(() => {});
     const prep = await p.$eval('.raloud', (e) => e.innerText).catch(() => '');
     ok('while the voice gets ready, it says so', /Getting the voice ready|Starting the voice|Preparing/.test(prep), prep.replace(/\n/g, ' ').slice(0, 80));
@@ -138,10 +147,10 @@ function instrument() {
     // The same opening again: now every sentence is already made, so what is
     // heard is exactly what the player schedules — the fluency of the reading
     // itself, independent of how fast this machine is.
-    await p.click('.raloud__btn[title="Stop reading"]');
+    await p.click('.raloud__pill [aria-label="Stop reading"]');
     await p.waitForTimeout(300);
     await p.evaluate(() => { window.__voice.played = []; });
-    await p.click('.raloud__btn--go');
+    await p.click('.raloud__pill .raloud__go');
     await p.waitForFunction(() => window.__voice.played.length >= 3, null, { timeout: 120000 });
     await p.waitForTimeout(500);
     const warm = await p.evaluate(() => window.__voice.played);
@@ -159,19 +168,19 @@ function instrument() {
     const onPage = await p.evaluate((ws) => { const t = document.querySelector('.reader__md').innerText; return ws.every((w) => t.includes(w)); }, litWords);
     ok('made on the device, it lights each word as it is spoken, and they are the lesson\'s words', litWords.length >= 4 && onPage, litWords.join(' → '));
 
-    await p.click('.raloud__btn:has-text("Pause")');
+    await p.click('.raloud__pill [aria-label="Pause"]');
     await p.waitForTimeout(400);
     ok('pause stops the sound where it is', (await p.evaluate(() => window.__voice.ctx.state)) === 'suspended' && (await p.$eval('.raloud', (e) => e.dataset.state)) === 'paused');
-    await p.click('.raloud__btn:has-text("Resume")');
+    await p.click('.raloud__pill [aria-label="Resume"]');
     await p.waitForTimeout(400);
     ok('resume carries on', (await p.evaluate(() => window.__voice.ctx.state)) === 'running');
 
-    const before = await p.$eval('.raloud__at', (e) => Number(e.textContent.split('/')[0]));
-    await p.click('.raloud__btn[title="On a sentence"]');
-    await p.waitForFunction((n) => Number(document.querySelector('.raloud__at').textContent.split('/')[0]) > n, before, { timeout: 120000 });
+    const before = await p.$eval('.raloud__pill .scrub__hit', (e) => Number(e.getAttribute('aria-valuenow')));
+    await p.click('.raloud__pill [aria-label^="On a sentence"]');
+    await p.waitForFunction((n) => Number(document.querySelector('.raloud__pill .scrub__hit').getAttribute('aria-valuenow')) > n, before, { timeout: 120000 });
     ok('skip moves on a sentence', true, 'from ' + before);
 
-    await p.click('.raloud__btn[title="Stop reading"]');
+    await p.click('.raloud__pill [aria-label="Stop reading"]');
     await p.waitForTimeout(300);
     ok('stop ends it', (await p.$eval('.raloud', (e) => e.dataset.state)) === 'idle');
     await p.close();
@@ -182,15 +191,14 @@ function instrument() {
     {
       const r = await ctx.newPage();
       r.on('pageerror', (e) => errs.push(String(e)));
+      await pickVoice(r, 'Heart');
       await LP.open(r, '/module/M0?lesson=m0-the-module');
       await r.waitForSelector('.raloud');
-      const heart = await r.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Heart/.test(o.textContent)).value);
-      await r.selectOption('.raloud__voice', heart);
       await r.waitForFunction(() => document.querySelector('.raloud').dataset.engine === 'recorded', null, { timeout: 15000 }).catch(() => {});
       ok('a recorded lesson plays its recording', (await r.$eval('.raloud', (e) => e.dataset.engine)) === 'recorded');
       const workersBefore = r.workers().length;
       const t0 = Date.now();
-      await r.click('.raloud__btn--go');
+      await r.click('.raloud__pill .raloud__go');
       await r.waitForSelector('.raloud[data-state="speaking"]', { timeout: 20000 });
       ok('and starts at once — nothing to download or make first', Date.now() - t0 < 8000, (Date.now() - t0) + ' ms');
       ok('with no voice model running on the device', r.workers().filter((w) => /voice\.worker/.test(w.url())).length === 0, workersBefore + ' workers');
@@ -208,30 +216,35 @@ function instrument() {
       ok('it lights each word as it is spoken, in order, and they are the lesson\'s words', seen.length >= 6 && seen.every((x) => text.includes(x.word) && typeof x.t === 'number') && seen.every((x, i) => i === 0 || x.t > seen[i - 1].t), seen.map((x) => x.word).join(' → '));
       const sentence = await r.evaluate(() => { const h = CSS.highlights.get('raloud-sentence'); return h ? [...h][0]?.toString() : ''; });
       ok('and, faintly, the sentence it is in', sentence.length > 20 && sentence.includes(seen[seen.length - 1].word), sentence.slice(0, 60));
-      const at1 = await r.$eval('.raloud__at', (e) => Number(e.textContent.split('/')[0]));
-      await r.click('.raloud__btn[title="On a sentence"]');
-      await r.waitForFunction((n) => Number(document.querySelector('.raloud__at').textContent.split('/')[0]) > n, at1, { timeout: 10000 }).catch(() => {});
-      ok('skip jumps to the next sentence in the recording', (await r.$eval('.raloud__at', (e) => Number(e.textContent.split('/')[0]))) > at1);
-      await r.click('.raloud__btn:has-text("Pause")');
+      const at1 = await r.$eval('.raloud__pill .scrub__hit', (e) => Number(e.getAttribute('aria-valuenow')));
+      await r.click('.raloud__pill [aria-label^="On a sentence"]');
+      await r.waitForFunction((n) => Number(document.querySelector('.raloud__pill .scrub__hit').getAttribute('aria-valuenow')) > n, at1, { timeout: 10000 }).catch(() => {});
+      ok('skip jumps to the next sentence in the recording', (await r.$eval('.raloud__pill .scrub__hit', (e) => Number(e.getAttribute('aria-valuenow')))) > at1);
+      await r.click('.raloud__pill [aria-label="Pause"]');
       await r.waitForTimeout(400);
       const pausedAt = await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime);
       await r.waitForTimeout(800);
       ok('pause holds the recording where it is', (await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime)) === pausedAt && (await r.$eval('.raloud', (e) => e.dataset.state)) === 'paused');
-      await r.click('.raloud__btn:has-text("Resume")');
+      await r.click('.raloud__pill [aria-label="Resume"]');
       await r.waitForTimeout(600);
       ok('resume carries on from there', (await r.evaluate(() => document.querySelector('audio.raloud-audio').currentTime)) > pausedAt);
       // Scroll far away from the word being read: the lesson offers to take her back.
-      await r.evaluate(() => { const s = document.querySelector('.scroll'); s.scrollTop = s.scrollHeight; });
-      await r.waitForSelector('.raloud-jump', { timeout: 5000 }).catch(() => {});
-      ok('scrolled away from the word, the lesson offers to go back to it', (await r.locator('.raloud-jump').count()) === 1);
-      await r.click('.raloud-jump');
+      // With the wheel, as she would: a scroll the page makes itself is the voice following along.
+      await r.hover('.reader__md');
+      for (let i = 0; i < 6; i++) { await r.mouse.wheel(0, 4000); await r.waitForTimeout(80); }
+      // Once the player itself has scrolled away it docks at the foot of the lesson, and the dock
+      // is the way back ("Click to follow along"); otherwise a button floats there.
+      const offer = r.locator('.raloud-jump:visible, .raloud-dock[data-show="true"] .raloud-dock__now:has-text("Click to follow along")').first();
+      const offered = await offer.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false);
+      ok('scrolled away from the word, the lesson offers to go back to it', offered);
+      await offer.click();
       await r.waitForTimeout(900);
       const back = await r.evaluate(() => {
         const h = CSS.highlights.get('raloud-word'); const rg = h && [...h][0]; if (!rg) return false;
         const b = rg.getBoundingClientRect(); return b.top > 0 && b.bottom < innerHeight;
       });
       ok('and one tap brings the word being read back into view', back);
-      await r.click('.raloud__btn[title="Stop reading"]');
+      await r.click('.raloud__pill [aria-label="Stop reading"]');
       await r.waitForTimeout(300);
       ok('stop ends it and clears the light', (await r.$eval('.raloud', (e) => e.dataset.state)) === 'idle' && (await r.evaluate(() => !CSS.highlights.get('raloud-word'))));
       await r.close();
@@ -249,12 +262,11 @@ function instrument() {
       Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
       Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
     });
+    // Another voice, so nothing it says was made (and kept) by the reading above.
+    await pickVoice(q, 'Bella');
     await LP.open(q, '/module/M3?lesson=m3-the-module');
     await q.waitForSelector('.raloud');
-    // Another voice, so nothing it says was made (and kept) by the reading above.
-    const bella = await q.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await q.selectOption('.raloud__voice', bella);
-    await q.click('.raloud__btn--go');
+    await q.click('.raloud__pill .raloud__go');
     await q.waitForFunction(() => window.__voice.played.length >= 1, null, { timeout: 300000 });
     const voiceWorkers = () => q.workers().filter((w) => /voice\.worker/.test(w.url()));
     ok('on an iPhone it runs one voice worker, not two', voiceWorkers().length === 1, voiceWorkers().length + ' workers');
@@ -281,7 +293,7 @@ function instrument() {
     const back = await q.evaluate(() => window.__voice.ctx.state);
     const st = await q.$eval('.raloud', (e) => e.dataset.state);
     ok('when the system stops the audio, it starts it again (or offers Resume), rather than hang', back === 'running' || st === 'paused', back + ' / ' + st);
-    await q.click('.raloud__btn[title="Stop reading"]').catch(() => {});
+    await q.click('.raloud__pill [aria-label="Stop reading"]').catch(() => {});
     await ctx.close();
   }
 
@@ -293,12 +305,10 @@ function instrument() {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errs.push(String(e)));
     await LP.reset(p);
+    await pickVoice(p, 'Bella');
     await LP.open(p, '/module/M3?lesson=m3-the-module');
     await p.waitForSelector('.raloud');
-    const bellaMissing = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await p.selectOption('.raloud__voice', bellaMissing);
-    await p.waitForTimeout(300);
-    await p.click('.raloud__btn--go');
+    await p.click('.raloud__pill .raloud__go');
     await p.waitForSelector('.raloud__notice', { timeout: 60000 });
     const notice = await p.$eval('.raloud__notice', (e) => e.textContent);
     ok('when the natural voice cannot download, it says so and uses the device voice', /could not start/.test(notice) && (await p.$eval('.raloud', (e) => e.dataset.engine)) === 'device', notice);

@@ -1,0 +1,15538 @@
+var e=`@track cpp
+@level expert
+@plainvoice true
+@title C++ · Expert
+@name C++, expert: generic code, containers and performance
+@blurb Think like a library author: value categories and perfect forwarding, variadic templates, concepts and compile-time code, containers and hash maps built from scratch, ranges, undefined behavior, performance, type erasure, and two classic problems solved end to end.
+
+=== cpp4-01 | Move semantics in depth
+--- teach
+Last lesson, the final one of the advanced course, you took apart a family of robot classes and rebuilt it with composition: a \`Robot\` that *has* abilities, each one a \`unique_ptr\` moved into a vector. Over that course you learned to write types that own resources, copy and move them, and work for any element type.
+
+This is the **expert course**. It shows you what happens under the hood, the way the people who write libraries see it: exactly when C++ copies or moves, how templates reason about types, how the [[standard containers are built|expert-road]], and the bugs and costs that only show up at scale. You already know how to write a move constructor. This first lesson is about using moves *well*: knowing, line by line, whether a copy happens.
+
+### Three kinds of expression
+
+Picture a school library. Some books sit on the shelf with a call number: you may read them, even photocopy a page, but you must put them back whole. Some things are leaflets handed out at the door: nobody else will ever want yours, so you can cut it up. And some shelf books carry a sticker that says "withdrawn: take it".
+
+C++ sorts every expression into one of three groups like those. The group is called the expression's **value category**: what kind of thing it is, as far as copying and moving are concerned. It is separate from the type. An \`int\` expression can be in any of the three groups.
+
+**Group 1: lvalues.** An **lvalue** is something with a name, or an address you can take: \`x\`, \`v[3]\`, \`*p\`. It will still be there after this line, so it may only be **copied** from. Stealing its insides would break the code that uses it later.
+
+\`\`\`cpp
+std::string callsign = "Eagle";
+std::string backup = callsign;         // callsign is an lvalue: copied
+\`\`\`
+
+**Group 2: prvalues.** A **prvalue**, short for "pure rvalue", is a pure temporary: a value with no name. \`Probe("a")\`, \`x + 1\` and a call to a function that returns by value are all prvalues. Nobody else can see it, so it may be **moved** from.
+
+\`\`\`cpp
+std::string greeting = std::string("hi") + " there";   // the + makes a prvalue
+\`\`\`
+
+Since C++17 there is something better than a move. When a prvalue is used to initialize an object of the same type, it is not moved at all: it is built directly in the new object's place. That is **[[guaranteed copy elision|elision-in-place]]**. "Elision" means leaving something out, and here both the copy and the move are left out.
+
+\`\`\`cpp
+std::string row = std::string(3, 'z');   // built straight into row: no copy, no move
+\`\`\`
+
+**Group 3: xvalues.** An **xvalue**, "expiring value", is an lvalue you have declared expendable. Making one is **all** \`std::move(x)\` does. As the moving lesson said, \`std::move\` is a cast to \`T&&\`, read "rvalue reference to T". It moves nothing by itself. The move constructor or move assignment that receives it does the stealing.
+
+\`\`\`cpp
+std::string cargo = "fuel";
+std::string hold = std::move(cargo);   // std::move(cargo) is an xvalue: moved
+\`\`\`
+
+The three groups [[fit together in a small family tree|category-tree]]. Prvalues and xvalues together are the "rvalues" that a \`&&\` reference binds to.
+
+With that vocabulary, four rules follow. Each one is small.
+
+### Rule 1: sink parameters take by value, then move
+
+A **sink parameter** is an argument the function keeps: it stores it in a member, or puts it in a container. Such a function should take the argument **by value**, and then \`std::move\` it into place.
+
+\`\`\`cpp
+class Person {
+public:
+    explicit Person(std::string name) : name_(std::move(name)) {}
+private:
+    std::string name_;
+};
+\`\`\`
+
+Follow what each caller pays:
+
+- \`Person a(std::string("Ada"));\` passes a temporary. Copy elision builds it straight into the parameter \`name\`, then one move carries it into \`name_\`. No copies.
+- \`Person b(nickname);\` passes an lvalue. The parameter \`name\` is copied from \`nickname\`. That one copy is unavoidable, because \`nickname\` must stay intact. Then one move carries it into \`name_\`.
+
+So a temporary costs one move, and an lvalue costs exactly the one copy it must. That is [[one function doing the work of two|why-by-value]]. A setter works the same way, with move assignment in its body: \`name_ = std::move(name);\`.
+
+Inside the function the parameter has a name, so it is an lvalue. Writing \`name_(name)\` would copy a second time. The \`std::move\` is what saves that copy.
+
+### Rule 2: return locals plainly
+
+\`\`\`cpp
+std::vector<int> countdown(int from) {
+    std::vector<int> steps;
+    for (int i = from; i > 0; --i) steps.push_back(i);
+    return steps;
+}
+\`\`\`
+
+\`return steps;\` lets the compiler build \`steps\` in the caller's space from the very start. That is called **NRVO**, the "named return value optimization": zero copies and zero moves. [[Compilers do it whenever they can|nrvo-fallback]].
+
+Writing \`return std::move(steps);\` looks as if it should help. It does the opposite. The return is no longer the plain name of a local, so NRVO is switched off and the compiler must do a real move. That is a **pessimisation**: a change that makes code slower. GCC and clang both warn about it with \`-Wpessimizing-move\`.
+
+### Rule 3: const blocks moves
+
+\`std::move\` on a \`const\` object gives a \`const T&&\`. The move constructor takes a \`T&&\` with no \`const\`, because it has to change the source to empty it, so it cannot accept a \`const T&&\`. The copy constructor takes a \`const T&\`, and that *can* bind to it. So moving from a \`const\` object **silently copies**:
+
+\`\`\`cpp
+const std::string title = "Apollo";
+std::string mine = std::move(title);   // compiles, but copies: title is const
+\`\`\`
+
+No error and no warning. If you mean to move something later, do not make it \`const\`.
+
+### Rule 4: ref-qualifiers pick by the object's category
+
+You know \`const\` after a member function's parameter list: "this function does not change the object". You can also write \`&\` or \`&&\` there. These are **ref-qualifiers**: they say which category of *object* the function may be called on.
+
+- \`&\` after the parameter list: only on an lvalue object, one that lives on.
+- \`&&\` after the parameter list: only on an expiring object.
+- \`const&\` after the parameter list: on any object, read-only. A \`const\` reference can bind to a temporary too, the way a \`const std::string&\` parameter accepts \`"text"\`.
+
+Here is a class with two of them:
+
+\`\`\`cpp
+class Envelope {
+public:
+    const std::string& peek() const& { return letter_; }   // look at it
+    std::string open() && { return std::move(letter_); }   // only on an expiring Envelope
+private:
+    std::string letter_;
+};
+\`\`\`
+
+\`peek\` lends you a look at the letter. \`open\` hands the letter over by moving it out, which guts the envelope. That is only safe if nobody uses the envelope again, and the \`&&\` makes the compiler hold you to it:
+
+\`\`\`cpp
+Envelope e;
+std::move(e).open();   // compiles: e is declared expendable
+e.open();              // error: e is a named lvalue
+\`\`\`
+
+The type system [[stops you from gutting an object someone still uses|ref-qualifier-rules]].
+
+### After a move
+
+A moved-from object is **valid but unspecified**: it is still a real object, but you do not know what it holds. You may destroy it, or assign a new value to it. Do not read it.
+
+**Watch out:** the mistake people really make is Rule 2. \`return std::move(local);\` feels like careful, modern code. For a local variable it is always either useless or harmful. Write \`return local;\`.
+
+::: context expert-road What the expert course covers
+After this lesson come perfect forwarding, variadic templates and concepts: templates that reason about the types they are given. Then work done by the compiler, and three lessons where you build a growable array, a ring buffer with its own iterator and a hash map from scratch, the same designs inside \`std::vector\` and \`std::unordered_map\`. Then ranges, two debugging lessons, performance, type erasure, and three classic problems. Moves matter in all of it: a container that grows carries every element across, as the vector-growth note in the moving lesson showed.
+:::
+
+::: context elision-in-place Where "in place" is
+When a function returns an object by value, the caller sets aside space for the result before the call and quietly passes the function the address of that space. The function can build its result right there, so nothing needs to travel back. Before C++17 compilers were allowed to do this, and most did, but a copy or move constructor still had to exist. Since C++17 it is required for prvalues: \`T x = T(…);\` and \`return T(…);\` build in place, and they even work for a type that cannot be copied or moved at all.
+:::
+
+::: context category-tree The family tree of value categories
+The C++ standard names two bigger groups above the three you met. A **glvalue**, "generalized lvalue", is anything with an identity: a real object living somewhere. An **rvalue** is anything that may be moved from. The xvalue sits in both: it is a real object with a name, and you have given permission to move from it.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="40" y="12" width="120" height="44" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="100" y="30" font-size="13" fill="#1f2a44" text-anchor="middle">glvalue</text>
+  <text x="100" y="47" font-size="11" fill="#6c7a93" text-anchor="middle">has an identity</text>
+  <rect x="200" y="12" width="120" height="44" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="260" y="30" font-size="13" fill="#1f2a44" text-anchor="middle">rvalue</text>
+  <text x="260" y="47" font-size="11" fill="#6c7a93" text-anchor="middle">may be moved from</text>
+  <line x1="100" y1="56" x2="60" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="100" y1="56" x2="180" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="260" y1="56" x2="180" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="260" y1="56" x2="300" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="10" y="110" width="100" height="44" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="60" y="128" font-size="13" fill="#1f2a44" text-anchor="middle">lvalue</text>
+  <text x="60" y="145" font-size="11" fill="#1f2a44" text-anchor="middle">x, v[3], *p</text>
+  <rect x="130" y="110" width="100" height="44" rx="6" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="128" font-size="13" fill="#1f2a44" text-anchor="middle">xvalue</text>
+  <text x="180" y="145" font-size="11" fill="#1f2a44" text-anchor="middle">std::move(x)</text>
+  <rect x="250" y="110" width="100" height="44" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="300" y="128" font-size="13" fill="#1f2a44" text-anchor="middle">prvalue</text>
+  <text x="300" y="145" font-size="11" fill="#1f2a44" text-anchor="middle">x + 1</text>
+</svg>
+\`\`\`
+:::
+
+::: context why-by-value Why not write two versions?
+The other way is two overloads: one taking \`const std::string&\`, which copies, and one taking \`std::string&&\`, which moves. Each saves the one extra move that taking by value costs. But a constructor with three sink parameters would need 2 × 2 × 2 = 8 overloads to cover every mix of lvalues and temporaries. Taking by value gives one function, and the extra move of a string or a vector is a few pointer copies. The next lesson shows a third way: a template that forwards each argument exactly as it came.
+:::
+
+::: context nrvo-fallback When NRVO cannot happen
+NRVO is allowed but, unlike building a prvalue in place, not required. It fails when a function returns different locals on different paths, \`return a;\` in one branch and \`return b;\` in another, because only one of them can be built in the caller's space. Even then C++ does not copy: returning a local variable by its plain name is automatically treated as a move. So \`return local;\` is never worse than \`return std::move(local);\`, and usually better. GCC does NRVO for a function with a single named result, which is what this lesson's checks rely on.
+:::
+
+::: context ref-qualifier-rules Ref-qualifiers in the standard library
+\`std::optional\`'s \`value()\` has both kinds: \`opt.value()\` gives a reference to the value inside, and \`std::move(opt).value()\` moves it out. One rule to know: if one overload of a function has a ref-qualifier, every overload with the same parameters must have one too, so \`get()\` and \`get() &&\` cannot live side by side. And one trap: a \`const&\` function can be called on a temporary, and a reference it returns into that temporary dangles once the line ends.
+:::
+--- task
+The starter's \`Probe\` counts its copies in \`Probe::copies\` and its moves in \`Probe::moves\`. \`Holder\` keeps one \`Probe\`. Right now \`Holder\` and \`make_probe\` copy more than they need to. Fix them so they make **no unnecessary copies**, using the four rules. Leave \`Probe\` as it is. No \`main\`: the checker supplies it.
+
+- \`explicit Holder(Probe p)\` and \`void set(Probe p)\`: sink parameters (Rule 1). An lvalue argument costs exactly one copy; a temporary costs none.
+- \`const Probe& get() const&\`: a read-only look at the probe (Rule 4).
+- \`Probe take() &&\`: callable only on an expiring \`Holder\`; it moves the probe out (Rule 4).
+- \`Probe make_probe(const std::string& label)\`: returns a new probe with no copies and no moves (Rule 2).
+--- starter
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Holder {
+public:
+    explicit Holder(const Probe& p) : p_(p) {}
+    void set(const Probe& p) { p_ = p; }
+    const Probe& get() const { return p_; }
+    Probe take() { return p_; }
+private:
+    Probe p_;
+};
+
+Probe make_probe(const std::string& label) {
+    Probe p(label);
+    return std::move(p);
+}
+--- solution
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Holder {
+public:
+    explicit Holder(Probe p) : p_(std::move(p)) {}
+    void set(Probe p) { p_ = std::move(p); }
+    const Probe& get() const& { return p_; }
+    Probe take() && { return std::move(p_); }
+private:
+    Probe p_;
+};
+
+Probe make_probe(const std::string& label) {
+    Probe p(label);
+    return p;
+}
+--- hint
+Match each function to its rule. The constructor and \`set\` are sink parameters: take \`Probe p\` by value, then \`std::move(p)\` into the member, in the initializer list for the constructor and with move assignment in \`set\`.
+--- hint
+Rule 4: add \`&&\` after \`take()\`'s parameter list and return \`std::move(p_)\`; add \`const&\` after \`get()\`'s.
+--- hint
+Rule 2: in \`make_probe\`, the \`std::move\` is the problem. A plain \`return p;\` lets the compiler build \`p\` in the caller's space.
+--- check test | A temporary goes in with no copies
+[] { Probe::reset(); Holder h(Probe("a")); return Probe::copies == 0 && h.get().label == "a"; }()
+--- check test | An lvalue costs exactly one copy and stays intact
+[] { Probe p("b"); Probe::reset(); Holder h(p); return Probe::copies == 1 && p.label == "b" && h.get().label == "b"; }()
+--- check test | set with a temporary copies nothing
+[] { Holder h(Probe("a")); Probe::reset(); h.set(Probe("c")); return Probe::copies == 0 && h.get().label == "c"; }()
+--- check test | take moves the probe out of an expiring Holder
+[] { Holder h(Probe("a")); Probe::reset(); Probe out = std::move(h).take(); return Probe::copies == 0 && out.label == "a"; }()
+--- check test | take cannot be called on a named Holder
+[] { Holder h(Probe("x")); return ![]<class H>(H& held) { return requires { held.take(); }; }(h); }()
+--- check test | make_probe copies and moves nothing
+[] { Probe::reset(); Probe p = make_probe("x"); return p.label == "x" && Probe::copies == 0 && Probe::moves == 0; }()
+
++++ practice | A journal that keeps its entries
+--- task
+The starter's \`Entry\` counts its copies in \`Entry::copies\` and its moves in \`Entry::moves\`. Finish \`class Journal\` so that it makes **no unnecessary copies**. Leave \`Entry\` as it is. No \`main\`.
+
+- \`explicit Journal(std::string title)\` keeps the title (a sink parameter).
+- \`void add(Entry e)\` keeps the entry at the end of a private \`std::vector<Entry>\`. Adding a temporary costs no copies at all, even when the vector grows; adding a named entry costs exactly one copy and leaves the caller's entry intact.
+- \`const std::string& title() const\`, \`std::size_t size() const\`, and \`const Entry& last() const\`, the newest entry (never called when the journal is empty).
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Entry {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string text;
+    explicit Entry(std::string t = "") : text(std::move(t)) {}
+    Entry(const Entry& o) : text(o.text) { ++copies; }
+    Entry(Entry&& o) noexcept : text(std::move(o.text)) { ++moves; }
+    Entry& operator=(const Entry& o) { text = o.text; ++copies; return *this; }
+    Entry& operator=(Entry&& o) noexcept { text = std::move(o.text); ++moves; return *this; }
+};
+
+class Journal {
+public:
+    explicit Journal(const std::string& title) : title_(title) {}
+    void add(const Entry& e) { entries_.push_back(e); }
+    const std::string& title() const { return title_; }
+    std::size_t size() const { return entries_.size(); }
+    const Entry& last() const { return entries_.back(); }
+private:
+    std::string title_;
+    std::vector<Entry> entries_;
+};
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Entry {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string text;
+    explicit Entry(std::string t = "") : text(std::move(t)) {}
+    Entry(const Entry& o) : text(o.text) { ++copies; }
+    Entry(Entry&& o) noexcept : text(std::move(o.text)) { ++moves; }
+    Entry& operator=(const Entry& o) { text = o.text; ++copies; return *this; }
+    Entry& operator=(Entry&& o) noexcept { text = std::move(o.text); ++moves; return *this; }
+};
+
+class Journal {
+public:
+    explicit Journal(std::string title) : title_(std::move(title)) {}
+    void add(Entry e) { entries_.push_back(std::move(e)); }
+    const std::string& title() const { return title_; }
+    std::size_t size() const { return entries_.size(); }
+    const Entry& last() const { return entries_.back(); }
+private:
+    std::string title_;
+    std::vector<Entry> entries_;
+};
+--- hint
+Both the constructor and \`add\` are sink parameters: Rule 1 says take them by value.
+--- hint
+Inside \`add\`, the parameter \`e\` has a name, so it is an lvalue. \`push_back(e)\` copies it; \`push_back(std::move(e))\` moves it into the vector.
+--- check test | Temporaries go in with no copies
+[] { Journal j("log"); Entry::reset(); j.add(Entry("boot")); j.add(Entry("burn")); return Entry::copies == 0 && j.size() == 2 && j.last().text == "burn"; }()
+--- check test | A named entry costs exactly one copy and stays intact
+[] { Journal j("log"); Entry e("keep"); Entry::reset(); j.add(e); return Entry::copies == 1 && e.text == "keep" && j.last().text == "keep"; }()
+--- check test | A hundred temporaries, and the vector grows, with no copies
+[] { Journal j("log"); Entry::reset(); for (int i = 0; i < 100; ++i) j.add(Entry("e" + std::to_string(i))); return Entry::copies == 0 && j.size() == 100 && j.last().text == "e99"; }()
+--- check test | The title is kept
+[] { Journal j(std::string("mission")); std::string t = "orbit"; Journal k(t); return j.title() == "mission" && k.title() == "orbit" && t == "orbit"; }()
+
++++ practice | Hand the data over only once
+--- task
+Finish \`class Buffer\`, which owns a \`std::vector<int>\`, and write \`make_buffer\`. No \`main\`.
+
+- \`explicit Buffer(std::vector<int> data)\`: a sink parameter.
+- \`const std::vector<int>& view() const&\`: a read-only look at the data, callable on any \`Buffer\`.
+- \`std::vector<int> release() &&\`: callable **only** on an expiring \`Buffer\`. It hands the vector over by moving it out, so the returned vector uses the very same block of memory (its \`data()\` pointer is unchanged). Calling it on a named \`Buffer\` must not compile.
+- \`std::size_t size() const\`: how many values it holds.
+- \`Buffer make_buffer(int n)\`: a buffer holding \`1, 2, …, n\` (empty for \`n <= 0\`). Build it in a local vector and return the buffer plainly.
+--- starter
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+class Buffer {
+public:
+    explicit Buffer(const std::vector<int>& data) : data_(data) {}
+    const std::vector<int>& view() const { return data_; }
+    std::vector<int> release() { return data_; }
+    std::size_t size() const { return data_.size(); }
+private:
+    std::vector<int> data_;
+};
+
+Buffer make_buffer(int n) {
+    std::vector<int> values;
+    for (int i = 1; i <= n; ++i) values.push_back(i);
+    return Buffer(values);
+}
+--- solution
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+class Buffer {
+public:
+    explicit Buffer(std::vector<int> data) : data_(std::move(data)) {}
+    const std::vector<int>& view() const& { return data_; }
+    std::vector<int> release() && { return std::move(data_); }
+    std::size_t size() const { return data_.size(); }
+private:
+    std::vector<int> data_;
+};
+
+Buffer make_buffer(int n) {
+    std::vector<int> values;
+    for (int i = 1; i <= n; ++i) values.push_back(i);
+    return Buffer(std::move(values));
+}
+--- hint
+Rule 4: put \`const&\` after \`view()\`'s parameter list and \`&&\` after \`release()\`'s.
+--- hint
+\`return data_;\` copies, because \`data_\` is a member that lives on. \`release\` must say it is expendable with \`std::move(data_)\`. In \`make_buffer\`, \`values\` is a local that is never used again, so move it into the constructor too.
+--- check test | release moves the block out instead of copying it
+[] { Buffer b(std::vector<int>{1, 2, 3}); const int* where = b.view().data(); std::vector<int> out = std::move(b).release(); return out == std::vector<int>{1, 2, 3} && out.data() == where; }()
+--- check test | release cannot be called on a named Buffer
+[] { Buffer b(std::vector<int>{4}); return ![]<class B>(B& x) { return requires { x.release(); }; }(b); }()
+--- check test | view works on named and temporary buffers
+[] { Buffer b(std::vector<int>{5, 6}); return b.view().size() == 2 && Buffer(std::vector<int>{7, 8, 9}).view().size() == 3; }()
+--- check test | make_buffer builds 1 to n, and hands its block straight over
+[] { Buffer b = make_buffer(4); const int* where = b.view().data(); std::vector<int> out = std::move(b).release(); return out == std::vector<int>{1, 2, 3, 4} && out.data() == where && make_buffer(0).size() == 0 && make_buffer(-3).size() == 0; }()
+--- check test | The caller's vector stays intact
+[] { std::vector<int> v{1, 2}; Buffer b(v); return v.size() == 2 && b.size() == 2; }()
+
++++ practice | Samples on a rack
+--- task
+The starter's \`Sample\` counts its copies and moves. Write \`make_batch\` and finish \`class Rack\` with **no unnecessary copies**. Leave \`Sample\` as it is. No \`main\`.
+
+- \`std::vector<Sample> make_batch(int n)\` returns \`n\` samples tagged \`"s0"\`, \`"s1"\`, …, \`"s<n-1>"\`. It may move samples, but must never copy one.
+- \`explicit Rack(std::vector<Sample> samples)\` keeps the whole vector. Passing a temporary vector copies no samples; passing a named vector copies each sample exactly once and leaves the caller's vector intact; passing \`std::move(v)\` copies and moves no samples at all.
+- \`void add(Sample s)\` puts one more sample at the end: a sink parameter.
+- \`std::size_t size() const\`, \`const Sample& at(std::size_t i) const\`, and \`std::vector<std::string> tags() const\`, the tags in order.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Sample {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string tag;
+    explicit Sample(std::string t = "") : tag(std::move(t)) {}
+    Sample(const Sample& o) : tag(o.tag) { ++copies; }
+    Sample(Sample&& o) noexcept : tag(std::move(o.tag)) { ++moves; }
+    Sample& operator=(const Sample& o) { tag = o.tag; ++copies; return *this; }
+    Sample& operator=(Sample&& o) noexcept { tag = std::move(o.tag); ++moves; return *this; }
+};
+
+std::vector<Sample> make_batch(int n) {
+    std::vector<Sample> out;
+    for (int i = 0; i < n; ++i) {
+        Sample s("s" + std::to_string(i));
+        out.push_back(s);
+    }
+    return out;
+}
+
+class Rack {
+public:
+    explicit Rack(const std::vector<Sample>& samples) : samples_(samples) {}
+    void add(const Sample& s) { samples_.push_back(s); }
+    std::size_t size() const { return samples_.size(); }
+    const Sample& at(std::size_t i) const { return samples_[i]; }
+    std::vector<std::string> tags() const { return {}; }
+private:
+    std::vector<Sample> samples_;
+};
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Sample {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string tag;
+    explicit Sample(std::string t = "") : tag(std::move(t)) {}
+    Sample(const Sample& o) : tag(o.tag) { ++copies; }
+    Sample(Sample&& o) noexcept : tag(std::move(o.tag)) { ++moves; }
+    Sample& operator=(const Sample& o) { tag = o.tag; ++copies; return *this; }
+    Sample& operator=(Sample&& o) noexcept { tag = std::move(o.tag); ++moves; return *this; }
+};
+
+std::vector<Sample> make_batch(int n) {
+    std::vector<Sample> out;
+    for (int i = 0; i < n; ++i) out.push_back(Sample("s" + std::to_string(i)));
+    return out;
+}
+
+class Rack {
+public:
+    explicit Rack(std::vector<Sample> samples) : samples_(std::move(samples)) {}
+    void add(Sample s) { samples_.push_back(std::move(s)); }
+    std::size_t size() const { return samples_.size(); }
+    const Sample& at(std::size_t i) const { return samples_[i]; }
+    std::vector<std::string> tags() const {
+        std::vector<std::string> out;
+        for (const Sample& s : samples_) out.push_back(s.tag);
+        return out;
+    }
+private:
+    std::vector<Sample> samples_;
+};
+--- hint
+In \`make_batch\`, the named local \`s\` is an lvalue, so \`push_back(s)\` copies it. Push a temporary instead, or \`std::move(s)\`. Return \`out\` plainly (Rule 2).
+--- hint
+A whole vector can be a sink parameter too. Moving a \`std::vector\` only hands over its block of memory: not one element is copied or moved. So take \`std::vector<Sample> samples\` by value and move it into the member.
+--- check test | A temporary batch goes in with no copies
+[] { Sample::reset(); Rack r(make_batch(5)); return Sample::copies == 0 && r.size() == 5 && r.at(4).tag == "s4"; }()
+--- check test | A named batch is copied exactly once per sample
+[] { std::vector<Sample> b = make_batch(3); Sample::reset(); Rack r(b); return Sample::copies == 3 && b.size() == 3 && b[2].tag == "s2" && r.at(0).tag == "s0"; }()
+--- check test | Moving a batch in touches no sample at all
+[] { std::vector<Sample> b = make_batch(3); Sample::reset(); Rack r(std::move(b)); return Sample::copies == 0 && Sample::moves == 0 && r.size() == 3; }()
+--- check test | add, tags, and an empty batch
+[] { Rack r(make_batch(2)); Sample::reset(); r.add(Sample("x")); Rack e(make_batch(0)); return Sample::copies == 0 && r.tags() == std::vector<std::string>{"s0", "s1", "x"} && e.size() == 0 && e.tags().empty(); }()
+
++++ practice | A move that survives itself
+--- task
+The starter's \`Blob\` owns an array of \`int\`s and counts how many arrays are alive in \`Blob::blocks\`. It has a destructor and copy operations, but no moves, so \`std::move\` quietly copies. Add the two move operations. No \`main\`.
+
+- \`Blob(Blob&& other) noexcept\` takes over \`other\`'s array and leaves \`other\` empty: \`size()\` 0 and no array.
+- \`Blob& operator=(Blob&& other) noexcept\` frees this blob's own array, takes over \`other\`'s, and leaves \`other\` empty.
+- Edge cases: \`a = std::move(a)\` must leave \`a\` exactly as it was. An empty blob (made with size 0, or moved from) can be moved, moved into, given a new value, and destroyed. No array is ever leaked or freed twice.
+--- starter
+#include <cstddef>
+
+class Blob {
+public:
+    static inline int blocks = 0;
+
+    explicit Blob(std::size_t n) : data_(n ? new int[n]() : nullptr), size_(n) {
+        if (data_) ++blocks;
+    }
+    ~Blob() { release(); }
+
+    Blob(const Blob& other) : data_(other.size_ ? new int[other.size_]() : nullptr), size_(other.size_) {
+        if (data_) ++blocks;
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
+    }
+    Blob& operator=(const Blob& other) {
+        if (this == &other) return *this;
+        release();
+        size_ = other.size_;
+        data_ = size_ ? new int[size_]() : nullptr;
+        if (data_) ++blocks;
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
+        return *this;
+    }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int v) { data_[i] = v; }
+
+private:
+    void release() {
+        if (data_) {
+            delete[] data_;
+            --blocks;
+        }
+        data_ = nullptr;
+        size_ = 0;
+    }
+
+    int* data_;
+    std::size_t size_;
+};
+--- solution
+#include <cstddef>
+
+class Blob {
+public:
+    static inline int blocks = 0;
+
+    explicit Blob(std::size_t n) : data_(n ? new int[n]() : nullptr), size_(n) {
+        if (data_) ++blocks;
+    }
+    ~Blob() { release(); }
+
+    Blob(const Blob& other) : data_(other.size_ ? new int[other.size_]() : nullptr), size_(other.size_) {
+        if (data_) ++blocks;
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
+    }
+    Blob& operator=(const Blob& other) {
+        if (this == &other) return *this;
+        release();
+        size_ = other.size_;
+        data_ = size_ ? new int[size_]() : nullptr;
+        if (data_) ++blocks;
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
+        return *this;
+    }
+
+    Blob(Blob&& other) noexcept : data_(other.data_), size_(other.size_) {
+        other.data_ = nullptr;
+        other.size_ = 0;
+    }
+    Blob& operator=(Blob&& other) noexcept {
+        if (this == &other) return *this;
+        release();
+        data_ = other.data_;
+        size_ = other.size_;
+        other.data_ = nullptr;
+        other.size_ = 0;
+        return *this;
+    }
+
+    std::size_t size() const { return size_; }
+    int get(std::size_t i) const { return data_[i]; }
+    void set(std::size_t i, int v) { data_[i] = v; }
+
+private:
+    void release() {
+        if (data_) {
+            delete[] data_;
+            --blocks;
+        }
+        data_ = nullptr;
+        size_ = 0;
+    }
+
+    int* data_;
+    std::size_t size_;
+};
+--- hint
+A move copies the pointer and the size, then sets the source's pointer to \`nullptr\` and its size to 0, so the source's destructor frees nothing.
+--- hint
+In the move assignment, first check \`this == &other\` and return straight away if so. Otherwise \`release()\` your own array before taking over the other one's.
+--- check test | The move constructor takes the array and empties the source
+[] { Blob::blocks = 0; Blob a(3); a.set(0, 7); Blob b(std::move(a)); return b.size() == 3 && b.get(0) == 7 && a.size() == 0 && Blob::blocks == 1; }()
+--- check test | Move assignment frees the old array, and nothing leaks
+[] { Blob::blocks = 0; bool ok; { Blob a(2); a.set(1, 5); Blob b(5); b = std::move(a); ok = Blob::blocks == 1 && b.size() == 2 && b.get(1) == 5 && a.size() == 0; } return ok && Blob::blocks == 0; }()
+--- check test | Moving a blob into itself changes nothing
+[] { Blob::blocks = 0; Blob a(4); a.set(3, 9); Blob& same = a; a = std::move(same); return a.size() == 4 && a.get(3) == 9 && Blob::blocks == 1; }()
+--- check test | A moved-from blob can take a new value
+[] { Blob::blocks = 0; Blob a(2); Blob b = std::move(a); a = Blob(3); a.set(2, 1); return a.size() == 3 && a.get(2) == 1 && b.size() == 2 && Blob::blocks == 2; }()
+--- check test | Empty blobs move safely
+[] { Blob::blocks = 0; bool ok; { Blob e(0); Blob f(std::move(e)); Blob g(1); g = std::move(f); ok = f.size() == 0 && g.size() == 0 && Blob::blocks == 0; } return ok && Blob::blocks == 0; }()
+--- check test | Both moves are noexcept
+std::is_nothrow_move_constructible_v<Blob> && std::is_nothrow_move_assignable_v<Blob>
+
++++ practice | Debug: the pipeline that copies anyway
+--- task
+**Bug report:** "\`make_frame\` should make no copies and no moves, but it moves once. And \`Pipeline::push\` copies every frame, even a temporary that nobody else can see."
+
+The starter's \`Frame\` counts its copies and moves. Fix \`make_frame\` and \`push\` so they follow the four rules, without changing what they do. No \`main\`.
+
+- \`Frame make_frame(const std::string& id)\` returns a new frame with that id.
+- \`void push(Frame f)\` appends \`f\` to the pipeline. A temporary costs no copies; a named frame costs exactly one and stays intact.
+- \`std::vector<std::string> ids() const\` gives the ids in order.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Frame {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string id;
+    explicit Frame(std::string i = "") : id(std::move(i)) {}
+    Frame(const Frame& o) : id(o.id) { ++copies; }
+    Frame(Frame&& o) noexcept : id(std::move(o.id)) { ++moves; }
+    Frame& operator=(const Frame& o) { id = o.id; ++copies; return *this; }
+    Frame& operator=(Frame&& o) noexcept { id = std::move(o.id); ++moves; return *this; }
+};
+
+Frame make_frame(const std::string& id) {
+    Frame f(id);
+    return std::move(f);
+}
+
+class Pipeline {
+public:
+    void push(Frame f) {
+        const Frame ready = std::move(f);
+        frames_.push_back(std::move(ready));
+    }
+    std::vector<std::string> ids() const {
+        std::vector<std::string> out;
+        for (const Frame& f : frames_) out.push_back(f.id);
+        return out;
+    }
+private:
+    std::vector<Frame> frames_;
+};
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Frame {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string id;
+    explicit Frame(std::string i = "") : id(std::move(i)) {}
+    Frame(const Frame& o) : id(o.id) { ++copies; }
+    Frame(Frame&& o) noexcept : id(std::move(o.id)) { ++moves; }
+    Frame& operator=(const Frame& o) { id = o.id; ++copies; return *this; }
+    Frame& operator=(Frame&& o) noexcept { id = std::move(o.id); ++moves; return *this; }
+};
+
+Frame make_frame(const std::string& id) {
+    Frame f(id);
+    return f;
+}
+
+class Pipeline {
+public:
+    void push(Frame f) {
+        Frame ready = std::move(f);
+        frames_.push_back(std::move(ready));
+    }
+    std::vector<std::string> ids() const {
+        std::vector<std::string> out;
+        for (const Frame& f : frames_) out.push_back(f.id);
+        return out;
+    }
+private:
+    std::vector<Frame> frames_;
+};
+--- hint
+Two of the four rules are broken, one in each function. Which rule is about returning a local, and which one is about \`const\`?
+--- hint
+\`return std::move(f);\` switches off NRVO. And \`std::move\` on a \`const\` object gives a \`const Frame&&\`, which only the copy constructor accepts.
+--- check test | make_frame copies and moves nothing
+[] { Frame::reset(); Frame f = make_frame("a"); return f.id == "a" && Frame::copies == 0 && Frame::moves == 0; }()
+--- check test | Temporaries are pushed with no copies
+[] { Pipeline p; Frame::reset(); p.push(make_frame("a")); p.push(Frame("b")); return Frame::copies == 0 && p.ids() == std::vector<std::string>{"a", "b"}; }()
+--- check test | A named frame costs exactly one copy and stays intact
+[] { Pipeline p; Frame f("keep"); Frame::reset(); p.push(f); return Frame::copies == 1 && f.id == "keep" && p.ids() == std::vector<std::string>{"keep"}; }()
+--- check test | Order is kept over many pushes
+[] { Pipeline p; Frame::reset(); for (int i = 0; i < 20; ++i) p.push(make_frame(std::to_string(i))); std::vector<std::string> ids = p.ids(); return Frame::copies == 0 && ids.size() == 20 && ids[0] == "0" && ids[19] == "19"; }()
+
++++ practice | Stretch: a recorder that keeps the newest packets
+--- task
+A radio recorder keeps only the newest packets it has received. The starter's \`Packet\` counts its copies. Write \`class Recorder\` so that packets are **never copied** unless the caller passes a named packet. No \`main\`.
+
+- \`explicit Recorder(std::size_t limit)\`: keeps at most \`limit\` packets (\`limit\` is at least 1).
+- \`void record(Packet p)\`: adds \`p\` as the newest. If that makes more than \`limit\`, the oldest packet is dropped. A temporary costs no copies; a named packet costs exactly one and stays intact.
+- \`std::vector<Packet> flush()\`: hands over every packet, oldest first, with no copies. Afterwards the recorder is empty and can record again.
+- \`std::size_t size() const\`, \`std::size_t total_bytes() const\` (the sum of the payload sizes), and \`const Packet* newest() const\`: the newest packet, or \`nullptr\` when there is none.
+
+With a limit of 2, recording \`"aa"\`, \`"bbb"\` and \`"c"\` keeps \`"bbb"\` and \`"c"\`, and \`total_bytes()\` is 4.
+--- starter
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Packet {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string payload;
+    explicit Packet(std::string p = "") : payload(std::move(p)) {}
+    Packet(const Packet& o) : payload(o.payload) { ++copies; }
+    Packet(Packet&& o) noexcept : payload(std::move(o.payload)) {}
+    Packet& operator=(const Packet& o) { payload = o.payload; ++copies; return *this; }
+    Packet& operator=(Packet&& o) noexcept { payload = std::move(o.payload); return *this; }
+};
+
+class Recorder {
+public:
+    explicit Recorder(std::size_t limit) : limit_(limit) {}
+    void record(const Packet& p) { packets_.push_back(p); }
+    std::vector<Packet> flush() { return packets_; }
+    std::size_t size() const { return packets_.size(); }
+    std::size_t total_bytes() const { return 0; }
+    const Packet* newest() const { return nullptr; }
+private:
+    std::size_t limit_;
+    std::vector<Packet> packets_;
+};
+--- solution
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Packet {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string payload;
+    explicit Packet(std::string p = "") : payload(std::move(p)) {}
+    Packet(const Packet& o) : payload(o.payload) { ++copies; }
+    Packet(Packet&& o) noexcept : payload(std::move(o.payload)) {}
+    Packet& operator=(const Packet& o) { payload = o.payload; ++copies; return *this; }
+    Packet& operator=(Packet&& o) noexcept { payload = std::move(o.payload); return *this; }
+};
+
+class Recorder {
+public:
+    explicit Recorder(std::size_t limit) : limit_(limit) {}
+
+    void record(Packet p) {
+        packets_.push_back(std::move(p));
+        if (packets_.size() > limit_) packets_.erase(packets_.begin());
+    }
+
+    std::vector<Packet> flush() {
+        std::vector<Packet> out = std::move(packets_);
+        packets_.clear();   // a moved-from vector is valid but unspecified: make it empty
+        return out;
+    }
+
+    std::size_t size() const { return packets_.size(); }
+
+    std::size_t total_bytes() const {
+        std::size_t total = 0;
+        for (const Packet& p : packets_) total += p.payload.size();
+        return total;
+    }
+
+    const Packet* newest() const { return packets_.empty() ? nullptr : &packets_.back(); }
+
+private:
+    std::size_t limit_;
+    std::vector<Packet> packets_;
+};
+--- hint
+\`record\` is a sink: take \`Packet p\` by value and move it in. Erasing the first element of a vector shifts the others down by move assignment, which copies nothing.
+--- hint
+\`flush\` can move the whole vector into a local and return that local plainly. But the member is now moved-from: valid, but unspecified. Call \`clear()\` on it so the recorder really is empty and ready to record again.
+--- check test | Recording temporaries past the limit copies nothing
+[] { Recorder r(3); Packet::reset(); for (int i = 0; i < 5; ++i) r.record(Packet("p" + std::to_string(i))); return Packet::copies == 0 && r.size() == 3 && r.newest() && r.newest()->payload == "p4"; }()
+--- check test | flush hands over every packet, oldest first, with no copies
+[] { Recorder r(2); r.record(Packet("aa")); r.record(Packet("bbb")); r.record(Packet("c")); Packet::reset(); std::vector<Packet> out = r.flush(); return Packet::copies == 0 && out.size() == 2 && out[0].payload == "bbb" && out[1].payload == "c" && r.size() == 0 && r.newest() == nullptr; }()
+--- check test | total_bytes, and recording again after a flush
+[] { Recorder r(2); r.record(Packet("aa")); r.record(Packet("bbb")); r.record(Packet("c")); bool four = r.total_bytes() == 4; r.flush(); r.record(Packet("zz")); return four && r.size() == 1 && r.total_bytes() == 2 && r.newest()->payload == "zz"; }()
+--- check test | A named packet costs one copy and stays intact
+[] { Recorder r(1); Packet mine("mine"); Packet::reset(); r.record(mine); r.record(Packet("next")); return Packet::copies == 1 && mine.payload == "mine" && r.size() == 1 && r.newest()->payload == "next"; }()
+--- check test | An empty recorder
+[] { Recorder r(4); return r.size() == 0 && r.total_bytes() == 0 && r.newest() == nullptr && r.flush().empty(); }()
+
+=== cpp4-02 | Perfect forwarding
+--- teach
+Last lesson you sorted expressions into lvalues, prvalues and xvalues, and saw that a sink parameter taken by value costs a temporary one move and an lvalue one copy. This lesson is about functions whose whole job is to pass their arguments on to somebody else, and how to do that without adding a single copy.
+
+### A courier who does not open the parcel
+
+A good courier delivers exactly what was handed over. They do not photocopy the contents, and they do not swap the box for another one.
+
+Some functions are couriers. A logger that wraps a call. A factory that builds an object from the arguments you give it. \`emplace_back\`, which [[builds an element right inside a vector|emplace-word]] from its arguments. Such a **wrapper** should pass its arguments on exactly as it received them:
+
+- lvalues as lvalues, so they are copied and the caller's object stays intact;
+- temporaries as rvalues, so they are moved.
+
+That is **perfect forwarding**: passing arguments on with their value category unchanged. It needs two pieces.
+
+### Piece 1: the forwarding reference
+
+\`\`\`cpp
+template <typename T>
+void relay(T&& msg);
+\`\`\`
+
+\`T&&\` here looks like the rvalue reference you know, but it is not one. When \`T\` is a template parameter of this very function, and the compiler deduces \`T\` from the argument, \`T&&\` is a **forwarding reference**: a parameter that binds to anything, lvalue or rvalue, \`const\` or not, and [[remembers which one it got|when-forwarding]].
+
+It remembers through what the compiler deduces for \`T\`:
+
+- Called with a temporary, \`relay(std::string("hi"))\`: \`T\` is \`std::string\`, so the parameter is \`std::string&&\`.
+- Called with an lvalue, \`relay(note)\` where \`note\` is a \`std::string\`: \`T\` is \`std::string&\`. The \`&\` goes into \`T\` itself.
+
+In the second case the parameter would be \`std::string& &&\`, a reference to a reference. C++ has no such thing, so it applies **reference collapsing**: two reference marks squeeze into one. The rule is short. If either mark is a single \`&\`, the result is \`&\`. Only \`&&\` with \`&&\` gives \`&&\`. So \`std::string& &&\` [[collapses to|collapse-table]] \`std::string&\`.
+
+So \`T\` carries the news. A plain type in \`T\` means "the caller gave a temporary". An lvalue reference in \`T\` means "the caller gave an lvalue".
+
+### Piece 2: std::forward
+
+Inside \`relay\`, \`msg\` has a name. Anything with a name is an lvalue, even when its type is \`std::string&&\`. So passing \`msg\` on plainly would always copy.
+
+\`std::forward<T>(msg)\`, from \`<utility>\`, passes it on with the category the caller gave. Read it as "forward \`msg\` the way \`T\` says". It casts to an rvalue only when \`T\` says the caller gave one, and otherwise leaves it an lvalue:
+
+\`\`\`cpp
+template <typename T>
+void relay(T&& msg) {
+    deliver(std::forward<T>(msg));   // lvalue in, lvalue out; temporary in, rvalue out
+}
+\`\`\`
+
+You must write the \`<T>\`, because \`T\` is where the news is stored. \`std::forward\` [[cannot work it out on its own|forward-inside]].
+
+Compare the three things you could write inside \`relay\`:
+
+- \`deliver(std::forward<T>(msg))\`: correct in every case.
+- \`deliver(std::move(msg))\`: always an rvalue. If the caller passed their own lvalue, it is **stolen**: emptied behind their back.
+- \`deliver(msg)\`: always an lvalue, so it always copies, even from temporaries.
+
+### Forwarding something you call
+
+A function can take something to call: a lambda, or any object with an \`operator()\`. That is a **callable**. A callable can arrive through a forwarding reference too, \`F&& job\`, and you call it after forwarding it:
+
+\`\`\`cpp
+template <typename F>
+void run_twice(F&& job) {
+    job();                    // first use: plain
+    std::forward<F>(job)();   // last use: passed on with its own category
+}
+\`\`\`
+
+Read \`std::forward<F>(job)()\` as "take \`job\` with the category it arrived in, then call it". Why bother? Last lesson's ref-qualifiers: a callable object may have an \`operator()\` marked \`&&\`, callable only when the object is expiring. Forwarding keeps that working. The same goes for arguments: \`std::forward<F>(job)(std::forward<X>(x))\` forwards both the callable and what you hand it.
+
+Forward each thing only once, on its **last** use. After forwarding, it may have been moved from.
+
+### Returning exactly what you got
+
+A wrapper often returns whatever the wrapped call returned. A plain \`auto\` return type **drops references**: if the call gives back a \`std::string&\`, an \`auto\` function returns a \`std::string\` copy. Write **\`decltype(auto)\`** instead, read "the declared type, worked out from the return": it keeps the exact type of the return expression, references included.
+
+\`\`\`cpp
+auto first_copy(std::vector<int>& v) { return v.front(); }          // returns int: a copy
+decltype(auto) first_ref(std::vector<int>& v) { return v.front(); } // returns int&: the element itself
+\`\`\`
+
+\`decltype\` is the one from the \`std::visit\` lesson. Here it [[has one sharp edge|decltype-parens]].
+
+### Any number of arguments
+
+The same pattern extends to any number of arguments: \`template <typename... Args> void f(Args&&... args)\`, passed on with \`std::forward<Args>(args)...\`. That is exactly how \`std::make_unique\` and \`emplace_back\` are written. The \`...\` makes a *pack*, and packs are next lesson.
+
+**Watch out:** \`std::move\` in a forwarding function. It compiles, and every test that passes a temporary passes. The bug only shows when someone passes a named variable and finds it empty afterwards. In a function that takes \`T&&\` with a deduced \`T\`, reach for \`std::forward<T>\`, never \`std::move\`.
+
+::: context emplace-word emplace_back builds in place
+\`v.push_back(Probe("a"))\` makes a temporary \`Probe\`, then moves it into the vector. \`v.emplace_back("a")\` hands the argument \`"a"\` to the vector, and the vector calls \`Probe\`'s constructor right inside its own storage: no temporary, no move. To do that, \`emplace_back\` must pass your arguments to the constructor exactly as you gave them, so it is a forwarding function. Both have been in \`std::vector\` since C++11.
+:::
+
+::: context when-forwarding When is T&& a forwarding reference?
+Only in the exact form \`T&&\`, with \`T\` deduced for this call. \`auto&&\` is one too. These are not: \`std::vector<T>&&\` is an rvalue reference to a vector; \`const T&&\` is an rvalue reference to const; and in a class template, a member \`void push(T&& x)\` uses the class's \`T\`, which was fixed when the class was made, so it is an ordinary rvalue reference. Scott Meyers called these "universal references" in 2012; the standard adopted the name "forwarding reference" for C++17.
+:::
+
+::: context collapse-table The four collapsing cases
+Every mix of the two marks, with \`X\` standing for a type such as \`std::string\`. A single \`&\` anywhere wins.
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="70" y="30" font-size="12" fill="#6c7a93" text-anchor="middle">T is</text>
+  <text x="185" y="30" font-size="12" fill="#6c7a93" text-anchor="middle">written T&amp;</text>
+  <text x="295" y="30" font-size="12" fill="#6c7a93" text-anchor="middle">written T&amp;&amp;</text>
+  <rect x="130" y="42" width="110" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="240" y="42" width="110" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="130" y="82" width="110" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="240" y="82" width="110" height="40" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="70" y="67" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;</text>
+  <text x="70" y="107" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;&amp; or X</text>
+  <text x="185" y="67" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;</text>
+  <text x="295" y="67" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;</text>
+  <text x="185" y="107" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;</text>
+  <text x="295" y="107" font-size="13" fill="#1f2a44" text-anchor="middle">X&amp;&amp;</text>
+  <text x="180" y="142" font-size="11" fill="#1d6fd1" text-anchor="middle">only the orange cell stays an rvalue reference</text>
+</svg>
+\`\`\`
+
+When \`T\` is a plain \`X\`, \`T&&\` is \`X&&\` with nothing to collapse, which is why the bottom row treats \`X\` and \`X&&\` alike.
+:::
+
+::: context forward-inside What std::forward really is
+Inside the library, \`std::forward<T>(x)\` comes down to \`static_cast<T&&>(x)\`, and reference collapsing does the rest. If \`T\` is \`std::string&\`, the cast is to \`std::string& &&\`, which collapses to \`std::string&\`: it stays an lvalue. If \`T\` is \`std::string\`, the cast is to \`std::string&&\`: an rvalue, free to be moved from. Like \`std::move\`, it is only a cast and moves nothing itself. The difference is that \`std::move\` always casts to an rvalue, and \`std::forward\` asks \`T\` first.
+:::
+
+::: context decltype-parens Parentheses change decltype(auto)
+\`decltype(auto)\` looks at the return expression exactly. \`return count;\` with a local \`int count\` gives \`int\`. But \`return (count);\`, with parentheses, counts as an expression that names an object, and its declared type is \`int&\`: the function now returns a reference to a local variable that dies when the function ends. That is a dangling reference. So with \`decltype(auto)\`, never put parentheses around a returned local.
+:::
+--- task
+Using the starter's \`Probe\` and its \`calls\` counter, write two function templates. No \`main\`: the checker supplies it.
+
+- \`template <typename T> void add_item(std::vector<Probe>& v, T&& item)\`: appends \`item\` to \`v\`. It copies from an lvalue, leaving the caller's probe intact, and moves from a temporary.
+- \`template <typename F, typename A> decltype(auto) invoke_logged(F&& f, A&& a)\`: adds 1 to \`calls\`, then calls \`f\` with \`a\` and returns whatever that call returns. Forward both \`f\` and \`a\` perfectly. If \`f\` returns a reference, \`invoke_logged\` must return that same reference.
+
+The starter compiles but gets both wrong: \`add_item\` uses \`std::move\`, and \`invoke_logged\` takes copies and returns plain \`auto\`.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+inline int calls = 0;
+
+template <typename T>
+void add_item(std::vector<Probe>& v, T&& item) {
+    v.push_back(std::move(item));
+}
+
+template <typename F, typename A>
+auto invoke_logged(F f, A a) {
+    ++calls;
+    return f(a);
+}
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+inline int calls = 0;
+
+template <typename T>
+void add_item(std::vector<Probe>& v, T&& item) {
+    v.push_back(std::forward<T>(item));
+}
+
+template <typename F, typename A>
+decltype(auto) invoke_logged(F&& f, A&& a) {
+    ++calls;
+    return std::forward<F>(f)(std::forward<A>(a));
+}
+--- hint
+\`std::move\` always casts to an rvalue; \`std::forward<T>\` only does when \`T\` says the caller passed one. Which one keeps the caller's lvalue intact?
+--- hint
+\`invoke_logged\` must take \`F&& f, A&& a\` (forwarding references, not copies) and return \`decltype(auto)\`, so a returned reference survives.
+--- hint
+\`add_item\`'s body is one \`push_back\` of \`std::forward<T>(item)\`. In \`invoke_logged\`, after \`++calls;\`, call the forwarded \`f\` with the forwarded \`a\` and return the result, the way \`run_twice\` calls \`std::forward<F>(job)()\`.
+--- check test | An lvalue is copied and left intact
+[] { Probe p("keep"); std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, p); return p.label == "keep" && v[0].label == "keep" && Probe::copies == 1 && Probe::moves == 0; }()
+--- check test | A temporary is moved, not copied
+[] { std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, Probe("tmp")); return v[0].label == "tmp" && Probe::copies == 0 && Probe::moves == 1; }()
+--- check test | A const lvalue works and is copied
+[] { const Probe c("c"); std::vector<Probe> v; v.reserve(4); Probe::reset(); add_item(v, c); return v[0].label == "c" && Probe::copies == 1; }()
+--- check test | invoke_logged passes a returned reference straight through
+[] { Probe p("r"); calls = 0; Probe& same = invoke_logged([](Probe& x) -> Probe& { return x; }, p); return &same == &p && calls == 1; }()
+--- check test | invoke_logged moves a temporary argument
+[] { Probe::reset(); std::string s = invoke_logged([](Probe x) { return x.label; }, Probe("z")); return s == "z" && Probe::copies == 0; }()
+
++++ practice | Remember a probe under a name
+--- task
+The starter's \`Probe\` counts its copies and moves. Write one function template. No \`main\`.
+
+\`template <typename T> Probe& remember(std::map<std::string, Probe>& shelf, const std::string& key, T&& p)\` stores \`p\` in \`shelf\` under \`key\`, replacing any probe already there, and returns a reference to the stored probe (the one inside the map).
+
+- From a named probe, \`const\` or not, it copies exactly once and leaves the caller's probe intact.
+- From a temporary, it moves and never copies.
+--- starter
+#include <map>
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+template <typename T>
+Probe& remember(std::map<std::string, Probe>& shelf, const std::string& key, T&& p) {
+    shelf[key] = p;
+    return shelf[key];
+}
+--- solution
+#include <map>
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+template <typename T>
+Probe& remember(std::map<std::string, Probe>& shelf, const std::string& key, T&& p) {
+    Probe& slot = shelf[key];
+    slot = std::forward<T>(p);
+    return slot;
+}
+--- hint
+Inside the function \`p\` has a name, so \`shelf[key] = p;\` always picks the copy assignment, even when the caller passed a temporary.
+--- hint
+Assign \`std::forward<T>(p)\` instead: it stays an lvalue when the caller gave one, and becomes an rvalue when the caller gave a temporary. Keep a reference to \`shelf[key]\` so you can return it.
+--- check test | A temporary is moved in, and the map's own probe comes back
+[] { std::map<std::string, Probe> m; Probe::reset(); Probe& r = remember(m, "a", Probe("x")); return Probe::copies == 0 && r.label == "x" && &r == &m["a"]; }()
+--- check test | A named probe is copied once and left intact
+[] { std::map<std::string, Probe> m; Probe p("keep"); Probe::reset(); remember(m, "a", p); return Probe::copies == 1 && p.label == "keep" && m["a"].label == "keep"; }()
+--- check test | A const probe is copied too
+[] { std::map<std::string, Probe> m; const Probe c("c"); Probe::reset(); remember(m, "k", c); return Probe::copies == 1 && m["k"].label == "c"; }()
+--- check test | Remembering the same name again replaces the probe
+[] { std::map<std::string, Probe> m; remember(m, "a", Probe("x")); Probe::reset(); remember(m, "a", Probe("y")); return m.size() == 1 && m["a"].label == "y" && Probe::copies == 0; }()
+
++++ practice | Pass it through untouched
+--- task
+The starter's \`Probe\` counts its copies and moves. Write two function templates that give back exactly what they were given. No \`main\`.
+
+- \`template <typename T> decltype(auto) pass_through(T&& x)\`: given a named object, it returns a reference to that very object (so \`&pass_through(p) == &p\`); given a temporary, it returns an rvalue reference to it (\`Probe&&\` for a \`Probe\`), so a caller that builds a new object from the result moves instead of copying.
+- \`template <typename C> decltype(auto) first_of(C& c)\` returns \`c.front()\` as a reference to the element itself, so changing the result changes \`c\`. For a \`const\` vector the result is a \`const\` reference.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+template <typename T>
+T pass_through(T&& x) {
+    return x;
+}
+
+template <typename C>
+auto first_of(C& c) {
+    return c.front();
+}
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+template <typename T>
+decltype(auto) pass_through(T&& x) {
+    return std::forward<T>(x);
+}
+
+template <typename C>
+decltype(auto) first_of(C& c) {
+    return c.front();
+}
+--- hint
+A plain \`auto\` return type, or returning \`T\` for a temporary, makes a new object. \`decltype(auto)\` keeps the exact type of the return expression, references included.
+--- hint
+In \`pass_through\`, return \`std::forward<T>(x)\`: its type is \`T&&\`, which collapses to \`Probe&\` for a named probe and stays \`Probe&&\` for a temporary.
+--- check test | A named probe comes back as itself
+[] { Probe p("p"); return std::is_same_v<decltype(pass_through(p)), Probe&> && &pass_through(p) == &p; }()
+--- check test | A temporary comes back as an rvalue reference, a const one as const
+[] { const Probe c("c"); return std::is_same_v<decltype(pass_through(Probe("t"))), Probe&&> && std::is_same_v<decltype(pass_through(c)), const Probe&>; }()
+--- check test | Building from a passed-through temporary moves, never copies
+[] { Probe::reset(); Probe b = pass_through(Probe("t")); return b.label == "t" && Probe::copies == 0 && Probe::moves == 1; }()
+--- check test | first_of gives the element itself
+[] { std::vector<int> v{1, 2}; auto&& f = first_of(v); f = 9; const std::vector<std::string> w{"a"}; return v[0] == 9 && std::is_same_v<decltype(first_of(w)), const std::string&>; }()
+
++++ practice | A stack that forwards
+--- task
+Finish the class template \`Stack<T>\`, a stack kept in a \`std::vector<T>\`. The starter's \`Probe\` counts its copies. No \`main\`.
+
+- \`push(x)\` puts \`x\` on top, forwarding it: it copies from a named object (and leaves it intact) and moves from a temporary. It also accepts anything a \`T\` can be built from, so \`push("text")\` works on a \`Stack<std::string>\`.
+- \`T pop()\` removes the top and returns it, moving it out: no copies.
+- \`const T& top() const\` and \`std::size_t size() const\`.
+
+Careful: inside a class template, a member \`void push(T&& x)\` is **not** a forwarding reference, because \`T\` was fixed when the class was made. \`push\` needs a template parameter of its own.
+--- starter
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename T>
+class Stack {
+public:
+    void push(const T& x) { items_.push_back(x); }
+    T pop() {
+        T top = items_.back();
+        items_.pop_back();
+        return top;
+    }
+    const T& top() const { return items_.back(); }
+    std::size_t size() const { return items_.size(); }
+private:
+    std::vector<T> items_;
+};
+--- solution
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename T>
+class Stack {
+public:
+    template <typename U>
+    void push(U&& x) {
+        items_.push_back(std::forward<U>(x));
+    }
+    T pop() {
+        T top = std::move(items_.back());
+        items_.pop_back();
+        return top;
+    }
+    const T& top() const { return items_.back(); }
+    std::size_t size() const { return items_.size(); }
+private:
+    std::vector<T> items_;
+};
+--- hint
+Give \`push\` its own template parameter: \`template <typename U> void push(U&& x)\`. That \`U&&\` is deduced at each call, so it is a real forwarding reference.
+--- hint
+Forward \`x\` into \`push_back\`. In \`pop\`, the top element is about to be removed, so move it into the local before \`pop_back()\`, then return the local plainly.
+--- check test | A named probe is copied once and left intact
+[] { Stack<Probe> s; Probe p("keep"); Probe::reset(); s.push(p); return Probe::copies == 1 && p.label == "keep" && s.top().label == "keep"; }()
+--- check test | A temporary is moved, not copied
+[] { Stack<Probe> s; Probe::reset(); s.push(Probe("t")); s.push(Probe("u")); return Probe::copies == 0 && s.size() == 2 && s.top().label == "u"; }()
+--- check test | pop moves the top out
+[] { Stack<Probe> s; s.push(Probe("a")); s.push(Probe("b")); Probe::reset(); Probe b = s.pop(); return b.label == "b" && Probe::copies == 0 && s.size() == 1 && s.top().label == "a"; }()
+--- check test | A const probe is accepted and copied
+[] { Stack<Probe> s; const Probe c("c"); Probe::reset(); s.push(c); return Probe::copies == 1 && s.top().label == "c"; }()
+--- check test | Strings from literals and from names
+[] { Stack<std::string> s; s.push("lit"); std::string w = "word"; s.push(w); std::string first = s.pop(); return first == "word" && w == "word" && s.pop() == "lit" && s.size() == 0; }()
+
++++ practice | What did the caller pass?
+--- task
+A forwarding reference remembers what it was given through the type it deduces for \`T\`. Write \`template <typename T> std::string what_came(T&& x)\`, which reports what kind of argument the caller passed, for \`std::string\` arguments. No \`main\`.
+
+It returns exactly one of these, decided from \`T\` alone (with \`if constexpr\` and \`std::is_same_v\`):
+
+- \`"lvalue"\` for a named, non-\`const\` \`std::string\`;
+- \`"const lvalue"\` for a named \`const std::string\`;
+- \`"rvalue"\` for a temporary string or \`std::move\` of a non-\`const\` one;
+- \`"const rvalue"\` for \`std::move\` of a \`const std::string\`;
+- \`"other"\` for anything that is not a \`std::string\`, including a string literal like \`"hi"\` and the number \`42\`.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+template <typename T>
+std::string what_came(const T& x) {
+    return "lvalue";
+}
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+
+template <typename T>
+std::string what_came(T&& x) {
+    if constexpr (std::is_same_v<T, std::string&>) return "lvalue";
+    else if constexpr (std::is_same_v<T, const std::string&>) return "const lvalue";
+    else if constexpr (std::is_same_v<T, std::string>) return "rvalue";
+    else if constexpr (std::is_same_v<T, const std::string>) return "const rvalue";
+    else return "other";
+}
+--- hint
+Work out \`T\` for each case first. For a named argument, the \`&\` goes into \`T\` itself: \`std::string&\` or \`const std::string&\`. For a temporary, \`T\` is the plain type.
+--- hint
+\`std::move\` of a \`const std::string\` is a \`const std::string&&\`, so \`T\` is \`const std::string\`. A literal \`"hi"\` is an array of \`const char\`, so none of the four string types match it.
+--- check test | Named strings
+[] { std::string s = "a"; const std::string c = "b"; return what_came(s) == "lvalue" && what_came(c) == "const lvalue"; }()
+--- check test | Temporaries and moved strings
+[] { std::string s = "a"; return what_came(std::string("t")) == "rvalue" && what_came(std::move(s)) == "rvalue"; }()
+--- check test | Moving a const string
+[] { const std::string c = "b"; return what_came(std::move(c)) == "const rvalue"; }()
+--- check test | Things that are not strings
+[] { int n = 3; return what_came("literal") == "other" && what_came(42) == "other" && what_came(n) == "other"; }()
+
++++ practice | Debug: the logger that empties your probe
+--- task
+**Bug report:** "After \`log_and_store(log, store, mine)\`, my own probe \`mine\` has an empty label. And when I pass a temporary, the log line says \`stored \` with no label at all."
+
+\`log_and_store\` should add the line \`"stored <label>"\` to \`log\`, then store the probe in \`store\`: copying from a named probe (leaving it intact) and moving from a temporary. Fix it. The starter's \`Probe\` counts its copies. No \`main\`.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename T>
+void log_and_store(std::vector<std::string>& log, std::vector<Probe>& store, T&& p) {
+    store.push_back(std::move(p));
+    log.push_back("stored " + p.label);
+}
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename T>
+void log_and_store(std::vector<std::string>& log, std::vector<Probe>& store, T&& p) {
+    log.push_back("stored " + p.label);
+    store.push_back(std::forward<T>(p));
+}
+--- hint
+There are two bugs. One is the wrong cast for a forwarding reference. The other is about *when* the probe is passed on: after it has been moved from, its label is gone.
+--- hint
+Use \`std::forward<T>(p)\`, and do it on the **last** use of \`p\`: write the log line first, then store.
+--- check test | A named probe is copied, logged, and left intact
+[] { std::vector<std::string> log; std::vector<Probe> store; Probe mine("m"); Probe::reset(); log_and_store(log, store, mine); return mine.label == "m" && store[0].label == "m" && log[0] == "stored m" && Probe::copies == 1; }()
+--- check test | A temporary is moved and still logged
+[] { std::vector<std::string> log; std::vector<Probe> store; store.reserve(4); Probe::reset(); log_and_store(log, store, Probe("t")); return log[0] == "stored t" && store[0].label == "t" && Probe::copies == 0; }()
+--- check test | A mix, in order
+[] { std::vector<std::string> log; std::vector<Probe> store; Probe a("a"); const Probe b("b"); log_and_store(log, store, a); log_and_store(log, store, b); log_and_store(log, store, Probe("c")); return log == std::vector<std::string>{"stored a", "stored b", "stored c"} && store.size() == 3 && store[2].label == "c" && a.label == "a"; }()
+
++++ practice | Stretch: a registry that only takes what it keeps
+--- task
+Write \`class Registry\`, which keeps probes by name in a private \`std::map<std::string, Probe>\`. The starter's \`Probe\` counts its copies and moves. No \`main\`.
+
+- \`template <typename P> bool add(const std::string& key, P&& p)\`: if \`key\` is new, store \`p\` under it (copying from a named probe, moving from a temporary) and return \`true\`. If \`key\` is already there, return \`false\` and leave both the stored probe and \`p\` untouched, even when the caller wrote \`std::move(p)\`.
+- \`template <typename F> decltype(auto) visit(const std::string& key, F&& f)\`: calls \`f\` with the stored probe (a \`Probe&\`) and returns exactly what \`f\` returns, a reference included. Forward \`f\`, so a callable whose \`operator()\` is marked \`&&\` works when passed as a temporary. \`key\` is always present.
+- \`std::size_t size() const\`.
+--- starter
+#include <cstddef>
+#include <map>
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Registry {
+public:
+    template <typename P>
+    bool add(const std::string& key, P&& p) {
+        items_[key] = std::move(p);
+        return true;
+    }
+
+    template <typename F>
+    auto visit(const std::string& key, F&& f) {
+        return std::forward<F>(f)(items_.find(key)->second);
+    }
+
+    std::size_t size() const { return items_.size(); }
+
+private:
+    std::map<std::string, Probe> items_;
+};
+--- solution
+#include <cstddef>
+#include <map>
+#include <string>
+#include <utility>
+
+struct Probe {
+    static inline int copies = 0;
+    static inline int moves = 0;
+    static void reset() { copies = 0; moves = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) { ++moves; }
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); ++moves; return *this; }
+};
+
+class Registry {
+public:
+    template <typename P>
+    bool add(const std::string& key, P&& p) {
+        if (items_.find(key) != items_.end()) return false;
+        items_[key] = std::forward<P>(p);
+        return true;
+    }
+
+    template <typename F>
+    decltype(auto) visit(const std::string& key, F&& f) {
+        return std::forward<F>(f)(items_.find(key)->second);
+    }
+
+    std::size_t size() const { return items_.size(); }
+
+private:
+    std::map<std::string, Probe> items_;
+};
+--- hint
+Look before you forward: find the key first, and only pass \`p\` on when you are really going to store it. \`std::forward\` is only a cast, so not calling it leaves \`p\` untouched.
+--- hint
+\`visit\` already forwards \`f\`, but its plain \`auto\` return type drops references. Switch it to \`decltype(auto)\`.
+--- check test | A temporary is added with no copies
+[] { Registry r; Probe::reset(); bool added = r.add("a", Probe("x")); return added && Probe::copies == 0 && r.size() == 1; }()
+--- check test | A named probe is copied once and left intact
+[] { Registry r; Probe p("keep"); Probe::reset(); r.add("a", p); return Probe::copies == 1 && p.label == "keep" && r.visit("a", [](const Probe& s) { return s.label; }) == "keep"; }()
+--- check test | A duplicate key leaves everything untouched, even after std::move
+[] { Registry r; r.add("a", Probe("first")); Probe x("second"); Probe::reset(); bool added = r.add("a", std::move(x)); return !added && x.label == "second" && Probe::copies == 0 && Probe::moves == 0 && r.visit("a", [](const Probe& s) { return s.label; }) == "first" && r.size() == 1; }()
+--- check test | visit passes a returned reference straight through
+[] { Registry r; r.add("a", Probe("a")); auto&& lab = r.visit("a", [](Probe& p) -> std::string& { return p.label; }); lab = "z"; return r.visit("a", [](const Probe& p) { return p.label; }) == "z"; }()
+--- check test | visit forwards a one-shot callable
+[] { struct Reader { std::string operator()(const Probe& p) && { return p.label + "!"; } }; Registry r; r.add("a", Probe("a")); return r.visit("a", Reader{}) == "a!"; }()
+
+=== cpp4-03 | Variadic templates and fold expressions
+--- teach
+Last lesson ended with a preview: \`template <typename... Args>\` and \`std::forward<Args>(args)...\`, which let \`std::make_unique\` take any number of arguments. This lesson explains the three dots.
+
+### A bag of any size
+
+A checkout counter does not care how many items are in your bag. Three apples, one loaf, nothing at all: the cashier handles each item in turn, and adds up the total.
+
+A **variadic template** is a template that takes any number of arguments, even none. "Variadic" means "with a variable number". You have used some already: \`std::make_unique<T>(…)\`, \`emplace_back(…)\`, and \`std::variant<int, double, std::string>\`, which takes any number of types. Now [[you will write your own|variadic-history]].
+
+### Packs
+
+The three dots \`...\` make a **parameter pack**: zero or more things, handled as one bundle.
+
+\`\`\`cpp
+template <typename... Ts>          // Ts: a pack of types
+void show_all(const Ts&... items); // items: a pack of values, one for each type
+\`\`\`
+
+Read \`typename... Ts\` as "Ts, a pack of types: zero or more". Read \`const Ts&... items\` as "items, one \`const\` reference parameter for each type in Ts". A call \`show_all(3, 2.5, 'k')\` makes \`Ts\` the three types \`int\`, \`double\`, \`char\`, and \`items\` the three values.
+
+\`sizeof...(items)\`, read "the size of the pack", says how many there are. It is worked out while compiling. For that call it is 3.
+
+A template can ask for some ordinary parameters first, then a pack:
+
+\`\`\`cpp
+template <typename T, typename... Ts>
+void tag_all(const T& tag, const Ts&... items);   // one tag, then zero or more items
+\`\`\`
+
+### You cannot loop over a pack
+
+A pack is not a list. There is no \`items[0]\`, and no loop can walk through it while the program runs, because each element may have a different type. Instead you **expand** it: write a pattern, then \`...\` after it, and the compiler writes the pattern out once per element, with commas between.
+
+\`\`\`cpp
+report(describe(items)...);          // becomes report(describe(i1), describe(i2), describe(i3))
+std::vector<std::string> v{describe(items)...};
+\`\`\`
+
+The pattern here is \`describe(items)\`. The \`...\` after it says "one of these for each element".
+
+### Fold expressions: combine them all
+
+Often you want to combine every element with one operator: add them all, or check them all. C++17 has **fold expressions** for that. Picture folding a long strip of paper, one crease at a time, until it is one small square. A fold [[squeezes a whole pack into one value|fold-shape]], one operator at a time.
+
+A fold is always written inside its own parentheses. Here it multiplies any number of numbers:
+
+\`\`\`cpp
+template <typename... Ts>
+auto product(Ts... xs) {
+    return (xs * ... * 1);       // x1 * (x2 * (x3 * 1))
+}
+\`\`\`
+
+Read \`(xs * ... * 1)\` as "multiply all of \`xs\` together, starting from 1". The \`1\` is the **start value**. \`product(2, 3, 4)\` is 24, and \`product()\` is 1: with nothing to multiply, the start value is the answer.
+
+The part next to the dots can be any expression that uses the pack, not only its name:
+
+\`\`\`cpp
+template <typename... Ts>
+bool all_positive(Ts... xs) {
+    return ((xs > 0) && ...);    // (x1 > 0) && ((x2 > 0) && (x3 > 0))
+}
+\`\`\`
+
+Here the pattern is \`(xs > 0)\`, and the operator is \`&&\`, "and". There is no start value, and \`all_positive()\` is \`true\`.
+
+Put the start value on the **left** and the fold runs from the left instead:
+
+\`\`\`cpp
+(std::string{} + ... + words)    // ((std::string{} + w1) + w2) + w3
+(0.0 + ... + (xs * xs))          // the sum of the squares
+\`\`\`
+
+The start value also sets the type. \`"ab" + "cd"\`, two string literals, does not compile, but a \`std::string\` plus a literal does, so the first fold starts from an empty \`std::string{}\`.
+
+### Empty packs
+
+With no arguments at all, a fold has nothing to combine. Only three operators have a [[built-in answer for "nothing"|empty-answers]]: \`&&\` gives \`true\`, \`||\` ("or") gives \`false\`, and the comma \`,\` gives \`void()\`, which means "nothing happened". Any other operator on an empty pack, with no start value, does not compile. That is why \`product\` has \`* 1\`.
+
+### The comma fold: once per element
+
+The **comma operator** \`a, b\` means "do \`a\`, then do \`b\`". A fold over the comma therefore runs an expression once per element, [[left to right|comma-order]]. That is the tidy way to "loop" over a pack:
+
+\`\`\`cpp
+((std::cout << items << '\\n'), ...);
+\`\`\`
+
+There are two sets of parentheses. The inner ones make \`std::cout << items << '\\n'\` one expression, the pattern. The outer ones belong to the fold.
+
+A pattern may do two things, joined by a comma inside its own parentheses. Here a counter numbers the lines:
+
+\`\`\`cpp
+int n = 0;
+((std::cout << n << ". " << items << '\\n', ++n), ...);   // 0. first  1. second ...
+\`\`\`
+
+For something *between* elements, such as a separator, use the idea from the robot's \`act\` in the last lesson of the advanced course: nothing before the first element, the separator before every other. A flag or a counter remembers whether you are at the first one, and the conditional operator picks the text inside an expression: \`(n == 0 ? "" : " | ")\`.
+
+### Packs and forwarding together
+
+Combined with last lesson's forwarding, packs give the shape of every factory in the standard library:
+
+\`\`\`cpp
+template <typename T, typename... Args>
+std::unique_ptr<T> create(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+\`\`\`
+
+The pattern \`std::forward<Args>(args)\` is expanded once per argument, each forwarded with its own type.
+
+**Watch out:** a fold like \`(xs + ...)\`, with no start value, works for every call with arguments and fails only when someone calls with none, with an error about an empty pack. If "no arguments" should have an answer, give the fold a start value.
+
+::: context variadic-history Before variadic templates
+Variadic templates arrived in C++11. The older way to take any number of arguments came from C: \`printf\` uses "varargs", and it cannot check the types it receives, so \`printf("%d", 2.5)\` is undefined behavior. A variadic template knows the exact type of every argument while compiling. Modern formatting is built this way: \`std::format\` in C++20 and \`std::print\` in C++23 check that each argument fits its place.
+:::
+
+::: context fold-shape The shape of a fold
+A **right fold**, with the pack before the dots, groups from the right: the start value is combined first, at the bottom of the tree. A **left fold**, with the start value before the dots, is the mirror image, ((1 * x1) * x2) * x3. For \`+\` and \`*\` on numbers the order does not change the answer. For joining strings, or for \`-\`, it does.
+
+\`\`\`svg
+<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="70" y1="30" x2="30" y2="80" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="70" y1="30" x2="120" y2="80" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="120" y1="80" x2="80" y2="130" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="120" y1="80" x2="170" y2="130" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="170" y1="130" x2="130" y2="180" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="170" y1="130" x2="210" y2="180" stroke="#1f2a44" stroke-width="1.5"/>
+  <circle cx="70" cy="30" r="14" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="120" cy="80" r="14" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="170" cy="130" r="14" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="14" fill="#1f2a44" text-anchor="middle">
+    <text x="70" y="35">*</text><text x="120" y="85">*</text><text x="170" y="135">*</text>
+  </g>
+  <rect x="12" y="68" width="36" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="62" y="118" width="36" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="112" y="168" width="36" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="192" y="168" width="36" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <text x="30" y="84">x1</text><text x="80" y="134">x2</text><text x="130" y="184">x3</text><text x="210" y="184">1</text>
+  </g>
+  <text x="230" y="30" font-size="12" fill="#1f2a44">(xs * ... * 1)</text>
+  <text x="230" y="50" font-size="12" fill="#1f2a44">x1 * (x2 * (x3 * 1))</text>
+  <text x="230" y="80" font-size="11" fill="#6c7a93">orange: the start value,</text>
+  <text x="230" y="96" font-size="11" fill="#6c7a93">used first, deepest down</text>
+</svg>
+\`\`\`
+:::
+
+::: context empty-answers Why "and" of nothing is true
+Think of \`all_positive()\` as the question "is every number here positive?" asked about an empty bag. There is no number that fails, so the answer is yes. Mathematicians call this *vacuously true*. In the same way, "is any number here positive?" about an empty bag is no, so \`||\` gives \`false\`. These answers are also the values that change nothing: \`true && b\` is \`b\`, and \`false || b\` is \`b\`, the way adding 0 or multiplying by 1 changes nothing.
+:::
+
+::: context comma-order The comma is not always an operator
+In \`f(a, b)\` or \`int x = 1, y = 2;\` the comma only separates things, and in a function call C++ does not promise which argument is worked out first. The comma **operator**, inside an expression, is different: it always finishes the left side before starting the right. A comma fold uses the operator, so \`((out << items), ...)\` writes the elements in order, first to last.
+:::
+--- task
+Write four variadic function templates. No \`main\`: the checker supplies it. The starter's two-argument \`sum\` and \`join\` show the old, fixed-size way; replace them.
+
+- \`sum(xs...)\`: the total of any number of numbers. \`sum()\` is \`0\`. Mixed types follow the usual arithmetic rules, so \`sum(1, 2.5)\` is \`3.5\`.
+- \`std::string join(const std::string& sep, const Ts&... xs)\`: writes each value into a \`std::ostringstream\` with \`<<\`, with \`sep\` between neighbors but not before the first or after the last. \`join(", ", 1, "a")\` is \`"1, a"\`, and \`join(", ")\` is \`""\`.
+- \`bool is_one_of(const T& x, const Ts&... options)\`: \`true\` if \`x ==\` any of the options; \`false\` with no options.
+- \`std::size_t total_size(const Cs&... containers)\`: the sum of their \`.size()\`s; \`0\` for none.
+--- starter
+#include <cstddef>
+#include <sstream>
+#include <string>
+
+template <typename A, typename B>
+auto sum(A a, B b) {
+    return a + b;
+}
+
+template <typename A, typename B>
+std::string join(const std::string& sep, const A& a, const B& b) {
+    std::ostringstream out;
+    out << a << sep << b;
+    return out.str();
+}
+--- solution
+#include <cstddef>
+#include <sstream>
+#include <string>
+
+template <typename... Ts>
+auto sum(Ts... xs) {
+    return (xs + ... + 0);
+}
+
+template <typename... Ts>
+std::string join(const std::string& sep, const Ts&... xs) {
+    std::ostringstream out;
+    bool first = true;
+    ((out << (first ? "" : sep) << xs, first = false), ...);
+    return out.str();
+}
+
+template <typename T, typename... Ts>
+bool is_one_of(const T& x, const Ts&... options) {
+    return ((x == options) || ...);
+}
+
+template <typename... Cs>
+std::size_t total_size(const Cs&... containers) {
+    return (std::size_t{0} + ... + containers.size());
+}
+--- hint
+Each function is one fold. For each, pick the operator, and ask whether "no arguments" needs a start value: \`+\` does, \`||\` does not. \`join\` is a comma fold.
+--- hint
+\`sum\` is a single fold with \`0\` as its start value: \`(xs + ... + 0)\`. \`is_one_of\` folds \`||\` over the pattern \`(x == options)\`. \`total_size\` folds \`+\` over \`containers.size()\`, starting from \`std::size_t{0}\` on the left.
+--- hint
+\`join\`: make the stream and a \`bool first = true;\`, then a comma fold over \`(out << (first ? "" : sep) << xs, first = false)\`, then return \`out.str()\`.
+--- check test | sum of many, of mixed types, of none
+sum(1, 2, 3, 4) == 10 && std::abs(sum(1, 2.5) - 3.5) < 1e-12 && sum() == 0 && sum(7) == 7
+--- check case | join with mixed types
+join(", ", 1, "a", 2.5, std::string("b"))
+=> "1, a, 2.5, b"
+--- check test | join with one and with no values
+join("-", 42) == "42" && join(", ") == ""
+--- check test | is_one_of
+is_one_of(3, 1, 2, 3) && !is_one_of(9, 1, 2, 3) && !is_one_of(3) && is_one_of(std::string("b"), "a", "b")
+--- check test | total_size across different containers
+total_size(std::vector<int>{1, 2}, std::string("abc"), std::map<int, int>{{1, 1}}) == 6 && total_size() == 0
+
++++ practice | Count, check and tally a pack
+--- task
+Write three variadic function templates. No \`main\`. The starter has their shapes with wrong bodies.
+
+- \`std::size_t count_args(const Ts&... xs)\`: how many arguments were passed. \`count_args()\` is 0.
+- \`bool all_even(Ts... xs)\`: \`true\` if every argument is even. Negative numbers can be even too, and \`all_even()\` is \`true\`.
+- \`int count_negative(Ts... xs)\`: how many arguments are below zero. \`count_negative()\` is 0.
+--- starter
+#include <cstddef>
+
+template <typename... Ts>
+std::size_t count_args(const Ts&... xs) {
+    return 0;
+}
+
+template <typename... Ts>
+bool all_even(Ts... xs) {
+    return false;
+}
+
+template <typename... Ts>
+int count_negative(Ts... xs) {
+    return 0;
+}
+--- solution
+#include <cstddef>
+
+template <typename... Ts>
+std::size_t count_args(const Ts&... xs) {
+    return sizeof...(xs);
+}
+
+template <typename... Ts>
+bool all_even(Ts... xs) {
+    return ((xs % 2 == 0) && ...);
+}
+
+template <typename... Ts>
+int count_negative(Ts... xs) {
+    return (0 + ... + (xs < 0 ? 1 : 0));
+}
+--- hint
+\`count_args\` needs no fold at all: the size of a pack is known while compiling. The other two are folds: one with \`&&\`, one with \`+\`.
+--- hint
+For \`all_even\`, test \`xs % 2 == 0\`, which is right for negative numbers too (\`-3 % 2\` is -1, not 1). For \`count_negative\`, fold \`+\` over the pattern \`(xs < 0 ? 1 : 0)\`, with 0 as the start value so that no arguments gives 0.
+--- check test | count_args
+count_args(1, "a", 2.5) == 3 && count_args() == 0 && count_args(std::string("x")) == 1
+--- check test | all_even, with negatives and with nothing
+all_even(2, 4, -6) && !all_even(2, 3) && !all_even(-3) && all_even() && all_even(0)
+--- check test | count_negative
+count_negative(-1, 2, -3.5, 0) == 2 && count_negative() == 0 && count_negative(5) == 0
+
++++ practice | Brackets and numbered lines
+--- task
+Write two variadic function templates that write every argument out in order, each with \`<<\`. No \`main\`.
+
+- \`std::string bracket_all(const Ts&... xs)\` returns every argument wrapped in square brackets, with nothing between them: \`bracket_all(1, "ab", 'c')\` is \`"[1][ab][c]"\`, and \`bracket_all()\` is \`""\`.
+- \`void print_numbered(std::ostream& out, const Ts&... xs)\` writes one line per argument to \`out\`, numbered from 1, as \`<number>: <value>\` followed by a newline. \`print_numbered(out, "x", 2.5)\` writes \`"1: x\\n2: 2.5\\n"\`; with no values it writes nothing.
+--- starter
+#include <ostream>
+#include <sstream>
+#include <string>
+
+template <typename... Ts>
+std::string bracket_all(const Ts&... xs) {
+    return "";
+}
+
+template <typename... Ts>
+void print_numbered(std::ostream& out, const Ts&... xs) {
+}
+--- solution
+#include <ostream>
+#include <sstream>
+#include <string>
+
+template <typename... Ts>
+std::string bracket_all(const Ts&... xs) {
+    std::ostringstream out;
+    ((out << '[' << xs << ']'), ...);
+    return out.str();
+}
+
+template <typename... Ts>
+void print_numbered(std::ostream& out, const Ts&... xs) {
+    int n = 1;
+    ((out << n << ": " << xs << '\\n', ++n), ...);
+}
+--- hint
+Both are comma folds: a pattern that writes one element, then \`, ...)\` so it runs once per element, left to right.
+--- hint
+For the numbers, keep an \`int n = 1;\` before the fold, and make the pattern do two things joined by a comma inside its own parentheses: write the line, then \`++n\`.
+--- check case | bracket_all with mixed types
+bracket_all(1, "ab", 'c', std::string("d"))
+=> "[1][ab][c][d]"
+--- check test | bracket_all with one and with nothing
+bracket_all(2.5) == "[2.5]" && bracket_all() == ""
+--- check test | print_numbered writes numbered lines
+[] { std::ostringstream out; print_numbered(out, "x", 2.5, 7); return out.str() == "1: x\\n2: 2.5\\n3: 7\\n"; }()
+--- check test | print_numbered with nothing writes nothing
+[] { std::ostringstream out; print_numbered(out); return out.str().empty(); }()
+
++++ practice | Push them all, each the right way
+--- task
+The starter's \`Probe\` counts its copies. Write two variadic function templates. No \`main\`.
+
+- \`void push_all(std::vector<Probe>& v, Ts&&... items)\` appends every item to \`v\`, in order, forwarding each one: a named probe is copied (and left intact), a temporary is moved. With no items it does nothing.
+- \`std::vector<std::string> labels(const Ts&... ps)\` returns the labels of the probes it is given, in order; \`labels()\` is empty. Build the vector in one step by expanding the pack inside braces.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename... Ts>
+void push_all(std::vector<Probe>& v, const Ts&... items) {
+    (v.push_back(items), ...);
+}
+
+template <typename... Ts>
+std::vector<std::string> labels(const Ts&... ps) {
+    return {};
+}
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    static void reset() { copies = 0; }
+
+    std::string label;
+    explicit Probe(std::string l = "") : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    Probe(Probe&& o) noexcept : label(std::move(o.label)) {}
+    Probe& operator=(const Probe& o) { label = o.label; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { label = std::move(o.label); return *this; }
+};
+
+template <typename... Ts>
+void push_all(std::vector<Probe>& v, Ts&&... items) {
+    (v.push_back(std::forward<Ts>(items)), ...);
+}
+
+template <typename... Ts>
+std::vector<std::string> labels(const Ts&... ps) {
+    return {ps.label...};
+}
+--- hint
+\`push_all\` needs forwarding references, one per item: \`Ts&&... items\`. Then each item is forwarded with its own type in the pattern \`std::forward<Ts>(items)\`.
+--- hint
+For \`labels\`, the pattern is \`ps.label\`. Put \`ps.label...\` inside the braces of the returned vector, and the compiler writes one label per probe.
+--- check test | Named probes are copied, temporaries moved, all in order
+[] { std::vector<Probe> v; v.reserve(8); Probe a("a"), c("c"); Probe::reset(); push_all(v, a, Probe("b"), c, Probe("d")); return Probe::copies == 2 && v.size() == 4 && v[1].label == "b" && v[3].label == "d" && a.label == "a" && c.label == "c"; }()
+--- check test | A const probe is copied, and no items change nothing
+[] { std::vector<Probe> v; const Probe k("k"); Probe::reset(); push_all(v, k); push_all(v); return Probe::copies == 1 && v.size() == 1 && v[0].label == "k"; }()
+--- check case | labels in order
+[] { Probe x("x"), y("y"); return labels(x, y, Probe("z")); }()
+=> std::vector<std::string>{"x", "y", "z"}
+--- check test | labels of nothing
+labels().empty()
+
++++ practice | Folds that survive the edge cases
+--- task
+Write three variadic function templates that give sensible answers even for the awkward calls. No \`main\`.
+
+- \`double average(Ts... xs)\`: the average as a \`double\`, never cut down to a whole number: \`average(1, 2)\` is \`1.5\`. \`average()\` is \`0.0\`.
+- \`long long sum_ll(Ts... xs)\`: the total, worked out in \`long long\` so that big \`int\`s do not overflow: \`sum_ll(2000000000, 2000000000)\` is \`4000000000\`. \`sum_ll()\` is 0.
+- \`all_same(xs...)\`: \`true\` if every argument equals the first one. With one argument, or none at all, it is \`true\`. \`all_same(std::string("a"), "a")\` is \`true\`.
+--- starter
+#include <cstddef>
+#include <string>
+
+template <typename... Ts>
+double average(Ts... xs) {
+    return 0.0;
+}
+
+template <typename... Ts>
+long long sum_ll(Ts... xs) {
+    return 0;
+}
+
+template <typename... Ts>
+bool all_same(const Ts&... xs) {
+    return false;
+}
+--- solution
+#include <cstddef>
+#include <string>
+
+template <typename... Ts>
+double average(Ts... xs) {
+    if (sizeof...(xs) == 0) return 0.0;
+    return (0.0 + ... + xs) / sizeof...(xs);
+}
+
+template <typename... Ts>
+long long sum_ll(Ts... xs) {
+    return (0LL + ... + xs);
+}
+
+bool all_same() {
+    return true;
+}
+
+template <typename T, typename... Ts>
+bool all_same(const T& first, const Ts&... rest) {
+    return ((rest == first) && ...);
+}
+--- hint
+The start value of a fold sets the type the adding happens in. Start from \`0.0\` and every step is done in \`double\`; start from \`0LL\` and every step is done in \`long long\`, before anything can overflow.
+--- hint
+\`average()\` must not divide by zero: check \`sizeof...(xs)\` first.
+--- hint
+\`all_same\` needs the first argument on its own, so give it a template of its own shape, \`(const T& first, const Ts&... rest)\`, folding \`&&\` over \`(rest == first)\`. That shape needs at least one argument, so add a plain function \`all_same()\` with no parameters for the empty call.
+--- check test | average does not cut to a whole number
+average(1, 2) == 1.5 && average() == 0.0 && average(4) == 4.0 && std::abs(average(1, 2.5, 3) - 6.5 / 3) < 1e-12
+--- check test | sum_ll does not overflow
+sum_ll(2000000000, 2000000000) == 4000000000LL && sum_ll() == 0 && sum_ll(-5, 5, 1) == 1 && sum_ll(2000000000, 2000000000, 2000000000) == 6000000000LL
+--- check test | all_same with many, one and none
+all_same(3, 3, 3) && !all_same(3, 3, 4) && !all_same(4, 3, 3) && all_same() && all_same(7) && all_same(std::string("a"), "a")
+
++++ practice | Debug: the fold that grouped the wrong way
+--- task
+**Bug report:** "\`remaining(100, 30, 20)\` should be 50, which is 100 − 30 − 20, but it gives 90. And \`any_zero(1, 0, 2)\` says \`false\`."
+
+Fix both functions. No \`main\`.
+
+- \`remaining(first, rest...)\` takes every later argument away from \`first\`, working from the left: \`remaining(10, 1, 2, 3)\` is \`((10 − 1) − 2) − 3\`, which is 4. \`remaining(10)\` is 10.
+- \`any_zero(xs...)\` is \`true\` if at least one argument is 0; \`any_zero()\` is \`false\`.
+--- starter
+template <typename T, typename... Ts>
+T remaining(T first, Ts... rest) {
+    return first - (rest - ... - 0);
+}
+
+template <typename... Ts>
+bool any_zero(Ts... xs) {
+    return ((xs == 0) && ...);
+}
+--- solution
+template <typename T, typename... Ts>
+T remaining(T first, Ts... rest) {
+    return (first - ... - rest);
+}
+
+template <typename... Ts>
+bool any_zero(Ts... xs) {
+    return ((xs == 0) || ...);
+}
+--- hint
+Write out what the starter's \`remaining(100, 30, 20)\` computes: \`100 - (30 - (20 - 0))\`. The pack sits before the dots, so it is a right fold, grouped from the right. Subtraction cares about the order.
+--- hint
+Put the start value on the left to get a left fold: \`(first - ... - rest)\` is \`((first - r1) - r2) - …\`. For \`any_zero\`, the question "is any of them zero" is an "or", and \`||\` of nothing is already \`false\`.
+--- check test | remaining works from the left
+remaining(100, 30, 20) == 50 && remaining(10, 1, 2, 3) == 4 && remaining(10) == 10
+--- check test | remaining with negatives and decimals
+remaining(0, -5) == 5 && std::abs(remaining(1.0, 0.25, 0.25) - 0.5) < 1e-12
+--- check test | any_zero
+any_zero(1, 0, 2) && any_zero(0) && !any_zero(1, 2) && !any_zero()
+
++++ practice | Stretch: a status line for any number of readings
+--- task
+Write \`std::string status(const std::string& name, const Ts&... readings)\`. The readings can be any number types, mixed. It returns one line, written with a default \`std::ostringstream\`. No \`main\`.
+
+- With readings: \`<name>: <n> readings, min <lo>, max <hi>, mean <mean>\`. For example \`status("pump", 3, 7.5, 1)\` is \`"pump: 3 readings, min 1, max 7.5, mean 3.83333"\`.
+- With exactly one reading, the word is \`reading\`: \`status("fan", 2)\` is \`"fan: 1 reading, min 2, max 2, mean 2"\`.
+- With none: \`<name>: no readings\`.
+--- starter
+#include <cstddef>
+#include <sstream>
+#include <string>
+#include <vector>
+
+template <typename... Ts>
+std::string status(const std::string& name, const Ts&... readings) {
+    return name + ": no readings";
+}
+--- solution
+#include <cstddef>
+#include <sstream>
+#include <string>
+#include <vector>
+
+template <typename... Ts>
+std::string status(const std::string& name, const Ts&... readings) {
+    std::ostringstream out;
+    out << name << ": ";
+    constexpr std::size_t n = sizeof...(readings);
+    if constexpr (n == 0) {
+        out << "no readings";
+    } else {
+        std::vector<double> values{static_cast<double>(readings)...};
+        double lo = values[0], hi = values[0], total = 0;
+        for (double v : values) {
+            if (v < lo) lo = v;
+            if (v > hi) hi = v;
+            total += v;
+        }
+        out << n << (n == 1 ? " reading" : " readings") << ", min " << lo << ", max " << hi << ", mean " << total / n;
+    }
+    return out.str();
+}
+--- hint
+Decide the empty case first, with \`sizeof...(readings)\`. Then you need the smallest, the largest and the total. You can get them with comma folds, or turn the pack into something you *can* loop over.
+--- hint
+Expanding the pack inside braces gives a vector: \`std::vector<double> values{static_cast<double>(readings)...};\`. Then an ordinary loop finds the smallest, the largest and the total, starting the smallest and largest from the first value.
+--- check case | Three mixed readings
+status("pump", 3, 7.5, 1)
+=> "pump: 3 readings, min 1, max 7.5, mean 3.83333"
+--- check case | One reading
+status("fan", 2)
+=> "fan: 1 reading, min 2, max 2, mean 2"
+--- check case | No readings
+status("valve")
+=> "valve: no readings"
+--- check case | Negative readings
+status("t", -4, -1.5)
+=> "t: 2 readings, min -4, max -1.5, mean -2.75"
+--- check case | Many number types
+status("x", 10, 20LL, 30.0f)
+=> "x: 3 readings, min 10, max 30, mean 20"
+
+=== cpp4-04 | Concepts and requires
+--- teach
+Last lesson your templates took a pack of *anything*. That is the deal with every template so far: it accepts any type, and complains only when something inside it fails to compile. In the function templates lesson, \`largest\` on a vector of \`Point\`s gave an error pointing deep inside the template, and that lesson promised a better way in the expert course. Here it is.
+
+### Rules at the gate
+
+A fairground ride has a sign at the gate: "You must be this tall to ride". It checks you *before* you get on, and it tells you exactly what was wrong. Nobody finds out halfway round the loop.
+
+A template can have a sign at the gate too. C++20 **concepts** state a template's requirements up front, as part of its signature. A wrong type is stopped at the call, with a message about the call, instead of [[a wall of errors from inside library code|error-walls]].
+
+### A concept is a yes-or-no question about a type
+
+A **concept** is a named [[compile-time predicate|predicate-word]] on types: a question about a type that the compiler answers yes or no.
+
+\`\`\`cpp
+#include <concepts>
+
+template <typename T>
+concept Small = sizeof(T) <= 4;
+\`\`\`
+
+Read it as "a type \`T\` is \`Small\` if a \`T\` takes at most 4 bytes". \`sizeof(T)\` is the size of a \`T\` in bytes. Here \`Small<int>\` is \`true\` and \`Small<double>\` is \`false\`, because a \`double\` takes 8 bytes.
+
+### Ready-made concepts
+
+\`<concepts>\` has many ready-made ones to build on:
+
+- \`std::integral<T>\`: whole-number types, such as \`int\`, \`long long\`, \`char\`, and also \`bool\`;
+- \`std::floating_point<T>\`: \`float\`, \`double\` and \`long double\`;
+- \`std::same_as<T, U>\`: \`T\` and \`U\` are the same type;
+- \`std::convertible_to<From, To>\`: a \`From\` can be turned into a \`To\`;
+- \`std::totally_ordered<T>\`: two \`T\`s can be compared with \`<\`, \`>\`, \`<=\` and \`>=\`.
+
+Concepts combine with \`&&\`, \`||\` and \`!\` ("not"), like any \`bool\`:
+
+\`\`\`cpp
+template <typename T>
+concept WholeNotChar = std::integral<T> && !std::same_as<T, char>;
+\`\`\`
+
+Read it as "an integral type, and not \`char\`". When you mix \`&&\` and \`||\`, add parentheses so the grouping is the one you mean.
+
+### Putting the sign on a template
+
+To constrain a template, write the concept's name where \`typename\` was:
+
+\`\`\`cpp
+template <std::floating_point T>
+T half(T x) { return x / 2; }
+
+half(3.0);   // fine: T is double
+half(3);     // error at the call: int does not satisfy std::floating_point
+\`\`\`
+
+Read \`template <std::floating_point T>\` as "for any type \`T\` that is a floating-point type". The same thing can be written as a **requires clause** after the template head: \`template <typename T> requires std::floating_point<T>\`.
+
+### Requires-expressions: "this must compile"
+
+Many requirements are not "is it a number" but "can I call \`.size()\` on it". A **requires-expression** lists code that must compile:
+
+\`\`\`cpp
+template <typename T>
+concept Resettable = requires(T& thing) {
+    thing.reset();                    // this must compile
+};
+\`\`\`
+
+\`requires(T& thing)\` makes a pretend parameter to write the code with. [[Nothing inside is ever run|never-run]]: the compiler only checks that each line would compile. Each line ending in \`;\` is one requirement.
+
+A requirement can also demand something of the **result**:
+
+\`\`\`cpp
+template <typename T>
+concept Measurable = requires(const T& m) {
+    { m.size() } -> std::convertible_to<std::size_t>;
+};
+\`\`\`
+
+Read \`{ m.size() } -> std::convertible_to<std::size_t>;\` as "\`m.size()\` must compile, **and** what it gives must be convertible to \`std::size_t\`". The arrow \`->\` means "and its result must satisfy". The compiler slots the result's type in as the concept's first argument, so this checks \`std::convertible_to<R, std::size_t>\`, where \`R\` is the type that \`m.size()\` gives.
+
+The pretend parameter is \`const T&\` on purpose. It checks that \`size()\` works on a \`const\` object, which is how your functions will receive it.
+
+### Why concepts earn their place
+
+- **Errors at the call site**, in terms of what the caller did wrong.
+- **Overloading on capabilities.** Two templates with different constraints: the compiler picks the one that fits, and [[the more constrained one when both do|subsumption]].
+- **Documentation that is checked.** \`template <Measurable M>\` says what the function needs, and the compiler enforces it.
+
+Here is overloading on capabilities:
+
+\`\`\`cpp
+template <typename T>
+std::string kind(const T&) { return "something"; }
+
+template <std::integral T>
+std::string kind(const T&) { return "a whole number"; }
+
+kind(2.5);   // "something": only the first fits
+kind(7);     // "a whole number": both fit, the constrained one wins
+\`\`\`
+
+### Testing a concept
+
+A concept is \`true\` or \`false\` while compiling, so you can test it with \`static_assert\` from the class templates lesson:
+
+\`\`\`cpp
+static_assert(Measurable<std::string>);
+static_assert(!Measurable<int>);
+\`\`\`
+
+A requires-expression can also ask "would this call compile?" and give \`true\` or \`false\`, without breaking the build when the answer is no. \`requires { half(n); }\` is \`false\` when \`n\` is an \`int\`. The checks for this lesson use that to prove your templates refuse what they should. They write it inside a small template lambda, \`[]<class T>(T t) { … }\`, a lambda with its own template parameter; you do not need to write one yourself.
+
+**Watch out:** \`std::integral\` includes \`bool\`. So \`std::integral<bool>\` is \`true\`, and a number concept built only from \`std::integral\` accepts \`true\` and \`false\` as numbers. If yours should refuse them, [[say so|numeric-picture]] with \`!std::same_as<T, bool>\`.
+
+More standard concepts live in \`<iterator>\` and \`<ranges>\`, such as \`std::forward_iterator\` and \`std::ranges::range\`. [[They come back later in this course|ranges-later]].
+
+::: context error-walls Why template errors got so long
+Without concepts, the compiler only notices a problem when it fills in the template and some line inside fails. That line may be several templates deep inside the standard library, so the error lists every layer on the way down, often hundreds of lines for one wrong argument. Concepts were first planned for C++11, but were voted out in 2009 as too complicated. A smaller design, nicknamed "Concepts Lite", was published separately in 2015 and became part of C++20.
+:::
+
+::: context predicate-word What "predicate" means
+A **predicate** is a question with a yes-or-no answer. In an earlier course, the lambda you gave \`std::find_if\` was a predicate on values: "is this one over 10?". A concept is a predicate on *types*, and "compile-time" means the compiler answers it while building the program, so it costs nothing when the program runs. A concept can never be \`maybe\`: for each type, it is either satisfied or not.
+:::
+
+::: context never-run Checked, never run
+The code in a requires-expression is in an *unevaluated context*, like the inside of \`sizeof\` or \`decltype\`: the compiler works out whether it is valid, and what type it would give, but never produces instructions for it. So \`requires(T& thing) { thing.reset(); }\` does not need a real object, and does not reset anything. If a line would not compile, the answer is \`false\`; the program itself still builds.
+:::
+
+::: context subsumption How "more constrained" is decided
+The compiler breaks each constraint into its named parts. If one template needs \`std::integral<T> && Small<T>\` and another needs only \`std::integral<T>\`, the first includes everything the second asks, and more, so it **subsumes** it and wins when both fit. An unconstrained template loses to any constrained one. This only works through named concepts: if two templates write the same condition out by hand in two places, the compiler cannot tell they match, and the call is ambiguous.
+:::
+
+::: context numeric-picture Which types count as numbers
+\`std::integral\` and \`std::floating_point\` split the built-in number types between them. A number concept that should refuse \`bool\` takes both boxes and removes \`bool\`. (It keeps \`char\`, which is a small integer type too.)
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="20" font-size="12" fill="#1d6fd1">std::integral&lt;T&gt;</text>
+  <rect x="10" y="28" width="190" height="90" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="12" fill="#1f2a44">
+    <text x="24" y="54">int</text>
+    <text x="24" y="78">long long</text>
+    <text x="24" y="102">unsigned</text>
+    <text x="120" y="54">char</text>
+    <text x="120" y="78">short</text>
+  </g>
+  <text x="120" y="102" font-size="12" fill="#b4232c">bool</text>
+  <line x1="116" y1="98" x2="150" y2="98" stroke="#b4232c" stroke-width="2"/>
+  <text x="215" y="20" font-size="12" fill="#1d6fd1">std::floating_point&lt;T&gt;</text>
+  <rect x="215" y="28" width="135" height="90" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="12" fill="#1f2a44">
+    <text x="229" y="54">float</text>
+    <text x="229" y="78">double</text>
+    <text x="229" y="102">long double</text>
+  </g>
+  <text x="180" y="140" font-size="11" fill="#6c7a93" text-anchor="middle">a number concept: both boxes, minus bool</text>
+</svg>
+\`\`\`
+:::
+
+::: context ranges-later Where concepts come back
+The ranges lesson later in this course is built on them. \`std::ranges::sort\` requires a \`std::ranges::random_access_range\`, so passing a \`std::list\` is refused at the call with a message about that concept, instead of a failure deep inside the sorting code. A container of your own can satisfy these concepts too, once it provides the right members, such as \`begin()\` and \`end()\`.
+:::
+--- task
+Using the starter's \`Square\` and \`Rect\`, write two concepts and two constrained templates. No \`main\`: the checker supplies it.
+
+- \`concept Shape\`: a type \`T\` for which, given a \`const T& s\`, \`s.area()\` gives something convertible to \`double\` and \`s.name()\` gives something convertible to \`std::string\`.
+- \`concept Numeric\`: integral or floating-point types, but **not** \`bool\`.
+- \`template <Shape S> std::string describe(const S& s)\`: the name, then \`": "\`, then the area written by a default \`std::ostringstream\`. So \`Square{2}\` gives \`"square: 4"\`.
+- \`template <Numeric T> double mean(const std::vector<T>& v)\`: the average, as a \`double\`; \`0.0\` for an empty vector.
+
+Because of the concepts, \`describe(5)\` and \`mean\` of a vector of strings or of \`bool\`s must not compile.
+--- starter
+#include <concepts>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+};
+
+struct Rect {
+    double w, h;
+    double area() const { return w * h; }
+    std::string name() const { return "rect"; }
+};
+
+template <typename S>
+std::string describe(const S& s) {
+    return s.name();
+}
+
+template <typename T>
+double mean(const std::vector<T>& v) {
+    return 0.0;
+}
+--- solution
+#include <concepts>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+};
+
+struct Rect {
+    double w, h;
+    double area() const { return w * h; }
+    std::string name() const { return "rect"; }
+};
+
+template <typename T>
+concept Shape = requires(const T& s) {
+    { s.area() } -> std::convertible_to<double>;
+    { s.name() } -> std::convertible_to<std::string>;
+};
+
+template <typename T>
+concept Numeric = (std::integral<T> && !std::same_as<T, bool>) || std::floating_point<T>;
+
+template <Shape S>
+std::string describe(const S& s) {
+    std::ostringstream out;
+    out << s.name() << ": " << s.area();
+    return out.str();
+}
+
+template <Numeric T>
+double mean(const std::vector<T>& v) {
+    if (v.empty()) return 0.0;
+    double total = 0;
+    for (const T& x : v) total += static_cast<double>(x);
+    return total / static_cast<double>(v.size());
+}
+--- hint
+Write the two concepts first. \`Shape\` is a requires-expression with a \`const T&\` pretend parameter and two result requirements. \`Numeric\` combines ready-made concepts, and remembers that \`bool\` is an integral type.
+--- hint
+\`concept Shape = requires(const T& s) { { s.area() } -> std::convertible_to<double>; … };\` and \`Numeric\` is \`(std::integral<T> && !std::same_as<T, bool>)\`, or'd with \`std::floating_point<T>\`.
+--- hint
+Replace \`typename\` with the concept name in each template head: \`template <Shape S>\`, \`template <Numeric T>\`. In \`mean\`, return \`0.0\` if \`v.empty()\`; otherwise add each element into a \`double\` total with \`static_cast<double>\`, and divide by \`static_cast<double>(v.size())\`.
+--- check test | Shape accepts shapes and rejects the rest
+Shape<Square> && Shape<Rect> && !Shape<int> && !Shape<std::string>
+--- check test | An area that is not a number is not a Shape
+[] { struct Liar { std::string area() const { return "big"; } std::string name() const { return "liar"; } }; return !Shape<Liar>; }()
+--- check test | Numeric includes numbers but not bool or strings
+Numeric<int> && Numeric<long long> && Numeric<double> && !Numeric<bool> && !Numeric<std::string>
+--- check test | describe formats a shape
+describe(Square{2}) == "square: 4" && describe(Rect{1.5, 3}) == "rect: 4.5"
+--- check test | describe refuses a non-shape
+![]<class T>(T t) { return requires { describe(t); }; }(5)
+--- check test | mean works for numbers, and empty is 0
+std::abs(mean(std::vector<int>{1, 2}) - 1.5) < 1e-12 && mean(std::vector<double>{}) == 0.0 && std::abs(mean(std::vector<float>{0.5f, 1.5f}) - 1.0) < 1e-6
+--- check test | mean refuses strings and bools
+![]<class V>(V v) { return requires { mean(v); }; }(std::vector<std::string>{}) && ![]<class V>(V v) { return requires { mean(v); }; }(std::vector<bool>{})
+
++++ practice | Anything with an id
+--- task
+Using the starter's \`Badge\` and \`Ticket\`, write a concept and a constrained template. No \`main\`.
+
+- \`concept HasId\`: a type \`T\` for which, given a \`const T& x\`, \`x.id()\` gives something convertible to \`int\`.
+- \`template <HasId T> int max_id(const std::vector<T>& items)\`: the largest id in the vector, or \`-1\` if it is empty. Ids are never negative.
+
+Because of the concept, \`max_id\` of a \`std::vector<int>\` must not compile, and a type whose \`id()\` is not a \`const\` member function is not \`HasId\`.
+--- starter
+#include <concepts>
+#include <string>
+#include <vector>
+
+struct Badge {
+    int number;
+    int id() const { return number; }
+};
+
+struct Ticket {
+    long long code;
+    long long id() const { return code; }
+};
+
+template <typename T>
+concept HasId = true;
+
+template <typename T>
+int max_id(const std::vector<T>& items) {
+    return 0;
+}
+--- solution
+#include <concepts>
+#include <string>
+#include <vector>
+
+struct Badge {
+    int number;
+    int id() const { return number; }
+};
+
+struct Ticket {
+    long long code;
+    long long id() const { return code; }
+};
+
+template <typename T>
+concept HasId = requires(const T& x) {
+    { x.id() } -> std::convertible_to<int>;
+};
+
+template <HasId T>
+int max_id(const std::vector<T>& items) {
+    int best = -1;
+    for (const T& x : items) {
+        int id = static_cast<int>(x.id());
+        if (id > best) best = id;
+    }
+    return best;
+}
+--- hint
+\`HasId\` is a requires-expression with a \`const T&\` pretend parameter and one result requirement: \`{ x.id() } -> std::convertible_to<int>;\`.
+--- hint
+Put the concept's name where \`typename\` was in \`max_id\`'s template head. Start the best id at \`-1\`, so an empty vector gives \`-1\` with no special case.
+--- check test | HasId accepts types with a const id() and nothing else
+HasId<Badge> && HasId<Ticket> && !HasId<int> && !HasId<std::string>
+--- check test | An id() that is not const does not count
+[] { struct Loose { int id() { return 1; } }; return !HasId<Loose>; }()
+--- check test | max_id finds the largest, and -1 for none
+max_id(std::vector<Badge>{{4}, {9}, {2}}) == 9 && max_id(std::vector<Ticket>{{7}}) == 7 && max_id(std::vector<Badge>{}) == -1 && max_id(std::vector<Badge>{{0}}) == 0
+--- check test | max_id refuses a vector of ints
+![]<class V>(V v) { return requires { max_id(v); }; }(std::vector<int>{1, 2})
+
++++ practice | Pick a function by what the type can do
+--- task
+Write a concept and five overloads of one function template, and let the compiler pick among them. No \`main\`.
+
+- \`concept Integer\`: integral types, but not \`bool\`.
+- \`kind_of(const T&)\` returns a \`std::string\`:
+  - \`"integer"\` for an \`Integer\` (so \`char\` counts too);
+  - \`"decimal"\` for a floating-point type;
+  - \`"boolean"\` for \`bool\`;
+  - \`"text"\` for any type convertible to \`std::string\`, such as a \`std::string\` or a string literal;
+  - \`"other"\` for everything else, from an unconstrained template.
+--- starter
+#include <concepts>
+#include <string>
+#include <vector>
+
+template <typename T>
+concept Integer = true;
+
+template <typename T>
+std::string kind_of(const T&) {
+    return "other";
+}
+--- solution
+#include <concepts>
+#include <string>
+#include <vector>
+
+template <typename T>
+concept Integer = std::integral<T> && !std::same_as<T, bool>;
+
+template <typename T>
+std::string kind_of(const T&) {
+    return "other";
+}
+
+template <Integer T>
+std::string kind_of(const T&) {
+    return "integer";
+}
+
+template <std::floating_point T>
+std::string kind_of(const T&) {
+    return "decimal";
+}
+
+template <typename T>
+    requires std::same_as<T, bool>
+std::string kind_of(const T&) {
+    return "boolean";
+}
+
+template <typename T>
+    requires std::convertible_to<T, std::string>
+std::string kind_of(const T&) {
+    return "text";
+}
+--- hint
+Keep the unconstrained template as the fallback, and add one constrained overload per answer. When both an unconstrained and a constrained template fit, the constrained one wins.
+--- hint
+No type should satisfy two of the constrained overloads at once, or the call is ambiguous. That is why \`Integer\` must leave out \`bool\`. The last two can be written with a requires clause: \`template <typename T> requires std::same_as<T, bool>\`, and the same with \`std::convertible_to<T, std::string>\`.
+--- check test | Whole numbers, including char
+kind_of(42) == "integer" && kind_of(7LL) == "integer" && kind_of('c') == "integer" && kind_of(3u) == "integer"
+--- check test | Decimals and booleans
+kind_of(2.5) == "decimal" && kind_of(2.5f) == "decimal" && kind_of(true) == "boolean" && kind_of(false) == "boolean"
+--- check test | Text of both kinds
+kind_of(std::string("s")) == "text" && kind_of("literal") == "text"
+--- check test | Everything else
+kind_of(std::vector<int>{1}) == "other" && Integer<int> && !Integer<bool> && !Integer<double>
+
++++ practice | Sums and clamps that check at the gate
+--- task
+Write a concept and two constrained templates. No \`main\`.
+
+- \`concept Whole\`: integral types, but not \`bool\`.
+- \`sum_whole(xs...)\` returns the total of any number of \`Whole\` arguments as a \`long long\`; \`sum_whole()\` is 0. If **any** argument is not \`Whole\`, the call must not compile. Write the constraint as a requires clause that folds \`&&\` over \`Whole<Ts>\`.
+- \`template <std::totally_ordered T> T clamp_to(const T& x, const T& lo, const T& hi)\` returns \`lo\` if \`x\` is below \`lo\`, \`hi\` if \`x\` is above \`hi\`, and \`x\` otherwise. It works for strings too, and refuses a type that cannot be compared with \`<\`.
+--- starter
+#include <concepts>
+#include <string>
+
+template <typename T>
+concept Whole = true;
+
+template <typename... Ts>
+long long sum_whole(Ts... xs) {
+    return (xs + ... + 0);
+}
+
+template <typename T>
+T clamp_to(const T& x, const T& lo, const T& hi) {
+    if (x < lo) return lo;
+    if (hi < x) return hi;
+    return x;
+}
+--- solution
+#include <concepts>
+#include <string>
+
+template <typename T>
+concept Whole = std::integral<T> && !std::same_as<T, bool>;
+
+template <typename... Ts>
+    requires (Whole<Ts> && ...)
+long long sum_whole(Ts... xs) {
+    return (0LL + ... + xs);
+}
+
+template <std::totally_ordered T>
+T clamp_to(const T& x, const T& lo, const T& hi) {
+    if (x < lo) return lo;
+    if (hi < x) return hi;
+    return x;
+}
+--- hint
+A requires clause can hold any compile-time \`bool\`, and a fold expression over a pack of types is one: \`requires (Whole<Ts> && ...)\`, in its own parentheses, right after the template head.
+--- hint
+Start \`sum_whole\`'s fold from \`0LL\`, so the adding happens in \`long long\` and the empty call gives 0. For \`clamp_to\`, only the template head changes: \`template <std::totally_ordered T>\`.
+--- check test | sum_whole adds whole numbers of any size
+sum_whole(1, 2LL, static_cast<short>(3)) == 6 && sum_whole() == 0 && sum_whole(2000000000, 2000000000) == 4000000000LL
+--- check test | sum_whole refuses a double or a bool anywhere
+![]<class T>(T t) { return requires { sum_whole(1, t); }; }(2.5) && ![]<class T>(T t) { return requires { sum_whole(t, 1); }; }(true) && !Whole<bool> && Whole<char>
+--- check test | clamp_to on numbers and strings
+clamp_to(15, 0, 10) == 10 && clamp_to(-3, 0, 10) == 0 && clamp_to(4, 0, 10) == 4 && clamp_to(std::string("m"), std::string("a"), std::string("k")) == "k"
+--- check test | clamp_to refuses a type with no <
+[] { struct Pt { int x; }; return ![]<class T>(T t) { return requires { clamp_to(t, t, t); }; }(Pt{1}); }()
+
++++ practice | The second largest, whatever the input
+--- task
+Write \`template <std::totally_ordered T> std::optional<T> second_largest(const std::vector<T>& v)\`. No \`main\`.
+
+It returns the second largest **distinct** value in \`v\`: the largest value that is smaller than the maximum. Duplicates of the maximum do not count, so \`{5, 5, 4}\` gives 4. If there is no such value (an empty vector, one element, or all elements equal), it returns \`std::nullopt\`. It must work for any type that \`std::totally_ordered\` accepts, strings included, and refuse any other type. Go through \`v\` once; do not sort.
+--- starter
+#include <algorithm>
+#include <concepts>
+#include <optional>
+#include <string>
+#include <vector>
+
+template <typename T>
+std::optional<T> second_largest(const std::vector<T>& v) {
+    if (v.size() < 2) return std::nullopt;
+    std::vector<T> sorted = v;
+    std::sort(sorted.begin(), sorted.end());
+    return sorted[sorted.size() - 2];
+}
+--- solution
+#include <algorithm>
+#include <concepts>
+#include <optional>
+#include <string>
+#include <vector>
+
+template <std::totally_ordered T>
+std::optional<T> second_largest(const std::vector<T>& v) {
+    std::optional<T> first;
+    std::optional<T> second;
+    for (const T& x : v) {
+        if (!first || *first < x) {
+            second = first;
+            first = x;
+        } else if (x < *first && (!second || *second < x)) {
+            second = x;
+        }
+    }
+    return second;
+}
+--- hint
+Keep two \`std::optional<T>\`s as you walk: the largest so far and the second largest so far. Each starts empty, which also covers the empty vector.
+--- hint
+A new maximum pushes the old maximum down into second place. A value equal to the maximum changes nothing. A value below the maximum replaces the second place only if it beats it (or second place is still empty).
+--- check test | Typical input
+second_largest(std::vector<int>{3, 1, 4, 1, 5}) == 4 && second_largest(std::vector<int>{-2, -9}) == -9
+--- check test | Duplicates of the maximum do not count
+second_largest(std::vector<int>{5, 5, 4}) == 4 && second_largest(std::vector<int>{4, 5, 5}) == 4 && second_largest(std::vector<int>{1, 2, 2}) == 1
+--- check test | Nothing to report
+second_largest(std::vector<int>{}) == std::nullopt && second_largest(std::vector<int>{7}) == std::nullopt && second_largest(std::vector<int>{5, 5, 5}) == std::nullopt
+--- check test | Strings
+second_largest(std::vector<std::string>{"b", "a", "c", "c"}) == std::string("b")
+--- check test | Refuses a type with no <
+[] { struct Pt { int x; }; return ![]<class V>(V v) { return requires { second_largest(v); }; }(std::vector<Pt>{}); }()
+
++++ practice | Debug: two concepts that let the wrong types in
+--- task
+**Bug report:** "\`Measurable<Gadget>\` says yes, but calling \`total_size\` on a vector of \`Gadget\`s fails to compile, with an error deep inside \`total_size\`. And \`triple(true)\` compiles, although \`Scalar\` is meant to refuse \`bool\`."
+
+Each concept has a one-line mistake. Fix the two concepts, so that the wrong types are stopped at the gate; leave \`total_size\` and \`triple\` as they are. No \`main\`.
+
+- \`Measurable\`: \`size()\` can be called on a **\`const\`** object and gives something convertible to \`std::size_t\`.
+- \`Scalar\`: integral or floating-point, but never \`bool\`.
+--- starter
+#include <concepts>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+struct Gadget {
+    std::size_t size() { return 3; }
+};
+
+template <typename T>
+concept Measurable = requires(T& m) {
+    { m.size() } -> std::convertible_to<std::size_t>;
+};
+
+template <Measurable M>
+std::size_t total_size(const std::vector<M>& items) {
+    std::size_t total = 0;
+    for (const M& x : items) total += x.size();
+    return total;
+}
+
+template <typename T>
+concept Scalar = std::integral<T> || std::floating_point<T> && !std::same_as<T, bool>;
+
+template <Scalar T>
+T triple(T x) {
+    return x * 3;
+}
+--- solution
+#include <concepts>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+struct Gadget {
+    std::size_t size() { return 3; }
+};
+
+template <typename T>
+concept Measurable = requires(const T& m) {
+    { m.size() } -> std::convertible_to<std::size_t>;
+};
+
+template <Measurable M>
+std::size_t total_size(const std::vector<M>& items) {
+    std::size_t total = 0;
+    for (const M& x : items) total += x.size();
+    return total;
+}
+
+template <typename T>
+concept Scalar = (std::integral<T> && !std::same_as<T, bool>) || std::floating_point<T>;
+
+template <Scalar T>
+T triple(T x) {
+    return x * 3;
+}
+--- hint
+\`Gadget::size()\` is not a \`const\` member function. Which object does \`Measurable\`'s pretend parameter test, and which one does \`total_size\` really call \`size()\` on?
+--- hint
+\`&&\` binds more tightly than \`||\`, so the starter's \`Scalar\` reads "integral, **or** (floating-point and not \`bool\`)". Add parentheses so the "not \`bool\`" applies to the integral part.
+--- check test | Measurable refuses Gadget and accepts real containers
+!Measurable<Gadget> && Measurable<std::string> && Measurable<std::vector<int>>
+--- check test | total_size works, and refuses Gadgets at the call
+total_size(std::vector<std::string>{"ab", "cde"}) == 5 && ![]<class V>(V v) { return requires { total_size(v); }; }(std::vector<Gadget>{})
+--- check test | Scalar refuses bool and keeps the numbers
+!Scalar<bool> && Scalar<int> && Scalar<char> && Scalar<double> && !Scalar<std::string>
+--- check test | triple works on numbers and refuses bool
+triple(4) == 12 && triple(2.5) == 7.5 && ![]<class T>(T t) { return requires { triple(t); }; }(true)
+
++++ practice | Stretch: sensors, and the calibrated ones
+--- task
+Some sensors on a bus report a raw value; calibrated ones also know an offset to subtract. Using the starter's \`Thermo\` and \`Gauge\`, write two concepts, two overloads and a report. No \`main\`.
+
+- \`concept Sensor\`: given a \`const T& s\`, \`s.read()\` gives something convertible to \`double\` and \`s.name()\` something convertible to \`std::string\`.
+- \`concept Calibrated\`: a \`Sensor\` that also has \`s.offset()\` convertible to \`double\`.
+- \`double reading(const S& s)\`: for a \`Sensor\`, \`s.read()\`; for a \`Calibrated\` sensor, \`s.read() - s.offset()\`. A \`Gauge\` satisfies both concepts, so write \`Calibrated\` in a way that makes the compiler pick the calibrated overload instead of calling the call ambiguous.
+- \`report(sensors...)\` returns \`<name>=<reading>\` for each sensor, joined with \`"; "\`, each reading written with \`<<\`. \`report(Thermo{20}, Gauge{5, 2})\` is \`"thermo=20; gauge=3"\`, and \`report()\` is \`""\`. It refuses any argument that is not a \`Sensor\`.
+--- starter
+#include <concepts>
+#include <sstream>
+#include <string>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string name() const { return "thermo"; }
+};
+
+struct Gauge {
+    double raw;
+    double off;
+    double read() const { return raw; }
+    double offset() const { return off; }
+    std::string name() const { return "gauge"; }
+};
+
+template <typename T>
+concept Sensor = true;
+
+template <typename T>
+concept Calibrated = true;
+
+template <typename S>
+double reading(const S& s) {
+    return s.read();
+}
+
+template <typename... Ss>
+std::string report(const Ss&... sensors) {
+    return "";
+}
+--- solution
+#include <concepts>
+#include <sstream>
+#include <string>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string name() const { return "thermo"; }
+};
+
+struct Gauge {
+    double raw;
+    double off;
+    double read() const { return raw; }
+    double offset() const { return off; }
+    std::string name() const { return "gauge"; }
+};
+
+template <typename T>
+concept Sensor = requires(const T& s) {
+    { s.read() } -> std::convertible_to<double>;
+    { s.name() } -> std::convertible_to<std::string>;
+};
+
+template <typename T>
+concept Calibrated = Sensor<T> && requires(const T& s) {
+    { s.offset() } -> std::convertible_to<double>;
+};
+
+template <Sensor S>
+double reading(const S& s) {
+    return s.read();
+}
+
+template <Calibrated S>
+double reading(const S& s) {
+    return s.read() - s.offset();
+}
+
+template <typename... Ss>
+    requires (Sensor<Ss> && ...)
+std::string report(const Ss&... sensors) {
+    std::ostringstream out;
+    bool first = true;
+    ((out << (first ? "" : "; ") << sensors.name() << '=' << reading(sensors), first = false), ...);
+    return out.str();
+}
+--- hint
+For the compiler to see that \`Calibrated\` is more constrained than \`Sensor\`, \`Calibrated\` must be built from the named concept: \`Sensor<T> && requires(const T& s) { … }\`. Writing the \`read\` and \`name\` requirements out a second time makes the two look unrelated, and the call becomes ambiguous.
+--- hint
+\`report\` is a comma fold with a \`first\` flag for the separator, like joining with a separator in the variadic lesson. Its requires clause folds \`&&\` over \`Sensor<Ss>\`.
+--- check test | The concepts sort the types
+Sensor<Thermo> && Sensor<Gauge> && Calibrated<Gauge> && !Calibrated<Thermo> && !Sensor<int>
+--- check test | reading picks the calibrated overload when it can
+reading(Gauge{10, 1.5}) == 8.5 && reading(Thermo{21.5}) == 21.5
+--- check case | A report of two sensors
+report(Thermo{20}, Gauge{5, 2})
+=> "thermo=20; gauge=3"
+--- check test | A report of one, and of none
+report(Gauge{1.5, 0.25}) == "gauge=1.25" && report() == ""
+--- check test | report refuses something that is not a sensor
+![]<class T>(T t) { return requires { report(Thermo{1}, t); }; }(5)
+
+=== cpp4-05 | Compile-time computation
+--- teach
+Last lesson, concepts let the compiler check what a *type* can do before your template ever runs. This lesson puts the compiler to work on *values*. In the advanced course you met \`constexpr\`: a function the compiler can run for you while it builds the program. Now you will use it to build whole tables, to let a template number decide how big a table is, and to read text, all before the program exists.
+
+### A table printed before the book
+
+Think of the times table printed inside the cover of an old exercise book. Somebody worked out every answer once, before printing. Every reader after that gets the answer for free.
+
+Programs can do the same. Anything a program works out from fixed data can be worked out **by the compiler** instead, and baked into the program as a constant. Lookup tables, lists of primes, text written into the code: the work happens once, at build time, and never again. A table made this way is called a **[[lookup table|lookup-tables]]**: a list of ready answers you read by position instead of calculating.
+
+### Three tools that work at compile time
+
+In C++20, all of these can be used inside a \`constexpr\` function:
+
+- **\`std::array\`** (from \`<array>\`), the fixed-size array you met in the advanced course. Its \`operator[]\` (reading and writing by position) and its \`==\` (comparing two arrays) both work at compile time.
+- **\`std::string_view\`** (from \`<string_view>\`): a read-only view of some text. With it, a \`constexpr\` function can look at the letters of a string literal like \`"ff"\`. More on it below.
+- **Loops, local variables and \`if\`**, the same as in any function.
+
+### Building a table
+
+Here is a function that fills a table of square numbers:
+
+\`\`\`cpp
+constexpr std::array<int, 10> squares() {
+    std::array<int, 10> out{};                 // 10 ints, all 0
+    for (int i = 0; i < 10; ++i) out[i] = i * i;
+    return out;
+}
+
+inline constexpr auto kSquares = squares();   // a table built by the compiler
+static_assert(kSquares[9] == 81);
+\`\`\`
+
+Line by line:
+
+- \`std::array<int, 10> out{};\` makes ten \`int\`s. The \`{}\` at the end sets every one to 0.
+- The loop writes \`i * i\` into position \`i\`, the same as it would at run time.
+- \`inline constexpr auto kSquares = squares();\` stores the result in a \`constexpr\` variable, so the compiler must run \`squares()\` itself. The word **[[inline|inline-variable]]** in front of a variable means "one shared copy for the whole program, even if this line sits in a header that many files include". The \`k\` at the start of the name is a common habit for constants.
+- \`static_assert(kSquares[9] == 81);\` checks the table while compiling.
+
+### A table that builds on itself
+
+A table entry may use entries that are already filled in. Here each entry is the one before it plus its own position, which gives 0, 1, 3, 6, 10, … (the triangle numbers):
+
+\`\`\`cpp
+constexpr std::array<int, 8> triangles() {
+    std::array<int, 8> t{};                    // t[0] stays 0
+    for (int i = 1; i < 8; ++i) t[i] = t[i - 1] + i;
+    return t;
+}
+\`\`\`
+
+The loop starts at 1, because entry 0 has nothing before it. It is already 0, thanks to the \`{}\`.
+
+### Letting the size be an input
+
+In the class templates lesson, \`template <typename T, std::size_t N>\` let a whole number \`N\` be part of a type. A function template can take a number like that too. Then the caller chooses the **size** of the result, and it is known while compiling:
+
+\`\`\`cpp
+template <std::size_t N>
+constexpr std::array<int, N> countdown() {
+    std::array<int, N> out{};
+    for (std::size_t i = 0; i < N; ++i) out[i] = static_cast<int>(N - i);
+    return out;
+}
+
+static_assert(countdown<3>() == std::array<int, 3>{3, 2, 1});
+\`\`\`
+
+\`countdown<3>()\` is read "countdown of 3". The number goes inside the angle brackets \`< >\`, because it is a template input, not a normal argument in the round brackets. The last line also shows \`==\` comparing two whole arrays at compile time.
+
+### Filling an array until you have enough
+
+Sometimes you do not know how many tries it takes to find \`N\` answers. Then you keep a count of how many you have found, and loop until the count reaches \`N\`:
+
+\`\`\`cpp
+std::array<int, 4> odds{};
+std::size_t found = 0;
+for (int n = 1; found < 4; ++n) {
+    if (n % 2 == 1) odds[found++] = n;         // store, then move to the next slot
+}
+// odds is {1, 3, 5, 7}
+\`\`\`
+
+\`odds[found++] = n\` does two things. It stores \`n\` in slot \`found\`, and *then* adds 1 to \`found\`. That is what the \`++\` written *after* a name means: use the old value first, then step it on.
+
+To find primes this way, you need a test for "is this candidate prime?". A number is prime when no smaller prime divides it evenly. You only have to try the primes you have found so far, and only while the prime times itself is not bigger than the candidate: that is, up to the candidate's [[square root|square-root-stop]].
+
+### Bits, and the operators that work on them
+
+Inside the computer, every whole number is stored in **binary**: base 2, a row of **bits**, where each bit is a 0 or a 1. Going from the right, the places are worth 1, 2, 4, 8, 16, and so on, each twice the last.
+
+So 22 is \`10110\` in [[binary|binary-places]]: 16 + 4 + 2. In C++ you can write it as \`0b10110\`. The \`0b\` at the front means "the digits after this are binary".
+
+Code that builds tables often uses the **bit operators**. One at a time:
+
+- \`i >> 1\`, read "i shifted right by one", slides every bit one place right, and the last bit falls off. For a number that is not negative, that is the same as \`i / 2\`. So \`22 >> 1\` is \`0b1011\`, which is 11.
+- \`i & 1\`, read "i and one", keeps only the lowest bit. It is 1 when \`i\` is odd and 0 when \`i\` is even. So \`22 & 1\` is 0 and \`11 & 1\` is 1.
+- \`|\` is **bitwise or**: a bit is 1 if it is 1 in either number. \`0b1100 | 0b1010\` is \`0b1110\`.
+- \`^\` is **exclusive or**: a bit is 1 if it is 1 in exactly one of them. \`0b1100 ^ 0b1010\` is \`0b0110\`.
+- \`<<\` is **shift left**: \`1 << 3\` slides the 1 three places left, giving \`0b1000\`, which is 8.
+
+The number of 1 bits in a number is called its **[[popcount|popcount-word]]**, short for "population count". The popcount of 22 (\`10110\`) is 3.
+
+### Reading text at compile time
+
+A \`std::string_view\` is a **[[window onto some text|string-view-window]]**: it remembers where the letters start and how many there are, but it does not own or copy them. Because it only looks, it works at compile time, even on a string literal:
+
+\`\`\`cpp
+constexpr int count_vowels(std::string_view s) {
+    int n = 0;
+    for (char c : s)
+        if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') ++n;
+    return n;
+}
+
+static_assert(count_vowels("telemetry") == 3);
+\`\`\`
+
+It has the parts of a string you know: \`s.size()\`, \`s.empty()\`, \`s[i]\`, and range-for over its characters. A \`std::string\` also turns into a \`std::string_view\` by itself, so the same function takes either.
+
+### Hexadecimal: base 16
+
+You saw in the pointers lesson that addresses print in **hexadecimal**, base 16. Base 16 needs sixteen digits, so after 0 to 9 it uses letters: \`a\` is 10, \`b\` is 11, and so on up to \`f\`, which is 15. Capitals \`A\` to \`F\` mean the same.
+
+You read a hex number left to right, the way the intermediate course read decimal digits with \`value = value * 10 + digit\`. The only change is 16 instead of 10:
+
+- \`"2c"\`: start at 0. Digit \`2\`: 0 × 16 + 2 = 2. Digit \`c\` (12): 2 × 16 + 12 = 44.
+- \`"ff"\`: 15, then 15 × 16 + 15 = 255.
+
+To turn a digit character into its value, you subtract the first character of its group. \`'7' - '0'\` is 7, as before. For letters, \`'c' - 'a'\` is 2, and adding 10 gives 12. That works because [[the letters a to f are stored in order|letter-codes]].
+
+### When does the compiler really do it?
+
+A \`constexpr\` function only *may* run at compile time. These places *force* it to:
+
+- a \`constexpr\` variable;
+- the size of an array, such as \`std::array<char, count_vowels("aeiou")>\`;
+- a template argument;
+- a \`static_assert\`.
+
+Anywhere else, the compiler may run it at compile time or at run time. That is its choice.
+
+### Mistakes become compile errors
+
+During compile-time evaluation, **undefined behavior is rejected**. Overflow, reading past the end of an array, or reading a value that was never set: each one is a compile error instead of silent garbage. That is a free safety check for your compile-time code.
+
+So keep inputs inside safe limits. A hex number with 8 digits can be as big as \`ffffffff\`, which is 4,294,967,295. The biggest \`int\` is 2,147,483,647, so it would overflow. With at most 7 digits the biggest is \`fffffff\`, which is 268,435,455: always safe. That is why the task caps the length at 7.
+
+Compilers also limit how much work one constant evaluation may do. Prefer loops to deep recursion, and do not ask for a million primes at compile time.
+
+### Two more keywords
+
+- **\`consteval\`** insists on compile time: calling it with a run-time value is an error. You met it in the advanced course.
+- **\`constinit\`**, put on a global variable, guarantees it is [[set up at compile time|constinit-order]], without making it \`const\`. The program may still change it later.
+
+**Watch out:** forgetting the \`{}\` on a local array. \`std::array<int, 8> t;\` leaves the numbers unset. At run time you would read garbage. In a constant evaluation, reading an unset entry (such as an entry 0 you never wrote) is a compile error, often with a long message about "uninitialized". Write \`std::array<int, 8> t{};\` and every entry starts at 0.
+
+::: context lookup-tables Tables in real code
+Lookup tables trade memory for speed: work an answer out once, store it, and read it by position forever after. Real programs are full of them. Checksum code, which spots damaged data in files and radio messages, often uses a 256-entry table so each byte takes one lookup. Game engines and small flight computers have used tables of sine values instead of calculating sines. When the compiler builds the table, it costs nothing at start-up and can sit in read-only memory, where a stray write cannot change it.
+:::
+
+::: context inline-variable One copy for the whole program
+A big program is compiled one \`.cpp\` file at a time, and headers are pasted into every file that includes them. If a header defined an ordinary global variable, each file would get its own definition, and the linker (the tool that joins the files together) would complain that the name is defined many times. Since C++17, \`inline\` on a variable tells it: "these are all the same variable, keep one". \`constexpr\` variables at namespace scope are const, and so are private to each file anyway, but writing \`inline constexpr\` makes sure there is only one table, not a copy per file.
+:::
+
+::: context square-root-stop Why the square root is enough
+If a number has a divisor bigger than its square root, it must also have one smaller than the square root, because the two multiply to give the number. Take 91 = 7 × 13. Its square root is about 9.5. You find the 7 before you ever reach 13. So if nothing up to the square root divides a candidate, nothing above it will either, and the candidate is prime. Writing \`p * p <= candidate\` checks this without calculating a square root at all. For the 1000th prime, 7919, that means trying only the primes up to 88, which is 23 of them.
+:::
+
+::: context binary-places Reading a binary number
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="20" y="30" font-size="12" fill="#6c7a93">place</text>
+  <text x="115" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">16</text>
+  <text x="165" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">8</text>
+  <text x="215" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">4</text>
+  <text x="265" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">2</text>
+  <text x="315" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">1</text>
+  <text x="20" y="62" font-size="12" fill="#1f2a44">22</text>
+  <rect x="95" y="42" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="145" y="42" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <rect x="195" y="42" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="245" y="42" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="295" y="42" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <text x="115" y="62" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="165" y="62" font-size="14" text-anchor="middle" fill="#1f2a44">0</text>
+  <text x="215" y="62" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="265" y="62" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="315" y="62" font-size="14" text-anchor="middle" fill="#1f2a44">0</text>
+  <text x="20" y="112" font-size="12" fill="#1f2a44">22 &gt;&gt; 1</text>
+  <rect x="145" y="92" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="195" y="92" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <rect x="245" y="92" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="295" y="92" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="165" y="112" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="215" y="112" font-size="14" text-anchor="middle" fill="#1f2a44">0</text>
+  <text x="265" y="112" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="315" y="112" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="355" y="87" font-size="11" text-anchor="end" fill="#b4232c">the last 0 falls off</text>
+  <text x="20" y="148" font-size="12" fill="#1d6fd1">16 + 4 + 2 = 22</text>
+  <text x="200" y="148" font-size="12" fill="#1d6fd1">8 + 2 + 1 = 11</text>
+</svg>
+\`\`\`
+
+Each box is one bit, and the blue boxes are the 1s. Add the place values of the 1s to get the number. Shifting right by one moves every bit to the next place down, so each is worth half as much, and the rightmost bit is dropped. That is why \`>> 1\` halves a number and rounds down.
+:::
+
+::: context popcount-word A count with its own machine instruction
+Counting 1 bits is so useful that most processors have a single instruction for it (on x86 it is called POPCNT), and C++20 added \`std::popcount\` in the header \`<bit>\`. It turns up in error-correcting codes, where the number of bits that differ between two messages tells you how damaged one is; in chess engines, which store a board as 64 bits; and in compression. A 256-entry table covers every possible byte, so a bigger number can be counted one byte at a time with a few lookups.
+:::
+
+::: context string-view-window A window, not a copy
+A \`std::string_view\` holds two things: a pointer to the first character and a length. Making one copies no letters, which is why it is cheap and why it works at compile time. The catch is that it does not keep the text alive. If you make a view of a \`std::string\` that is then destroyed, the view points at memory that is gone, and reading it is undefined behavior. String literals like \`"ff"\` live for the whole program, so views of them are always safe. A good rule: use \`std::string_view\` for parameters you only read, and do not store one that outlives its text.
+:::
+
+::: context letter-codes Why subtracting 'a' works
+The C++ standard promises that the digit characters \`'0'\` to \`'9'\` are stored as numbers in order, one after another. It makes no such promise for letters. In practice, though, every computer you will meet uses ASCII (or Unicode, which starts with ASCII) for these characters, and there \`'a'\` to \`'f'\` are 97 to 102 and \`'A'\` to \`'F'\` are 65 to 70, each run in order. So \`c - 'a' + 10\` gives 10 to 15. Code meant for very unusual machines would use a lookup instead, but on every real system this app targets the subtraction is correct.
+:::
+
+::: context constinit-order Globals that are ready before main
+A global variable that needs code to set it up is set up at run time, before \`main\`, in an order that is not guaranteed between different files. If one global's set-up reads another global from a different file, it may read it before it is ready. Programmers call this the "static initialization order fiasco". \`constinit\` rules it out: if the value cannot be worked out at compile time, the build fails. Flight and embedded software like this, because nothing is left to chance when the computer powers on.
+:::
+--- task
+Write these three, all usable at compile time. There is no \`main\`. The starter has the headers and the empty shapes.
+
+- \`constexpr std::array<int, 256> make_popcounts()\` — a table where entry \`i\` is the popcount of \`i\`: the number of 1 bits in \`i\`. Keep the starter's line \`inline constexpr std::array<int, 256> kPopcount = make_popcounts();\` under it.
+- \`template <std::size_t N> constexpr std::array<int, N> first_primes()\` — the first \`N\` primes, in order (\`first_primes<5>()\` is \`{2, 3, 5, 7, 11}\`).
+- \`constexpr int parse_hex(std::string_view s)\` — the value of 1 to 7 hex digits (\`0\`–\`9\`, \`a\`–\`f\`, \`A\`–\`F\`), so \`"ff"\` gives 255 and \`"1A"\` gives 26. Return \`-1\` if \`s\` is empty, longer than 7 characters, or has any other character (so \`"0x1"\` gives \`-1\`).
+--- starter
+#include <array>
+#include <cstddef>
+#include <string_view>
+
+constexpr std::array<int, 256> make_popcounts() {
+    return {};
+}
+
+inline constexpr std::array<int, 256> kPopcount = make_popcounts();
+
+template <std::size_t N>
+constexpr std::array<int, N> first_primes() {
+    return {};
+}
+
+constexpr int parse_hex(std::string_view s) {
+    return -1;
+}
+--- solution
+#include <array>
+#include <cstddef>
+#include <string_view>
+
+constexpr std::array<int, 256> make_popcounts() {
+    std::array<int, 256> table{};
+    for (int i = 1; i < 256; ++i) table[i] = table[i >> 1] + (i & 1);
+    return table;
+}
+
+inline constexpr std::array<int, 256> kPopcount = make_popcounts();
+
+template <std::size_t N>
+constexpr std::array<int, N> first_primes() {
+    std::array<int, N> primes{};
+    std::size_t found = 0;
+    for (int candidate = 2; found < N; ++candidate) {
+        bool prime = true;
+        for (std::size_t k = 0; k < found && primes[k] * primes[k] <= candidate; ++k) {
+            if (candidate % primes[k] == 0) {
+                prime = false;
+                break;
+            }
+        }
+        if (prime) primes[found++] = candidate;
+    }
+    return primes;
+}
+
+constexpr int parse_hex(std::string_view s) {
+    if (s.empty() || s.size() > 7) return -1;
+    int value = 0;
+    for (char c : s) {
+        int digit;
+        if (c >= '0' && c <= '9') digit = c - '0';
+        else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+        else return -1;
+        value = value * 16 + digit;
+    }
+    return value;
+}
+--- hint
+Each function is a table-filling loop like the ones in the explanation. For the popcounts, make the table build on itself: how is the popcount of \`i\` related to the popcount of \`i >> 1\`, which is \`i\` with its last bit dropped?
+--- hint
+Popcount: \`table[i]\` is \`table[i >> 1]\` plus \`(i & 1)\`, for \`i\` from 1 up (entry 0 stays 0). Primes: keep a \`found\` count, try candidates from 2 upward until \`found\` reaches \`N\`, and test each one only against \`primes[0]\` to \`primes[found - 1]\` while \`primes[k] * primes[k] <= candidate\`.
+--- hint
+\`parse_hex\`: first return -1 if \`s.empty() || s.size() > 7\`. Then for each character, work out its digit (\`c - '0'\`, or \`c - 'a' + 10\`, or \`c - 'A' + 10\`, or return -1 for anything else) and update \`value = value * 16 + digit\`.
+--- check test | The popcount table is built by the compiler
+[] { static_assert(kPopcount[0] == 0 && kPopcount[1] == 1 && kPopcount[255] == 8 && kPopcount[0b10110] == 3); return kPopcount[128] == 1; }()
+--- check test | first_primes at compile time, including the 1000th
+[] { static_assert(first_primes<5>() == std::array<int, 5>{2, 3, 5, 7, 11}); constexpr auto p = first_primes<1000>(); return p[999] == 7919 && first_primes<1>()[0] == 2; }()
+--- check test | parse_hex in static_assert and as an array size
+[] { static_assert(parse_hex("ff") == 255 && parse_hex("1A") == 26 && parse_hex("0") == 0 && parse_hex("fffffff") == 268435455); std::array<char, parse_hex("10")> a{}; return a.size() == 16; }()
+--- check test | parse_hex rejects bad input
+[] { static_assert(parse_hex("") == -1 && parse_hex("g1") == -1 && parse_hex("12345678") == -1 && parse_hex("0x1") == -1); return parse_hex(std::string("7f")) == 127; }()
+
++++ practice | Factorials and digits, before the program runs
+--- task
+Write these two, both usable at compile time. No \`main\`.
+
+- \`constexpr std::array<long long, 21> make_factorials()\`: entry \`i\` is \`i!\` ("i factorial"), the product \`1 × 2 × … × i\`, with \`0!\` being 1. So entry 5 is 120 and entry 20 is 2,432,902,008,176,640,000, which still fits in a \`long long\`. Keep the starter's line \`inline constexpr std::array<long long, 21> kFactorial = make_factorials();\` under it.
+- \`constexpr int count_digits(std::string_view s)\`: how many characters of \`s\` are the digits \`0\` to \`9\`. \`count_digits("a1b22")\` is 3.
+--- starter
+#include <array>
+#include <string_view>
+
+constexpr std::array<long long, 21> make_factorials() {
+    return {};
+}
+
+inline constexpr std::array<long long, 21> kFactorial = make_factorials();
+
+constexpr int count_digits(std::string_view s) {
+    return 0;
+}
+--- solution
+#include <array>
+#include <string_view>
+
+constexpr std::array<long long, 21> make_factorials() {
+    std::array<long long, 21> f{};
+    f[0] = 1;
+    for (int i = 1; i < 21; ++i) f[i] = f[i - 1] * i;
+    return f;
+}
+
+inline constexpr std::array<long long, 21> kFactorial = make_factorials();
+
+constexpr int count_digits(std::string_view s) {
+    int n = 0;
+    for (char c : s)
+        if (c >= '0' && c <= '9') ++n;
+    return n;
+}
+--- hint
+The factorial table builds on itself, like the triangle numbers: each entry is the one before it times its own position. Entry 0 has nothing before it, so set it to 1 yourself.
+--- hint
+\`count_digits\` walks the characters of the view with a range-for and counts those between \`'0'\` and \`'9'\`.
+--- check test | The factorial table is built by the compiler
+[] { static_assert(kFactorial[0] == 1 && kFactorial[1] == 1 && kFactorial[5] == 120); return kFactorial[20] == 2432902008176640000LL && kFactorial[10] == 3628800; }()
+--- check test | count_digits in a static_assert and as an array size
+[] { static_assert(count_digits("a1b22") == 3); std::array<int, count_digits("x9y9")> a{}; return a.size() == 2; }()
+--- check test | count_digits with none, and on a std::string
+count_digits("") == 0 && count_digits("orbit") == 0 && count_digits(std::string("2026-09-29")) == 8
+
++++ practice | Binary in, Gray codes out
+--- task
+Write these two, both usable at compile time. No \`main\`.
+
+- \`constexpr int from_binary(std::string_view s)\`: the value of a binary number written with \`0\`s and \`1\`s, read left to right: \`"10110"\` gives 22. Return \`-1\` if \`s\` is empty, longer than 30 characters, or has any other character.
+- \`constexpr std::array<int, 16> make_gray()\`: entry \`i\` is the Gray code of \`i\`, which is \`i ^ (i >> 1)\` ("i exclusive-or i shifted right by one"). The table starts 0, 1, 3, 2, and each entry differs from the one before it in exactly one bit.
+--- starter
+#include <array>
+#include <string_view>
+
+constexpr int from_binary(std::string_view s) {
+    return -1;
+}
+
+constexpr std::array<int, 16> make_gray() {
+    return {};
+}
+--- solution
+#include <array>
+#include <string_view>
+
+constexpr int from_binary(std::string_view s) {
+    if (s.empty() || s.size() > 30) return -1;
+    int value = 0;
+    for (char c : s) {
+        if (c != '0' && c != '1') return -1;
+        value = value * 2 + (c - '0');
+    }
+    return value;
+}
+
+constexpr std::array<int, 16> make_gray() {
+    std::array<int, 16> g{};
+    for (int i = 0; i < 16; ++i) g[i] = i ^ (i >> 1);
+    return g;
+}
+--- hint
+Reading binary is reading hex with 2 in place of 16: \`value = value * 2 + digit\`. The 30-character limit keeps the value inside an \`int\`.
+--- hint
+\`make_gray\` is a table-filling loop; each entry is worked out from its own position alone.
+--- check test | from_binary at compile time
+[] { static_assert(from_binary("10110") == 22 && from_binary("0") == 0 && from_binary("1") == 1); return from_binary("11111111") == 255; }()
+--- check test | from_binary rejects bad input, and allows exactly 30 digits
+from_binary("") == -1 && from_binary("102") == -1 && from_binary("0b1") == -1 && from_binary(std::string(31, '1')) == -1 && from_binary(std::string(30, '1')) == 1073741823
+--- check test | The Gray table
+[] { constexpr auto g = make_gray(); static_assert(g[0] == 0 && g[1] == 1 && g[2] == 3 && g[3] == 2); for (int i = 1; i < 16; ++i) { int d = g[i] ^ g[i - 1]; if (d == 0 || (d & (d - 1)) != 0) return false; } return g[15] == 8; }()
+
++++ practice | Sorted by the compiler
+--- task
+Write two function templates, both usable at compile time. No \`main\`.
+
+- \`sorted_array(xs...)\` takes any number of \`int\` arguments and returns a \`std::array<int, N>\` holding them in ascending order, where \`N\` is how many arguments there were. \`sorted_array(3, 1, 2)\` is \`{1, 2, 3}\`, and \`sorted_array()\` is an empty array. It must refuse any argument that is not an \`int\` (use a requires clause that folds \`&&\` over \`std::same_as<Ts, int>\`).
+- \`template <std::size_t N> constexpr bool is_ascending(const std::array<int, N>& a)\`: \`true\` if no entry is smaller than the one before it.
+
+Sort with a loop you write yourself: for example, for each position from the second on, slide its value left past every larger value.
+--- starter
+#include <array>
+#include <concepts>
+#include <cstddef>
+
+template <typename... Ts>
+constexpr std::array<int, sizeof...(Ts)> sorted_array(Ts... xs) {
+    return {xs...};
+}
+
+template <std::size_t N>
+constexpr bool is_ascending(const std::array<int, N>& a) {
+    return true;
+}
+--- solution
+#include <array>
+#include <concepts>
+#include <cstddef>
+
+template <typename... Ts>
+    requires (std::same_as<Ts, int> && ...)
+constexpr std::array<int, sizeof...(Ts)> sorted_array(Ts... xs) {
+    std::array<int, sizeof...(Ts)> a{xs...};
+    for (std::size_t i = 1; i < a.size(); ++i) {
+        int x = a[i];
+        std::size_t j = i;
+        while (j > 0 && a[j - 1] > x) {
+            a[j] = a[j - 1];
+            --j;
+        }
+        a[j] = x;
+    }
+    return a;
+}
+
+template <std::size_t N>
+constexpr bool is_ascending(const std::array<int, N>& a) {
+    for (std::size_t i = 1; i < N; ++i)
+        if (a[i] < a[i - 1]) return false;
+    return true;
+}
+--- hint
+Expanding the pack inside braces fills the array: \`std::array<int, sizeof...(Ts)> a{xs...};\`. Then sort \`a\` in place with loops, exactly as you would at run time, and return it.
+--- hint
+One way: for each \`i\` from 1, remember \`x = a[i]\`, then move every larger value one place to the right while walking left with \`j\`, and put \`x\` into the gap at \`j\`. Start \`j\` at \`i\` and stop at 0.
+--- check test | Sorted at compile time, duplicates and negatives too
+[] { static_assert(sorted_array(3, 1, 2) == std::array<int, 3>{1, 2, 3}); static_assert(sorted_array(5, -1, 5, 0) == std::array<int, 4>{-1, 0, 5, 5}); return sorted_array(9, 8, 7, 6, 5, 4, 3, 2, 1) == std::array<int, 9>{1, 2, 3, 4, 5, 6, 7, 8, 9}; }()
+--- check test | One argument and none
+sorted_array(5) == std::array<int, 1>{5} && sorted_array().size() == 0
+--- check test | is_ascending
+[] { static_assert(is_ascending(std::array<int, 4>{1, 1, 2, 9}) && !is_ascending(std::array<int, 3>{2, 1, 3})); return is_ascending(std::array<int, 0>{}) && !is_ascending(std::array<int, 2>{5, 4}) && is_ascending(sorted_array(4, 2, 8)); }()
+--- check test | Refuses anything that is not an int
+![]<class T>(T t) { return requires { sorted_array(1, t); }; }(2.5) && ![]<class T>(T t) { return requires { sorted_array(t); }; }('c')
+
++++ practice | A signed number that might not be there
+--- task
+Write \`constexpr std::optional<int> parse_dec(std::string_view s)\`, usable at compile time. No \`main\`.
+
+It reads a whole number written in decimal: an optional \`-\` sign, then 1 to 9 digits. Leading zeros are allowed: \`"007"\` is 7 and \`"-0"\` is 0. It returns \`std::nullopt\` for anything else: an empty string, a lone \`"-"\`, a \`+\` sign, a space anywhere, any other character, or more than 9 digits (which keeps every answer inside an \`int\`).
+
+A result of \`-1\` could be a real answer here, which is why the result is a \`std::optional<int>\` and not an \`int\` with \`-1\` meaning "bad".
+--- starter
+#include <optional>
+#include <string_view>
+
+constexpr std::optional<int> parse_dec(std::string_view s) {
+    return std::nullopt;
+}
+--- solution
+#include <optional>
+#include <string_view>
+
+constexpr std::optional<int> parse_dec(std::string_view s) {
+    std::size_t i = 0;
+    bool negative = false;
+    if (!s.empty() && s[0] == '-') {
+        negative = true;
+        i = 1;
+    }
+    std::size_t digits = s.size() - i;
+    if (digits == 0 || digits > 9) return std::nullopt;
+    int value = 0;
+    for (; i < s.size(); ++i) {
+        char c = s[i];
+        if (c < '0' || c > '9') return std::nullopt;
+        value = value * 10 + (c - '0');
+    }
+    return negative ? -value : value;
+}
+--- hint
+Deal with the sign first: if the first character is \`-\`, remember that and start reading one place later. Then count the characters that are left: there must be between 1 and 9 of them.
+--- hint
+Read the digits left to right with \`value = value * 10 + (c - '0')\`, returning \`std::nullopt\` on any character outside \`'0'\` to \`'9'\`. At the end, give back \`-value\` if there was a sign.
+--- check test | Good numbers, at compile time
+[] { static_assert(parse_dec("42") == 42 && parse_dec("-45") == -45 && parse_dec("007") == 7 && parse_dec("-0") == 0); constexpr int three = *parse_dec("3"); return three == 3; }()
+--- check test | Nine digits is the limit
+parse_dec("999999999") == 999999999 && parse_dec("-999999999") == -999999999 && parse_dec("1234567890") == std::nullopt
+--- check test | Missing digits and signs
+parse_dec("") == std::nullopt && parse_dec("-") == std::nullopt && parse_dec("+5") == std::nullopt && parse_dec("--5") == std::nullopt
+--- check test | Stray characters
+parse_dec("12a") == std::nullopt && parse_dec(" 1") == std::nullopt && parse_dec("1 ") == std::nullopt && parse_dec("4-2") == std::nullopt && parse_dec(std::string("-17")) == -17
+
++++ practice | Debug: a table with a hole and a test with a gap
+--- task
+**Bug report:** "\`kDigitSum[99]\` is 0, but the digits of 99 add up to 18. And \`is_power_of_two(0)\` says \`true\`."
+
+Fix both, keeping them usable at compile time. No \`main\`.
+
+- \`make_digit_sums()\` builds a 100-entry table where entry \`i\` is the sum of the decimal digits of \`i\` (entry 47 is 4 + 7 = 11). It builds on itself: \`i\`'s digit sum is the digit sum of \`i / 10\` plus the last digit, \`i % 10\`.
+- \`is_power_of_two(n)\` is \`true\` for 1, 2, 4, 8, … and \`false\` for everything else, including 0. A power of two has exactly one 1 bit, and \`n & (n - 1)\` clears the lowest 1 bit of \`n\`.
+--- starter
+#include <array>
+
+constexpr std::array<int, 100> make_digit_sums() {
+    std::array<int, 100> t{};
+    for (int i = 1; i < 99; ++i) t[i] = t[i / 10] + i % 10;
+    return t;
+}
+
+inline constexpr std::array<int, 100> kDigitSum = make_digit_sums();
+
+constexpr bool is_power_of_two(unsigned n) {
+    return (n & (n - 1)) == 0;
+}
+--- solution
+#include <array>
+
+constexpr std::array<int, 100> make_digit_sums() {
+    std::array<int, 100> t{};
+    for (int i = 1; i < 100; ++i) t[i] = t[i / 10] + i % 10;
+    return t;
+}
+
+inline constexpr std::array<int, 100> kDigitSum = make_digit_sums();
+
+constexpr bool is_power_of_two(unsigned n) {
+    return n != 0 && (n & (n - 1)) == 0;
+}
+--- hint
+Which entries does the loop in \`make_digit_sums\` actually fill? Compare its stopping condition with the size of the table.
+--- hint
+For \`n = 0\`, \`n - 1\` wraps round to the biggest \`unsigned\`, and \`0 & anything\` is 0, so the test passes by accident. Zero has no 1 bits at all: rule it out first.
+--- check test | Every digit sum, including the last
+kDigitSum[99] == 18 && kDigitSum[0] == 0 && kDigitSum[47] == 11 && kDigitSum[90] == 9 && kDigitSum[9] == 9
+--- check test | Powers of two
+is_power_of_two(1) && is_power_of_two(64) && is_power_of_two(2147483648u) && !is_power_of_two(96) && !is_power_of_two(3)
+--- check test | Zero is not a power of two
+!is_power_of_two(0)
+
++++ practice | Stretch: card numbers checked by the compiler
+--- task
+Bank card numbers end in a **check digit** chosen by the Luhn rule, so that most typing mistakes are caught. Write both functions, usable at compile time. No \`main\`.
+
+The rule: ignore spaces. Starting from the **rightmost** digit and moving left, double every second digit (the 2nd, 4th, 6th, … from the right). If doubling gives more than 9, take 9 away. Add up all the digits, doubled or not. The number is valid when that total is a multiple of 10.
+
+- \`constexpr bool luhn_valid(std::string_view number)\`: \`true\` if the number passes. Any character other than a digit or a space makes it \`false\`, and so does having fewer than 2 digits. \`"79927398713"\` and \`"4539 1488 0343 6467"\` are valid; \`"79927398710"\` is not.
+- \`constexpr int luhn_check_digit(std::string_view partial)\`: the digit, 0 to 9, that makes \`partial\` valid when written on the end. \`luhn_check_digit("7992739871")\` is 3. Return \`-1\` if \`partial\` has no digits or any character other than digits and spaces.
+--- starter
+#include <string_view>
+
+constexpr bool luhn_valid(std::string_view number) {
+    return false;
+}
+
+constexpr int luhn_check_digit(std::string_view partial) {
+    return -1;
+}
+--- solution
+#include <string_view>
+
+// The Luhn total of the digits in s, doubling every second digit from the right.
+// With double_first, the rightmost digit itself is doubled (as when a check digit will follow).
+// Returns -1 for a bad character; digits counts the digits seen.
+constexpr int luhn_total(std::string_view s, bool double_first, int& digits) {
+    int total = 0;
+    digits = 0;
+    bool twice = double_first;
+    for (std::size_t k = s.size(); k > 0; --k) {
+        char c = s[k - 1];
+        if (c == ' ') continue;
+        if (c < '0' || c > '9') return -1;
+        int d = c - '0';
+        if (twice) {
+            d *= 2;
+            if (d > 9) d -= 9;
+        }
+        total += d;
+        twice = !twice;
+        ++digits;
+    }
+    return total;
+}
+
+constexpr bool luhn_valid(std::string_view number) {
+    int digits = 0;
+    int total = luhn_total(number, false, digits);
+    return total >= 0 && digits >= 2 && total % 10 == 0;
+}
+
+constexpr int luhn_check_digit(std::string_view partial) {
+    int digits = 0;
+    int total = luhn_total(partial, true, digits);
+    if (total < 0 || digits == 0) return -1;
+    return (10 - total % 10) % 10;
+}
+--- hint
+Walk the view from the right: \`for (std::size_t k = s.size(); k > 0; --k)\` looks at \`s[k - 1]\`, which never goes below index 0. Skip spaces, and flip a \`bool\` after each digit to know whether the next one is doubled.
+--- hint
+The two functions share the adding-up, so give it a helper. The only difference: for a check digit, the digit you are about to add will be the rightmost, so the rightmost digit of \`partial\` is already a "second" one and is doubled.
+--- hint
+If the total with the check digit left out is \`t\`, the check digit is the amount that brings \`t\` up to the next multiple of 10: \`(10 - t % 10) % 10\`.
+--- check test | Valid numbers, at compile time
+[] { static_assert(luhn_valid("79927398713") && luhn_valid("4539 1488 0343 6467")); return luhn_valid("4111 1111 1111 1111") && luhn_valid("00"); }()
+--- check test | Invalid numbers
+!luhn_valid("79927398710") && !luhn_valid("1234 5678 9012 3456") && !luhn_valid("7992-7398-713")
+--- check test | Too few digits
+!luhn_valid("") && !luhn_valid("0") && !luhn_valid("   5 ")
+--- check test | Check digits
+[] { static_assert(luhn_check_digit("7992739871") == 3); return luhn_check_digit("4111 1111 1111 111") == 1 && luhn_check_digit("") == -1 && luhn_check_digit("12x") == -1 && luhn_check_digit("0") == 0; }()
+
+=== cpp4-05b | Raw memory: room first, objects later
+--- teach
+Last lesson the compiler filled tables whose size was fixed while compiling. The next lesson builds your own \`std::vector\`, a container that grows while the program runs. Every container like that rests on one idea, and this lesson is about only that idea: getting *room* for objects and *making* the objects are two separate steps.
+
+### A car park, not a row of cars
+
+Picture a car park with 8 empty spaces. Building the car park does not build 8 cars. Cars arrive one at a time and park in a space. When a car leaves, its space is empty again, ready for the next one.
+
+A container works the same way. The **raw memory** is the car park: room for objects, with nothing in it yet. The **objects** are the cars: each one is built in a space when it arrives, and destroyed when it leaves.
+
+### Why new T[n] is not enough
+
+In the rule of three lesson you wrote \`new int[3]()\`. That form does two jobs at once: it gets room for 3 \`int\`s *and* builds all 3. For a container that is wrong in two ways:
+
+- **Some types cannot be built from nothing.** A type whose constructor needs a value, like a \`Sensor\` that needs its id, has no **[[default constructor|default-constructor]]**: a constructor that takes no arguments. \`new Sensor[8]\` does not compile, because C++ does not know what id to give the eight sensors.
+- **It is wasteful.** A container keeps spare room for later. Building objects in room nobody has used yet costs time, and they would all have to be destroyed again.
+
+So a real container gets the room first and builds each object only when it is added.
+
+### Step 1: get room with std::allocator
+
+**\`std::allocator<T>\`**, from \`<memory>\`, is an [[allocator|allocator-word]]: an object whose job is to hand out raw memory for \`T\`s and take it back.
+
+\`\`\`cpp
+std::allocator<double> alloc;
+double* room = alloc.allocate(5);   // room for 5 doubles, none built yet
+// ... use the room ...
+alloc.deallocate(room, 5);          // give the room back
+\`\`\`
+
+- \`alloc.allocate(n)\` gives back a \`T*\` pointing at room for \`n\` objects. No object exists there yet.
+- \`alloc.deallocate(p, n)\` gives the room back. You must pass the same \`n\` you asked for.
+
+Making a \`std::allocator\` costs nothing: it has no data inside. So code often makes a fresh one right where it is needed, as \`std::allocator<T>().allocate(n)\`. The \`()\` builds a temporary allocator, and \`.allocate(n)\` is called on it at once.
+
+### Step 2: build one object in one space
+
+**\`std::construct_at(p, args...)\`**, also from \`<memory>\` (new in C++20), builds one object at exactly the place \`p\` points to. The \`args...\` means "zero or more arguments", and they go straight to the object's constructor:
+
+\`\`\`cpp
+std::allocator<std::string> alloc;
+std::string* room = alloc.allocate(3);
+std::construct_at(room, "north");        // a string "north" in space 0
+std::construct_at(room + 1, 4, 'x');     // a string "xxxx" in space 1
+\`\`\`
+
+\`room + 1\` is the pointer to the next space along, the same pointer arithmetic that \`begin() + 1\` does on a vector. Space 2 is still empty room.
+
+### Step 3: destroy one object, keep the space
+
+**\`std::destroy_at(p)\`** runs the destructor of the object at \`p\`. The object is gone, but the space stays yours, empty again:
+
+\`\`\`cpp
+std::destroy_at(room + 1);               // "xxxx" is destroyed; space 1 is empty
+\`\`\`
+
+\`deallocate\` never runs destructors. It only gives back the room. So you destroy every object *first*, then give the room back.
+
+### The rule
+
+Every object you built must be destroyed **exactly once**, and **only** spaces that hold an object may be destroyed.
+
+The easy way to follow the rule is a count. If you always fill the spaces from the front, a number \`size\` tells you everything: spaces \`0\` to \`size - 1\` [[hold objects|size-and-capacity]], and spaces \`size\` to \`capacity - 1\` are empty room. So:
+
+- adding builds in space \`size\`, then adds 1 to \`size\`;
+- removing the newest takes 1 from \`size\`, then destroys the object in space \`size\`;
+- cleaning up destroys spaces \`0\` to \`size - 1\`, then deallocates all \`capacity\` spaces.
+
+**Watch out:** a clean-up loop that runs to \`capacity\` instead of \`size\`. It calls destructors on empty room, which is **[[undefined behavior|destroy-empty]]**, and the program may crash or quietly corrupt memory. The opposite mistake, deallocating without destroying first, skips the destructors: a string's own heap memory then leaks.
+
+::: context default-constructor Types that cannot start empty
+A default constructor is the one that runs when you write \`Sensor s;\` with nothing in brackets. The compiler writes one for you only if you wrote no constructor at all. As soon as a class has a constructor like \`explicit Sensor(int id)\`, there is no default one, and that is often exactly right: a sensor without an id, or a file handle without a file, would be a broken object. Good containers must hold such types, so they never build an object until they are given the value to build it from. \`std::vector\` holds them happily; \`new Sensor[8]\` cannot.
+:::
+
+::: context allocator-word Where memory comes from
+To allocate is to set something aside for a use, like seats allocated to a class. Every standard container takes an allocator as a hidden template input: \`std::vector<int>\` is really \`std::vector<int, std::allocator<int>>\`. You can swap in your own. Game engines and flight software often do, handing out memory from a pool set aside when the program starts, so that nothing asks the operating system for memory in the middle of a frame or a flight. The coding rules written for the F-35 fighter's software (JSF AV C++) forbid taking memory from the heap after start-up at all.
+:::
+
+::: context size-and-capacity Two numbers, one block
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="40" width="40" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="60" y="40" width="40" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="40" width="40" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="140" y="40" width="40" height="40" fill="#fff" stroke="#1f2a44" stroke-dasharray="4 3"/>
+  <rect x="180" y="40" width="40" height="40" fill="#fff" stroke="#1f2a44" stroke-dasharray="4 3"/>
+  <rect x="220" y="40" width="40" height="40" fill="#fff" stroke="#1f2a44" stroke-dasharray="4 3"/>
+  <rect x="260" y="40" width="40" height="40" fill="#fff" stroke="#1f2a44" stroke-dasharray="4 3"/>
+  <rect x="300" y="40" width="40" height="40" fill="#fff" stroke="#1f2a44" stroke-dasharray="4 3"/>
+  <text x="40" y="65" font-size="12" text-anchor="middle" fill="#1f2a44">A</text>
+  <text x="80" y="65" font-size="12" text-anchor="middle" fill="#1f2a44">B</text>
+  <text x="120" y="65" font-size="12" text-anchor="middle" fill="#1f2a44">C</text>
+  <text x="40" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">0</text>
+  <text x="80" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">1</text>
+  <text x="120" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">2</text>
+  <text x="160" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">3</text>
+  <text x="320" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">7</text>
+  <line x1="20" y1="95" x2="140" y2="95" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="80" y="112" font-size="12" text-anchor="middle" fill="#1d6fd1">size = 3: built</text>
+  <line x1="20" y1="125" x2="340" y2="125" stroke="#b4232c" stroke-width="2"/>
+  <text x="180" y="142" font-size="12" text-anchor="middle" fill="#b4232c">capacity = 8: room allocated</text>
+</svg>
+\`\`\`
+
+One block of room for 8, with objects built in the first 3. The next object goes into space 3, the first dashed one. Clean-up destroys the three blue spaces and then gives back all eight.
+:::
+
+::: context destroy-empty Why destroying an empty space is so bad
+A destructor assumes it is looking at a real, finished object. A \`std::string\`'s destructor reads the pointer stored inside it and frees that memory. In an empty space, that "pointer" is whatever bits happened to be left there, so the destructor may free memory that belongs to something else, or crash. C++ calls this undefined behavior: the language makes no promise at all about what happens. Destroying the same object twice is as bad, for the same reason. That is why the rule says exactly once, and only built spaces.
+:::
+--- task
+Complete \`template <typename T> class FixedStack\`: a stack whose room is set once, when it is made, and never grows. There is no \`main\`. The starter's \`Counted\` type has no default constructor and counts how many \`Counted\` objects are alive, so the checks can see every object you build and destroy.
+
+- The constructor \`explicit FixedStack(std::size_t capacity)\` gets room for \`capacity\` objects with \`std::allocator<T>\`, and builds **none**.
+- \`bool push(const T& x)\`: if the stack is full, return \`false\` and build nothing. Otherwise build a copy of \`x\` in the next empty space with \`std::construct_at\`, and return \`true\`.
+- \`void pop()\`: destroy the newest object with \`std::destroy_at\` (it is never called when the stack is empty).
+- The destructor \`~FixedStack()\`: destroy every object that is still built, exactly once, then give the room back with \`deallocate\`.
+
+\`size()\`, \`capacity()\` and \`operator[]\` are already written, and copying is switched off with \`= delete\`.
+--- starter
+#include <cstddef>
+#include <memory>
+
+// A test type with no default constructor that counts how many are alive.
+struct Counted {
+    static inline int alive = 0;
+    int id;
+    explicit Counted(int i) : id(i) { ++alive; }
+    Counted(const Counted& o) : id(o.id) { ++alive; }
+    ~Counted() { --alive; }
+};
+
+template <typename T>
+class FixedStack {
+public:
+    explicit FixedStack(std::size_t capacity) : cap_(capacity) {}
+    ~FixedStack() {}
+
+    FixedStack(const FixedStack&) = delete;
+    FixedStack& operator=(const FixedStack&) = delete;
+
+    bool push(const T& x) { return false; }
+    void pop() {}
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+
+// A test type with no default constructor that counts how many are alive.
+struct Counted {
+    static inline int alive = 0;
+    int id;
+    explicit Counted(int i) : id(i) { ++alive; }
+    Counted(const Counted& o) : id(o.id) { ++alive; }
+    ~Counted() { --alive; }
+};
+
+template <typename T>
+class FixedStack {
+public:
+    explicit FixedStack(std::size_t capacity)
+        : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+
+    ~FixedStack() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    FixedStack(const FixedStack&) = delete;
+    FixedStack& operator=(const FixedStack&) = delete;
+
+    bool push(const T& x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, x);
+        ++size_;
+        return true;
+    }
+
+    void pop() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Follow the three steps and the rule. The constructor only gets room (step 1). \`push\` builds one object in space \`size_\` (step 2). \`pop\` and the destructor destroy (step 3), and only the destructor gives the room back.
+--- hint
+In the constructor's member list, set \`data_\` from \`std::allocator<T>().allocate(capacity)\`. In \`push\`, return \`false\` when \`size_ == cap_\`; otherwise \`std::construct_at(data_ + size_, x)\`, add 1 to \`size_\`, and return \`true\`.
+--- hint
+\`pop\` takes 1 from \`size_\` first and then destroys \`data_ + size_\`. The destructor loops \`i\` from 0 while \`i < size_\`, calling \`std::destroy_at(data_ + i)\`, and after the loop calls \`std::allocator<T>().deallocate(data_, cap_)\`.
+--- check test | Making room builds no objects
+[] { Counted::alive = 0; FixedStack<Counted> s(100); return Counted::alive == 0 && s.capacity() == 100 && s.size() == 0; }()
+--- check test | push builds one copy each time, and refuses when full
+[] { Counted::alive = 0; FixedStack<Counted> s(3); Counted a(7); bool ok = s.push(a) && s.push(Counted(8)) && s.push(a); bool fourth = s.push(a); return ok && !fourth && s.size() == 3 && Counted::alive == 4 && s[0].id == 7 && s[1].id == 8 && s[2].id == 7; }()
+--- check test | pop destroys the newest, and its space can be used again
+[] { Counted::alive = 0; FixedStack<Counted> s(4); for (int i = 0; i < 4; ++i) s.push(Counted(i)); s.pop(); bool ok = Counted::alive == 3 && s.size() == 3 && s[2].id == 2; bool again = s.push(Counted(9)); return ok && again && s[3].id == 9 && Counted::alive == 4; }()
+--- check test | Every object is destroyed exactly once when the stack goes
+[] { Counted::alive = 0; { FixedStack<Counted> s(10); for (int i = 0; i < 6; ++i) s.push(Counted(i)); s.pop(); } return Counted::alive == 0; }()
+--- check test | Works with strings
+[] { FixedStack<std::string> s(2); s.push("a string long enough to live on the heap"); s.push("b"); s.pop(); bool c = s.push("c"); return c && !s.push("d") && s.size() == 2 && s[0] == "a string long enough to live on the heap" && s[1] == "c"; }()
+--- check source | Builds objects with std::construct_at
+std::construct_at\\s*\\(
+
++++ practice | Build n copies, then tear them down
+--- task
+Write two function templates that work in raw memory. The starter's \`Counted\` has no default constructor and counts how many are alive. No \`main\`.
+
+- \`T* build_copies(std::allocator<T>& alloc, const T& value, std::size_t n)\` gets room for \`n\` objects from \`alloc\`, builds a copy of \`value\` in each space with \`std::construct_at\`, and returns the pointer to the first.
+- \`void tear_down(std::allocator<T>& alloc, T* p, std::size_t n)\` destroys the \`n\` objects that \`build_copies\` built with \`std::destroy_at\`, then gives the room back to \`alloc\`.
+
+\`n\` may be 0.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+
+// A test type with no default constructor that counts how many are alive.
+struct Counted {
+    static inline int alive = 0;
+    int id;
+    explicit Counted(int i) : id(i) { ++alive; }
+    Counted(const Counted& o) : id(o.id) { ++alive; }
+    ~Counted() { --alive; }
+};
+
+template <typename T>
+T* build_copies(std::allocator<T>& alloc, const T& value, std::size_t n) {
+    return alloc.allocate(n);
+}
+
+template <typename T>
+void tear_down(std::allocator<T>& alloc, T* p, std::size_t n) {
+    alloc.deallocate(p, n);
+}
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+
+// A test type with no default constructor that counts how many are alive.
+struct Counted {
+    static inline int alive = 0;
+    int id;
+    explicit Counted(int i) : id(i) { ++alive; }
+    Counted(const Counted& o) : id(o.id) { ++alive; }
+    ~Counted() { --alive; }
+};
+
+template <typename T>
+T* build_copies(std::allocator<T>& alloc, const T& value, std::size_t n) {
+    T* p = alloc.allocate(n);
+    for (std::size_t i = 0; i < n; ++i) std::construct_at(p + i, value);
+    return p;
+}
+
+template <typename T>
+void tear_down(std::allocator<T>& alloc, T* p, std::size_t n) {
+    for (std::size_t i = 0; i < n; ++i) std::destroy_at(p + i);
+    alloc.deallocate(p, n);
+}
+--- hint
+\`allocate\` only gets room: no object exists there yet. Each space needs its own \`std::construct_at(p + i, value)\`.
+--- hint
+\`deallocate\` never runs destructors. Loop over the \`n\` spaces with \`std::destroy_at(p + i)\` first, then deallocate.
+--- check test | Builds exactly n copies
+[] { Counted::alive = 0; std::allocator<Counted> a; Counted seed(4); Counted* p = build_copies(a, seed, 5); bool ok = Counted::alive == 6 && p[0].id == 4 && p[4].id == 4; tear_down(a, p, 5); return ok; }()
+--- check test | Tearing down destroys every copy
+[] { Counted::alive = 0; std::allocator<Counted> a; Counted seed(1); Counted* p = build_copies(a, seed, 3); tear_down(a, p, 3); return Counted::alive == 1; }()
+--- check test | Works with strings that live on the heap
+[] { std::allocator<std::string> a; std::string s = "a string long enough to live on the heap"; std::string* p = build_copies(a, s, 3); bool ok = p[2] == s && p[0] == s; p[1] = "changed"; ok = ok && p[0] == s; tear_down(a, p, 3); return ok; }()
+--- check test | Zero copies builds nothing
+[] { Counted::alive = 0; std::allocator<Counted> a; Counted seed(2); Counted* p = build_copies(a, seed, 0); tear_down(a, p, 0); return Counted::alive == 1; }()
+
++++ practice | A roster built in place
+--- task
+Finish \`template <typename T> class Roster\`, a fixed-capacity list that builds each object **in place** from the arguments it is given. The starter's \`Crew\` has no default constructor and counts how many are alive and how many were copied. The constructor, the destructor, \`size()\`, \`capacity()\` and \`operator[]\` are already written. No \`main\`.
+
+- \`template <typename... Args> bool emplace(Args&&... args)\`: if the roster is full, return \`false\` and build nothing. Otherwise build one new \`T\` at the end straight from \`args\` (forwarded to \`T\`'s constructor with \`std::construct_at\`), and return \`true\`. No temporary \`T\` and no copy is made.
+- \`void clear()\`: destroy every object, but keep the room, so \`capacity()\` is unchanged and new objects can be added.
+- \`T& back()\`: the newest object (never called when empty).
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts live objects and copies.
+struct Crew {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    int id;
+    std::string role;
+    Crew(int i, std::string r) : id(i), role(std::move(r)) { ++alive; }
+    Crew(const Crew& o) : id(o.id), role(o.role) { ++alive; ++copies; }
+    ~Crew() { --alive; }
+};
+
+template <typename T>
+class Roster {
+public:
+    explicit Roster(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Roster() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Roster(const Roster&) = delete;
+    Roster& operator=(const Roster&) = delete;
+
+    template <typename... Args>
+    bool emplace(Args&&... args) { return false; }
+    void clear() {}
+    T& back() { return data_[0]; }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts live objects and copies.
+struct Crew {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    int id;
+    std::string role;
+    Crew(int i, std::string r) : id(i), role(std::move(r)) { ++alive; }
+    Crew(const Crew& o) : id(o.id), role(o.role) { ++alive; ++copies; }
+    ~Crew() { --alive; }
+};
+
+template <typename T>
+class Roster {
+public:
+    explicit Roster(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Roster() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Roster(const Roster&) = delete;
+    Roster& operator=(const Roster&) = delete;
+
+    template <typename... Args>
+    bool emplace(Args&&... args) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, std::forward<Args>(args)...);
+        ++size_;
+        return true;
+    }
+
+    void clear() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        size_ = 0;
+    }
+
+    T& back() { return data_[size_ - 1]; }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+\`std::construct_at(p, args...)\` passes its extra arguments straight to \`T\`'s constructor. Hand it the whole pack, forwarded: \`std::forward<Args>(args)...\`.
+--- hint
+\`clear\` is the destructor's loop without the \`deallocate\`: destroy spaces \`0\` to \`size_ - 1\`, then set \`size_\` to 0. The newest object sits in space \`size_ - 1\`.
+--- check test | emplace builds in place, with no copies
+[] { Crew::alive = 0; Crew::copies = 0; Roster<Crew> r(3); bool ok = r.emplace(1, "pilot") && r.emplace(2, std::string("medic")); return ok && Crew::alive == 2 && Crew::copies == 0 && r.size() == 2 && r.back().role == "medic" && r[0].id == 1; }()
+--- check test | A full roster refuses and builds nothing
+[] { Crew::alive = 0; Roster<Crew> r(1); r.emplace(1, "a"); bool again = r.emplace(2, "b"); return !again && Crew::alive == 1 && r.size() == 1 && r.back().id == 1; }()
+--- check test | clear destroys everything and keeps the room
+[] { Crew::alive = 0; Roster<Crew> r(4); for (int i = 0; i < 4; ++i) r.emplace(i, "x"); r.clear(); bool ok = Crew::alive == 0 && r.size() == 0 && r.capacity() == 4; ok = ok && r.emplace(9, "y") && r.back().id == 9 && Crew::alive == 1; return ok; }()
+--- check test | Everything left is destroyed with the roster
+[] { Crew::alive = 0; { Roster<Crew> r(5); r.emplace(1, "a"); r.emplace(2, "b"); r.clear(); r.emplace(3, "c"); } return Crew::alive == 0; }()
+--- check test | Strings built from several arguments
+[] { Roster<std::string> r(2); r.emplace(3, 'z'); r.emplace("abc"); return r[0] == "zzz" && r.back() == "abc"; }()
+
++++ practice | A tray for things that can only move
+--- task
+Finish \`template <typename T> class Tray\`, a fixed-capacity stack in raw memory that also works for types that cannot be copied at all, such as \`std::unique_ptr<int>\`. The starter's \`Crate\` counts its copies. The constructor, destructor and \`size()\` are written. No \`main\`.
+
+- \`bool push(T x)\`: a sink parameter. If the tray is full, return \`false\`. Otherwise build the new top from \`x\` by **moving** it, and return \`true\`.
+- \`std::optional<T> take()\`: if the tray is empty, return \`std::nullopt\`. Otherwise move the top object out into the result, destroy what is left of it in its space, and return the result. It never copies.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+struct Crate {
+    static inline int copies = 0;
+    std::string label;
+    explicit Crate(std::string l) : label(std::move(l)) {}
+    Crate(const Crate& o) : label(o.label) { ++copies; }
+    Crate(Crate&& o) noexcept : label(std::move(o.label)) {}
+};
+
+template <typename T>
+class Tray {
+public:
+    explicit Tray(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Tray() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Tray(const Tray&) = delete;
+    Tray& operator=(const Tray&) = delete;
+
+    bool push(T x) { return false; }
+    std::optional<T> take() { return std::nullopt; }
+
+    std::size_t size() const { return size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+struct Crate {
+    static inline int copies = 0;
+    std::string label;
+    explicit Crate(std::string l) : label(std::move(l)) {}
+    Crate(const Crate& o) : label(o.label) { ++copies; }
+    Crate(Crate&& o) noexcept : label(std::move(o.label)) {}
+};
+
+template <typename T>
+class Tray {
+public:
+    explicit Tray(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Tray() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Tray(const Tray&) = delete;
+    Tray& operator=(const Tray&) = delete;
+
+    bool push(T x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+        return true;
+    }
+
+    std::optional<T> take() {
+        if (size_ == 0) return std::nullopt;
+        --size_;
+        std::optional<T> out(std::move(data_[size_]));
+        std::destroy_at(data_ + size_);
+        return out;
+    }
+
+    std::size_t size() const { return size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Inside \`push\`, \`x\` has a name, so building from plain \`x\` would copy (and would not compile for a \`std::unique_ptr\`). Build from \`std::move(x)\`.
+--- hint
+In \`take\`, step \`size_\` back by one, build the result from \`std::move(data_[size_])\`, and then \`std::destroy_at(data_ + size_)\`: the moved-from husk is still an object and must be destroyed.
+--- check test | Move-only values go in and come out
+[] { Tray<std::unique_ptr<int>> t(2); bool ok = t.push(std::make_unique<int>(5)) && t.push(std::make_unique<int>(6)); std::optional<std::unique_ptr<int>> top = t.take(); return ok && top && **top == 6 && t.size() == 1 && **t.take() == 5; }()
+--- check test | Empty and full trays
+[] { Tray<std::unique_ptr<int>> t(1); bool first = t.take() == std::nullopt; bool in = t.push(std::make_unique<int>(1)); bool again = t.push(std::make_unique<int>(2)); return first && in && !again && t.size() == 1; }()
+--- check test | Temporaries and taking copy nothing
+[] { Crate::copies = 0; Tray<Crate> t(3); t.push(Crate("a")); t.push(Crate("b")); std::optional<Crate> b = t.take(); return Crate::copies == 0 && b && b->label == "b" && t.size() == 1; }()
+--- check test | A named crate is copied exactly once
+[] { Tray<Crate> t(3); Crate mine("mine"); Crate::copies = 0; t.push(mine); return Crate::copies == 1 && mine.label == "mine" && t.take()->label == "mine"; }()
+
++++ practice | Take one out of the middle
+--- task
+Finish \`template <typename T> class Shelf\`, a fixed-capacity list in raw memory. The starter's \`Box\` has no default constructor, no assignment, and counts how many are alive. Everything except \`erase_at\` is written. No \`main\`.
+
+\`bool erase_at(std::size_t i)\` removes the object at position \`i\`, keeping the others in their order, and returns \`true\`. If \`i\` is not a position that holds an object (including any \`i\` on an empty shelf), it returns \`false\` and changes nothing.
+
+The objects after \`i\` must each move down one space. \`Box\` has no assignment operator, so do it with the tools of this lesson: destroy, then build again in the same space from the next object, moved. When you are done, exactly the right objects are alive: no object is destroyed twice, and none is left behind in the old last space.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// No default constructor and no assignment; counts how many are alive.
+struct Box {
+    static inline int alive = 0;
+    std::string tag;
+    explicit Box(std::string t) : tag(std::move(t)) { ++alive; }
+    Box(const Box& o) : tag(o.tag) { ++alive; }
+    Box(Box&& o) noexcept : tag(std::move(o.tag)) { ++alive; }
+    Box& operator=(const Box&) = delete;
+    ~Box() { --alive; }
+};
+
+template <typename T>
+class Shelf {
+public:
+    explicit Shelf(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Shelf() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Shelf(const Shelf&) = delete;
+    Shelf& operator=(const Shelf&) = delete;
+
+    bool push(const T& x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, x);
+        ++size_;
+        return true;
+    }
+
+    bool erase_at(std::size_t i) {
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// No default constructor and no assignment; counts how many are alive.
+struct Box {
+    static inline int alive = 0;
+    std::string tag;
+    explicit Box(std::string t) : tag(std::move(t)) { ++alive; }
+    Box(const Box& o) : tag(o.tag) { ++alive; }
+    Box(Box&& o) noexcept : tag(std::move(o.tag)) { ++alive; }
+    Box& operator=(const Box&) = delete;
+    ~Box() { --alive; }
+};
+
+template <typename T>
+class Shelf {
+public:
+    explicit Shelf(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Shelf() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Shelf(const Shelf&) = delete;
+    Shelf& operator=(const Shelf&) = delete;
+
+    bool push(const T& x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, x);
+        ++size_;
+        return true;
+    }
+
+    bool erase_at(std::size_t i) {
+        if (i >= size_) return false;
+        std::destroy_at(data_ + i);
+        for (std::size_t j = i; j + 1 < size_; ++j) {
+            std::construct_at(data_ + j, std::move(data_[j + 1]));
+            std::destroy_at(data_ + j + 1);
+        }
+        --size_;
+        return true;
+    }
+
+    std::size_t size() const { return size_; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Check \`i\` first: only positions \`0\` to \`size_ - 1\` hold objects, and on an empty shelf there are none. Because \`size_\` is unsigned, \`i >= size_\` covers all of it.
+--- hint
+Destroy the object at \`i\`. Now space \`i\` is empty room. For each later position \`j + 1\`, build a new object in space \`j\` from \`std::move(data_[j + 1])\`, then destroy the husk left in space \`j + 1\`. Finally take 1 from \`size_\`.
+--- check test | Erase from the middle keeps the order
+[] { Box::alive = 0; bool ok; { Shelf<Box> s(5); for (const char* t : {"a", "b", "c", "d"}) s.push(Box(t)); ok = s.erase_at(1) && s.size() == 3 && s[0].tag == "a" && s[1].tag == "c" && s[2].tag == "d" && Box::alive == 3; } return ok && Box::alive == 0; }()
+--- check test | Erase the first and the last
+[] { Box::alive = 0; Shelf<Box> s(4); for (const char* t : {"a", "b", "c"}) s.push(Box(t)); bool ok = s.erase_at(2) && s.erase_at(0) && s.size() == 1 && s[0].tag == "b" && Box::alive == 1; return ok; }()
+--- check test | Erase the only object, then fill again
+[] { Box::alive = 0; Shelf<Box> s(1); s.push(Box("x")); bool ok = s.erase_at(0) && s.size() == 0 && Box::alive == 0 && s.push(Box("y")) && s[0].tag == "y"; return ok && Box::alive == 1; }()
+--- check test | Positions that hold nothing are refused
+[] { Box::alive = 0; Shelf<Box> s(3); bool empty = !s.erase_at(0); s.push(Box("a")); bool past = !s.erase_at(1) && !s.erase_at(2) && !s.erase_at(99); return empty && past && s.size() == 1 && s[0].tag == "a" && Box::alive == 1; }()
+--- check test | Heap-sized strings survive the shuffle
+[] { Shelf<std::string> s(3); s.push("first string, long enough to live on the heap"); s.push("second string, long enough to live on the heap"); s.push("third string, long enough to live on the heap"); s.erase_at(0); return s.size() == 2 && s[0] == "second string, long enough to live on the heap" && s[1] == "third string, long enough to live on the heap"; }()
+
++++ practice | Debug: destroyed twice, or never built
+--- task
+**Bug report:** "When a \`Pile\` is destroyed, it runs more destructors than there were objects. And \`pop()\` destroys something, but not the newest object."
+
+The starter's \`Tagged\` records the id of every object whose destructor runs, in \`Tagged::destroyed\`. Fix \`Pile\` so that it follows the rule: every object built is destroyed exactly once, and only spaces that hold an object are destroyed. No \`main\`.
+
+- \`pop()\` destroys the newest object (it is never called on an empty pile).
+- The destructor destroys every object still built, oldest first, then gives the room back.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <vector>
+
+// Records the id of every object whose destructor runs.
+struct Tagged {
+    static inline std::vector<int> destroyed;
+    int id;
+    explicit Tagged(int i) : id(i) {}
+    Tagged(const Tagged& o) : id(o.id) {}
+    ~Tagged() { destroyed.push_back(id); }
+};
+
+template <typename T>
+class Pile {
+public:
+    explicit Pile(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Pile() {
+        for (std::size_t i = 0; i < cap_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Pile(const Pile&) = delete;
+    Pile& operator=(const Pile&) = delete;
+
+    bool push(const T& x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, x);
+        ++size_;
+        return true;
+    }
+
+    void pop() {
+        std::destroy_at(data_ + size_);
+        --size_;
+    }
+
+    std::size_t size() const { return size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <vector>
+
+// Records the id of every object whose destructor runs.
+struct Tagged {
+    static inline std::vector<int> destroyed;
+    int id;
+    explicit Tagged(int i) : id(i) {}
+    Tagged(const Tagged& o) : id(o.id) {}
+    ~Tagged() { destroyed.push_back(id); }
+};
+
+template <typename T>
+class Pile {
+public:
+    explicit Pile(std::size_t capacity) : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+    ~Pile() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+    Pile(const Pile&) = delete;
+    Pile& operator=(const Pile&) = delete;
+
+    bool push(const T& x) {
+        if (size_ == cap_) return false;
+        std::construct_at(data_ + size_, x);
+        ++size_;
+        return true;
+    }
+
+    void pop() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Draw a pile with capacity 4 holding 2 objects. Which spaces hold objects? Which spaces does the destructor's loop visit? And which space is \`data_ + size_\`?
+--- hint
+The built spaces are \`0\` to \`size_ - 1\`. The destructor's loop must stop at \`size_\`, not \`cap_\`. And \`pop\` must take 1 from \`size_\` *before* destroying, so that it destroys space \`size_ - 1\`, the newest.
+--- check test | pop destroys exactly the newest object
+[] { Pile<Tagged> p(4); p.push(Tagged(1)); p.push(Tagged(2)); p.push(Tagged(3)); Tagged::destroyed.clear(); p.pop(); return Tagged::destroyed == std::vector<int>{3} && p.size() == 2; }()
+--- check test | The destructor destroys only what is built, oldest first
+[] { { Pile<Tagged> p(5); p.push(Tagged(7)); p.push(Tagged(8)); Tagged::destroyed.clear(); } return Tagged::destroyed == std::vector<int>{7, 8}; }()
+--- check test | Pops and pushes, then the end
+[] { std::vector<int> seen; { Pile<Tagged> p(3); p.push(Tagged(1)); p.push(Tagged(2)); p.pop(); p.push(Tagged(5)); Tagged::destroyed.clear(); p.pop(); seen = Tagged::destroyed; Tagged::destroyed.clear(); } return seen == std::vector<int>{5} && Tagged::destroyed == std::vector<int>{1}; }()
+
++++ practice | Stretch: a list that stays sorted in fixed room
+--- task
+Write \`template <typename T> class SortedFixed\`: a fixed-capacity list in raw memory that always keeps its objects in ascending order. \`T\` has \`<\` and \`==\` but maybe no default constructor and no assignment, like the starter's \`Reading\`, which counts how many are alive. No \`main\`.
+
+- \`explicit SortedFixed(std::size_t capacity)\` gets room and builds nothing. Copying is switched off with \`= delete\`.
+- \`bool insert(const T& x)\`: if full, return \`false\` and change nothing. Otherwise put a copy of \`x\` in its sorted place and return \`true\`. A new object equal to ones already there goes **after** them.
+- \`bool erase_value(const T& x)\`: remove the first object equal to \`x\`, keeping the order; \`false\` if there is none.
+- \`const T& operator[](std::size_t i) const\`, \`std::size_t size() const\`, and a destructor that destroys every object exactly once.
+
+Moving objects along means destroying and building again in the same space, as in the lesson.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Ordered by value only; tag tells equal readings apart. No default constructor, no assignment.
+struct Reading {
+    static inline int alive = 0;
+    int value;
+    std::string tag;
+    Reading(int v, std::string t) : value(v), tag(std::move(t)) { ++alive; }
+    Reading(const Reading& o) : value(o.value), tag(o.tag) { ++alive; }
+    Reading(Reading&& o) noexcept : value(o.value), tag(std::move(o.tag)) { ++alive; }
+    Reading& operator=(const Reading&) = delete;
+    ~Reading() { --alive; }
+    bool operator<(const Reading& o) const { return value < o.value; }
+    bool operator==(const Reading& o) const { return value == o.value; }
+};
+
+template <typename T>
+class SortedFixed {
+public:
+    explicit SortedFixed(std::size_t capacity) : cap_(capacity) {}
+    bool insert(const T& x) { return false; }
+    bool erase_value(const T& x) { return false; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+    std::size_t size() const { return size_; }
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Ordered by value only; tag tells equal readings apart. No default constructor, no assignment.
+struct Reading {
+    static inline int alive = 0;
+    int value;
+    std::string tag;
+    Reading(int v, std::string t) : value(v), tag(std::move(t)) { ++alive; }
+    Reading(const Reading& o) : value(o.value), tag(o.tag) { ++alive; }
+    Reading(Reading&& o) noexcept : value(o.value), tag(std::move(o.tag)) { ++alive; }
+    Reading& operator=(const Reading&) = delete;
+    ~Reading() { --alive; }
+    bool operator<(const Reading& o) const { return value < o.value; }
+    bool operator==(const Reading& o) const { return value == o.value; }
+};
+
+template <typename T>
+class SortedFixed {
+public:
+    explicit SortedFixed(std::size_t capacity)
+        : data_(std::allocator<T>().allocate(capacity)), cap_(capacity) {}
+
+    ~SortedFixed() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    SortedFixed(const SortedFixed&) = delete;
+    SortedFixed& operator=(const SortedFixed&) = delete;
+
+    bool insert(const T& x) {
+        if (size_ == cap_) return false;
+        std::size_t pos = 0;
+        while (pos < size_ && !(x < data_[pos])) ++pos;   // after every equal one
+        // Open a gap at pos by moving the objects from pos onward one space up, last first.
+        for (std::size_t j = size_; j > pos; --j) {
+            std::construct_at(data_ + j, std::move(data_[j - 1]));
+            std::destroy_at(data_ + j - 1);
+        }
+        std::construct_at(data_ + pos, x);
+        ++size_;
+        return true;
+    }
+
+    bool erase_value(const T& x) {
+        std::size_t i = 0;
+        while (i < size_ && !(data_[i] == x)) ++i;
+        if (i == size_) return false;
+        std::destroy_at(data_ + i);
+        for (std::size_t j = i; j + 1 < size_; ++j) {
+            std::construct_at(data_ + j, std::move(data_[j + 1]));
+            std::destroy_at(data_ + j + 1);
+        }
+        --size_;
+        return true;
+    }
+
+    const T& operator[](std::size_t i) const { return data_[i]; }
+    std::size_t size() const { return size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+For \`insert\`, first find the position: walk forward while the object there is not bigger than \`x\` (that is, \`!(x < data_[pos])\`), so equal objects stay in front of the new one.
+--- hint
+To open a gap at \`pos\`, work from the end backwards: for \`j\` from \`size_\` down to \`pos + 1\`, build in space \`j\` from \`std::move(data_[j - 1])\`, then destroy space \`j - 1\`. Space \`pos\` is then empty room for the copy of \`x\`.
+--- hint
+\`erase_value\` finds the first equal object, destroys it, and closes the gap from the front: build in space \`j\` from the moved object in \`j + 1\`, then destroy \`j + 1\`.
+--- check test | Inserts land in sorted order
+[] { Reading::alive = 0; SortedFixed<Reading> s(5); for (int v : {5, 1, 4, 2}) s.insert(Reading(v, "")); return s.size() == 4 && s[0].value == 1 && s[1].value == 2 && s[2].value == 4 && s[3].value == 5 && Reading::alive == 4; }()
+--- check test | Equal values keep the order they came in
+[] { SortedFixed<Reading> s(4); s.insert(Reading(3, "a")); s.insert(Reading(1, "x")); s.insert(Reading(3, "b")); s.insert(Reading(3, "c")); return s.size() == 4 && s[1].tag == "a" && s[2].tag == "b" && s[3].tag == "c" && s[0].tag == "x"; }()
+--- check test | A full list refuses
+[] { Reading::alive = 0; SortedFixed<Reading> s(2); s.insert(Reading(2, "")); s.insert(Reading(1, "")); bool third = s.insert(Reading(0, "")); return !third && s.size() == 2 && s[0].value == 1 && Reading::alive == 2; }()
+--- check test | erase_value removes the first match only
+[] { SortedFixed<Reading> s(5); s.insert(Reading(2, "a")); s.insert(Reading(2, "b")); s.insert(Reading(7, "c")); bool gone = s.erase_value(Reading(2, "")); bool missing = !s.erase_value(Reading(9, "")); return gone && missing && s.size() == 2 && s[0].tag == "b" && s[1].tag == "c"; }()
+--- check test | Every object is destroyed exactly once
+[] { Reading::alive = 0; { SortedFixed<Reading> s(6); for (int v : {4, 8, 1, 9, 3}) s.insert(Reading(v, "")); s.erase_value(Reading(8, "")); s.erase_value(Reading(1, "")); s.insert(Reading(0, "")); } return Reading::alive == 0; }()
+--- check test | Works with strings too
+[] { SortedFixed<std::string> s(3); s.insert("pear"); s.insert("apple"); s.insert("fig"); return s.size() == 3 && s[0] == "apple" && s[1] == "fig" && s[2] == "pear"; }()
+
+=== cpp4-06 | Build a container: a growable array
+--- teach
+Last lesson your \`FixedStack\` kept room and objects apart, but its room was fixed forever. \`std::vector\` is that same idea plus the power to grow. It is not magic, and writing a small one yourself teaches more about C++ than almost anything else. This lesson adds three ideas to last lesson's, one at a time: grow by doubling, watch out for a piece of yourself, and copy and move properly.
+
+### A quick reminder: room first, objects later
+
+\`new T[n]\` gets room *and* builds \`n\` objects. That is impossible if \`T\` has no default constructor, and wasteful for room you have not used yet. So a real container gets raw memory and builds each object only when it is added:
+
+\`\`\`cpp
+std::allocator<T> alloc;
+T* p = alloc.allocate(8);          // room for 8 T, no objects yet
+std::construct_at(p, value);       // build one object in space 0   (<memory>)
+std::destroy_at(p);                // run its destructor
+alloc.deallocate(p, 8);            // give the memory back
+\`\`\`
+
+The rule is the same as last lesson: every object you built is destroyed exactly once, and only spaces that hold an object are destroyed.
+
+### Growing: double, don't add one
+
+Picture a bookshelf that is full. You buy a bigger one, carry every book across, and throw the old shelf away. Carrying books is the slow part, so you want to do it as rarely as possible.
+
+A growable array does exactly that. When it is full and you add one more:
+
+1. Allocate a new, bigger block.
+2. **Move** each element across: build it in the new block from \`std::move\` of the old one.
+3. Destroy the old elements.
+4. Deallocate the old block.
+
+Here are steps 2 and 3 for one element, with different names from your class:
+
+\`\`\`cpp
+std::construct_at(bigger + i, std::move(old[i]));   // build the new one by moving
+std::destroy_at(old + i);                           // the moved-from husk still needs destroying
+\`\`\`
+
+How much bigger should the new block be? This matters more than it looks.
+
+- **Add one each time** (capacity + 1): every single push past the first has to carry *all* the elements. For 1000 pushes that is 0 + 1 + 2 + … + 999 = 499,500 element moves. The work grows with the square of the count, which is O(n²).
+- **Double each time**: the capacity goes 0, 1, 2, 4, 8, 16, …. You carry elements only when you pass a power of two. For 1000 pushes that is 1 + 2 + 4 + … + 512 = 1023 moves. The total is always less than 2n, which is O(n).
+
+Spread over all the pushes, doubling costs less than two moves per push, however many you do. Programmers call that **[[amortised|amortised-word]] O(1)**: each push is O(1) *on average over many pushes*, even though an occasional one is slow. That is why [[real vectors grow by a factor|growth-factor]], never by a fixed amount.
+
+### Aliasing: pushing a piece of yourself
+
+**Aliasing** means two names for the same piece of memory. A container meets it here:
+
+\`\`\`cpp
+std::vector<std::string> names = {"Ada"};
+names.push_back(names[0]);        // the argument is a reference INTO names' own block
+\`\`\`
+
+\`names[0]\` is a reference to the first string, which lives *inside* the vector's own storage. Now imagine your own \`push_back\` receives that reference, finds the array full, and grows. Growing moves the string out of the old block and destroys the old block. The reference you were handed now points into memory that is gone: it **[[dangles|dangling-reference]]**. Building the new element from it reads garbage.
+
+\`std::vector\` handles this case correctly, so the code above is fine. Your class must too. The fix is about order: make (or move) your own copy of the new element **before** you release the old memory. Then growing can throw the old block away safely.
+
+### Copying and moving: the rule of five, done once properly
+
+A class that owns raw memory needs all five special functions from the advanced course. For a growable array:
+
+- **Destructor**: destroy the \`size\` built elements, then deallocate all \`capacity\` spaces.
+- **Copy constructor**: a *deep* copy. Get a new block of your own and build a copy of each element in it. Two arrays must never share one block.
+- **Move constructor**: steal the other array's block and leave the other one empty (null pointer, size 0, capacity 0). Mark it \`noexcept\`, so containers of your array will move it too.
+- **Copy assignment** and **move assignment**: both come from one trick, next.
+
+### Two helpers from \`<utility>\`
+
+\`std::swap(a, b)\`, which you met in the basics course, exchanges two values.
+
+\`std::exchange(x, v)\` sets \`x\` to \`v\` and **gives back the old value** of \`x\`, in one step:
+
+\`\`\`cpp
+int count = 5;
+int old = std::exchange(count, 0);   // count is now 0, old is 5
+\`\`\`
+
+That is exactly what a move constructor needs for each member: take the other one's value, and leave it empty at the same time. In a member initializer list it looks like this, for a class with a pointer member called \`ptr_\`:
+
+\`\`\`cpp
+ptr_(std::exchange(other.ptr_, nullptr))
+\`\`\`
+
+### Copy-and-swap: both assignments at once
+
+**Copy-and-swap** writes both assignment operators as one function. Take the parameter *by value*, then swap your members with it:
+
+\`\`\`cpp
+Buffer& operator=(Buffer other) noexcept {
+    swap(other);          // other now holds our old contents, and frees them
+    return *this;
+}
+\`\`\`
+
+Here is why it works:
+
+- Because \`other\` is taken by value, it is **made when the function is called**. If the caller passed an lvalue, the copy constructor makes it. If the caller passed a temporary or \`std::move(x)\`, the move constructor makes it. So one function covers both copy and move assignment.
+- \`swap(other)\` is a member function you write, that \`std::swap\`s each member with \`other\`'s. Now \`*this\` holds the new contents, and \`other\` holds the old ones.
+- At the closing brace, \`other\` is destroyed, and its destructor frees your old contents. You never write clean-up twice.
+
+It is also [[safe if something goes wrong|copy-and-swap-safety]], and \`a = a;\` works without a special check.
+
+### Iterators come free
+
+Your elements sit side by side in one block, in order. So a plain pointer is already a good iterator: \`begin()\` is the pointer to the first element, \`data_\`, and \`end()\` is one past the last, \`data_ + size_\`. The starter has these already. Every standard algorithm, like \`std::sort\`, and every range-for then work on your class.
+
+**Watch out:** in the grow step, the moved-from elements are still objects. After \`std::construct_at(bigger + i, std::move(old[i]))\`, the old one is a husk, but its destructor must still run, with \`std::destroy_at\`, before you deallocate the old block. Forgetting it gives no error; for a type like \`Tracked\` in the starter, the live count stays too high.
+
+::: context amortised-word Paying in instalments
+To amortise a cost is to spread it over time, like paying for a bicycle in small monthly instalments instead of all at once. Here, the rare expensive push, which moves every element, is "paid for" by all the cheap pushes before it. After doubling from 512 to 1024, the next 511 pushes cost nothing extra. Add up the whole bill and divide by the number of pushes, and it comes to less than two moves per push, however long you keep going. Amortised O(1) is a promise about the average over many operations, not about any single one.
+:::
+
+::: context growth-factor What real vectors do
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 162" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="28" font-size="11" fill="#6c7a93">cap 1</text>
+  <rect x="60" y="16" width="16" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="10" y="58" font-size="11" fill="#6c7a93">cap 2</text>
+  <rect x="60" y="46" width="16" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="76" y="46" width="16" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="10" y="88" font-size="11" fill="#6c7a93">cap 4</text>
+  <rect x="60" y="76" width="64" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <line x1="76" y1="76" x2="76" y2="92" stroke="#1f2a44"/>
+  <line x1="92" y1="76" x2="92" y2="92" stroke="#1f2a44"/>
+  <line x1="108" y1="76" x2="108" y2="92" stroke="#1f2a44"/>
+  <text x="10" y="118" font-size="11" fill="#6c7a93">cap 8</text>
+  <rect x="60" y="106" width="128" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="10" y="148" font-size="11" fill="#6c7a93">cap 16</text>
+  <rect x="60" y="136" width="256" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="200" y="28" font-size="11" fill="#1f2a44">moves so far: 0</text>
+  <text x="200" y="58" font-size="11" fill="#1d6fd1">1</text>
+  <text x="200" y="88" font-size="11" fill="#1d6fd1">1 + 2 = 3</text>
+  <text x="200" y="118" font-size="11" fill="#1d6fd1">3 + 4 = 7</text>
+  <text x="322" y="148" font-size="11" fill="#1d6fd1">15</text>
+</svg>
+\`\`\`
+
+Each row is the new block after a grow, twice the one above, with the moves counted so far on the right. Growing to 16 carries the 8 elements across, so after 9 pushes the total is 7 + 8 = 15 moves: fewer than two per push. GCC's and Clang's standard libraries double the capacity; Microsoft's grows it by 1.5 times, which wastes less room. If you know the final size up front, \`v.reserve(n)\` allocates once and nothing is ever moved. Flight software often reserves everything at start-up so that no allocation happens during the mission.
+:::
+
+::: context dangling-reference A reference to something that is gone
+A reference is a second name for an object. It does not keep the object alive. When the object is destroyed, or its memory is freed, the reference still exists but names nothing: it dangles. Using it is undefined behavior. The nasty part is that it often *seems* to work, because the old bytes are still there for a moment, and then fails later. The test in this lesson uses a string long enough to keep its letters on the heap, so reading a destroyed one really does go wrong.
+:::
+
+::: context copy-and-swap-safety Why copy-and-swap is safe
+All the risky work, getting memory and copying elements, happens while building the parameter \`other\`, before your object is touched. If that fails, your object is exactly as it was. The swap itself only exchanges a pointer and two numbers, which cannot fail, so it is honestly \`noexcept\`. Programmers call this the strong guarantee: an operation either fully happens or leaves everything unchanged. Self-assignment works too: \`a = a\` copies \`a\` into \`other\`, swaps, and frees the old copy. The price is that every copy assignment builds a whole new block, even when the old one was big enough; \`std::vector\` skips the idiom for that reason.
+:::
+--- task
+Complete \`template <typename T> class DynArray\`, a growable array. There is no \`main\`. The starter has the members \`data_\`, \`size_\` and \`cap_\`, and the reading functions.
+
+- \`push_back(const T&)\` and \`push_back(T&&)\`, and \`pop_back()\` (never called when empty).
+- \`size()\` and \`capacity()\`: the capacity goes 0, 1, 2, 4, 8, … (doubling when full).
+- \`operator[]\` (const and non-const), and \`begin()\` / \`end()\` as pointers (const and non-const). The starter has these.
+- The destructor, a deep copy constructor, a move constructor (\`noexcept\`, leaving the source empty), and assignment (copy-and-swap is the easy way).
+
+It must work for types **without a default constructor** (like the starter's \`Tracked\`, which counts live objects), destroy every element it built, and handle \`a.push_back(a[0])\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    int id;
+    explicit Tracked(int i) : id(i) { ++alive; }
+    Tracked(const Tracked& o) : id(o.id) { ++alive; }
+    Tracked(Tracked&& o) noexcept : id(o.id) { ++alive; }
+    Tracked& operator=(const Tracked&) = default;
+    ~Tracked() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+
+    void push_back(const T& x) {}
+    void push_back(T&& x) {}
+    void pop_back() {}
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+    T* begin() { return data_; }
+    T* end() { return data_ + size_; }
+    const T* begin() const { return data_; }
+    const T* end() const { return data_ + size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    int id;
+    explicit Tracked(int i) : id(i) { ++alive; }
+    Tracked(const Tracked& o) : id(o.id) { ++alive; }
+    Tracked(Tracked&& o) noexcept : id(o.id) { ++alive; }
+    Tracked& operator=(const Tracked&) = default;
+    ~Tracked() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+
+    ~DynArray() { release(); }
+
+    DynArray(const DynArray& other) : data_(allocate(other.size_)), size_(0), cap_(other.size_) {
+        for (const T& x : other) {
+            std::construct_at(data_ + size_, x);
+            ++size_;
+        }
+    }
+
+    DynArray(DynArray&& other) noexcept
+        : data_(std::exchange(other.data_, nullptr)),
+          size_(std::exchange(other.size_, 0)),
+          cap_(std::exchange(other.cap_, 0)) {}
+
+    DynArray& operator=(DynArray other) noexcept {
+        swap(other);
+        return *this;
+    }
+
+    void swap(DynArray& other) noexcept {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+        std::swap(cap_, other.cap_);
+    }
+
+    void push_back(const T& x) {
+        if (size_ == cap_) {
+            T copy(x);   // x may live in our own storage
+            grow();
+            std::construct_at(data_ + size_, std::move(copy));
+        } else {
+            std::construct_at(data_ + size_, x);
+        }
+        ++size_;
+    }
+
+    void push_back(T&& x) {
+        if (size_ == cap_) {
+            T moved(std::move(x));
+            grow();
+            std::construct_at(data_ + size_, std::move(moved));
+        } else {
+            std::construct_at(data_ + size_, std::move(x));
+        }
+        ++size_;
+    }
+
+    void pop_back() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+    T* begin() { return data_; }
+    T* end() { return data_ + size_; }
+    const T* begin() const { return data_; }
+    const T* end() const { return data_ + size_; }
+
+private:
+    static T* allocate(std::size_t n) { return n ? std::allocator<T>().allocate(n) : nullptr; }
+
+    void release() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = nullptr;
+        size_ = cap_ = 0;
+    }
+
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Write a private \`grow()\` first: get double the capacity (or 1 when it is 0) with \`std::allocator<T>\`, \`construct_at\` each element there from \`std::move(data_[i])\`, \`destroy_at\` the old one, then deallocate the old block and keep the new pointer and capacity.
+--- hint
+In \`push_back\`, when \`size_ == cap_\`, make a local copy of the argument (\`T copy(x);\`, or \`T moved(std::move(x));\` for the \`T&&\` one) *before* calling \`grow()\`, then construct the new element in \`data_ + size_\` from that local with \`std::move\`.
+--- hint
+The destructor destroys \`size_\` elements and deallocates \`cap_\` slots. The copy constructor allocates \`other.size_\` slots and \`construct_at\`s a copy of each element. The move constructor uses \`std::exchange\` on all three members. Assignment: \`DynArray& operator=(DynArray other) noexcept { swap(other); return *this; }\`, with a member \`swap\` that \`std::swap\`s the three members.
+--- check test | Pushing ints, capacity doubles
+[] { DynArray<int> a; std::vector<std::size_t> caps; for (int i = 0; i < 9; ++i) { a.push_back(i * i); caps.push_back(a.capacity()); } return a.size() == 9 && a[8] == 64 && caps == std::vector<std::size_t>{1, 2, 4, 4, 8, 8, 8, 8, 16}; }()
+--- check test | No default constructor needed, and every element destroyed
+[] { Tracked::alive = 0; bool ok; { DynArray<Tracked> a; for (int i = 0; i < 10; ++i) a.push_back(Tracked(i)); ok = Tracked::alive == 10 && a[9].id == 9; a.pop_back(); ok = ok && Tracked::alive == 9 && a.size() == 9; DynArray<Tracked> b = a; ok = ok && Tracked::alive == 18; } return ok && Tracked::alive == 0; }()
+--- check test | Copies are deep; moves leave the source empty
+[] { DynArray<std::string> a; a.push_back("x"); a.push_back("y"); DynArray<std::string> b = a; b[0] = "changed"; DynArray<std::string> c = std::move(a); DynArray<std::string> d; d = c; return b[0] == "changed" && c[0] == "x" && a.size() == 0 && d.size() == 2 && d[1] == "y"; }()
+--- check test | Pushing an element of itself is safe
+[] { DynArray<std::string> a; a.push_back("a string long enough to live on the heap"); for (int i = 0; i < 6; ++i) a.push_back(a[0]); return a.size() == 7 && a[6] == "a string long enough to live on the heap"; }()
+--- check test | Works with range-for and standard algorithms
+[] { DynArray<int> a; for (int x : {5, 3, 9, 1}) a.push_back(x); std::sort(a.begin(), a.end()); int total = 0; for (int x : a) total += x; return total == 18 && a[0] == 1 && a[3] == 9; }()
+--- check test | A million pushes, quickly
+[] { DynArray<int> a; for (int i = 0; i < 1000000; ++i) a.push_back(i % 10); long long total = 0; for (int x : a) total += x; return a.size() == 1000000 && total == 4500000; }()
+
++++ practice | A stack that grows by doubling
+--- task
+Write \`template <typename T> class GrowStack\`, a stack that keeps its objects side by side in raw memory from \`std::allocator<T>\` and grows when full. The starter's \`Part\` has no default constructor and counts how many are alive. No \`main\`.
+
+- \`void push(T x)\`: a sink parameter. When the stack is full, first grow: get a block twice as big (1 when the capacity is 0), move every object across, destroy the old objects and give the old block back. Then move \`x\` onto the top. Because \`x\` is a parameter taken by value, \`s.push(s.top())\` is safe.
+- \`void pop()\` destroys the top (never called when empty), and \`T& top()\` returns it.
+- \`std::size_t size() const\` and \`std::size_t capacity() const\`: the capacity goes 0, 1, 2, 4, 8, ….
+- The destructor destroys every object still there, then gives the block back. Copying is switched off with \`= delete\`.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class GrowStack {
+public:
+    GrowStack() = default;
+    GrowStack(const GrowStack&) = delete;
+    GrowStack& operator=(const GrowStack&) = delete;
+
+    void push(T x) {}
+    void pop() {}
+    T& top() { return data_[size_ - 1]; }
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class GrowStack {
+public:
+    GrowStack() = default;
+    GrowStack(const GrowStack&) = delete;
+    GrowStack& operator=(const GrowStack&) = delete;
+
+    ~GrowStack() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push(T x) {
+        if (size_ == cap_) grow();
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    void pop() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    T& top() { return data_[size_ - 1]; }
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+
+private:
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Write a private \`grow()\` first: the four steps from the lesson, with the new capacity \`cap_ ? cap_ * 2 : 1\`. Only deallocate when there is a block to give back.
+--- hint
+\`push\` calls \`grow()\` when \`size_ == cap_\`, then builds the new top from \`std::move(x)\`. \`x\` is already the stack's own copy, made before \`grow()\` ran, so nothing it depends on can disappear.
+--- check test | Capacity doubles
+[] { GrowStack<int> s; std::vector<std::size_t> caps; for (int i = 0; i < 9; ++i) { s.push(i); caps.push_back(s.capacity()); } return s.size() == 9 && s.top() == 8 && caps == std::vector<std::size_t>{1, 2, 4, 4, 8, 8, 8, 8, 16}; }()
+--- check test | Every object is destroyed, through growing, popping and the end
+[] { Part::alive = 0; bool ok; { GrowStack<Part> s; for (int i = 0; i < 10; ++i) s.push(Part(i)); ok = Part::alive == 10 && s.top().id == 9; s.pop(); s.pop(); ok = ok && Part::alive == 8 && s.top().id == 7; } return ok && Part::alive == 0; }()
+--- check test | Pushing your own top is safe
+[] { GrowStack<std::string> s; s.push("a string long enough to live on the heap"); for (int i = 0; i < 5; ++i) s.push(s.top()); return s.size() == 6 && s.top() == "a string long enough to live on the heap"; }()
+--- check test | A million pushes, quickly
+[] { GrowStack<int> s; for (int i = 0; i < 1000000; ++i) s.push(i); long long total = 0; while (s.size() > 0) { total += s.top(); s.pop(); } return total == 499999500000LL; }()
+
++++ practice | Reserve room, then give it back
+--- task
+The starter's \`Vec<T>\` already grows by doubling in \`push_back\`. Add two member functions that change its capacity directly, the way \`std::vector\`'s do. The starter's \`Part\` counts objects alive, copies and moves. No \`main\`.
+
+- \`void reserve(std::size_t n)\`: if \`n\` is more than the capacity, move every object into a new block of **exactly** \`n\` spaces (the capacity becomes \`n\`). Otherwise do nothing.
+- \`void shrink_to_fit()\`: move the objects into a block of exactly \`size()\` spaces, so the capacity equals the size. If the size is 0, give the block back and leave no block at all (capacity 0).
+
+Moving objects to a new block moves each one exactly once and copies nothing, and every old object is destroyed.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// Counts objects alive, copies and moves.
+struct Part {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; ++copies; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; ++moves; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(T x) {
+        if (size_ == cap_) {
+            std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+            T* fresh = std::allocator<T>().allocate(new_cap);
+            for (std::size_t i = 0; i < size_; ++i) {
+                std::construct_at(fresh + i, std::move(data_[i]));
+                std::destroy_at(data_ + i);
+            }
+            if (data_) std::allocator<T>().deallocate(data_, cap_);
+            data_ = fresh;
+            cap_ = new_cap;
+        }
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    void reserve(std::size_t n) {}
+    void shrink_to_fit() {}
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+// Counts objects alive, copies and moves.
+struct Part {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; ++copies; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; ++moves; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(T x) {
+        if (size_ == cap_) relocate(cap_ ? cap_ * 2 : 1);
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    void reserve(std::size_t n) {
+        if (n > cap_) relocate(n);
+    }
+
+    void shrink_to_fit() {
+        if (size_ != cap_) relocate(size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    // Moves every object into a block of exactly new_cap spaces (no block at all for 0).
+    void relocate(std::size_t new_cap) {
+        T* fresh = new_cap ? std::allocator<T>().allocate(new_cap) : nullptr;
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+All three functions do the same job with a different new capacity: move everything into a fresh block. Pull the grow step out of \`push_back\` into a private helper that takes the new capacity.
+--- hint
+\`reserve(n)\` calls the helper only when \`n > cap_\`; \`shrink_to_fit\` calls it with \`size_\`. When the new capacity is 0, allocate nothing and set the pointer to \`nullptr\`; the helper must still deallocate the old block if there was one.
+--- check test | reserve gives exactly n, and never shrinks
+[] { Vec<int> v; v.reserve(10); bool ten = v.capacity() == 10; for (int i = 0; i < 10; ++i) v.push_back(i); bool still = v.capacity() == 10; v.reserve(4); bool kept = v.capacity() == 10; v.push_back(10); return ten && still && kept && v.capacity() == 20 && v[10] == 10 && v[0] == 0; }()
+--- check test | reserve moves each object once and copies none
+[] { Vec<Part> v; for (int i = 0; i < 5; ++i) v.push_back(Part(i)); Part::alive = 0; Part::copies = 0; Part::moves = 0; v.reserve(100); return Part::moves == 5 && Part::copies == 0 && Part::alive == 0 && v.capacity() == 100 && v[4].id == 4; }()
+--- check test | shrink_to_fit fits the size exactly
+[] { Vec<Part> v; for (int i = 0; i < 5; ++i) v.push_back(Part(i)); v.shrink_to_fit(); bool five = v.capacity() == 5 && v.size() == 5 && v[0].id == 0 && v[4].id == 4; v.push_back(Part(5)); return five && v.capacity() == 10; }()
+--- check test | Shrinking an empty Vec leaves no block
+[] { Vec<int> v; v.reserve(8); v.shrink_to_fit(); bool zero = v.capacity() == 0; v.push_back(7); return zero && v.capacity() == 1 && v[0] == 7; }()
+--- check test | Nothing leaks through reserving and shrinking
+[] { Part::alive = 0; { Vec<Part> v; v.reserve(3); for (int i = 0; i < 7; ++i) v.push_back(Part(i)); v.shrink_to_fit(); v.reserve(50); } return Part::alive == 0; }()
+
++++ practice | Copy, compare and append to yourself
+--- task
+The starter's \`Vec<T>\` can grow, push and destroy itself, but cannot be copied, moved, compared or appended to. Add these, using the lesson's tools. No \`main\`.
+
+- A deep copy constructor, and a move constructor that is \`noexcept\` and leaves the source empty (no block, size 0, capacity 0). Use \`std::exchange\`.
+- One assignment operator that covers copy and move assignment: copy-and-swap, with a member \`void swap(Vec& other) noexcept\`.
+- \`bool operator==(const Vec& other) const\`: the same size and equal elements in the same order.
+- \`Vec& operator+=(const Vec& other)\`: appends a copy of every element of \`other\`, in order, and returns \`*this\`. \`a += a\` must double \`a\`'s contents: \`{1, 2}\` becomes \`{1, 2, 1, 2}\`.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    // x is taken by value, so pushing one of our own elements is safe.
+    void push_back(T x) {
+        if (size_ == cap_) {
+            std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+            T* fresh = std::allocator<T>().allocate(new_cap);
+            for (std::size_t i = 0; i < size_; ++i) {
+                std::construct_at(fresh + i, std::move(data_[i]));
+                std::destroy_at(data_ + i);
+            }
+            if (data_) std::allocator<T>().deallocate(data_, cap_);
+            data_ = fresh;
+            cap_ = new_cap;
+        }
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    Vec(const Vec& other) {
+        if (other.size_ == 0) return;
+        data_ = std::allocator<T>().allocate(other.size_);
+        cap_ = other.size_;
+        for (std::size_t i = 0; i < other.size_; ++i) {
+            std::construct_at(data_ + i, other.data_[i]);
+            ++size_;
+        }
+    }
+
+    Vec(Vec&& other) noexcept
+        : data_(std::exchange(other.data_, nullptr)),
+          size_(std::exchange(other.size_, 0)),
+          cap_(std::exchange(other.cap_, 0)) {}
+
+    Vec& operator=(Vec other) noexcept {
+        swap(other);
+        return *this;
+    }
+
+    void swap(Vec& other) noexcept {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+        std::swap(cap_, other.cap_);
+    }
+
+    bool operator==(const Vec& other) const {
+        if (size_ != other.size_) return false;
+        for (std::size_t i = 0; i < size_; ++i)
+            if (!(data_[i] == other.data_[i])) return false;
+        return true;
+    }
+
+    Vec& operator+=(const Vec& other) {
+        std::size_t n = other.size_;   // other may be *this, whose size grows as we push
+        for (std::size_t i = 0; i < n; ++i) push_back(other[i]);
+        return *this;
+    }
+
+    // x is taken by value, so pushing one of our own elements is safe.
+    void push_back(T x) {
+        if (size_ == cap_) {
+            std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+            T* fresh = std::allocator<T>().allocate(new_cap);
+            for (std::size_t i = 0; i < size_; ++i) {
+                std::construct_at(fresh + i, std::move(data_[i]));
+                std::destroy_at(data_ + i);
+            }
+            if (data_) std::allocator<T>().deallocate(data_, cap_);
+            data_ = fresh;
+            cap_ = new_cap;
+        }
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+The copy constructor gets its own block of \`other.size_\` spaces and builds a copy of each element there. The move constructor takes all three members with \`std::exchange\`, leaving the source with \`nullptr\`, 0 and 0.
+--- hint
+Assignment is \`Vec& operator=(Vec other) noexcept { swap(other); return *this; }\`. \`operator==\` compares the sizes first, then the elements one by one.
+--- hint
+In \`a += a\`, \`other\` *is* \`*this\`, and every \`push_back\` makes \`other.size()\` bigger, so a loop \`while (i < other.size())\` never ends. Remember the size before the loop, and push each element by index.
+--- check test | Copies are deep
+[] { Vec<std::string> a; a.push_back("x"); a.push_back("y"); Vec<std::string> b = a; b[0] = "changed"; return a[0] == "x" && b[0] == "changed" && b.size() == 2 && b[1] == "y"; }()
+--- check test | Moves leave the source empty, and are noexcept
+[] { Vec<int> a; a.push_back(1); Vec<int> b = std::move(a); Vec<int> c; c = std::move(b); return a.size() == 0 && b.size() == 0 && c.size() == 1 && c[0] == 1 && std::is_nothrow_move_constructible_v<Vec<int>>; }()
+--- check test | Copy assignment, including to yourself
+[] { Vec<int> a; a.push_back(4); a.push_back(5); Vec<int> b; b.push_back(9); b = a; a[0] = 0; Vec<int>& same = b; b = same; return b.size() == 2 && b[0] == 4 && b[1] == 5; }()
+--- check test | Equality
+[] { Vec<int> a, b, c; for (int x : {1, 2, 3}) { a.push_back(x); b.push_back(x); } c.push_back(1); c.push_back(2); Vec<int> e1, e2; return a == b && !(a == c) && !(c == a) && e1 == e2 && !(a == e1); }()
+--- check test | Appending another, and appending yourself
+[] { Vec<int> a, b; a.push_back(1); a.push_back(2); b.push_back(3); a += b; bool one = a.size() == 3 && a[2] == 3; a += a; Vec<int> e; a += e; e += e; return one && a.size() == 6 && a[3] == 1 && a[5] == 3 && e.size() == 0; }()
+
++++ practice | Insert and erase anywhere
+--- task
+The starter's \`Vec<T>\` grows by doubling and pushes safely. Add insertion and removal at any position. \`T\` is copyable and assignable, like the starter's \`Part\`, which counts how many are alive. No \`main\`.
+
+- \`void insert(std::size_t i, const T& x)\` puts a copy of \`x\` at position \`i\`, moving the elements from \`i\` onward one place later. \`i\` can be anything from 0 to \`size()\`; \`i == size()\` appends. \`x\` may be an element of this very \`Vec\`, even when inserting makes it grow.
+- \`void erase(std::size_t i)\` removes the element at \`i\` (always a valid position), moving the later elements one place earlier.
+- Afterwards exactly \`size()\` objects are alive.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Counts how many are alive. Copyable and assignable.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part& operator=(const Part&) = default;
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(T x) {
+        if (size_ == cap_) grow();
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    void insert(std::size_t i, const T& x) {}
+    void erase(std::size_t i) {}
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Counts how many are alive. Copyable and assignable.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part& operator=(const Part&) = default;
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(T x) {
+        if (size_ == cap_) grow();
+        std::construct_at(data_ + size_, std::move(x));
+        ++size_;
+    }
+
+    void insert(std::size_t i, const T& x) {
+        T copy(x);   // x may live in our own storage
+        if (size_ == cap_) grow();
+        if (i == size_) {
+            std::construct_at(data_ + size_, std::move(copy));
+        } else {
+            std::construct_at(data_ + size_, std::move(data_[size_ - 1]));
+            for (std::size_t j = size_ - 1; j > i; --j) data_[j] = std::move(data_[j - 1]);
+            data_[i] = std::move(copy);
+        }
+        ++size_;
+    }
+
+    void erase(std::size_t i) {
+        for (std::size_t j = i; j + 1 < size_; ++j) data_[j] = std::move(data_[j + 1]);
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Make your own copy of \`x\` first, before growing or shifting anything: after that, nothing that happens to the storage can change it.
+--- hint
+To open a gap at \`i\`: the space at \`size_\` is empty room, so *build* the new last element there from \`std::move(data_[size_ - 1])\`. The other shifts are between spaces that already hold objects, so they are plain assignments, working from the back towards \`i\`. Then assign the copy into \`data_[i]\`.
+--- hint
+\`erase\` is the mirror image: assign each later element one place earlier, then take 1 from \`size_\` and destroy the leftover object at the end.
+--- check test | Insert at the front, middle and end
+[] { Vec<int> v; for (int x : {1, 2, 3}) v.push_back(x); v.insert(0, 0); v.insert(2, 9); v.insert(v.size(), 7); return v.size() == 6 && v[0] == 0 && v[1] == 1 && v[2] == 9 && v[3] == 2 && v[4] == 3 && v[5] == 7; }()
+--- check test | Insert into an empty Vec and into a full one
+[] { Vec<int> v; v.insert(0, 5); v.insert(0, 4); v.insert(1, 6); return v.size() == 3 && v[0] == 4 && v[1] == 6 && v[2] == 5; }()
+--- check test | Inserting your own element, while growing
+[] { Vec<std::string> v; v.push_back("first string, long enough to live on the heap"); v.push_back("b"); v.insert(0, v[1]); v.insert(1, v[1]); v.insert(0, v[2]); const std::string f = "first string, long enough to live on the heap"; return v.size() == 5 && v[0] == f && v[1] == "b" && v[2] == f && v[3] == f && v[4] == "b"; }()
+--- check test | Erase the first, the last and the only
+[] { Vec<int> v; for (int x : {1, 2, 3, 4}) v.push_back(x); v.erase(0); v.erase(v.size() - 1); bool mid = v.size() == 2 && v[0] == 2 && v[1] == 3; Vec<int> one; one.push_back(8); one.erase(0); return mid && one.size() == 0; }()
+--- check test | Exactly the right number of objects stay alive
+[] { Part::alive = 0; bool ok; { Vec<Part> v; for (int i = 0; i < 5; ++i) v.push_back(Part(i)); v.insert(2, Part(9)); v.insert(0, v[3]); v.erase(1); v.erase(4); ok = Part::alive == 5 && v.size() == 5 && v[0].id == 2 && v[1].id == 1 && v[2].id == 9 && v[4].id == 4; } return ok && Part::alive == 0; }()
+
++++ practice | Debug: the leaky, forgetful grow
+--- task
+**Bug report:** "After pushing 10 \`Part\`s and destroying the array, \`Part::alive\` is still 15. And \`a.push_back(a[0])\` sometimes stores an empty or garbled string, but only when the array was full."
+
+The starter's \`DynArray\` has two bugs, both in the growing path. Fix them. The starter's \`Part\` counts how many are alive. No \`main\`.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+    DynArray(const DynArray&) = delete;
+    DynArray& operator=(const DynArray&) = delete;
+    ~DynArray() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(const T& x) {
+        if (size_ == cap_) grow();
+        std::construct_at(data_ + size_, x);
+        ++size_;
+    }
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// A test type with no default constructor that counts how many are alive.
+struct Part {
+    static inline int alive = 0;
+    int id;
+    explicit Part(int i) : id(i) { ++alive; }
+    Part(const Part& o) : id(o.id) { ++alive; }
+    Part(Part&& o) noexcept : id(o.id) { ++alive; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class DynArray {
+public:
+    DynArray() = default;
+    DynArray(const DynArray&) = delete;
+    DynArray& operator=(const DynArray&) = delete;
+    ~DynArray() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    void push_back(const T& x) {
+        if (size_ == cap_) {
+            T copy(x);   // x may live in the block that grow() gives back
+            grow();
+            std::construct_at(data_ + size_, std::move(copy));
+        } else {
+            std::construct_at(data_ + size_, x);
+        }
+        ++size_;
+    }
+
+    std::size_t size() const { return size_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    void grow() {
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+    }
+
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+For the count: after \`std::construct_at(fresh + i, std::move(data_[i]))\`, the old \`data_[i]\` is a moved-from husk, but it is still an object. What must happen to it before its block is given back?
+--- hint
+For the string: \`x\` can be a reference into the old block. \`grow()\` gives that block back, and then \`x\` dangles. Make a local copy of \`x\` *before* calling \`grow()\`, then build the new element from that copy with \`std::move\`.
+--- check test | Growing destroys every moved-from husk
+[] { Part::alive = 0; bool ok; { DynArray<Part> a; for (int i = 0; i < 10; ++i) a.push_back(Part(i)); ok = Part::alive == 10 && a[9].id == 9 && a[0].id == 0; } return ok && Part::alive == 0; }()
+--- check test | Pushing your own element while full is safe
+[] { DynArray<std::string> a; a.push_back("a string long enough to live on the heap"); for (int i = 0; i < 8; ++i) a.push_back(a[0]); bool all = true; for (std::size_t i = 0; i < a.size(); ++i) all = all && a[i] == "a string long enough to live on the heap"; return a.size() == 9 && all; }()
+--- check test | Pushing the last element, too
+[] { DynArray<std::string> a; a.push_back("x"); a.push_back("another string long enough to live on the heap"); a.push_back(a[1]); a.push_back(a[2]); return a.size() == 4 && a[3] == "another string long enough to live on the heap" && a[0] == "x"; }()
+
++++ practice | Stretch: emplace_back, built in place and safe
+--- task
+The starter's \`Vec<T>\` has an \`emplace_back\` that works, but badly: it grows by **one** space at a time, and it breaks when an argument refers into the array. Rewrite \`emplace_back\` properly. The starter's \`Part\` counts objects alive, copies and moves. No \`main\`.
+
+\`template <typename... Args> T& emplace_back(Args&&... args)\` builds a new element at the end straight from \`args\`, forwarded to \`T\`'s constructor, and returns a reference to it.
+
+- When full, grow by **doubling** (1 when the capacity is 0). Then 1,000 calls move elements fewer than 2,000 times in total, and never copy one.
+- \`v.emplace_back(v[0])\` must be safe, even when it makes the array grow. Do it without an extra temporary: in the new block, build the new element **first**, while the old block and everything in it still exist, and only then move the old elements across.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Counts objects alive, copies and moves.
+struct Part {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    int id;
+    std::string name;
+    Part(int i, std::string n) : id(i), name(std::move(n)) { ++alive; }
+    Part(const Part& o) : id(o.id), name(o.name) { ++alive; ++copies; }
+    Part(Part&& o) noexcept : id(o.id), name(std::move(o.name)) { ++alive; ++moves; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    template <typename... Args>
+    T& emplace_back(Args&&... args) {
+        if (size_ == cap_) {
+            std::size_t new_cap = cap_ + 1;
+            T* fresh = std::allocator<T>().allocate(new_cap);
+            for (std::size_t i = 0; i < size_; ++i) {
+                std::construct_at(fresh + i, std::move(data_[i]));
+                std::destroy_at(data_ + i);
+            }
+            if (data_) std::allocator<T>().deallocate(data_, cap_);
+            data_ = fresh;
+            cap_ = new_cap;
+        }
+        std::construct_at(data_ + size_, std::forward<Args>(args)...);
+        return data_[size_++];
+    }
+
+    void pop_back() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
+// Counts objects alive, copies and moves.
+struct Part {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    int id;
+    std::string name;
+    Part(int i, std::string n) : id(i), name(std::move(n)) { ++alive; }
+    Part(const Part& o) : id(o.id), name(o.name) { ++alive; ++copies; }
+    Part(Part&& o) noexcept : id(o.id), name(std::move(o.name)) { ++alive; ++moves; }
+    ~Part() { --alive; }
+};
+
+template <typename T>
+class Vec {
+public:
+    Vec() = default;
+    Vec(const Vec&) = delete;
+    Vec& operator=(const Vec&) = delete;
+    ~Vec() {
+        for (std::size_t i = 0; i < size_; ++i) std::destroy_at(data_ + i);
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+    }
+
+    template <typename... Args>
+    T& emplace_back(Args&&... args) {
+        if (size_ < cap_) {
+            std::construct_at(data_ + size_, std::forward<Args>(args)...);
+            return data_[size_++];
+        }
+        std::size_t new_cap = cap_ ? cap_ * 2 : 1;
+        T* fresh = std::allocator<T>().allocate(new_cap);
+        // The arguments may refer into the old block, so build from them before it goes.
+        std::construct_at(fresh + size_, std::forward<Args>(args)...);
+        for (std::size_t i = 0; i < size_; ++i) {
+            std::construct_at(fresh + i, std::move(data_[i]));
+            std::destroy_at(data_ + i);
+        }
+        if (data_) std::allocator<T>().deallocate(data_, cap_);
+        data_ = fresh;
+        cap_ = new_cap;
+        return data_[size_++];
+    }
+
+    void pop_back() {
+        --size_;
+        std::destroy_at(data_ + size_);
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t capacity() const { return cap_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t cap_ = 0;
+};
+--- hint
+Split \`emplace_back\` into two paths. With room to spare, build at \`data_ + size_\` from the forwarded arguments and return it. When full, the order of the steps is the whole problem.
+--- hint
+When full: allocate the doubled block, build the new element at \`fresh + size_\` from the forwarded arguments (the old block is still whole), then move each old element to \`fresh + i\` and destroy it, then give the old block back.
+--- check test | Builds in place and returns the new element
+[] { Part::copies = 0; Part::moves = 0; Vec<Part> v; Part& a = v.emplace_back(7, "seven"); a.name = "changed"; return Part::copies == 0 && Part::moves == 0 && v[0].name == "changed" && &a == &v[0] && v.size() == 1; }()
+--- check test | Doubling: few moves, no copies
+[] { Part::copies = 0; Part::moves = 0; bool ok; { Vec<Part> v; for (int i = 0; i < 1000; ++i) v.emplace_back(i, "p"); ok = Part::moves < 2000 && Part::copies == 0 && v.size() == 1000 && v[999].id == 999 && v.capacity() == 1024; } return ok; }()
+--- check test | Emplacing your own element while growing
+[] { Vec<std::string> v; v.emplace_back("a string long enough to live on the heap"); for (int i = 0; i < 6; ++i) v.emplace_back(v[0]); v.emplace_back(v[6]); return v.size() == 8 && v[7] == "a string long enough to live on the heap" && v[0] == v[7]; }()
+--- check test | Several constructor arguments, and nothing leaks
+[] { Part::alive = 0; bool ok; { Vec<Part> v; v.emplace_back(1, "one"); v.emplace_back(2, "two"); v.emplace_back(v[0].id + 10, v[1].name); v.pop_back(); v.emplace_back(3, "three"); ok = Part::alive == 3 && v[2].name == "three" && v[1].name == "two"; } return ok && Part::alive == 0; }()
+
+=== cpp4-07 | Build a container: a ring buffer with its own iterator
+--- teach
+Last lesson your \`DynArray\` could use plain pointers as its iterators, because its elements sat side by side, in order, in one block. This lesson builds a container where that is not true, so you write the iterator yourself: a small class that knows how to walk it.
+
+### A ring of seats
+
+Picture a round table with 4 seats, and guests who arrive one at a time. When all the seats are full and a new guest arrives, the guest who has been there longest leaves, and the newcomer takes that seat. The table always holds the 4 most recent guests.
+
+A **ring buffer** does exactly that with a fixed array. It keeps the last \`N\` items. Two numbers track it:
+
+- \`head\`: the array position (the **slot**) of the oldest item;
+- \`size\`: how many items there are right now.
+
+Positions **wrap around** with \`% N\`, the remainder after dividing by \`N\`. With \`N\` = 4, the slot after slot 3 is \`(3 + 1) % 4\`, which is 0: back to the start, like the hand of a clock going past 12.
+
+Pushing when the buffer is full overwrites the oldest item and moves \`head\` on by one. A ring buffer never allocates memory once it exists, which is why [[logs, audio and network code love it|ring-buffer-uses]].
+
+### Watching one fill and wrap
+
+Here is a buffer with \`N\` = 4, pushing 10, 20, 30, 40, 50 and 60. The starter's \`push\` writes to slot \`(head + size) % N\`:
+
+| after pushing | slot 0 | slot 1 | slot 2 | slot 3 | head | size |
+| --- | --- | --- | --- | --- | --- | --- |
+| 10, 20, 30, 40 | 10 | 20 | 30 | 40 | 0 | 4 |
+| 50 | 50 | 20 | 30 | 40 | 1 | 4 |
+| 60 | 50 | 60 | 30 | 40 | 2 | 4 |
+
+At the end, the oldest item, 30, sits in slot 2, in the *middle* of the array. Oldest to newest, the items are 30, 40, 50, 60.
+
+So there are two ways to number an item:
+
+- its **slot**: where it sits in the array;
+- its **logical position**: how old it is, with 0 for the oldest, 1 for the next, and so on up to \`size - 1\`.
+
+To go from a logical position to a slot, count on from \`head\` and [[wrap around|ring-picture]]. In the last row, logical position 0 is slot 2, position 1 is slot 3, and position 2 wraps round to slot 0.
+
+### Why a pointer will not do
+
+A pointer can only walk the array in slot order: 0, 1, 2, 3, then off the end. Starting at the oldest item in slot 2, it would visit 30 and 40 and then run past the end of the array, instead of wrapping round to 50 and 60.
+
+So you write an **iterator class**: a small object that remembers two things, which buffer it belongs to and a *logical* position. When you ask for its element, it turns that position into a slot.
+
+### The pieces of an iterator, one at a time
+
+To work with the standard library, an iterator provides a few named parts. To see them without giving away your buffer's, picture an iterator called \`Skip\` that walks a \`std::vector<int>\` visiting every second element. It remembers a pointer to the vector and an index:
+
+\`\`\`cpp
+const std::vector<int>* v_ = nullptr;   // which vector
+std::size_t i_ = 0;                     // which position in it
+\`\`\`
+
+**1. Five type names.** The standard library looks inside an iterator for five names, written as **[[type aliases|type-alias]]**. \`using A = B;\` means "A is another name for the type B":
+
+\`\`\`cpp
+using iterator_category = std::forward_iterator_tag;
+using value_type        = int;
+using difference_type   = std::ptrdiff_t;
+using pointer           = const int*;
+using reference         = const int&;
+\`\`\`
+
+- \`iterator_category\` says what kind of iterator it is. \`std::forward_iterator_tag\`, from \`<iterator>\`, says a **[[forward iterator|iterator-kinds]]**: it only steps forward, and you can walk the same items more than once.
+- \`value_type\` is the type of the elements.
+- \`difference_type\` is the type for the distance between two iterators. \`std::ptrdiff_t\` is a signed whole-number type made for exactly that.
+- \`pointer\` and \`reference\` are what you get when you look at an element. Both say \`const\` here, so the iterator is read-only.
+
+**2. A default constructor.** Forward iterators must be buildable with nothing, so the class has \`Skip() = default;\`. That is why both members above have starting values.
+
+**3. \`operator*\`, the element.** \`*it\` calls it. It must be a \`const\` member function, so it has \`const\` after the brackets:
+
+\`\`\`cpp
+const int& operator*() const { return (*v_)[i_]; }
+\`\`\`
+
+\`(*v_)\` is the vector the pointer points at, and \`[i_]\` picks the element.
+
+**4. Two kinds of \`++\`.** \`++it\` is the **prefix** form: step, then give back the iterator itself. \`it++\` is the **postfix** form: step, but give back a copy of where it *was*. C++ tells them apart by a [[dummy int parameter|postfix-int]] on the postfix one:
+
+\`\`\`cpp
+Skip& operator++() { i_ += 2; return *this; }                      // ++it
+Skip operator++(int) { Skip before = *this; i_ += 2; return before; }  // it++
+\`\`\`
+
+**5. \`==\`.** Two iterators are equal when all their members are equal. \`= default\` asks the compiler to write that comparison for you, member by member. In C++20, [[the compiler also writes the not-equal test|defaulted-equality]], \`!=\`, from it:
+
+\`\`\`cpp
+bool operator==(const Skip&) const = default;
+\`\`\`
+
+An iterator may also have \`operator->\`, so that \`it->name\` works when elements have members. It gives back the element's address, a \`pointer\`. The standard concepts do not require it, but it is polite to add.
+
+### An iterator that lives inside its container
+
+The standard containers keep their iterator **inside** the container class, as a **nested class**: a class written inside another class. Then its full name is \`Container::iterator\`, like \`std::vector<int>::iterator\`. A class nested inside a class template can use the outer template's parameters, such as \`T\` and \`N\`, directly.
+
+The container then hands out two iterators:
+
+- \`begin()\`: logical position 0, the oldest item.
+- \`end()\`: one past the last *logical* item, which is position \`size\`. It is a stopping mark, not a slot, and never dereferenced.
+
+Inside a \`const\` member function such as \`begin() const\`, the word \`this\` is a pointer to a *const* object. So an iterator made there remembers a \`const Container*\`.
+
+### Checking your work with a concept
+
+C++20 can check your iterator for you. \`std::forward_iterator<It>\`, from \`<iterator>\`, is a concept that is true only if every piece above is present and has the right type:
+
+\`\`\`cpp
+static_assert(std::forward_iterator<Skip>);   // compiles only if Skip is a real forward iterator
+\`\`\`
+
+If \`begin()\` and \`end()\` return such iterators, your class is a **[[range|range-word]]**. Then range-for works on it, \`std::vector<T>(x.begin(), x.end())\` copies it into a vector, and the \`std::ranges\` algorithms, such as \`std::ranges::max_element\`, \`std::ranges::count\` and \`std::ranges::distance\`, all accept it.
+
+**Watch out:** two details catch people. First, \`operator*\` must be a \`const\` member function, because the concept dereferences const iterators; without the \`const\`, \`std::forward_iterator\` is false. Second, \`end()\` is logical position \`size\`, not the slot \`(head + size) % N\`. When the buffer is full, that slot is the same as \`head\`, so \`begin()\` would equal \`end()\` and every loop would see a full buffer as empty.
+
+::: context ring-buffer-uses Where ring buffers live
+Anywhere new data keeps arriving and only the most recent part matters. The Linux kernel keeps its log messages in a ring buffer, which is what the \`dmesg\` command prints. Audio programs pass sound between parts of the program that run at the same time through ring buffers, because allocating memory in the middle of playback can cause a click. Network cards hand received packets to the computer through rings of slots. Spacecraft and aircraft data recorders work the same way: they record over the oldest data, so the last stretch before anything goes wrong is always kept.
+:::
+
+::: context ring-picture Counting on from head
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" font-family="Inter, Arial, sans-serif">
+  <circle cx="110" cy="100" r="62" fill="none" stroke="#6c7a93" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <rect x="90" y="18" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <text x="110" y="38" font-size="12" text-anchor="middle" fill="#1f2a44">50</text>
+  <text x="110" y="12" font-size="11" text-anchor="middle" fill="#6c7a93">slot 0</text>
+  <rect x="152" y="85" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <text x="172" y="105" font-size="12" text-anchor="middle" fill="#1f2a44">60</text>
+  <text x="222" y="105" font-size="11" text-anchor="middle" fill="#6c7a93">slot 1</text>
+  <rect x="90" y="152" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="110" y="172" font-size="12" text-anchor="middle" fill="#1f2a44">30</text>
+  <text x="110" y="196" font-size="11" text-anchor="middle" fill="#6c7a93">slot 2</text>
+  <rect x="28" y="85" width="40" height="30" fill="#fff" stroke="#1f2a44"/>
+  <text x="48" y="105" font-size="12" text-anchor="middle" fill="#1f2a44">40</text>
+  <text x="14" y="80" font-size="11" fill="#6c7a93">slot 3</text>
+  <text x="250" y="40" font-size="12" fill="#1f2a44">head = 2</text>
+  <text x="250" y="62" font-size="11" fill="#1d6fd1">position 0: slot 2</text>
+  <text x="250" y="80" font-size="11" fill="#1d6fd1">position 1: slot 3</text>
+  <text x="250" y="98" font-size="11" fill="#1d6fd1">position 2: slot 0</text>
+  <text x="250" y="116" font-size="11" fill="#1d6fd1">position 3: slot 1</text>
+  <text x="250" y="146" font-size="11" fill="#b4232c">end: position 4,</text>
+  <text x="250" y="162" font-size="11" fill="#b4232c">not a slot</text>
+</svg>
+\`\`\`
+
+The table's last row, drawn as a ring. The oldest item, 30, is shaded. Walking the ring from \`head\`, one slot at a time, and wrapping from slot 3 back to slot 0, visits the items oldest to newest. The iterator only ever counts positions 0, 1, 2, 3 and stops at 4; the turning into slots happens when you look at an element.
+:::
+
+::: context type-alias A second name for a type
+\`using A = B;\` does not make a new type. It gives an existing type a second name, the way "NASA" and "the National Aeronautics and Space Administration" name the same agency. You have met the idea already: \`std::size_t\` is a standard alias for one of the unsigned whole-number types, chosen to fit the computer. Inside a class, an alias becomes a member name, so code can ask \`Skip::value_type\` or \`std::vector<int>::value_type\` and get \`int\`. That is how library code learns about an iterator it has never seen before.
+:::
+
+::: context iterator-kinds A ladder of iterators
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="130" width="130" height="26" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="75" y="147" font-size="11" text-anchor="middle" fill="#1f2a44">input</text>
+  <rect x="35" y="100" width="130" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="100" y="117" font-size="11" text-anchor="middle" fill="#1f2a44">forward</text>
+  <rect x="60" y="70" width="130" height="26" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="125" y="87" font-size="11" text-anchor="middle" fill="#1f2a44">bidirectional</text>
+  <rect x="85" y="40" width="130" height="26" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="150" y="57" font-size="11" text-anchor="middle" fill="#1f2a44">random access</text>
+  <rect x="110" y="10" width="130" height="26" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="175" y="27" font-size="11" text-anchor="middle" fill="#1f2a44">contiguous</text>
+  <text x="250" y="147" font-size="11" fill="#6c7a93">read once</text>
+  <text x="250" y="117" font-size="11" fill="#1d6fd1">walk again</text>
+  <text x="250" y="87" font-size="11" fill="#6c7a93">step back: --</text>
+  <text x="250" y="57" font-size="11" fill="#6c7a93">jump: it + 10</text>
+  <text x="250" y="27" font-size="11" fill="#6c7a93">side by side</text>
+</svg>
+\`\`\`
+
+Iterators come in kinds, each able to do everything the one before can, plus more. An **input** iterator reads each item once, like keyboard input. A **forward** iterator can walk the same items again. A **bidirectional** one can also step back with \`--\`, like a \`std::map\`'s. A **random-access** one can jump, \`it + 10\`, like a \`std::deque\`'s. A **contiguous** one promises the items sit side by side in memory, like a \`std::vector\`'s or a plain pointer. An algorithm asks for the weakest kind it needs, so it works on as many containers as possible.
+:::
+
+::: context postfix-int Why the postfix one takes an int
+Both forms are called \`operator++\`, and a function's name plus its parameters must be different for two versions to exist. So C++ made a rule: the postfix one takes an \`int\` parameter that nobody uses and the caller never writes. It is only a marker. The postfix form must copy the old iterator to give it back, which is why programmers write \`++it\` in loops by habit: it never makes a copy it does not need.
+:::
+
+::: context defaulted-equality Less to write in C++20
+Before C++20 you wrote both \`==\` and \`!=\` by hand, and a class that compared its members had to list every one, where a forgotten member was an easy bug. In C++20, \`bool operator==(const X&) const = default;\` compares every member, in order, for you. And when the compiler sees \`a != b\` with no \`!=\` written, it rewrites it as \`!(a == b)\`. So a range-for loop's \`it != end\` works with only \`==\` written.
+:::
+
+::: context range-word What a range is
+A range is anything with a \`begin()\` and an \`end()\`: a sequence you can walk from start to stopping mark. Every standard container is one, and now your buffer is too. The C++20 \`std::ranges\` algorithms take the whole range as one argument, \`std::ranges::count(x, 2)\`, instead of a pair of iterators. Two lessons from now, "Ranges and views", builds on exactly this idea, with lazy views that filter and transform a range without copying it.
+:::
+--- task
+The starter's \`RingBuffer<T, N>\` already stores and pops correctly with \`head_\` and \`size_\`. Add, with no \`main\`:
+
+- \`const T& operator[](std::size_t i) const\`: the item at logical position \`i\`, so \`0\` is the oldest.
+- A nested class called \`iterator\` that satisfies \`std::forward_iterator\` and visits the items oldest to newest. It is read-only: its \`reference\` is \`const T&\`. It needs the five type names, a default constructor, a \`const\` \`operator*\`, both \`++\` forms and a defaulted \`operator==\`.
+- \`iterator begin() const\` and \`iterator end() const\`.
+--- starter
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+
+    std::optional<T> pop() {
+        if (size_ == 0) return std::nullopt;
+        T x = data_[head_];
+        head_ = (head_ + 1) % N;
+        --size_;
+        return x;
+    }
+
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    bool full() const { return size_ == N; }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+
+    std::optional<T> pop() {
+        if (size_ == 0) return std::nullopt;
+        T x = data_[head_];
+        head_ = (head_ + 1) % N;
+        --size_;
+        return x;
+    }
+
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    bool full() const { return size_ == N; }
+
+    const T& operator[](std::size_t i) const { return data_[(head_ + i) % N]; }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const RingBuffer* rb, std::size_t i) : rb_(rb), i_(i) {}
+
+        reference operator*() const { return (*rb_)[i_]; }
+        pointer operator->() const { return &(*rb_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const RingBuffer* rb_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, size_); }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- hint
+Start with \`operator[]\`: count on \`i\` places from \`head_\` and wrap around with \`% N\`, the way the table's last row turned positions into slots.
+--- hint
+The item at logical position \`i\` lives at slot \`(head_ + i) % N\`. The nested \`iterator\` holds a \`const RingBuffer*\` (starting as \`nullptr\`) and a logical index (starting at 0), plus a constructor that sets both. \`operator*\` returns \`(*rb_)[i_]\`, both \`++\` forms add 1 to the index, and a defaulted \`operator==\` compares both members.
+--- hint
+\`begin()\` is \`iterator(this, 0)\` and \`end()\` is \`iterator(this, size_)\`. Check you have all five \`using\` names (with \`T\` in place of \`int\`), \`iterator() = default;\`, and \`const\` after the brackets of \`operator*\`.
+--- check test | The iterator is a real forward iterator
+std::forward_iterator<RingBuffer<int, 3>::iterator>
+--- check case | Oldest to newest after wrapping
+[] { RingBuffer<int, 3> rb; for (int i = 1; i <= 5; ++i) rb.push(i); return std::vector<int>(rb.begin(), rb.end()); }()
+=> std::vector<int>{3, 4, 5}
+--- check test | operator[] and range-for agree after pops and pushes
+[] { RingBuffer<int, 4> rb; for (int i = 1; i <= 6; ++i) rb.push(i); rb.pop(); rb.push(7); int total = 0; for (int x : rb) total += x; return rb[0] == 4 && rb[3] == 7 && total == 4 + 5 + 6 + 7; }()
+--- check test | An empty buffer has begin() == end()
+[] { RingBuffer<std::string, 2> rb; bool empty = rb.begin() == rb.end(); rb.push("a"); rb.pop(); return empty && rb.begin() == rb.end(); }()
+--- check test | std::ranges algorithms accept it
+[] { RingBuffer<int, 5> rb; for (int x : {4, 9, 2, 7}) rb.push(x); return *std::ranges::max_element(rb) == 9 && std::ranges::count(rb, 2) == 1 && std::ranges::distance(rb) == 4; }()
+
++++ practice | Walk a vector backwards
+--- task
+Write \`template <typename T> class Reversed\`, a small read-only view that walks a \`std::vector<T>\` from its last element to its first, without copying it. No \`main\`.
+
+- \`explicit Reversed(const std::vector<T>& v)\` remembers a pointer to \`v\`.
+- A nested class \`iterator\` that satisfies \`std::forward_iterator\`, with \`const T&\` as its \`reference\`. It remembers the vector and a logical position, where position 0 is the **last** element of the vector.
+- \`iterator begin() const\` and \`iterator end() const\`, so range-for and the \`std::ranges\` algorithms work. For an empty vector, \`begin() == end()\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <vector>
+
+template <typename T>
+class Reversed {
+public:
+    explicit Reversed(const std::vector<T>& v) : v_(&v) {}
+
+private:
+    const std::vector<T>* v_;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <vector>
+
+template <typename T>
+class Reversed {
+public:
+    explicit Reversed(const std::vector<T>& v) : v_(&v) {}
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const std::vector<T>* v, std::size_t i) : v_(v), i_(i) {}
+
+        reference operator*() const { return (*v_)[v_->size() - 1 - i_]; }
+        pointer operator->() const { return &**this; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const std::vector<T>* v_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(v_, 0); }
+    iterator end() const { return iterator(v_, v_->size()); }
+
+private:
+    const std::vector<T>* v_;
+};
+--- hint
+The iterator counts logical positions 0, 1, 2, … like the ring buffer's. Only \`operator*\` turns a position into an index: position \`i\` is index \`size - 1 - i\`.
+--- hint
+You need the five \`using\` names, \`iterator() = default;\` with starting values for both members, a \`const\` \`operator*\`, both \`++\` forms and \`bool operator==(const iterator&) const = default;\`. \`end()\` is position \`size()\`.
+--- check test | The iterator is a real forward iterator
+std::forward_iterator<Reversed<int>::iterator> && std::forward_iterator<Reversed<std::string>::iterator>
+--- check case | Last to first
+[] { std::vector<int> v{1, 2, 3}; Reversed<int> r(v); return std::vector<int>(r.begin(), r.end()); }()
+=> std::vector<int>{3, 2, 1}
+--- check test | An empty vector
+[] { std::vector<int> v; Reversed<int> r(v); return r.begin() == r.end() && std::ranges::distance(r) == 0; }()
+--- check test | Range-for, and the ranges algorithms
+[] { std::vector<std::string> v{"a", "b", "c"}; Reversed<std::string> r(v); std::string s; for (const std::string& x : r) s += x; return s == "cba" && std::ranges::count(r, "b") == 1 && *std::ranges::max_element(r) == "c"; }()
+--- check test | Both ++ forms, and it sees changes to the vector
+[] { std::vector<int> v{5, 6}; Reversed<int> r(v); auto it = r.begin(); int first = *it++; int second = *it; v[1] = 9; return first == 6 && second == 5 && *r.begin() == 9; }()
+
++++ practice | Only the seats that are taken
+--- task
+The starter's \`Seats<N>\` is a row of \`N\` seats, each holding a name; an empty name means the seat is free. It has an iterator, but that iterator visits **every** seat, free ones included. Change the iterator so that it visits only the taken seats, in seat order, and add \`operator->\`. No \`main\`.
+
+- \`++\` moves to the next **taken** seat, or to \`end()\` if there is none.
+- \`begin()\` is the first taken seat (or \`end()\` if every seat is free). \`end()\` is position \`N\`.
+- \`pointer operator->() const\` returns the address of the name, so \`it->size()\` works.
+- It must still satisfy \`std::forward_iterator\`.
+--- starter
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <std::size_t N>
+class Seats {
+public:
+    bool occupy(std::size_t seat, std::string name) {
+        if (seat >= N || name.empty() || !names_[seat].empty()) return false;
+        names_[seat] = std::move(name);
+        return true;
+    }
+    void vacate(std::size_t seat) { names_[seat].clear(); }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = std::string;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const std::string*;
+        using reference = const std::string&;
+
+        iterator() = default;
+        iterator(const Seats* s, std::size_t seat) : s_(s), seat_(seat) {}
+
+        reference operator*() const { return s_->names_[seat_]; }
+        iterator& operator++() {
+            ++seat_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++*this;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const Seats* s_ = nullptr;
+        std::size_t seat_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, N); }
+
+private:
+    std::array<std::string, N> names_{};
+};
+--- solution
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <std::size_t N>
+class Seats {
+public:
+    bool occupy(std::size_t seat, std::string name) {
+        if (seat >= N || name.empty() || !names_[seat].empty()) return false;
+        names_[seat] = std::move(name);
+        return true;
+    }
+    void vacate(std::size_t seat) { names_[seat].clear(); }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = std::string;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const std::string*;
+        using reference = const std::string&;
+
+        iterator() = default;
+        iterator(const Seats* s, std::size_t seat) : s_(s), seat_(seat) { skip_free(); }
+
+        reference operator*() const { return s_->names_[seat_]; }
+        pointer operator->() const { return &s_->names_[seat_]; }
+        iterator& operator++() {
+            ++seat_;
+            skip_free();
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++*this;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        void skip_free() {
+            while (seat_ < N && s_->names_[seat_].empty()) ++seat_;
+        }
+
+        const Seats* s_ = nullptr;
+        std::size_t seat_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, N); }
+
+private:
+    std::array<std::string, N> names_{};
+};
+--- hint
+Give the iterator a small private helper that moves forward past free seats, stopping at \`N\`. Call it in two places: after every step, and once when the iterator is made, so that \`begin()\` also lands on a taken seat.
+--- hint
+The helper is \`while (seat_ < N && s_->names_[seat_].empty()) ++seat_;\`. A nested class may read its outer class's private members. \`operator->\` returns \`&s_->names_[seat_]\`.
+--- check test | Still a forward iterator
+std::forward_iterator<Seats<4>::iterator>
+--- check case | Only taken seats, in seat order
+[] { Seats<6> s; s.occupy(4, "lin"); s.occupy(1, "ada"); s.occupy(5, "sam"); return std::vector<std::string>(s.begin(), s.end()); }()
+=> std::vector<std::string>{"ada", "lin", "sam"}
+--- check test | A row with nobody in it
+[] { Seats<3> s; bool empty = s.begin() == s.end(); s.occupy(2, "x"); s.vacate(2); return empty && s.begin() == s.end() && std::ranges::distance(s) == 0; }()
+--- check test | operator-> and the ranges algorithms
+[] { Seats<5> s; s.occupy(0, "bo"); s.occupy(3, "kim"); s.occupy(4, "al"); auto it = s.begin(); ++it; return it->size() == 3 && std::ranges::distance(s) == 3 && std::ranges::count(s, "al") == 1; }()
+--- check test | A full row, then a gap in the middle
+[] { Seats<3> s; s.occupy(0, "a"); s.occupy(1, "b"); s.occupy(2, "c"); bool full = std::ranges::distance(s) == 3; s.vacate(1); std::string all; for (const std::string& n : s) all += n; return full && all == "ac"; }()
+
++++ practice | Two vectors, one sequence
+--- task
+Write \`template <typename T> class Chain\`, a read-only view that walks two vectors one after the other, as if they were one sequence, without copying either. The starter's \`Probe\` counts its copies. No \`main\`.
+
+- \`Chain(const std::vector<T>& first, const std::vector<T>& second)\` remembers both.
+- A nested class \`iterator\` that satisfies \`std::forward_iterator\`, with \`const T&\` as its \`reference\`, and \`operator->\`. Looking at an element never copies it.
+- \`begin()\` and \`end()\`, both \`const\`. Either vector, or both, may be empty.
+- \`std::size_t size() const\`: the two sizes added together.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    std::string label;
+    explicit Probe(std::string l) : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    bool operator==(const Probe& o) const { return label == o.label; }
+};
+
+template <typename T>
+class Chain {
+public:
+    Chain(const std::vector<T>& first, const std::vector<T>& second) : a_(&first), b_(&second) {}
+    std::size_t size() const { return 0; }
+
+private:
+    const std::vector<T>* a_;
+    const std::vector<T>* b_;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Probe {
+    static inline int copies = 0;
+    std::string label;
+    explicit Probe(std::string l) : label(std::move(l)) {}
+    Probe(const Probe& o) : label(o.label) { ++copies; }
+    bool operator==(const Probe& o) const { return label == o.label; }
+};
+
+template <typename T>
+class Chain {
+public:
+    Chain(const std::vector<T>& first, const std::vector<T>& second) : a_(&first), b_(&second) {}
+
+    std::size_t size() const { return a_->size() + b_->size(); }
+
+    const T& operator[](std::size_t i) const { return i < a_->size() ? (*a_)[i] : (*b_)[i - a_->size()]; }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const Chain* c, std::size_t i) : c_(c), i_(i) {}
+
+        reference operator*() const { return (*c_)[i_]; }
+        pointer operator->() const { return &(*c_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const Chain* c_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, size()); }
+
+private:
+    const std::vector<T>* a_;
+    const std::vector<T>* b_;
+};
+--- hint
+Number the whole sequence 0, 1, 2, … up to \`size()\`. Position \`i\` is in the first vector when \`i < first.size()\`, and otherwise at index \`i - first.size()\` of the second. A \`const\` \`operator[]\` that does this turning keeps the iterator tiny.
+--- hint
+The iterator remembers a \`const Chain*\` and a position, like the ring buffer's. \`end()\` is position \`size()\`. Return \`const T&\` from \`operator*\`, never a \`T\`, so nothing is copied.
+--- check test | A forward iterator
+std::forward_iterator<Chain<int>::iterator>
+--- check case | First vector, then second
+[] { std::vector<int> a{1, 2}, b{3, 4, 5}; Chain<int> c(a, b); return std::vector<int>(c.begin(), c.end()); }()
+=> std::vector<int>{1, 2, 3, 4, 5}
+--- check test | Either or both may be empty
+[] { std::vector<int> e, b{7}; Chain<int> c1(e, b), c2(b, e), c3(e, e); return std::vector<int>(c1.begin(), c1.end()) == std::vector<int>{7} && std::vector<int>(c2.begin(), c2.end()) == std::vector<int>{7} && c3.begin() == c3.end() && c3.size() == 0; }()
+--- check test | Walking copies nothing
+[] { std::vector<Probe> a{Probe("x")}, b{Probe("y"), Probe("z")}; Chain<Probe> c(a, b); Probe::copies = 0; std::string all; for (const Probe& p : c) all += p.label; auto it = c.begin(); ++it; return all == "xyz" && it->label == "y" && Probe::copies == 0; }()
+--- check test | Ranges algorithms across the join
+[] { std::vector<int> a{4, 9}, b{2, 9, 1}; Chain<int> c(a, b); return std::ranges::count(c, 9) == 2 && *std::ranges::max_element(c) == 9 && std::ranges::distance(c) == 5 && c.size() == 5; }()
+
++++ practice | A ring that counts from the write position
+--- task
+The starter's \`RingLog<T, N>\` keeps the last \`N\` items in a different way from the lesson's buffer: \`next_\` is the slot the **next** push will write, and \`count_\` is how many items there are. Add, with no \`main\`:
+
+- \`const T& operator[](std::size_t i) const\`: the item at logical position \`i\`, where 0 is the oldest.
+- A nested \`iterator\` that satisfies \`std::forward_iterator\` and visits the items oldest to newest, read-only.
+- \`begin()\` and \`end()\`, both \`const\`.
+
+It must be right in every case: empty, partly full, exactly full, after wrapping round many times, and with \`N\` = 1. Work out where the oldest item is from \`next_\` and \`count_\`, without letting any unsigned number go below zero.
+--- starter
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingLog {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[next_] = x;
+        next_ = (next_ + 1) % N;
+        if (count_ < N) ++count_;
+    }
+    std::size_t size() const { return count_; }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t next_ = 0;
+    std::size_t count_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingLog {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[next_] = x;
+        next_ = (next_ + 1) % N;
+        if (count_ < N) ++count_;
+    }
+    std::size_t size() const { return count_; }
+
+    const T& operator[](std::size_t i) const {
+        std::size_t oldest = (next_ + N - count_) % N;   // + N first, so nothing goes below zero
+        return data_[(oldest + i) % N];
+    }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const RingLog* log, std::size_t i) : log_(log), i_(i) {}
+
+        reference operator*() const { return (*log_)[i_]; }
+        pointer operator->() const { return &(*log_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const RingLog* log_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, count_); }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t next_ = 0;
+    std::size_t count_ = 0;
+};
+--- hint
+The oldest item sits \`count_\` slots before \`next_\`, wrapping round. With unsigned numbers, \`next_ - count_\` can go below zero and wrap to a huge value; add \`N\` first: \`(next_ + N - count_) % N\`.
+--- hint
+From there it is the lesson's pattern: position \`i\` is slot \`(oldest + i) % N\`, the iterator counts positions, and \`end()\` is position \`count_\`, never a slot.
+--- check test | A forward iterator
+std::forward_iterator<RingLog<int, 3>::iterator>
+--- check test | Empty, then partly full
+[] { RingLog<int, 4> r; bool empty = r.begin() == r.end(); r.push(1); r.push(2); return empty && std::vector<int>(r.begin(), r.end()) == std::vector<int>{1, 2} && r[0] == 1 && r[1] == 2; }()
+--- check test | Exactly full, and full after wrapping
+[] { RingLog<int, 3> r; for (int i = 1; i <= 3; ++i) r.push(i); bool full = std::vector<int>(r.begin(), r.end()) == std::vector<int>{1, 2, 3}; for (int i = 4; i <= 100; ++i) r.push(i); return full && std::vector<int>(r.begin(), r.end()) == std::vector<int>{98, 99, 100} && r[0] == 98; }()
+--- check test | A ring of one
+[] { RingLog<int, 1> r; bool empty = r.begin() == r.end(); r.push(5); r.push(6); return empty && std::vector<int>(r.begin(), r.end()) == std::vector<int>{6} && r[0] == 6 && std::ranges::distance(r) == 1; }()
+--- check test | it++ gives the old position
+[] { RingLog<int, 2> r; r.push(7); r.push(8); r.push(9); auto it = r.begin(); int a = *it++; int b = *it++; return a == 8 && b == 9 && it == r.end(); }()
+
++++ practice | Debug: the full buffer that looks empty
+--- task
+**Bug report:** "A \`RingBuffer\` that is exactly full iterates as if it were empty. A buffer that has wrapped round gives the wrong number of items. And \`int x = *it++;\` gives me the second item instead of the first."
+
+Two member functions of the starter are wrong. Fix them. No \`main\`.
+--- starter
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+    std::size_t size() const { return size_; }
+    const T& operator[](std::size_t i) const { return data_[(head_ + i) % N]; }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const RingBuffer* rb, std::size_t i) : rb_(rb), i_(i) {}
+
+        reference operator*() const { return (*rb_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            ++i_;
+            return *this;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const RingBuffer* rb_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, (head_ + size_) % N); }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0);
+public:
+    void push(const T& x) {
+        data_[(head_ + size_) % N] = x;
+        if (size_ < N) ++size_;
+        else head_ = (head_ + 1) % N;
+    }
+    std::size_t size() const { return size_; }
+    const T& operator[](std::size_t i) const { return data_[(head_ + i) % N]; }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const T*;
+        using reference = const T&;
+
+        iterator() = default;
+        iterator(const RingBuffer* rb, std::size_t i) : rb_(rb), i_(i) {}
+
+        reference operator*() const { return (*rb_)[i_]; }
+        iterator& operator++() {
+            ++i_;
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++i_;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        const RingBuffer* rb_ = nullptr;
+        std::size_t i_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, size_); }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;
+    std::size_t size_ = 0;
+};
+--- hint
+The iterator counts **logical** positions, 0 for the oldest. So what position is one past the newest item? Compare that with what \`end()\` builds its iterator from.
+--- hint
+\`end()\` should be position \`size_\`. And the postfix \`++\` must give back a copy of where the iterator *was*: save \`*this\` first, step, then return the saved copy.
+--- check test | A full buffer shows every item
+[] { RingBuffer<int, 4> rb; for (int i = 1; i <= 4; ++i) rb.push(i); return std::vector<int>(rb.begin(), rb.end()) == std::vector<int>{1, 2, 3, 4}; }()
+--- check test | A wrapped buffer shows the right items
+[] { RingBuffer<int, 4> rb; for (int i = 1; i <= 6; ++i) rb.push(i); bool full = std::vector<int>(rb.begin(), rb.end()) == std::vector<int>{3, 4, 5, 6}; RingBuffer<int, 5> part; part.push(1); part.push(2); return full && std::vector<int>(part.begin(), part.end()) == std::vector<int>{1, 2}; }()
+--- check test | *it++ gives the item it was on
+[] { RingBuffer<int, 3> rb; rb.push(10); rb.push(20); auto it = rb.begin(); int first = *it++; return first == 10 && *it == 20; }()
+--- check test | Range-for agrees with size()
+[] { RingBuffer<int, 3> rb; int seen = 0; for (int i = 0; i < 7; ++i) { rb.push(i); int n = 0; for (int x : rb) { (void)x; ++n; } if (n != static_cast<int>(rb.size())) return false; seen += n; } return seen == 1 + 2 + 3 + 3 + 3 + 3 + 3; }()
+
++++ practice | Stretch: one iterator over a list of lists
+--- task
+Write \`class Flat\`, a read-only view over a \`std::vector<std::vector<int>>\` that walks every number of every inner vector, row by row, as one flat sequence. Inner vectors may be empty anywhere: at the start, in the middle, at the end, or all of them. No \`main\`.
+
+- \`explicit Flat(const std::vector<std::vector<int>>& rows)\` remembers a pointer to \`rows\`.
+- A nested \`iterator\` that satisfies \`std::forward_iterator\`, with \`const int&\` as its \`reference\`. It remembers the row and the column it is on, and it never rests on an empty row.
+- \`begin()\` and \`end()\`, both \`const\`. When there are no numbers at all, \`begin() == end()\`.
+
+For \`{{1, 2}, {}, {3}, {}}\` it visits 1, 2, 3.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+class Flat {
+public:
+    explicit Flat(const std::vector<std::vector<int>>& rows) : rows_(&rows) {}
+
+private:
+    const std::vector<std::vector<int>>* rows_;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <vector>
+
+class Flat {
+public:
+    explicit Flat(const std::vector<std::vector<int>>& rows) : rows_(&rows) {}
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = int;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const int*;
+        using reference = const int&;
+
+        iterator() = default;
+        iterator(const std::vector<std::vector<int>>* rows, std::size_t row) : rows_(rows), row_(row) { skip_empty(); }
+
+        reference operator*() const { return (*rows_)[row_][col_]; }
+        pointer operator->() const { return &(*rows_)[row_][col_]; }
+        iterator& operator++() {
+            ++col_;
+            if (col_ == (*rows_)[row_].size()) {
+                ++row_;
+                col_ = 0;
+                skip_empty();
+            }
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++*this;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        void skip_empty() {
+            while (row_ < rows_->size() && (*rows_)[row_].empty()) ++row_;
+        }
+
+        const std::vector<std::vector<int>>* rows_ = nullptr;
+        std::size_t row_ = 0;
+        std::size_t col_ = 0;
+    };
+
+    iterator begin() const { return iterator(rows_, 0); }
+    iterator end() const { return iterator(rows_, rows_->size()); }
+
+private:
+    const std::vector<std::vector<int>>* rows_;
+};
+--- hint
+Let the iterator hold three things: the pointer to the rows, a row number and a column number. Decide on one exact state for \`end()\` (row = number of rows, column 0), so that \`==\` can compare all three members.
+--- hint
+Keep one rule: the iterator is either on a real number or exactly at \`end()\`. A helper that steps past empty rows keeps it true; call it when the iterator is made and whenever \`++\` moves to a new row.
+--- hint
+\`++\` adds 1 to the column. If that reaches the end of the row, go to the next row, set the column back to 0, and skip any empty rows.
+--- check test | A forward iterator
+std::forward_iterator<Flat::iterator>
+--- check case | Rows with gaps
+[] { std::vector<std::vector<int>> rows{{1, 2}, {}, {3}, {}}; Flat f(rows); return std::vector<int>(f.begin(), f.end()); }()
+=> std::vector<int>{1, 2, 3}
+--- check case | Empty rows at the start
+[] { std::vector<std::vector<int>> rows{{}, {}, {4}, {5, 6}}; Flat f(rows); return std::vector<int>(f.begin(), f.end()); }()
+=> std::vector<int>{4, 5, 6}
+--- check test | Nothing to visit at all
+[] { std::vector<std::vector<int>> none; std::vector<std::vector<int>> blanks{{}, {}}; Flat a(none), b(blanks); return a.begin() == a.end() && b.begin() == b.end() && std::ranges::distance(b) == 0; }()
+--- check test | Ranges algorithms and it++
+[] { std::vector<std::vector<int>> rows{{7}, {}, {2, 7, 1}}; Flat f(rows); auto it = f.begin(); int a = *it++; return a == 7 && *it == 2 && std::ranges::count(f, 7) == 2 && *std::ranges::max_element(f) == 7 && std::ranges::distance(f) == 4; }()
+
+=== cpp4-08 | A hash map from scratch
+--- teach
+Last lesson you gave a container its own iterator. This lesson builds the container you have used most for fast lookups: \`std::unordered_map\`. It answers "what is the value for this key?" in O(1) on average, which means a fixed number of steps however many keys it holds. Building one yourself shows where that promise comes from, and when it breaks.
+
+### Lockers by first letter
+
+Picture a school with one row of lockers for each first letter of a surname. To find Okafor's locker, you do not search the whole school. You go straight to the O row and look at the few names there.
+
+A **hash table** works like that. In the intermediate course you met its parts: a row of **buckets**, and a **hash function** that picks a bucket for each key. Now you build them.
+
+### Step 1: hash the key
+
+A **[[hash function|hash-function]]** turns a key into a big whole number, its **hash**. The same key always gives the same hash. The standard library has one for strings:
+
+\`\`\`cpp
+std::size_t h = std::hash<std::string>{}("kiwi");
+\`\`\`
+
+Read \`std::hash<std::string>{}\` as "make a string hasher". The \`{}\` builds a hasher object, and \`("kiwi")\` then calls it with the key, the way you call a lambda. The result is a \`std::size_t\`.
+
+### Step 2: pick a bucket
+
+The hash is far too big to be a bucket number. So take its remainder after dividing by the number of buckets, with \`%\`:
+
+\`\`\`cpp
+std::size_t b = h % 8;   // with 8 buckets: a bucket number from 0 to 7
+\`\`\`
+
+Only the keys in that one bucket need comparing with the key you want. Every other bucket is skipped.
+
+### Step 3: collisions are normal
+
+Two different keys can land in the same bucket. That is a **collision**, and it is not an error: with more keys than buckets, it is certain.
+
+The simplest fix is **[[separate chaining|chaining-picture]]**: each bucket is a small list of the \`(key, value)\` pairs that landed in it. For a map from strings to \`double\`s, that is a vector of buckets, where each bucket is a vector of pairs:
+
+\`\`\`cpp
+std::vector<std::vector<std::pair<std::string, double>>> table_;
+
+auto& bucket = table_[std::hash<std::string>{}(name) % table_.size()];
+for (auto& [k, v] : bucket) if (k == name) { /* found: v is its value */ }
+\`\`\`
+
+\`table_.size()\` is the number of buckets. The loop uses a structured binding, \`auto& [k, v]\`, to name the two halves of each pair. The \`&\` means \`v\` is the real value inside the table, not a copy.
+
+There is a [[second big family of hash tables|open-addressing]], **open addressing**, which stores the entries in the array itself and, on a collision, tries neighboring slots. It is faster in practice, but fiddlier to delete from.
+
+### Step 4: keep the buckets short
+
+The **load factor** is the number of keys divided by the number of buckets: \`size / bucket_count\`. It is the average length of a bucket's list, so a lookup costs about that many comparisons.
+
+When the load factor passes a limit ([[0.75 is typical|load-limits]]), you **rehash**:
+
+1. Make twice as many buckets.
+2. Put every entry back in, one by one, into the bucket its hash picks *now*.
+
+Step 2 cannot be skipped, because a key's bucket depends on the bucket count. \`h % 8\` and \`h % 16\` are usually different numbers. A key that was in bucket 3 of 8 may belong in bucket 11 of 16.
+
+With 8 buckets, 0.75 × 8 = 6. So the 7th key pushes the load factor over 0.75 (7 ÷ 8 is 0.875), and the table grows to 16 buckets.
+
+Rehashing is O(n): it touches every entry. But it happens only when the table doubles, so, like your \`DynArray\` growing, the cost per insert stays O(1) on average.
+
+Without rehashing, a table with 8 buckets holding 200,000 keys has lists of about 25,000. Every lookup becomes a slow search, and "O(1)" has quietly become O(n).
+
+### Swapping two vectors
+
+A handy way to rehash: build the new, empty buckets in a local vector, then **swap** it with the member. \`a.swap(b)\` exchanges two vectors' contents in one quick step: only their inside pointers change places, no element is copied. After the swap, the member holds the new empty buckets and the local holds the old full ones, ready to be emptied back in.
+
+### A good hash matters
+
+The average-case promise also needs the hash to spread keys evenly. A terrible hash, such as "the length of the string", piles most keys into a few buckets: the same O(n) collapse. That is why you use a well-tested hash, and why [[an attacker can hurt a weak one|hash-flooding]]. It is also why a hash table walks its keys in no particular order.
+
+### Removing from the middle of a vector, fast
+
+To erase an entry you must take it out of its bucket's vector. \`erase\` on a vector shifts every later element down one place. When order does not matter, there is a faster way: move the **last** element into the hole, then \`pop_back()\`:
+
+\`\`\`cpp
+std::vector<std::string> crew = {"Ada", "Lin", "Sam", "Kai"};
+crew[1] = std::move(crew.back());   // "Kai" moves into Lin's place
+crew.pop_back();                    // crew is {"Ada", "Kai", "Sam"}
+\`\`\`
+
+Order inside a bucket does not matter, so this trick fits a bucket perfectly.
+
+### Adding in place: emplace_back
+
+\`b.emplace_back(key, value)\` adds a new pair at the end of a vector, building it in place from the two arguments you give. It saves writing \`b.push_back(std::pair(key, value))\`.
+
+### A const and a non-const find
+
+\`find\` gives back a pointer to the value, or \`nullptr\` if the key is missing. A pointer lets the caller change the value, \`*m.find("k") = 5\`, and tells them "not there" without a separate check.
+
+You need two versions. The non-\`const\` one gives an \`int*\`. The \`const\` one, used on a \`const\` map, gives a \`const int*\`, so nobody can change a read-only map through it. You can write the search loop twice. Or the \`const\` one can call the other through \`const_cast<StringIntMap*>(this)->find(key)\`. \`const_cast\` [[removes the const|const-cast]] from a pointer. That is safe here only because that \`find\` changes nothing. The starter already does it this way.
+
+**Watch out:** two mistakes are common. First, adding a key without looking for it first. Then the same key sits in its bucket twice, \`size()\` counts it twice, and an overwrite changes only one copy. Second, rehashing by copying old bucket 3 into new bucket 3. The keys must be hashed again with the new count, or most of them can never be found.
+
+::: context hash-function What makes a hash function good
+A hash function must give the same number for the same key every time, or you could never find a key again. A good one also makes similar keys give very different numbers: "key1" and "key2" should land far apart, so that a run of similar names spreads over all the buckets. It must be fast, too, because it runs on every lookup. Hashes are used well beyond tables: file downloads are checked by comparing hashes, and git names every saved version of your code by a hash of its contents.
+:::
+
+::: context chaining-picture Buckets with chains
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 190" font-family="Inter, Arial, sans-serif">
+  <text x="20" y="16" font-size="11" fill="#6c7a93">buckets</text>
+  <rect x="20" y="24" width="44" height="30" fill="#fff" stroke="#1f2a44"/>
+  <rect x="20" y="54" width="44" height="30" fill="#fff" stroke="#1f2a44"/>
+  <rect x="20" y="84" width="44" height="30" fill="#fff" stroke="#1f2a44"/>
+  <rect x="20" y="114" width="44" height="30" fill="#fff" stroke="#1f2a44"/>
+  <text x="42" y="44" font-size="12" text-anchor="middle" fill="#1f2a44">0</text>
+  <text x="42" y="74" font-size="12" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="42" y="104" font-size="12" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="42" y="134" font-size="12" text-anchor="middle" fill="#1f2a44">3</text>
+  <line x1="64" y1="39" x2="88" y2="39" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="90" y="27" width="100" height="24" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="140" y="43" font-size="11" text-anchor="middle" fill="#1f2a44">"kiwi", 4</text>
+  <line x1="64" y1="99" x2="88" y2="99" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="90" y="87" width="100" height="24" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="140" y="103" font-size="11" text-anchor="middle" fill="#1f2a44">"fig", 9</text>
+  <line x1="190" y1="99" x2="206" y2="99" stroke="#b4232c" stroke-width="1.5"/>
+  <rect x="208" y="87" width="100" height="24" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="258" y="103" font-size="11" text-anchor="middle" fill="#1f2a44">"plum", 2</text>
+  <text x="258" y="128" font-size="11" text-anchor="middle" fill="#b4232c">a collision</text>
+  <text x="20" y="170" font-size="11" fill="#1d6fd1">3 keys, 4 buckets: load factor 3 / 4 = 0.75</text>
+</svg>
+\`\`\`
+
+Four buckets, each a small list. "fig" and "plum" hashed to the same bucket, so bucket 2 holds both, and looking up "plum" compares two keys instead of one. Buckets 1 and 3 are empty. The bucket numbers here are made up for the picture; real ones depend on the hash.
+:::
+
+::: context open-addressing The other way to handle collisions
+In open addressing, there are no lists. Every entry sits directly in one big array. If a key's slot is taken, the table tries the next slot, then the next, until it finds a free one; lookups follow the same path. This keeps everything in one block of memory, which modern processors read very quickly. Deleting is fiddly, because an emptied slot would break the path for keys stored past it, so tables leave a "deleted" marker called a tombstone. Python's dictionaries and Google's widely used \`absl::flat_hash_map\` both use open addressing.
+:::
+
+::: context load-limits Where the limit is set
+The limit is a trade between memory and speed. A lower limit means more empty buckets but shorter lists. Java's \`HashMap\` rehashes at 0.75. Python's dictionaries, which use open addressing, grow at about two thirds full, because probing slows down sharply as the array fills. C++'s \`std::unordered_map\` allows a load factor of 1.0 by default, and you can change it with \`max_load_factor\`. Doubling each time, as here, keeps the load factor between 0.375 and 0.75 while keys are only being added, once the table has grown past its first 8 buckets.
+:::
+
+::: context hash-flooding When someone picks your keys
+If the keys come from outside, say names typed into a web form, an attacker who knows your hash function can choose thousands of keys that all land in one bucket. Every insert then searches one huge list, and a server can be slowed to a crawl. In 2011, researchers showed this working against many popular web languages at once. The fix was hash functions with a secret random ingredient chosen when the program starts, such as SipHash, which Python and Rust now use for strings, so outsiders cannot predict where keys land.
+:::
+
+::: context const-cast The escape hatch for const
+\`const_cast\` is one of C++'s named casts, like \`static_cast\`, and the only one that can add or remove \`const\`. It is an escape hatch: if you remove \`const\` from an object that really was created \`const\`, and then change it, that is undefined behavior. Here nothing is changed, so it is safe, and it saves writing the search twice. Many programmers still prefer to write the loop in one private helper that both versions call, because a \`const_cast\` makes every reader stop and check.
+:::
+--- task
+Finish \`class StringIntMap\`, a hash table from \`std::string\` to \`int\` that uses separate chaining. Do not use any standard map or set. There is no \`main\`. The starter already has the buckets, \`bucket_for(key)\`, \`find\` (both versions) and the size functions; its \`insert_or_assign\` is too simple and \`erase\` does nothing.
+
+- It starts with 8 buckets. After an insert makes \`size() > 0.75 × bucket_count()\`, it doubles the bucket count and rehashes, putting every entry into the bucket its hash picks with the new count.
+- \`void insert_or_assign(const std::string& key, int value)\`: adds the key, or, if the key is already there, overwrites its value.
+- \`int* find(const std::string& key)\` and a \`const\` version: a pointer to the value, or \`nullptr\`.
+- \`bool erase(const std::string& key)\`: removes the key and returns \`true\`, or returns \`false\` if it was not there.
+- \`size()\`, \`bucket_count()\` and \`load_factor()\`.
+--- starter
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        bucket_for(key).emplace_back(key, value);
+        ++size_;
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key)) {
+            if (k == key) return &v;
+        }
+        return nullptr;
+    }
+
+    const int* find(const std::string& key) const {
+        return const_cast<StringIntMap*>(this)->find(key);
+    }
+
+    bool erase(const std::string& key) {
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+    double load_factor() const { return static_cast<double>(size_) / buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) {
+        return buckets_[std::hash<std::string>{}(key) % buckets_.size()];
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) {
+                v = value;
+                return;
+            }
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key)) {
+            if (k == key) return &v;
+        }
+        return nullptr;
+    }
+
+    const int* find(const std::string& key) const {
+        return const_cast<StringIntMap*>(this)->find(key);
+    }
+
+    bool erase(const std::string& key) {
+        Bucket& b = bucket_for(key);
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i].first == key) {
+                b[i] = std::move(b.back());
+                b.pop_back();
+                --size_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+    double load_factor() const { return static_cast<double>(size_) / buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) {
+        return buckets_[std::hash<std::string>{}(key) % buckets_.size()];
+    }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old) {
+            for (auto& entry : b) {
+                bucket_for(entry.first).push_back(std::move(entry));
+            }
+        }
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+\`insert_or_assign\` must first look through the key's bucket, like \`find\` does, and overwrite the value if the key is there. Only a new key is added with \`emplace_back\` and increases the size, and only then can the table need to grow.
+--- hint
+To check the limit without decimals, \`size_ > 0.75 × buckets\` is the same as \`size_ * 4 > buckets_.size() * 3\`. Rehash in a private function: make a local \`std::vector<Bucket>\` of twice as many buckets, \`swap\` it with \`buckets_\`, then move every entry of the old buckets into \`bucket_for(entry.first)\`, which now uses the new count.
+--- hint
+For \`erase\`, loop over the key's bucket by index. When \`b[i].first == key\`, do \`b[i] = std::move(b.back());\`, then \`b.pop_back();\`, take 1 from \`size_\`, and return \`true\`. After the loop, return \`false\`.
+--- check test | Insert, find and overwrite
+[] { StringIntMap m; m.insert_or_assign("a", 1); m.insert_or_assign("b", 2); m.insert_or_assign("a", 10); return m.size() == 2 && m.find("a") && *m.find("a") == 10 && *m.find("b") == 2 && m.find("zzz") == nullptr; }()
+--- check test | find through a const map
+[] { StringIntMap m; m.insert_or_assign("k", 7); const StringIntMap& c = m; return c.find("k") && *c.find("k") == 7 && c.find("q") == nullptr; }()
+--- check test | erase removes exactly one key
+[] { StringIntMap m; m.insert_or_assign("x", 1); m.insert_or_assign("y", 2); bool gone = m.erase("x"); return gone && !m.erase("x") && m.size() == 1 && m.find("x") == nullptr && *m.find("y") == 2; }()
+--- check test | Grows from 8 to 16 buckets on the 7th key
+[] { StringIntMap m; for (int i = 0; i < 6; ++i) m.insert_or_assign("k" + std::to_string(i), i); bool eight = m.bucket_count() == 8; m.insert_or_assign("k6", 6); return eight && m.bucket_count() == 16 && *m.find("k0") == 0 && *m.find("k6") == 6; }()
+--- check test | 200,000 keys: fast, and the load factor stays low
+[] { StringIntMap m; for (int i = 0; i < 200000; ++i) m.insert_or_assign("key" + std::to_string(i), i); long long total = 0; for (int i = 0; i < 200000; ++i) { const int* v = m.find("key" + std::to_string(i)); if (v) total += *v; } return m.size() == 200000 && total == 19999900000LL && m.load_factor() <= 0.75; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap)\\s*<
+
++++ practice | A hash set of whole numbers
+--- task
+Finish \`class IntSet\`, a hash set of \`int\`s that uses separate chaining: a vector of buckets, each a \`std::vector<int>\`. Do not use any standard map or set. No \`main\`.
+
+- It starts with 8 buckets. A number's bucket is \`std::hash<int>{}(x) % bucket_count()\`.
+- \`bool insert(int x)\`: adds \`x\` and returns \`true\`, or returns \`false\` if \`x\` is already in the set (and adds nothing).
+- After an insert makes \`size() > 0.75 × bucket_count()\`, double the bucket count and put every number into the bucket it belongs in now.
+- \`bool contains(int x) const\`, \`std::size_t size() const\` and \`std::size_t bucket_count() const\`.
+--- starter
+#include <cstddef>
+#include <functional>
+#include <vector>
+
+class IntSet {
+public:
+    IntSet() : buckets_(8) {}
+
+    bool insert(int x) {
+        buckets_[index_for(x)].push_back(x);
+        ++size_;
+        return true;
+    }
+
+    bool contains(int x) const {
+        for (int y : buckets_[index_for(x)])
+            if (y == x) return true;
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    std::size_t index_for(int x) const { return std::hash<int>{}(x) % buckets_.size(); }
+
+    std::vector<std::vector<int>> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <vector>
+
+class IntSet {
+public:
+    IntSet() : buckets_(8) {}
+
+    bool insert(int x) {
+        if (contains(x)) return false;
+        buckets_[index_for(x)].push_back(x);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+        return true;
+    }
+
+    bool contains(int x) const {
+        for (int y : buckets_[index_for(x)])
+            if (y == x) return true;
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    std::size_t index_for(int x) const { return std::hash<int>{}(x) % buckets_.size(); }
+
+    void rehash(std::size_t count) {
+        std::vector<std::vector<int>> old(count);
+        old.swap(buckets_);
+        for (const std::vector<int>& b : old)
+            for (int x : b) buckets_[index_for(x)].push_back(x);
+    }
+
+    std::vector<std::vector<int>> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+\`insert\` must look before it adds: if \`contains(x)\`, return \`false\` straight away. Only a new number increases the size, and only then can the set need to grow.
+--- hint
+Compare without decimals: \`size_ * 4 > bucket_count * 3\`. To rehash, make a local vector of twice as many empty buckets, \`swap\` it with the member, then put every number from the old buckets into \`buckets_[index_for(x)]\`, which now uses the new count.
+--- check test | Insert, duplicates and contains
+[] { IntSet s; bool a = s.insert(5); bool b = s.insert(-3); bool again = s.insert(5); return a && b && !again && s.size() == 2 && s.contains(5) && s.contains(-3) && !s.contains(4); }()
+--- check test | Grows from 8 to 16 buckets on the 7th number
+[] { IntSet s; for (int i = 0; i < 6; ++i) s.insert(i * 100); bool eight = s.bucket_count() == 8; s.insert(600); bool all = true; for (int i = 0; i <= 6; ++i) all = all && s.contains(i * 100); return eight && s.bucket_count() == 16 && all; }()
+--- check test | Duplicates never make it grow
+[] { IntSet s; for (int i = 0; i < 100; ++i) s.insert(7); return s.size() == 1 && s.bucket_count() == 8; }()
+--- check test | 50,000 numbers, quickly, with the load factor kept low
+[] { IntSet s; for (int i = 0; i < 50000; ++i) s.insert(i * 3); int found = 0; for (int i = 0; i < 150000; ++i) if (s.contains(i)) ++found; return found == 50000 && s.size() == 50000 && s.size() * 4 <= s.bucket_count() * 3; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
++++ practice | A tally with square brackets
+--- task
+Finish \`class Tally\`, a hash table from \`std::string\` to \`int\` with separate chaining, that is used with square brackets like \`std::map\`. Do not use any standard map or set. No \`main\`.
+
+- It starts with 8 buckets and rehashes exactly as in the lesson: after an insert makes \`size() > 0.75 × bucket_count()\`, double the bucket count and rehash every entry.
+- \`int& operator[](const std::string& key)\`: a reference to the key's value. A missing key is added first with the value 0, so \`++t["kiwi"]\` counts. The reference must stay usable after the call, **even when adding the key made the table rehash**.
+- \`int get(const std::string& key) const\`: the value, or 0 for a missing key, which it never adds.
+- \`bool contains(const std::string& key) const\`, \`std::size_t size() const\` and \`std::size_t bucket_count() const\`.
+--- starter
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Tally {
+public:
+    Tally() : buckets_(8) {}
+
+    int& operator[](const std::string& key) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b)
+            if (k == key) return v;
+        b.emplace_back(key, 0);
+        ++size_;
+        return b.back().second;
+    }
+
+    int get(const std::string& key) const { return 0; }
+    bool contains(const std::string& key) const { return false; }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[std::hash<std::string>{}(key) % buckets_.size()]; }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Tally {
+public:
+    Tally() : buckets_(8) {}
+
+    int& operator[](const std::string& key) {
+        if (int* v = lookup(key)) return *v;
+        bucket_for(key).emplace_back(key, 0);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+        return *lookup(key);   // the entry may have moved during the rehash: find it again
+    }
+
+    int get(const std::string& key) const {
+        const int* v = const_cast<Tally*>(this)->lookup(key);
+        return v ? *v : 0;
+    }
+
+    bool contains(const std::string& key) const { return const_cast<Tally*>(this)->lookup(key) != nullptr; }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[std::hash<std::string>{}(key) % buckets_.size()]; }
+
+    int* lookup(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+Write a private \`int* lookup(const std::string& key)\` that searches the key's bucket, like the lesson's \`find\`. \`operator[]\`, \`get\` and \`contains\` can all use it; the \`const\` ones through \`const_cast\`, as in the lesson.
+--- hint
+The trap: after adding the new entry and rehashing, the entry lives in a different bucket, and \`b.back()\` refers into a vector that has been moved away. Add, rehash if needed, and only then look the key up again and return a reference to what you find.
+--- check test | Counting with ++
+[] { Tally t; for (const char* w : {"kiwi", "fig", "kiwi", "kiwi"}) ++t[w]; return t["kiwi"] == 3 && t["fig"] == 1 && t.size() == 2; }()
+--- check test | get and contains never add
+[] { Tally t; t["a"] = 4; bool ok = t.get("a") == 4 && t.get("zzz") == 0 && t.contains("a") && !t.contains("zzz"); const Tally& c = t; return ok && c.get("a") == 4 && t.size() == 1; }()
+--- check test | Grows from 8 to 16 on the 7th key
+[] { Tally t; for (int i = 0; i < 6; ++i) t["k" + std::to_string(i)] = i; bool eight = t.bucket_count() == 8; t["k6"] = 6; return eight && t.bucket_count() == 16 && t.get("k0") == 0 && t.get("k6") == 6 && t.size() == 7; }()
+--- check test | The reference survives the rehash its own key caused
+[] { Tally t; for (int i = 0; i < 6; ++i) t["key number " + std::to_string(i)]; int& r = t["the seventh key, long enough to live on the heap"]; r = 42; return t.bucket_count() == 16 && t.get("the seventh key, long enough to live on the heap") == 42; }()
+--- check test | 100,000 keys, quickly
+[] { Tally t; for (int i = 0; i < 100000; ++i) t["w" + std::to_string(i % 50000)] += 2; long long total = 0; for (int i = 0; i < 50000; ++i) total += t.get("w" + std::to_string(i)); return t.size() == 50000 && total == 200000; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
++++ practice | One hash map for any key
+--- task
+The starter's \`StringIntMap\` works, but only from \`std::string\` to \`int\`. Turn it into a class template \`HashMap<K, V>\` that works for any key type the standard library can hash, with any value type, and guard it with a concept. Do not use any standard map or set. No \`main\`.
+
+- \`concept Hashable\`: given a \`const K& k\`, \`std::hash<K>{}(k)\` gives something convertible to \`std::size_t\`, and \`k == k\` gives something convertible to \`bool\`.
+- \`template <Hashable K, typename V> class HashMap\` with the same members and the same growth rule as the starter: \`insert_or_assign(const K& key, const V& value)\`, \`V* find(const K& key)\`, a \`const\` \`find\` giving \`const V*\`, \`erase\`, \`size()\` and \`bucket_count()\`.
+- A type with no \`std::hash\`, such as a plain struct, is not \`Hashable\`.
+--- starter
+#include <concepts>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) {
+                v = value;
+                return;
+            }
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    const int* find(const std::string& key) const { return const_cast<StringIntMap*>(this)->find(key); }
+
+    bool erase(const std::string& key) {
+        Bucket& b = bucket_for(key);
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i].first == key) {
+                b[i] = std::move(b.back());
+                b.pop_back();
+                --size_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[std::hash<std::string>{}(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <concepts>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <typename K>
+concept Hashable = requires(const K& k) {
+    { std::hash<K>{}(k) } -> std::convertible_to<std::size_t>;
+    { k == k } -> std::convertible_to<bool>;
+};
+
+template <Hashable K, typename V>
+class HashMap {
+public:
+    HashMap() : buckets_(8) {}
+
+    void insert_or_assign(const K& key, const V& value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) {
+                v = value;
+                return;
+            }
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    V* find(const K& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    const V* find(const K& key) const { return const_cast<HashMap*>(this)->find(key); }
+
+    bool erase(const K& key) {
+        Bucket& b = bucket_for(key);
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i].first == key) {
+                b[i] = std::move(b.back());
+                b.pop_back();
+                --size_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<K, V>>;
+
+    Bucket& bucket_for(const K& key) { return buckets_[std::hash<K>{}(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+Write the concept first: a requires-expression with a \`const K&\` pretend parameter and two result requirements. Then put \`template <Hashable K, typename V>\` in front of the class and rename it.
+--- hint
+Replace every \`std::string\` that means "the key" with \`K\`, every \`int\` that means "the value" with \`V\`, and \`std::hash<std::string>\` with \`std::hash<K>\`. Inside the class, the bare name \`HashMap\` means \`HashMap<K, V>\`, which is handy in the \`const_cast\`.
+--- check test | Hashable sorts the key types
+[] { struct Pt { int x; }; return Hashable<int> && Hashable<std::string> && Hashable<double> && !Hashable<Pt>; }()
+--- check test | int keys with double values
+[] { HashMap<int, double> m; m.insert_or_assign(3, 1.5); m.insert_or_assign(-8, 2.0); m.insert_or_assign(3, 9.25); return m.size() == 2 && *m.find(3) == 9.25 && *m.find(-8) == 2.0 && m.find(4) == nullptr; }()
+--- check test | string keys, erase and const find
+[] { HashMap<std::string, std::string> m; m.insert_or_assign("a", "x"); m.insert_or_assign("b", "y"); bool gone = m.erase("a"); const HashMap<std::string, std::string>& c = m; return gone && !m.erase("a") && c.find("a") == nullptr && *c.find("b") == "y" && m.size() == 1; }()
+--- check test | Grows and keeps every key
+[] { HashMap<long long, int> m; for (long long i = 0; i < 1000; ++i) m.insert_or_assign(i * 1000003LL, static_cast<int>(i)); bool all = true; for (long long i = 0; i < 1000; ++i) all = all && m.find(i * 1000003LL) && *m.find(i * 1000003LL) == i; return all && m.size() == 1000 && m.size() * 4 <= m.bucket_count() * 3 && m.bucket_count() > 8; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
++++ practice | Collisions on purpose
+--- task
+\`ChainMap\` is a hash table from \`std::string\` to \`int\` whose hash function is passed in, so the checks can force keys to collide. Insertion, lookup and growth are written. Add the three members below, correct in every edge case. Do not use any standard map or set. No \`main\`.
+
+- \`bool erase(const std::string& key)\`: removes the key and returns \`true\`, or returns \`false\` if it is not there. Every other key in the same bucket must stay findable, whether the erased one was first, in the middle or last in its bucket.
+- \`std::size_t longest_chain() const\`: the number of entries in the fullest bucket (0 for an empty table).
+- \`std::vector<std::string> keys() const\`: every key, sorted alphabetically.
+
+When every key collides, all entries share one bucket. The empty string is a key like any other.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class ChainMap {
+public:
+    explicit ChainMap(std::function<std::size_t(const std::string&)> hash) : hash_(std::move(hash)), buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        if (int* v = find(key)) {
+            *v = value;
+            return;
+        }
+        bucket_for(key).emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    bool erase(const std::string& key) { return false; }
+    std::size_t longest_chain() const { return 0; }
+    std::vector<std::string> keys() const { return {}; }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[hash_(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::function<std::size_t(const std::string&)> hash_;
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class ChainMap {
+public:
+    explicit ChainMap(std::function<std::size_t(const std::string&)> hash) : hash_(std::move(hash)), buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        if (int* v = find(key)) {
+            *v = value;
+            return;
+        }
+        bucket_for(key).emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    bool erase(const std::string& key) {
+        Bucket& b = bucket_for(key);
+        for (std::size_t i = 0; i < b.size(); ++i) {
+            if (b[i].first == key) {
+                if (i + 1 != b.size()) b[i] = std::move(b.back());
+                b.pop_back();
+                --size_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::size_t longest_chain() const {
+        std::size_t longest = 0;
+        for (const Bucket& b : buckets_) longest = std::max(longest, b.size());
+        return longest;
+    }
+
+    std::vector<std::string> keys() const {
+        std::vector<std::string> out;
+        for (const Bucket& b : buckets_)
+            for (const auto& entry : b) out.push_back(entry.first);
+        std::sort(out.begin(), out.end());
+        return out;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[hash_(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::function<std::size_t(const std::string&)> hash_;
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+\`erase\` looks only in the key's own bucket. Use the lesson's trick: move the bucket's last entry into the hole, then \`pop_back()\`. When the entry to erase *is* the last one, there is nothing to move; just \`pop_back()\`.
+--- hint
+\`longest_chain\` and \`keys\` walk every bucket. Collect the keys into a vector, then sort it, because a hash table keeps no order of its own.
+--- check test | Erasing from a chain where every key collides
+[] { ChainMap m([](const std::string&) -> std::size_t { return 0; }); for (const char* k : {"a", "b", "c", "d", "e"}) m.insert_or_assign(k, 1); bool five = m.longest_chain() == 5; bool mid = m.erase("c"); bool first = m.erase("a"); bool last = m.erase("e"); return five && mid && first && last && m.size() == 2 && m.find("b") && m.find("d") && !m.find("c") && m.longest_chain() == 2; }()
+--- check test | Erasing a missing key, or from an empty map
+[] { ChainMap m([](const std::string& s) { return s.size(); }); bool empty = !m.erase("x"); m.insert_or_assign("x", 1); return empty && !m.erase("y") && !m.erase("") && m.size() == 1; }()
+--- check test | Erase then insert again: no duplicates
+[] { ChainMap m([](const std::string&) -> std::size_t { return 3; }); m.insert_or_assign("k", 1); m.insert_or_assign("j", 2); m.erase("k"); m.insert_or_assign("k", 5); m.insert_or_assign("k", 6); return m.size() == 2 && *m.find("k") == 6 && m.keys() == std::vector<std::string>{"j", "k"}; }()
+--- check test | The empty string, and erasing everything
+[] { ChainMap m([](const std::string& s) { return std::hash<std::string>{}(s); }); m.insert_or_assign("", 9); m.insert_or_assign("z", 1); bool has = m.find("") && *m.find("") == 9; m.erase(""); m.erase("z"); return has && m.size() == 0 && m.longest_chain() == 0 && m.keys().empty(); }()
+--- check test | Colliding keys survive growth
+[] { ChainMap m([](const std::string&) -> std::size_t { return 5; }); for (int i = 0; i < 10; ++i) m.insert_or_assign("k" + std::to_string(i), i); bool all = true; for (int i = 0; i < 10; ++i) all = all && m.find("k" + std::to_string(i)) && *m.find("k" + std::to_string(i)) == i; m.erase("k9"); return all && m.bucket_count() == 16 && m.longest_chain() == 9 && m.keys().front() == "k0" && m.keys().size() == 9; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
++++ practice | Debug: counted twice, then lost
+--- task
+**Bug report:** "After \`insert_or_assign("a", 1)\` and \`insert_or_assign("a", 10)\`, \`size()\` is 2 and \`*find("a")\` is still 1. And once the table has grown, most keys can no longer be found at all."
+
+The starter's \`StringIntMap\` has one bug in \`insert_or_assign\` and one in \`rehash\`. Fix them. No \`main\`.
+--- starter
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) v = value;
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[std::hash<std::string>{}(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> fresh(count);
+        for (std::size_t i = 0; i < buckets_.size(); ++i) fresh[i] = std::move(buckets_[i]);
+        buckets_.swap(fresh);
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class StringIntMap {
+public:
+    StringIntMap() : buckets_(8) {}
+
+    void insert_or_assign(const std::string& key, int value) {
+        Bucket& b = bucket_for(key);
+        for (auto& [k, v] : b) {
+            if (k == key) {
+                v = value;
+                return;
+            }
+        }
+        b.emplace_back(key, value);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int* find(const std::string& key) {
+        for (auto& [k, v] : bucket_for(key))
+            if (k == key) return &v;
+        return nullptr;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    Bucket& bucket_for(const std::string& key) { return buckets_[std::hash<std::string>{}(key) % buckets_.size()]; }
+
+    void rehash(std::size_t count) {
+        std::vector<Bucket> old(count);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- hint
+In \`insert_or_assign\`, follow the code after the value is overwritten: nothing stops it, so the same key is added a second time. It must return as soon as it has overwritten.
+--- hint
+A key's bucket depends on the bucket count, so bucket 3 of 8 is not bucket 3 of 16. \`rehash\` must hash every entry again: swap in the new empty buckets, then put each old entry into \`bucket_for(entry.first)\`.
+--- check test | Overwriting keeps one copy of the key
+[] { StringIntMap m; m.insert_or_assign("a", 1); m.insert_or_assign("a", 10); m.insert_or_assign("a", 100); return m.size() == 1 && *m.find("a") == 100; }()
+--- check test | Every key is still found after growing
+[] { StringIntMap m; for (int i = 0; i < 1000; ++i) m.insert_or_assign("key" + std::to_string(i), i); int found = 0; for (int i = 0; i < 1000; ++i) { int* v = m.find("key" + std::to_string(i)); if (v && *v == i) ++found; } return found == 1000 && m.size() == 1000 && m.bucket_count() == 2048; }()
+--- check test | Overwrites after growing
+[] { StringIntMap m; for (int i = 0; i < 20; ++i) m.insert_or_assign("k" + std::to_string(i), 0); for (int i = 0; i < 20; ++i) m.insert_or_assign("k" + std::to_string(i), i); return m.size() == 20 && *m.find("k19") == 19 && *m.find("k0") == 0 && m.find("k20") == nullptr; }()
+
++++ practice | Stretch: the most common readings, from your own table
+--- task
+A telemetry stream sends status codes such as \`"OK"\`, \`"TEMP_HIGH"\` and \`"LINK_LOST"\`. Write a counting hash table from scratch and use it to find the most common codes. Do not use any standard map or set. No \`main\`.
+
+- \`class Counter\`, with separate chaining, 8 buckets to start and the lesson's growth rule:
+  - \`void add(const std::string& code)\` counts one more of \`code\`;
+  - \`int count(const std::string& code) const\`: how many times it was added (0 if never);
+  - \`std::size_t size() const\`: how many **different** codes;
+  - \`std::vector<std::pair<std::string, int>> items() const\`: every code with its count, in any order.
+- \`std::vector<std::pair<std::string, int>> top_k(const Counter& c, std::size_t k)\`: the \`k\` most common codes with their counts, most common first. Codes with equal counts come in alphabetical order. If there are fewer than \`k\` codes, return them all.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Counter {
+public:
+    void add(const std::string& code) {}
+    int count(const std::string& code) const { return 0; }
+    std::size_t size() const { return 0; }
+    std::vector<std::pair<std::string, int>> items() const { return {}; }
+};
+
+std::vector<std::pair<std::string, int>> top_k(const Counter& c, std::size_t k) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Counter {
+public:
+    Counter() : buckets_(8) {}
+
+    void add(const std::string& code) {
+        Bucket& b = bucket_for(code);
+        for (auto& [k, n] : b) {
+            if (k == code) {
+                ++n;
+                return;
+            }
+        }
+        b.emplace_back(code, 1);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int count(const std::string& code) const {
+        const Bucket& b = buckets_[index_for(code)];
+        for (const auto& [k, n] : b)
+            if (k == code) return n;
+        return 0;
+    }
+
+    std::size_t size() const { return size_; }
+
+    std::vector<std::pair<std::string, int>> items() const {
+        std::vector<std::pair<std::string, int>> out;
+        for (const Bucket& b : buckets_)
+            for (const auto& entry : b) out.push_back(entry);
+        return out;
+    }
+
+private:
+    using Bucket = std::vector<std::pair<std::string, int>>;
+
+    std::size_t index_for(const std::string& code) const { return std::hash<std::string>{}(code) % buckets_.size(); }
+    Bucket& bucket_for(const std::string& code) { return buckets_[index_for(code)]; }
+
+    void rehash(std::size_t n) {
+        std::vector<Bucket> old(n);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) bucket_for(entry.first).push_back(std::move(entry));
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+
+std::vector<std::pair<std::string, int>> top_k(const Counter& c, std::size_t k) {
+    std::vector<std::pair<std::string, int>> all = c.items();
+    std::sort(all.begin(), all.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    if (all.size() > k) all.resize(k);
+    return all;
+}
+--- hint
+\`Counter\` is the lesson's map with \`add\` in place of \`insert_or_assign\`: look through the code's bucket, add 1 if it is there, and otherwise add the pair \`(code, 1)\`, which may make the table grow. A private helper that works out a bucket number can be \`const\`, so \`count\` needs no \`const_cast\`.
+--- hint
+\`top_k\` does not need the table's order at all. Take \`items()\`, sort it with a comparator lambda (higher count first; for equal counts, the smaller code first), then keep the first \`k\`.
+--- check test | Counting codes
+[] { Counter c; for (const char* s : {"OK", "TEMP_HIGH", "OK", "OK", "LINK_LOST"}) c.add(s); return c.count("OK") == 3 && c.count("TEMP_HIGH") == 1 && c.count("NOPE") == 0 && c.size() == 3 && c.items().size() == 3; }()
+--- check case | Most common first, ties alphabetical
+[] { Counter c; for (const char* s : {"b", "a", "c", "b", "a", "d", "e"}) c.add(s); return top_k(c, 3); }()
+=> std::vector<std::pair<std::string, int>>{{"a", 2}, {"b", 2}, {"c", 1}}
+--- check test | Asking for more than there are, or for none
+[] { Counter c; c.add("x"); c.add("y"); c.add("x"); Counter empty; return top_k(c, 10) == std::vector<std::pair<std::string, int>>{{"x", 2}, {"y", 1}} && top_k(c, 0).empty() && top_k(empty, 3).empty(); }()
+--- check test | 300,000 readings of 2,000 codes, quickly
+[] { Counter c; for (int i = 0; i < 300000; ++i) c.add("CODE_" + std::to_string((i * 7) % 2000)); auto top = top_k(c, 2); return c.size() == 2000 && c.count("CODE_0") == 150 && top.size() == 2 && top[0].first == "CODE_0" && top[1].first == "CODE_1"; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
+=== cpp4-09 | Ranges and views
+--- teach
+Last lesson you built a hash map from scratch: buckets, chains, and a rehash when the table got crowded. You have now written three containers of your own. This lesson turns to the other side: new, shorter ways to *use* containers. C++20 added **ranges** and **views**, which let you hand a whole container to an algorithm and chain steps together like stations on a production line.
+
+### A production line for numbers
+
+Picture a factory line. Parts ride along a belt. One station throws away the faulty ones. The next paints the ones that are left. The last station packs the first three into a box, and then the line stops.
+
+That is the idea of this lesson. You describe the stations once, and the numbers flow through them one at a time.
+
+### Step 1: pass the whole container
+
+Until now, every algorithm wanted two iterators: \`std::sort(v.begin(), v.end())\`. That is easy to get wrong, for example by mixing up the \`begin\` of one vector with the \`end\` of another.
+
+A **[[range|what-is-a-range]]** is anything with a \`begin()\` and an \`end()\`: a vector, a string, a map, even the ring buffer you built two lessons ago. The versions of the algorithms in the namespace \`std::ranges\` take the whole range at once:
+
+\`\`\`cpp
+#include <algorithm>
+
+std::vector<int> fuel = {40, 12, 75, 3};
+std::ranges::sort(fuel);                     // no begin()/end() pair
+auto it = std::ranges::find(fuel, 75);       // an iterator to the 75, as before
+\`\`\`
+
+They do the same job as the old ones. They only save you from writing the pair.
+
+### Step 2: a view, and the pipe
+
+A **view** is a lightweight window onto a range that shows it changed in some way: only some of the elements, or each one turned into something else. Views live in \`<ranges>\`, under the short name \`std::views\`.
+
+**\`std::views::filter\`** keeps only the elements for which a test is true. The test is a lambda, like the ones you gave \`std::copy_if\`:
+
+\`\`\`cpp
+#include <ranges>
+
+std::vector<int> temps = {-4, 12, 0, 25, -9};
+auto warm = temps | std::views::filter([](int t) { return t > 0; });
+// looking through warm, you see 12, 25
+\`\`\`
+
+The \`|\` is read "**[[pipe|pipe-symbol]]**" or "then". \`temps | std::views::filter(...)\` means "take \`temps\`, then send it through a filter". C++ uses the \`|\` character for other jobs too; for views it has been given this new meaning by operator overloading, the way you gave \`Fraction\` its own \`+\`.
+
+**\`std::views::transform\`** is the second station. It runs a function on each element and shows you the results:
+
+\`\`\`cpp
+auto doubled = temps | std::views::transform([](int t) { return t * 2; });
+// looking through doubled, you see -8, 24, 0, 50, -18
+\`\`\`
+
+You can chain stations with more \`|\`: \`range | first_view | second_view\`. Each one works on what the one before it lets through. The order matters. Filter-then-transform throws values away before changing them; transform-then-filter changes every value and tests the changed ones.
+
+### Step 3: a view does no work until you ask
+
+Here is the surprising part. Building \`warm\` or \`doubled\` computes **nothing**. A view holds no numbers of its own. It only remembers where its source is and what to do. Each value is worked out at the moment a loop asks for it.
+
+This is called being **[[lazy|lazy-views]]**: doing work only when the result is needed. You read a view with a range-for, like any range:
+
+\`\`\`cpp
+for (int t : warm) std::cout << t << ' ';   // prints 12 25
+\`\`\`
+
+### Step 4: stopping early with take
+
+Laziness makes some things easy that are awkward with plain algorithms. **\`std::views::take(k)\`** lets through the first \`k\` elements and then ends the whole pipeline, however long the input is:
+
+\`\`\`cpp
+auto first_two = temps | std::views::take(2);   // -4, 12
+\`\`\`
+
+If the input has fewer than \`k\` elements, \`take\` lets through all of them and stops there. No error, no reading past the end.
+
+\`take\` counts with a signed type, \`std::ptrdiff_t\` (the same type you get when you subtract two iterators). A \`std::size_t\` count converts to it by itself, but writing \`static_cast<std::ptrdiff_t>(k)\` makes the conversion visible.
+
+### Step 5: a sequence that never ends
+
+**\`std::views::iota(1)\`** is the numbers 1, 2, 3, 4, … **forever**. (The odd name, [[iota|iota-name]], is a Greek letter.) That sounds impossible to store, and it would be. But a view is lazy, so it only ever makes the numbers someone asks for.
+
+An endless view is fine as long as something further down the line stops. \`take\` is one way:
+
+\`\`\`cpp
+auto sevens = std::views::iota(1)
+    | std::views::filter([](int x) { return x % 7 == 0; })
+    | std::views::take(3);
+// 7, 14, 21, and then the line stops
+\`\`\`
+
+Another way is to read only the first element. \`begin()\` gives an iterator to the first value that comes out of the pipeline, and \`*\` reads it:
+
+\`\`\`cpp
+auto cubes = std::views::iota(1)
+    | std::views::transform([](int i) { return i * i * i; });
+int first = *cubes.begin();   // 1, the first cube
+\`\`\`
+
+Only the work for that one value is done. The rest of the endless line is never touched.
+
+### Step 6: collecting a view into a vector
+
+In C++20 there is no one-line way to turn a view into a \`std::vector\` (that arrived in C++23 as \`std::ranges::to\`). You have two choices.
+
+Loop over the view and \`push_back\` each value. Or use **\`std::ranges::copy\`** with the \`std::back_inserter\` you met beside \`std::copy_if\`. Writing through a back inserter calls \`push_back\` for you:
+
+\`\`\`cpp
+std::vector<int> kept;
+std::ranges::copy(warm, std::back_inserter(kept));   // kept is {12, 25}
+\`\`\`
+
+### Step 7: projections, sorting by one member
+
+Say you have a list of planets and want them ordered by how many moons they have. Before, you would write a comparator lambda. The \`std::ranges\` algorithms take a shortcut called a **projection**: a way to say "compare this member of each element".
+
+\`\`\`cpp
+struct Planet {
+    std::string name;
+    int moons;
+};
+
+std::vector<Planet> planets = {{"Mars", 2}, {"Earth", 1}, {"Venus", 0}};
+std::ranges::sort(planets, {}, &Planet::moons);   // Venus, Earth, Mars
+\`\`\`
+
+Read the three arguments in turn:
+
+- \`planets\` is the range.
+- \`{}\`, an empty pair of braces, means "the default comparison", which is \`std::ranges::less\`: an ordinary \`<\`.
+- \`&Planet::moons\` is a **[[pointer to member|member-pointer]]**. Read it "the \`moons\` of whichever \`Planet\`". The algorithm applies it to each element and compares the results.
+
+The same trick works on other algorithms:
+
+\`\`\`cpp
+std::ranges::stable_sort(planets, {}, &Planet::moons);         // ties keep their order
+auto most = std::ranges::max_element(planets, {}, &Planet::moons);   // iterator to Mars
+\`\`\`
+
+\`stable_sort\` is the stable sort from the sorting lesson: planets with equal moon counts stay in the order they came in.
+
+A pointer to member can also be the function you give \`transform\`. \`planets | std::views::transform(&Planet::name)\` is a view of the names alone: "Venus", "Earth", "Mars".
+
+### Step 8: splitting text into pieces
+
+**\`std::views::split(',')\`** cuts a string at every comma. Each piece that comes out is a small range of characters. Turn a piece into a real \`std::string\` with the string constructor that takes a begin and an end:
+
+\`\`\`cpp
+std::string csv = "red,,blue";
+for (auto piece : csv | std::views::split(',')) {
+    std::string part(piece.begin(), piece.end());
+    std::cout << '[' << part << "] ";
+}
+// prints [red] [] [blue]
+\`\`\`
+
+Look at the middle one. Two separators in a row have nothing between them, so \`split\` gives you an **empty piece** there. If you do not want empty pieces, skip them yourself.
+
+**Watch out:** a view **refers** to its source. It does not own a copy. So never return a view of a local container from a function: when the function ends, the container is destroyed, and the view is left pointing at memory that is gone. That is a [[dangling view|dangling-view]]. Return a real container (a \`std::vector\`) built from the view instead.
+
+::: context what-is-a-range What counts as a range
+In C++20 a range is any type you can call \`std::ranges::begin\` and \`std::ranges::end\` on: in practice, anything with \`begin()\` and \`end()\` members, or a plain array. The concept \`std::ranges::range\` checks exactly that, the same way \`std::forward_iterator\` checked your ring buffer's iterator. So every standard container is a range, and so is any container of your own that provides the two functions. Views are ranges too, which is why you can pipe a view into another view and why range-for accepts them.
+:::
+
+::: context pipe-symbol Where the pipe comes from
+The idea is older than C++. In the Unix terminal, \`ls | grep txt\` sends the output of one program into the next, and that \`|\` has been called a pipe since the early 1970s. Ranges borrow the look on purpose: data flows left to right through a chain of small steps. Underneath, \`range | view\` is an overloaded \`operator|\`, the same tool you used to give \`Fraction\` its \`+\`.
+:::
+
+::: context lazy-views Lazy: the loop pulls the values
+Nothing moves until the loop asks. Each time the range-for wants the next value, the request travels back up the pipeline to the source; one element is read, tested, changed, and handed over. Then the pipeline waits again.
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="8" y="40" width="70" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="43" y="64" font-size="12" fill="#1f2a44" text-anchor="middle">source</text>
+  <rect x="98" y="40" width="70" height="40" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="133" y="64" font-size="12" fill="#1f2a44" text-anchor="middle">filter</text>
+  <rect x="188" y="40" width="80" height="40" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="228" y="64" font-size="12" fill="#1f2a44" text-anchor="middle">transform</text>
+  <rect x="288" y="40" width="64" height="40" fill="#1d6fd1" stroke="#1f2a44"/>
+  <text x="320" y="64" font-size="12" fill="#ffffff" text-anchor="middle">loop</text>
+  <line x1="320" y1="30" x2="45" y2="30" stroke="#b4232c" stroke-width="2"/>
+  <path d="M 40 30 L 50 25 L 50 35 Z" fill="#b4232c"/>
+  <text x="182" y="20" font-size="12" fill="#b4232c" text-anchor="middle">1. "next, please"</text>
+  <line x1="45" y1="95" x2="315" y2="95" stroke="#1d6fd1" stroke-width="2"/>
+  <path d="M 320 95 L 310 90 L 310 100 Z" fill="#1d6fd1"/>
+  <text x="182" y="115" font-size="12" fill="#1d6fd1" text-anchor="middle">2. one value flows back</text>
+  <text x="180" y="140" font-size="11" fill="#6c7a93" text-anchor="middle">no loop asking, no work done</text>
+</svg>
+\`\`\`
+:::
+
+::: context iota-name Why "iota"
+Iota is the Greek letter ι, the smallest letter of the Greek alphabet. In APL, a programming language from the 1960s, the ι symbol made the list of numbers 1 to n. C++ first borrowed the name for \`std::iota\` in \`<numeric>\`, which fills a container with 0, 1, 2, …; \`std::views::iota\` is the lazy version. \`iota(1)\` has no end, and \`iota(1, 6)\` stops before 6: 1, 2, 3, 4, 5.
+:::
+
+::: context member-pointer Pointers to members
+An ordinary pointer holds the address of one object. A pointer to member, written \`&Planet::moons\`, holds no address at all: it names a *member*, and only means something once it is paired with an object. \`std::invoke(&Planet::moons, mars)\` gives \`mars.moons\`. The ranges algorithms call projections through \`std::invoke\`, which is why you can pass a lambda or a member pointer and both work. You can also point at a member function: \`&std::string::size\` projects each string to its length.
+:::
+
+::: context dangling-view How a view dangles
+A function that builds \`std::vector<int> local = ...;\` and returns \`local | std::views::filter(...)\` compiles. But \`local\` is destroyed at the closing brace, and the returned view still points into it: reading it is undefined behavior. The library does catch some cases for you. The \`std::ranges\` algorithms return a special type, \`std::ranges::dangling\`, instead of an iterator when you pass them a temporary that is about to die, so misusing the result becomes a compile error.
+:::
+--- task
+Write four functions with ranges and views. No \`main\`: the checker supplies it. The starter has the \`Person\` struct (a \`name\` and an \`age\`).
+
+- \`std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n)\` returns the squares of the odd values of \`v\`, in order, but at most \`n\` of them. Build a pipeline of \`filter\`, \`transform\` and \`take\`, then collect it into a vector.
+- \`int first_square_above(int limit)\` returns the smallest perfect square (1, 4, 9, 16, …) that is greater than \`limit\`, for \`limit >= 0\`. Start from the endless \`std::views::iota(1)\`.
+- \`std::vector<std::string> names_by_age(std::vector<Person> people)\` returns the names, youngest first. People of equal age keep their input order.
+- \`std::vector<std::string> long_words(const std::string& text, std::size_t min_len)\` splits \`text\` at every space and returns the words whose length is \`>= min_len\`, in order. \`min_len\` is at least 1, so empty pieces are left out automatically.
+
+Use at least one \`std::views::\` view and at least one \`std::ranges::\` algorithm.
+--- starter
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n) {
+    return {};
+}
+
+int first_square_above(int limit) {
+    return 0;
+}
+
+std::vector<std::string> names_by_age(std::vector<Person> people) {
+    return {};
+}
+
+std::vector<std::string> long_words(const std::string& text, std::size_t min_len) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+std::vector<int> squares_of_odds(const std::vector<int>& v, std::size_t n) {
+    auto view = v
+        | std::views::filter([](int x) { return x % 2 != 0; })
+        | std::views::transform([](int x) { return x * x; })
+        | std::views::take(static_cast<std::ptrdiff_t>(n));
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+
+int first_square_above(int limit) {
+    auto squares = std::views::iota(1)
+        | std::views::transform([](int i) { return i * i; })
+        | std::views::filter([limit](int s) { return s > limit; });
+    return *squares.begin();
+}
+
+std::vector<std::string> names_by_age(std::vector<Person> people) {
+    std::ranges::stable_sort(people, {}, &Person::age);
+    std::vector<std::string> names;
+    std::ranges::copy(people | std::views::transform(&Person::name), std::back_inserter(names));
+    return names;
+}
+
+std::vector<std::string> long_words(const std::string& text, std::size_t min_len) {
+    std::vector<std::string> out;
+    for (auto piece : text | std::views::split(' ')) {
+        std::string word(piece.begin(), piece.end());
+        if (word.size() >= min_len) out.push_back(word);
+    }
+    return out;
+}
+--- hint
+Each function uses one idea from the explanation. \`squares_of_odds\` is a pipeline with three stations (Steps 2 and 4) plus collecting (Step 6). \`first_square_above\` is an endless \`iota\` read only at its first element (Step 5). \`names_by_age\` is a projection (Step 7). \`long_words\` is \`split\` (Step 8).
+--- hint
+For \`squares_of_odds\`: \`v | std::views::filter(is_odd) | std::views::transform(square) | std::views::take(n)\`, where the two middle pieces are lambdas you write (an odd \`x\` has \`x % 2 != 0\`, which also works for negative numbers). Then \`std::ranges::copy(view, std::back_inserter(out))\`. For \`first_square_above\`: pipe \`std::views::iota(1)\` through a transform that squares and a filter that keeps squares above \`limit\` (capture \`limit\` in the lambda), then return \`*view.begin()\`.
+--- hint
+For \`names_by_age\`: \`std::ranges::stable_sort(people, {}, &Person::age);\`, then copy \`people | std::views::transform(&Person::name)\` into a vector of strings. For \`long_words\`: loop \`for (auto piece : text | std::views::split(' '))\`, make \`std::string word(piece.begin(), piece.end());\`, and \`push_back\` it when \`word.size() >= min_len\`.
+--- check case | squares_of_odds stops after n
+squares_of_odds({1, 2, 3, 4, 5, 7, 9}, 3)
+=> std::vector<int>{1, 9, 25}
+--- check case | squares_of_odds with fewer than n odds
+squares_of_odds({2, 4, -3}, 5)
+=> std::vector<int>{9}
+--- check test | first_square_above
+first_square_above(0) == 1 && first_square_above(15) == 16 && first_square_above(16) == 25 && first_square_above(1000000) == 1002001
+--- check case | names_by_age is stable
+names_by_age({{"ada", 36}, {"lin", 20}, {"sam", 36}, {"bo", 20}, {"cy", 5}})
+=> std::vector<std::string>{"cy", "lin", "bo", "ada", "sam"}
+--- check case | long_words skips short and empty pieces
+long_words("the quick  brown fox jumps", 4)
+=> std::vector<std::string>{"quick", "brown", "jumps"}
+--- check source | Uses views
+std::views::
+--- check source | Uses a ranges algorithm
+std::ranges::
+
++++ practice | Keep, change, count
+--- task
+Write two functions with ranges and views. No \`main\`.
+
+- \`std::vector<int> positive_doubled(const std::vector<int>& v)\` returns twice each value of \`v\` that is greater than 0, in order. Build it as a pipeline of \`std::views::filter\` and \`std::views::transform\`, then collect it into a vector.
+- \`long long count_long(const std::vector<std::string>& words, std::size_t n)\` returns how many words have at least \`n\` characters, using \`std::ranges::count_if\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+std::vector<int> positive_doubled(const std::vector<int>& v) {
+    return {};
+}
+
+long long count_long(const std::vector<std::string>& words, std::size_t n) {
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+std::vector<int> positive_doubled(const std::vector<int>& v) {
+    auto view = v
+        | std::views::filter([](int x) { return x > 0; })
+        | std::views::transform([](int x) { return x * 2; });
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+
+long long count_long(const std::vector<std::string>& words, std::size_t n) {
+    return std::ranges::count_if(words, [n](const std::string& w) { return w.size() >= n; });
+}
+--- hint
+The pipeline is \`v | std::views::filter(…) | std::views::transform(…)\`, each with a small lambda. Collect it with \`std::ranges::copy(view, std::back_inserter(out))\`.
+--- hint
+\`std::ranges::count_if(words, test)\` takes the whole vector and a lambda. The lambda captures \`n\` and returns \`w.size() >= n\`.
+--- check case | Positive values, doubled, in order
+positive_doubled({3, -1, 0, 5, -7, 2})
+=> std::vector<int>{6, 10, 4}
+--- check test | Nothing positive, and nothing at all
+positive_doubled({-1, 0}).empty() && positive_doubled({}).empty()
+--- check test | count_long
+count_long({"orbit", "go", "apogee", "sun"}, 4) == 2 && count_long({}, 1) == 0 && count_long({"a", ""}, 0) == 2
+--- check source | Uses a view
+std::views::(filter|transform)
+--- check source | Uses count_if from std::ranges
+std::ranges::count_if
+
++++ practice | Rovers by mass and by speed
+--- task
+The starter declares \`struct Rover { std::string name; double mass; double speed; };\`. Write three functions with the \`std::ranges\` algorithms and projections, with no comparator lambdas. No \`main\`.
+
+- \`const Rover* heaviest(const std::vector<Rover>& rs)\`: a pointer to the rover with the largest mass (the first of them if several tie), or \`nullptr\` if there are none.
+- \`std::vector<std::string> by_speed(std::vector<Rover> rs)\`: the names, slowest first. Rovers of equal speed keep their input order.
+- \`std::vector<std::string> fastest_first(std::vector<Rover> rs)\`: the names, fastest first. Rovers of equal speed keep their input order. Pass \`std::greater<double>()\` as the comparison.
+--- starter
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Rover {
+    std::string name;
+    double mass;
+    double speed;
+};
+
+const Rover* heaviest(const std::vector<Rover>& rs) {
+    return nullptr;
+}
+
+std::vector<std::string> by_speed(std::vector<Rover> rs) {
+    return {};
+}
+
+std::vector<std::string> fastest_first(std::vector<Rover> rs) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Rover {
+    std::string name;
+    double mass;
+    double speed;
+};
+
+const Rover* heaviest(const std::vector<Rover>& rs) {
+    if (rs.empty()) return nullptr;
+    return &*std::ranges::max_element(rs, {}, &Rover::mass);
+}
+
+std::vector<std::string> names_of(const std::vector<Rover>& rs) {
+    std::vector<std::string> out;
+    std::ranges::copy(rs | std::views::transform(&Rover::name), std::back_inserter(out));
+    return out;
+}
+
+std::vector<std::string> by_speed(std::vector<Rover> rs) {
+    std::ranges::stable_sort(rs, {}, &Rover::speed);
+    return names_of(rs);
+}
+
+std::vector<std::string> fastest_first(std::vector<Rover> rs) {
+    std::ranges::stable_sort(rs, std::greater<double>(), &Rover::speed);
+    return names_of(rs);
+}
+--- hint
+Each algorithm takes the range, then the comparison (\`{}\` for the ordinary \`<\`), then the projection \`&Rover::mass\` or \`&Rover::speed\`. "Keep their input order" asks for \`stable_sort\`.
+--- hint
+\`max_element\` gives an iterator; \`&*it\` turns it into a pointer to the element. Check for an empty vector first. For the names, pipe the sorted vector through \`std::views::transform(&Rover::name)\` and copy that into a vector.
+--- check test | heaviest, with a tie and with none
+[] { std::vector<Rover> rs{{"ant", 2, 5}, {"bee", 9, 1}, {"cat", 9, 3}}; const Rover* h = heaviest(rs); return h && h->name == "bee" && h == &rs[1] && heaviest({}) == nullptr; }()
+--- check case | Slowest first, ties in input order
+by_speed({{"a", 1, 3.5}, {"b", 1, 1.0}, {"c", 1, 3.5}, {"d", 1, 0.5}})
+=> std::vector<std::string>{"d", "b", "a", "c"}
+--- check case | Fastest first, ties in input order
+fastest_first({{"a", 1, 3.5}, {"b", 1, 1.0}, {"c", 1, 3.5}, {"d", 1, 0.5}})
+=> std::vector<std::string>{"a", "c", "b", "d"}
+--- check test | No rovers
+by_speed({}).empty() && fastest_first({}).empty()
+--- check source absent | No comparator lambdas
+\\[\\]\\s*\\(\\s*const\\s+Rover
+
++++ practice | The most common word
+--- task
+Write \`std::string most_common_word(const std::string& text)\`. No \`main\`.
+
+Split \`text\` at every space with \`std::views::split\`, skip the empty pieces that come from runs of spaces, and count the words in a \`std::map<std::string, int>\`. Then find the word with the highest count using \`std::ranges::max_element\` on the map, with a projection. If several words tie, return the one that comes first alphabetically. If there are no words at all, return \`""\`.
+
+For \`"the cat and the dog"\` the answer is \`"the"\`.
+--- starter
+#include <algorithm>
+#include <map>
+#include <ranges>
+#include <string>
+#include <utility>
+
+std::string most_common_word(const std::string& text) {
+    return "";
+}
+--- solution
+#include <algorithm>
+#include <map>
+#include <ranges>
+#include <string>
+#include <utility>
+
+std::string most_common_word(const std::string& text) {
+    std::map<std::string, int> counts;
+    for (auto piece : text | std::views::split(' ')) {
+        std::string word(piece.begin(), piece.end());
+        if (!word.empty()) ++counts[word];
+    }
+    if (counts.empty()) return "";
+    auto best = std::ranges::max_element(counts, {}, &std::pair<const std::string, int>::second);
+    return best->first;
+}
+--- hint
+A map is a range of pairs, \`std::pair<const std::string, int>\`, walked in alphabetical order of the key. \`max_element\` returns the **first** largest element it meets, which takes care of ties.
+--- hint
+The projection is the count, the pair's \`second\`: \`&std::pair<const std::string, int>::second\`. A lambda that returns \`p.second\` works too.
+--- check case | A clear winner
+most_common_word("the cat and the dog")
+=> "the"
+--- check case | A tie goes to the alphabetically first word
+most_common_word("pear fig pear fig apple")
+=> "fig"
+--- check case | Runs of spaces are not words
+most_common_word("  go   go  stop ")
+=> "go"
+--- check test | No words
+most_common_word("") == "" && most_common_word("     ") == ""
+--- check source | Uses split and max_element
+std::views::split[\\s\\S]*std::ranges::max_element
+
++++ practice | Empty fields and endless numbers
+--- task
+Write two functions with views, correct at the edges. No \`main\`.
+
+- \`std::vector<std::string> fields(const std::string& line, char sep)\` splits \`line\` at every \`sep\` with \`std::views::split\` and keeps **every** field, empty ones included: \`fields("a,,b,", ',')\` is \`{"a", "", "b", ""}\`, and \`fields(",", ',')\` is \`{"", ""}\`. An empty line has no fields at all: \`{}\`.
+- \`std::vector<int> first_multiples(int k, std::size_t n)\` returns the first \`n\` positive multiples of \`k\` (for \`k >= 1\`), starting from the endless \`std::views::iota(1)\`: \`first_multiples(7, 3)\` is \`{7, 14, 21}\`. For \`n\` equal to 0 it returns \`{}\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+std::vector<std::string> fields(const std::string& line, char sep) {
+    std::vector<std::string> out;
+    for (auto piece : line | std::views::split(sep)) {
+        std::string f(piece.begin(), piece.end());
+        if (!f.empty()) out.push_back(f);
+    }
+    return out;
+}
+
+std::vector<int> first_multiples(int k, std::size_t n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <ranges>
+#include <string>
+#include <vector>
+
+std::vector<std::string> fields(const std::string& line, char sep) {
+    std::vector<std::string> out;
+    for (auto piece : line | std::views::split(sep)) out.push_back(std::string(piece.begin(), piece.end()));
+    return out;
+}
+
+std::vector<int> first_multiples(int k, std::size_t n) {
+    auto view = std::views::iota(1)
+        | std::views::filter([k](int x) { return x % k == 0; })
+        | std::views::take(static_cast<std::ptrdiff_t>(n));
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+--- hint
+\`split\` already gives an empty piece wherever two separators meet or a separator ends the line. The starter throws those away; keep them. Try \`""\` to see what \`split\` does with an empty line.
+--- hint
+\`first_multiples\` is \`iota(1)\`, then a filter that keeps multiples of \`k\` (capture \`k\`), then \`take(n)\`, which is what makes the endless view stop. \`take(0)\` lets nothing through.
+--- check case | Empty fields in the middle and at the end
+fields("a,,b,", ',')
+=> std::vector<std::string>{"a", "", "b", ""}
+--- check test | A lone separator, an empty line, and no separator
+fields(",", ',') == std::vector<std::string>{"", ""} && fields("", ',').empty() && fields("abc", ',') == std::vector<std::string>{"abc"} && fields(";x", ';') == std::vector<std::string>{"", "x"}
+--- check case | first_multiples
+first_multiples(7, 3)
+=> std::vector<int>{7, 14, 21}
+--- check test | first_multiples of 1, and none at all
+first_multiples(1, 4) == std::vector<int>{1, 2, 3, 4} && first_multiples(5, 0).empty()
+
++++ practice | Debug: the stations in the wrong order
+--- task
+**Bug report:** "\`big_squares({2, 8, 9, 3}, 50)\` should give \`{64, 81}\` but gives \`{}\`. And \`first_three_even({1, 3, 4, 6, 8, 10})\` gives \`{4}\` instead of \`{4, 6, 8}\`."
+
+Each pipeline has its stations in the wrong order. Fix them. No \`main\`.
+
+- \`big_squares(v, limit)\` returns the squares of the values of \`v\` that are greater than \`limit\`, in order: it squares first, then keeps the big results.
+- \`first_three_even(v)\` returns the first three even values of \`v\`, or all of them if there are fewer than three.
+--- starter
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <vector>
+
+std::vector<int> big_squares(const std::vector<int>& v, int limit) {
+    auto view = v
+        | std::views::filter([limit](int x) { return x > limit; })
+        | std::views::transform([](int x) { return x * x; });
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+
+std::vector<int> first_three_even(const std::vector<int>& v) {
+    auto view = v
+        | std::views::take(3)
+        | std::views::filter([](int x) { return x % 2 == 0; });
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+--- solution
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+#include <vector>
+
+std::vector<int> big_squares(const std::vector<int>& v, int limit) {
+    auto view = v
+        | std::views::transform([](int x) { return x * x; })
+        | std::views::filter([limit](int s) { return s > limit; });
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+
+std::vector<int> first_three_even(const std::vector<int>& v) {
+    auto view = v
+        | std::views::filter([](int x) { return x % 2 == 0; })
+        | std::views::take(3);
+    std::vector<int> out;
+    std::ranges::copy(view, std::back_inserter(out));
+    return out;
+}
+--- hint
+Each station works on what the station before it lets through. In \`big_squares\`, what does the filter test: the value, or its square?
+--- hint
+In \`first_three_even\`, \`take(3)\` first keeps the first three values of any kind, and only then are the odd ones thrown away. Filter first, then take.
+--- check case | big_squares keeps the big squares
+big_squares({2, 8, 9, 3}, 50)
+=> std::vector<int>{64, 81}
+--- check test | big_squares with negatives and with a limit nobody passes
+big_squares({-10, 4, 7}, 40) == std::vector<int>{100, 49} && big_squares({1, 2}, 100).empty()
+--- check case | first_three_even takes three even values
+first_three_even({1, 3, 4, 6, 8, 10})
+=> std::vector<int>{4, 6, 8}
+--- check test | first_three_even with fewer than three
+first_three_even({1, 2, 5, -4}) == std::vector<int>{2, -4} && first_three_even({}).empty()
+
++++ practice | Stretch: alarms from a sensor log
+--- task
+A sensor log is text with one reading per line, written \`time,sensor,value\`, for example \`12,pump,7.5\`. Blank lines can appear anywhere and are skipped. Write \`std::vector<std::string> alarms(const std::string& log, double limit, std::size_t max_count)\`. No \`main\`.
+
+- Every reading whose value is **greater than** \`limit\` is an alarm.
+- Return the alarms highest value first. Alarms with equal values keep the order they have in the log.
+- Return at most \`max_count\` of them, each written as \`"<time> <sensor>"\`.
+
+For the log \`"1,pump,7.5\\n2,fan,9\\n\\n3,pump,9\\n4,valve,2"\` with limit 5 and at most 2, the answer is \`{"2 fan", "3 pump"}\`. Use \`std::views::split\` for the lines and the fields, and the \`std::ranges\` algorithms with a projection for the ordering. Read the value with a \`std::istringstream\`.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<std::string> alarms(const std::string& log, double limit, std::size_t max_count) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Reading {
+    std::string time;
+    std::string sensor;
+    double value;
+};
+
+std::vector<std::string> alarms(const std::string& log, double limit, std::size_t max_count) {
+    std::vector<Reading> found;
+    for (auto line_piece : log | std::views::split('\\n')) {
+        std::string line(line_piece.begin(), line_piece.end());
+        if (line.empty()) continue;
+        std::vector<std::string> parts;
+        for (auto field : line | std::views::split(',')) parts.push_back(std::string(field.begin(), field.end()));
+        double value = 0;
+        std::istringstream(parts[2]) >> value;
+        if (value > limit) found.push_back({parts[0], parts[1], value});
+    }
+    std::ranges::stable_sort(found, std::greater<double>(), &Reading::value);
+    std::vector<std::string> out;
+    for (const Reading& r : found | std::views::take(static_cast<std::ptrdiff_t>(max_count))) out.push_back(r.time + " " + r.sensor);
+    return out;
+}
+--- hint
+Two levels of splitting: the log at \`'\\n'\` into lines, and each non-empty line at \`','\` into its three fields. Keep each alarm in a small struct with the time, the sensor and the value.
+--- hint
+\`std::ranges::stable_sort(found, std::greater<double>(), &Reading::value)\` puts the highest values first and keeps ties in log order. Then \`found | std::views::take(max_count)\` gives at most \`max_count\` of them to turn into strings.
+--- check case | The example
+alarms("1,pump,7.5\\n2,fan,9\\n\\n3,pump,9\\n4,valve,2", 5, 2)
+=> std::vector<std::string>{"2 fan", "3 pump"}
+--- check case | Every alarm, ties in log order, trailing newline
+alarms("\\n08,valve,3.5\\n09,fan,12\\n10,pump,3.5\\n", 3, 10)
+=> std::vector<std::string>{"09 fan", "08 valve", "10 pump"}
+--- check test | A value equal to the limit is not an alarm
+alarms("1,a,5\\n2,b,5.01", 5, 5) == std::vector<std::string>{"2 b"}
+--- check test | No alarms, an empty log, and max_count 0
+alarms("1,a,1\\n2,b,2", 10, 3).empty() && alarms("", 0, 3).empty() && alarms("1,a,9", 0, 0).empty()
+--- check source | Uses split
+std::views::split
+
+=== cpp4-10 | Debugging: iterator invalidation
+--- teach
+Last lesson ended with a warning: a view refers to its source, so it breaks when the source goes away. This lesson is about the everyday version of that bug. You hold on to a position inside a container, the container changes, and your position now points somewhere wrong.
+
+### A bookmark that moved
+
+Picture a book where you marked your place by writing "page 40" on a sticky note. Then someone glues three new pages in near the front. Page 40 now holds different words. Your note still says "page 40", and it is still a real page, but it is not *your* page any more.
+
+Worse: someone photocopies the whole book into a new, thicker binder and throws the old one away. Your note points into a book that no longer exists.
+
+C++ containers can do both of those things to you.
+
+### What "invalid" means
+
+You have three ways to remember a spot inside a container:
+
+- an **iterator**, like \`v.begin() + 2\`;
+- a **pointer**, like \`&v[2]\`;
+- a **reference**, like \`int& x = v[2];\`.
+
+Each one is only good until the container **changes shape**: until elements are added, removed or moved to new memory. After a change that breaks it, the iterator, pointer or reference is **[[invalidated|invalid-word]]**. Using it is undefined behavior.
+
+The nasty part is that nothing crashes most of the time. The program keeps running with the wrong data. That makes this one of the hardest bugs to see.
+
+### Why a vector moves its elements
+
+From building your own growable array two lessons back, you know a \`std::vector\` keeps its elements side by side in one block of memory. The block has room for \`capacity()\` elements. When it is full and you add one more, the vector **[[reallocates|reallocation]]**: it gets a bigger block, moves every element across, and frees the old block. Every old iterator, pointer and reference now points into freed memory. That is the photocopied book.
+
+Adding or removing in the middle is the glued-in page. The vector has to shift the later elements along to keep them side by side, so the element that used to be in slot 5 is now in slot 4 or 6.
+
+### The rules for std::vector
+
+| Operation | What it invalidates |
+| --- | --- |
+| \`push_back\`, \`insert\` that **reallocates** | every iterator, pointer and reference |
+| \`insert\` without reallocating | everything at or after the insertion point |
+| \`erase\` | everything at or after the erased element |
+| \`reserve\` beyond capacity | everything |
+
+**[[Node-based containers|node-based]]** such as \`std::list\` and \`std::map\` are gentler. Each element lives in its own small block that never moves, so only iterators to the erased elements die.
+
+Most of these bugs come in two shapes. Here is each one on its own.
+
+### Shape 1: erasing inside a loop
+
+Say you want to remove every negative score. This loop looks right:
+
+\`\`\`cpp
+std::vector<int> scores = {7, -1, -2, 5};
+for (auto it = scores.begin(); it != scores.end(); ++it) {
+    if (*it < 0) scores.erase(it);     // bug
+}
+\`\`\`
+
+Walk through it. \`it\` reaches the \`-1\` in slot 1 and erases it. Everything after shifts one slot left, so the \`-2\` slides into slot 1. Then the loop's \`++it\` moves on to slot 2, and the \`-2\` is never looked at. The result is \`{7, -2, 5}\`.
+
+And if the element you erase is the last one, \`++it\` steps past \`end()\`, and the loop runs off into memory that is not yours.
+
+The fix is to use what \`erase\` gives back. **\`erase\` returns an iterator to the element after the one it removed**, which is always valid. So move on only when you did not erase:
+
+\`\`\`cpp
+for (auto it = scores.begin(); it != scores.end(); ) {
+    if (*it < 0) it = scores.erase(it);   // it now points at the next element
+    else ++it;
+}
+\`\`\`
+
+Notice the \`for\` has no \`++it\` at the top any more. Each pass moves \`it\` exactly once, one way or the other.
+
+C++20 does all of that in one line, and does it faster. **\`std::erase_if(container, test)\`** removes every element for which the test is true and keeps the rest in order:
+
+\`\`\`cpp
+std::erase_if(scores, [](int s) { return s < 0; });   // scores is {7, 5}
+\`\`\`
+
+It was the [[end of a long story|erase-remove]]; before C++20 people wrote a two-step recipe instead.
+
+### Shape 2: holding a reference across an insert
+
+\`\`\`cpp
+std::vector<int> v = {10, 20, 30, 40};
+int& third = v[2];               // refers to slot 2, holding 30
+v.insert(v.begin(), 0);          // v is {0, 10, 20, 30, 40}
+third += 1;                      // bug
+\`\`\`
+
+A reference is tied to a *slot*, not to a value. After the insert, slot 2 holds \`20\`, so \`third += 1\` changes the 20, and the 30 you meant is untouched. And if the insert had to reallocate, \`third\` would refer to freed memory instead.
+
+**Watch out:** whether an insert reallocates depends on the spare capacity at that moment. So the same buggy code can give one wrong answer when there is room, a different one when there is not, and pass a test by luck. That is why the checks for this lesson try both.
+
+### The debugging method
+
+When data comes out wrong **near** a place where a container changes, stop and list every iterator, pointer and reference that is alive across that change. Each one is a suspect.
+
+Then fix it. In order of preference:
+
+1. **Restructure** so nothing is held across the change. Do the change last, or use \`std::erase_if\`.
+2. **Hold an index instead of a reference**, and adjust it yourself. An index is a plain number: "slot 2". It never dangles. If you insert in front of it, add one.
+3. **\`reserve\` in advance**, but only when you control every insertion, so you know the vector will never grow past it.
+
+To turn an iterator into an index, subtract \`begin()\`. Subtracting two iterators gives how many steps apart they are:
+
+\`\`\`cpp
+auto where = std::find(v.begin(), v.end(), 30);
+auto slot = where - v.begin();     // 3, in the v after the insert above
+\`\`\`
+
+An index stays a number whatever happens to the vector. It is your job to keep it pointing at the right element, for example by adding one after inserting at the front. A [[debug build|debug-checks]] can help you catch the cases you missed.
+
+::: context invalid-word What "invalidated" really means
+"Invalidated" does not mean the iterator now holds a special "bad" value you could test for. It still holds the same address or position it always did. The container's rules have stopped promising anything about what is there. There is no \`is_valid()\` to call: the only protection is knowing the rules and not using an iterator after a change that can break it. The C++ standard lists, for every container operation, exactly which iterators, pointers and references survive it; the table in this lesson is the part of that list for \`std::vector\`.
+:::
+
+::: context reallocation What happens when a vector grows
+When a full vector needs one more slot, it asks for a new, bigger block (most libraries make it about 1.5 or 2 times the old size), moves the elements across, then frees the old block. Anything still pointing into the old block now points at memory the program gave back.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="22" font-size="12" fill="#1f2a44">old block (freed)</text>
+  <rect x="10" y="30" width="40" height="30" fill="#ffffff" stroke="#6c7a93" stroke-dasharray="4 3"/>
+  <rect x="50" y="30" width="40" height="30" fill="#ffffff" stroke="#6c7a93" stroke-dasharray="4 3"/>
+  <rect x="90" y="30" width="40" height="30" fill="#ffffff" stroke="#6c7a93" stroke-dasharray="4 3"/>
+  <text x="30" y="50" font-size="12" fill="#6c7a93" text-anchor="middle">5</text>
+  <text x="70" y="50" font-size="12" fill="#6c7a93" text-anchor="middle">8</text>
+  <text x="110" y="50" font-size="12" fill="#6c7a93" text-anchor="middle">2</text>
+  <text x="170" y="22" font-size="12" fill="#b4232c">old reference</text>
+  <line x1="190" y1="30" x2="80" y2="58" stroke="#b4232c" stroke-width="2"/>
+  <path d="M 72 60 L 84 52 L 85 62 Z" fill="#b4232c"/>
+  <text x="10" y="100" font-size="12" fill="#1f2a44">new block</text>
+  <rect x="10" y="108" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="50" y="108" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="90" y="108" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="130" y="108" width="40" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="170" y="108" width="40" height="30" fill="#ffffff" stroke="#1f2a44"/>
+  <rect x="210" y="108" width="40" height="30" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="30" y="128" font-size="12" fill="#1f2a44" text-anchor="middle">0</text>
+  <text x="70" y="128" font-size="12" fill="#1f2a44" text-anchor="middle">5</text>
+  <text x="110" y="128" font-size="12" fill="#1f2a44" text-anchor="middle">8</text>
+  <text x="150" y="128" font-size="12" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="270" y="128" font-size="11" fill="#6c7a93">spare room</text>
+  <text x="180" y="160" font-size="11" fill="#1f2a44" text-anchor="middle">inserting 0 at the front moved everything to a new block</text>
+</svg>
+\`\`\`
+:::
+
+::: context node-based Why lists and maps are gentler
+A \`std::list\` or \`std::map\` keeps each element in its own separately allocated node, and links the nodes together with pointers. Inserting a new element only makes a new node and changes a few links; erasing one only frees that node. The other nodes never move in memory, so iterators and references to them stay good. The price is speed: nodes are scattered around memory, which is slow to walk through, as the performance lesson later in this course shows. \`std::unordered_map\` is in between: a rehash invalidates its iterators, but references to the elements themselves survive.
+:::
+
+::: context erase-remove Before erase_if: the erase-remove recipe
+Before C++20, the standard way was two steps: \`v.erase(std::remove_if(v.begin(), v.end(), test), v.end());\`. \`std::remove_if\` cannot shrink a vector, because it only has iterators, not the vector itself. So it slides every element to keep toward the front, in order, and returns an iterator to the new "end". \`erase\` then chops off the leftovers. It is one pass, O(n), which is why it beats erasing one element at a time: each single \`erase\` shifts everything after it, so erasing many elements one by one can cost O(n²). \`std::erase_if\` does the whole recipe for you.
+:::
+
+::: context debug-checks Tools that catch it for you
+GCC's standard library has a debug mode: compile with \`-D_GLIBCXX_DEBUG\` and every iterator knows which container it belongs to, so using an invalidated one stops the program with a message saying so. Microsoft's library does the same in debug builds. \`-fsanitize=address\`, from the out-of-range lesson, catches reads of freed memory after a reallocation. These make the program slower, so they are for testing, not for the build you ship.
+:::
+--- task
+**Bug report:** "\`remove_short({"a", "b", "cat"}, 2)\` leaves \`{"b", "cat"}\`, but it should leave \`{"cat"}\`. And \`mark_and_boost({3, 9, 4}, 10)\` gives \`{0, 13, 9, 4}\` instead of \`{0, 3, 19, 4}\`."
+
+Both functions keep something alive across a change to the vector. Fix each one at the cause. No \`main\`.
+
+- \`void remove_short(std::vector<std::string>& words, std::size_t min_len)\` removes every word shorter than \`min_len\`, keeping the rest in their order. This is the erasing-inside-a-loop shape.
+- \`void mark_and_boost(std::vector<int>& v, int bonus)\` inserts a \`0\` at the front, and adds \`bonus\` to the largest of the original values (the first one, if several are equal). \`v\` is never empty. This is the reference-across-an-insert shape: \`std::max_element\` gives an iterator to the largest value.
+--- starter
+#include <algorithm>
+#include <string>
+#include <vector>
+
+// Removes every word shorter than min_len.
+void remove_short(std::vector<std::string>& words, std::size_t min_len) {
+    for (auto it = words.begin(); it != words.end(); ++it) {
+        if (it->size() < min_len) {
+            words.erase(it);
+        }
+    }
+}
+
+// Puts a 0 marker at the front, then adds \`bonus\` to the largest value.
+void mark_and_boost(std::vector<int>& v, int bonus) {
+    int& largest = *std::max_element(v.begin(), v.end());
+    v.insert(v.begin(), 0);
+    largest += bonus;
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <vector>
+
+// Removes every word shorter than min_len.
+void remove_short(std::vector<std::string>& words, std::size_t min_len) {
+    std::erase_if(words, [min_len](const std::string& w) { return w.size() < min_len; });
+}
+
+// Puts a 0 marker at the front, then adds \`bonus\` to the largest value.
+void mark_and_boost(std::vector<int>& v, int bonus) {
+    auto index = std::max_element(v.begin(), v.end()) - v.begin();
+    v.insert(v.begin(), 0);
+    v[index + 1] += bonus;
+}
+--- hint
+In \`remove_short\`, walk through \`{"a", "b", "cat"}\` by hand. After \`words.erase(it)\` removes \`"a"\`, which word slides into its slot, and what does \`++it\` then skip?
+--- hint
+\`std::erase_if(words, test)\` removes every match safely in one pass. The test is a lambda taking \`const std::string& w\` that captures \`min_len\` and returns \`w.size() < min_len\`.
+--- hint
+In \`mark_and_boost\`, keep the largest value's **index** instead of a reference: \`std::max_element(v.begin(), v.end()) - v.begin()\`. After inserting at the front, every element has moved one slot along, so add \`bonus\` to \`v[index + 1]\`.
+--- check case | Neighbouring short words are all removed
+[] { std::vector<std::string> w{"a", "b", "cat"}; remove_short(w, 2); return w; }()
+=> std::vector<std::string>{"cat"}
+--- check case | Order of the rest is kept
+[] { std::vector<std::string> w{"hello", "x", "yy", "z", "world"}; remove_short(w, 2); return w; }()
+=> std::vector<std::string>{"hello", "yy", "world"}
+--- check case | A short word at the very end
+[] { std::vector<std::string> w{"keep", "no", "x"}; remove_short(w, 3); return w; }()
+=> std::vector<std::string>{"keep"}
+--- check case | mark_and_boost with spare capacity
+[] { std::vector<int> v; v.reserve(16); v.insert(v.end(), {3, 9, 4}); mark_and_boost(v, 10); return v; }()
+=> std::vector<int>{0, 3, 19, 4}
+--- check case | mark_and_boost boosts the first of equal largest
+[] { std::vector<int> v; v.reserve(16); v.insert(v.end(), {7, 2, 7}); mark_and_boost(v, 1); return v; }()
+=> std::vector<int>{0, 8, 2, 7}
+--- check case | mark_and_boost when the vector must grow
+[] { std::vector<int> v{5}; v.shrink_to_fit(); mark_and_boost(v, 5); return v; }()
+=> std::vector<int>{0, 10}
+
++++ practice | Drop the odd ones and the blanks
+--- task
+Write two functions that remove elements from a vector safely, keeping the rest in their order. No \`main\`.
+
+- \`int remove_odd(std::vector<int>& v)\` removes every odd value, negative ones included, and returns how many it removed.
+- \`void drop_blank(std::vector<std::string>& lines)\` removes every empty string.
+
+Neighbouring matches, a match at the very end, and a vector where everything (or nothing) matches must all work.
+--- starter
+#include <algorithm>
+#include <string>
+#include <vector>
+
+int remove_odd(std::vector<int>& v) {
+    return 0;
+}
+
+void drop_blank(std::vector<std::string>& lines) {
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <vector>
+
+int remove_odd(std::vector<int>& v) {
+    int removed = 0;
+    for (auto it = v.begin(); it != v.end();) {
+        if (*it % 2 != 0) {
+            it = v.erase(it);
+            ++removed;
+        } else {
+            ++it;
+        }
+    }
+    return removed;
+}
+
+void drop_blank(std::vector<std::string>& lines) {
+    std::erase_if(lines, [](const std::string& s) { return s.empty(); });
+}
+--- hint
+Either use the loop where \`it = v.erase(it)\` replaces the step, and \`++it\` happens only when nothing was erased, or use \`std::erase_if\` with a lambda.
+--- hint
+An odd number has \`x % 2 != 0\`; testing \`x % 2 == 1\` misses the negative ones, because \`-3 % 2\` is -1.
+--- check case | Neighbouring odd values, and one at the end
+[] { std::vector<int> v{2, 3, 5, 4, 7}; int n = remove_odd(v); v.push_back(n); return v; }()
+=> std::vector<int>{2, 4, 3}
+--- check case | Negative odd values
+[] { std::vector<int> v{-3, -2, 0, -1}; remove_odd(v); return v; }()
+=> std::vector<int>{-2, 0}
+--- check test | Everything, nothing, and an empty vector
+[] { std::vector<int> odd{1, 3, 5}, even{2, 4}, none; int a = remove_odd(odd), b = remove_odd(even), c = remove_odd(none); return a == 3 && odd.empty() && b == 0 && even.size() == 2 && c == 0; }()
+--- check case | drop_blank
+[] { std::vector<std::string> l{"", "", "go", "", "no", ""}; drop_blank(l); return l; }()
+=> std::vector<std::string>{"go", "no"}
+
++++ practice | Expiring entries in a map and a set
+--- task
+Erasing while walking works differently in node-based containers: only the erased element's iterator dies, and \`erase\` still gives back the next one. Write two functions. No \`main\`.
+
+- \`void expire(std::map<std::string, int>& ttl)\`: every entry's value is a count of ticks left. Take 1 off every value, then remove each entry whose value has reached 0 or less. Do it in one pass.
+- \`int purge(std::set<int>& ids, int below)\`: remove every id smaller than \`below\` and return how many were removed.
+--- starter
+#include <map>
+#include <set>
+#include <string>
+
+void expire(std::map<std::string, int>& ttl) {
+    for (auto it = ttl.begin(); it != ttl.end(); ++it) {
+        --it->second;
+    }
+}
+
+int purge(std::set<int>& ids, int below) {
+    return 0;
+}
+--- solution
+#include <map>
+#include <set>
+#include <string>
+
+void expire(std::map<std::string, int>& ttl) {
+    for (auto it = ttl.begin(); it != ttl.end();) {
+        if (--it->second <= 0) it = ttl.erase(it);
+        else ++it;
+    }
+}
+
+int purge(std::set<int>& ids, int below) {
+    int removed = 0;
+    for (auto it = ids.begin(); it != ids.end() && *it < below;) {
+        it = ids.erase(it);
+        ++removed;
+    }
+    return removed;
+}
+--- hint
+The same shape as for a vector: \`it = container.erase(it)\` when you erase, \`++it\` otherwise, and no \`++it\` in the \`for\` line itself.
+--- hint
+A \`std::set\` keeps its values in ascending order, so the ids below \`below\` are all at the front: erase from \`begin()\` while the value is too small, and stop at the first one that is not.
+--- check test | expire takes a tick off and removes what runs out
+[] { std::map<std::string, int> t{{"a", 1}, {"b", 3}, {"c", 1}, {"d", 0}}; expire(t); return t.size() == 1 && t["b"] == 2; }()
+--- check test | expire until empty
+[] { std::map<std::string, int> t{{"x", 2}, {"y", 1}}; expire(t); bool one = t.size() == 1 && t.begin()->first == "x"; expire(t); std::map<std::string, int> none; expire(none); return one && t.empty() && none.empty(); }()
+--- check test | purge removes the small ids
+[] { std::set<int> s{-4, 1, 5, 9, 12}; int n = purge(s, 9); return n == 3 && s == std::set<int>{9, 12}; }()
+--- check test | purge with nothing to remove, and everything
+[] { std::set<int> a{5, 6}, b{1, 2}; int x = purge(a, 5), y = purge(b, 100); return x == 0 && a.size() == 2 && y == 2 && b.empty(); }()
+
++++ practice | Move someone to the front of the queue
+--- task
+A queue of names is kept in a \`std::vector<std::string>\`, front first. Write two functions that move one person without copying their name. No \`main\`.
+
+- \`bool promote(std::vector<std::string>& queue, const std::string& name)\`: moves the first person called \`name\` to the front, keeping everyone else in order, and returns \`true\`; returns \`false\` and changes nothing if there is no such person.
+- \`bool demote(std::vector<std::string>& queue, const std::string& name)\`: the same, but to the back.
+
+Find the person with \`std::ranges::find\`. The name must be **moved** into its new place, never copied: a long name keeps the very same block of characters on the heap. Remember that a reference or iterator into the vector is not safe across \`erase\` or \`insert\`.
+--- starter
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+bool promote(std::vector<std::string>& queue, const std::string& name) {
+    return false;
+}
+
+bool demote(std::vector<std::string>& queue, const std::string& name) {
+    return false;
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+bool promote(std::vector<std::string>& queue, const std::string& name) {
+    auto it = std::ranges::find(queue, name);
+    if (it == queue.end()) return false;
+    std::string person = std::move(*it);   // take it out before the vector changes
+    queue.erase(it);
+    queue.insert(queue.begin(), std::move(person));
+    return true;
+}
+
+bool demote(std::vector<std::string>& queue, const std::string& name) {
+    auto it = std::ranges::find(queue, name);
+    if (it == queue.end()) return false;
+    std::string person = std::move(*it);
+    queue.erase(it);
+    queue.push_back(std::move(person));
+    return true;
+}
+--- hint
+Holding \`*it\` by reference and then erasing is the bug from the lesson: after the erase, that slot holds the *next* person. Take the person out first: move \`*it\` into a local \`std::string\`.
+--- hint
+Then \`erase(it)\` (the moved-from husk goes), and \`insert\` at \`begin()\` or \`push_back\` the local with \`std::move\`, so the characters travel without being copied.
+--- check case | promote from the middle
+[] { std::vector<std::string> q{"ann", "bo", "cy", "dee"}; promote(q, "cy"); return q; }()
+=> std::vector<std::string>{"cy", "ann", "bo", "dee"}
+--- check test | The name is moved, not copied
+[] { std::vector<std::string> q{"ann", "a name long enough to live on the heap", "cy"}; const char* where = q[1].data(); promote(q, "a name long enough to live on the heap"); bool front = q[0].data() == where; where = q[0].data(); std::string who = q[0]; demote(q, who); return front && q[2].data() == where && q[2] == "a name long enough to live on the heap"; }()
+--- check test | Someone missing, someone already in place
+[] { std::vector<std::string> q{"ann", "bo"}; bool missing = !promote(q, "zed") && !demote(q, "zed"); bool first = promote(q, "ann"); bool last = demote(q, "bo"); return missing && first && last && q == std::vector<std::string>{"ann", "bo"}; }()
+--- check case | demote the first of two with the same name
+[] { std::vector<std::string> q{"bo", "ann", "bo", "cy"}; demote(q, "bo"); return q; }()
+=> std::vector<std::string>{"ann", "bo", "cy", "bo"}
+
++++ practice | Runs and edges
+--- task
+Write two functions that remove elements in place, correct in every edge case. No \`main\`.
+
+- \`void collapse_runs(std::vector<int>& v)\`: wherever the same value appears several times **in a row**, keep only the first of that run. \`{1, 1, 2, 2, 2, 1}\` becomes \`{1, 2, 1}\`.
+- \`void strip_edges(std::vector<int>& v, int x)\`: remove every \`x\` at the **start** and at the **end**, but none in the middle. \`strip_edges({0, 0, 5, 0, 7, 0}, 0)\` leaves \`{5, 0, 7}\`.
+
+Empty vectors, one element, and vectors made entirely of one value must all work.
+--- starter
+#include <algorithm>
+#include <vector>
+
+void collapse_runs(std::vector<int>& v) {
+}
+
+void strip_edges(std::vector<int>& v, int x) {
+}
+--- solution
+#include <algorithm>
+#include <vector>
+
+void collapse_runs(std::vector<int>& v) {
+    if (v.empty()) return;
+    for (auto it = v.begin() + 1; it != v.end();) {
+        if (*it == *(it - 1)) it = v.erase(it);
+        else ++it;
+    }
+}
+
+void strip_edges(std::vector<int>& v, int x) {
+    while (!v.empty() && v.back() == x) v.pop_back();
+    auto first_kept = std::find_if(v.begin(), v.end(), [x](int y) { return y != x; });
+    v.erase(v.begin(), first_kept);
+}
+--- hint
+In \`collapse_runs\`, compare each element with the one **before** it and erase the current one when they match, stepping with \`it = v.erase(it)\`. Start at the second element, and handle the empty vector first: \`v.begin() + 1\` would be past the end.
+--- hint
+For \`strip_edges\`, strip the end first with \`pop_back\` while the last value is \`x\`. Then find the first value that is not \`x\` (with \`std::find_if\`), and erase everything before it with the two-iterator form \`v.erase(first, last)\`.
+--- check case | collapse_runs
+[] { std::vector<int> v{1, 1, 2, 2, 2, 1, 3, 3}; collapse_runs(v); return v; }()
+=> std::vector<int>{1, 2, 1, 3}
+--- check test | collapse_runs at the edges
+[] { std::vector<int> e, one{4}, same{7, 7, 7, 7}; collapse_runs(e); collapse_runs(one); collapse_runs(same); return e.empty() && one == std::vector<int>{4} && same == std::vector<int>{7}; }()
+--- check case | strip_edges keeps the middle
+[] { std::vector<int> v{0, 0, 5, 0, 7, 0}; strip_edges(v, 0); return v; }()
+=> std::vector<int>{5, 0, 7}
+--- check test | strip_edges at the edges
+[] { std::vector<int> all{3, 3, 3}, none{1, 2}, e, left{9, 1}, right{1, 9}; strip_edges(all, 3); strip_edges(none, 3); strip_edges(e, 3); strip_edges(left, 9); strip_edges(right, 9); return all.empty() && none == std::vector<int>{1, 2} && e.empty() && left == std::vector<int>{1} && right == std::vector<int>{1}; }()
+
++++ practice | Debug: a summary that reads a dead reference
+--- task
+**Bug report:** "\`append_summary({4, 5, 6})\` should leave \`{4, 5, 6, 15, 4}\`, but when the vector has no spare room the last number is garbage. And \`mirror_negatives\` gives wrong numbers, or crashes, once the vector has to grow."
+
+Fix both functions. No \`main\`.
+
+- \`void append_summary(std::vector<int>& v)\` appends the total of the values, then a copy of the first value. \`v\` is never empty.
+- \`void mirror_negatives(std::vector<int>& v)\` appends \`-x\` for every negative \`x\` that was in \`v\` at the start, in order. \`{3, -1, -4}\` becomes \`{3, -1, -4, 1, 4}\`.
+--- starter
+#include <vector>
+
+void append_summary(std::vector<int>& v) {
+    const int& first = v.front();
+    int total = 0;
+    for (int x : v) total += x;
+    v.push_back(total);
+    v.push_back(first);
+}
+
+void mirror_negatives(std::vector<int>& v) {
+    for (int x : v) {
+        if (x < 0) v.push_back(-x);
+    }
+}
+--- solution
+#include <vector>
+
+void append_summary(std::vector<int>& v) {
+    int first = v.front();
+    int total = 0;
+    for (int x : v) total += x;
+    v.push_back(total);
+    v.push_back(first);
+}
+
+void mirror_negatives(std::vector<int>& v) {
+    std::size_t n = v.size();
+    for (std::size_t i = 0; i < n; ++i) {
+        if (v[i] < 0) v.push_back(-v[i]);
+    }
+}
+--- hint
+List everything that points into \`v\` and stays alive across a \`push_back\`. In \`append_summary\`, \`first\` is a reference to slot 0; when \`push_back\` reallocates, slot 0's old memory is given back.
+--- hint
+A range-for holds iterators into \`v\` for the whole loop, so \`push_back\` inside it breaks them. Loop over indexes instead, up to the size the vector had *before* the loop, and read \`v[i]\` fresh each time.
+--- check case | append_summary when the vector must grow
+[] { std::vector<int> v{4, 5, 6}; v.shrink_to_fit(); append_summary(v); return v; }()
+=> std::vector<int>{4, 5, 6, 15, 4}
+--- check case | append_summary with spare room
+[] { std::vector<int> v; v.reserve(10); v.push_back(-2); v.push_back(7); append_summary(v); return v; }()
+=> std::vector<int>{-2, 7, 5, -2}
+--- check case | mirror_negatives when the vector must grow
+[] { std::vector<int> v{3, -1, -4, 2, -6}; v.shrink_to_fit(); mirror_negatives(v); return v; }()
+=> std::vector<int>{3, -1, -4, 2, -6, 1, 4, 6}
+--- check test | mirror_negatives with no negatives, and with only negatives
+[] { std::vector<int> a{1, 2}, b{-5}; b.shrink_to_fit(); mirror_negatives(a); mirror_negatives(b); return a == std::vector<int>{1, 2} && b == std::vector<int>{-5, 5}; }()
+
++++ practice | Stretch: jobs that create more jobs
+--- task
+A job runner works through a queue of jobs, front to back. Some jobs create follow-up jobs, which join the **back** of the same queue. The starter declares \`struct Job { std::string name; int spawns; };\`. Write \`std::vector<std::string> process(std::vector<Job> queue)\`, which returns the names of the jobs in the order they run. No \`main\`.
+
+When a job with \`spawns\` equal to \`s\` runs, and \`s\` is more than 0, it adds \`s\` new jobs to the back, named \`<name>.1\`, \`<name>.2\`, … \`<name>.s\`, each with \`spawns\` equal to \`s - 1\`. Jobs with \`spawns\` of 0 add nothing.
+
+For \`{{"a", 2}, {"b", 0}}\` the jobs run in the order \`a, b, a.1, a.2, a.1.1, a.2.1\`. Keep the queue in the vector itself and walk it by index; the vector grows while you walk it, so hold nothing into it across a \`push_back\`.
+--- starter
+#include <string>
+#include <vector>
+
+struct Job {
+    std::string name;
+    int spawns;
+};
+
+std::vector<std::string> process(std::vector<Job> queue) {
+    return {};
+}
+--- solution
+#include <string>
+#include <vector>
+
+struct Job {
+    std::string name;
+    int spawns;
+};
+
+std::vector<std::string> process(std::vector<Job> queue) {
+    std::vector<std::string> ran;
+    for (std::size_t i = 0; i < queue.size(); ++i) {
+        std::string name = queue[i].name;   // copies: queue may reallocate below
+        int spawns = queue[i].spawns;
+        ran.push_back(name);
+        for (int k = 1; k <= spawns; ++k) queue.push_back({name + "." + std::to_string(k), spawns - 1});
+    }
+    return ran;
+}
+--- hint
+Walk with an index, \`for (std::size_t i = 0; i < queue.size(); ++i)\`, and compare with \`queue.size()\` every time round, because the queue grows as you go.
+--- hint
+Before adding any follow-up jobs, copy the current job's name and spawn count into locals. A \`const Job&\` to \`queue[i]\` would dangle after the first \`push_back\` that reallocates.
+--- check case | The example
+process({{"a", 2}, {"b", 0}})
+=> std::vector<std::string>{"a", "b", "a.1", "a.2", "a.1.1", "a.2.1"}
+--- check case | Jobs that spawn nothing
+process({{"x", 0}, {"y", 0}})
+=> std::vector<std::string>{"x", "y"}
+--- check test | An empty queue
+process({}).empty()
+--- check test | A big family, and the order of the last jobs
+[] { std::vector<Job> q{{"r", 6}}; q.shrink_to_fit(); auto ran = process(q); return ran.size() == 1957 && ran[1] == "r.1" && ran[6] == "r.6" && ran.back() == "r.6.5.4.3.2.1"; }()
+
+=== cpp4-11 | Debugging: signed overflow and undefined behavior
+--- teach
+Last lesson, using an invalidated iterator was undefined behavior: the program kept running, with wrong data and no warning. This lesson goes back to an undefined behavior you met in the intermediate course, signed integer overflow, and shows the part that surprises even experienced programmers. The compiler can quietly **delete** the check you wrote to catch it.
+
+### A quick reminder
+
+An \`int\` is a box of fixed size. It holds whole numbers from about −2.1 billion to about +2.1 billion. **Integer overflow** is a result too big (or too far below zero) for the box.
+
+Most languages say exactly what happens then. Java wraps around to the other end; Python makes room for a bigger number. C++ does not. For a **signed** type such as \`int\`, which can hold negative numbers, overflow is **[[undefined behavior|ub-promise]]**: the rules make no promise at all.
+
+Unsigned types, such as \`unsigned int\` and \`std::size_t\`, are different. Their overflow is **defined**: they wrap around, like a car's mileage counter going from 999,999 back to 0.
+
+### The rule book that says "never"
+
+Picture a referee whose rule book says, "Players never step over the side line." A careful referee might still watch the line. But a referee who trusts the book completely can stop watching it, and put that attention somewhere else. If a player *does* step over, nobody notices.
+
+The **[[optimizer|optimiser]]** is the part of the compiler that rewrites your code to run faster. You switch it on with a flag like \`-O1\`, read "optimize, level one". It trusts the C++ rule book completely. The rule book says signed overflow never happens in a correct program. So the optimizer is allowed to assume it never happens, and reason from there.
+
+### Watch it delete a check
+
+Here is an overflow check that looks careful:
+
+\`\`\`cpp
+int total = x + step;
+if (step > 0 && total < x) { /* overflowed */ }
+\`\`\`
+
+The idea: if \`step\` is positive, the total should be bigger than \`x\`. If it came out smaller, the addition must have wrapped around.
+
+The optimizer reasons differently: "If \`step > 0\`, then \`x + step > x\`, because overflow cannot happen. So \`total < x\` is always false." It deletes the whole check.
+
+The code looked careful. It may even work without optimization. But built with clang at \`-O1\`, which is what this app's checker uses, the check silently does nothing. (Not every compiler deletes it every time, which is exactly why the bug slips through testing. Try the starter and see.)
+
+### The rule: check before you compute
+
+The fix is to never do the addition that might overflow. Instead, ask first, using only arithmetic that **cannot** overflow.
+
+You need the edges of the box. **\`std::numeric_limits<int>::max()\`**, from \`<limits>\`, is the largest \`int\`. **\`std::numeric_limits<int>::min()\`** is the smallest. (\`INT_MAX\` and \`INT_MIN\`, from \`<climits>\`, are the same two numbers under their older C names.)
+
+\`\`\`cpp
+#include <limits>
+constexpr int TOP = std::numeric_limits<int>::max();   // 2,147,483,647
+\`\`\`
+
+Now think about \`x + step\` with a positive \`step\`. It overflows exactly when \`x\` is more than \`TOP - step\`. And \`TOP - step\` is [[itself safe to compute|why-safe]]: taking a positive number away from the largest \`int\` can never go off the bottom.
+
+\`\`\`cpp
+if (step > 0 && x > TOP - step) { /* x + step would overflow */ }
+\`\`\`
+
+A negative \`step\` is the mirror image. There the danger is going below the smallest \`int\`, so you compare \`x\` with the smallest \`int\` minus \`step\`. Minus a negative number moves *up*, away from the edge, so that subtraction is safe too.
+
+Only after both questions say "it fits" do you compute \`x + step\`.
+
+### Or let the compiler check
+
+GCC and clang also have a built-in that does the check for you: \`__builtin_add_overflow(a, b, &result)\` stores the sum in \`result\` and returns \`true\` if it overflowed. It never triggers undefined behavior. The two leading underscores mark it as a compiler extra, not part of standard C++.
+
+### Other well-known traps
+
+Each of these is its own small bug. Here they are one at a time.
+
+**Midpoints.** Halfway between two numbers looks like \`(lo + hi) / 2\`. But \`lo + hi\` can overflow even when both numbers fit. For example, 2,000,000,000 + 2,000,000,000 is too big. Instead, start at the lower one and add half the distance:
+
+\`\`\`cpp
+int middle = first + (last - first) / 2;
+\`\`\`
+
+For \`first <= last\` (both not negative), \`last - first\` is never bigger than \`last\`, so nothing overflows. This bug hid in [[binary searches|binary-search-bug]] for years. C++20 also has \`std::midpoint\` in \`<numeric>\`.
+
+**Differences.** \`a - b\` overflows when the signs are different and the numbers are large. For example, 2,000,000,000 − (−2,000,000,000) is 4 billion. The fix is to **widen first**: turn one number into a \`long long\` *before* subtracting, so the subtraction happens in the bigger box.
+
+\`\`\`cpp
+long long diff = static_cast<long long>(a) - b;
+\`\`\`
+
+Here \`b\` is widened to \`long long\` automatically, because the other side of the \`-\` already is.
+
+**Watch out:** \`static_cast<long long>(a - b)\` is too late. The brackets mean the subtraction happens first, in \`int\`, and overflows; only the broken result gets widened.
+
+**\`abs(INT_MIN)\`.** The absolute value of the smallest \`int\` has no \`int\` answer. The box holds one more negative number than positive ones, so [[+2,147,483,648 does not fit|asymmetric-range]].
+
+**Unsigned wrap-around fixes nothing.** Switching to an unsigned type makes overflow defined, but defined is not the same as right. If you expected a negative result, an unsigned type gives you a huge positive one instead.
+
+### Catching it while you test
+
+Two compiler flags turn silent overflow into a loud report while you test. **\`-fsanitize=undefined\`** checks for undefined behavior as the program runs and prints a message when it happens. **\`-ftrapv\`** stops the program on signed overflow. Both slow the program down, so they are for testing.
+
+And a habit: when a result near some arithmetic looks **impossible**, such as a negative distance or a check that never fires, suspect undefined behavior. Real systems have [[failed this way|ariane-5]].
+
+::: context ub-promise Undefined behavior is a promise you made
+Undefined behavior is a deal. You promise the compiler your program never does certain things: overflow a signed integer, read past the end of an array, use a freed object. In return, the compiler does not have to check for them, and can make the code faster. When you break the promise, the deal is off, and the program is allowed to do anything at all. "Anything" is usually boring, like a wrong number, but it can also be a missing \`if\`, a loop that never ends, or a crash that only happens in the optimized build.
+:::
+
+::: context optimiser What the optimizer does
+The compiler first turns your code into a simple, correct program, then the optimizer improves it without changing what it does: it keeps values in fast registers, drops work whose result is never used, folds constant arithmetic, and deletes branches it can prove are never taken. \`-O0\` means no optimizing, \`-O1\` a sensible amount, \`-O2\` and \`-O3\` more. "Without changing what it does" only covers programs that follow the rules: code with undefined behavior has no required behavior to keep, which is why it can change between \`-O0\` and \`-O1\`.
+:::
+
+::: context why-safe Why the safe check cannot overflow
+Draw the \`int\` range as a line from the smallest value to the largest. With \`step\` positive, \`TOP - step\` moves left from the top end by \`step\`, and never reaches the bottom, so it fits. If \`x\` is further right than that, adding \`step\` would carry it off the end.
+
+\`\`\`svg
+<svg viewBox="0 0 360 130" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="60" x2="340" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="20" y1="50" x2="20" y2="70" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="340" y1="50" x2="340" y2="70" stroke="#1f2a44" stroke-width="2"/>
+  <text x="20" y="88" font-size="12" fill="#1f2a44" text-anchor="middle">smallest</text>
+  <text x="340" y="88" font-size="12" fill="#1f2a44" text-anchor="middle">TOP</text>
+  <line x1="260" y1="52" x2="260" y2="68" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="260" y="88" font-size="12" fill="#1d6fd1" text-anchor="middle">TOP - step</text>
+  <rect x="262" y="54" width="76" height="12" fill="#f2b880"/>
+  <text x="300" y="44" font-size="11" fill="#b4232c" text-anchor="middle">x here: x + step</text>
+  <text x="300" y="30" font-size="11" fill="#b4232c" text-anchor="middle">would pass TOP</text>
+  <text x="140" y="44" font-size="11" fill="#1f2a44" text-anchor="middle">x here: the sum fits</text>
+  <text x="180" y="118" font-size="11" fill="#6c7a93" text-anchor="middle">every number in this check stays on the line</text>
+</svg>
+\`\`\`
+:::
+
+::: context binary-search-bug The midpoint bug in real libraries
+In 2006, Joshua Bloch, who had written Java's \`Arrays.binarySearch\`, reported that it contained \`int mid = (low + high) / 2;\`. For arrays of more than about a billion elements, \`low + high\` overflowed, turned negative, and the search crashed. The same line had been in textbooks and libraries for decades, because nobody tested arrays that big. The fix was the one in this lesson: \`low + (high - low) / 2\`. It is a good reminder that "works on every test" and "correct" are different claims.
+:::
+
+::: context asymmetric-range Why the box is lopsided
+A 32-bit \`int\` has 2³² = 4,294,967,296 bit patterns. One of them is zero, which leaves an odd number for everything else, so the two sides cannot be equal. In two's complement, the pattern every modern machine uses, the negatives get the extra one: the range is −2,147,483,648 to +2,147,483,647. So \`-INT_MIN\` and \`abs(INT_MIN)\` would be +2,147,483,648, one past the top. In practice you usually get \`INT_MIN\` back, still negative, but that is undefined behavior and cannot be relied on.
+:::
+
+::: context ariane-5 An overflow that lost a rocket
+On 4 June 1996, the first Ariane 5 rocket veered off course about 37 seconds after launch and was destroyed. Its guidance software converted a 64-bit floating-point value, one tied to the rocket's sideways speed, into a 16-bit signed integer. Ariane 5 flew faster sideways than the older Ariane 4 the code was written for, and the value did not fit. The conversion raised an error that nothing handled, so both inertial reference computers shut down, and the main flight computer read their error messages as if they were flight data and swung the engines hard over. Flight software today checks ranges before converting, for exactly this reason.
+:::
+--- task
+**Bug report:** "\`checked_add(INT_MAX, 1)\` returns a huge negative number instead of \`std::nullopt\`. \`midpoint(2000000000, 2100000000)\` is negative. And \`gap(INT_MIN, INT_MAX)\` comes out as 1."
+
+Fix all three functions so that none of them relies on undefined behavior anywhere. No \`main\`.
+
+- \`std::optional<int> checked_add(int a, int b)\` returns the sum, or \`std::nullopt\` if the sum does not fit in an \`int\`. Check before you compute, with \`std::numeric_limits<int>::max()\` and \`std::numeric_limits<int>::min()\` (or \`INT_MAX\` and \`INT_MIN\`).
+- \`int midpoint(int lo, int hi)\` returns the middle of \`lo\` and \`hi\`, rounded down, for \`0 <= lo <= hi\`.
+- \`long long gap(int a, int b)\` returns how far apart \`a\` and \`b\` are. It is never negative. Widen to \`long long\` before subtracting.
+--- starter
+#include <climits>
+#include <limits>
+#include <optional>
+
+// The sum, or nullopt if it does not fit in an int.
+std::optional<int> checked_add(int a, int b) {
+    int sum = a + b;
+    if (b > 0 && sum < a) return std::nullopt;   // wrapped upwards
+    if (b < 0 && sum > a) return std::nullopt;   // wrapped downwards
+    return sum;
+}
+
+// The middle of [lo, hi], rounded down (0 <= lo <= hi).
+int midpoint(int lo, int hi) {
+    return (lo + hi) / 2;
+}
+
+// How far apart a and b are.
+long long gap(int a, int b) {
+    return a > b ? a - b : b - a;
+}
+--- solution
+#include <climits>
+#include <limits>
+#include <optional>
+
+// The sum, or nullopt if it does not fit in an int.
+std::optional<int> checked_add(int a, int b) {
+    constexpr int kMax = std::numeric_limits<int>::max();
+    constexpr int kMin = std::numeric_limits<int>::min();
+    if (b > 0 && a > kMax - b) return std::nullopt;
+    if (b < 0 && a < kMin - b) return std::nullopt;
+    return a + b;
+}
+
+// The middle of [lo, hi], rounded down (0 <= lo <= hi).
+int midpoint(int lo, int hi) {
+    return lo + (hi - lo) / 2;
+}
+
+// How far apart a and b are.
+long long gap(int a, int b) {
+    long long d = static_cast<long long>(a) - static_cast<long long>(b);
+    return d < 0 ? -d : d;
+}
+--- hint
+The starter computes \`a + b\` first and checks afterwards; that is the check the optimizer deletes. Ask the question before adding: for a positive \`b\`, the sum overflows when \`a\` is more than the largest \`int\` minus \`b\`.
+--- hint
+For a negative \`b\`, the mirror image: the sum goes too low when \`a < std::numeric_limits<int>::min() - b\`. If neither is true, \`return a + b;\`. For \`midpoint\`, start at \`lo\` and add half the distance: \`lo + (hi - lo) / 2\`.
+--- hint
+In \`gap\`, write \`long long d = static_cast<long long>(a) - b;\` so the subtraction happens in \`long long\`, then return \`d\` if it is not negative and \`-d\` if it is.
+--- check test | Overflow upwards is caught
+checked_add(INT_MAX, 1) == std::nullopt && checked_add(2000000000, 2000000000) == std::nullopt
+--- check test | Overflow downwards is caught
+checked_add(INT_MIN, -1) == std::nullopt && checked_add(-2000000000, -2000000000) == std::nullopt
+--- check test | Sums that fit still work, right up to the edge
+checked_add(INT_MAX, 0) == INT_MAX && checked_add(INT_MAX, INT_MIN) == -1 && checked_add(-5, 3) == -2 && checked_add(INT_MIN, 0) == INT_MIN
+--- check test | midpoint of large values
+midpoint(2000000000, 2100000000) == 2050000000 && midpoint(0, INT_MAX) == 1073741823 && midpoint(7, 7) == 7 && midpoint(0, 1) == 0
+--- check test | gap across the whole int range
+gap(INT_MIN, INT_MAX) == 4294967295LL && gap(INT_MAX, INT_MIN) == 4294967295LL && gap(5, -5) == 10 && gap(3, 3) == 0
+
++++ practice | Subtract and negate, safely
+--- task
+Write two functions that never rely on undefined behavior. Check before you compute, using \`std::numeric_limits<int>::max()\` and \`std::numeric_limits<int>::min()\` (or \`INT_MAX\` and \`INT_MIN\`). No \`main\`.
+
+- \`std::optional<int> checked_sub(int a, int b)\` returns \`a - b\`, or \`std::nullopt\` if the result does not fit in an \`int\`.
+- \`std::optional<int> checked_neg(int x)\` returns \`-x\`, or \`std::nullopt\` if it does not fit.
+
+Taking away a negative number moves *up*, so it can overflow at the top; taking away a positive number can overflow at the bottom.
+--- starter
+#include <climits>
+#include <limits>
+#include <optional>
+
+std::optional<int> checked_sub(int a, int b) {
+    int result = a - b;
+    if (b > 0 && result > a) return std::nullopt;
+    if (b < 0 && result < a) return std::nullopt;
+    return result;
+}
+
+std::optional<int> checked_neg(int x) {
+    return -x;
+}
+--- solution
+#include <climits>
+#include <limits>
+#include <optional>
+
+std::optional<int> checked_sub(int a, int b) {
+    constexpr int kMax = std::numeric_limits<int>::max();
+    constexpr int kMin = std::numeric_limits<int>::min();
+    if (b < 0 && a > kMax + b) return std::nullopt;   // a - b would pass the top
+    if (b > 0 && a < kMin + b) return std::nullopt;   // a - b would pass the bottom
+    return a - b;
+}
+
+std::optional<int> checked_neg(int x) {
+    if (x == std::numeric_limits<int>::min()) return std::nullopt;
+    return -x;
+}
+--- hint
+Mirror the lesson's check for addition. For a negative \`b\`, \`a - b\` passes the top exactly when \`a > max + b\`, and \`max + b\` is safe to work out because \`b\` is negative.
+--- hint
+For a positive \`b\`, the danger is the bottom: \`a - b\` goes too low when \`a < min + b\`. And the only \`int\` whose negative does not fit is the smallest one.
+--- check test | Overflow at the bottom and the top is caught
+checked_sub(INT_MIN, 1) == std::nullopt && checked_sub(INT_MAX, -1) == std::nullopt && checked_sub(0, INT_MIN) == std::nullopt && checked_sub(-2000000000, 2000000000) == std::nullopt
+--- check test | Results that fit, right up to the edge
+checked_sub(-1, INT_MIN) == INT_MAX && checked_sub(INT_MIN, 0) == INT_MIN && checked_sub(5, 3) == 2 && checked_sub(-5, -5) == 0 && checked_sub(INT_MAX, INT_MAX) == 0
+--- check test | checked_neg
+checked_neg(INT_MIN) == std::nullopt && checked_neg(INT_MAX) == -INT_MAX && checked_neg(0) == 0 && checked_neg(-7) == 7
+
++++ practice | Multiply by widening, or stop at the edge
+--- task
+Write two functions that use a wider type instead of a check-first comparison. No \`main\`.
+
+- \`std::optional<int> checked_mul(int a, int b)\` returns \`a * b\`, or \`std::nullopt\` if it does not fit in an \`int\`. Multiply in \`long long\` (the product of two \`int\`s always fits there), then check the range.
+- \`int saturating_add(int a, int b)\` returns \`a + b\`, but if the true sum is above the largest \`int\` it returns the largest \`int\`, and if it is below the smallest it returns the smallest. This is called **saturating**: stopping at the edge instead of wrapping.
+--- starter
+#include <climits>
+#include <limits>
+#include <optional>
+
+std::optional<int> checked_mul(int a, int b) {
+    return a * b;
+}
+
+int saturating_add(int a, int b) {
+    return a + b;
+}
+--- solution
+#include <climits>
+#include <limits>
+#include <optional>
+
+std::optional<int> checked_mul(int a, int b) {
+    long long product = static_cast<long long>(a) * b;
+    if (product > std::numeric_limits<int>::max() || product < std::numeric_limits<int>::min()) return std::nullopt;
+    return static_cast<int>(product);
+}
+
+int saturating_add(int a, int b) {
+    long long sum = static_cast<long long>(a) + b;
+    if (sum > std::numeric_limits<int>::max()) return std::numeric_limits<int>::max();
+    if (sum < std::numeric_limits<int>::min()) return std::numeric_limits<int>::min();
+    return static_cast<int>(sum);
+}
+--- hint
+Widen *before* the operation: \`static_cast<long long>(a) * b\` multiplies in \`long long\`, because the other side is widened to match. \`static_cast<long long>(a * b)\` would be too late.
+--- hint
+Once the result is in a \`long long\`, compare it with the largest and smallest \`int\`, and only then turn it back into an \`int\` with \`static_cast<int>\`.
+--- check test | checked_mul just past and just inside the edge
+checked_mul(46341, 46341) == std::nullopt && checked_mul(46340, 46340) == 2147395600 && checked_mul(65536, 32768) == std::nullopt && checked_mul(-65536, 32768) == INT_MIN
+--- check test | checked_mul with the smallest int
+checked_mul(INT_MIN, -1) == std::nullopt && checked_mul(INT_MIN, 1) == INT_MIN && checked_mul(INT_MIN, 0) == 0 && checked_mul(-3, 7) == -21
+--- check test | saturating_add stops at both edges
+saturating_add(INT_MAX, 5) == INT_MAX && saturating_add(INT_MIN, -1) == INT_MIN && saturating_add(INT_MAX, INT_MAX) == INT_MAX && saturating_add(3, -10) == -7 && saturating_add(INT_MAX, INT_MIN) == -1
+
++++ practice | Totals that fit, however they get there
+--- task
+Write two functions that total whole numbers and say whether the **final** total fits in an \`int\`. A running total may pass the edge on the way and come back (\`INT_MAX\`, then 1, then -1 is fine: the total is \`INT_MAX\`). No \`main\`.
+
+- \`std::optional<int> checked_total(const std::vector<int>& v)\`: the total, or \`std::nullopt\` if it does not fit. The total of an empty vector is 0.
+- \`sum_fits(xs...)\`: the same for any number of \`int\` arguments, written as a fold expression. Arguments that are not \`int\` must not compile (a requires clause folding \`&&\` over \`std::same_as<Ts, int>\`). \`sum_fits()\` is 0.
+--- starter
+#include <climits>
+#include <concepts>
+#include <limits>
+#include <optional>
+#include <vector>
+
+std::optional<int> checked_total(const std::vector<int>& v) {
+    int total = 0;
+    for (int x : v) total += x;
+    return total;
+}
+
+template <typename... Ts>
+std::optional<int> sum_fits(Ts... xs) {
+    return (xs + ... + 0);
+}
+--- solution
+#include <climits>
+#include <concepts>
+#include <limits>
+#include <optional>
+#include <vector>
+
+std::optional<int> fit(long long total) {
+    if (total > std::numeric_limits<int>::max() || total < std::numeric_limits<int>::min()) return std::nullopt;
+    return static_cast<int>(total);
+}
+
+std::optional<int> checked_total(const std::vector<int>& v) {
+    long long total = 0;
+    for (int x : v) total += x;
+    return fit(total);
+}
+
+template <typename... Ts>
+    requires (std::same_as<Ts, int> && ...)
+std::optional<int> sum_fits(Ts... xs) {
+    return fit((0LL + ... + xs));
+}
+--- hint
+Add everything up in a \`long long\`, where no realistic number of \`int\`s can overflow, and check the range once, at the end.
+--- hint
+For the fold, the start value sets the type: \`(0LL + ... + xs)\` adds in \`long long\` from the first step. A small helper that turns a \`long long\` into a \`std::optional<int>\` serves both functions.
+--- check test | A total that passes the edge and comes back
+checked_total({INT_MAX, 1, -1}) == INT_MAX && checked_total({INT_MIN, -5, 10, -5}) == INT_MIN && checked_total({}) == 0
+--- check test | A total that ends up too big or too small
+checked_total({INT_MAX, 1}) == std::nullopt && checked_total({-2000000000, -2000000000}) == std::nullopt && checked_total({1000000000, 1000000000, 1000000000}) == std::nullopt
+--- check test | sum_fits
+sum_fits(INT_MAX, 1, -1) == INT_MAX && sum_fits(INT_MAX, 1) == std::nullopt && sum_fits() == 0 && sum_fits(-3, 4) == 1
+--- check test | sum_fits refuses anything that is not an int
+![]<class T>(T t) { return requires { sum_fits(1, t); }; }(2LL) && ![]<class T>(T t) { return requires { sum_fits(t); }; }(1.5)
+
++++ practice | Absolute values, averages and spans at the edges
+--- task
+Write three functions that give the right answer for every pair of \`int\`s, including the largest and smallest. No \`main\`.
+
+- \`std::optional<int> checked_abs(int x)\`: the absolute value, or \`std::nullopt\` when it does not fit.
+- \`int floor_average(int a, int b)\`: the average of \`a\` and \`b\`, rounded **down** (towards minus infinity, not towards zero): \`floor_average(-3, 0)\` is -2, because -1.5 rounded down is -2. \`floor_average(3, 0)\` is 1.
+- \`long long span(const std::vector<int>& v)\`: the largest value minus the smallest, which can be bigger than any \`int\`; 0 for an empty vector.
+
+Careful: in C++, \`/\` on whole numbers rounds towards zero, so \`-3 / 2\` is -1.
+--- starter
+#include <algorithm>
+#include <climits>
+#include <limits>
+#include <optional>
+#include <vector>
+
+std::optional<int> checked_abs(int x) {
+    return x < 0 ? -x : x;
+}
+
+int floor_average(int a, int b) {
+    return (a + b) / 2;
+}
+
+long long span(const std::vector<int>& v) {
+    if (v.empty()) return 0;
+    auto [lo, hi] = std::minmax_element(v.begin(), v.end());
+    return *hi - *lo;
+}
+--- solution
+#include <algorithm>
+#include <climits>
+#include <limits>
+#include <optional>
+#include <vector>
+
+std::optional<int> checked_abs(int x) {
+    if (x == std::numeric_limits<int>::min()) return std::nullopt;
+    return x < 0 ? -x : x;
+}
+
+int floor_average(int a, int b) {
+    long long sum = static_cast<long long>(a) + b;
+    long long half = sum / 2;              // rounds towards zero
+    if (sum < 0 && sum % 2 != 0) --half;   // so step down for negative odd sums
+    return static_cast<int>(half);
+}
+
+long long span(const std::vector<int>& v) {
+    if (v.empty()) return 0;
+    auto [lo, hi] = std::minmax_element(v.begin(), v.end());
+    return static_cast<long long>(*hi) - *lo;
+}
+--- hint
+\`checked_abs\` has exactly one bad input. \`span\` subtracts in \`int\`: widen one side to \`long long\` before subtracting.
+--- hint
+For \`floor_average\`, add in \`long long\` so nothing overflows, then divide by 2. That rounds towards zero, which is already right for sums that are not negative. For a negative sum that is odd, the exact half ends in .5, so step the result down by 1.
+--- check test | checked_abs
+checked_abs(INT_MIN) == std::nullopt && checked_abs(INT_MIN + 1) == INT_MAX && checked_abs(-5) == 5 && checked_abs(0) == 0
+--- check test | floor_average rounds down, for negatives too
+floor_average(-3, 0) == -2 && floor_average(3, 0) == 1 && floor_average(-1, 2) == 0 && floor_average(-4, 0) == -2 && floor_average(7, 7) == 7
+--- check test | floor_average at the edges of int
+floor_average(INT_MAX, INT_MAX) == INT_MAX && floor_average(INT_MIN, INT_MIN) == INT_MIN && floor_average(INT_MIN, INT_MAX) == -1 && floor_average(INT_MAX, INT_MAX - 1) == INT_MAX - 1
+--- check test | span across the whole int range
+span({INT_MIN, INT_MAX}) == 4294967295LL && span({INT_MAX, 0, INT_MIN}) == 4294967295LL && span({}) == 0 && span({5}) == 0 && span({-2, 3}) == 5
+
++++ practice | Debug: a countdown that never ends, a mean that goes negative
+--- task
+**Bug report:** "\`reversed\` crashes for every input, even \`{1, 2, 3}\`. And \`mean({2000000000, 2000000000})\` comes out negative."
+
+Fix both functions. No \`main\`.
+
+- \`std::vector<int> reversed(const std::vector<int>& v)\` returns the values of \`v\` last to first; \`{}\` for an empty vector.
+- \`double mean(const std::vector<int>& v)\` returns the average, or \`0.0\` for an empty vector.
+--- starter
+#include <cstddef>
+#include <vector>
+
+std::vector<int> reversed(const std::vector<int>& v) {
+    std::vector<int> out;
+    for (std::size_t i = v.size() - 1; i >= 0; --i) out.push_back(v[i]);
+    return out;
+}
+
+double mean(const std::vector<int>& v) {
+    if (v.empty()) return 0.0;
+    int total = 0;
+    for (int x : v) total += x;
+    return static_cast<double>(total) / v.size();
+}
+--- solution
+#include <cstddef>
+#include <vector>
+
+std::vector<int> reversed(const std::vector<int>& v) {
+    std::vector<int> out;
+    for (std::size_t i = v.size(); i > 0; --i) out.push_back(v[i - 1]);
+    return out;
+}
+
+double mean(const std::vector<int>& v) {
+    if (v.empty()) return 0.0;
+    long long total = 0;
+    for (int x : v) total += x;
+    return static_cast<double>(total) / v.size();
+}
+--- hint
+\`std::size_t\` is unsigned: it can never be below zero, so \`i >= 0\` is always true. When \`i\` is 0, \`--i\` wraps round to the biggest \`std::size_t\`. For an empty vector, \`v.size() - 1\` already does.
+--- hint
+Count down with \`i\` from \`v.size()\` while \`i > 0\`, and read \`v[i - 1]\`. For the mean, keep the total in a \`long long\`: two big \`int\`s already overflow an \`int\` total.
+--- check case | reversed
+reversed({1, 2, 3})
+=> std::vector<int>{3, 2, 1}
+--- check test | reversed of one, and of none
+reversed({7}) == std::vector<int>{7} && reversed({}).empty()
+--- check test | mean of big values
+mean({2000000000, 2000000000}) == 2000000000.0 && mean({2000000000, 2000000000, 2000000000, -1}) == 1499999999.75
+--- check test | mean of small values, and of none
+mean({1, 2}) == 1.5 && mean({}) == 0.0 && mean({-3}) == -3.0
+
++++ practice | Stretch: how many complete rows of crates
+--- task
+Crates are stacked in rows: row 1 holds 1 crate, row 2 holds 2, row 3 holds 3, and so on. Building \`n\` complete rows takes \`n × (n + 1) / 2\` crates. Write \`long long complete_rows(long long crates)\`, the largest \`n\` (0 or more) such that \`n\` complete rows use at most \`crates\` crates. No \`main\`.
+
+\`crates\` is between 0 and 2,000,000,000,000,000,000 (2 × 10¹⁸), so the answer can be about 2 billion: counting up one row at a time is far too slow. The starter solves the equation with a \`double\` square root instead, but a \`double\` holds only about 16 significant digits, so for some big inputs it is off by one. Search for the answer with whole numbers only (binary search on the answer, from the advanced course), and make sure that no arithmetic on the way can overflow: not the midpoint, and not \`n × (n + 1)\`.
+
+\`complete_rows(6)\` is 3, and \`complete_rows(5)\` is 2.
+--- starter
+#include <cmath>
+
+long long complete_rows(long long crates) {
+    return static_cast<long long>((std::sqrt(8.0 * crates + 1) - 1) / 2);
+}
+--- solution
+#include <cmath>
+
+// Crates needed for n complete rows. Safe for n up to 2,000,000,000: n * (n + 1) stays below 4.1e18.
+long long crates_for(long long n) {
+    return n * (n + 1) / 2;
+}
+
+long long complete_rows(long long crates) {
+    long long lo = 0;               // always a row count that fits
+    long long hi = 2000000000LL;    // always a row count that is too many for the largest input
+    while (hi - lo > 1) {
+        long long mid = lo + (hi - lo) / 2;
+        if (crates_for(mid) <= crates) lo = mid;
+        else hi = mid;
+    }
+    return lo;
+}
+--- hint
+The answer is monotonic: if \`n\` rows fit, so do fewer. Keep \`lo\` as a row count that fits (0 always does) and \`hi\` as one that does not, and halve the gap until they are neighbours.
+--- hint
+2,000,000,000 rows need about 2 × 10¹⁸ crates, more than enough for the largest input, and 2,000,000,000 × 2,000,000,001 is about 4 × 10¹⁸, which still fits in a \`long long\` (its largest value is about 9.2 × 10¹⁸). Take the midpoint as \`lo + (hi - lo) / 2\`.
+--- check test | Small numbers of crates
+complete_rows(0) == 0 && complete_rows(1) == 1 && complete_rows(2) == 1 && complete_rows(3) == 2 && complete_rows(5) == 2 && complete_rows(6) == 3
+--- check test | Exactly on a boundary and one below it
+complete_rows(1000000000179470703LL) == 1414213562 && complete_rows(1000000000179470702LL) == 1414213561 && complete_rows(2147483647) == 65535
+--- check test | The largest inputs, quickly
+complete_rows(1000000000000000000LL) == 1414213561 && complete_rows(2000000000000000000LL) == 1999999999 && complete_rows(1999999999000000000LL) == 1999999999 && complete_rows(1999999998999999999LL) == 1999999998
+
+=== cpp4-12 | Performance: data layout and algorithmic cost
+--- teach
+Last lesson was about getting arithmetic *right*: checking before you compute, and widening to \`long long\` before a big subtraction. This lesson is about getting code *fast*. You will see the two things that decide speed, and then use the bigger one to turn a slow class into one that answers every question in the same tiny time.
+
+### Two costs
+
+Two things decide how fast code runs:
+
+1. **How much work it does.** That is the algorithm, measured with the big-O notation you met with maps: O(n), O(n²), O(1).
+2. **How it touches memory.** That is the data **layout**: where the values sit, and in what order the code visits them.
+
+The first one usually matters most. Doing a thousand times less work beats any clever memory trick. The second is where the remaining speed-up hides, often a factor of 2 to 10 on the same algorithm. This lesson takes them one at a time.
+
+### Memory arrives by the armful
+
+Picture a library where the books are in a basement store. Each time you ask for one, a helper walks down and comes back with the whole *shelf section* it sits on, sixteen books side by side. If the next book you want is the one next to it, it is already on your desk. If it is on a shelf at the other end of the basement, you wait for another trip.
+
+A computer's main memory is that basement: big, and slow to reach. The processor keeps a small, very fast store of recently used memory right next to it, called the **[[cache|cache-word]]**. Memory is never copied into the cache one value at a time. It comes in fixed chunks called **[[cache lines|cache-line]]**, usually 64 bytes each.
+
+An \`int\` is 4 bytes, and 64 ÷ 4 = 16. So when your code reads \`v[i]\`, the next fifteen \`int\`s, \`v[i+1]\` to \`v[i+15]\`, usually arrive in the same trip, nearly for free.
+
+That gives the one rule of this section. Code that walks memory **in order** runs at full speed. Code that jumps around waits for memory on almost every step.
+
+### Layout 1: a grid in one vector
+
+A grid with rows and columns can live in one flat \`std::vector\`. Row 0 goes first, then all of row 1, then row 2, and so on. That order is called **[[row-major|row-major]]**. The cell in row \`r\` and column \`c\` is at index \`r * cols + c\`: skip \`r\` whole rows of \`cols\` cells each, then step \`c\` more.
+
+\`\`\`cpp
+int width = 4, height = 3;
+std::vector<char> pixels(width * height, '.');
+pixels[2 * width + 1] = '#';        // row 2, column 1
+\`\`\`
+
+The loop order now matters a lot. Rows on the outside and columns on the inside visit the cells in exactly the order they sit in memory:
+
+\`\`\`cpp
+for (int y = 0; y < height; ++y)          // each row...
+    for (int x = 0; x < width; ++x)       // ...left to right along it
+        draw(pixels[y * width + x]);
+\`\`\`
+
+Swap the two loops, and each step jumps a whole row ahead in memory. On a big grid, every one of those jumps can mean a new trip to the basement.
+
+### Layout 2: one block, not many
+
+\`std::vector<std::vector<int>>\` looks like a grid, but it is not one block. Each inner vector is a separate allocation, and they can be scattered anywhere in memory. Walking from the end of one row to the start of the next is a jump.
+
+One flat vector, indexed with \`r * cols + c\`, keeps the whole grid in one block. It is faster, and it is simpler too: one allocation, one size.
+
+### Layout 3: keep the hot data together
+
+Say you have a million records like \`{x, y, z, name}\`, and one loop, run thousands of times a second, reads only \`x\`. Stored as a vector of those structs, each record takes around 48 bytes, so a 64-byte cache line brings in only one or two useful \`x\` values; the rest of the line is \`y\`, \`z\` and names you did not ask for.
+
+Store the \`x\` values in their own \`std::vector<float> xs\` instead, and every cache line brings in 16 useful values. The first layout is called an **array of structs**, the second a **[[struct of arrays|aos-soa]]**.
+
+### But first, count the work
+
+The best memory layout in the world cannot rescue an algorithm that does a billion additions it did not need to. So before tuning layout, count.
+
+Here is the classic case. You have a grid of numbers, and you are asked, again and again, "what is the sum of this rectangle?" Adding up a rectangle cell by cell costs as many additions as it has cells. On a 1000 × 1000 grid, one big rectangle is up to a million cells. Answer 100,000 such questions and that is up to 100,000 × 1,000,000 = 10¹¹ additions: minutes of work, not milliseconds.
+
+The trick is to do the adding **once**, up front, and then answer every question with a few lookups.
+
+### The idea in one dimension: prefix sums
+
+Start with a single row. A **prefix sum** table \`P\` stores running totals: \`P[i]\` is the sum of the first \`i\` values. It has one more entry than the row, and \`P[0]\` is 0, the sum of nothing.
+
+\`\`\`text
+values:   5   1   4   2
+P:     0  5   6  10  12
+\`\`\`
+
+Each entry is the one before plus the next value, so building the table is one pass. Now the sum of any stretch is **one subtraction**. The sum of positions 1 to 3 (1 + 4 + 2 = 7) is "everything up to position 3" minus "everything before position 1": \`P[4] - P[1]\` = 12 − 5 = 7.
+
+### The same idea in two dimensions
+
+For a grid, **\`P[r][c]\`** is the sum of every cell **above and to the left** of \`(r, c)\`: rows \`0\` to \`r − 1\` and columns \`0\` to \`c − 1\`. The table is one bigger in each direction, \`(rows + 1) × (cols + 1)\`, with a border of zeros along the top row and left column.
+
+You fill it in one pass, row by row, in memory order. Each entry is its own cell, plus the block above, plus the block to the left, minus the corner block that got added twice:
+
+\`\`\`text
+P[r+1][c+1] = value(r, c) + P[r][c+1] + P[r+1][c] - P[r][c]
+\`\`\`
+
+Then the sum of the rectangle from rows \`r1..r2\` and columns \`c1..c2\` (both ends included) is four lookups. Take the big block up to the bottom-right corner, remove the strip above the rectangle and the strip to its left, and add back the corner you removed twice. This add-and-take-away pattern is called [[inclusion–exclusion|inclusion-exclusion]]:
+
+\`\`\`text
+sum = P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] + P[r1][c1]
+\`\`\`
+
+Four lookups, whatever the size of the rectangle: O(1) per question.
+
+### A worked example
+
+Take this grid of 2 rows and 3 columns:
+
+\`\`\`text
+2  0  1
+3  4  5
+\`\`\`
+
+Its prefix table is 3 × 4. The top row and left column are the zero border:
+
+\`\`\`text
+0  0  0   0
+0  2  2   3
+0  5  9  15
+\`\`\`
+
+Check one entry: \`P[2][2]\` should be the sum of rows 0–1 and columns 0–1, which is 2 + 0 + 3 + 4 = 9. It is. And \`P[2][3]\` = 15 is the whole grid.
+
+Now ask for rows 0 to 1, columns 1 to 2 (the cells 0, 1, 4, 5, which add to 10). With \`r1 = 0, r2 = 1, c1 = 1, c2 = 2\`:
+
+\`P[2][3] - P[0][3] - P[2][1] + P[0][1]\` = 15 − 0 − 5 + 0 = 10. It matches.
+
+### Storing the table
+
+Use the flat layout from earlier: one \`std::vector<long long>\` of \`(rows + 1) * (cols + 1)\` entries, where entry \`(r, c)\` is at index \`r * (cols + 1) + c\`. The number you multiply the row by, here \`cols + 1\`, is called the **stride**: how far apart two rows are in memory. A small helper function that turns \`(r, c)\` into that index keeps the formulas readable.
+
+**Watch out:** use \`long long\` for the table, not \`int\`. Each entry is a sum of up to a million cells, and as the last lesson showed, a big enough sum overflows an \`int\` silently. And remember the table's stride is \`cols + 1\`, not \`cols\`: it is one wider than the grid.
+
+::: context cache-word What a cache is
+A cache is a small, fast copy of things you use often, kept close at hand: like the few books on your desk instead of the whole library. A processor has several levels. The smallest, called L1, holds tens of kilobytes and answers in about a nanosecond. Main memory holds gigabytes but takes on the order of a hundred nanoseconds to answer: about a hundred times slower. Programs run fast when almost every value they need is already in the cache, and the hardware is built to guess well when code reads memory in order.
+:::
+
+::: context cache-line One trip, sixteen ints
+Reading one \`int\` fetches the whole 64-byte line it sits in. For a vector of \`int\`, that is 16 neighbors in one trip. The hardware also notices when you walk forward steadily, and starts fetching the next lines before you ask for them.
+
+\`\`\`svg
+<svg viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="40" width="320" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <line x1="40" y1="40" x2="40" y2="70" stroke="#1f2a44"/>
+  <line x1="60" y1="40" x2="60" y2="70" stroke="#1f2a44"/>
+  <line x1="80" y1="40" x2="80" y2="70" stroke="#1f2a44"/>
+  <line x1="100" y1="40" x2="100" y2="70" stroke="#1f2a44"/>
+  <line x1="120" y1="40" x2="120" y2="70" stroke="#1f2a44"/>
+  <line x1="140" y1="40" x2="140" y2="70" stroke="#1f2a44"/>
+  <line x1="160" y1="40" x2="160" y2="70" stroke="#1f2a44"/>
+  <line x1="180" y1="40" x2="180" y2="70" stroke="#1f2a44"/>
+  <line x1="200" y1="40" x2="200" y2="70" stroke="#1f2a44"/>
+  <line x1="220" y1="40" x2="220" y2="70" stroke="#1f2a44"/>
+  <line x1="240" y1="40" x2="240" y2="70" stroke="#1f2a44"/>
+  <line x1="260" y1="40" x2="260" y2="70" stroke="#1f2a44"/>
+  <line x1="280" y1="40" x2="280" y2="70" stroke="#1f2a44"/>
+  <line x1="300" y1="40" x2="300" y2="70" stroke="#1f2a44"/>
+  <line x1="320" y1="40" x2="320" y2="70" stroke="#1f2a44"/>
+  <rect x="20" y="40" width="20" height="30" fill="#1d6fd1" stroke="#1f2a44"/>
+  <text x="30" y="30" font-size="12" fill="#1d6fd1" text-anchor="middle">v[i]</text>
+  <text x="200" y="30" font-size="12" fill="#1f2a44" text-anchor="middle">v[i+1] ... v[i+15] come along</text>
+  <text x="180" y="92" font-size="12" fill="#1f2a44" text-anchor="middle">one cache line: 64 bytes = 16 ints of 4 bytes</text>
+  <text x="180" y="112" font-size="11" fill="#6c7a93" text-anchor="middle">(assuming v[i] starts the line)</text>
+</svg>
+\`\`\`
+:::
+
+::: context row-major Row-major and column-major
+C and C++ arrays are row-major: \`int a[3][4]\` stores row 0's four values, then row 1's, then row 2's. Fortran and MATLAB, which much older scientific and engineering code is written in, are column-major: they store a whole column first. That is why a loop that is fast in C++ can be slow when translated line for line into Fortran, and why programs that pass grids between the two languages must be careful to agree on the order.
+:::
+
+::: context aos-soa Arrays of structs and structs of arrays
+Game engines use struct-of-arrays layouts heavily: an "entity component system" keeps every object's positions in one array, velocities in another, and health in a third, so the physics loop streams through positions and velocities without dragging names and textures through the cache. Flight software that processes thousands of sensor samples a second often does the same, one array per measured quantity. The cost is convenience: one record is now spread across several vectors, and you must keep them the same length.
+:::
+
+::: context inclusion-exclusion Why four lookups give one rectangle
+The big block up to the rectangle's bottom-right corner contains the rectangle plus some extra. Take away the strip above it and the strip to its left, and the top-left corner has been taken away twice, so add it back once.
+
+\`\`\`svg
+<svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="30" y="20" width="180" height="140" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="30" y="20" width="80" height="60" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="110" y="20" width="100" height="60" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="30" y="80" width="80" height="80" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="110" y="80" width="100" height="80" fill="#1d6fd1" stroke="#1f2a44"/>
+  <text x="70" y="54" font-size="12" fill="#1f2a44" text-anchor="middle">corner</text>
+  <text x="160" y="54" font-size="12" fill="#1f2a44" text-anchor="middle">above</text>
+  <text x="70" y="124" font-size="12" fill="#1f2a44" text-anchor="middle">left</text>
+  <text x="160" y="124" font-size="12" fill="#ffffff" text-anchor="middle">wanted</text>
+  <g font-size="11" fill="#1f2a44">
+    <text x="228" y="40">whole block: all four</text>
+    <text x="228" y="62">minus above + corner</text>
+    <text x="228" y="84">minus left + corner</text>
+    <text x="228" y="106">plus corner once</text>
+    <text x="228" y="128">= wanted</text>
+  </g>
+</svg>
+\`\`\`
+:::
+--- task
+The starter's \`RegionSums\` gives right answers, but it adds up every cell of every rectangle, and it walks a \`std::vector<std::vector<int>>\` column by column. Rewrite it with a 2-D prefix sum table so that each query takes constant time: four lookups. No \`main\`.
+
+- \`RegionSums(const std::vector<int>& values, int rows, int cols)\` builds the table. \`values\` holds the grid row-major: cell \`(r, c)\` is \`values[r * cols + c]\`.
+- \`long long sum(int r1, int c1, int r2, int c2) const\` returns the sum of the rectangle from \`(r1, c1)\` to \`(r2, c2)\`, both corners included. The arguments are always valid, with \`r1 <= r2\` and \`c1 <= c2\`.
+
+Store the table as one flat \`std::vector<long long>\` with \`(rows + 1) * (cols + 1)\` entries. The last check runs 100,000 queries on a 1000 × 1000 grid, so the old way is far too slow.
+--- starter
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols) : grid_(rows, std::vector<int>(cols)) {
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) grid_[r][c] = values[r * cols + c];
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        long long total = 0;
+        for (int c = c1; c <= c2; ++c)
+            for (int r = r1; r <= r2; ++r) total += grid_[r][c];
+        return total;
+    }
+
+private:
+    std::vector<std::vector<int>> grid_;
+};
+--- solution
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols)
+        : stride_(cols + 1), prefix_(static_cast<std::size_t>(rows + 1) * (cols + 1), 0) {
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                at(r + 1, c + 1) = values[static_cast<std::size_t>(r) * cols + c] + at(r, c + 1) + at(r + 1, c) - at(r, c);
+            }
+        }
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        return at(r2 + 1, c2 + 1) - at(r1, c2 + 1) - at(r2 + 1, c1) + at(r1, c1);
+    }
+
+private:
+    long long& at(int r, int c) { return prefix_[static_cast<std::size_t>(r) * stride_ + c]; }
+    long long at(int r, int c) const { return prefix_[static_cast<std::size_t>(r) * stride_ + c]; }
+
+    int stride_;
+    std::vector<long long> prefix_;
+};
+--- hint
+Keep two members: the stride \`cols + 1\`, and one flat \`std::vector<long long>\` of size \`(rows + 1) * (cols + 1)\`, all zeros to start. Entry \`(r, c)\` is at index \`r * stride + c\` and holds the sum of every cell above and to the left of \`(r, c)\`. Two small \`at(r, c)\` helpers, one returning a \`long long&\` for filling and one \`const\` for reading, keep the formulas short.
+--- hint
+In the constructor, loop rows on the outside and columns on the inside, and fill \`P[r+1][c+1] = value(r, c) + P[r][c+1] + P[r+1][c] - P[r][c]\`, where \`value(r, c)\` is \`values[r * cols + c]\`.
+--- hint
+\`sum\` is the four lookups from the explanation: \`P[r2+1][c2+1] - P[r1][c2+1] - P[r2+1][c1] + P[r1][c1]\`, each written with your \`at\` helper.
+--- check test | Small grid: single cells, rows, columns, everything
+[] { RegionSums s({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 3, 4); return s.sum(0, 0, 0, 0) == 1 && s.sum(2, 3, 2, 3) == 12 && s.sum(1, 0, 1, 3) == 26 && s.sum(0, 2, 2, 2) == 21 && s.sum(0, 0, 2, 3) == 78 && s.sum(1, 1, 2, 2) == 34; }()
+--- check test | Negative values
+[] { RegionSums s({-5, 3, 2, -1}, 2, 2); return s.sum(0, 0, 1, 1) == -1 && s.sum(0, 0, 1, 0) == -3 && s.sum(0, 1, 1, 1) == 2; }()
+--- check test | One row, one column
+[] { RegionSums row({4, 5, 6}, 1, 3); RegionSums col({4, 5, 6}, 3, 1); return row.sum(0, 1, 0, 2) == 11 && col.sum(1, 0, 2, 0) == 11; }()
+--- check test | 100,000 queries on a million cells
+[] { const int n = 1000; std::vector<int> vals(n * n); for (int i = 0; i < n * n; ++i) vals[i] = i % 1009; RegionSums rs(vals, n, n); long long total = 0; for (int q = 0; q < 100000; ++q) total += rs.sum(q % 10, q % 13, n - 1 - q % 17, n - 1 - q % 11); return total == 49212463632833LL; }()
+
++++ practice | Sums of any stretch of a row
+--- task
+Write \`class RangeSum\`, which answers "what is the sum of positions \`i\` to \`j\`?" for one row of numbers, in constant time per question. No \`main\`.
+
+- \`explicit RangeSum(const std::vector<int>& values)\` builds a prefix sum table: a \`std::vector<long long>\` one longer than \`values\`, where entry \`k\` is the sum of the first \`k\` values (entry 0 is 0).
+- \`long long sum(std::size_t i, std::size_t j) const\` returns \`values[i] + … + values[j]\`, both ends included, with one subtraction. The arguments are always valid: \`i <= j < values.size()\`.
+
+Values can be as big as 1,000,000,000 and there can be 200,000 of them, so the totals need a \`long long\`. The last check asks 200,000 questions about wide stretches.
+--- starter
+#include <cstddef>
+#include <vector>
+
+class RangeSum {
+public:
+    explicit RangeSum(const std::vector<int>& values) {}
+    long long sum(std::size_t i, std::size_t j) const { return 0; }
+};
+--- solution
+#include <cstddef>
+#include <vector>
+
+class RangeSum {
+public:
+    explicit RangeSum(const std::vector<int>& values) : prefix_(values.size() + 1, 0) {
+        for (std::size_t k = 0; k < values.size(); ++k) prefix_[k + 1] = prefix_[k] + values[k];
+    }
+
+    long long sum(std::size_t i, std::size_t j) const { return prefix_[j + 1] - prefix_[i]; }
+
+private:
+    std::vector<long long> prefix_;
+};
+--- hint
+Build the table in one pass: each entry is the one before it plus the next value. Keep it as a member.
+--- hint
+The sum of positions \`i\` to \`j\` is "everything up to and including \`j\`" minus "everything before \`i\`": \`prefix_[j + 1] - prefix_[i]\`.
+--- check test | The lesson's small row
+[] { RangeSum s({5, 1, 4, 2}); return s.sum(1, 3) == 7 && s.sum(0, 0) == 5 && s.sum(3, 3) == 2 && s.sum(0, 3) == 12; }()
+--- check test | Negative values
+[] { RangeSum s({-3, 8, -5, 0}); return s.sum(0, 1) == 5 && s.sum(1, 2) == 3 && s.sum(2, 3) == -5; }()
+--- check test | Totals too big for an int
+[] { RangeSum s(std::vector<int>(5, 1000000000)); return s.sum(0, 4) == 5000000000LL && s.sum(1, 3) == 3000000000LL; }()
+--- check test | 200,000 questions on 200,000 values
+[] { std::vector<int> v(200000); for (int i = 0; i < 200000; ++i) v[i] = (i * 37) % 1000 - 500; RangeSum s(v); long long total = 0; for (int q = 0; q < 200000; ++q) total += s.sum(q % 1000, 199999 - q % 777); return total == -19825855676LL; }()
+
++++ practice | A grid in one flat vector
+--- task
+Write \`class Grid\`, a grid of characters stored row-major in **one** \`std::vector<char>\`: cell \`(r, c)\` is at index \`r * cols + c\`. No \`main\`.
+
+- \`Grid(int rows, int cols, char fill)\`: every cell starts as \`fill\`. Rows or columns can be 0.
+- \`char& at(int r, int c)\` and \`char at(int r, int c) const\`.
+- \`int rows() const\` and \`int cols() const\`.
+- \`std::string row(int r) const\`: that row's characters, left to right.
+- \`std::string column(int c) const\`: that column's characters, top to bottom.
+- \`Grid transposed() const\`: a new grid with rows and columns swapped, so the new cell \`(c, r)\` holds the old cell \`(r, c)\`.
+
+Do not use a vector of vectors.
+--- starter
+#include <string>
+#include <vector>
+
+class Grid {
+public:
+    Grid(int rows, int cols, char fill) : rows_(rows), cols_(cols), cells_(rows, std::vector<char>(cols, fill)) {}
+    char& at(int r, int c) { return cells_[r][c]; }
+    char at(int r, int c) const { return cells_[r][c]; }
+    int rows() const { return rows_; }
+    int cols() const { return cols_; }
+    std::string row(int r) const { return ""; }
+    std::string column(int c) const { return ""; }
+    Grid transposed() const { return *this; }
+private:
+    int rows_;
+    int cols_;
+    std::vector<std::vector<char>> cells_;
+};
+--- solution
+#include <string>
+#include <vector>
+
+class Grid {
+public:
+    Grid(int rows, int cols, char fill)
+        : rows_(rows), cols_(cols), cells_(static_cast<std::size_t>(rows) * cols, fill) {}
+
+    char& at(int r, int c) { return cells_[index(r, c)]; }
+    char at(int r, int c) const { return cells_[index(r, c)]; }
+    int rows() const { return rows_; }
+    int cols() const { return cols_; }
+
+    std::string row(int r) const {
+        return std::string(cells_.begin() + index(r, 0), cells_.begin() + index(r, 0) + cols_);
+    }
+
+    std::string column(int c) const {
+        std::string out;
+        for (int r = 0; r < rows_; ++r) out += at(r, c);
+        return out;
+    }
+
+    Grid transposed() const {
+        Grid t(cols_, rows_, ' ');
+        for (int r = 0; r < rows_; ++r)
+            for (int c = 0; c < cols_; ++c) t.at(c, r) = at(r, c);
+        return t;
+    }
+
+private:
+    std::size_t index(int r, int c) const { return static_cast<std::size_t>(r) * cols_ + c; }
+
+    int rows_;
+    int cols_;
+    std::vector<char> cells_;
+};
+--- hint
+One member \`std::vector<char> cells_\` of \`rows * cols\` characters, and a small private \`index(r, c)\` that returns \`r * cols_ + c\`. Every other function goes through it.
+--- hint
+A row is \`cols_\` characters that sit side by side, so it can be built from two iterators into \`cells_\`. A column jumps \`cols_\` places at a time. \`transposed\` makes a \`Grid(cols_, rows_, …)\` and copies each cell to its swapped position.
+--- check test | Cells, rows and columns
+[] { Grid g(3, 4, '.'); g.at(2, 1) = '#'; g.at(0, 3) = '@'; return g.row(2) == ".#.." && g.row(0) == "...@" && g.column(1) == "..#" && g.column(3) == "@.." && g.rows() == 3 && g.cols() == 4; }()
+--- check test | A const grid reads the same
+[] { Grid g(2, 2, 'x'); g.at(1, 0) = 'y'; const Grid& c = g; return c.at(1, 0) == 'y' && c.at(0, 1) == 'x' && c.row(1) == "yx"; }()
+--- check test | transposed swaps rows and columns
+[] { Grid g(2, 3, '.'); g.at(0, 2) = 'a'; g.at(1, 0) = 'b'; Grid t = g.transposed(); return t.rows() == 3 && t.cols() == 2 && t.at(2, 0) == 'a' && t.at(0, 1) == 'b' && t.row(2) == "a." && t.column(1) == "b.." && g.at(0, 2) == 'a'; }()
+--- check test | Empty grids
+[] { Grid none(0, 5, '.'); Grid thin(3, 0, '.'); return none.column(2) == "" && thin.row(1) == "" && none.transposed().rows() == 5 && none.transposed().cols() == 0; }()
+--- check source absent | One flat vector, not a vector of vectors
+vector<\\s*std::vector
+
++++ practice | How many days to reach the target
+--- task
+A probe records the fuel it collects each day. Write \`class FuelLog\`, which answers two kinds of question fast, however many are asked. No \`main\`.
+
+- \`explicit FuelLog(const std::vector<int>& daily)\`: \`daily[d]\` is the fuel collected on day \`d\`. Every amount is 0 or more.
+- \`long long total(std::size_t first, std::size_t last) const\`: the fuel collected from day \`first\` to day \`last\`, both included (\`first <= last < daily.size()\`).
+- \`std::optional<std::size_t> days_to_reach(long long target) const\`: the smallest number of days, counted from day 0, whose total is at least \`target\`. A \`target\` of 0 or less takes 0 days. If even all the days together fall short, return \`std::nullopt\`.
+
+Keep a prefix sum table. Because no amount is negative, the table never goes down, so \`days_to_reach\` can binary search it with \`std::lower_bound\`. The last check asks 200,000 questions of each kind.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+class FuelLog {
+public:
+    explicit FuelLog(const std::vector<int>& daily) {}
+    long long total(std::size_t first, std::size_t last) const { return 0; }
+    std::optional<std::size_t> days_to_reach(long long target) const { return std::nullopt; }
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+class FuelLog {
+public:
+    explicit FuelLog(const std::vector<int>& daily) : prefix_(daily.size() + 1, 0) {
+        for (std::size_t d = 0; d < daily.size(); ++d) prefix_[d + 1] = prefix_[d] + daily[d];
+    }
+
+    long long total(std::size_t first, std::size_t last) const { return prefix_[last + 1] - prefix_[first]; }
+
+    std::optional<std::size_t> days_to_reach(long long target) const {
+        auto it = std::lower_bound(prefix_.begin(), prefix_.end(), target);
+        if (it == prefix_.end()) return std::nullopt;
+        return static_cast<std::size_t>(it - prefix_.begin());
+    }
+
+private:
+    std::vector<long long> prefix_;   // prefix_[k]: fuel in the first k days; never goes down
+};
+--- hint
+Entry \`k\` of the prefix table is the total of the first \`k\` days, so "how many days to reach \`target\`" is "the first \`k\` whose entry is at least \`target\`".
+--- hint
+\`std::lower_bound(prefix_.begin(), prefix_.end(), target)\` finds exactly that entry in O(log n). Subtract \`prefix_.begin()\` to turn it into a number of days; if it is \`end()\`, the target is never reached. Entry 0 is 0, which already handles targets of 0 or less.
+--- check test | Totals of stretches
+[] { FuelLog f({4, 0, 3, 5}); return f.total(0, 3) == 12 && f.total(1, 2) == 3 && f.total(1, 1) == 0; }()
+--- check test | Days to reach a target
+[] { FuelLog f({4, 0, 3, 5}); return f.days_to_reach(4) == std::size_t{1} && f.days_to_reach(5) == std::size_t{3} && f.days_to_reach(7) == std::size_t{3} && f.days_to_reach(12) == std::size_t{4}; }()
+--- check test | Targets of zero or less, and targets never reached
+[] { FuelLog f({4, 0, 3, 5}); FuelLog none({}); return f.days_to_reach(0) == std::size_t{0} && f.days_to_reach(-9) == std::size_t{0} && f.days_to_reach(13) == std::nullopt && none.days_to_reach(1) == std::nullopt; }()
+--- check test | 200,000 questions of each kind
+[] { std::vector<int> v(200000); for (int i = 0; i < 200000; ++i) v[i] = (i * 13) % 1000; FuelLog f(v); long long t = 0, d = 0; for (int q = 0; q < 200000; ++q) { t += f.total(q % 500, 199999 - q % 300); auto days = f.days_to_reach(1000LL * q); if (days) d += static_cast<long long>(*days); } return t == 19940236941000LL && d == 9991601300LL; }()
+
++++ practice | Count the rocks in any rectangle
+--- task
+A map of a crater is a list of equal-length strings, where \`'#'\` is a rock and \`'.'\` is sand. Write \`class Density\`, which counts the rocks in a rectangle in constant time. No \`main\`.
+
+- \`explicit Density(const std::vector<std::string>& map)\` builds a 2-D prefix sum table of rock counts. The map may have no rows at all.
+- \`int count(int r1, int c1, int r2, int c2) const\`: the rocks in the rectangle with corners \`(r1, c1)\` and \`(r2, c2)\`, both included. Unlike the lesson, the corners can be given in **either order** (\`r1\` may be bigger than \`r2\`, and \`c1\` bigger than \`c2\`), and the rectangle may stick out of the map, or miss it completely: only the part inside the map counts, and a rectangle that misses the map has 0 rocks.
+--- starter
+#include <algorithm>
+#include <string>
+#include <vector>
+
+class Density {
+public:
+    explicit Density(const std::vector<std::string>& map) {}
+    int count(int r1, int c1, int r2, int c2) const { return 0; }
+};
+--- solution
+#include <algorithm>
+#include <string>
+#include <vector>
+
+class Density {
+public:
+    explicit Density(const std::vector<std::string>& map)
+        : rows_(static_cast<int>(map.size())), cols_(map.empty() ? 0 : static_cast<int>(map[0].size())),
+          prefix_(static_cast<std::size_t>(rows_ + 1) * (cols_ + 1), 0) {
+        for (int r = 0; r < rows_; ++r)
+            for (int c = 0; c < cols_; ++c)
+                at(r + 1, c + 1) = (map[r][c] == '#' ? 1 : 0) + at(r, c + 1) + at(r + 1, c) - at(r, c);
+    }
+
+    int count(int r1, int c1, int r2, int c2) const {
+        int top = std::max(0, std::min(r1, r2));
+        int bottom = std::min(rows_ - 1, std::max(r1, r2));
+        int left = std::max(0, std::min(c1, c2));
+        int right = std::min(cols_ - 1, std::max(c1, c2));
+        if (top > bottom || left > right) return 0;
+        return at(bottom + 1, right + 1) - at(top, right + 1) - at(bottom + 1, left) + at(top, left);
+    }
+
+private:
+    int& at(int r, int c) { return prefix_[static_cast<std::size_t>(r) * (cols_ + 1) + c]; }
+    int at(int r, int c) const { return prefix_[static_cast<std::size_t>(r) * (cols_ + 1) + c]; }
+
+    int rows_;
+    int cols_;
+    std::vector<int> prefix_;
+};
+--- hint
+First put the corners in order: the top row is the smaller of \`r1\` and \`r2\`, the bottom row the larger, and the same for columns. Then clip: the top is at least 0, the bottom at most \`rows - 1\`, and likewise for the columns.
+--- hint
+After clipping, if the top is below the bottom or the left is past the right, nothing of the rectangle is on the map: return 0. Otherwise it is the lesson's four lookups. A map with no rows has 0 columns, so every rectangle misses it.
+--- check test | Rectangles fully inside
+[] { Density d({"#..#", ".##.", "#..."}); return d.count(0, 0, 2, 3) == 5 && d.count(1, 1, 1, 2) == 2 && d.count(0, 3, 0, 3) == 1 && d.count(2, 1, 2, 3) == 0; }()
+--- check test | Corners in either order
+[] { Density d({"#..#", ".##.", "#..."}); return d.count(2, 3, 0, 0) == 5 && d.count(1, 2, 0, 0) == 3 && d.count(0, 2, 1, 0) == 3; }()
+--- check test | Rectangles that stick out or miss
+[] { Density d({"#..#", ".##.", "#..."}); return d.count(-5, -5, 1, 1) == 2 && d.count(1, 2, 99, 99) == 1 && d.count(5, 5, 9, 9) == 0 && d.count(-3, 0, -1, 3) == 0 && d.count(0, 4, 2, 7) == 0; }()
+--- check test | A map with no rows
+[] { Density d({}); return d.count(0, 0, 0, 0) == 0 && d.count(-1, -1, 5, 5) == 0; }()
+--- check test | 100,000 questions on a million cells
+[] { std::vector<std::string> m(1000, std::string(1000, '.')); for (int r = 0; r < 1000; ++r) for (int c = 0; c < 1000; ++c) if ((r * 7 + c * 3) % 5 == 0) m[r][c] = '#'; Density d(m); long long total = 0; for (int q = 0; q < 100000; ++q) total += d.count(q % 1100 - 50, q % 900, 999 - q % 700, q % 1050 - 20); return total == 2146675139LL; }()
+
++++ practice | Debug: the table that is one column too narrow
+--- task
+**Bug report:** "\`RegionSums\` gives wrong answers for almost every grid. And on a big grid of large values, some sums come out negative."
+
+The starter's \`RegionSums\` has the right formulas, but two mistakes in how it stores the table. Fix them. No \`main\`.
+
+- \`RegionSums(const std::vector<int>& values, int rows, int cols)\`: cell \`(r, c)\` is \`values[r * cols + c]\`.
+- \`long long sum(int r1, int c1, int r2, int c2) const\`: the rectangle from \`(r1, c1)\` to \`(r2, c2)\`, both included, with \`r1 <= r2\` and \`c1 <= c2\`.
+--- starter
+#include <cstddef>
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols)
+        : cols_(cols), prefix_(static_cast<std::size_t>(rows + 1) * (cols + 1), 0) {
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c)
+                at(r + 1, c + 1) = values[static_cast<std::size_t>(r) * cols + c] + at(r, c + 1) + at(r + 1, c) - at(r, c);
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        return at(r2 + 1, c2 + 1) - at(r1, c2 + 1) - at(r2 + 1, c1) + at(r1, c1);
+    }
+
+private:
+    int& at(int r, int c) { return prefix_[static_cast<std::size_t>(r) * cols_ + c]; }
+    int at(int r, int c) const { return prefix_[static_cast<std::size_t>(r) * cols_ + c]; }
+
+    int cols_;
+    std::vector<int> prefix_;
+};
+--- solution
+#include <cstddef>
+#include <vector>
+
+class RegionSums {
+public:
+    RegionSums(const std::vector<int>& values, int rows, int cols)
+        : cols_(cols), prefix_(static_cast<std::size_t>(rows + 1) * (cols + 1), 0) {
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c)
+                at(r + 1, c + 1) = values[static_cast<std::size_t>(r) * cols + c] + at(r, c + 1) + at(r + 1, c) - at(r, c);
+    }
+
+    long long sum(int r1, int c1, int r2, int c2) const {
+        return at(r2 + 1, c2 + 1) - at(r1, c2 + 1) - at(r2 + 1, c1) + at(r1, c1);
+    }
+
+private:
+    long long& at(int r, int c) { return prefix_[static_cast<std::size_t>(r) * (cols_ + 1) + c]; }
+    long long at(int r, int c) const { return prefix_[static_cast<std::size_t>(r) * (cols_ + 1) + c]; }
+
+    int cols_;
+    std::vector<long long> prefix_;
+};
+--- hint
+The table has \`cols + 1\` entries in every row, one more than the grid. How far apart are two rows of the *table* in memory, and what does \`at\` multiply the row by?
+--- hint
+The stride of the table is \`cols_ + 1\`. And a sum of a million cells of a million each is about 10¹², far past the largest \`int\`: the table's entries, and what \`at\` returns, must be \`long long\`.
+--- check test | A small grid
+[] { RegionSums s({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, 3, 4); return s.sum(0, 0, 2, 3) == 78 && s.sum(1, 1, 2, 2) == 34 && s.sum(2, 3, 2, 3) == 12 && s.sum(0, 2, 2, 2) == 21; }()
+--- check test | One row and one column
+[] { RegionSums row({4, 5, 6}, 1, 3); RegionSums col({4, 5, 6}, 3, 1); return row.sum(0, 1, 0, 2) == 11 && col.sum(1, 0, 2, 0) == 11 && col.sum(0, 0, 0, 0) == 4; }()
+--- check test | Large values do not overflow
+[] { const int n = 1000; std::vector<int> v(n * n, 1000000); RegionSums s(v, n, n); return s.sum(0, 0, n - 1, n - 1) == 1000000000000LL && s.sum(10, 20, 509, 519) == 250000000000LL; }()
+
++++ practice | Stretch: the hottest square on the map
+--- task
+A thermal camera gives a grid of temperatures. Write \`std::pair<int, int> hottest_square(const std::vector<int>& temps, int rows, int cols, int k)\`, which finds the \`k\` × \`k\` square of cells with the **largest total** and returns its top-left corner as \`{row, column}\`. No \`main\`.
+
+- \`temps\` holds the grid row-major: cell \`(r, c)\` is \`temps[r * cols + c]\`. Temperatures can be negative.
+- \`1 <= k <= rows\` and \`k <= cols\`.
+- If several squares tie, return the one with the smallest row, and among those the smallest column.
+
+The last check has a 1200 × 1200 grid and \`k\` = 240. Adding up every square cell by cell would take about 5 × 10¹⁰ additions: build a 2-D prefix sum table once, and each square's total is four lookups.
+--- starter
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+std::pair<int, int> hottest_square(const std::vector<int>& temps, int rows, int cols, int k) {
+    return {0, 0};
+}
+--- solution
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+std::pair<int, int> hottest_square(const std::vector<int>& temps, int rows, int cols, int k) {
+    const std::size_t stride = static_cast<std::size_t>(cols) + 1;
+    std::vector<long long> prefix(static_cast<std::size_t>(rows + 1) * stride, 0);
+    auto at = [&](int r, int c) -> long long& { return prefix[static_cast<std::size_t>(r) * stride + c]; };
+    for (int r = 0; r < rows; ++r)
+        for (int c = 0; c < cols; ++c)
+            at(r + 1, c + 1) = temps[static_cast<std::size_t>(r) * cols + c] + at(r, c + 1) + at(r + 1, c) - at(r, c);
+
+    std::pair<int, int> best{0, 0};
+    long long best_sum = 0;
+    bool first = true;
+    for (int r = 0; r + k <= rows; ++r) {
+        for (int c = 0; c + k <= cols; ++c) {
+            long long s = at(r + k, c + k) - at(r, c + k) - at(r + k, c) + at(r, c);
+            if (first || s > best_sum) {   // strictly greater keeps the earliest square on a tie
+                best = {r, c};
+                best_sum = s;
+                first = false;
+            }
+        }
+    }
+    return best;
+}
+--- hint
+Build the table exactly as in the lesson: \`(rows + 1) × (cols + 1)\` entries of \`long long\`, stride \`cols + 1\`. The square with top-left \`(r, c)\` covers rows \`r\` to \`r + k - 1\` and columns \`c\` to \`c + k - 1\`.
+--- hint
+Visit the top-left corners row by row, left to right, and replace the best only when a square is **strictly** larger. Then the first of several equal squares, in that order, is the one you keep. Start from the first square, not from a best total of 0, since temperatures can be negative.
+--- check case | A small grid
+hottest_square({1, 2, 0, 3, 9, 1, 0, 8, 2}, 3, 3, 2)
+=> std::pair<int, int>{1, 0}
+--- check test | Negative temperatures, and k equal to the grid
+hottest_square({-5, -1, -9, -2}, 2, 2, 1) == std::pair<int, int>{0, 1} && hottest_square({-5, -1, -9, -2}, 2, 2, 2) == std::pair<int, int>{0, 0}
+--- check test | Ties go to the smallest row, then column
+hottest_square(std::vector<int>(12, 4), 3, 4, 2) == std::pair<int, int>{0, 0} && hottest_square({0, 1, 0, 1, 0, 1}, 2, 3, 1) == std::pair<int, int>{0, 1}
+--- check test | A hot spot on a 1200 x 1200 grid
+[] { const int n = 1200; std::vector<int> t(static_cast<std::size_t>(n) * n); for (int r = 0; r < n; ++r) for (int c = 0; c < n; ++c) t[static_cast<std::size_t>(r) * n + c] = (r * 31 + c * 17) % 10 + ((r >= 500 && r < 740 && c >= 800 && c < 1040) ? 100 : 0); return hottest_square(t, n, n, 240) == std::pair<int, int>{500, 800}; }()
+
+=== cpp4-13 | Design: type erasure
+--- teach
+Last lesson was about speed: counting the work first, then walking memory in order. This lesson is about design again. You will build one type that can hold *any* shape, even a kind of shape that nobody has written yet, and still copy it around like an \`int\`.
+
+### Two ways you already know
+
+You have met two ways to handle "many kinds of shape" in the advanced course.
+
+- **Virtual functions.** New shape types can be added at any time. But every type must *inherit* from your base class, and you juggle \`unique_ptr\`s instead of plain values.
+- **\`std::variant\`.** Plain values, no inheritance. But the list of types is **closed**: it is written inside the angle brackets, so a new shape means editing the variant.
+
+Each one gives you something the other one lacks. This lesson gets both at once.
+
+### An adapter, not a family tree
+
+Picture a travel plug adapter. Your hair dryer was never designed for a foreign socket. It does not need to be. The adapter wraps its plug and shows the wall one standard shape. Any device with a plug fits, and nobody redesigns the device.
+
+**Type erasure** is that adapter in code: one type that wraps *any* type with the right member functions, and from the outside shows only what it can do. The concrete type is hidden, or "erased". The wrapped type does not inherit from anything.
+
+You have used it already. \`std::function\` from the callbacks lesson is type erasure for anything callable. \`std::any\`, from \`<any>\`, is type erasure for any value at all. The pattern [[turns up in many libraries|erasure-everywhere]], and it has four parts. We will build them one at a time, on a different example from the task: an \`AnyGauge\` that holds any kind of instrument with \`double reading() const\`.
+
+### Part 1: the private interface
+
+Inside the class goes an abstract base, traditionally called \`Concept\`. It lists what every wrapped thing must be able to do. Declaring a struct inside a class makes it a [[nested type|nested-types]]: here it is private, so outside code never sees it.
+
+\`\`\`cpp
+class AnyGauge {
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double reading() const = 0;
+    };
+    // ...
+};
+\`\`\`
+
+This is the \`Shape\` interface from the virtual functions lesson, moved *inside*: a pure virtual function (\`= 0\`, "every derived class must write this") and a virtual destructor.
+
+### Part 2: one wrapper per concrete type
+
+Next, a class template, traditionally called \`Model\`. \`Model<T>\` inherits from \`Concept\`, holds one \`T\`, and passes each call on to it:
+
+\`\`\`cpp
+    template <typename T>
+    struct Model : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        double reading() const override { return held.reading(); }
+    };
+\`\`\`
+
+The compiler writes a separate \`Model\` for each type you use: \`Model<Thermometer>\`, \`Model<Barometer>\`, and so on. So the inheritance still happens, but *inside the library*. Users write plain structs with a \`reading()\` member and never see a base class. Together these two parts are the [[Concept and Model pattern|concept-model]].
+
+### Part 3: the constructor where the type disappears
+
+\`AnyGauge\` keeps one \`std::unique_ptr<Concept>\`, which points at whichever \`Model\` it made. Its constructor is a **template constructor**: a constructor that accepts any type \`T\`.
+
+\`\`\`cpp
+    std::unique_ptr<Concept> self_;
+public:
+    template <typename T>
+    AnyGauge(T g) : self_(std::make_unique<Model<T>>(std::move(g))) {}
+\`\`\`
+
+Read it as: "given a \`T\`, build a \`Model<T>\` holding it on the heap, and keep a pointer to it as a plain \`Concept\`". This is where the type is erased. Once the constructor has run, only the \`Concept\` interface is visible. Nothing in \`AnyGauge\` remembers whether it holds a thermometer or a barometer.
+
+The public member functions then pass each call through the pointer:
+
+\`\`\`cpp
+    double reading() const { return self_->reading(); }
+\`\`\`
+
+### Part 4: copying, moving and assigning
+
+\`AnyGauge\` should be a [[value type|value-semantics]]: something you copy like an \`int\`, where the copy is independent. A \`unique_ptr\` cannot be copied, so you write the copy constructor yourself.
+
+The trouble is that \`AnyGauge\` no longer knows which \`Model<T>\` it holds, so it cannot write \`new Model<T>\` itself. The object that *does* know is the model. So \`Concept\` gets one more pure virtual function, \`clone()\`, which returns a fresh copy of the whole model:
+
+\`\`\`cpp
+        virtual std::unique_ptr<Concept> clone() const = 0;          // in Concept
+        std::unique_ptr<Concept> clone() const override {             // in Model<T>
+            return std::make_unique<Model>(held);
+        }
+\`\`\`
+
+Inside \`Model<T>\`, the bare name \`Model\` means \`Model<T>\` itself. The copy constructor then asks the other object's model to clone itself:
+
+\`\`\`cpp
+    AnyGauge(const AnyGauge& other) : self_(other.self_->clone()) {}
+\`\`\`
+
+That is a **deep copy**: the new object gets its own model with its own \`T\` inside, so changing one leaves the other alone.
+
+Moving is easier. Moving an \`AnyGauge\` only has to move its \`unique_ptr\`, so the compiler's version is right. Ask for it with \`= default\`, and promise it never throws with \`noexcept\`:
+
+\`\`\`cpp
+    AnyGauge(AnyGauge&&) noexcept = default;
+\`\`\`
+
+That promise [[matters more than it looks|noexcept-moves]].
+
+For assignment, reuse the **copy-and-swap** trick from the growable array lesson: take the parameter *by value* (so the copy constructor or the move constructor makes it), swap your \`self_\` with its \`self_\` using \`std::swap\`, and return \`*this\`. The old model leaves with the parameter and is destroyed at the end of the function.
+
+### What you get
+
+Users can now write plain structs, with no base class, and mix them freely:
+
+\`\`\`cpp
+std::vector<AnyGauge> panel{Thermometer{21.5}, Barometer{1013}};
+double first = panel[0].reading();
+\`\`\`
+
+No pointers in sight. Copy the vector and you get independent gauges.
+
+**Watch out:** do not make the template constructor take \`T&&\`. That is a forwarding reference (from the perfect forwarding lesson), and it would [[also match an AnyGauge itself|overload-trap]]. Copying a non-const \`AnyGauge\` would then pick the template instead of your copy constructor. It hijacks copying: depending on how the template is written, you get a baffling compile error or an \`AnyGauge\` wrapped inside another \`AnyGauge\`. Taking \`T\` by value, as above, avoids that.
+
+**Watch out, too:** do not mark the template constructor \`explicit\`. Lines like \`AnyGauge g = Thermometer{20};\` and the braced vector above rely on it turning a \`Thermometer\` into an \`AnyGauge\` on its own.
+
+### A compile-time cousin
+
+There is one more way to share code between types, called [[CRTP|crtp-name]]: \`class Square : public ShapeBase<Square>\`, a class that passes *itself* to its base template. The base can then call the derived class's functions with no virtual calls at all. But everything is fixed at compile time: there is no single type for "any shape", so you cannot keep different shapes in one vector.
+
+::: context erasure-everywhere Where erased types hide
+Once you know the pattern you see it all over the standard library. \`std::function\` erases callables. \`std::any\` erases any copyable value. \`std::shared_ptr\` erases its deleter: two \`shared_ptr<int>\`s can clean up in completely different ways and still have the same type. Game engines use it for components and event handlers, and flight software frameworks use it for "anything that can receive a command". The cost is always the same small one you saw with \`std::function\`: a heap allocation to store the object, and one indirect call through a virtual function each time you use it.
+:::
+
+::: context nested-types A type inside a class
+A struct or class declared inside another class is a *nested type*. Its full name is \`AnyGauge::Concept\`, and it obeys the same \`public\`/\`private\` rules as members do. Declared in the private part, it is a hidden detail: no outside code can name it, so no outside code can depend on it, and you are free to change it later. The standard library does the same. \`std::vector<int>::iterator\` is a nested type that vector makes public, because you need to name it.
+:::
+
+::: context concept-model Where the names come from
+The Concept and Model names became popular through a 2013 talk by Sean Parent, then at Adobe, called "Inheritance Is the Base Class of Evil". His point: inheritance is a detail of how you *implement* polymorphism, and users should not have to pay for it. The concept says what can be done; each model is one concrete type made to fit.
+
+\`\`\`svg
+<svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="130" y="14" width="190" height="30" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="225" y="34" font-size="11" fill="#1f2a44" text-anchor="middle">Concept: reading(), clone()</text>
+  <rect x="10" y="100" width="95" height="44" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="57" y="118" font-size="12" fill="#1f2a44" text-anchor="middle">AnyGauge</text>
+  <text x="57" y="135" font-size="11" fill="#1f2a44" text-anchor="middle">self_</text>
+  <rect x="130" y="100" width="105" height="44" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="182" y="118" font-size="11" fill="#1f2a44" text-anchor="middle">Model&lt;Thermo&gt;</text>
+  <text x="182" y="135" font-size="11" fill="#1f2a44" text-anchor="middle">holds a Thermo</text>
+  <rect x="248" y="100" width="105" height="44" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="300" y="118" font-size="11" fill="#1f2a44" text-anchor="middle">Model&lt;Baro&gt;</text>
+  <text x="300" y="135" font-size="11" fill="#1f2a44" text-anchor="middle">holds a Baro</text>
+  <line x1="182" y1="100" x2="205" y2="44" stroke="#6c7a93" stroke-width="1.5"/>
+  <line x1="300" y1="100" x2="250" y2="44" stroke="#6c7a93" stroke-width="1.5"/>
+  <text x="228" y="76" font-size="11" fill="#6c7a93" text-anchor="middle">inherit</text>
+  <line x1="105" y1="122" x2="122" y2="122" stroke="#1d6fd1" stroke-width="2"/>
+  <path d="M 130 122 L 121 117 L 121 127 Z" fill="#1d6fd1"/>
+  <text x="180" y="170" font-size="11" fill="#6c7a93" text-anchor="middle">users see AnyGauge; each type gets its own Model</text>
+</svg>
+\`\`\`
+:::
+
+::: context value-semantics Why values are easier than pointers
+With a value type, \`b = a\` makes a real, separate copy, the way it does for \`int\` and \`std::string\`. Nobody else can change your copy behind your back, there is no null pointer to check, and the destructor cleans up for you. A vector of \`unique_ptr<Shape>\` works too, but every copy must be written by hand and every user must think about ownership. Type erasure moves that pointer work inside one class, written once, so the rest of the program deals only in values.
+:::
+
+::: context noexcept-moves Why vector cares about noexcept
+When a \`std::vector\` runs out of room it moves its elements to a bigger block, as you saw in the growable array lesson. If a move could throw halfway through, some elements would be moved and some not, and the vector could not undo the damage. So \`std::vector\` only moves elements whose move constructor is marked \`noexcept\`. Otherwise, if they can be copied, it copies them, which is safe but slower, and for \`AnyGauge\` a copy means a heap allocation and a clone for every element. One word buys the fast path.
+:::
+
+::: context overload-trap How the forwarding reference wins
+When you copy a non-const \`AnyGauge a\`, the compiler compares the candidates. Your copy constructor takes \`const AnyGauge&\`, which needs \`const\` added. A template taking \`T&&\` would deduce \`T\` as \`AnyGauge&\` and take exactly \`AnyGauge&\`: a closer fit, so the template wins. With the template taking \`T\` by value, both candidates fit equally well, and on a tie C++ prefers the ordinary function over the template. So your copy constructor is chosen, as it should be.
+:::
+
+::: context crtp-name A curious name
+CRTP stands for the *Curiously Recurring Template Pattern*. The name comes from a 1995 article by James Coplien, who noticed programmers kept inventing the same strange-looking trick: a class passing itself as a template argument to its own base. The standard library uses it too: \`std::enable_shared_from_this<T>\` is a CRTP base. It suits code that must be as fast as possible and never needs to mix types at run time.
+:::
+--- task
+The starter's \`AnyShape\` wraps a \`std::variant<Square, Circle>\`, so a new shape type means editing \`AnyShape\`. Redesign it with type erasure, so it accepts **any** type that has \`double area() const\`, \`std::string name() const\` and \`void scale(double)\`. No \`main\`.
+
+- Inside \`AnyShape\`, write a private \`Concept\` with \`area\`, \`name\`, \`scale\` and \`clone\`, and a private \`template <typename S> struct Model\` that holds an \`S\` and passes each call on to it.
+- \`AnyShape\` is a value type: copies are deep (scaling a copy leaves the original alone), assignment works, and the move constructor is \`noexcept\`.
+- Keep the public \`area()\`, \`name()\` and \`scale(double)\`, and the free function \`double total_area(const std::vector<AnyShape>& shapes)\`.
+- \`Square\` and \`Circle\` stay plain structs with no base class.
+--- starter
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+    void scale(double f) { side *= f; }
+};
+
+struct Circle {
+    double r;
+    double area() const { return 3.141592653589793 * r * r; }
+    std::string name() const { return "circle"; }
+    void scale(double f) { r *= f; }
+};
+
+class AnyShape {
+public:
+    AnyShape(Square s) : v_(s) {}
+    AnyShape(Circle c) : v_(c) {}
+    double area() const { return std::visit([](const auto& s) { return s.area(); }, v_); }
+    std::string name() const { return std::visit([](const auto& s) { return s.name(); }, v_); }
+    void scale(double f) { std::visit([f](auto& s) { s.scale(f); }, v_); }
+private:
+    std::variant<Square, Circle> v_;
+};
+
+double total_area(const std::vector<AnyShape>& shapes) {
+    double total = 0;
+    for (const auto& s : shapes) total += s.area();
+    return total;
+}
+--- solution
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Square {
+    double side;
+    double area() const { return side * side; }
+    std::string name() const { return "square"; }
+    void scale(double f) { side *= f; }
+};
+
+struct Circle {
+    double r;
+    double area() const { return 3.141592653589793 * r * r; }
+    std::string name() const { return "circle"; }
+    void scale(double f) { r *= f; }
+};
+
+class AnyShape {
+public:
+    template <typename S>
+    AnyShape(S shape) : self_(std::make_unique<Model<S>>(std::move(shape))) {}
+
+    AnyShape(const AnyShape& other) : self_(other.self_->clone()) {}
+    AnyShape(AnyShape&&) noexcept = default;
+    AnyShape& operator=(AnyShape other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double area() const { return self_->area(); }
+    std::string name() const { return self_->name(); }
+    void scale(double f) { self_->scale(f); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double area() const = 0;
+        virtual std::string name() const = 0;
+        virtual void scale(double f) = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename S>
+    struct Model final : Concept {
+        S s;
+        explicit Model(S x) : s(std::move(x)) {}
+        double area() const override { return s.area(); }
+        std::string name() const override { return s.name(); }
+        void scale(double f) override { s.scale(f); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(s); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+double total_area(const std::vector<AnyShape>& shapes) {
+    double total = 0;
+    for (const auto& s : shapes) total += s.area();
+    return total;
+}
+--- hint
+Start inside \`AnyShape\`: a private abstract \`Concept\` with four pure virtual functions (\`area\`, \`name\`, \`scale\`, \`clone\`) and a virtual destructor, then a \`template <typename S> struct Model : Concept\` that holds an \`S\` and passes each call on to it.
+--- hint
+The template constructor takes \`S shape\` by value and makes \`std::make_unique<Model<S>>(std::move(shape))\`. The copy constructor calls \`other.self_->clone()\`. The member \`self_\` is a \`std::unique_ptr<Concept>\`.
+--- hint
+Default the move constructor and mark it \`noexcept\`. Write assignment as copy-and-swap: take \`AnyShape other\` by value, \`std::swap\` the two \`self_\` pointers, return \`*this\`. The public \`area()\`, \`name()\` and \`scale()\` each call through \`self_->\`.
+--- check test | Squares and circles still work
+[] { AnyShape s = Square{2}; AnyShape c = Circle{1}; return s.name() == "square" && s.area() == 4 && c.name() == "circle" && std::abs(c.area() - 3.141592653589793) < 1e-12; }()
+--- check test | A brand-new shape type works with no changes to AnyShape
+[] { struct Tri { double b, h; double area() const { return b * h / 2; } std::string name() const { return "triangle"; } void scale(double f) { b *= f; h *= f; } }; AnyShape t = Tri{4, 3}; t.scale(2); return t.name() == "triangle" && t.area() == 24; }()
+--- check test | Copies are deep
+[] { AnyShape a = Square{2}; AnyShape b = a; b.scale(3); AnyShape c = Circle{1}; c = a; c.scale(0.5); return a.area() == 4 && b.area() == 36 && c.area() == 1 && c.name() == "square"; }()
+--- check test | A vector of values, and total_area
+[] { std::vector<AnyShape> v{Square{1}, Square{3}}; v.push_back(Circle{2}); return std::abs(total_area(v) - (10 + 4 * 3.141592653589793)) < 1e-9; }()
+--- check test | Moving is noexcept
+std::is_nothrow_move_constructible_v<AnyShape>
+
++++ practice | Any sensor at all
+--- task
+The starter's \`AnySensor\` wraps a \`std::variant<Thermo, Baro>\`, so every new kind of sensor means editing it. Redesign it with type erasure, so it holds **any** type that has \`double read() const\` and \`std::string unit() const\`. No \`main\`.
+
+- Inside \`AnySensor\`: a private \`Concept\` with \`read\`, \`unit\` and \`clone\`, and a private \`template <typename S> struct Model\` that holds an \`S\` and passes each call on to it. \`AnySensor\` keeps a \`std::unique_ptr<Concept>\`.
+- It is a value type: copying makes an independent copy (deep, through \`clone\`), assignment works (copy-and-swap), and the move constructor is \`noexcept\`.
+- Keep the public \`read()\` and \`unit()\`, and the free function \`double average_reading(const std::vector<AnySensor>& sensors)\`, which returns \`0.0\` for an empty vector.
+--- starter
+#include <memory>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string unit() const { return "C"; }
+};
+
+struct Baro {
+    double hpa;
+    double read() const { return hpa; }
+    std::string unit() const { return "hPa"; }
+};
+
+class AnySensor {
+public:
+    AnySensor(Thermo t) : v_(t) {}
+    AnySensor(Baro b) : v_(b) {}
+    double read() const { return std::visit([](const auto& s) { return s.read(); }, v_); }
+    std::string unit() const { return std::visit([](const auto& s) { return s.unit(); }, v_); }
+private:
+    std::variant<Thermo, Baro> v_;
+};
+
+double average_reading(const std::vector<AnySensor>& sensors) {
+    return 0.0;
+}
+--- solution
+#include <memory>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string unit() const { return "C"; }
+};
+
+struct Baro {
+    double hpa;
+    double read() const { return hpa; }
+    std::string unit() const { return "hPa"; }
+};
+
+class AnySensor {
+public:
+    template <typename S>
+    AnySensor(S sensor) : self_(std::make_unique<Model<S>>(std::move(sensor))) {}
+
+    AnySensor(const AnySensor& other) : self_(other.self_->clone()) {}
+    AnySensor(AnySensor&&) noexcept = default;
+    AnySensor& operator=(AnySensor other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double read() const { return self_->read(); }
+    std::string unit() const { return self_->unit(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double read() const = 0;
+        virtual std::string unit() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename S>
+    struct Model final : Concept {
+        S held;
+        explicit Model(S s) : held(std::move(s)) {}
+        double read() const override { return held.read(); }
+        std::string unit() const override { return held.unit(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+double average_reading(const std::vector<AnySensor>& sensors) {
+    if (sensors.empty()) return 0.0;
+    double total = 0;
+    for (const AnySensor& s : sensors) total += s.read();
+    return total / static_cast<double>(sensors.size());
+}
+--- hint
+Start with the private \`Concept\`: a virtual destructor and three pure virtual functions. Then \`template <typename S> struct Model : Concept\`, holding an \`S\` and passing \`read\` and \`unit\` on to it; its \`clone\` returns \`std::make_unique<Model>(held)\`.
+--- hint
+The template constructor takes \`S sensor\` by value, not \`S&&\`, and is not \`explicit\`. The copy constructor calls \`other.self_->clone()\`; the move constructor is \`= default\` with \`noexcept\`; assignment takes the parameter by value and swaps the two \`self_\` pointers.
+--- check test | Thermometers and barometers still work
+[] { AnySensor t = Thermo{21.5}; AnySensor b = Baro{1013}; return t.read() == 21.5 && t.unit() == "C" && b.read() == 1013 && b.unit() == "hPa"; }()
+--- check test | A brand-new kind of sensor, with no changes to AnySensor
+[] { struct Lux { int level; double read() const { return level * 10.0; } std::string unit() const { return "lx"; } }; AnySensor s = Lux{3}; return s.read() == 30 && s.unit() == "lx"; }()
+--- check test | Copies and assignment
+[] { AnySensor a = Thermo{1}; AnySensor b = a; AnySensor c = Baro{2}; c = a; a = Baro{900}; return b.read() == 1 && c.read() == 1 && c.unit() == "C" && a.read() == 900; }()
+--- check test | A vector of sensors, and average_reading
+[] { std::vector<AnySensor> v{Thermo{10}, Baro{20}}; v.push_back(Thermo{30}); return average_reading(v) == 20 && average_reading({}) == 0.0; }()
+--- check test | Moving is noexcept
+std::is_nothrow_move_constructible_v<AnySensor>
+
++++ practice | Any action on a number
+--- task
+Write \`class Action\`: a type-erased holder for **anything callable** with an \`int\` that gives back an \`int\`, such as a lambda, a function object or a plain function. It is a small cousin of \`std::function<int(int)>\`, written by you. No \`main\`.
+
+- A private \`Concept\` with \`call(int)\` and \`clone\`, a private \`template <typename F> struct Model\` holding an \`F\`, and a \`std::unique_ptr<Concept>\`.
+- A template constructor that is not \`explicit\`, so \`Action a = [](int x) { return x + 1; };\` works, and so does \`Action d = twice;\` with the starter's plain function \`twice\`.
+- \`int operator()(int x) const\` calls the held callable.
+- A value type: deep copies, copy-and-swap assignment, a \`noexcept\` move constructor.
+- \`int chain(const std::vector<Action>& steps, int x)\`: feeds \`x\` through every step in order, each result going into the next step; with no steps it returns \`x\`.
+--- starter
+#include <memory>
+#include <utility>
+#include <vector>
+
+int twice(int x) { return 2 * x; }
+
+class Action {
+public:
+    int operator()(int x) const { return x; }
+};
+
+int chain(const std::vector<Action>& steps, int x) {
+    return x;
+}
+--- solution
+#include <memory>
+#include <utility>
+#include <vector>
+
+int twice(int x) { return 2 * x; }
+
+class Action {
+public:
+    template <typename F>
+    Action(F f) : self_(std::make_unique<Model<F>>(std::move(f))) {}
+
+    Action(const Action& other) : self_(other.self_->clone()) {}
+    Action(Action&&) noexcept = default;
+    Action& operator=(Action other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    int operator()(int x) const { return self_->call(x); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual int call(int x) const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename F>
+    struct Model final : Concept {
+        F f;
+        explicit Model(F fn) : f(std::move(fn)) {}
+        int call(int x) const override { return f(x); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(f); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+int chain(const std::vector<Action>& steps, int x) {
+    for (const Action& step : steps) x = step(x);
+    return x;
+}
+--- hint
+The pattern is the lesson's, with one member function: the concept says "can be called with an \`int\`", and \`Model<F>::call\` does \`return f(x);\`. A plain function arrives as a function pointer, which can be called the same way.
+--- hint
+\`operator()\` passes the call through the pointer: \`return self_->call(x);\`. \`chain\` keeps replacing \`x\` with \`step(x)\`.
+--- check test | Lambdas, with and without captures
+[] { int k = 3; Action add1 = [](int x) { return x + 1; }; Action times = [k](int x) { return x * k; }; return add1(4) == 5 && times(4) == 12; }()
+--- check test | A function object, and the starter's plain function twice
+[] { struct Square { int operator()(int x) const { return x * x; } }; Action sq = Square{}; Action d = twice; return sq(7) == 49 && d(7) == 14; }()
+--- check test | Copies are independent of later assignments
+[] { Action a = [k = 3](int x) { return x * k; }; Action b = a; a = [](int x) { return x + 1; }; Action c = b; c = std::move(a); return b(5) == 15 && c(5) == 6; }()
+--- check test | chain feeds each result into the next step
+[] { std::vector<Action> steps{[](int x) { return x + 2; }, [](int x) { return x * 10; }}; steps.push_back([](int x) { return x - 1; }); return chain(steps, 1) == 29 && chain({}, 7) == 7; }()
+--- check test | Moving is noexcept
+std::is_nothrow_move_constructible_v<Action>
+
++++ practice | Only drawable things may enter
+--- task
+The starter's \`AnyDrawable\` is already type-erased, but its template constructor accepts **anything**, so a mistake like \`AnyDrawable d = 5;\` fails deep inside \`Model\`. Put a concept on the gate, and write a render function. No \`main\`.
+
+- \`concept Drawable\`: given a \`const T& d\`, \`d.draw()\` gives something convertible to \`std::string\`.
+- Constrain the template constructor with it, so constructing an \`AnyDrawable\` from a non-drawable type does not compile at all. Copying an \`AnyDrawable\` must still work.
+- \`std::string render(const std::vector<AnyDrawable>& items)\`: each item's drawing on its own line, joined with \`"\\n"\` (no newline after the last); \`""\` for no items.
+--- starter
+#include <concepts>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <typename T>
+concept Drawable = true;
+
+class AnyDrawable {
+public:
+    template <typename T>
+    AnyDrawable(T d) : self_(std::make_unique<Model<T>>(std::move(d))) {}
+
+    AnyDrawable(const AnyDrawable& other) : self_(other.self_->clone()) {}
+    AnyDrawable(AnyDrawable&&) noexcept = default;
+    AnyDrawable& operator=(AnyDrawable other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    std::string draw() const { return self_->draw(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual std::string draw() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        std::string draw() const override { return held.draw(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+std::string render(const std::vector<AnyDrawable>& items) {
+    return "";
+}
+--- solution
+#include <concepts>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <typename T>
+concept Drawable = requires(const T& d) {
+    { d.draw() } -> std::convertible_to<std::string>;
+};
+
+class AnyDrawable {
+public:
+    template <Drawable T>
+    AnyDrawable(T d) : self_(std::make_unique<Model<T>>(std::move(d))) {}
+
+    AnyDrawable(const AnyDrawable& other) : self_(other.self_->clone()) {}
+    AnyDrawable(AnyDrawable&&) noexcept = default;
+    AnyDrawable& operator=(AnyDrawable other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    std::string draw() const { return self_->draw(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual std::string draw() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        std::string draw() const override { return held.draw(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+std::string render(const std::vector<AnyDrawable>& items) {
+    std::string out;
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        if (i > 0) out += "\\n";
+        out += items[i].draw();
+    }
+    return out;
+}
+--- hint
+\`Drawable\` is a requires-expression with a \`const T&\` pretend parameter and one result requirement. Then write its name where \`typename\` is in the template constructor's head.
+--- hint
+Copying still picks the real copy constructor: an \`AnyDrawable\` has a \`draw()\` member, so it is \`Drawable\` itself, and on an equally good match an ordinary function beats a template. For \`render\`, add \`"\\n"\` before every item except the first.
+--- check test | Drawable sorts the types
+[] { struct Box { std::string draw() const { return "[]"; } }; struct Mute { int size() const { return 1; } }; return Drawable<Box> && !Drawable<int> && !Drawable<Mute> && !Drawable<std::string>; }()
+--- check test | Non-drawable types cannot become an AnyDrawable
+![]<class T>(T t) { return requires { AnyDrawable(t); }; }(5) && ![]<class T>(T t) { return requires { AnyDrawable(t); }; }(std::string("x"))
+--- check test | Drawable types can, and copies still work
+[] { struct Box { std::string draw() const { return "[]"; } }; AnyDrawable a = Box{}; AnyDrawable b = a; const AnyDrawable c = b; AnyDrawable d = c; return a.draw() == "[]" && b.draw() == "[]" && d.draw() == "[]"; }()
+--- check test | render joins the drawings with newlines
+[] { struct Box { std::string draw() const { return "[]"; } }; struct Dot { std::string draw() const { return "."; } }; std::vector<AnyDrawable> v{Box{}, Dot{}, Box{}}; return render(v) == "[]\\n.\\n[]" && render({}) == "" && render({Dot{}}) == "."; }()
+
++++ practice | A holder that may be empty
+--- task
+Write \`class AnyTask\`, a type-erased holder for any type with \`std::string describe() const\`, which, unlike the lesson's \`AnyShape\`, may also hold **nothing**. The starter is the lesson's pattern, and it crashes on every empty case. Make every operation safe when a holder is empty. No \`main\`.
+
+- \`AnyTask()\` makes an empty holder. After \`AnyTask b = std::move(a);\`, \`a\` is empty too.
+- \`bool has_value() const\`, and \`void reset()\`, which makes the holder empty.
+- \`std::string describe() const\` returns the held task's description, or \`"(empty)"\`.
+- Copying an empty holder gives an empty holder; assigning an empty holder to a full one empties it; assigning a holder to itself changes nothing. Moves stay \`noexcept\`.
+--- starter
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class AnyTask {
+public:
+    AnyTask() = default;
+
+    template <typename T>
+    AnyTask(T task) : self_(std::make_unique<Model<T>>(std::move(task))) {}
+
+    AnyTask(const AnyTask& other) : self_(other.self_->clone()) {}
+    AnyTask(AnyTask&&) noexcept = default;
+    AnyTask& operator=(AnyTask other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    bool has_value() const { return true; }
+    void reset() {}
+    std::string describe() const { return self_->describe(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual std::string describe() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        std::string describe() const override { return held.describe(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+--- solution
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class AnyTask {
+public:
+    AnyTask() = default;
+
+    template <typename T>
+    AnyTask(T task) : self_(std::make_unique<Model<T>>(std::move(task))) {}
+
+    AnyTask(const AnyTask& other) : self_(other.self_ ? other.self_->clone() : nullptr) {}
+    AnyTask(AnyTask&&) noexcept = default;
+    AnyTask& operator=(AnyTask other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    bool has_value() const { return self_ != nullptr; }
+    void reset() { self_.reset(); }
+    std::string describe() const { return self_ ? self_->describe() : "(empty)"; }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual std::string describe() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        std::string describe() const override { return held.describe(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+--- hint
+An empty holder is simply a null \`self_\`. Find every place that goes through \`self_->\` and ask what happens when it is null.
+--- hint
+The copy constructor clones only when there is something to clone: \`other.self_ ? other.self_->clone() : nullptr\`. \`describe\` checks the same way. A moved-from \`std::unique_ptr\` is guaranteed to be null, so a moved-from holder is already empty; \`reset()\` can call \`self_.reset()\`.
+--- check test | A default holder is empty
+[] { struct Job { std::string describe() const { return "job"; } }; AnyTask e; AnyTask f = Job{}; return !e.has_value() && e.describe() == "(empty)" && f.has_value() && f.describe() == "job"; }()
+--- check test | Copying and assigning empty holders
+[] { struct Job { std::string describe() const { return "job"; } }; AnyTask e; AnyTask copy = e; AnyTask full = Job{}; full = e; AnyTask again = Job{}; again = copy; return !copy.has_value() && !full.has_value() && full.describe() == "(empty)" && !again.has_value(); }()
+--- check test | Moved-from holders are empty and reusable
+[] { struct Job { std::string describe() const { return "job"; } }; AnyTask a = Job{}; AnyTask b = std::move(a); bool empty = !a.has_value() && a.describe() == "(empty)"; a = b; return empty && a.describe() == "job" && b.describe() == "job"; }()
+--- check test | reset, and assigning to yourself
+[] { struct Job { std::string describe() const { return "job"; } }; AnyTask a = Job{}; AnyTask& same = a; a = same; bool kept = a.describe() == "job"; a.reset(); AnyTask e; AnyTask& e2 = e; e = e2; return kept && !a.has_value() && !e.has_value(); }()
+--- check test | A vector with empty and full holders, and noexcept moves
+[] { struct Job { std::string describe() const { return "job"; } }; std::vector<AnyTask> v{Job{}, AnyTask{}}; std::vector<AnyTask> w = v; std::string all; for (const AnyTask& t : w) all += t.describe(); return all == "job(empty)" && std::is_nothrow_move_constructible_v<AnyTask>; }()
+
++++ practice | Debug: shapes that leak and clone too much
+--- task
+**Bug report:** "Every shape I put in an \`AnyShape\` is never destroyed: \`Tracked::alive\` never goes back to 0. And growing a \`std::vector<AnyShape>\` clones every shape in it each time, instead of moving them."
+
+The starter counts clones in \`clone_count\`. Two lines of \`AnyShape\` are wrong. Fix them. No \`main\`.
+--- starter
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+inline int clone_count = 0;
+
+// A shape that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    double side;
+    explicit Tracked(double s) : side(s) { ++alive; }
+    Tracked(const Tracked& o) : side(o.side) { ++alive; }
+    ~Tracked() { --alive; }
+    double area() const { return side * side; }
+};
+
+class AnyShape {
+public:
+    template <typename S>
+    AnyShape(S shape) : self_(std::make_unique<Model<S>>(std::move(shape))) {}
+
+    AnyShape(const AnyShape& other) : self_(other.self_->clone()) {}
+    AnyShape(AnyShape&& other) : self_(std::move(other.self_)) {}
+    AnyShape& operator=(AnyShape other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double area() const { return self_->area(); }
+
+private:
+    struct Concept {
+        ~Concept() = default;
+        virtual double area() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename S>
+    struct Model final : Concept {
+        S s;
+        explicit Model(S x) : s(std::move(x)) {}
+        double area() const override { return s.area(); }
+        std::unique_ptr<Concept> clone() const override {
+            ++clone_count;
+            return std::make_unique<Model>(s);
+        }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+--- solution
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+inline int clone_count = 0;
+
+// A shape that counts how many are alive.
+struct Tracked {
+    static inline int alive = 0;
+    double side;
+    explicit Tracked(double s) : side(s) { ++alive; }
+    Tracked(const Tracked& o) : side(o.side) { ++alive; }
+    ~Tracked() { --alive; }
+    double area() const { return side * side; }
+};
+
+class AnyShape {
+public:
+    template <typename S>
+    AnyShape(S shape) : self_(std::make_unique<Model<S>>(std::move(shape))) {}
+
+    AnyShape(const AnyShape& other) : self_(other.self_->clone()) {}
+    AnyShape(AnyShape&& other) noexcept : self_(std::move(other.self_)) {}
+    AnyShape& operator=(AnyShape other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double area() const { return self_->area(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double area() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename S>
+    struct Model final : Concept {
+        S s;
+        explicit Model(S x) : s(std::move(x)) {}
+        double area() const override { return s.area(); }
+        std::unique_ptr<Concept> clone() const override {
+            ++clone_count;
+            return std::make_unique<Model>(s);
+        }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+--- hint
+The \`std::unique_ptr<Concept>\` deletes a \`Model<S>\` through a pointer to \`Concept\`. Which destructor runs if \`Concept\`'s destructor is not virtual?
+--- hint
+\`std::vector\` only moves its elements while growing if their move constructor promises not to throw. The move constructor here was written by hand, and says nothing.
+--- check test | Every held shape is destroyed
+[] { Tracked::alive = 0; { AnyShape a = Tracked(2); AnyShape b = a; b = Tracked(3); } return Tracked::alive == 0; }()
+--- check test | Growing a vector moves, never clones
+[] { std::vector<AnyShape> v; clone_count = 0; for (int i = 0; i < 20; ++i) v.push_back(AnyShape(Tracked(i))); return clone_count == 0 && v.size() == 20 && v[19].area() == 361; }()
+--- check test | The move constructor is noexcept, and copies still clone
+[] { AnyShape a = Tracked(1.5); clone_count = 0; AnyShape b = a; return std::is_nothrow_move_constructible_v<AnyShape> && clone_count == 1 && b.area() == 2.25; }()
+--- check test | Nothing leaks from a vector
+[] { Tracked::alive = 0; { std::vector<AnyShape> v; for (int i = 0; i < 10; ++i) v.push_back(AnyShape(Tracked(i))); std::vector<AnyShape> w = v; } return Tracked::alive == 0; }()
+
++++ practice | Stretch: instruments that may or may not calibrate
+--- task
+A science panel shows readings from many instruments. Some instruments can be **calibrated**: they have \`void calibrate(double offset)\`. Others cannot. Write \`class Instrument\`, a type-erased value type for any type with \`double read() const\` and \`std::string unit() const\`, where calibration is optional. No \`main\`.
+
+- \`double read() const\` and \`std::string unit() const\` pass on to the held instrument.
+- \`bool can_calibrate() const\`: whether the held type has a \`calibrate(double)\` member.
+- \`bool calibrate(double offset)\`: if the held type can be calibrated, call its \`calibrate(offset)\` and return \`true\`; otherwise change nothing and return \`false\`.
+- A value type: deep copies (calibrating a copy leaves the original alone), copy-and-swap assignment, a \`noexcept\` move constructor.
+- \`std::string panel(const std::vector<Instrument>& xs)\`: each reading and unit as \`<reading> <unit>\`, written with a default \`std::ostringstream\`, joined with \`", "\`.
+
+Decide inside \`Model<T>\` with \`if constexpr\` and a requires-expression whether \`held.calibrate(offset)\` would compile.
+--- starter
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string unit() const { return "C"; }
+    void calibrate(double offset) { celsius += offset; }
+};
+
+struct Baro {
+    double hpa;
+    double read() const { return hpa; }
+    std::string unit() const { return "hPa"; }
+};
+
+class Instrument {
+public:
+    double read() const { return 0; }
+    std::string unit() const { return ""; }
+    bool can_calibrate() const { return false; }
+    bool calibrate(double offset) { return false; }
+};
+
+std::string panel(const std::vector<Instrument>& xs) {
+    return "";
+}
+--- solution
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Thermo {
+    double celsius;
+    double read() const { return celsius; }
+    std::string unit() const { return "C"; }
+    void calibrate(double offset) { celsius += offset; }
+};
+
+struct Baro {
+    double hpa;
+    double read() const { return hpa; }
+    std::string unit() const { return "hPa"; }
+};
+
+class Instrument {
+public:
+    template <typename T>
+    Instrument(T inst) : self_(std::make_unique<Model<T>>(std::move(inst))) {}
+
+    Instrument(const Instrument& other) : self_(other.self_->clone()) {}
+    Instrument(Instrument&&) noexcept = default;
+    Instrument& operator=(Instrument other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    double read() const { return self_->read(); }
+    std::string unit() const { return self_->unit(); }
+    bool can_calibrate() const { return self_->can_calibrate(); }
+    bool calibrate(double offset) { return self_->calibrate(offset); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual double read() const = 0;
+        virtual std::string unit() const = 0;
+        virtual bool can_calibrate() const = 0;
+        virtual bool calibrate(double offset) = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T x) : held(std::move(x)) {}
+        double read() const override { return held.read(); }
+        std::string unit() const override { return held.unit(); }
+        bool can_calibrate() const override {
+            return requires(T& t, double d) { t.calibrate(d); };
+        }
+        bool calibrate(double offset) override {
+            if constexpr (requires { held.calibrate(offset); }) {
+                held.calibrate(offset);
+                return true;
+            } else {
+                return false;
+            }
+        }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+std::string panel(const std::vector<Instrument>& xs) {
+    std::ostringstream out;
+    for (std::size_t i = 0; i < xs.size(); ++i) {
+        if (i > 0) out << ", ";
+        out << xs[i].read() << ' ' << xs[i].unit();
+    }
+    return out.str();
+}
+--- hint
+The pattern is the lesson's, with two more virtual functions in \`Concept\`: \`can_calibrate()\` and \`calibrate(double)\`. Only \`Model<T>\` knows the real type, so only it can answer.
+--- hint
+Inside \`Model<T>::calibrate\`, \`if constexpr (requires { held.calibrate(offset); })\` keeps only the branch that fits \`T\`: call it and return \`true\`, or return \`false\`. The discarded branch is never compiled for a \`T\` without \`calibrate\`. \`can_calibrate\` can return the same requires-expression as a \`bool\`.
+--- check test | Readings and units
+[] { Instrument t = Thermo{21.5}; Instrument b = Baro{1013}; return t.read() == 21.5 && t.unit() == "C" && b.read() == 1013 && b.unit() == "hPa"; }()
+--- check test | Only some instruments calibrate
+[] { Instrument t = Thermo{20}; Instrument b = Baro{1000}; bool ct = t.calibrate(1.5); bool cb = b.calibrate(5); return t.can_calibrate() && !b.can_calibrate() && ct && !cb && t.read() == 21.5 && b.read() == 1000; }()
+--- check test | Calibrating a copy leaves the original alone
+[] { Instrument a = Thermo{10}; Instrument b = a; b.calibrate(-3); Instrument c = Baro{1}; c = a; c.calibrate(100); return a.read() == 10 && b.read() == 7 && c.read() == 110; }()
+--- check case | The panel
+[] { std::vector<Instrument> v{Thermo{21.5}, Baro{1013}}; v.push_back(Thermo{-4}); return panel(v); }()
+=> "21.5 C, 1013 hPa, -4 C"
+--- check test | An empty panel, and noexcept moves
+panel({}) == "" && std::is_nothrow_move_constructible_v<Instrument>
+
+=== cpp4-14 | Problem solving: an LRU cache
+--- teach
+Last lesson you hid many types behind one. This lesson is a problem-solving one, like the range sums two lessons ago: start from the slow, obvious answer, work out what it is missing, and find the data structures that fix it. Here the answer is two containers working as a team.
+
+### A cache
+
+Picture a small desk next to a big library. Fetching a book from the shelves takes minutes, so you keep the books you are using on the desk. The desk only holds a few. When it is full and you need a new one, some book has to go back.
+
+A **[[cache|caches-everywhere]]** is that desk: a small store that keeps recent answers so they need not be fetched or worked out again. Each stored item is an **entry**, a key and its value. Taking an entry out to make room is called **evicting** it.
+
+### Least recently used
+
+Which book goes back? A good rule: the one you touched longest ago. You have not needed it for a while, so you probably will not need it soon.
+
+That rule is **least recently used**, or **LRU**: when the cache is full, evict the entry whose last use is the oldest. It is [[simple and works well|eviction-policies]] for most real patterns of use.
+
+An LRU cache has two operations:
+
+- \`get(key)\`: give back the value if the key is there. Using it makes that entry the **most** recently used.
+- \`put(key, value)\`: add the entry, or change the value if the key is already there. Either way it becomes the most recently used. If that makes the cache too big, evict the **least** recently used entry.
+
+Here is a cache that holds 2 entries, with its entries listed from most to least recent after each call:
+
+| call | entries afterwards | what happened |
+| --- | --- | --- |
+| \`put(7, 70)\` | 7 | added |
+| \`put(8, 80)\` | 8, 7 | added, 8 is newest |
+| \`get(7)\` gives 70 | 7, 8 | 7 was used, so it is newest again |
+| \`put(9, 90)\` | 9, 7 | 3 entries is too many: 8 is oldest, evicted |
+
+### Brute force first
+
+The obvious way: keep a vector of \`(key, value)\` pairs in order of use, newest at the front. Each \`get\` or \`put\` searches the vector for the key, which is O(n), and moves the entry to the front, which shifts everything before it, also O(n).
+
+With room for 50,000 entries and a million calls, that is up to 50,000 × 1,000,000 = 5 × 10¹⁰ steps. Far too slow.
+
+### Find the structure
+
+Look at what each call really needs. Two jobs, and each must be O(1), a fixed number of steps however big the cache is:
+
+1. **Find** an entry by its key. A hash map does that: \`std::unordered_map\` from the intermediate course.
+2. **Move** an entry to the front, and **remove** one from the back. A vector cannot do that without shifting. A doubly linked list can.
+
+So use both: a list that keeps the entries in order of use, and a map that says where each key's entry sits in the list.
+
+### A doubly linked list
+
+Picture a train. Each carriage is coupled to the one in front and the one behind. To take a carriage out of the middle, you uncouple it and join its two neighbors. Nothing else moves.
+
+A **[[doubly linked list|linked-list]]** is that train. Each element lives in its own **node**, a small block of memory holding the element plus a link to the node before it and a link to the node after it. "Doubly" means links go both ways.
+
+The standard one is \`std::list<T>\`, from \`<list>\`. It has the operations you need at both ends:
+
+\`\`\`cpp
+std::list<std::string> queue{"ann", "bo", "cy"};
+queue.push_front("dee");             // dee ann bo cy
+queue.pop_back();                    // dee ann bo
+std::string oldest = queue.back();   // "bo"
+std::string newest = queue.front();  // "dee"
+\`\`\`
+
+To build a pair right inside a new front node, pass the two parts to \`emplace_front\` ("construct in place at the front"):
+
+\`\`\`cpp
+std::list<std::pair<std::string, double>> prices;
+prices.emplace_front("tea", 2.5);    // the new front node holds ("tea", 2.5)
+\`\`\`
+
+### Iterators that stay put
+
+In the iterator invalidation lesson, adding to a vector could move every element and break every iterator. A list is different. Its nodes never move, so an [[iterator to a node stays valid|iterator-stability]] until that one node is erased. You can store list iterators and use them much later.
+
+### Moving a node: splice
+
+\`splice\` moves a node to a new position in the list. It re-links the node; it does not copy the element or make a new node. So every stored iterator still points at the same node, now in its new place. It takes three things: where to put the node, the list the node comes from (here the same list), and an iterator to the node:
+
+\`\`\`cpp
+auto it = queue.begin();             // queue is dee ann bo
+++it;                                // it points at "ann"
+queue.splice(queue.begin(), queue, it);   // ann dee bo
+\`\`\`
+
+Moving one node like this is O(1).
+
+### Naming the iterator type
+
+The map's values will be list iterators, and their type name is long. A **type alias** gives it a shorter [[name of your own|type-alias]]. With
+
+\`\`\`cpp
+using Queue = std::list<std::string>;
+\`\`\`
+
+\`Queue\` means \`std::list<std::string>\`, and \`Queue::iterator\` is that list's iterator type. A map from a name to the node holding it looks like this:
+
+\`\`\`cpp
+Queue line;
+std::unordered_map<std::string, Queue::iterator> where;
+line.push_front("eve");
+where["eve"] = line.begin();         // remember eve's node
+\`\`\`
+
+### Following two arrows
+
+When the list holds pairs, one line can go through the map *and* the list. Say \`spot\` maps each drink to its node in \`prices\`:
+
+\`\`\`cpp
+auto found = spot.find("tea");       // an iterator into the map
+found->second->second = 3.0;         // change tea's price in the list
+\`\`\`
+
+Read it left to right. \`found->second\` is the map's value: a list iterator. The next \`->second\` follows that iterator to the pair in the list, and takes its second part, the price.
+
+### Evicting
+
+To evict, you need to erase the oldest entry from **both** containers. The oldest is at the back of the list. Read its key first, erase that key from the map, and only then drop the node:
+
+\`\`\`cpp
+where.erase(line.back());            // forget the oldest name...
+line.pop_back();                     // ...then remove its node
+\`\`\`
+
+In the \`prices\` list the key would be \`line.back().first\`, since each node holds a pair.
+
+**Watch out:** do those two lines in that order. Call \`pop_back()\` first and \`back()\` is now a *different* node, so you erase the wrong key from the map. The map is then left holding an iterator to a node that no longer exists, and using it later is undefined behavior.
+
+### Decide the edge cases first
+
+Before you write code, decide what happens here:
+
+- Putting a key that is already there changes its value and makes it newest. It must **not** grow the size.
+- \`get\` of a missing key returns nothing and changes nothing.
+- With a capacity of 1, every new key evicts the one before it.
+
+::: context caches-everywhere Caches all the way down
+You met one cache two lessons ago: the processor keeps recently used memory in cache lines, because main memory is far slower. The idea repeats at every level. Your web browser caches pages and pictures so a second visit is instant. Your phone caches map tiles. A database caches the rows people ask for most. Spacecraft computers cache data read from slower storage. In each case the cache is small and fast, the full store is big and slow, and the eviction rule decides how often you get the fast answer.
+:::
+
+::: context eviction-policies Other rules for what to throw out
+LRU is not the only rule. *FIFO* (first in, first out) evicts the oldest entry added, whether or not it was used since; it is simpler but can throw out something used constantly. *LFU* (least frequently used) counts uses and evicts the least popular. Operating systems deciding which memory pages to move to disk use cheap approximations of LRU, such as the "clock" algorithm, because keeping an exact order on every memory access would cost too much. Java's \`LinkedHashMap\` can keep entries in order of use for exactly this job.
+:::
+
+::: context linked-list Nodes and links
+Each node sits somewhere of its own on the heap and knows only its two neighbors. Unlinking a node, or linking one in, changes a few links and nothing else, so it is O(1) wherever the node is, as long as you already have an iterator to it. The price: there is no \`list[5]\`; reaching the fifth node means following links from the front. And the nodes are scattered in memory, so walking a long list misses the cache often, the problem from the data layout lesson.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="16" font-size="11" fill="#6c7a93">hash map: key → node</text>
+  <rect x="35" y="26" width="50" height="24" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="60" y="43" font-size="12" fill="#1f2a44" text-anchor="middle">9</text>
+  <rect x="155" y="26" width="50" height="24" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="180" y="43" font-size="12" fill="#1f2a44" text-anchor="middle">7</text>
+  <rect x="275" y="26" width="50" height="24" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="300" y="43" font-size="12" fill="#1f2a44" text-anchor="middle">8</text>
+  <line x1="60" y1="50" x2="60" y2="92" stroke="#1d6fd1" stroke-width="2"/>
+  <path d="M 60 100 L 55 91 L 65 91 Z" fill="#1d6fd1"/>
+  <line x1="180" y1="50" x2="180" y2="92" stroke="#1d6fd1" stroke-width="2"/>
+  <path d="M 180 100 L 175 91 L 185 91 Z" fill="#1d6fd1"/>
+  <line x1="300" y1="50" x2="300" y2="92" stroke="#1d6fd1" stroke-width="2"/>
+  <path d="M 300 100 L 295 91 L 305 91 Z" fill="#1d6fd1"/>
+  <rect x="20" y="100" width="80" height="34" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="60" y="121" font-size="12" fill="#1f2a44" text-anchor="middle">(9, 90)</text>
+  <rect x="140" y="100" width="80" height="34" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="180" y="121" font-size="12" fill="#1f2a44" text-anchor="middle">(7, 70)</text>
+  <rect x="260" y="100" width="80" height="34" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="300" y="121" font-size="12" fill="#1f2a44" text-anchor="middle">(8, 80)</text>
+  <line x1="100" y1="110" x2="133" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M 140 110 L 132 106 L 132 114 Z" fill="#1f2a44"/>
+  <line x1="140" y1="126" x2="107" y2="126" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M 100 126 L 108 122 L 108 130 Z" fill="#1f2a44"/>
+  <line x1="220" y1="110" x2="253" y2="110" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M 260 110 L 252 106 L 252 114 Z" fill="#1f2a44"/>
+  <line x1="260" y1="126" x2="227" y2="126" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M 220 126 L 228 122 L 228 130 Z" fill="#1f2a44"/>
+  <text x="60" y="155" font-size="11" fill="#1f2a44" text-anchor="middle">front: most recent</text>
+  <text x="300" y="155" font-size="11" fill="#1f2a44" text-anchor="middle">back: least recent</text>
+</svg>
+\`\`\`
+:::
+
+::: context iterator-stability Why the stored iterators never break
+This whole design depends on one promise. The map holds an iterator for every key, possibly for a very long time. If any list operation could quietly break those iterators, the map would fill with dangling ones. \`std::list\` promises that inserting, splicing and erasing never touch any node except the ones involved, and only erasing a node breaks iterators to it. \`std::map\` and \`std::set\` make the same promise, because they are built from nodes too. \`std::vector\` and \`std::unordered_map\` do not.
+:::
+
+::: context type-alias Aliases old and new
+\`using Name = Type;\` arrived in C++11. Older code writes the same thing as \`typedef Type Name;\`, with the new name last, which is harder to read when the type is long. An alias is not a new type, only a second name: a \`Queue\` and a \`std::list<std::string>\` are exactly the same thing and can be mixed freely. Aliases are also a cheap way to change your mind later: switch \`Queue\` to another container in one place and every use follows.
+:::
+--- task
+Write \`class LRUCache\` in which every operation is O(1). No \`main\`.
+
+- \`explicit LRUCache(std::size_t capacity)\` makes an empty cache (the capacity is at least 1).
+- \`std::optional<int> get(int key)\` returns the value, or \`std::nullopt\` if the key is missing. A hit makes the key most recent.
+- \`void put(int key, int value)\` adds the key or updates its value, making it most recent. If the cache is then over capacity, evict the least recent entry.
+- \`std::size_t size() const\` returns the number of entries.
+- \`std::vector<int> keys() const\` returns the keys from most to least recent.
+
+Use a \`std::list<std::pair<int, int>>\` of \`(key, value)\` pairs in order of use, and a \`std::unordered_map\` from each key to its node's iterator. The last check makes a million calls on a cache of 50,000.
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        return std::nullopt;
+    }
+
+    void put(int key, int value) {
+    }
+
+    std::size_t size() const { return 0; }
+
+    std::vector<int> keys() const { return {}; }
+
+private:
+    std::size_t capacity_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, int value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = value;
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.emplace_front(key, value);
+        index_[key] = order_.begin();
+        if (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+    }
+
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<int> keys() const {
+        std::vector<int> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    using Order = std::list<std::pair<int, int>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- hint
+Two private members besides the capacity: a \`std::list<std::pair<int, int>>\` in order of use, newest at the front, and an \`std::unordered_map<int, std::list<std::pair<int, int>>::iterator>\` from each key to its node. A \`using\` alias for the list type makes the second one shorter.
+--- hint
+A hit in \`get\` and an update in \`put\` both move the node to the front. If your list is called \`order_\`, that is \`order_.splice(order_.begin(), order_, node)\`. The value is the node's \`.second\`, reached through the map with two arrows.
+--- hint
+For a new key: \`emplace_front(key, value)\`, then store \`order_.begin()\` in the map. If the list is now longer than the capacity, erase \`order_.back().first\` from the map, and only then \`pop_back()\`. \`keys()\` walks the list and collects each \`.first\`.
+--- check test | Basic get and put
+[] { LRUCache c(2); c.put(1, 10); c.put(2, 20); return c.get(1) == 10 && c.get(2) == 20 && c.get(3) == std::nullopt && c.size() == 2; }()
+--- check case | get refreshes, so the other key is evicted
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.get(1); c.put(3, 3); return c.keys(); }()
+=> std::vector<int>{3, 1}
+--- check test | Updating an existing key refreshes it and does not grow
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.put(1, 100); c.put(3, 3); return c.size() == 2 && c.get(1) == 100 && c.get(2) == std::nullopt && c.keys() == std::vector<int>{1, 3}; }()
+--- check test | A miss changes nothing
+[] { LRUCache c(3); c.put(1, 1); c.put(2, 2); c.get(9); return c.keys() == std::vector<int>{2, 1} && c.size() == 2; }()
+--- check test | Capacity 1
+[] { LRUCache c(1); c.put(1, 1); c.put(2, 2); return c.get(1) == std::nullopt && c.get(2) == 2 && c.size() == 1; }()
+--- check test | A million operations on a cache of 50,000
+[] { LRUCache c(50000); long long s = 0; for (int i = 0; i < 1000000; ++i) { int k = static_cast<int>((1LL * i * 7919) % 70001); if (i % 3 == 0) { auto v = c.get(k); if (v) s += *v; } else c.put(k, i); } return s == 21465079944LL && c.size() == 50000; }()
+
++++ practice | Recently opened files
+--- task
+An editor remembers the files you opened most recently. Write \`class RecentFiles\` in which every operation is O(1) on average (apart from \`list()\`, which walks every name). No \`main\`.
+
+- \`explicit RecentFiles(std::size_t limit)\`: remembers at most \`limit\` names (\`limit\` is at least 1).
+- \`void open(const std::string& name)\`: \`name\` becomes the most recent. If it was already remembered, it moves to the front and is not added twice. If remembering it makes more than \`limit\` names, the least recently opened one is forgotten.
+- \`std::vector<std::string> list() const\`: the names, most recent first.
+- \`bool contains(const std::string& name) const\` and \`std::size_t size() const\`.
+
+Use a \`std::list<std::string>\` in order of use and a \`std::unordered_map\` from each name to its node. The last check opens 300,000 files.
+--- starter
+#include <cstddef>
+#include <list>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+class RecentFiles {
+public:
+    explicit RecentFiles(std::size_t limit) : limit_(limit) {}
+    void open(const std::string& name) {}
+    std::vector<std::string> list() const { return {}; }
+    bool contains(const std::string& name) const { return false; }
+    std::size_t size() const { return 0; }
+private:
+    std::size_t limit_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+class RecentFiles {
+public:
+    explicit RecentFiles(std::size_t limit) : limit_(limit) {}
+
+    void open(const std::string& name) {
+        auto it = where_.find(name);
+        if (it != where_.end()) {
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.push_front(name);
+        where_[name] = order_.begin();
+        if (order_.size() > limit_) {
+            where_.erase(order_.back());
+            order_.pop_back();
+        }
+    }
+
+    std::vector<std::string> list() const { return std::vector<std::string>(order_.begin(), order_.end()); }
+    bool contains(const std::string& name) const { return where_.find(name) != where_.end(); }
+    std::size_t size() const { return order_.size(); }
+
+private:
+    using Order = std::list<std::string>;
+    std::size_t limit_;
+    Order order_;
+    std::unordered_map<std::string, Order::iterator> where_;
+};
+--- hint
+Look the name up in the map first. If it is there, \`splice\` its node to the front and stop. Otherwise \`push_front\` it and remember \`order_.begin()\` in the map.
+--- hint
+When the list grows past the limit, the oldest name is \`order_.back()\`: erase that name from the map first, and only then \`pop_back()\`.
+--- check case | Most recent first, no duplicates
+[] { RecentFiles r(3); for (const char* f : {"a.cpp", "b.cpp", "a.cpp", "c.cpp"}) r.open(f); return r.list(); }()
+=> std::vector<std::string>{"c.cpp", "a.cpp", "b.cpp"}
+--- check test | The oldest is forgotten past the limit
+[] { RecentFiles r(2); r.open("x"); r.open("y"); r.open("x"); r.open("z"); return r.list() == std::vector<std::string>{"z", "x"} && !r.contains("y") && r.contains("x") && r.size() == 2; }()
+--- check test | A limit of one
+[] { RecentFiles r(1); r.open("a"); r.open("b"); r.open("b"); return r.list() == std::vector<std::string>{"b"} && !r.contains("a"); }()
+--- check test | 300,000 opens, quickly
+[] { RecentFiles r(20000); for (int i = 0; i < 300000; ++i) r.open("f" + std::to_string((1LL * i * 7919) % 30011)); auto l = r.list(); return r.size() == 20000 && l.size() == 20000 && l[0] == "f" + std::to_string((299999LL * 7919) % 30011) && l[1] == "f" + std::to_string((299998LL * 7919) % 30011); }()
+
++++ practice | A cache you can peek into
+--- task
+Write \`class NameCache\`, an LRU cache from \`std::string\` keys to \`std::string\` values, with every operation O(1) on average. No \`main\`.
+
+- \`explicit NameCache(std::size_t capacity)\` (at least 1).
+- \`std::optional<std::string> get(const std::string& key)\`: the value, or \`std::nullopt\`. A hit makes the key most recent.
+- \`std::optional<std::string> peek(const std::string& key) const\`: the same answer, but it changes **nothing**: the order of use stays as it was.
+- \`void put(const std::string& key, std::string value)\`: adds or updates the key, making it most recent, and evicts the least recent entry if the cache is then over capacity.
+- \`bool erase(const std::string& key)\`: removes the key from the cache and returns \`true\`, or returns \`false\` if it was not there.
+- \`std::vector<std::string> keys() const\`: the keys from most to least recent.
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class NameCache {
+public:
+    explicit NameCache(std::size_t capacity) : capacity_(capacity) {}
+    std::optional<std::string> get(const std::string& key) { return std::nullopt; }
+    std::optional<std::string> peek(const std::string& key) const { return std::nullopt; }
+    void put(const std::string& key, std::string value) {}
+    bool erase(const std::string& key) { return false; }
+    std::vector<std::string> keys() const { return {}; }
+private:
+    std::size_t capacity_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class NameCache {
+public:
+    explicit NameCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<std::string> get(const std::string& key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    std::optional<std::string> peek(const std::string& key) const {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        return it->second->second;
+    }
+
+    void put(const std::string& key, std::string value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = std::move(value);
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.emplace_front(key, std::move(value));
+        index_[key] = order_.begin();
+        if (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+    }
+
+    bool erase(const std::string& key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return false;
+        order_.erase(it->second);
+        index_.erase(it);
+        return true;
+    }
+
+    std::vector<std::string> keys() const {
+        std::vector<std::string> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    using Order = std::list<std::pair<std::string, std::string>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<std::string, Order::iterator> index_;
+};
+--- hint
+The same two containers as the lesson, with \`std::string\` values. \`peek\` is \`get\` without the \`splice\`, which is also why it can be \`const\`.
+--- hint
+\`erase\` must remove the entry from **both** containers: \`order_.erase(it->second)\` removes the node the map points to, then \`index_.erase(it)\` removes the map entry. Erase the node first, while you still have the iterator to it.
+--- check test | get refreshes, peek does not
+[] { NameCache c(2); c.put("a", "1"); c.put("b", "2"); bool p = c.peek("a") == std::string("1"); c.put("c", "3"); bool a_gone = c.peek("a") == std::nullopt; c.get("b"); c.put("d", "4"); return p && a_gone && c.keys() == std::vector<std::string>{"d", "b"}; }()
+--- check test | peek works on a const cache and changes nothing
+[] { NameCache c(3); c.put("x", "10"); c.put("y", "20"); const NameCache& k = c; bool ok = k.peek("x") == std::string("10") && k.peek("zzz") == std::nullopt; return ok && c.keys() == std::vector<std::string>{"y", "x"}; }()
+--- check test | put updates and refreshes
+[] { NameCache c(2); c.put("a", "1"); c.put("b", "2"); c.put("a", "one"); c.put("c", "3"); return c.get("a") == std::string("one") && c.get("b") == std::nullopt && c.keys() == std::vector<std::string>{"a", "c"}; }()
+--- check test | erase removes from both containers
+[] { NameCache c(2); c.put("a", "1"); c.put("b", "2"); bool gone = c.erase("a"); bool again = c.erase("a"); c.put("c", "3"); c.put("d", "4"); return gone && !again && c.get("a") == std::nullopt && c.keys() == std::vector<std::string>{"d", "c"}; }()
+
++++ practice | Remember expensive answers
+--- task
+Some answers are slow to work out. Write \`class Memo\`, which remembers the answers of a function for the most recently asked inputs, using an LRU cache. No \`main\`.
+
+- \`Memo(std::size_t capacity, std::function<long long(int)> compute)\`: \`compute\` is the slow function; the cache keeps at most \`capacity\` answers (at least 1).
+- \`long long get(int n)\`: if the answer for \`n\` is remembered, return it and make \`n\` most recent. Otherwise call \`compute(n)\`, remember the answer as most recent (forgetting the least recent answer if the cache is then over capacity), and return it.
+- \`int computed() const\`: how many times \`compute\` has been called so far.
+- \`bool cached(int n) const\`: whether the answer for \`n\` is remembered right now (without changing the order).
+--- starter
+#include <cstddef>
+#include <functional>
+#include <list>
+#include <unordered_map>
+#include <utility>
+
+class Memo {
+public:
+    Memo(std::size_t capacity, std::function<long long(int)> compute) : capacity_(capacity), compute_(std::move(compute)) {}
+    long long get(int n) { return compute_(n); }
+    int computed() const { return 0; }
+    bool cached(int n) const { return false; }
+private:
+    std::size_t capacity_;
+    std::function<long long(int)> compute_;
+};
+--- solution
+#include <cstddef>
+#include <functional>
+#include <list>
+#include <unordered_map>
+#include <utility>
+
+class Memo {
+public:
+    Memo(std::size_t capacity, std::function<long long(int)> compute) : capacity_(capacity), compute_(std::move(compute)) {}
+
+    long long get(int n) {
+        auto it = index_.find(n);
+        if (it != index_.end()) {
+            order_.splice(order_.begin(), order_, it->second);
+            return it->second->second;
+        }
+        long long answer = compute_(n);
+        ++computed_;
+        order_.emplace_front(n, answer);
+        index_[n] = order_.begin();
+        if (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+        return answer;
+    }
+
+    int computed() const { return computed_; }
+    bool cached(int n) const { return index_.find(n) != index_.end(); }
+
+private:
+    using Order = std::list<std::pair<int, long long>>;
+    std::size_t capacity_;
+    std::function<long long(int)> compute_;
+    int computed_ = 0;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- hint
+This is the lesson's cache with one change: a miss is not an answer of "nothing". On a miss, work the answer out with \`compute_(n)\`, count the call, and \`put\` it into the cache yourself.
+--- hint
+Keep a \`std::list<std::pair<int, long long>>\` in order of use and an \`std::unordered_map<int, …::iterator>\`. A hit splices the node to the front; a new answer is \`emplace_front\`ed, and the back is evicted when the list is too long.
+--- check test | Each answer is computed once while it is remembered
+[] { Memo m(3, [](int n) { return 1LL * n * n; }); long long a = m.get(4), b = m.get(4), c = m.get(5); return a == 16 && b == 16 && c == 25 && m.computed() == 2; }()
+--- check test | A forgotten answer is computed again
+[] { Memo m(2, [](int n) { return 10LL * n; }); m.get(1); m.get(2); m.get(1); m.get(3); bool two_gone = !m.cached(2) && m.cached(1) && m.cached(3); m.get(2); return two_gone && m.computed() == 4 && !m.cached(1); }()
+--- check test | Capacity one
+[] { Memo m(1, [](int n) { return n + 100LL; }); m.get(1); m.get(1); m.get(2); m.get(1); return m.computed() == 3 && m.cached(1) && !m.cached(2); }()
+--- check test | The function can keep its own count
+[] { int calls = 0; Memo m(100, [&calls](int n) { ++calls; return 2LL * n; }); long long total = 0; for (int i = 0; i < 1000; ++i) total += m.get(i % 50); return calls == 50 && m.computed() == 50 && total == 49000; }()
+
++++ practice | A cache that can shrink
+--- task
+Write \`class LRUCache\` from \`int\` keys to \`int\` values, with O(1) \`get\` and \`put\`, whose capacity can change while it is in use. No \`main\`.
+
+- \`explicit LRUCache(std::size_t capacity)\`: the capacity **may be 0**, in which case the cache stores nothing at all.
+- \`std::optional<int> get(int key)\` and \`void put(int key, int value)\` as in the lesson. Updating a key that is already there never evicts anything, even when the cache is full.
+- \`void resize(std::size_t capacity)\`: sets a new capacity. If the cache now holds more than that, evict least recent entries until it fits. Growing evicts nothing.
+- \`std::size_t size() const\` and \`std::vector<int> keys() const\` (most to least recent).
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+    std::optional<int> get(int key) { return std::nullopt; }
+    void put(int key, int value) {}
+    void resize(std::size_t capacity) { capacity_ = capacity; }
+    std::size_t size() const { return 0; }
+    std::vector<int> keys() const { return {}; }
+private:
+    std::size_t capacity_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, int value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = value;
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.emplace_front(key, value);
+        index_[key] = order_.begin();
+        evict_to_fit();
+    }
+
+    void resize(std::size_t capacity) {
+        capacity_ = capacity;
+        evict_to_fit();
+    }
+
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<int> keys() const {
+        std::vector<int> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    void evict_to_fit() {
+        while (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+    }
+
+    using Order = std::list<std::pair<int, int>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- hint
+Pull eviction out into a private helper that evicts from the back **while** the list is longer than the capacity. \`put\` calls it after adding a new key; \`resize\` calls it after changing the capacity.
+--- hint
+With a capacity of 0, adding a key and then evicting while the size is above 0 removes that same key again, so the cache stays empty with no special case. Updating an existing key only splices, so it never reaches the eviction.
+--- check test | A capacity of 0 stores nothing
+[] { LRUCache c(0); c.put(1, 1); c.put(2, 2); return c.size() == 0 && c.get(1) == std::nullopt && c.keys().empty(); }()
+--- check test | Updating when full evicts nothing
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.put(1, 10); c.put(2, 20); return c.size() == 2 && c.get(1) == 10 && c.get(2) == 20; }()
+--- check test | Shrinking evicts the least recent
+[] { LRUCache c(4); for (int k = 1; k <= 4; ++k) c.put(k, k); c.get(1); c.resize(2); return c.keys() == std::vector<int>{1, 4} && c.get(2) == std::nullopt && c.get(3) == std::nullopt; }()
+--- check test | Shrinking to 0, then growing again
+[] { LRUCache c(3); c.put(1, 1); c.put(2, 2); c.resize(0); bool empty = c.size() == 0 && c.get(1) == std::nullopt; c.resize(2); c.put(5, 5); c.put(6, 6); c.put(7, 7); return empty && c.keys() == std::vector<int>{7, 6}; }()
+--- check test | Growing evicts nothing
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.resize(5); c.put(3, 3); c.put(4, 4); return c.size() == 4 && c.keys() == std::vector<int>{4, 3, 2, 1}; }()
+
++++ practice | Debug: the cache that forgets the wrong key
+--- task
+**Bug report:** "With a capacity of 1, putting a second key makes *both* keys unfindable, and sometimes the program crashes on a later \`get\`. Also, updating a key's value does not protect it from being evicted next."
+
+The starter's \`LRUCache\` has two bugs, both in \`put\`. Fix them. No \`main\`.
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, int value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = value;
+            return;
+        }
+        order_.emplace_front(key, value);
+        index_[key] = order_.begin();
+        if (order_.size() > capacity_) {
+            order_.pop_back();
+            index_.erase(order_.back().first);
+        }
+    }
+
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<int> keys() const {
+        std::vector<int> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    using Order = std::list<std::pair<int, int>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class LRUCache {
+public:
+    explicit LRUCache(std::size_t capacity) : capacity_(capacity) {}
+
+    std::optional<int> get(int key) {
+        auto it = index_.find(key);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    void put(int key, int value) {
+        auto it = index_.find(key);
+        if (it != index_.end()) {
+            it->second->second = value;
+            order_.splice(order_.begin(), order_, it->second);
+            return;
+        }
+        order_.emplace_front(key, value);
+        index_[key] = order_.begin();
+        if (order_.size() > capacity_) {
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+    }
+
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<int> keys() const {
+        std::vector<int> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    using Order = std::list<std::pair<int, int>>;
+    std::size_t capacity_;
+    Order order_;
+    std::unordered_map<int, Order::iterator> index_;
+};
+--- hint
+Walk through capacity 1: put 1, then put 2. After \`pop_back()\` removes key 1's node, which node is \`order_.back()\` now, and which key gets erased from the map? What is left in the map for key 1?
+--- hint
+Read the oldest key and erase it from the map **before** \`pop_back()\`. And an update is a use too: after changing the value, splice the node to the front.
+--- check test | Capacity 1: the new key stays, the old one goes
+[] { LRUCache c(1); c.put(1, 1); c.put(2, 2); return c.get(2) == 2 && c.get(1) == std::nullopt && c.size() == 1; }()
+--- check test | Evicted keys are really gone
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.put(3, 3); c.put(4, 4); return c.get(1) == std::nullopt && c.get(2) == std::nullopt && c.get(3) == 3 && c.get(4) == 4 && c.keys() == std::vector<int>{4, 3}; }()
+--- check test | An update protects the key from eviction
+[] { LRUCache c(2); c.put(1, 1); c.put(2, 2); c.put(1, 100); c.put(3, 3); return c.get(1) == 100 && c.get(2) == std::nullopt && c.keys() == std::vector<int>{1, 3}; }()
+
++++ practice | Stretch: a cache with a byte budget
+--- task
+A download cache keeps files in memory, but what limits it is the total **size** of the files, not how many there are. Write \`class ByteCache\` from \`std::string\` names to \`std::string\` contents, where a file's size is \`contents.size()\`. Every operation is O(1) on average, apart from evicting several files, which is O(1) per file evicted. No \`main\`.
+
+- \`explicit ByteCache(std::size_t budget)\`: the total size of the stored files may never be more than \`budget\`.
+- \`bool put(const std::string& name, std::string contents)\`: if \`contents\` alone is bigger than \`budget\`, store nothing, remove any old file with that name, and return \`false\`. Otherwise store it (replacing any old file with that name) as the most recent, then evict least recent files until the total fits, and return \`true\`. The file just stored is never evicted by its own \`put\`.
+- \`std::optional<std::string> get(const std::string& name)\`: the contents, making the file most recent; \`std::nullopt\` if it is not stored.
+- \`std::size_t bytes() const\` (the total size stored), \`std::size_t size() const\` (how many files), and \`std::vector<std::string> names() const\` (most to least recent).
+--- starter
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class ByteCache {
+public:
+    explicit ByteCache(std::size_t budget) : budget_(budget) {}
+    bool put(const std::string& name, std::string contents) { return false; }
+    std::optional<std::string> get(const std::string& name) { return std::nullopt; }
+    std::size_t bytes() const { return 0; }
+    std::size_t size() const { return 0; }
+    std::vector<std::string> names() const { return {}; }
+private:
+    std::size_t budget_;
+};
+--- solution
+#include <cstddef>
+#include <list>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+class ByteCache {
+public:
+    explicit ByteCache(std::size_t budget) : budget_(budget) {}
+
+    bool put(const std::string& name, std::string contents) {
+        drop(name);   // a replaced file leaves first, so its bytes are not counted twice
+        if (contents.size() > budget_) return false;
+        bytes_ += contents.size();
+        order_.emplace_front(name, std::move(contents));
+        index_[name] = order_.begin();
+        while (bytes_ > budget_) {   // never reaches the new front file: it fits on its own
+            bytes_ -= order_.back().second.size();
+            index_.erase(order_.back().first);
+            order_.pop_back();
+        }
+        return true;
+    }
+
+    std::optional<std::string> get(const std::string& name) {
+        auto it = index_.find(name);
+        if (it == index_.end()) return std::nullopt;
+        order_.splice(order_.begin(), order_, it->second);
+        return it->second->second;
+    }
+
+    std::size_t bytes() const { return bytes_; }
+    std::size_t size() const { return order_.size(); }
+
+    std::vector<std::string> names() const {
+        std::vector<std::string> out;
+        for (const auto& entry : order_) out.push_back(entry.first);
+        return out;
+    }
+
+private:
+    void drop(const std::string& name) {
+        auto it = index_.find(name);
+        if (it == index_.end()) return;
+        bytes_ -= it->second->second.size();
+        order_.erase(it->second);
+        index_.erase(it);
+    }
+
+    using Order = std::list<std::pair<std::string, std::string>>;
+    std::size_t budget_;
+    std::size_t bytes_ = 0;
+    Order order_;
+    std::unordered_map<std::string, Order::iterator> index_;
+};
+--- hint
+Keep a running total of the bytes stored, and change it in exactly the places where a file enters or leaves. The simplest way to replace a file is to remove the old one first, then add the new one.
+--- hint
+After adding the new file at the front, evict from the back **while** the total is over budget. Since the new file fits on its own, the loop stops before it reaches the front. A file bigger than the whole budget is refused after the old one with that name has been removed.
+--- check test | Evicting several files at once
+[] { ByteCache c(10); c.put("a", "1234"); c.put("b", "123"); c.put("c", "12"); bool fits = c.bytes() == 9; c.put("d", "12345678"); return fits && c.names() == std::vector<std::string>{"d", "c"} && c.bytes() == 10 && c.size() == 2; }()
+--- check test | get refreshes, so a different file is evicted
+[] { ByteCache c(6); c.put("a", "12"); c.put("b", "12"); c.put("c", "12"); c.get("a"); c.put("d", "12"); return c.names() == std::vector<std::string>{"d", "a", "c"} && c.get("b") == std::nullopt; }()
+--- check test | Replacing a file changes the total correctly
+[] { ByteCache c(10); c.put("a", "12345"); c.put("b", "1"); c.put("a", "12"); bool small = c.bytes() == 3 && c.size() == 2; c.put("a", "123456789"); return small && c.bytes() == 10 && c.get("a") == std::string("123456789") && c.names().front() == "a"; }()
+--- check test | A file bigger than the budget is refused, and its old version removed
+[] { ByteCache c(4); c.put("a", "12"); c.put("b", "34"); bool refused = !c.put("a", "12345"); return refused && c.get("a") == std::nullopt && c.bytes() == 2 && c.names() == std::vector<std::string>{"b"}; }()
+--- check test | Empty files and an exact fit
+[] { ByteCache c(3); bool a = c.put("e", ""); bool b = c.put("f", "123"); return a && b && c.bytes() == 3 && c.size() == 2 && c.get("e") == std::string(""); }()
+
+=== cpp4-15 | Problem solving: a tokenizer
+--- teach
+Last lesson, two containers working together made a fast cache. The last two lessons of this course build something bigger in two steps: a calculator that reads a line like \`2 * (3 + 4)\` and works out the answer. This lesson is step one: cutting the text into pieces.
+
+### Words before meaning
+
+When you read a sentence, your eyes first group the letters into words, and only then do you think about what the sentence means. You never wonder whether the space between two words is part of the meaning.
+
+A program that reads a language does the same, in two stages:
+
+- A **token** is one "word" of the language: a number, a plus sign, a bracket.
+- A **tokenizer**, also called a **[[lexer|lexer-word]]**, turns a string of characters into a list of tokens.
+- A **parser**, next lesson, reads the list of tokens and works out what they mean.
+
+For example, the text \`12 + (3.5*4)\` [[becomes seven tokens|token-strip]]:
+
+\`\`\`
+Number(12) Plus LParen Number(3.5) Star Number(4) RParen
+\`\`\`
+
+Splitting the work this way means the parser never thinks about spaces or digits again. [[Every compiler starts like this|pipeline]], and so does every calculator and config-file reader.
+
+### One loop, one decision per step
+
+A tokenizer is a loop with a position \`i\`, the index of the character you are looking at. Each time round, it looks at that character and makes one decision:
+
+- **Whitespace** (a space, tab or newline): skip it.
+- **A digit**: a number starts here. Read the whole number.
+- **One of \`+ - * / ( )\`**: a one-character token.
+- **Anything else**: an error, at this position.
+
+Here it is as **pseudocode**, a sketch in plain words and code-like lines that is not any real language:
+
+\`\`\`
+i = 0
+while i < n:
+    c = src[i]
+    if space:  i += 1
+    elif digit: start = i; consume digits [. digits]; emit Number(src[start:i])
+    elif c in "+-*/()": emit token for c; i += 1
+    else: error at i
+\`\`\`
+
+"Emit" means "add a token to the output list". \`[. digits]\`, in square brackets, means "optionally, a dot followed by digits". \`src[start:i]\` means the text from index \`start\` up to, but not including, \`i\`. Now each step in C++.
+
+### Skipping whitespace
+
+\`std::isspace(c)\`, from \`<cctype>\`, is true for a space, tab, newline and a few other blank characters. Pass it the character [[cast to an unsigned char|char-cast]], as here:
+
+\`\`\`cpp
+std::string_view text = "   go";
+std::size_t k = 0;
+while (k < text.size() && std::isspace(static_cast<unsigned char>(text[k]))) ++k;
+// k is now 3, the index of 'g'
+\`\`\`
+
+### Reading a number
+
+\`std::isdigit(c)\`, also from \`<cctype>\`, is true for \`0\` to \`9\`. To read a number, remember where it starts, then step forward while you see digits:
+
+\`\`\`cpp
+std::string_view line = "ab 450;";
+std::size_t at = 3;
+std::size_t first = at;
+while (at < line.size() && std::isdigit(static_cast<unsigned char>(line[at]))) ++at;
+// first is 3 and at is 6: the digits are line.substr(first, at - first), "450"
+\`\`\`
+
+\`substr(start, length)\` gives the piece of text that begins at \`start\` and is \`length\` characters long. The length is \`at - first\`: end minus start.
+
+A number may also have a decimal part. The rule for this lesson:
+
+- After the digits, if the next character is \`.\`, the character after the dot **must** be a digit. Then keep reading digits.
+- A dot with no digit after it is an error, and the error is at the dot.
+- A number cannot *start* with a dot. A lone \`.\` is not a digit, so it falls into "anything else".
+
+| text | result |
+| --- | --- |
+| \`12.75\` | one number, 12.75 |
+| \`6.\` | error at index 1, the dot |
+| \`6.+2\` | error at index 1, the dot |
+| \`.25\` | error at index 0, the dot |
+
+### From text to a double
+
+The digits are still text. To turn them into a \`double\`, use \`std::strtod\`, from \`<cstdlib>\`, [["string to double"|strtod-more]]. It is an old C function, so it wants a C-style string: characters with an invisible end marker after them. A \`std::string\` can give you one with \`.c_str()\`. A \`std::string_view\` cannot, so copy the piece into a \`std::string\` first:
+
+\`\`\`cpp
+std::string_view line = "x=0.125";
+std::string digits(line.substr(2, 5));                    // "0.125"
+double amount = std::strtod(digits.c_str(), nullptr);    // 0.125
+\`\`\`
+
+The second argument could tell you where \`strtod\` stopped reading. You already know where the number ends, so pass \`nullptr\`, "no place to tell me".
+
+### One-character tokens
+
+For single characters, a \`switch\` maps each character to its kind in an \`enum class\`. Here it is for a different little language, one with commas and colons:
+
+\`\`\`cpp
+enum class Mark { Comma, Colon };
+
+std::optional<Mark> mark_for(char ch) {
+    switch (ch) {
+        case ',': return Mark::Comma;
+        case ':': return Mark::Colon;
+        default:  return std::nullopt;   // not one of ours
+    }
+}
+\`\`\`
+
+### Three design choices that pay off later
+
+- **Record where each token starts** in the source, as an index. Error messages can then point at the exact character, the way a compiler says "line 3, column 7".
+- **Report errors as data**, not by printing. Return the position of the first bad character, and let the caller decide what to show. An \`std::optional<std::size_t>\` fits: empty means "no error".
+- **Do not decide meaning here.** \`-\` is only \`Minus\`. Whether it [[means subtraction or a negative number|minus-context]] is the parser's business, because only the parser knows what came before it.
+
+The function takes a **\`std::string_view\`**, the read-only [[view of text|string-view]] from the compile-time lesson. It accepts a string literal or a \`std::string\` without copying either.
+
+**Watch out:** every branch of the loop must move \`i\` forward. The whitespace branch and the one-character branch add 1. The number branch has already moved \`i\` past the digits, so it must not add 1 again, or it skips the next character. Forget to move \`i\` at all and the loop looks at the same character forever.
+
+::: context lexer-word Where "lexer" comes from
+"Lexer" is short for *lexical analyzer*. "Lexical" means "to do with words", from the Greek *lexis*, "word"; a dictionary is also called a lexicon. In 1975 Mike Lesk and Eric Schmidt wrote Lex, a Unix tool that builds a lexer from a list of patterns, and its descendants such as Flex are still used. Many real compilers write their lexer by hand, though, exactly as you are about to: a loop and a decision per character.
+:::
+
+::: context token-strip The string and its tokens
+Every character has an index, spaces included. A token covers one or more characters and remembers the index where it starts. The spaces produce no tokens, but they still take up positions, which is why the plus sign starts at 3 and not 2.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="37" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">0</text>
+  <text x="63" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">1</text>
+  <text x="89" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">2</text>
+  <text x="115" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">3</text>
+  <text x="141" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">4</text>
+  <text x="167" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">5</text>
+  <text x="193" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">6</text>
+  <text x="219" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">7</text>
+  <text x="245" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">8</text>
+  <text x="271" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">9</text>
+  <text x="297" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">10</text>
+  <text x="323" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">11</text>
+  <rect x="24" y="26" width="312" height="28" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="37" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="63" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="89" y="45" font-size="14" fill="#6c7a93" text-anchor="middle">·</text>
+  <text x="115" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">+</text>
+  <text x="141" y="45" font-size="14" fill="#6c7a93" text-anchor="middle">·</text>
+  <text x="167" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">(</text>
+  <text x="193" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="219" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">.</text>
+  <text x="245" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">5</text>
+  <text x="271" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">*</text>
+  <text x="297" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">4</text>
+  <text x="323" y="45" font-size="14" fill="#1f2a44" text-anchor="middle">)</text>
+  <rect x="25" y="68" width="50" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="50" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">12</text>
+  <rect x="103" y="68" width="24" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="115" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">+</text>
+  <rect x="155" y="68" width="24" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="167" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">(</text>
+  <rect x="181" y="68" width="76" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="219" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">3.5</text>
+  <rect x="259" y="68" width="24" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="271" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">*</text>
+  <rect x="285" y="68" width="24" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="297" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">4</text>
+  <rect x="311" y="68" width="24" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="323" y="85" font-size="12" fill="#1f2a44" text-anchor="middle">)</text>
+  <text x="4" y="112" font-size="11" fill="#6c7a93">pos</text>
+  <text x="37" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">0</text>
+  <text x="115" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">3</text>
+  <text x="167" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">5</text>
+  <text x="193" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">6</text>
+  <text x="271" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">9</text>
+  <text x="297" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">10</text>
+  <text x="323" y="112" font-size="11" fill="#1d6fd1" text-anchor="middle">11</text>
+  <text x="180" y="138" font-size="11" fill="#1f2a44" text-anchor="middle">orange: Number tokens; blue: one-character tokens</text>
+  <text x="180" y="158" font-size="11" fill="#6c7a93" text-anchor="middle">the dots mark spaces: no token, but they count</text>
+</svg>
+\`\`\`
+:::
+
+::: context pipeline The first stage of every compiler
+The compiler that builds your C++ works in stages. The lexer turns your file into tokens: keywords, names, numbers, symbols. The parser turns the tokens into a tree that shows how the pieces fit together. Later stages check types, optimize and write machine code. The same first two stages sit inside JSON readers, spreadsheet formula boxes and the command interpreters that let ground controllers send a spacecraft commands as text. Keeping the lexer separate means each stage stays small enough to test on its own.
+:::
+
+::: context char-cast Why the cast to unsigned char
+On most computers a plain \`char\` is signed, so characters outside basic English, such as the bytes of "é", arrive as negative numbers. The \`<cctype>\` functions are only defined for values that fit in an \`unsigned char\` (and for the special end-of-file value). Passing any other negative number is undefined behavior: it may work, return nonsense, or crash. Casting with \`static_cast<unsigned char>(c)\` turns those bytes into 128 to 255 first, which is always allowed. It is a small habit that saves a real bug.
+:::
+
+::: context strtod-more What strtod will accept
+\`std::strtod\` reads far more than plain digits. It skips leading whitespace, accepts a \`+\` or \`-\` sign, exponents like \`2.5e3\` (2500), and even the words \`inf\` and \`nan\`. That is exactly why the tokenizer checks the shape of the number itself first, digits, maybe a dot and more digits, and only then hands \`strtod\` a piece of text it already knows is a plain number. The lexer stays in charge of what counts as a number in *your* language.
+:::
+
+::: context minus-context One symbol, two meanings
+In \`7 - 2\`, the minus sits between two numbers and means subtraction. In \`-2\`, or \`3 * -2\`, it has nothing on its left to subtract from, so it means "the negative of". The lexer cannot tell these apart by looking at one character, but the parser can, because it knows whether it is expecting a number or an operator at that moment. That is exactly how the next lesson handles it.
+:::
+
+::: context string-view A window onto someone else's text
+A \`std::string_view\` holds only two things: where some text starts in memory and how long it is. Making one copies no characters, and \`substr\` on a view makes another small view, again with no copying. The catch is that it owns nothing. If the string it looks at is destroyed, the view points at freed memory. So views make excellent function parameters, used while the caller's text is alive, and poor members of long-lived objects.
+:::
+--- task
+Using the starter's \`Tok\`, \`Token\` and \`LexResult\`, write \`LexResult tokenize(std::string_view src)\`. No \`main\`.
+
+- Spaces, tabs and newlines are skipped.
+- A number is one or more digits, optionally followed by a \`.\` and one or more digits. Its token has \`kind\` \`Tok::Number\` and the number as its \`value\` (use \`std::strtod\`).
+- \`+ - * / ( )\` become \`Tok::Plus\`, \`Tok::Minus\`, \`Tok::Star\`, \`Tok::Slash\`, \`Tok::LParen\` and \`Tok::RParen\`. Their \`value\` is 0.
+- Each token's \`pos\` is the index where it starts.
+- On the first bad character (anything else, or a \`.\` not followed by a digit), return a \`LexResult\` whose \`tokens\` list is empty and whose \`error_at\` is that character's index.
+- Empty or blank input gives no tokens and no error.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- hint
+Make a \`LexResult r;\` and loop with an index \`i\` while \`i < src.size()\`. Skip whitespace; on a digit, remember \`start\` and move \`i\` past the number; otherwise turn the character into a \`Tok\` with a \`switch\`, where \`default\` is the error.
+--- hint
+After the digits, if \`src[i]\` is \`.\`, check that \`i + 1\` is inside the text and is a digit. If not, the error is at \`i\`, the dot: clear \`r.tokens\`, set \`r.error_at = i\` and return \`r\`.
+--- hint
+The number's value is \`std::strtod(std::string(src.substr(start, i - start)).c_str(), nullptr)\`. Add each token with \`r.tokens.push_back({kind, value, position})\`, and after a number \`continue\` without adding 1 to \`i\`.
+--- check test | Kinds and positions of a simple expression
+[] { auto r = tokenize("1 + 2"); std::vector<Tok> k; std::vector<std::size_t> p; for (const auto& t : r.tokens) { k.push_back(t.kind); p.push_back(t.pos); } return !r.error_at && k == std::vector<Tok>{Tok::Number, Tok::Plus, Tok::Number} && p == std::vector<std::size_t>{0, 2, 4}; }()
+--- check test | Every operator and parentheses
+[] { auto r = tokenize("(8-3)*2/1"); std::vector<Tok> k; for (const auto& t : r.tokens) k.push_back(t.kind); return !r.error_at && k == std::vector<Tok>{Tok::LParen, Tok::Number, Tok::Minus, Tok::Number, Tok::RParen, Tok::Star, Tok::Number, Tok::Slash, Tok::Number}; }()
+--- check test | Numbers with decimals keep their value
+[] { auto r = tokenize("  12.75*\\t3.5\\n"); return !r.error_at && r.tokens.size() == 3 && std::abs(r.tokens[0].value - 12.75) < 1e-12 && r.tokens[0].pos == 2 && std::abs(r.tokens[2].value - 3.5) < 1e-12 && r.tokens[2].pos == 9; }()
+--- check test | Multi-digit integers
+[] { auto r = tokenize("1234"); return r.tokens.size() == 1 && r.tokens[0].value == 1234 && r.tokens[0].kind == Tok::Number; }()
+--- check test | An unknown character is an error at its position
+[] { auto r = tokenize("12+(3.5*x)"); return r.error_at == std::size_t{8} && r.tokens.empty(); }()
+--- check test | A dot with no digit after it is an error at the dot
+[] { auto a = tokenize("3.+1"); auto b = tokenize("7."); auto c = tokenize(".5"); return a.error_at == std::size_t{1} && b.error_at == std::size_t{1} && c.error_at == std::size_t{0}; }()
+--- check test | Empty and blank input give no tokens and no error
+[] { auto a = tokenize(""); auto b = tokenize("   "); return a.tokens.empty() && !a.error_at && b.tokens.empty() && !b.error_at; }()
+
++++ practice | Commands for a rover
+--- task
+A rover is steered with commands like \`F10 L90 R45 B3\`: a letter \`F\`, \`B\`, \`L\` or \`R\`, followed straight away by a distance or angle of 1 to 4 digits. Using the starter's \`Move\` and \`MoveResult\`, write \`MoveResult parse_moves(std::string_view src)\` with the tokenizer's loop. No \`main\`.
+
+- Spaces, tabs and newlines between commands are skipped. Commands may also follow each other with no space: \`F1R2\` is two commands.
+- Each \`Move\` has the letter in \`dir\`, the number in \`amount\` (build it digit by digit), and in \`pos\` the index of its letter.
+- Errors, reported as data: return a \`MoveResult\` whose \`moves\` list is empty and whose \`error_at\` is the index of the first bad character:
+  - a command letter with no digit straight after it: the error is at the letter;
+  - a fifth digit in a row: the error is at that fifth digit;
+  - any other character, including a digit where a command letter should be: the error is at that character.
+- Empty or blank input gives no moves and no error.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+#include <vector>
+
+struct Move {
+    char dir;
+    int amount;
+    std::size_t pos;
+};
+
+struct MoveResult {
+    std::vector<Move> moves;
+    std::optional<std::size_t> error_at;
+};
+
+MoveResult parse_moves(std::string_view src) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+#include <vector>
+
+struct Move {
+    char dir;
+    int amount;
+    std::size_t pos;
+};
+
+struct MoveResult {
+    std::vector<Move> moves;
+    std::optional<std::size_t> error_at;
+};
+
+MoveResult parse_moves(std::string_view src) {
+    MoveResult r;
+    auto fail = [&r](std::size_t at) {
+        r.moves.clear();
+        r.error_at = at;
+        return r;
+    };
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (c != 'F' && c != 'B' && c != 'L' && c != 'R') return fail(i);
+        std::size_t start = i;
+        ++i;
+        int amount = 0;
+        std::size_t digits = 0;
+        while (i < src.size() && std::isdigit(static_cast<unsigned char>(src[i]))) {
+            if (digits == 4) return fail(i);
+            amount = amount * 10 + (src[i] - '0');
+            ++digits;
+            ++i;
+        }
+        if (digits == 0) return fail(start);
+        r.moves.push_back({c, amount, start});
+    }
+    return r;
+}
+--- hint
+One loop over \`i\` with one decision per step: skip whitespace; on one of the four letters, read the digits that follow; on anything else, fail at \`i\`. Every branch must move \`i\` forward.
+--- hint
+After the letter, count the digits as you read them. Reaching a digit when you already have four is the error at that digit; having none at all is the error at the letter, so remember where the letter was.
+--- check test | A line of commands
+[] { auto r = parse_moves("F10 L90 R45 B3"); std::vector<int> amounts; std::vector<std::size_t> pos; std::string dirs; for (const Move& m : r.moves) { amounts.push_back(m.amount); pos.push_back(m.pos); dirs += m.dir; } return !r.error_at && dirs == "FLRB" && amounts == std::vector<int>{10, 90, 45, 3} && pos == std::vector<std::size_t>{0, 4, 8, 12}; }()
+--- check test | Commands with no space, and with tabs and newlines
+[] { auto a = parse_moves("F1R2"); auto b = parse_moves("\\tL9999\\n B0 "); return a.moves.size() == 2 && a.moves[1].pos == 2 && b.moves.size() == 2 && b.moves[0].amount == 9999 && b.moves[1].amount == 0 && b.moves[1].pos == 8; }()
+--- check test | A letter with no number, and too many digits
+[] { auto a = parse_moves("F"); auto b = parse_moves("F10 L"); auto c = parse_moves("F12345"); return a.error_at == std::size_t{0} && b.error_at == std::size_t{4} && c.error_at == std::size_t{5} && b.moves.empty() && c.moves.empty(); }()
+--- check test | Anything else is an error where it stands
+[] { auto a = parse_moves("X5"); auto b = parse_moves("F1 5"); auto c = parse_moves("f5"); return a.error_at == std::size_t{0} && b.error_at == std::size_t{3} && c.error_at == std::size_t{0}; }()
+--- check test | Empty and blank input
+[] { auto a = parse_moves(""); auto b = parse_moves("  \\n"); return a.moves.empty() && !a.error_at && b.moves.empty() && !b.error_at; }()
+
++++ practice | Tokens for a settings file
+--- task
+A settings file looks like \`speed = 40; name_2 = rover;\`, and may have comments. Using the starter's \`Kind\`, \`Tok\` and \`Lexed\`, write \`Lexed lex_config(std::string_view src)\`. No \`main\`.
+
+- Whitespace is skipped. A \`#\` starts a comment that runs to the end of the line; it makes no token.
+- An **identifier** starts with a letter or \`_\` and goes on with letters, digits and \`_\` (use \`std::isalpha\` and \`std::isalnum\` from \`<cctype>\`, with the \`unsigned char\` cast). Its \`text\` is exactly the identifier.
+- A **number** is one or more digits, and its \`text\` is exactly those digits. A number directly followed by a letter or \`_\`, as in \`12ab\`, is an error at that letter.
+- \`=\` and \`;\` are \`Kind::Equals\` and \`Kind::Semicolon\`, with text \`"="\` and \`";"\`.
+- Each token's \`pos\` is the index where it starts. On the first bad character, return no tokens and its index in \`error_at\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Kind { Ident, Number, Equals, Semicolon };
+
+struct Tok {
+    Kind kind;
+    std::string text;
+    std::size_t pos;
+};
+
+struct Lexed {
+    std::vector<Tok> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+Lexed lex_config(std::string_view src) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Kind { Ident, Number, Equals, Semicolon };
+
+struct Tok {
+    Kind kind;
+    std::string text;
+    std::size_t pos;
+};
+
+struct Lexed {
+    std::vector<Tok> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+Lexed lex_config(std::string_view src) {
+    Lexed r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+    auto word_char = [&src](std::size_t i) {
+        return i < src.size() && (std::isalnum(static_cast<unsigned char>(src[i])) || src[i] == '_');
+    };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+        } else if (c == '#') {
+            while (i < src.size() && src[i] != '\\n') ++i;
+        } else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            std::size_t start = i;
+            while (word_char(i)) ++i;
+            r.tokens.push_back({Kind::Ident, std::string(src.substr(start, i - start)), start});
+        } else if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (word_char(i)) return fail(i);
+            r.tokens.push_back({Kind::Number, std::string(src.substr(start, i - start)), start});
+        } else if (c == '=') {
+            r.tokens.push_back({Kind::Equals, "=", i});
+            ++i;
+        } else if (c == ';') {
+            r.tokens.push_back({Kind::Semicolon, ";", i});
+            ++i;
+        } else {
+            return fail(i);
+        }
+    }
+    return r;
+}
+--- hint
+The loop is the lesson's, with more branches: whitespace, a comment, an identifier, a number, \`=\`, \`;\`, and anything else. The comment branch moves \`i\` forward until it reaches a newline (or the end), without adding a token.
+--- hint
+An identifier's first character is a letter or \`_\`; after that, digits are allowed too. After the digits of a number, look at the next character: if it is a letter or \`_\`, that character is the error.
+--- check test | A line of settings
+[] { auto r = lex_config("speed = 40; name_2=rover;"); std::vector<Kind> k; std::vector<std::string> t; for (const Tok& x : r.tokens) { k.push_back(x.kind); t.push_back(x.text); } return !r.error_at && k == std::vector<Kind>{Kind::Ident, Kind::Equals, Kind::Number, Kind::Semicolon, Kind::Ident, Kind::Equals, Kind::Ident, Kind::Semicolon} && t == std::vector<std::string>{"speed", "=", "40", ";", "name_2", "=", "rover", ";"}; }()
+--- check test | Positions, and identifiers that start with _
+[] { auto r = lex_config("  _x=7"); return r.tokens.size() == 3 && r.tokens[0].text == "_x" && r.tokens[0].pos == 2 && r.tokens[1].pos == 4 && r.tokens[2].pos == 5; }()
+--- check test | Comments make no tokens
+[] { auto r = lex_config("# setup\\nmode = 3 # fast\\n#end"); return !r.error_at && r.tokens.size() == 3 && r.tokens[0].text == "mode" && r.tokens[0].pos == 8 && r.tokens[2].text == "3"; }()
+--- check test | A number glued to a word, and other bad characters
+[] { auto a = lex_config("x = 12ab;"); auto b = lex_config("x = 4_"); auto c = lex_config("x = 1.5;"); auto d = lex_config("a-b"); return a.error_at == std::size_t{6} && a.tokens.empty() && b.error_at == std::size_t{5} && c.error_at == std::size_t{5} && d.error_at == std::size_t{1}; }()
+--- check test | Empty input, and only a comment
+[] { auto a = lex_config(""); auto b = lex_config("# nothing here"); return a.tokens.empty() && !a.error_at && b.tokens.empty() && !b.error_at; }()
+
++++ practice | Tokens as a variant
+--- task
+Instead of a struct with a \`kind\`, a token can be a \`std::variant\`: either a number or a symbol. The starter declares \`using Piece = std::variant<double, char>;\`. Write two functions. No \`main\`.
+
+- \`std::optional<std::vector<Piece>> lex(std::string_view src)\`: skips whitespace; reads numbers exactly as in the lesson (digits, optionally a \`.\` and more digits; a \`.\` with no digit after it is an error) and stores each as a \`double\`; stores each of \`+ - * / ( )\` as that \`char\`. On any error, returns \`std::nullopt\`.
+- \`std::string show(const std::vector<Piece>& pieces)\`: the pieces separated by single spaces, numbers written with a default \`std::ostringstream\` and symbols as themselves. \`show(*lex("12+(3.5*4)"))\` is \`"12 + ( 3.5 * 4 )"\`.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+using Piece = std::variant<double, char>;
+
+std::optional<std::vector<Piece>> lex(std::string_view src) {
+    return std::nullopt;
+}
+
+std::string show(const std::vector<Piece>& pieces) {
+    return "";
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+using Piece = std::variant<double, char>;
+
+std::optional<std::vector<Piece>> lex(std::string_view src) {
+    std::vector<Piece> out;
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+        } else if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return std::nullopt;
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            out.push_back(std::strtod(text.c_str(), nullptr));
+        } else if (std::string_view("+-*/()").find(c) != std::string_view::npos) {
+            out.push_back(c);
+            ++i;
+        } else {
+            return std::nullopt;
+        }
+    }
+    return out;
+}
+
+std::string show(const std::vector<Piece>& pieces) {
+    std::ostringstream out;
+    for (std::size_t k = 0; k < pieces.size(); ++k) {
+        if (k > 0) out << ' ';
+        std::visit([&out](const auto& p) { out << p; }, pieces[k]);
+    }
+    return out.str();
+}
+--- hint
+Pushing a \`double\` into a \`std::vector<Piece>\` makes a piece holding a number, and pushing a \`char\` makes one holding a symbol: the variant remembers which. A \`std::string_view("+-*/()").find(c)\` tells you whether \`c\` is one of the symbols.
+--- hint
+\`show\` writes a space before every piece except the first. Both kinds of piece can be written with \`<<\`, so one generic lambda in \`std::visit\` handles either.
+--- check case | show after lex
+show(*lex("12+(3.5*4)"))
+=> "12 + ( 3.5 * 4 )"
+--- check test | What each piece holds
+[] { auto p = lex(" 7 - 0.25"); return p && p->size() == 3 && std::get<double>((*p)[0]) == 7 && std::get<char>((*p)[1]) == '-' && std::get<double>((*p)[2]) == 0.25; }()
+--- check test | Errors give nullopt
+!lex("2 + x") && !lex("3.") && !lex(".5") && !lex("4 % 2")
+--- check test | Empty input is an empty list
+[] { auto p = lex("   "); return p && p->empty() && show(*p) == "" && show({}) == ""; }()
+
++++ practice | Numbers with exponents
+--- task
+Extend the lesson's tokenizer so that numbers may end in an **exponent**, as in \`2.5e3\` (2.5 × 10³, which is 2500) or \`1E-2\` (0.01). The starter is the lesson's tokenizer. Change only how a number is read. No \`main\`.
+
+A number is now: digits, then optionally a \`.\` and digits (as before), then optionally an exponent: an \`e\` or \`E\`, then an optional \`+\` or \`-\`, then **one or more digits**.
+
+- If an \`e\` or \`E\` comes straight after a number but is not followed (after the optional sign) by a digit, that is an error at the \`e\`: \`"1e"\`, \`"1e+"\` and \`"3e+x"\` are all errors at index 1.
+- An \`e\` that does not follow a number is an ordinary bad character: \`"e5"\` is an error at index 0.
+- \`std::strtod\` already understands exponents, so the value can still come from it.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            if (i < src.size() && (src[i] == 'e' || src[i] == 'E')) {
+                std::size_t e = i;
+                std::size_t k = i + 1;
+                if (k < src.size() && (src[k] == '+' || src[k] == '-')) ++k;
+                if (!digit(k)) return fail(e);
+                i = k;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- hint
+Add one more optional part after the decimal part, in the number branch only. Remember where the \`e\` is, because that is where an error would be reported.
+--- hint
+Look ahead with a second index \`k\`: start just after the \`e\`, step over one \`+\` or \`-\` if there is one, and then require \`digit(k)\`. Only when the whole exponent is good do you move \`i\` to \`k\` and read the digits.
+--- check test | Exponents, with and without signs
+[] { auto a = tokenize("2.5e3"); auto b = tokenize("1E-2*4"); auto c = tokenize("6e+1"); return !a.error_at && a.tokens.size() == 1 && a.tokens[0].value == 2500 && b.tokens.size() == 3 && std::abs(b.tokens[0].value - 0.01) < 1e-15 && b.tokens[1].kind == Tok::Star && c.tokens[0].value == 60; }()
+--- check test | An exponent with no digits is an error at the e
+[] { return tokenize("1e").error_at == std::size_t{1} && tokenize("1e+").error_at == std::size_t{1} && tokenize("3e+x").error_at == std::size_t{1} && tokenize("2.5E").error_at == std::size_t{3}; }()
+--- check test | An e on its own is just a bad character
+[] { auto a = tokenize("e5"); auto b = tokenize("4 + e"); return a.error_at == std::size_t{0} && b.error_at == std::size_t{4} && b.tokens.empty(); }()
+--- check test | Old rules still hold
+[] { auto a = tokenize("7"); auto b = tokenize("1.5e2.5"); auto c = tokenize("3.e2"); return a.tokens.size() == 1 && a.tokens[0].value == 7 && b.error_at == std::size_t{5} && c.error_at == std::size_t{1}; }()
+--- check test | Positions after an exponent
+[] { auto r = tokenize("1e3 - 2"); return r.tokens.size() == 3 && r.tokens[1].pos == 4 && r.tokens[2].pos == 6 && r.tokens[2].value == 2; }()
+
++++ practice | Debug: the lost plus sign
+--- task
+**Bug report:** "\`tokenize("12+3")\` gives two numbers and no plus sign. And every number token's \`pos\` points just past the number instead of at its first digit."
+
+The starter's tokenizer has two bugs, both in the number branch. Fix them. No \`main\`.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), i});
+            ++i;
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+--- hint
+After the digits have been read, where is \`i\` pointing? The number branch has already moved past the number, so what does the extra step do to the character after it?
+--- hint
+Delete the \`++i\` before \`continue\` in the number branch, and record the token at \`start\`, the index of its first digit, not at \`i\`.
+--- check test | The plus sign is kept
+[] { auto r = tokenize("12+3"); std::vector<Tok> k; for (const Token& t : r.tokens) k.push_back(t.kind); return !r.error_at && k == std::vector<Tok>{Tok::Number, Tok::Plus, Tok::Number}; }()
+--- check test | Number positions point at the first digit
+[] { auto r = tokenize(" 45 * 6.5"); return r.tokens.size() == 3 && r.tokens[0].pos == 1 && r.tokens[1].pos == 4 && r.tokens[2].pos == 6 && r.tokens[2].value == 6.5; }()
+--- check test | Errors right after a number are still found
+[] { auto a = tokenize("7x"); auto b = tokenize("7)"); return a.error_at == std::size_t{1} && b.tokens.size() == 2 && b.tokens[1].kind == Tok::RParen && b.tokens[1].pos == 1; }()
+
++++ practice | Stretch: commands with quoted text
+--- task
+Ground control sends commands like \`SET(heater, 21.5, "on \\"now\\"")\`. Using the starter's \`Kind\`, \`Token\` and \`Lexed\`, write \`Lexed lex_command(std::string_view src)\`. No \`main\`.
+
+- Whitespace is skipped. \`,\` \`(\` \`)\` are \`Kind::Comma\`, \`Kind::LParen\` and \`Kind::RParen\`, with their character as \`text\`.
+- An **identifier** starts with a letter or \`_\` and goes on with letters, digits and \`_\`. A **number** follows the lesson's rule (digits, optionally a \`.\` and more digits; a \`.\` with no digit after it is an error at the dot). For both, \`text\` is exactly what was written.
+- A **string** starts with \`"\` and ends at the next \`"\` that is not escaped. Inside it, \`\\"\` means a quote and \`\\\\\` means a backslash. Its \`text\` is the contents with the escapes worked out, without the outer quotes.
+- Errors (no tokens, and the index in \`error_at\`): a string with no closing quote is an error at its **opening** quote; a backslash followed by anything other than \`"\` or \`\\\` is an error at the backslash; any other character is an error where it stands.
+- Every token's \`pos\` is the index of its first character (the opening quote, for a string).
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Kind { Ident, Number, String, Comma, LParen, RParen };
+
+struct Token {
+    Kind kind;
+    std::string text;
+    std::size_t pos;
+};
+
+struct Lexed {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+Lexed lex_command(std::string_view src) {
+    return {};
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Kind { Ident, Number, String, Comma, LParen, RParen };
+
+struct Token {
+    Kind kind;
+    std::string text;
+    std::size_t pos;
+};
+
+struct Lexed {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+Lexed lex_command(std::string_view src) {
+    Lexed r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+    auto word = [&src](std::size_t i) {
+        return i < src.size() && (std::isalnum(static_cast<unsigned char>(src[i])) || src[i] == '_');
+    };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        std::size_t start = i;
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+        } else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            while (word(i)) ++i;
+            r.tokens.push_back({Kind::Ident, std::string(src.substr(start, i - start)), start});
+        } else if (digit(i)) {
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            r.tokens.push_back({Kind::Number, std::string(src.substr(start, i - start)), start});
+        } else if (c == '"') {
+            std::string text;
+            ++i;
+            while (true) {
+                if (i >= src.size()) return fail(start);   // no closing quote
+                char s = src[i];
+                if (s == '"') break;
+                if (s == '\\\\') {
+                    if (i + 1 < src.size() && (src[i + 1] == '"' || src[i + 1] == '\\\\')) {
+                        text += src[i + 1];
+                        i += 2;
+                        continue;
+                    }
+                    return fail(i);
+                }
+                text += s;
+                ++i;
+            }
+            ++i;   // step past the closing quote
+            r.tokens.push_back({Kind::String, text, start});
+        } else if (c == ',' || c == '(' || c == ')') {
+            Kind k = c == ',' ? Kind::Comma : c == '(' ? Kind::LParen : Kind::RParen;
+            r.tokens.push_back({k, std::string(1, c), start});
+            ++i;
+        } else {
+            return fail(i);
+        }
+    }
+    return r;
+}
+--- hint
+A string gets its own branch with an inner loop, building the text one character at a time. Remember where the opening quote was: if the inner loop reaches the end of the input, that is where the error is.
+--- hint
+Inside the string: a \`"\` ends it (step past it); a \`\\\` must be followed by \`"\` or \`\\\`, and then you add that second character and step over both; anything else is added as it is. A backslash at the very end, or before another character, is the error at the backslash.
+--- check test | The example command
+[] { auto r = lex_command(R"x(SET(heater, 21.5, "on \\"now\\""))x"); std::vector<Kind> k; for (const Token& t : r.tokens) k.push_back(t.kind); return !r.error_at && k == std::vector<Kind>{Kind::Ident, Kind::LParen, Kind::Ident, Kind::Comma, Kind::Number, Kind::Comma, Kind::String, Kind::RParen} && r.tokens[4].text == "21.5" && r.tokens[6].text == "on \\"now\\"" && r.tokens[6].pos == 18; }()
+--- check test | Backslashes, and an empty string
+[] { auto r = lex_command(R"x(LOG("a\\\\b", ""))x"); return !r.error_at && r.tokens.size() == 6 && r.tokens[2].text == "a\\\\b" && r.tokens[4].text == "" && r.tokens[4].pos == 12; }()
+--- check test | A string with no closing quote is an error at its start
+[] { auto a = lex_command(R"x(SAY("hello)x"); auto b = lex_command(R"x(SAY("hi\\"))x"); return a.error_at == std::size_t{4} && a.tokens.empty() && b.error_at == std::size_t{4}; }()
+--- check test | A bad escape, a bad dot, a bad character
+[] { auto a = lex_command(R"x(X("a\\nb"))x"); auto b = lex_command("GO(3.)"); auto c = lex_command("GO;"); return a.error_at == std::size_t{4} && b.error_at == std::size_t{4} && c.error_at == std::size_t{2}; }()
+--- check test | Identifiers with digits and _, and blank input
+[] { auto r = lex_command(" _cam2 ( 7 )"); auto e = lex_command(" \\t"); return r.tokens.size() == 4 && r.tokens[0].text == "_cam2" && r.tokens[0].pos == 1 && r.tokens[2].text == "7" && e.tokens.empty() && !e.error_at; }()
+
+=== cpp4-16 | Problem solving: a recursive-descent calculator
+--- teach
+Last lesson, your tokenizer cut a line of text into tokens: numbers, operators and brackets. This last lesson of the course gives those tokens meaning. You will write a **parser**, the part that works out how the tokens fit together, and make it calculate the answer as it goes.
+
+### Why order is the hard part
+
+What is \`1 + 2 * 3\`? Not 9. Multiplication goes first, so it is \`1 + 6 = 7\`. Think of \`*\` and \`/\` as stronger glue than \`+\` and \`-\`: the \`2 * 3\` sticks together before the \`1 +\` gets a look. Which operators stick first is called **precedence**.
+
+And what is \`8 - 3 - 2\`? Operators of equal strength go from left to right: \`(8 - 3) - 2 = 3\`, not \`8 - (3 - 2) = 7\`. Which way a row of equal operators groups is called **associativity**. \`+ - * /\` are all **left-associative**: they group from the left.
+
+A calculator that reads left to right and does each operation as it meets it gets both of these wrong. The fix is to describe the language precisely first.
+
+### A grammar
+
+A recipe book might say: "a sandwich is bread, then a filling, then bread. A filling is one or more of cheese, ham or tomato." Each line says how a bigger thing is built from smaller things.
+
+A **grammar** does the same for a language. Each line is a **rule**. Here is the [[grammar for your calculator|grammar-notation]]:
+
+\`\`\`
+expr   := term   (('+' | '-') term)*
+term   := factor (('*' | '/') factor)*
+factor := NUMBER | '(' expr ')' | '-' factor
+\`\`\`
+
+How to read the symbols:
+
+- \`:=\` means "is made of".
+- \`|\` means "or".
+- \`( … )*\`, brackets followed by a star, means "the part inside, zero or more times".
+- A character in quotes, like \`'+'\`, is that token. \`NUMBER\` is a number token.
+
+So, read aloud: an **expression** is a term, followed by any number of "plus or minus, then another term". A **term** is a factor, followed by any number of "times or divide, then another factor". A **factor** is a number, or an expression in brackets, or a minus sign followed by a factor.
+
+### Precedence lives in the grammar
+
+Look at who calls whom. \`expr\` only ever deals in whole terms. By the time it sees a \`+\`, the term on each side has already been completely worked out, \`*\` and \`/\` included. So \`1 + 2 * 3\` is read as "the term \`1\`, plus the term \`2 * 3\`", and [[multiplication goes first|precedence-tree]] with no special code at all.
+
+The rule: lower precedence sits **higher** in the grammar, and calls the stronger rules beneath it.
+
+### One function per rule
+
+**Recursive descent** is the classic way to write a parser by hand: one function for each rule, each one consuming tokens from a shared position. "Descent" because you start at the top rule and work down. "Recursive" because the rules loop back: \`factor\` can contain a whole \`expr\` in brackets, so the functions end up calling each other.
+
+Keep the tokens and the position together in a small \`Parser\` class. It needs two tiny tools.
+
+**Looking at the next token** without using it up:
+
+\`\`\`cpp
+bool next_is(Tok kind) const {
+    return pos_ < tokens_.size() && tokens_[pos_].kind == kind;
+}
+\`\`\`
+
+The first half stops you reading past the end of the list.
+
+**Taking the next token**, with \`pos_++\`. Written after a variable, \`++\` gives back the *old* value, then adds 1:
+
+\`\`\`cpp
+int n = 4;
+int m = n++;   // m is 4, n is now 5
+\`\`\`
+
+So \`tokens_[pos_++]\` means "the token at \`pos_\`, and move \`pos_\` on past it".
+
+### A rule with a loop
+
+Here is the pattern for a rule with \`( … )*\`, shown on a smaller grammar that only adds: \`sum := item ('+' item)*\`.
+
+\`\`\`cpp
+std::optional<double> sum() {
+    auto total = item();                   // the first item
+    if (!total) return std::nullopt;       // it failed: pass the failure up
+    while (next_is(Tok::Plus)) {           // zero or more times...
+        ++pos_;                            // step past the '+'
+        auto more = item();                // ...then another item
+        if (!more) return std::nullopt;
+        *total += *more;
+    }
+    return total;
+}
+\`\`\`
+
+Each function returns \`std::optional<double>\`: the value of what it read, or \`std::nullopt\` if it could not read one. Every caller checks, and passes a failure straight up.
+
+Your \`expr\` has two operators, \`+\` and \`-\`, so before stepping past the operator, remember which one it was, for example \`Tok op = tokens_[pos_++].kind;\`. After reading the right-hand side, add or subtract depending on \`op\`. \`term\` is the same shape with \`*\` and \`/\`.
+
+### The factor rule: three choices
+
+\`factor\` has no loop. It looks at the next token and picks one branch:
+
+1. **A number:** its value is the answer. Step past it.
+2. **A minus:** step past it, read a whole \`factor\` (the function calls itself), and give back the negative of that. This is the **unary minus**, a minus with one number instead of two, as in \`-4\`. Because it calls \`factor\` again, \`--4\` is \`-(-4) = 4\`.
+3. **An opening bracket:** step past it, read a whole \`expr\`, then the next token **must** be a closing bracket. Step past that too. If it is missing, that is an error.
+
+Anything else, such as a \`*\` where a number should be, or the end of the tokens, is an error.
+
+### Details that matter
+
+- **The \`while\` loop gives [[left associativity|left-assoc]].** Each time round, the result so far becomes the left side of the next operation. \`8 - 3 - 2\` is \`(8 - 3) - 2 = 3\`. Recursing on the right instead would compute \`8 - (3 - 2) = 7\`.
+- **Recursion happens only on brackets and unary minus.** A long flat expression like \`1 + 1 + … + 1\` runs round a loop, so it cannot pile up [[thousands of nested calls|stack-depth]].
+- **Errors travel as \`std::nullopt\`**: a missing factor, a missing \`)\`, division by zero, or a lexer error.
+- **After parsing, every token must be used.** \`1 2\` reads \`1\` as a complete expression and leaves \`2\` behind. That is an error, not the answer 1.
+
+### Putting it together
+
+\`evaluate\` runs the two stages in order. Tokenize; if the lexer reported an \`error_at\`, fail. Otherwise make a \`Parser\` over the tokens, read one \`expr\`, and check that the position reached the end. The parser can [[keep a reference to the tokens|reference-member]] rather than copying them.
+
+**Watch out:** check for division by zero yourself, before dividing. Dividing a \`double\` by zero does not crash. It quietly gives infinity (or "not a number" for 0 / 0), and your calculator would print that as if it were an answer. If the right-hand side of a \`/\` is 0, return \`std::nullopt\`.
+
+### Where you go from here
+
+That is the end of the Expert course. You have gone from moves and templates to building containers, a hash map, a cache and now a small language, which is how [[real compilers are written|real-parsers]].
+
+Next is the **C++ Projects** course. There you build three programs step by step: a matrix library, a bank with different kinds of account, and a text-statistics tool. Then come three capstones where you get only a specification and design everything yourself: a priority task scheduler, a JSON value type, and an expression evaluator with variables, which grows today's calculator into a tiny programming language with a \`^\` for powers.
+
+::: context grammar-notation Grammars on paper
+This way of writing grammars grew from the notation John Backus and Peter Naur used to define the programming language ALGOL 60 in 1960, now called Backus–Naur form, or BNF. Shorthands for repetition, like the \`*\` here, came later with *extended* BNF and its many variants. Almost every programming language has its official grammar written this way, including C++: its standard has hundreds of such rules. Writing the grammar before the code is the design step. Once it is right, the code follows it rule for rule.
+:::
+
+::: context precedence-tree The shape of 1 + 2 * 3
+A parser's real result is a tree. Each operator joins the two pieces below it, and the pieces lower down are worked out first. Because \`expr\` sees \`2 * 3\` as one whole term, the \`*\` sits below the \`+\`, and is done first.
+
+\`\`\`svg
+<svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="12" y="34" font-size="11" fill="#6c7a93">expr</text>
+  <text x="12" y="89" font-size="11" fill="#6c7a93">term</text>
+  <text x="12" y="139" font-size="11" fill="#6c7a93">factor</text>
+  <line x1="180" y1="30" x2="110" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="180" y1="30" x2="250" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="250" y1="85" x2="205" y2="135" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="250" y1="85" x2="295" y2="135" stroke="#1f2a44" stroke-width="1.5"/>
+  <circle cx="180" cy="30" r="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="180" y="35" font-size="14" fill="#1f2a44" text-anchor="middle">+</text>
+  <circle cx="110" cy="85" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="110" y="90" font-size="13" fill="#1f2a44" text-anchor="middle">1</text>
+  <circle cx="250" cy="85" r="16" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="250" y="90" font-size="14" fill="#1f2a44" text-anchor="middle">*</text>
+  <circle cx="205" cy="135" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="205" y="140" font-size="13" fill="#1f2a44" text-anchor="middle">2</text>
+  <circle cx="295" cy="135" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="295" y="140" font-size="13" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="318" y="78" font-size="11" fill="#b4232c" text-anchor="middle">done first</text>
+</svg>
+\`\`\`
+:::
+
+::: context left-assoc Not every operator leans left
+Left associativity is a choice, and a few operators make the other one. In C++, \`a = b = 0\` groups from the right: \`a = (b = 0)\`, so both end up 0. In mathematics, a tower of powers also groups from the right: 2 to the power 3 to the power 2 means 2 to the power 9, which is 512, not 8 squared, 64. You will meet exactly this in the Projects course, where the calculator gains a power operator and its grammar rule has to recurse on the right instead of looping.
+:::
+
+::: context stack-depth Why deep recursion is risky
+Every function call that has not yet returned keeps a small block of memory, called a stack frame, for its local variables. All those frames live in one region, the call stack, which is limited: often 8 MB for a program's main thread on Linux, and 1 MB by default on Windows. A parser that recursed once for every \`+\` would stack up 100,000 frames on the 100,000-term check and could run out, crashing the program. Looping keeps it to a handful. Flight software rules, such as NASA's "Power of 10", go further and forbid recursion outright, so that stack use can be proved safe.
+:::
+
+::: context reference-member A class that borrows
+Storing \`const std::vector<Token>& tokens_\` as a member means the parser borrows the caller's vector instead of copying it. That is fine as long as the vector outlives the parser. In \`evaluate\` it does: the token list is a local variable, and the parser is made and used within the same function, so the list is still alive the whole time the parser reads it. If a parser could outlive its tokens, it should own a copy instead.
+:::
+
+::: context real-parsers Hand-written parsers in real compilers
+Parsers can also be generated automatically from a grammar by tools such as Yacc and Bison, and for years GCC's C++ parser was. In 2004, GCC 3.4 replaced it with a hand-written recursive-descent parser, because C++ is hard to fit into those tools and a hand-written parser gives much better error messages. The Clang compiler is recursive descent too. The same technique you used today, scaled up to thousands of rules, is what reads your C++.
+:::
+--- task
+The starter is your tokenizer from last lesson. Add \`std::optional<double> evaluate(std::string_view expr)\` that works out the value of the expression, following the grammar in the lesson. No \`main\`.
+
+- It handles \`+ - * /\`, brackets and unary minus, with the usual precedence (\`*\` and \`/\` before \`+\` and \`-\`) and left associativity.
+- It returns \`std::nullopt\` for a lexer error, for a syntax error (including leftover tokens and empty input), and for division by zero.
+- Long flat expressions (100,000 terms) and deeply nested brackets (100 levels) must both work.
+
+A small \`Parser\` class with one member function per grammar rule is a good way to organize it.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+std::optional<double> evaluate(std::string_view expr) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- hint
+Make a small \`Parser\` class holding the tokens and a position \`pos_\`, with a helper that checks the kind of the next token, and one member function per grammar rule: \`expr\`, \`term\` and \`factor\`, each returning \`std::optional<double>\`.
+--- hint
+\`expr\` and \`term\` follow the loop pattern from the lesson, remembering which operator they stepped past. \`factor\` handles a number, a \`-\` followed by a factor, or \`(\` then \`expr\` then a required \`)\`; anything else returns \`std::nullopt\`.
+--- hint
+In \`evaluate\`: tokenize, return \`std::nullopt\` if \`error_at\` is set, then run \`expr()\` and fail unless the position reached \`tokens.size()\`. In \`term\`, if the right-hand side of a \`/\` is 0, return \`std::nullopt\` before dividing.
+--- check test | Precedence
+[] { auto a = evaluate("1 + 2 * 3"); auto b = evaluate("(1 + 2) * 3"); return a && *a == 7 && b && *b == 9; }()
+--- check test | Left associativity
+[] { auto a = evaluate("8 - 3 - 2"); auto b = evaluate("8 / 4 / 2"); return a && *a == 3 && b && *b == 1; }()
+--- check test | Unary minus
+[] { auto a = evaluate("-(2 + 3) * -2"); auto b = evaluate("2 * -3"); auto c = evaluate("--4"); return a && *a == 10 && b && *b == -6 && c && *c == 4; }()
+--- check test | Decimals and nesting
+[] { auto a = evaluate("3.5 * (2 - (0.5 + 0.5)) / 7"); return a && std::abs(*a - 0.5) < 1e-12; }()
+--- check test | Syntax errors
+!evaluate("") && !evaluate("2 +") && !evaluate("(1") && !evaluate("1)") && !evaluate("2 3") && !evaluate("*4") && !evaluate("()")
+--- check test | Lexer errors and division by zero
+!evaluate("x + 1") && !evaluate("4 / 0") && !evaluate("4 / (2 - 2)") && !evaluate("1.")
+--- check test | 100,000 terms in a row
+[] { std::string s = "1"; for (int i = 1; i < 100000; ++i) s += "+1"; auto v = evaluate(s); return v && *v == 100000; }()
+--- check test | 100 levels of brackets
+[] { std::string s(100, '('); s += "6"; s += std::string(100, ')'); s += "/4"; auto v = evaluate(s); return v && *v == 1.5; }()
+
++++ practice | True, false, and, or, not
+--- task
+Write a recursive-descent parser for a tiny language of truth values. No \`main\`. The text is made of \`T\` (true), \`F\` (false), \`&\` (and), \`|\` (or), \`!\` (not), brackets and spaces, and follows this grammar:
+
+\`\`\`
+or_expr  := and_expr ('|' and_expr)*
+and_expr := unary ('&' unary)*
+unary    := '!' unary | atom
+atom     := 'T' | 'F' | '(' or_expr ')'
+\`\`\`
+
+So \`!\` binds most tightly, then \`&\`, then \`|\`: \`T | T & F\` is \`T | (T & F)\`, which is true.
+
+\`std::optional<bool> eval_bool(std::string_view src)\` returns the value, or \`std::nullopt\` for anything that does not fit the grammar: an unknown character, a missing operand or bracket, leftover text, or empty input. Spaces may appear anywhere between symbols. A small class with a position and one member function per rule is a good way to organize it; it can read the characters directly, with no separate tokenizer.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
+std::optional<bool> eval_bool(std::string_view src) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
+// or_expr  := and_expr ('|' and_expr)*
+// and_expr := unary ('&' unary)*
+// unary    := '!' unary | atom
+// atom     := 'T' | 'F' | '(' or_expr ')'
+class BoolParser {
+public:
+    explicit BoolParser(std::string_view src) : src_(src) {}
+
+    std::optional<bool> parse() {
+        auto value = or_expr();
+        skip_spaces();
+        if (!value || i_ != src_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    void skip_spaces() {
+        while (i_ < src_.size() && std::isspace(static_cast<unsigned char>(src_[i_]))) ++i_;
+    }
+
+    bool next_is(char c) {
+        skip_spaces();
+        return i_ < src_.size() && src_[i_] == c;
+    }
+
+    std::optional<bool> or_expr() {
+        auto left = and_expr();
+        if (!left) return std::nullopt;
+        while (next_is('|')) {
+            ++i_;
+            auto right = and_expr();
+            if (!right) return std::nullopt;
+            *left = *left || *right;
+        }
+        return left;
+    }
+
+    std::optional<bool> and_expr() {
+        auto left = unary();
+        if (!left) return std::nullopt;
+        while (next_is('&')) {
+            ++i_;
+            auto right = unary();
+            if (!right) return std::nullopt;
+            *left = *left && *right;
+        }
+        return left;
+    }
+
+    std::optional<bool> unary() {
+        if (next_is('!')) {
+            ++i_;
+            auto inner = unary();
+            if (!inner) return std::nullopt;
+            return !*inner;
+        }
+        return atom();
+    }
+
+    std::optional<bool> atom() {
+        if (next_is('T')) {
+            ++i_;
+            return true;
+        }
+        if (next_is('F')) {
+            ++i_;
+            return false;
+        }
+        if (next_is('(')) {
+            ++i_;
+            auto inner = or_expr();
+            if (!inner || !next_is(')')) return std::nullopt;
+            ++i_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    std::string_view src_;
+    std::size_t i_ = 0;
+};
+
+std::optional<bool> eval_bool(std::string_view src) {
+    return BoolParser(src).parse();
+}
+--- hint
+One member function per rule, each returning \`std::optional<bool>\`. \`or_expr\` and \`and_expr\` are the lesson's loop pattern; \`unary\` calls itself after a \`!\`; \`atom\` has three choices and fails on anything else.
+--- hint
+Write a helper that skips spaces and then says whether the next character is a given one, and use it everywhere you look ahead. After the top rule, skip spaces once more and check that you reached the end of the text.
+--- check test | Precedence of ! over & over |
+eval_bool("T | T & F") == true && eval_bool("F | T & F") == false && eval_bool("!T | T") == true && eval_bool("!(T | T)") == false
+--- check test | Brackets, and not of not
+eval_bool("T & (F | T)") == true && eval_bool("(T & F) | (F & T)") == false && eval_bool("!!T") == true && eval_bool("! ! ! F") == true
+--- check test | Spaces anywhere, and no spaces at all
+eval_bool("  T&!F  ") == true && eval_bool("(T|F)&T") == true
+--- check test | Everything that does not fit the grammar
+!eval_bool("") && !eval_bool("T &") && !eval_bool("(T") && !eval_bool("T)") && !eval_bool("TF") && !eval_bool("x") && !eval_bool("!") && !eval_bool("t")
+
++++ practice | From brackets to reverse Polish
+--- task
+In **reverse Polish notation** (RPN), every operator comes after the two things it works on, and no brackets are needed: \`1 + 2 * 3\` is \`1 2 3 * +\`, and \`(1 + 2) * 3\` is \`1 2 + 3 *\`. Using the lesson's tokenizer (in the starter) and its grammar **without** the unary minus, write \`std::optional<std::string> to_rpn(std::string_view expr)\`. No \`main\`.
+
+- The grammar: \`expr := term (('+' | '-') term)*\`, \`term := factor (('*' | '/') factor)*\`, \`factor := NUMBER | '(' expr ')'\`.
+- The result lists the numbers and operators separated by single spaces. Each number is written with a default \`std::ostringstream\`, so \`2.50\` becomes \`2.5\`.
+- It returns \`std::nullopt\` for a lexer error or anything that does not fit the grammar, including a minus sign where a number should be. Nothing is worked out, so \`4 / 0\` is fine: \`4 0 /\`.
+
+A parser can produce text instead of a value: each rule writes its pieces into a shared list, and writes an operator only after both of its sides.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+std::optional<std::string> to_rpn(std::string_view expr) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+// expr := term (('+' | '-') term)*    term := factor (('*' | '/') factor)*    factor := NUMBER | '(' expr ')'
+class RpnWriter {
+public:
+    explicit RpnWriter(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<std::string> write() {
+        if (!expr() || pos_ != tokens_.size()) return std::nullopt;
+        std::string text;
+        for (std::size_t k = 0; k < out_.size(); ++k) {
+            if (k > 0) text += ' ';
+            text += out_[k];
+        }
+        return text;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    bool expr() {
+        if (!term()) return false;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            if (!term()) return false;
+            out_.push_back(op == Tok::Plus ? "+" : "-");   // the operator comes after both sides
+        }
+        return true;
+    }
+
+    bool term() {
+        if (!factor()) return false;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            if (!factor()) return false;
+            out_.push_back(op == Tok::Star ? "*" : "/");
+        }
+        return true;
+    }
+
+    bool factor() {
+        if (at(Tok::Number)) {
+            std::ostringstream number;
+            number << tokens_[pos_++].value;
+            out_.push_back(number.str());
+            return true;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            if (!expr() || !at(Tok::RParen)) return false;
+            ++pos_;
+            return true;
+        }
+        return false;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+    std::vector<std::string> out_;
+};
+
+std::optional<std::string> to_rpn(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return RpnWriter(lexed.tokens).write();
+}
+--- hint
+Write a small class like the lesson's \`Parser\`, but let each rule return \`bool\` (did it fit?) and push the text it produces onto a member \`std::vector<std::string>\`. A number pushes itself; brackets push nothing.
+--- hint
+In \`expr\`, after reading the right-hand \`term\`, push \`"+"\` or \`"-"\`. That order, left side, right side, then operator, is exactly RPN, and the loop keeps \`8 - 3 - 2\` left-associative: \`8 3 - 2 -\`.
+--- check case | Precedence
+to_rpn("1 + 2 * 3")
+=> std::optional<std::string>("1 2 3 * +")
+--- check test | Brackets and left associativity
+to_rpn("(1 + 2) * 3") == std::string("1 2 + 3 *") && to_rpn("8 - 3 - 2") == std::string("8 3 - 2 -") && to_rpn("8 / (4 / 2)") == std::string("8 4 2 / /")
+--- check test | Decimals, and nothing is worked out
+to_rpn("2.50 / (1 - 0.5)") == std::string("2.5 1 0.5 - /") && to_rpn("4 / 0") == std::string("4 0 /") && to_rpn("7") == std::string("7")
+--- check test | Errors
+!to_rpn("") && !to_rpn("1 +") && !to_rpn("(1") && !to_rpn("1 2") && !to_rpn("-1") && !to_rpn("2 * x") && !to_rpn("()")
+
++++ practice | A calculator with named values
+--- task
+The starter is the lesson's calculator. Extend it so that an expression can use **names** for values, looked up in a map: with \`r\` = 2, the expression \`3.14 * r * r\` is 12.56. The new signature is \`std::optional<double> evaluate(std::string_view expr, const std::map<std::string, double>& vars)\`. No \`main\`.
+
+- The tokenizer learns a new kind of token, \`Tok::Ident\`: a letter or \`_\`, followed by letters, digits and \`_\`. The token must carry its text, so add a \`std::string name\` member to \`Token\`.
+- The grammar gains one choice: \`factor := NUMBER | IDENT | '(' expr ')' | '-' factor\`. An identifier's value is its entry in \`vars\`.
+- A name that is not in \`vars\` makes the whole result \`std::nullopt\`, like any other error.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr, const std::map<std::string, double>& vars) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Ident, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+    std::string name;   // for Tok::Ident
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+    auto word = [&src](std::size_t i) {
+        return i < src.size() && (std::isalnum(static_cast<unsigned char>(src[i])) || src[i] == '_');
+    };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start, ""});
+            continue;
+        }
+        if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            std::size_t start = i;
+            while (word(i)) ++i;
+            r.tokens.push_back({Tok::Ident, 0.0, start, std::string(src.substr(start, i - start))});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i, ""});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    Parser(const std::vector<Token>& tokens, const std::map<std::string, double>& vars) : tokens_(tokens), vars_(vars) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Ident)) {
+            auto found = vars_.find(tokens_[pos_++].name);
+            if (found == vars_.end()) return std::nullopt;
+            return found->second;
+        }
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    const std::map<std::string, double>& vars_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr, const std::map<std::string, double>& vars) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens, vars).parse();
+}
+--- hint
+Start with the tokenizer: one more branch before the switch, for a letter or \`_\`, that reads the whole identifier and stores its text in the token's new \`name\`. Give the other tokens an empty name.
+--- hint
+The parser needs the map too: keep a \`const\` reference to it next to the tokens. In \`factor\`, an \`Ident\` token looks its name up with \`vars_.find(...)\`; if it is not there, return \`std::nullopt\`.
+--- check test | Names in an expression
+[] { std::map<std::string, double> v{{"r", 2}, {"pi", 3.5}}; auto a = evaluate("pi * r * r", v); auto b = evaluate("(r + 1) * -r", v); return a && *a == 14 && b && *b == -6; }()
+--- check test | Names with digits and _
+[] { std::map<std::string, double> v{{"x_1", 10}, {"_y2", 4}}; auto a = evaluate("x_1 / _y2", v); return a && *a == 2.5; }()
+--- check test | Unknown names, and names used wrongly
+[] { std::map<std::string, double> v{{"a", 1}}; return !evaluate("a + b", v) && !evaluate("a a", v) && !evaluate("2a", v) && !evaluate("", v); }()
+--- check test | Everything from the lesson still works
+[] { std::map<std::string, double> none; auto a = evaluate("1 + 2 * 3", none); auto b = evaluate("8 - 3 - 2", none); return a && *a == 7 && b && *b == 3 && !evaluate("4 / 0", none) && !evaluate("(1", none); }()
+
++++ practice | A calculator for int that never overflows
+--- task
+Write \`std::optional<int> eval_int(std::string_view src)\`: the lesson's grammar (\`+ - * /\`, brackets, unary minus, the usual precedence and left associativity), but on \`int\`s, and safe at every edge. No \`main\`. Read the characters directly (no separate tokenizer is needed): a number is one or more digits, and spaces may appear between symbols.
+
+- \`/\` divides whole numbers and rounds towards zero, as C++ does: \`7 / 2\` is 3 and \`-7 / 2\` is -3.
+- It returns \`std::nullopt\` for a syntax error (including leftover text, empty input and a \`.\`), for division by zero, and whenever a number, a partial result or the final result would not fit in an \`int\`.
+- That includes the literal \`2147483648\`, which does not fit even though \`-2147483648\` would: \`-2147483648\` is the minus sign applied to a number too big for an \`int\`, so it is \`std::nullopt\`. \`-2147483647 - 1\` is fine. And \`INT_MIN / -1\` does not fit.
+
+Never let the program itself overflow while checking: work each step out in \`long long\` (or check before you compute), as in the undefined behavior lesson.
+--- starter
+#include <cctype>
+#include <climits>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string_view>
+
+std::optional<int> eval_int(std::string_view src) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <climits>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string_view>
+
+class IntParser {
+public:
+    explicit IntParser(std::string_view src) : src_(src) {}
+
+    std::optional<int> parse() {
+        auto value = expr();
+        skip_spaces();
+        if (!value || i_ != src_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    static std::optional<int> fit(long long v) {
+        if (v > std::numeric_limits<int>::max() || v < std::numeric_limits<int>::min()) return std::nullopt;
+        return static_cast<int>(v);
+    }
+
+    void skip_spaces() {
+        while (i_ < src_.size() && std::isspace(static_cast<unsigned char>(src_[i_]))) ++i_;
+    }
+
+    bool next_is(char c) {
+        skip_spaces();
+        return i_ < src_.size() && src_[i_] == c;
+    }
+
+    bool next_is_digit() {
+        skip_spaces();
+        return i_ < src_.size() && std::isdigit(static_cast<unsigned char>(src_[i_]));
+    }
+
+    std::optional<int> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (next_is('+') || next_is('-')) {
+            char op = src_[i_++];
+            auto right = term();
+            if (!right) return std::nullopt;
+            long long wide = op == '+' ? static_cast<long long>(*left) + *right : static_cast<long long>(*left) - *right;
+            left = fit(wide);
+            if (!left) return std::nullopt;
+        }
+        return left;
+    }
+
+    std::optional<int> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (next_is('*') || next_is('/')) {
+            char op = src_[i_++];
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == '/' && *right == 0) return std::nullopt;
+            long long wide = op == '*' ? static_cast<long long>(*left) * *right : static_cast<long long>(*left) / *right;
+            left = fit(wide);   // also catches INT_MIN / -1
+            if (!left) return std::nullopt;
+        }
+        return left;
+    }
+
+    std::optional<int> factor() {
+        if (next_is_digit()) {
+            long long value = 0;
+            while (i_ < src_.size() && std::isdigit(static_cast<unsigned char>(src_[i_]))) {
+                value = value * 10 + (src_[i_] - '0');
+                if (value > std::numeric_limits<int>::max()) return std::nullopt;   // the number itself does not fit
+                ++i_;
+            }
+            return static_cast<int>(value);
+        }
+        if (next_is('-')) {
+            ++i_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return fit(-static_cast<long long>(*inner));
+        }
+        if (next_is('(')) {
+            ++i_;
+            auto inner = expr();
+            if (!inner || !next_is(')')) return std::nullopt;
+            ++i_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    std::string_view src_;
+    std::size_t i_ = 0;
+};
+
+std::optional<int> eval_int(std::string_view src) {
+    return IntParser(src).parse();
+}
+--- hint
+Keep the lesson's shape, with \`std::optional<int>\` everywhere. For each \`+ - *\`, compute the result in \`long long\` (two \`int\`s always fit there), then check that it fits in an \`int\` before going on.
+--- hint
+Build a number digit by digit in a \`long long\`, and fail as soon as it goes past the largest \`int\`. For \`/\`, check for 0 first; the only quotient of two \`int\`s that does not fit is \`INT_MIN / -1\`, which the same range check catches. Unary minus of the smallest \`int\` does not fit either.
+--- check test | Precedence, associativity and division
+eval_int("1 + 2 * 3") == 7 && eval_int("8 - 3 - 2") == 3 && eval_int("7 / 2") == 3 && eval_int("-7 / 2") == -3 && eval_int("100 / 10 / 5") == 2
+--- check test | Unary minus and brackets
+eval_int("3 - -3") == 6 && eval_int("--5") == 5 && eval_int("-(2 + 3) * 4") == -20
+--- check test | Right up to the edges of int
+eval_int("2147483647") == INT_MAX && eval_int("-2147483647 - 1") == INT_MIN && eval_int("46340 * 46340") == 2147395600 && eval_int("-(2147483647) - 1") == INT_MIN
+--- check test | Anything that does not fit
+!eval_int("2147483647 + 1") && !eval_int("2147483648") && !eval_int("-2147483648") && !eval_int("46341 * 46341") && !eval_int("(-2147483647 - 1) / -1") && !eval_int("-(-2147483647 - 1)") && !eval_int("99999999999999999999")
+--- check test | Syntax errors and division by zero
+!eval_int("") && !eval_int("1.5") && !eval_int("2 3") && !eval_int("(1") && !eval_int("1 / 0") && !eval_int("4 / (2 - 2)") && !eval_int("*2")
+
++++ practice | Debug: the calculator that leans right
+--- task
+**Bug report:** "\`8 - 3 - 2\` gives 7, not 3. And \`(4 * 2 5\` gives 8 instead of an error: the parser seems to treat the \`5\` as the closing bracket."
+
+The starter is the lesson's calculator with two bugs in the \`Parser\`. Fix them. No \`main\`.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        if (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = expr();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- hint
+\`8 - 3 - 2\` should be \`(8 - 3) - 2\`. Look at how \`expr\` reads the part after an operator: does the result so far become the left side of the next operation, or does it read everything to the right first?
+--- hint
+\`expr\` must loop, reading one \`term\` at a time after each operator, as in the lesson's pattern. And in \`factor\`, after reading the expression inside brackets, check that the next token really is \`Tok::RParen\` before stepping past it.
+--- check test | Left associativity
+[] { auto a = evaluate("8 - 3 - 2"); auto b = evaluate("10 - 4 + 3"); auto c = evaluate("1 - 1 - 1 - 1"); return a && *a == 3 && b && *b == 9 && c && *c == -2; }()
+--- check test | A missing closing bracket is an error
+!evaluate("(4 * 2 5") && !evaluate("(1 + 2") && !evaluate("((3)")
+--- check test | Correct expressions still work
+[] { auto a = evaluate("(1 + 2) * 3"); auto b = evaluate("-(2 + 3) * -2"); auto c = evaluate("12 / 3 / 2"); return a && *a == 9 && b && *b == 10 && c && *c == 2; }()
+--- check test | 100,000 terms in a row
+[] { std::string s = "1"; for (int i = 1; i < 100000; ++i) s += "-1"; auto v = evaluate(s); return v && *v == -99998; }()
+
++++ practice | Stretch: a calculator with functions
+--- task
+The starter is the lesson's calculator. Add three functions, called with brackets and commas: \`abs(x)\`, \`min(a, b, …)\` and \`max(a, b, …)\`. For example, \`max(1, 2 * 3) - abs(-4)\` is 2. No \`main\`.
+
+- The tokenizer learns two new tokens: \`Tok::Ident\` (a letter or \`_\`, then letters, digits and \`_\`; add a \`std::string name\` member to \`Token\` for its text) and \`Tok::Comma\` for \`,\`.
+- The grammar gains a function call: \`factor := NUMBER | call | '(' expr ')' | '-' factor\`, where \`call := IDENT '(' expr (',' expr)* ')'\`. Each argument is a whole expression, so calls can be nested.
+- \`abs\` takes exactly one argument. \`min\` and \`max\` take one or more.
+- \`std::optional<double> evaluate(std::string_view expr)\` returns \`std::nullopt\` for an unknown function name, the wrong number of arguments, a name with no brackets after it, a missing argument or bracket, and all the lesson's errors.
+--- starter
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Plus, Minus, Star, Slash, LParen, RParen };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- solution
+#include <cctype>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+enum class Tok { Number, Ident, Plus, Minus, Star, Slash, LParen, RParen, Comma };
+
+struct Token {
+    Tok kind;
+    double value;
+    std::size_t pos;
+    std::string name;   // for Tok::Ident
+};
+
+struct LexResult {
+    std::vector<Token> tokens;
+    std::optional<std::size_t> error_at;
+};
+
+LexResult tokenize(std::string_view src) {
+    LexResult r;
+    auto fail = [&r](std::size_t at) {
+        r.tokens.clear();
+        r.error_at = at;
+        return r;
+    };
+    auto digit = [&src](std::size_t i) { return i < src.size() && std::isdigit(static_cast<unsigned char>(src[i])); };
+    auto word = [&src](std::size_t i) {
+        return i < src.size() && (std::isalnum(static_cast<unsigned char>(src[i])) || src[i] == '_');
+    };
+
+    std::size_t i = 0;
+    while (i < src.size()) {
+        char c = src[i];
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
+            continue;
+        }
+        if (digit(i)) {
+            std::size_t start = i;
+            while (digit(i)) ++i;
+            if (i < src.size() && src[i] == '.') {
+                if (!digit(i + 1)) return fail(i);
+                ++i;
+                while (digit(i)) ++i;
+            }
+            std::string text(src.substr(start, i - start));
+            r.tokens.push_back({Tok::Number, std::strtod(text.c_str(), nullptr), start, ""});
+            continue;
+        }
+        if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            std::size_t start = i;
+            while (word(i)) ++i;
+            r.tokens.push_back({Tok::Ident, 0.0, start, std::string(src.substr(start, i - start))});
+            continue;
+        }
+        Tok kind;
+        switch (c) {
+            case '+': kind = Tok::Plus; break;
+            case '-': kind = Tok::Minus; break;
+            case '*': kind = Tok::Star; break;
+            case '/': kind = Tok::Slash; break;
+            case '(': kind = Tok::LParen; break;
+            case ')': kind = Tok::RParen; break;
+            case ',': kind = Tok::Comma; break;
+            default: return fail(i);
+        }
+        r.tokens.push_back({kind, 0.0, i, ""});
+        ++i;
+    }
+    return r;
+}
+
+class Parser {
+public:
+    explicit Parser(const std::vector<Token>& tokens) : tokens_(tokens) {}
+
+    std::optional<double> parse() {
+        auto value = expr();
+        if (!value || pos_ != tokens_.size()) return std::nullopt;
+        return value;
+    }
+
+private:
+    bool at(Tok kind) const { return pos_ < tokens_.size() && tokens_[pos_].kind == kind; }
+
+    std::optional<double> expr() {
+        auto left = term();
+        if (!left) return std::nullopt;
+        while (at(Tok::Plus) || at(Tok::Minus)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = term();
+            if (!right) return std::nullopt;
+            *left = op == Tok::Plus ? *left + *right : *left - *right;
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = factor();
+        if (!left) return std::nullopt;
+        while (at(Tok::Star) || at(Tok::Slash)) {
+            Tok op = tokens_[pos_++].kind;
+            auto right = factor();
+            if (!right) return std::nullopt;
+            if (op == Tok::Star) {
+                *left *= *right;
+            } else {
+                if (*right == 0) return std::nullopt;
+                *left /= *right;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> factor() {
+        if (at(Tok::Number)) return tokens_[pos_++].value;
+        if (at(Tok::Ident)) return call();
+        if (at(Tok::Minus)) {
+            ++pos_;
+            auto inner = factor();
+            if (!inner) return std::nullopt;
+            return -*inner;
+        }
+        if (at(Tok::LParen)) {
+            ++pos_;
+            auto inner = expr();
+            if (!inner || !at(Tok::RParen)) return std::nullopt;
+            ++pos_;
+            return inner;
+        }
+        return std::nullopt;
+    }
+
+    // call := IDENT '(' expr (',' expr)* ')'
+    std::optional<double> call() {
+        std::string name = tokens_[pos_++].name;
+        if (!at(Tok::LParen)) return std::nullopt;
+        ++pos_;
+        std::vector<double> args;
+        while (true) {
+            auto arg = expr();
+            if (!arg) return std::nullopt;
+            args.push_back(*arg);
+            if (at(Tok::Comma)) {
+                ++pos_;
+                continue;
+            }
+            break;
+        }
+        if (!at(Tok::RParen)) return std::nullopt;
+        ++pos_;
+        if (name == "abs" && args.size() == 1) return args[0] < 0 ? -args[0] : args[0];
+        if (name == "min" || name == "max") {
+            double best = args[0];
+            for (double a : args) best = name == "min" ? (a < best ? a : best) : (a > best ? a : best);
+            return best;
+        }
+        return std::nullopt;   // unknown function, or abs with the wrong number of arguments
+    }
+
+    const std::vector<Token>& tokens_;
+    std::size_t pos_ = 0;
+};
+
+std::optional<double> evaluate(std::string_view expr) {
+    LexResult lexed = tokenize(expr);
+    if (lexed.error_at) return std::nullopt;
+    return Parser(lexed.tokens).parse();
+}
+--- hint
+Extend the tokenizer first: an identifier branch before the switch, and a \`case ','\`. Then give the parser a \`call\` rule that \`factor\` uses when it sees an \`Ident\` token.
+--- hint
+In \`call\`: remember the name, require \`(\`, then read one \`expr\` into a vector of arguments, and keep reading another \`expr\` after every \`,\`. Require \`)\`. Only then look at the name and the number of arguments to work out the answer, or fail.
+--- check test | The example, and nested calls
+[] { auto a = evaluate("max(1, 2 * 3) - abs(-4)"); auto b = evaluate("min(max(1, 5), abs(-3), 4)"); return a && *a == 2 && b && *b == 3; }()
+--- check test | One argument for min and max, and calls inside expressions
+[] { auto a = evaluate("min(7)"); auto b = evaluate("2 * -max(-1, -2) + abs(0.5)"); return a && *a == 7 && b && *b == 2.5; }()
+--- check test | Wrong names and wrong numbers of arguments
+!evaluate("sqrt(4)") && !evaluate("abs(1, 2)") && !evaluate("abs()") && !evaluate("max()") && !evaluate("min")
+--- check test | Broken calls
+!evaluate("max(1, )") && !evaluate("max(1 2)") && !evaluate("max(1, 2") && !evaluate("abs 3") && !evaluate("1, 2")
+--- check test | Everything from the lesson still works
+[] { auto a = evaluate("1 + 2 * 3"); auto b = evaluate("(8 - 3 - 2) / 2"); return a && *a == 7 && b && *b == 1.5 && !evaluate("4 / 0") && !evaluate("2 +"); }()
+
+=== cpp4-gate | C++, expert: mastery gate
+--- teach
+This gate covers the whole course: moves and perfect forwarding, variadic templates, concepts, compile-time code, raw memory and the containers you built, iterators, hash maps, ranges, iterator invalidation, undefined behavior, performance, type erasure, caches and parsers. Each problem combines two or more lessons, and there are no hints. The questions at the end check that you understand why the code works, not only that it runs. To get ready, redo the practice problems of the lessons that felt hardest, from memory and against the clock: about ten minutes a problem.
+--- gate
+pass 7
+questions 10
+minutes 112
+
++++ problem | A box that may hold one object
+--- task
+Write \`template <typename T> class Maybe\`, which holds **zero or one** \`T\` in raw memory: room for the object is taken from \`std::allocator<T>\` only while there is an object. \`T\` may have no default constructor, like the starter's \`Gear\`, which counts objects alive, copies and moves. No \`main\`.
+
+- \`Maybe()\` holds nothing. \`bool has_value() const\`.
+- \`template <typename... Args> T& emplace(Args&&... args)\`: builds a new \`T\` from the forwarded arguments, **in place** (no temporary, no copy, no move), destroys the object held before if there was one, and returns a reference to the new object. The arguments may refer to the object held before, as in \`m.emplace(m.value())\`, so build the new object before destroying the old one.
+- \`void reset()\`: destroys the object, if any, and gives its room back. The destructor does the same.
+- A deep copy constructor (copying an empty \`Maybe\` gives an empty one), a \`noexcept\` move constructor that takes the object over **without moving it** (the source is left empty), and one assignment operator by copy-and-swap.
+- \`T& value() &\` and \`const T& value() const&\` return the object; \`T value() &&\` moves it out. They are only called when there is an object.
+--- starter
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// No default constructor. Counts objects alive, copies and moves.
+struct Gear {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    std::string name;
+    int teeth;
+    Gear(std::string n, int t) : name(std::move(n)), teeth(t) { ++alive; }
+    Gear(const Gear& o) : name(o.name), teeth(o.teeth) { ++alive; ++copies; }
+    Gear(Gear&& o) noexcept : name(std::move(o.name)), teeth(o.teeth) { ++alive; ++moves; }
+    ~Gear() { --alive; }
+};
+
+template <typename T>
+class Maybe {
+public:
+    bool has_value() const { return false; }
+};
+--- solution
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// No default constructor. Counts objects alive, copies and moves.
+struct Gear {
+    static inline int alive = 0;
+    static inline int copies = 0;
+    static inline int moves = 0;
+    std::string name;
+    int teeth;
+    Gear(std::string n, int t) : name(std::move(n)), teeth(t) { ++alive; }
+    Gear(const Gear& o) : name(o.name), teeth(o.teeth) { ++alive; ++copies; }
+    Gear(Gear&& o) noexcept : name(std::move(o.name)), teeth(o.teeth) { ++alive; ++moves; }
+    ~Gear() { --alive; }
+};
+
+template <typename T>
+class Maybe {
+public:
+    Maybe() = default;
+    ~Maybe() { reset(); }
+
+    Maybe(const Maybe& other) {
+        if (other.slot_) emplace(*other.slot_);
+    }
+    Maybe(Maybe&& other) noexcept : slot_(std::exchange(other.slot_, nullptr)) {}
+    Maybe& operator=(Maybe other) noexcept {
+        std::swap(slot_, other.slot_);
+        return *this;
+    }
+
+    template <typename... Args>
+    T& emplace(Args&&... args) {
+        T* room = std::allocator<T>().allocate(1);
+        std::construct_at(room, std::forward<Args>(args)...);   // the arguments may refer to the old object
+        reset();
+        slot_ = room;
+        return *slot_;
+    }
+
+    void reset() {
+        if (!slot_) return;
+        std::destroy_at(slot_);
+        std::allocator<T>().deallocate(slot_, 1);
+        slot_ = nullptr;
+    }
+
+    bool has_value() const { return slot_ != nullptr; }
+    T& value() & { return *slot_; }
+    const T& value() const& { return *slot_; }
+    T value() && { return std::move(*slot_); }
+
+private:
+    T* slot_ = nullptr;   // null when empty
+};
+--- check test | emplace builds in place and returns the object
+[] { Gear::alive = 0; Maybe<Gear> m; bool empty = !m.has_value() && Gear::alive == 0; Gear::copies = 0; Gear::moves = 0; Gear& g = m.emplace("spur", 12); return empty && m.has_value() && &g == &m.value() && g.teeth == 12 && Gear::copies == 0 && Gear::moves == 0 && Gear::alive == 1; }()
+--- check test | Replacing, resetting and destroying leave nothing behind
+[] { Gear::alive = 0; { Maybe<Gear> m; m.emplace("a", 1); m.emplace("b", 2); bool one = Gear::alive == 1 && m.value().name == "b"; m.reset(); bool none = !m.has_value() && Gear::alive == 0; m.emplace("c", 3); if (!one || !none) return false; } return Gear::alive == 0; }()
+--- check test | Copies are deep; moves take the object without moving it
+[] { Maybe<Gear> a; a.emplace("x", 5); Gear::copies = 0; Gear::moves = 0; Maybe<Gear> b = a; b.value().teeth = 9; bool deep = a.value().teeth == 5 && Gear::copies == 1; Maybe<Gear> c = std::move(a); return deep && Gear::moves == 0 && !a.has_value() && c.value().teeth == 5 && std::is_nothrow_move_constructible_v<Maybe<Gear>>; }()
+--- check test | Empty boxes copy and assign safely
+[] { Gear::alive = 0; bool ok; { Maybe<Gear> e; Maybe<Gear> f = e; Maybe<Gear> g; g.emplace("g", 1); g = e; Maybe<Gear> k; k.emplace("k", 2); Maybe<Gear> l; l = k; Maybe<Gear>& same = l; l = same; ok = !f.has_value() && !g.has_value() && l.value().name == "k" && Gear::alive == 2; } return ok && Gear::alive == 0; }()
+--- check test | value() by category
+[] { Maybe<Gear> m; m.emplace("m", 7); const Maybe<Gear>& c = m; Gear::copies = 0; Gear out = std::move(m).value(); return std::is_same_v<decltype(m.value()), Gear&> && std::is_same_v<decltype(c.value()), const Gear&> && std::is_same_v<decltype(std::move(m).value()), Gear> && out.teeth == 7 && Gear::copies == 0; }()
+--- check test | emplace from the object it replaces
+[] { Maybe<std::string> m; m.emplace("a string long enough to live on the heap"); m.emplace(m.value()); m.emplace(3, 'z'); Maybe<std::string> n; n.emplace(m.value() + "!"); return m.value() == "zzz" && n.value() == "zzz!"; }()
+
++++ problem | Names hashed by the compiler
+--- task
+A flight computer identifies commands by a 32-bit hash of their names, worked out while compiling. Write these, all usable at compile time. \`std::uint32_t\`, from \`<cstdint>\`, is an unsigned whole number of exactly 32 bits; like every unsigned type, it wraps round instead of overflowing. No \`main\`.
+
+- \`constexpr std::uint32_t fnv1a(std::string_view s)\`: the FNV-1a hash. Start from \`2166136261\`; for each character, first **exclusive-or** the hash with the character's value as an \`unsigned char\`, then multiply the hash by \`16777619\`, letting it wrap. So \`fnv1a("")\` is 2166136261 and \`fnv1a("a")\` is 3826002220.
+- \`template <std::size_t N> constexpr std::array<std::uint32_t, N> hash_all(const std::array<std::string_view, N>& names)\`: the hash of each name, in order.
+- \`template <std::size_t N> constexpr bool all_distinct(const std::array<std::string_view, N>& names)\`: \`true\` if no two names in the array have the same hash (so a name listed twice makes it \`false\`). With 0 or 1 names it is \`true\`.
+--- starter
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+
+constexpr std::uint32_t fnv1a(std::string_view s) {
+    return 0;
+}
+--- solution
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+
+constexpr std::uint32_t fnv1a(std::string_view s) {
+    std::uint32_t h = 2166136261u;
+    for (char c : s) {
+        h ^= static_cast<unsigned char>(c);
+        h *= 16777619u;   // unsigned: wraps round, never undefined
+    }
+    return h;
+}
+
+template <std::size_t N>
+constexpr std::array<std::uint32_t, N> hash_all(const std::array<std::string_view, N>& names) {
+    std::array<std::uint32_t, N> out{};
+    for (std::size_t i = 0; i < N; ++i) out[i] = fnv1a(names[i]);
+    return out;
+}
+
+template <std::size_t N>
+constexpr bool all_distinct(const std::array<std::string_view, N>& names) {
+    std::array<std::uint32_t, N> h = hash_all(names);
+    for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t j = i + 1; j < N; ++j)
+            if (h[i] == h[j]) return false;
+    return true;
+}
+--- check test | fnv1a at compile time
+[] { static_assert(fnv1a("") == 2166136261u && fnv1a("a") == 3826002220u && fnv1a("foobar") == 3214735720u); std::array<int, fnv1a("a") % 7> a{}; return a.size() == 5; }()
+--- check test | fnv1a at run time, on a std::string
+fnv1a(std::string("orbit")) == 3946618703u && fnv1a(std::string("burn")) == 1375277208u
+--- check test | hash_all
+[] { constexpr auto h = hash_all(std::array<std::string_view, 3>{"a", "burn", ""}); static_assert(h[0] == 3826002220u); return h[1] == 1375277208u && h[2] == 2166136261u; }()
+--- check test | all_distinct
+[] { static_assert(all_distinct(std::array<std::string_view, 3>{"orbit", "burn", "coast"})); static_assert(!all_distinct(std::array<std::string_view, 3>{"burn", "orbit", "burn"})); return all_distinct(std::array<std::string_view, 0>{}) && all_distinct(std::array<std::string_view, 1>{"x"}); }()
+
++++ problem | A histogram you can walk
+--- task
+Write \`class Histogram\`, which counts how many times each \`int\` was added, as a hash table from scratch with separate chaining, and which can be walked with a forward iterator. Do not use any standard map or set. No \`main\`.
+
+- It starts with 8 buckets; a value's bucket is \`std::hash<int>{}(x) % bucket_count()\`; after an add makes the number of **different** values more than 0.75 × \`bucket_count()\`, it doubles the bucket count and rehashes.
+- \`void add(int x)\`, \`int count(int x) const\` (0 for a value never added), \`std::size_t size() const\` (different values) and \`std::size_t bucket_count() const\`.
+- A nested \`iterator\` that satisfies \`std::forward_iterator\` and visits every entry once, in any order. Its \`value_type\` is \`std::pair<int, int>\` (a value and its count) and its \`reference\` is \`const std::pair<int, int>&\`. It must skip empty buckets. \`begin()\` and \`end()\` are \`const\`, and \`begin() == end()\` when nothing was added.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <utility>
+#include <vector>
+
+class Histogram {
+public:
+    void add(int x) {}
+    int count(int x) const { return 0; }
+    std::size_t size() const { return 0; }
+};
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <utility>
+#include <vector>
+
+class Histogram {
+    using Bucket = std::vector<std::pair<int, int>>;
+
+public:
+    Histogram() : buckets_(8) {}
+
+    void add(int x) {
+        Bucket& b = buckets_[index_for(x)];
+        for (auto& entry : b) {
+            if (entry.first == x) {
+                ++entry.second;
+                return;
+            }
+        }
+        b.emplace_back(x, 1);
+        ++size_;
+        if (size_ * 4 > buckets_.size() * 3) rehash(buckets_.size() * 2);
+    }
+
+    int count(int x) const {
+        for (const auto& entry : buckets_[index_for(x)])
+            if (entry.first == x) return entry.second;
+        return 0;
+    }
+
+    std::size_t size() const { return size_; }
+    std::size_t bucket_count() const { return buckets_.size(); }
+
+    class iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = std::pair<int, int>;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const std::pair<int, int>*;
+        using reference = const std::pair<int, int>&;
+
+        iterator() = default;
+        iterator(const Histogram* h, std::size_t bucket) : h_(h), bucket_(bucket) { skip_empty(); }
+
+        reference operator*() const { return h_->buckets_[bucket_][entry_]; }
+        pointer operator->() const { return &h_->buckets_[bucket_][entry_]; }
+        iterator& operator++() {
+            ++entry_;
+            if (entry_ == h_->buckets_[bucket_].size()) {
+                ++bucket_;
+                entry_ = 0;
+                skip_empty();
+            }
+            return *this;
+        }
+        iterator operator++(int) {
+            iterator old = *this;
+            ++*this;
+            return old;
+        }
+        bool operator==(const iterator&) const = default;
+
+    private:
+        void skip_empty() {
+            while (bucket_ < h_->buckets_.size() && h_->buckets_[bucket_].empty()) ++bucket_;
+        }
+
+        const Histogram* h_ = nullptr;
+        std::size_t bucket_ = 0;
+        std::size_t entry_ = 0;
+    };
+
+    iterator begin() const { return iterator(this, 0); }
+    iterator end() const { return iterator(this, buckets_.size()); }
+
+private:
+    std::size_t index_for(int x) const { return std::hash<int>{}(x) % buckets_.size(); }
+
+    void rehash(std::size_t n) {
+        std::vector<Bucket> old(n);
+        old.swap(buckets_);
+        for (Bucket& b : old)
+            for (auto& entry : b) buckets_[index_for(entry.first)].push_back(entry);
+    }
+
+    std::vector<Bucket> buckets_;
+    std::size_t size_ = 0;
+};
+--- check test | A forward iterator
+std::forward_iterator<Histogram::iterator>
+--- check test | Counting, and growing on the 7th different value
+[] { Histogram h; for (int x : {4, -1, 4, 9, 4}) h.add(x); bool small = h.count(4) == 3 && h.count(-1) == 1 && h.count(7) == 0 && h.size() == 3; for (int x = 100; x < 104; ++x) h.add(x); return small && h.size() == 7 && h.bucket_count() == 16 && h.count(4) == 3; }()
+--- check test | Walking visits every entry exactly once
+[] { Histogram h; for (int i = 0; i < 5000; ++i) h.add((i * 37) % 1000); long long adds = 0, values = 0; for (const auto& [x, n] : h) { adds += n; values += x; } return adds == 5000 && values == 499500 && std::ranges::distance(h) == 1000 && h.size() == 1000; }()
+--- check test | An empty histogram, and the most common value
+[] { Histogram e; bool empty = e.begin() == e.end(); Histogram h; for (int x : {3, 8, 8, 5, 8, 3}) h.add(x); auto top = std::ranges::max_element(h, {}, &std::pair<int, int>::second); auto it = h.begin(); auto before = it++; return empty && top->first == 8 && top->second == 3 && before != it; }()
+--- check source absent | No standard maps or sets
+\\b(unordered_map|unordered_set|map|set|multimap|multiset)\\s*<
+
++++ problem | Prune the weak, rank the strong
+--- task
+The starter declares \`struct Sat { std::string name; double signal; };\`. Write \`std::vector<std::string> prune_and_rank(std::vector<Sat>& sats, double min_signal, std::size_t k)\`. No \`main\`.
+
+- First it removes from \`sats\` itself every satellite whose signal is below \`min_signal\`, keeping the others in their order. \`sats\` is left in that order: it is not sorted.
+- Then it returns the names of the \`k\` strongest remaining satellites, strongest first. Satellites with equal signals keep their order in \`sats\`. If fewer than \`k\` remain, it returns them all.
+
+Use \`std::erase_if\` for the removal, and the \`std::ranges\` algorithms with a projection and a view for the ranking.
+--- starter
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Sat {
+    std::string name;
+    double signal;
+};
+
+std::vector<std::string> prune_and_rank(std::vector<Sat>& sats, double min_signal, std::size_t k) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Sat {
+    std::string name;
+    double signal;
+};
+
+std::vector<std::string> prune_and_rank(std::vector<Sat>& sats, double min_signal, std::size_t k) {
+    std::erase_if(sats, [min_signal](const Sat& s) { return s.signal < min_signal; });
+    std::vector<Sat> ranked = sats;   // sort a copy: sats keeps its own order
+    std::ranges::stable_sort(ranked, std::greater<double>(), &Sat::signal);
+    std::vector<std::string> names;
+    for (const Sat& s : ranked | std::views::take(static_cast<std::ptrdiff_t>(k))) names.push_back(s.name);
+    return names;
+}
+--- check test | Pruned in place, order kept
+[] { std::vector<Sat> s{{"a", 5}, {"b", 1}, {"c", 9}, {"d", 0.5}, {"e", 7}}; prune_and_rank(s, 2, 10); return s.size() == 3 && s[0].name == "a" && s[1].name == "c" && s[2].name == "e"; }()
+--- check case | Ranked strongest first, ties in order
+[] { std::vector<Sat> s{{"a", 5}, {"b", 9}, {"c", 1}, {"d", 9}, {"e", 5}}; return prune_and_rank(s, 2, 3); }()
+=> std::vector<std::string>{"b", "d", "a"}
+--- check test | Fewer than k, and k of 0
+[] { std::vector<Sat> s{{"x", 3}, {"y", 4}}; auto all = prune_and_rank(s, 0, 9); std::vector<Sat> t{{"x", 3}}; return all == std::vector<std::string>{"y", "x"} && prune_and_rank(t, 0, 0).empty() && t.size() == 1; }()
+--- check test | Everything pruned, and a signal equal to the limit stays
+[] { std::vector<Sat> s{{"x", 1}, {"y", 2}}; auto none = prune_and_rank(s, 5, 3); std::vector<Sat> t{{"edge", 5}, {"low", 4.9}}; auto edge = prune_and_rank(t, 5, 3); return none.empty() && s.empty() && edge == std::vector<std::string>{"edge"}; }()
+
++++ problem | Add up a line of numbers, safely
+--- task
+Write \`std::optional<int> total_of(std::string_view csv)\`, which adds up whole numbers written in one line, separated by commas, as in \`" 12, -4,7 "\`. No \`main\`.
+
+- Each field is: optional spaces, an optional \`-\` directly followed by one or more digits, then optional spaces. Nothing else is allowed: not a \`+\`, not a space between the \`-\` and the digits, not an empty field (\`"1,,2"\`, \`"1,"\` and \`",1"\` are all invalid).
+- Every number must fit in an \`int\` (\`-2147483648\` does, \`2147483648\` does not), and so must the final total. A running total may pass the edge on the way: \`"2147483647, 1, -1"\` is 2147483647.
+- Blank or empty input has no numbers, and its total is 0.
+- Return \`std::nullopt\` for anything invalid. Never let the program itself overflow while reading or adding.
+--- starter
+#include <cctype>
+#include <climits>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string_view>
+
+std::optional<int> total_of(std::string_view csv) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <climits>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string_view>
+
+std::optional<int> total_of(std::string_view csv) {
+    std::size_t i = 0;
+    auto skip_spaces = [&] {
+        while (i < csv.size() && std::isspace(static_cast<unsigned char>(csv[i]))) ++i;
+    };
+    auto digit = [&] { return i < csv.size() && std::isdigit(static_cast<unsigned char>(csv[i])); };
+
+    skip_spaces();
+    if (i == csv.size()) return 0;   // no numbers at all
+
+    long long total = 0;
+    while (true) {
+        skip_spaces();
+        bool negative = false;
+        if (i < csv.size() && csv[i] == '-') {
+            negative = true;
+            ++i;
+        }
+        if (!digit()) return std::nullopt;
+        long long value = 0;
+        while (digit()) {
+            value = value * 10 + (csv[i] - '0');
+            if (value > 2147483648LL) return std::nullopt;   // stop before anything can overflow
+            ++i;
+        }
+        if (negative) value = -value;
+        if (value > std::numeric_limits<int>::max()) return std::nullopt;
+        total += value;
+        skip_spaces();
+        if (i == csv.size()) break;
+        if (csv[i] != ',') return std::nullopt;
+        ++i;
+    }
+    if (total > std::numeric_limits<int>::max() || total < std::numeric_limits<int>::min()) return std::nullopt;
+    return static_cast<int>(total);
+}
+--- check test | Ordinary lines
+total_of("1, 2, 3") == 6 && total_of(" -4 ,10") == 6 && total_of("7") == 7 && total_of("0,-0") == 0
+--- check test | Right at the edges of int
+total_of("2147483647, 1, -1") == INT_MAX && total_of("-2147483648") == INT_MIN && total_of("2147483647,1") == std::nullopt && total_of("-2147483648, -1") == std::nullopt
+--- check test | Numbers that do not fit
+total_of("2147483648, -1") == std::nullopt && total_of("99999999999999999999") == std::nullopt && total_of("1, -99999999999999999999") == std::nullopt
+--- check test | Empty fields and stray characters
+total_of("1,,2") == std::nullopt && total_of("1,") == std::nullopt && total_of(",1") == std::nullopt && total_of("1 2") == std::nullopt && total_of("+5") == std::nullopt && total_of("- 5") == std::nullopt && total_of("1.5") == std::nullopt && total_of("-") == std::nullopt
+--- check test | Blank input totals 0
+total_of("") == 0 && total_of("   ") == 0
+
++++ problem | Count the stretches with a given sum
+--- task
+Write \`long long count_ranges(const std::vector<int>& v, long long target)\`: how many stretches of consecutive elements \`v[i] + … + v[j]\` (with \`i <= j\`) add up to exactly \`target\`. Values can be negative and zero. No \`main\`.
+
+For \`{1, 2, 3, -3, 3}\` and target 3 the answer is 5. For \`{0, 0, 0}\` and target 0 it is 6, because every one of the six stretches adds up to 0.
+
+The last check has 200,000 values, so trying every pair \`i\`, \`j\` (about 2 × 10¹⁰ of them) is far too slow. Combine prefix sums with a hash map: the stretch from \`i\` to \`j\` adds up to \`target\` exactly when (sum of the first \`j + 1\` values) − (sum of the first \`i\` values) equals \`target\`. Sums can pass the largest \`int\`.
+--- starter
+#include <cstddef>
+#include <unordered_map>
+#include <vector>
+
+long long count_ranges(const std::vector<int>& v, long long target) {
+    return 0;
+}
+--- solution
+#include <cstddef>
+#include <unordered_map>
+#include <vector>
+
+long long count_ranges(const std::vector<int>& v, long long target) {
+    std::unordered_map<long long, long long> seen;   // prefix sum -> how many times it has appeared
+    seen[0] = 1;                                     // the empty prefix
+    long long prefix = 0;
+    long long count = 0;
+    for (int x : v) {
+        prefix += x;
+        auto it = seen.find(prefix - target);
+        if (it != seen.end()) count += it->second;
+        ++seen[prefix];
+    }
+    return count;
+}
+--- check test | Small examples
+count_ranges({1, 2, 3, -3, 3}, 3) == 5 && count_ranges({0, 0, 0}, 0) == 6 && count_ranges({1, -1, 1, -1}, 0) == 4
+--- check test | Empty, one element, and nothing matching
+count_ranges({}, 5) == 0 && count_ranges({5}, 5) == 1 && count_ranges({5}, 4) == 0 && count_ranges({2, 2}, 3) == 0
+--- check test | Sums bigger than an int
+[] { std::vector<int> v(100000, 1000000000); return count_ranges(v, 3000000000LL) == 99998; }()
+--- check test | 200,000 values, quickly
+[] { std::vector<int> v(200000); for (int i = 0; i < 200000; ++i) v[i] = (i * 7919) % 21 - 10; return count_ranges(v, 7) == 453504308LL; }()
+
++++ problem | Any statistic, as a value
+--- task
+The starter has three running statistics, \`Mean\`, \`Count\` and \`Peak\`, each with \`void add(double)\` and \`double result() const\`. Write a concept, a type-erased class and two functions. No \`main\`.
+
+- \`concept Stat\`: given a \`T& s\`, a \`const T& c\` and a \`double x\`, \`s.add(x)\` compiles and \`c.result()\` gives something convertible to \`double\`.
+- \`class AnyStat\`: holds any \`Stat\` by type erasure (a private \`Concept\`/\`Model\` pair and a \`std::unique_ptr\`). Its template constructor is constrained by \`Stat\`, so an \`AnyStat\` cannot be made from anything else. It is a value type: deep copies (a copy keeps counting on its own), copy-and-swap assignment, a \`noexcept\` move constructor. Public \`void add(double x)\` and \`double result() const\`.
+- \`make_stats(stats...)\`: any number of \`Stat\` arguments, returned as a \`std::vector<AnyStat>\` in order; a non-\`Stat\` argument must not compile (a requires clause folding \`&&\` over \`Stat<Ss>\`).
+- \`std::vector<double> run(std::vector<AnyStat> stats, const std::vector<double>& data)\`: feeds every value of \`data\`, in order, to every statistic, and returns their results in order. It takes the vector by value, so the caller's statistics are not changed.
+--- starter
+#include <concepts>
+#include <memory>
+#include <utility>
+#include <vector>
+
+struct Mean {
+    double total = 0;
+    int n = 0;
+    void add(double x) { total += x; ++n; }
+    double result() const { return n ? total / n : 0.0; }
+};
+
+struct Count {
+    int n = 0;
+    void add(double) { ++n; }
+    double result() const { return n; }
+};
+
+struct Peak {
+    double best = 0;
+    bool any = false;
+    void add(double x) { if (!any || x > best) best = x; any = true; }
+    double result() const { return best; }
+};
+--- solution
+#include <concepts>
+#include <memory>
+#include <utility>
+#include <vector>
+
+struct Mean {
+    double total = 0;
+    int n = 0;
+    void add(double x) { total += x; ++n; }
+    double result() const { return n ? total / n : 0.0; }
+};
+
+struct Count {
+    int n = 0;
+    void add(double) { ++n; }
+    double result() const { return n; }
+};
+
+struct Peak {
+    double best = 0;
+    bool any = false;
+    void add(double x) { if (!any || x > best) best = x; any = true; }
+    double result() const { return best; }
+};
+
+template <typename T>
+concept Stat = requires(T& s, const T& c, double x) {
+    s.add(x);
+    { c.result() } -> std::convertible_to<double>;
+};
+
+class AnyStat {
+public:
+    template <Stat T>
+    AnyStat(T s) : self_(std::make_unique<Model<T>>(std::move(s))) {}
+
+    AnyStat(const AnyStat& other) : self_(other.self_->clone()) {}
+    AnyStat(AnyStat&&) noexcept = default;
+    AnyStat& operator=(AnyStat other) noexcept {
+        std::swap(self_, other.self_);
+        return *this;
+    }
+
+    void add(double x) { self_->add(x); }
+    double result() const { return self_->result(); }
+
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual void add(double x) = 0;
+        virtual double result() const = 0;
+        virtual std::unique_ptr<Concept> clone() const = 0;
+    };
+
+    template <typename T>
+    struct Model final : Concept {
+        T held;
+        explicit Model(T s) : held(std::move(s)) {}
+        void add(double x) override { held.add(x); }
+        double result() const override { return held.result(); }
+        std::unique_ptr<Concept> clone() const override { return std::make_unique<Model>(held); }
+    };
+
+    std::unique_ptr<Concept> self_;
+};
+
+template <typename... Ss>
+    requires (Stat<Ss> && ...)
+std::vector<AnyStat> make_stats(Ss... stats) {
+    std::vector<AnyStat> out;
+    (out.push_back(AnyStat(std::move(stats))), ...);
+    return out;
+}
+
+std::vector<double> run(std::vector<AnyStat> stats, const std::vector<double>& data) {
+    for (double x : data)
+        for (AnyStat& s : stats) s.add(x);
+    std::vector<double> results;
+    for (const AnyStat& s : stats) results.push_back(s.result());
+    return results;
+}
+--- check test | Stat sorts the types
+[] { struct Mute { double result() const { return 0; } }; return Stat<Mean> && Stat<Count> && Stat<Peak> && !Stat<int> && !Stat<Mute>; }()
+--- check case | Every value to every statistic
+run(make_stats(Mean{}, Count{}, Peak{}), {2, 8, 5})
+=> std::vector<double>{5, 3, 8}
+--- check test | Copies count on their own, and run leaves the caller's statistics alone
+[] { AnyStat a = Count{}; a.add(1); AnyStat b = a; b.add(1); AnyStat c = Mean{}; c = b; c.add(1); auto mine = make_stats(Count{}); run(mine, {1, 2, 3}); return a.result() == 1 && b.result() == 2 && c.result() == 3 && mine[0].result() == 0; }()
+--- check test | A new kind of statistic, and no statistics at all
+[] { struct Last { double v = 0; void add(double x) { v = x; } double result() const { return v; } }; return run(make_stats(Last{}), {4, 9}) == std::vector<double>{9} && run(make_stats(), {1}).empty() && make_stats().empty(); }()
+--- check test | Non-statistics are refused, and moves are noexcept
+![]<class T>(T t) { return requires { make_stats(Count{}, t); }; }(5) && ![]<class T>(T t) { return requires { AnyStat(t); }; }(2.5) && std::is_nothrow_move_constructible_v<AnyStat>
+
++++ problem | Handles that know when they are stale
+--- task
+A game keeps its objects in a **slot map**: a container that hands out small handles instead of pointers, so that a handle to an object that has been removed can be recognized as stale instead of dangling. Write it. No \`main\`.
+
+The starter declares \`struct Handle { std::size_t index; unsigned generation; bool operator==(const Handle&) const = default; };\`.
+
+- \`template <typename T> class SlotMap\`. Keep a \`std::vector\` of slots, where each slot holds a \`std::optional<T>\` and an \`unsigned\` generation (starting at 0), plus a list of free slot indexes.
+- \`Handle insert(T value)\`: stores the value (moved in) and returns its handle. It reuses a free slot if there is one, and otherwise adds a slot at the end.
+- \`T* get(Handle h)\` and \`const T* get(Handle h) const\`: a pointer to the value, or \`nullptr\` if the handle is stale: its index is out of range, its slot is empty, or its generation does not match the slot's.
+- \`bool erase(Handle h)\`: if \`h\` is not stale, destroys the value, adds 1 to that slot's generation, remembers the slot as free, and returns \`true\`; otherwise returns \`false\`.
+- \`std::size_t size() const\`: how many values are stored.
+
+\`T\` may be a type that can only be moved, such as \`std::unique_ptr<int>\`.
+--- starter
+#include <cstddef>
+#include <optional>
+#include <utility>
+#include <vector>
+
+struct Handle {
+    std::size_t index;
+    unsigned generation;
+    bool operator==(const Handle&) const = default;
+};
+
+template <typename T>
+class SlotMap {
+public:
+    std::size_t size() const { return 0; }
+};
+--- solution
+#include <cstddef>
+#include <optional>
+#include <utility>
+#include <vector>
+
+struct Handle {
+    std::size_t index;
+    unsigned generation;
+    bool operator==(const Handle&) const = default;
+};
+
+template <typename T>
+class SlotMap {
+public:
+    Handle insert(T value) {
+        ++size_;
+        if (!free_.empty()) {
+            std::size_t i = free_.back();
+            free_.pop_back();
+            slots_[i].value = std::move(value);
+            return {i, slots_[i].generation};
+        }
+        slots_.push_back(Slot{std::move(value), 0});
+        return {slots_.size() - 1, 0};
+    }
+
+    T* get(Handle h) {
+        if (h.index >= slots_.size()) return nullptr;
+        Slot& s = slots_[h.index];
+        if (s.generation != h.generation || !s.value) return nullptr;
+        return &*s.value;
+    }
+
+    const T* get(Handle h) const { return const_cast<SlotMap*>(this)->get(h); }
+
+    bool erase(Handle h) {
+        if (!get(h)) return false;
+        Slot& s = slots_[h.index];
+        s.value.reset();
+        ++s.generation;   // every old handle to this slot is now stale
+        free_.push_back(h.index);
+        --size_;
+        return true;
+    }
+
+    std::size_t size() const { return size_; }
+
+private:
+    struct Slot {
+        std::optional<T> value;
+        unsigned generation = 0;
+    };
+
+    std::vector<Slot> slots_;
+    std::vector<std::size_t> free_;
+    std::size_t size_ = 0;
+};
+--- check test | Insert and get
+[] { SlotMap<std::string> m; Handle a = m.insert("alpha"); Handle b = m.insert("beta"); return m.size() == 2 && m.get(a) && *m.get(a) == "alpha" && *m.get(b) == "beta" && !(a == b); }()
+--- check test | Erased handles are stale
+[] { SlotMap<int> m; Handle a = m.insert(7); bool gone = m.erase(a); return gone && m.get(a) == nullptr && !m.erase(a) && m.size() == 0; }()
+--- check test | A reused slot gets a new generation; the old handle stays stale
+[] { SlotMap<int> m; Handle a = m.insert(1); m.insert(2); m.erase(a); Handle c = m.insert(3); return c.index == a.index && c.generation != a.generation && m.get(a) == nullptr && *m.get(c) == 3 && m.size() == 2; }()
+--- check test | Handles that never existed, and a const map
+[] { SlotMap<int> m; m.insert(5); const SlotMap<int>& k = m; return m.get(Handle{9, 0}) == nullptr && k.get(Handle{0, 0}) && *k.get(Handle{0, 0}) == 5 && k.get(Handle{0, 1}) == nullptr && !m.erase(Handle{3, 0}); }()
+--- check test | Move-only values, and many cycles
+[] { SlotMap<std::unique_ptr<int>> m; std::vector<Handle> live; for (int round = 0; round < 1000; ++round) { Handle h = m.insert(std::make_unique<int>(round)); if (round % 3 == 0) m.erase(h); else live.push_back(h); } bool all = true; for (const Handle& h : live) all = all && m.get(h) && **m.get(h) % 3 != 0; return all && m.size() == live.size() && m.size() == 666; }()
+
++++ problem | Read a nested list
+--- task
+Write \`std::optional<ListInfo> read_list(std::string_view src)\`, a recursive-descent reader for nested lists of whole numbers, like \`[1, [2, 3], []]\`. The starter declares \`struct ListInfo { long long sum; int count; int depth; };\`. No \`main\`.
+
+The grammar, with spaces allowed between any two symbols:
+
+\`\`\`
+list := '[' ( item ( ',' item )* )? ']'
+item := NUMBER | list
+\`\`\`
+
+A \`NUMBER\` is an optional \`-\` directly followed by 1 to 9 digits. \`( … )?\` means "optionally, once", so \`[]\` is a list with no items.
+
+- On success, \`sum\` is the total of every number at every level, \`count\` is how many numbers there are, and \`depth\` is the deepest nesting of brackets: \`[]\` has depth 1, and \`[1, [2, 3], []]\` has sum 6, count 3 and depth 2.
+- Return \`std::nullopt\` for anything that does not fit the grammar: missing brackets, a missing item (\`[1,]\`, \`[,1]\`), items with no comma between them, leftover text after the outer list, empty input, a bare number with no brackets, or a number with more than 9 digits.
+- 200 levels of nesting must work.
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
+struct ListInfo {
+    long long sum;
+    int count;
+    int depth;
+};
+
+std::optional<ListInfo> read_list(std::string_view src) {
+    return std::nullopt;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
+struct ListInfo {
+    long long sum;
+    int count;
+    int depth;
+};
+
+class ListReader {
+public:
+    explicit ListReader(std::string_view src) : src_(src) {}
+
+    std::optional<ListInfo> read() {
+        ListInfo info{0, 0, 0};
+        if (!list(1, info)) return std::nullopt;
+        skip_spaces();
+        if (i_ != src_.size()) return std::nullopt;
+        return info;
+    }
+
+private:
+    void skip_spaces() {
+        while (i_ < src_.size() && std::isspace(static_cast<unsigned char>(src_[i_]))) ++i_;
+    }
+
+    bool next_is(char c) {
+        skip_spaces();
+        return i_ < src_.size() && src_[i_] == c;
+    }
+
+    // list := '[' ( item ( ',' item )* )? ']'
+    bool list(int level, ListInfo& info) {
+        if (!next_is('[')) return false;
+        ++i_;
+        info.depth = std::max(info.depth, level);
+        if (next_is(']')) {
+            ++i_;
+            return true;
+        }
+        while (true) {
+            if (!item(level, info)) return false;
+            if (next_is(',')) {
+                ++i_;
+                continue;
+            }
+            if (!next_is(']')) return false;
+            ++i_;
+            return true;
+        }
+    }
+
+    // item := NUMBER | list
+    bool item(int level, ListInfo& info) {
+        if (next_is('[')) return list(level + 1, info);
+        bool negative = false;
+        if (i_ < src_.size() && src_[i_] == '-') {
+            negative = true;
+            ++i_;
+        }
+        long long value = 0;
+        std::size_t digits = 0;
+        while (i_ < src_.size() && std::isdigit(static_cast<unsigned char>(src_[i_]))) {
+            if (digits == 9) return false;
+            value = value * 10 + (src_[i_] - '0');
+            ++digits;
+            ++i_;
+        }
+        if (digits == 0) return false;
+        info.sum += negative ? -value : value;
+        ++info.count;
+        return true;
+    }
+
+    std::string_view src_;
+    std::size_t i_ = 0;
+};
+
+std::optional<ListInfo> read_list(std::string_view src) {
+    return ListReader(src).read();
+}
+--- check test | The example
+[] { auto r = read_list("[1, [2, 3], []]"); return r && r->sum == 6 && r->count == 3 && r->depth == 2; }()
+--- check test | Empty lists, deep lists and negative numbers
+[] { auto a = read_list("[]"); auto b = read_list("[[[]]]"); auto c = read_list(" [ -5 ,[ 10 ] ] "); return a && a->sum == 0 && a->count == 0 && a->depth == 1 && b && b->depth == 3 && b->count == 0 && c && c->sum == 5 && c->count == 2 && c->depth == 2; }()
+--- check test | Nine digits, and big totals
+[] { auto r = read_list("[999999999, 999999999, [999999999]]"); return r && r->sum == 2999999997LL && !read_list("[1234567890]"); }()
+--- check test | Everything that does not fit the grammar
+!read_list("") && !read_list("[") && !read_list("[1,]") && !read_list("[,1]") && !read_list("[1 2]") && !read_list("[1]]") && !read_list("1") && !read_list("[- 1]") && !read_list("[1] [2]") && !read_list("[[1]")
+--- check test | 200 levels of nesting
+[] { std::string s(200, '['); s += "7"; s += std::string(200, ']'); auto r = read_list(s); return r && r->depth == 200 && r->sum == 7 && r->count == 1; }()
+
++++ problem | Insert in order, copying only what you must
+--- task
+Write \`template <typename T, typename U> void insert_sorted(std::vector<T>& v, U&& x)\`. \`v\` is sorted in ascending order by \`<\`; insert \`x\` so that it stays sorted, **after** any elements equal to \`x\`. No \`main\`.
+
+- Find the place with \`std::upper_bound\`, and insert with the vector's \`insert\`, forwarding \`x\`: a named object is copied exactly once (and left intact), and a temporary is moved, never copied.
+- Anything a \`T\` can be built from works too: \`insert_sorted(names, "kim")\` on a \`std::vector<std::string>\`.
+- No existing element is ever copied, even when the vector grows (the starter's \`Probe\` moves with \`noexcept\` and counts only its copies).
+--- starter
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Ordered by key only. Counts copies (by construction or assignment).
+struct Probe {
+    static inline int copies = 0;
+    int key;
+    std::string tag;
+    Probe(int k, std::string t) : key(k), tag(std::move(t)) {}
+    Probe(const Probe& o) : key(o.key), tag(o.tag) { ++copies; }
+    Probe(Probe&& o) noexcept : key(o.key), tag(std::move(o.tag)) {}
+    Probe& operator=(const Probe& o) { key = o.key; tag = o.tag; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { key = o.key; tag = std::move(o.tag); return *this; }
+    bool operator<(const Probe& o) const { return key < o.key; }
+};
+
+template <typename T, typename U>
+void insert_sorted(std::vector<T>& v, U&& x) {
+}
+--- solution
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Ordered by key only. Counts copies (by construction or assignment).
+struct Probe {
+    static inline int copies = 0;
+    int key;
+    std::string tag;
+    Probe(int k, std::string t) : key(k), tag(std::move(t)) {}
+    Probe(const Probe& o) : key(o.key), tag(o.tag) { ++copies; }
+    Probe(Probe&& o) noexcept : key(o.key), tag(std::move(o.tag)) {}
+    Probe& operator=(const Probe& o) { key = o.key; tag = o.tag; ++copies; return *this; }
+    Probe& operator=(Probe&& o) noexcept { key = o.key; tag = std::move(o.tag); return *this; }
+    bool operator<(const Probe& o) const { return key < o.key; }
+};
+
+template <typename T, typename U>
+void insert_sorted(std::vector<T>& v, U&& x) {
+    auto place = std::upper_bound(v.begin(), v.end(), x);   // after every element equal to x
+    v.insert(place, std::forward<U>(x));
+}
+--- check test | Sorted, with equal keys after the ones already there
+[] { std::vector<Probe> v; insert_sorted(v, Probe(5, "a")); insert_sorted(v, Probe(1, "b")); insert_sorted(v, Probe(5, "c")); insert_sorted(v, Probe(3, "d")); insert_sorted(v, Probe(5, "e")); std::string tags; for (const Probe& p : v) tags += p.tag; return tags == "bdace"; }()
+--- check test | Temporaries are never copied, even while the vector grows
+[] { std::vector<Probe> v; Probe::copies = 0; for (int i = 0; i < 100; ++i) insert_sorted(v, Probe((i * 37) % 50, "t")); bool sorted = true; for (std::size_t i = 1; i < v.size(); ++i) sorted = sorted && !(v[i] < v[i - 1]); return Probe::copies == 0 && sorted && v.size() == 100; }()
+--- check test | A named object is copied exactly once and left intact
+[] { std::vector<Probe> v; for (int k : {1, 4, 9}) insert_sorted(v, Probe(k, "x")); Probe mine(5, "mine"); Probe::copies = 0; insert_sorted(v, mine); return Probe::copies == 1 && mine.tag == "mine" && v[2].tag == "mine" && v.size() == 4; }()
+--- check test | Strings from literals and ints
+[] { std::vector<std::string> names{"ann", "zed"}; insert_sorted(names, "kim"); std::string b = "bo"; insert_sorted(names, b); std::vector<int> n{1, 3}; insert_sorted(n, 2); insert_sorted(n, 0); insert_sorted(n, 3); return names == std::vector<std::string>{"ann", "bo", "kim", "zed"} && b == "bo" && n == std::vector<int>{0, 1, 2, 3, 3}; }()
+
++++ question | Copies and moves, line by line
+--- ask
+\`P\` prints \`copy \` from its copy constructor and \`move \` from its move constructor. The compiler does NRVO whenever it can. What does this program print?
+
+\`\`\`cpp fragment
+P make() {
+    P p;
+    return p;
+}
+
+int main() {
+    P a = make();
+    P b = a;
+    P c = std::move(b);
+    const P d;
+    P e = std::move(d);
+}
+\`\`\`
+--- answer
+copy move copy
+copy move copy
+--- why
+\`make()\` returns a local by its plain name, so NRVO builds \`p\` straight in \`a\`: nothing is printed. \`b = a\` copies from an lvalue. \`std::move(b)\` is an xvalue, so \`c\` is moved. \`std::move(d)\` gives a \`const P&&\`, which the move constructor cannot take, so \`e\` is silently copied.
+
++++ question | A fold with no start value
+--- ask
+What does \`f(10, 4, 3)\` return?
+
+\`\`\`cpp
+template <typename... Ts>
+int f(Ts... xs) {
+    return (xs - ...);
+}
+\`\`\`
+--- answer
+9
+--- why
+With the pack before the dots, it is a right fold: \`10 - (4 - 3)\`, which is \`10 - 1 = 9\`. A left fold, \`(... - xs)\`, would give \`(10 - 4) - 3 = 3\`. For \`-\` the grouping changes the answer.
+
++++ question | Returning a local with std::move
+--- ask
+A function builds a local \`std::vector<int> result\` and ends with \`return std::move(result);\` instead of \`return result;\`. What does that change?
+--- choice
+Nothing: the compiler moves the vector either way.
+--- choice correct
+It switches off NRVO, so the vector is moved when it could have been built in the caller's space with no move at all.
+--- choice
+It makes the function faster, because without it the vector would be copied.
+--- choice
+It leaves the caller with an empty vector.
+--- why
+\`return result;\` lets the compiler build \`result\` directly in the caller's space (NRVO), and even when it cannot, a returned local is moved automatically. \`std::move\` makes the expression no longer the plain name of a local, so NRVO is off and a real move must happen: a pessimisation.
+
++++ question | forward, not move
+--- ask
+Inside \`template <typename T> void wrap(T&& x)\`, why pass \`x\` on with \`std::forward<T>(x)\` rather than \`std::move(x)\`?
+--- choice
+\`std::move\` does not compile on a forwarding reference.
+--- choice
+\`std::forward\` is faster, because it does not call the move constructor.
+--- choice correct
+\`std::move\` always makes an rvalue, so a caller's named object would be moved from and emptied; \`std::forward<T>\` makes an rvalue only when \`T\` says the caller passed one.
+--- choice
+\`std::forward\` copies the argument, which is always safer.
+--- why
+Both are only casts. \`T\` records whether the caller passed an lvalue (\`T\` is \`X&\`) or an rvalue (\`T\` is \`X\`), and \`std::forward<T>\` casts to \`T&&\`, which collapses to \`X&\` or stays \`X&&\`. \`std::move\` ignores \`T\` and always casts to an rvalue, stealing the caller's object.
+
++++ question | Why build one concept from another
+--- ask
+Two overloads exist: \`template <Sensor S> double reading(const S&)\` and \`template <Calibrated S> double reading(const S&)\`. A \`Gauge\` satisfies both concepts. Why must \`Calibrated\` be written as \`Sensor<T> && requires(const T& s) { s.offset(); }\`, instead of repeating \`Sensor\`'s requirements by hand inside its own requires-expression?
+--- choice
+Repeating them by hand does not compile.
+--- choice correct
+The compiler can only tell that \`Calibrated\` is more constrained than \`Sensor\` when it is built from the named concept; with the requirements written out twice, the two look unrelated and the call is ambiguous.
+--- choice
+It makes the program run faster, because the compiler checks \`Sensor\` only once.
+--- choice
+The compiler always picks the overload that was declared last, so the order is what matters.
+--- why
+Choosing the more constrained overload is called subsumption, and it works on named concepts: \`Sensor<T> && X\` includes everything \`Sensor<T>\` asks, so it wins when both fit. Two conditions written out separately are never compared, even if they say the same thing.
+
++++ question | A table the compiler refuses
+--- ask
+The \`static_assert\` below does not compile. Which line is the real cause?
+
+\`\`\`cpp
+constexpr int sum_of_squares() {
+    std::array<int, 4> t;              // line A
+    for (int i = 1; i < 4; ++i)        // line B
+        t[i] = i * i;
+    int total = 0;
+    for (int x : t) total += x;        // line C
+    return total;
+}
+static_assert(sum_of_squares() == 14);
+\`\`\`
+--- choice
+Line B: loops are not allowed in a \`constexpr\` function.
+--- choice correct
+Line A: without \`{}\`, \`t[0]\` is never set, and reading a value that was never set is an error during constant evaluation; line C is only where it is read.
+--- choice
+Line C: a range-for cannot be used at compile time.
+--- choice
+None of them: it compiles, \`t[0]\` happens to be 0, and the total is 14.
+--- why
+During compile-time evaluation, undefined behavior, such as reading a value that was never set, is a compile error instead of silent garbage. The first loop starts at 1, so only \`{}\` could have set entry 0. Writing \`std::array<int, 4> t{};\` sets every entry to 0, and the total is 0 + 1 + 4 + 9 = 14.
+
++++ question | Growing by one
+--- ask
+A growable array grows to exactly \`capacity + 1\` every time it is full, moving every element to the new block. What is the total number of element moves for \`n\` pushes?
+--- choice
+O(n), because each push moves only one element.
+--- choice correct
+O(n²), because the k-th push moves about k elements, and 1 + 2 + … + n is about n² / 2.
+--- choice
+O(n log n), because the block is reallocated about log n times.
+--- choice
+O(1) per push on average, like doubling.
+--- why
+Adding one slot means every push past the first reallocates and carries every element across: 0 + 1 + … + (n − 1) moves in all. Doubling reallocates only at powers of two, for fewer than 2n moves in total, which is amortised O(1) per push.
+
++++ question | Why noexcept on a move
+--- ask
+A class has a working move constructor that is **not** marked \`noexcept\`, and a copy constructor. What happens when a \`std::vector\` of it runs out of room and grows?
+--- choice
+It does not compile.
+--- choice
+It moves the elements anyway; \`noexcept\` only affects error messages.
+--- choice correct
+It copies the elements instead of moving them, because a move that might throw halfway through could not be undone.
+--- choice
+It moves half of the elements and copies the rest.
+--- why
+While growing, a vector must be able to give the strong guarantee: if something fails, the old block is untouched. Copies leave the old elements intact; moves do not. So the vector only moves elements whose move constructor promises not to throw.
+
++++ question | Erasing while walking
+--- ask
+This loop should remove every 0 from \`v\`. What goes wrong?
+
+\`\`\`cpp
+for (auto it = v.begin(); it != v.end(); ++it) {
+    if (*it == 0) v.erase(it);
+}
+\`\`\`
+--- choice
+Nothing: \`erase\` keeps \`it\` pointing at the next element.
+--- choice
+It removes every 0, but it is slow.
+--- choice correct
+After \`erase(it)\`, \`it\` is invalid: in practice it now sits on the next element, which \`++it\` then skips, so neighbouring zeros survive, and erasing the last element runs past the end.
+--- choice
+It does not compile, because \`v\` is changed inside a loop over it.
+--- why
+\`erase\` invalidates iterators at and after the erased element, and returns a valid iterator to the next one. The fix is \`it = v.erase(it);\` with \`++it\` only when nothing was erased, or simply \`std::erase_if(v, [](int x) { return x == 0; });\`.
+
++++ question | A rehash that keeps the buckets
+--- ask
+A hash table grows from 8 to 16 buckets by moving everything in old bucket \`b\` into new bucket \`b\`, without hashing any key again. What happens?
+--- choice
+Nothing goes wrong; it is just slightly slower to look keys up.
+--- choice correct
+Many keys can no longer be found, because a lookup goes to bucket \`hash % 16\`, which is usually not the bucket \`hash % 8\` that the key was left in.
+--- choice
+Every key ends up in bucket 0.
+--- choice
+Keys are found, but their values are swapped.
+--- why
+A key's bucket depends on the bucket count: \`h % 8\` and \`h % 16\` differ whenever the key's hash has the bit worth 8 set, which is about half of all keys. Rehashing must put every entry into the bucket its hash picks with the new count.
+
++++ question | An overflow check that vanishes
+--- ask
+With optimization on, this function never returns \`true\`, even for \`x = INT_MAX\`. Why?
+
+\`\`\`cpp
+bool will_overflow(int x) {
+    return x + 1 < x;
+}
+\`\`\`
+--- choice
+\`INT_MAX + 1\` is exactly \`INT_MAX\`, so the comparison is false.
+--- choice correct
+Signed overflow is undefined behavior, so the optimizer may assume \`x + 1\` never overflows; then \`x + 1 < x\` is always false, and it replaces the check with \`false\`.
+--- choice
+The compiler has a bug with \`int\` comparisons.
+--- choice
+\`x + 1\` is worked out in \`long long\`, where it does not overflow.
+--- why
+The optimizer trusts the rule book: in a correct program a signed \`int\` never overflows, so it is allowed to reason from that. The safe check asks before computing, using only arithmetic that cannot overflow: \`x == std::numeric_limits<int>::max()\`, or in general \`x > max - step\`.
+
++++ question | Why clone is virtual
+--- ask
+In a type-erased \`AnyShape\` that stores a \`std::unique_ptr<Concept>\`, why does the copy constructor call \`other.self_->clone()\` instead of making the new model itself?
+--- choice
+Because \`std::unique_ptr\` cannot be copied, and \`clone\` is the only way to copy a pointer.
+--- choice correct
+Because after the template constructor has run, \`AnyShape\` no longer knows which \`Model<T>\` it holds; only the model itself knows its \`T\`, so a virtual \`clone\` lets it make a copy of its own exact type.
+--- choice
+Because \`clone\` makes a shallow copy, which is faster than a deep one.
+--- choice
+Because copy constructors cannot use \`std::make_unique\`.
+--- why
+The concrete type is erased: \`AnyShape\` sees only the \`Concept\` interface. A virtual function is dispatched to the real \`Model<T>\`, which can write \`std::make_unique<Model>(held)\` and so copy the held object deeply, whatever its type.
+`;export{e as default};

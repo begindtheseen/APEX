@@ -1,0 +1,2 @@
+var e=/\[\[([^\]|\n]+)\|([a-z0-9][a-z0-9-]*)\]\]/g,t=/^[ \t]*:::[ \t]*context[ \t]+([a-z0-9][a-z0-9-]*)[ \t]*(.*)\r?\n([\s\S]*?)^[ \t]*:::[ \t]*$\n?/gm;function n(e){let n=new Map;return{body:e.replace(t,(e,t,r,i)=>(n.set(t,{id:t,title:r.trim()||t,body:i.trim()}),``)).replace(/\n{3,}$/g,`
+`),notes:n}}function r(t){return t.replace(e,`$1`)}function i(){if(typeof window>`u`)return;let e=window.orbit;return e&&typeof e==`object`&&typeof e.ready==`function`&&typeof e.updates==`object`&&typeof e.updates.onState==`function`?e:void 0}i();export{n,r,i as t};

@@ -12,39 +12,50 @@
    ========================================================================== */
 import { python as py, runCpp, runJavaScript, runSql, runTypeScript, tsCompiler, type RunOutput, type StatusFn } from '@/lib/runtimes'
 import type { ShellState } from '@/lib/shell'
+import CATALOG from 'virtual:learn-catalog'
 import { runWebChecks } from '@/lib/web'
 import { domSteps, typeCheckFailures } from './grade'
 import type { Lang } from '@/curriculum/types'
-import type { LearnLang, LearnLesson, LearnRun, Roadmap } from './types'
+import type { CatalogTrack, LearnLang, LearnLesson, LearnRun, Roadmap } from './types'
 
 /** The languages this app teaches, in the order a beginner should meet them. */
 const TAUGHT: LearnLang[] = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp']
 
 /*
  * Every course file in tracks/: `<lang>.txt` is a language's basics, and
- * `<lang>.<level>.txt` the courses after it. Adding a course is adding a file.
+ * `<lang>.<level>.txt` the courses after it, and `<lang>.<topic>.txt` a
+ * specialty course. Only the catalog (catalogOf.ts, built from the files)
+ * loads at startup; a course's text loads when it is opened (load.ts).
  */
-const FILES = import.meta.glob('./tracks/*.txt', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 const LEVEL_ORDER = ['basics', 'intermediate', 'advanced', 'expert', 'projects']
 
-/** Language, then level; a specialty course (`<lang>.<topic>.txt`) comes after the ladder. */
+/*
+ * `cs.<nn>-<name>.txt` is a course of the Computer Science degree: after every
+ * language, in the order its number gives. A specialty course (`<lang>.<topic>.txt`)
+ * comes after its language's ladder.
+ */
 function sortKey(file: string): [number, number] {
   const [lang = '', level = 'basics'] = file.replace(/\.txt$/, '').split('.')
+  if (lang === 'cs') return [TAUGHT.length, Number.parseInt(level, 10)]
   const at = LEVEL_ORDER.indexOf(level)
   return [TAUGHT.indexOf(lang as LearnLang), at >= 0 ? at : LEVEL_ORDER.length]
 }
 
-/** [file name, text] for every course this app teaches, language by language, basics first. */
-export const LEARN_SOURCES: [string, string][] = Object.entries(FILES)
-  .map(([path, text]): [string, string] => [path.split('/').pop()!, text])
-  .filter(([file]) => sortKey(file)[0] >= 0)
-  .sort((a, b) => {
-    const [la, va] = sortKey(a[0])
-    const [lb, vb] = sortKey(b[0])
-    return la - lb || va - vb
-  })
+/** The courses this app teaches, out of any list of course files, language by language, basics first. */
+export function taughtCourses<T>(all: T[], fileOf: (t: T) => string): T[] {
+  return all
+    .filter((t) => sortKey(fileOf(t))[0] >= 0)
+    .sort((a, b) => {
+      const [la, va] = sortKey(fileOf(a))
+      const [lb, vb] = sortKey(fileOf(b))
+      return la - lb || va - vb
+    })
+}
 
-export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_SOURCES.some(([f]) => f.split('.')[0] === l))
+/** Every course this app teaches, from the catalog, language by language, basics first. */
+export const LEARN_COURSES: CatalogTrack[] = taughtCourses(CATALOG.tracks, (t) => t.file)
+
+export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_COURSES.some((t) => t.file.split('.')[0] === l))
 
 /**
  * The goals Learn to code opens on, each in the order a mentor would teach
@@ -53,6 +64,18 @@ export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_SOURCES.some(
  * SQL for its data (the Postgres modules) and Python for the models (M24).
  */
 export const ROADMAPS: Roadmap[] = [
+  {
+    id: 'internship',
+    title: 'Phase 1 · Internship-ready',
+    blurb: 'The shortest road to being worth an internship: one language learned properly, the command line and git, SQL, JavaScript and TypeScript for services, and the first data structures and algorithms course. Pair it with a live flagship from the modules (M1 to M10: HTTP, a database, tests, a deploy) and start applying when both are done — not after everything else.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1'],
+  },
+  {
+    id: 'backend-ai-infra',
+    title: 'Backend & AI Infrastructure',
+    blurb: 'The path LAUNCHPAD is built around, beside a Software Engineering bachelor’s at DeVry, in three phases: where a school course covers a subject, the matching course here is its practice and labs. Phase 1, internship-ready: a language, the tools, SQL, TypeScript, first algorithms. Phase 2, junior engineer: deeper algorithms, databases, systems, operating systems and networks, security, and the backend capstones (an HTTP server, a key-value store, a data warehouse). Phase 3, specialist: parallel computing, a language model from scratch, then distributed systems, cloud infrastructure and ML systems. Apply from the end of Phase 1; keep going while you are paid to engineer.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1', 'typescript-intermediate', 'python-advanced', 'cs-disc', 'cs-dsa2', 'sql-advanced', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-sys', 'cs-os', 'cs-net', 'cs-cap-http', 'cs-cap-kv', 'cs-sec', 'sql-expert', 'sql-projects', 'cs-cap-data', 'cs-par', 'python-expert', 'python-projects', 'python-ai', 'cs-dist1', 'cs-cloud', 'cs-mlsys1', 'cs-mlsys2'],
+  },
   {
     id: 'ai-product',
     title: 'AI Product Engineer',
@@ -118,6 +141,12 @@ export const ROADMAPS: Roadmap[] = [
     title: 'Game & Performance Engineer',
     blurb: 'Code where every millisecond and byte counts — game engines, simulations, trading, embedded: C++ from the basics to move semantics, templates, containers built from raw memory and undefined behaviour, then three real programs.',
     steps: ['bash', 'git', 'cpp', 'python', 'cpp-intermediate', 'cpp-advanced', 'cpp-expert', 'cpp-projects'],
+  },
+  {
+    id: 'cs-degree',
+    title: 'Computer Science degree',
+    blurb: 'What a computer science bachelor\u2019s teaches, taught to mastery: a first language learned properly, the command line and git, then data structures and algorithms with proofs and costs, systems, and the courses that follow. Every course ends in a gate you must pass to go on.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'python-advanced', 'cs-disc', 'cs-dsa1', 'cs-dsa2', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-dsacpp', 'cs-sys', 'cs-os', 'sql', 'sql-intermediate', 'cs-net', 'cs-theory', 'cs-plc', 'cs-sec', 'cs-par', 'cs-cap-interp', 'cs-cap-kv', 'cs-cap-flight', 'cs-cap-http', 'cs-cap-data'],
   },
 ]
 

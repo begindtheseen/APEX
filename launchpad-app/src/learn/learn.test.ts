@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { buildProgram, checkFact, gradeRun, lessonShell, normalize, splitMarks, typeCheckFailures, typeLines } from './grade'
-import { MASTERY, PREREQUISITES, ROADMAPS, TRACKS, findLesson, nextLesson, streak, trackFor, tracksFor } from './index'
+import { readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
+import { MASTERY, PREREQUISITES, ROADMAPS, TRACKS as CATALOG_TRACKS, findLesson, nextLesson, streak, trackFor, tracksFor } from './index'
+import { MODULE_TRACKS as MODULE_CATALOG } from './modules'
+import { MODULE_TRACKS, TRACKS } from './full'
+import { trackMeta } from './catalogOf'
+import { givesAway } from './giveaway'
 import { LEARN_LANGS } from './platform'
 import { run as runShell } from '@/lib/shell'
 import { LessonFormatError, parseTrack } from './parse'
+import { asLesson, gradedUnits } from './practice'
+import { courseProblems } from './validate'
 import { LEVELS, type LearnLesson } from './types'
+import { noteRefs, notePicture, pictureProblem, splitNotes } from '@/lib/contextNotes'
 
 const lesson = (over: Partial<LearnLesson>): LearnLesson => ({
   id: 'x-01',
@@ -16,7 +25,38 @@ const lesson = (over: Partial<LearnLesson>): LearnLesson => ({
   solution: '',
   hints: [],
   checks: [],
+  practice: [],
   ...over,
+})
+
+/** A language's courses in full (tracksFor gives the catalog's, without the text). */
+const coursesIn = (lang: string) => TRACKS.filter((t) => t.lang === lang && !t.subject)
+
+describe('the catalog', () => {
+  const withoutFile = ({ file: _file, ...meta }: { file: string }) => meta
+
+  it('holds every course and module file, in the order the app shows them, exactly as parsed but without the text', () => {
+    expect(CATALOG_TRACKS.map((t) => t.id)).toEqual(TRACKS.map((t) => t.id))
+    expect(CATALOG_TRACKS.map(withoutFile)).toEqual(TRACKS.map((t) => withoutFile(trackMeta(t, ''))))
+    expect(MODULE_CATALOG.map((t) => t.id)).toEqual(MODULE_TRACKS.map((t) => t.id))
+    expect(MODULE_CATALOG.map(withoutFile)).toEqual(MODULE_TRACKS.map((t) => withoutFile(trackMeta(t, ''))))
+  })
+
+  it('carries no course text: only ids, titles and the shape of each lesson', () => {
+    const json = JSON.stringify([...CATALOG_TRACKS, ...MODULE_CATALOG])
+    for (const key of ['teach', 'task', 'starter', 'solution', 'checks', 'hints', 'ask', 'choices']) expect(json, key).not.toContain(`"${key}":`)
+  })
+
+  it('only tests read every course in full: the app loads a course when it is opened', () => {
+    const src = path.resolve(__dirname, '..')
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(path.join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(dir, e.name)] : []))
+    const bad = files(src)
+      .filter((f) => !/\.test\.tsx?$/.test(f) && !f.endsWith(path.join('learn', 'full.ts')))
+      .filter((f) => /from ['"](?:\.\/|@\/learn\/|\.\.\/learn\/)full['"]|eager:\s*true[^)]*tracks|tracks\/\*\.txt['"][^)]*eager:\s*true/.test(readFileSync(f, 'utf8')))
+      .map((f) => path.relative(src, f))
+    expect(bad).toEqual([])
+  })
 })
 
 describe('the tracks', () => {
@@ -48,33 +88,48 @@ describe('the tracks', () => {
   it('every lesson teaches, sets a task, has a solution and a hint, and checks something real', () => {
     for (const t of TRACKS) {
       for (const l of t.lessons) {
+        if (l.gate) {
+          // A gate says what it covers; its problems are graded like lessons but come with no hints.
+          expect(l.teach.length, l.id).toBeGreaterThan(40)
+          for (const p of l.gate.problems) {
+            expect(p.task.length, p.id).toBeGreaterThan(20)
+            expect(p.checks.some((c) => c.kind !== 'source'), p.id).toBe(true)
+          }
+          continue
+        }
         expect(l.teach.length, l.id).toBeGreaterThan(80)
         expect(l.task.length, l.id).toBeGreaterThan(20)
         expect(l.solution.trim().length, l.id).toBeGreaterThan(0)
         expect(l.hints.length, l.id).toBeGreaterThan(0)
         // A lesson graded only on its source text would be a string match.
         expect(l.checks.some((c) => c.kind !== 'source'), l.id).toBe(true)
+        for (const p of l.practice) {
+          expect(p.task.length, p.id).toBeGreaterThan(20)
+          expect(p.hints.length, p.id).toBeGreaterThan(0)
+          expect(p.checks.some((c) => c.kind !== 'source'), p.id).toBe(true)
+        }
       }
     }
   })
 
   it('C++ lessons with tests do not ask for main — the checker supplies it', () => {
-    for (const l of tracksFor('cpp').flatMap((t) => t.lessons)) {
+    for (const l of coursesIn('cpp').flatMap((t) => t.lessons)) {
       if (!l.checks.some((c) => c.kind === 'test' || c.kind === 'case')) continue
       expect(/\bint\s+main\s*\(/.test(l.solution), l.id).toBe(false)
     }
   })
 
   it('SQL lessons all have a database', () => {
-    for (const l of tracksFor('sql').flatMap((t) => t.lessons)) expect(l.schema, l.id).toContain('CREATE TABLE')
+    for (const l of coursesIn('sql').flatMap((t) => t.lessons)) expect(l.schema, l.id).toContain('CREATE TABLE')
   })
 
   it('Web lessons are checked inside the page, never on the source alone', () => {
-    for (const l of tracksFor('html').flatMap((t) => t.lessons)) expect(l.checks.some((c) => c.kind === 'dom'), l.id).toBe(true)
+    for (const l of coursesIn('html').flatMap((t) => t.lessons)) expect(l.checks.some((c) => c.kind === 'dom'), l.id).toBe(true)
   })
 
   it('every Terminal and Git lesson passes when its solution is typed, and not before', () => {
-    for (const l of [...tracksFor('bash'), ...tracksFor('git')].flatMap((t) => t.lessons)) {
+    // Every graded unit: the lessons, their practice problems and the gates' problems (a gate itself has no checks).
+    for (const l of [...coursesIn('bash'), ...coursesIn('git')].flatMap((t) => t.lessons.flatMap(gradedUnits))) {
       const start = lessonShell(l)
       const before = gradeRun(l, '', { stdout: '', stderr: '', error: null, shell: start, ms: 0 })
       expect(before.passed, `${l.id} passes with nothing typed`).toBe(false)
@@ -82,7 +137,7 @@ describe('the tracks', () => {
       const failing = after.results.filter((r) => r.status === 'fail').map((r) => `${r.name}: ${r.actual ?? r.detail}`)
       expect(failing, l.id).toEqual([])
     }
-  })
+  }, 120_000)
 
   it('every course has a full name for the roadmap, and Git is a course of its own', () => {
     for (const t of TRACKS) expect(t.name.length, t.lang).toBeGreaterThan(t.lang === 'sql' ? 3 : 5)
@@ -115,6 +170,18 @@ describe('the tracks', () => {
     }
   })
 
+  it('a course\'s @requires names real courses that end in a gate, never itself, and every degree course has one', () => {
+    const byId = new Map(TRACKS.map((t) => [t.id, t]))
+    for (const t of TRACKS) {
+      for (const id of t.requires ?? []) {
+        expect(byId.has(id), `${t.id} requires ${id}`).toBe(true)
+        expect(id, t.id).not.toBe(t.id)
+        expect(byId.get(id)!.lessons.some((l) => l.gate), `${t.id} requires ${id}, which has no gate`).toBe(true)
+      }
+      if (t.subject) expect(t.requires?.length, `${t.id} needs @requires`).toBeGreaterThan(0)
+    }
+  })
+
   it('a language with more than one course has a beginner-to-expert roadmap through all of them', () => {
     for (const lang of LEARN_LANGS) {
       const courses = tracksFor(lang)
@@ -140,8 +207,8 @@ describe('the tracks', () => {
   it('continue goes to the first lesson not yet passed', () => {
     const py = TRACKS.find((t) => t.lang === 'python')!
     expect(nextLesson(py, {}).id).toBe('py-01')
-    expect(nextLesson(py, { 'py-01': 'x', 'py-02': 'x' }).id).toBe('py-03')
-    expect(findLesson('py-03')?.index).toBe(2)
+    expect(nextLesson(py, { 'py-01': 'x' }).id).toBe('py-02')
+    expect(findLesson('py-02')?.index).toBe(1)
   })
 })
 
@@ -421,5 +488,106 @@ describe('the streak', () => {
   it('is zero after a missed day', () => {
     expect(streak({ a: at('2026-05-07') }, now)).toBe(0)
     expect(streak({}, now)).toBe(0)
+  })
+})
+
+/*
+ * Every Learn to code lesson carries context notes in its teach section, the
+ * same Genius-style notes as the module lessons (src/learn/TEMPLATE.md).
+ * These courses were written before that rule and are being rewritten; a
+ * course joins the rule when its rewrite lands with `@plainvoice true` in its
+ * header, and this list only ever shrinks. A course not on it, every new
+ * course included, is held to the rule from the start.
+ */
+const WRITTEN_BEFORE_NOTES = new Set<string>([
+  // LAUNCHPAD's own courses, written before the rule (being rewritten).
+  'html',
+  'html-intermediate',
+  'html-advanced',
+  'html-expert',
+  'html-projects',
+  'javascript',
+  'javascript-intermediate',
+  'javascript-advanced',
+  'javascript-expert',
+  'javascript-projects',
+  'typescript',
+  'typescript-intermediate',
+  'typescript-advanced',
+  'typescript-expert',
+  'typescript-projects',
+  'python-ai',
+])
+const LEARN_NOTES_MIN = 3
+const LEARN_NOTES_MAX = 10
+
+describe('degree courses', () => {
+  it('every Computer Science course meets every rule in validate.ts', () => {
+    expect(TRACKS.filter((t) => t.subject).flatMap(courseProblems)).toEqual([])
+  })
+})
+
+describe('context notes in Learn to code', () => {
+  it('holds every course not written before the rule to it', () => {
+    const loose = TRACKS.filter((t) => !t.plainVoice && !WRITTEN_BEFORE_NOTES.has(t.id)).map((t) => t.id)
+    expect(loose, 'new courses carry @plainvoice true and notes in every lesson').toEqual([])
+  })
+
+  for (const t of TRACKS) {
+    it(`${t.id}: notes are complete, at the end of the explanation, and safe`, () => {
+      for (const l of t.lessons) {
+        const where = `${t.id} ${l.id}`
+        for (const p of [...l.practice, ...(l.gate?.problems ?? [])]) expect(noteRefs(p.task), `${p.id}: marks go in the explanation, not a problem`).toEqual([])
+        if (l.gate) continue // a gate is an exam, not an explanation: no notes
+        const { body, notes } = splitNotes(l.teach)
+        const refs = noteRefs(body)
+        expect([...new Set(refs)].filter((id) => !notes.has(id)), `${where}: marked phrases with no note`).toEqual([])
+        expect([...notes.keys()].filter((id) => !refs.includes(id)), `${where}: notes nothing points to`).toEqual([])
+        expect(noteRefs(l.task), `${where}: marks go in the explanation, not the task`).toEqual([])
+        if (notes.size) {
+          const first = l.teach.search(/^\s*:::\s*context\s/m)
+          const after = l.teach.slice(first).replace(/^[ \t]*:::[ \t]*context[\s\S]*?^[ \t]*:::[ \t]*$/gm, '').trim()
+          expect(after, `${where}: notes go at the very end of the explanation`).toBe('')
+        }
+        for (const n of notes.values()) {
+          const words = n.body.replace(/```[\s\S]*?```/g, ' ').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length
+          expect(words, `${where}: note "${n.id}" 15–260 words`).toBeGreaterThanOrEqual(15)
+          expect(words, `${where}: note "${n.id}" 15–260 words`).toBeLessThanOrEqual(260)
+          const svg = notePicture(n.body)
+          if (svg) expect(pictureProblem(svg), `${where}: note "${n.id}" picture`).toBeNull()
+        }
+        if (t.plainVoice) {
+          expect(notes.size, `${where}: ${LEARN_NOTES_MIN}–${LEARN_NOTES_MAX} context notes`).toBeGreaterThanOrEqual(LEARN_NOTES_MIN)
+          expect(notes.size, `${where}: ${LEARN_NOTES_MIN}–${LEARN_NOTES_MAX} context notes`).toBeLessThanOrEqual(LEARN_NOTES_MAX)
+        }
+        for (const part of [l.teach, l.task, ...l.hints]) {
+          expect(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(part), `${where}: a control character (a TeX or escape lost its backslash)`).toBe(false)
+        }
+      }
+    })
+  }
+})
+
+/**
+ * Lessons whose examples still give the answer away (see giveaway.ts). This
+ * list only shrinks: rewrite the example on different names and data, or show
+ * the pieces instead of the finished answer, then take the id out.
+ */
+const GIVES_AWAY = new Set<string>([])
+
+describe('examples leave the task to her', () => {
+  const lessons = TRACKS.flatMap((t) => t.lessons)
+  it('no example shows the answer word for word, or as a template to fill in', () => {
+    for (const l of lessons) if (!GIVES_AWAY.has(l.id) && !l.gate) expect(givesAway(l), `${l.id}: the example gives the answer away`).toBeNull()
+  })
+  it('no practice problem can be copied from the lesson\'s examples either', () => {
+    for (const l of lessons) for (const p of l.practice) expect(givesAway(asLesson(l, p)), `${p.id}: the lesson's example gives this practice problem away`).toBeNull()
+  })
+  it('the list of lessons still to fix has no stale entries', () => {
+    const ids = new Set(lessons.map((l) => l.id))
+    for (const id of GIVES_AWAY) {
+      expect(ids.has(id), `${id} is not a lesson`).toBe(true)
+      expect(givesAway(lessons.find((l) => l.id === id)!), `${id} is fixed: take it out of GIVES_AWAY`).not.toBeNull()
+    }
   })
 })

@@ -1,0 +1,9927 @@
+var e=`@track sql
+@level advanced
+@title SQL · Advanced
+@name SQL, advanced: window functions, schema design and the database's own rules
+@plainvoice true
+@blurb Write the queries analysts reach for — CTEs, recursion, window functions — and design databases that protect themselves with constraints, indexes, transactions, upserts, views and triggers.
+@schema
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  manager_id INTEGER REFERENCES employees(id),
+  dept TEXT NOT NULL,
+  salary INTEGER NOT NULL,
+  hired TEXT NOT NULL
+);
+INSERT INTO employees (id, name, title, manager_id, dept, salary, hired) VALUES
+  (1,  'Maya', 'CEO',              NULL, 'exec',    250000, '2019-01-10'),
+  (2,  'Omar', 'CTO',              1,    'eng',     200000, '2019-03-01'),
+  (3,  'Lena', 'CFO',              1,    'finance', 190000, '2019-06-15'),
+  (4,  'Raj',  'Eng manager',      2,    'eng',     150000, '2020-02-01'),
+  (5,  'Tess', 'Staff engineer',   2,    'eng',     150000, '2020-05-20'),
+  (6,  'Ivan', 'Engineer',         4,    'eng',     120000, '2021-01-11'),
+  (7,  'Nora', 'Engineer',         4,    'eng',     120000, '2021-09-01'),
+  (8,  'Paul', 'Engineer',         4,    'eng',     105000, '2022-04-18'),
+  (9,  'Zara', 'Accountant',       3,    'finance',  90000, '2021-07-07'),
+  (10, 'Leo',  'Intern',           6,    'eng',      40000, '2024-06-03'),
+  (11, 'Amy',  'Analyst',          3,    'finance',  90000, '2023-02-14');
+CREATE TABLE daily_sales (
+  day TEXT NOT NULL,
+  region TEXT NOT NULL,
+  amount REAL NOT NULL,
+  PRIMARY KEY (day, region)
+);
+INSERT INTO daily_sales (day, region, amount) VALUES
+  ('2024-07-01', 'north', 120), ('2024-07-02', 'north',  80), ('2024-07-03', 'north', 150),
+  ('2024-07-05', 'north',  90), ('2024-07-06', 'north', 200), ('2024-07-07', 'north', 110),
+  ('2024-07-01', 'south',  60), ('2024-07-03', 'south',  75), ('2024-07-04', 'south',  75),
+  ('2024-07-05', 'south',  40), ('2024-07-07', 'south',  95);
+CREATE TABLE categories (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id INTEGER REFERENCES categories(id)
+);
+INSERT INTO categories (id, name, parent_id) VALUES
+  (1, 'All', NULL), (2, 'Electronics', 1), (3, 'Home', 1), (4, 'Audio', 2),
+  (5, 'Headphones', 4), (6, 'Speakers', 4), (7, 'Cables', 2), (8, 'Kitchen', 3), (9, 'Earbuds', 5);
+@end
+
+=== sql3-01 | CTEs: a query in named steps
+--- teach
+You finished the intermediate course by planning a report's joins before writing a line. This course starts where reports get long. First, a way to write a long query as a list of short, named steps, where each step can use the ones before it.
+
+### The tables in this course
+
+Most lessons in this course share three tables:
+
+- \`employees\`: \`id\`, \`name\`, \`title\`, \`manager_id\` (the \`id\` of this person's manager; NULL for the CEO, who has none), \`dept\`, \`salary\`, \`hired\`
+- \`daily_sales\`: \`day\`, \`region\` (\`north\` or \`south\`), \`amount\`. A day with no sales in a region has no row at all.
+- \`categories\`: \`id\`, \`name\`, \`parent_id\` (the \`id\` of the category this one sits inside; NULL for the top one). Together they form a tree, like folders inside folders.
+
+The intermediate course answered business questions with joins, subqueries and \`CASE\`. This course adds the two tools analysts reach for next, [[recursion and window functions|course-map]]. Then it turns to design: a database that protects its own data.
+
+### The picture
+
+Think of working out a long sum on paper. You do one part, write the answer down with a label ("total pay = 1,505,000"), and use that label on the next line. Nobody has to read the whole calculation at once. Each line is short, and you can check each one.
+
+### Named steps, again
+
+You met this in the lesson "WITH: naming the steps". A **CTE** (common table expression) is a query with a name, written at the top of a statement after \`WITH\`. The rest of the statement can use it like a table. In "Debugging: the join that double-counts" you wrote two of them, separated by a comma.
+
+Here is one step on its own. It adds up the pay in each department:
+
+\`\`\`sql
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+)
+SELECT * FROM dept_pay;
+\`\`\`
+
+| dept | headcount | payroll |
+| --- | --- | --- |
+| eng | 7 | 885000 |
+| exec | 1 | 250000 |
+| finance | 3 | 370000 |
+
+### A step can read the step before it
+
+Here is the new idea: a later step can read an earlier one, as if it were a table. Add a second step after a comma. \`company\` reads from \`dept_pay\`, not from \`employees\`:
+
+\`\`\`sql
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+), company AS (
+  SELECT SUM(payroll) AS total FROM dept_pay
+)
+SELECT * FROM company;
+\`\`\`
+
+That gives one row with one value: \`total\` = 1505000, the pay of the whole company. The steps now form a [[pipeline|pipeline]]: \`employees\` feeds \`dept_pay\`, and \`dept_pay\` feeds \`company\`. The order matters. A step can only read the steps written above it.
+
+### Putting the total on every row
+
+To compare each department with the whole company, the final \`SELECT\` needs both steps. Pair them with a **CROSS JOIN**: a join with no \`ON\`, which pairs every row on the left with every row on the right.
+
+\`\`\`sql
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+), company AS (
+  SELECT SUM(payroll) AS total FROM dept_pay
+)
+SELECT d.dept, d.payroll, c.total
+FROM dept_pay d CROSS JOIN company c;
+\`\`\`
+
+\`company\` has only one row, so each department is paired with that one row. The effect is that [[the total is copied onto every department's row|cross-join]]:
+
+| dept | payroll | total |
+| --- | --- | --- |
+| eng | 885000 | 1505000 |
+| exec | 250000 | 1505000 |
+| finance | 370000 | 1505000 |
+
+### Why steps instead of subqueries?
+
+A subquery in brackets could do the same job. On a long report, steps win for two reasons:
+
+- Each step has a **name** that says what it means: \`dept_pay\`, \`company\`.
+- You can [[check one step at a time|debug-a-step]]. Change the last line to \`SELECT * FROM company;\` and run it.
+
+Nested subqueries are read inside-out, starting from the innermost bracket. CTEs are read top to bottom, in the order you thought of them.
+
+### Dividing whole numbers
+
+A percentage is part ÷ whole × 100. There is one trap. When SQLite divides one whole number (an **integer**) by another, the answer is a whole number too. The part after the decimal point is thrown away:
+
+\`\`\`sql
+SELECT 7 / 2;          -- 3, not 3.5
+SELECT 100.0 * 7 / 2;  -- 350.0
+\`\`\`
+
+\`100.0\` has a decimal point, so it is a **real** number: one that can have decimals. SQLite works from left to right. \`100.0 * 7\` is a real number, so the division after it keeps its decimals. [[Salaries are integers|integer-division]], so write \`100.0 * d.payroll / c.total\`. Then \`ROUND(…, 1)\`, from the lesson "Aggregates", rounds to one decimal place.
+
+**Watch out:** \`d.payroll / c.total * 100.0\` gives 0.0 for every department. The division runs first, between two integers, and 885000 / 1505000 is 0 in whole numbers. The 100.0 arrives too late. Put \`100.0 *\` at the front.
+
+::: context course-map What the rest of this course covers
+**Recursion** means a query that reads its own results to make more rows. It is how SQL counts, fills in missing days, and walks down an org chart without knowing how deep it goes. The next few lessons build it up one small step at a time. **Window functions** work across neighboring rows without squashing them into groups: rankings, running totals, the change since yesterday. The last part of the course is design: constraints, foreign keys, indexes, transactions, views and triggers, the rules a database enforces on its own.
+:::
+
+::: context pipeline The pipeline, drawn
+Each box is a table or a step, and each arrow means "is read by". \`employees\` is a real table, saved in the database. \`dept_pay\` and \`company\` exist only while this one statement runs. The final \`SELECT\` reads two steps at once, which is why it needs a join.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2a44"/>
+    </marker>
+  </defs>
+  <rect x="8" y="70" width="80" height="32" rx="4" fill="#fff" stroke="#6c7a93"/>
+  <text x="48" y="90" font-size="12" fill="#1f2a44" text-anchor="middle">employees</text>
+  <rect x="112" y="70" width="80" height="32" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="152" y="90" font-size="12" fill="#1f2a44" text-anchor="middle">dept_pay</text>
+  <rect x="196" y="10" width="80" height="32" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="236" y="30" font-size="12" fill="#1f2a44" text-anchor="middle">company</text>
+  <rect x="272" y="70" width="80" height="32" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="312" y="90" font-size="11" fill="#1f2a44" text-anchor="middle">final SELECT</text>
+  <line x1="88" y1="86" x2="110" y2="86" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="192" y1="86" x2="270" y2="86" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="172" y1="70" x2="208" y2="44" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="262" y1="42" x2="294" y2="68" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="180" y="122" font-size="11" fill="#6c7a93" text-anchor="middle">each arrow means: is read by</text>
+</svg>
+\`\`\`
+:::
+
+::: context cross-join Every possible pair
+A CROSS JOIN makes every possible pair of rows. 3 rows × 1 row gives 3 rows, which is why it is a safe way to attach one total. 3 rows × 2 rows gives 6: \`(SELECT DISTINCT dept FROM employees) d CROSS JOIN (SELECT DISTINCT region FROM daily_sales) r\` pairs all three departments with both sales regions. Grids and calendars are built this way. The danger is size: two tables of 1,000 rows cross-joined make 1,000,000 rows. Use it when one side is small and you know how big.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 144" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="16" width="110" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="35" font-size="12" fill="#1f2a44" text-anchor="middle">eng 885000</text>
+  <rect x="20" y="56" width="110" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="75" font-size="12" fill="#1f2a44" text-anchor="middle">exec 250000</text>
+  <rect x="20" y="96" width="110" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="115" font-size="12" fill="#1f2a44" text-anchor="middle">finance 370000</text>
+  <rect x="230" y="56" width="110" height="28" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="285" y="75" font-size="12" fill="#1f2a44" text-anchor="middle">total 1505000</text>
+  <line x1="130" y1="30" x2="230" y2="70" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="70" x2="230" y2="70" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="110" x2="230" y2="70" stroke="#1d6fd1" stroke-width="1.5"/>
+  <text x="180" y="138" font-size="11" fill="#6c7a93" text-anchor="middle">3 rows × 1 row = 3 pairs</text>
+</svg>
+\`\`\`
+:::
+
+::: context debug-a-step How engineers find a wrong number
+When a report's number looks wrong, nobody stares at the whole query. They run the first step on its own and check it against something they already know, then the next step, until one step's output is wrong. The bug is in that step. With CTEs this takes one change: point the final \`SELECT *\` at the step you want to see. A flight-data query might have steps called \`raw_readings\`, \`cleaned\`, \`per_minute\` and \`out_of_range\`. If an alarm fires by mistake, you look at \`cleaned\` first.
+:::
+
+::: context integer-division Why 7 / 2 is 3
+The \`salary\` column was created as \`INTEGER\`, so it holds whole numbers, and SQLite divides them as whole numbers: it keeps the whole part and drops the rest, rounding towards zero (so \`-7 / 2\` is \`-3\`). C++ does the same with its integers. Python's \`/\` gives 3.5 and has a separate \`//\` for whole-number division. The fix is always the same: get one real number into the calculation before the division, with \`100.0 *\` or \`1.0 *\`. In a report, this mistake shows up as percentages that are all 0.
+:::
+--- task
+Return one row per department with four columns: \`dept\`, \`headcount\` (the number of people), \`payroll\` (their total salary) and \`share\`: the department's payroll as a percentage of the whole company's payroll, rounded to 1 decimal place.
+
+Use at least two CTEs: one for each department's pay, and one for the company total that reads from the first. Sort by \`payroll\`, largest first.
+--- starter
+SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+FROM employees
+GROUP BY dept;
+--- solution
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+), company AS (
+  SELECT SUM(payroll) AS total FROM dept_pay
+)
+SELECT d.dept, d.headcount, d.payroll,
+       ROUND(100.0 * d.payroll / c.total, 1) AS share
+FROM dept_pay d
+CROSS JOIN company c
+ORDER BY d.payroll DESC;
+--- hint
+The lesson's two steps are most of it: \`dept_pay\` with \`dept\`, \`headcount\` and \`payroll\` for each department, then \`company\` with \`SUM(payroll) AS total\`, read from \`dept_pay\`.
+--- hint
+In the final \`SELECT\`, use \`FROM dept_pay d CROSS JOIN company c\`, so every department row has the total beside it. Pick \`d.dept\`, \`d.headcount\` and \`d.payroll\`.
+--- hint
+The share is \`ROUND(100.0 * d.payroll / c.total, 1) AS share\`, with \`100.0\` at the front. End with \`ORDER BY d.payroll DESC\`.
+--- check result | eng, finance, exec with their shares
+ordered
+[["eng", 7, 885000, 58.8], ["finance", 3, 370000, 24.6], ["exec", 1, 250000, 16.6]]
+--- check source | Uses more than one CTE
+\\)\\s*,\\s*\\w+\\s+[Aa][Ss]\\s*\\(
+
++++ practice | Who earns more than average
+--- task
+Return every employee who earns more than the average salary of the whole company, with two columns: \`name\` and \`salary\`. Sort by \`salary\`, highest first, then by \`name\`.
+
+Work the average out in a CTE called \`company\`, with one column, \`avg_pay\`. Then pair it with \`employees\` in the final \`SELECT\`. Do not type the average in as a number.
+--- starter
+SELECT name, salary
+FROM employees
+ORDER BY salary DESC, name;
+--- solution
+WITH company AS (
+  SELECT AVG(salary) AS avg_pay FROM employees
+)
+SELECT e.name, e.salary
+FROM employees e
+CROSS JOIN company c
+WHERE e.salary > c.avg_pay
+ORDER BY e.salary DESC, e.name;
+--- hint
+The CTE holds one row with one value: \`SELECT AVG(salary) AS avg_pay FROM employees\`.
+--- hint
+\`FROM employees e CROSS JOIN company c\` puts the average beside every employee. Then a \`WHERE\` can compare \`e.salary\` with \`c.avg_pay\`.
+--- check result | Five people earn more than the average of about 136818
+ordered
+[["Maya", 250000], ["Omar", 200000], ["Lena", 190000], ["Raj", 150000], ["Tess", 150000]]
+--- check source | Names a step with WITH
+[Ww][Ii][Tt][Hh]\\s+company\\s+[Aa][Ss]
+--- check source absent | Does not type the average in
+136818
+
++++ practice | Departments below the average payroll
+--- task
+Find the departments whose total payroll is below the average department payroll. Return \`dept\` and \`payroll\`, sorted by \`payroll\`.
+
+Use two CTEs. \`dept_pay\` holds each department's \`payroll\` (the sum of its salaries). \`typical\` reads from \`dept_pay\` and holds one value, \`avg_payroll\`: the average of those department payrolls.
+--- starter
+WITH dept_pay AS (
+  SELECT dept, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+)
+SELECT dept, payroll
+FROM dept_pay
+ORDER BY payroll;
+--- solution
+WITH dept_pay AS (
+  SELECT dept, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+), typical AS (
+  SELECT AVG(payroll) AS avg_payroll FROM dept_pay
+)
+SELECT d.dept, d.payroll
+FROM dept_pay d
+CROSS JOIN typical t
+WHERE d.payroll < t.avg_payroll
+ORDER BY d.payroll;
+--- hint
+The second step reads the first one: \`typical AS (SELECT AVG(payroll) AS avg_payroll FROM dept_pay)\`, written after a comma.
+--- hint
+Pair the two steps with a \`CROSS JOIN\`, then keep only the rows where \`d.payroll < t.avg_payroll\`.
+--- check result | exec and finance are below the average of about 501667
+ordered
+[["exec", 250000], ["finance", 370000]]
+--- check source | Uses more than one CTE
+\\)\\s*,\\s*\\w+\\s+[Aa][Ss]\\s*\\(
+--- check source | The second step reads from dept_pay
+[Ff][Rr][Oo][Mm]\\s+dept_pay
+
++++ practice | Salary bands as a share of staff
+--- task
+Put everyone in a pay band: \`'senior'\` for a salary of 150000 or more, \`'mid'\` for 100000 up to 149999, and \`'junior'\` for less than 100000.
+
+Return one row per band with three columns: \`band\`, \`people\` (how many are in it) and \`pct\`: that number as a percentage of all staff, rounded to 1 decimal place. Sort by \`people\`, largest first, then by \`band\`.
+
+Use one CTE that gives each employee their band, and another that counts the people in each band.
+--- starter
+SELECT CASE WHEN salary >= 150000 THEN 'senior'
+            WHEN salary >= 100000 THEN 'mid'
+            ELSE 'junior' END AS band,
+       COUNT(*) AS people
+FROM employees
+GROUP BY band;
+--- solution
+WITH banded AS (
+  SELECT name,
+         CASE WHEN salary >= 150000 THEN 'senior'
+              WHEN salary >= 100000 THEN 'mid'
+              ELSE 'junior' END AS band
+  FROM employees
+), counts AS (
+  SELECT band, COUNT(*) AS people FROM banded GROUP BY band
+), staff AS (
+  SELECT SUM(people) AS total FROM counts
+)
+SELECT c.band, c.people, ROUND(100.0 * c.people / s.total, 1) AS pct
+FROM counts c
+CROSS JOIN staff s
+ORDER BY c.people DESC, c.band;
+--- hint
+Step one is the \`CASE\` from the starter, one row per employee. Step two groups step one by \`band\` and counts.
+--- hint
+You also need the total number of staff on every row: a third step with \`SUM(people)\`, paired in with \`CROSS JOIN\`.
+--- hint
+Counts are whole numbers, so put \`100.0 *\` at the front of the percentage: \`ROUND(100.0 * c.people / s.total, 1)\`.
+--- check result | senior 5 (45.5%), then junior and mid with 3 each (27.3%)
+ordered
+[["senior", 5, 45.5], ["junior", 3, 27.3], ["mid", 3, 27.3]]
+--- check source | Uses more than one CTE
+\\)\\s*,\\s*\\w+\\s+[Aa][Ss]\\s*\\(
+--- check source absent | Does not type the staff total in
+/\\s*11\\b
+
++++ practice | Hours logged by each crew
+--- schema
+CREATE TABLE tasks (
+  id INTEGER PRIMARY KEY,
+  crew TEXT NOT NULL,
+  hours INTEGER
+);
+INSERT INTO tasks (id, crew, hours) VALUES
+  (1, 'alpha', 6), (2, 'alpha', 4), (3, 'alpha', NULL),
+  (4, 'bravo', 3), (5, 'bravo', 2),
+  (6, 'charlie', NULL), (7, 'charlie', NULL),
+  (8, 'delta', 5);
+--- task
+This problem has its own table, \`tasks\`: \`id\`, \`crew\` and \`hours\`. \`hours\` is a whole number, or NULL when nobody has logged the task's hours yet.
+
+Return one row per crew with four columns:
+
+- \`crew\`
+- \`tasks\`: how many tasks the crew has, logged or not
+- \`hours\`: the crew's total logged hours, and \`0\` for a crew with nothing logged
+- \`share\`: the crew's hours as a percentage of all logged hours, rounded to 1 decimal place, and \`0.0\` for a crew with nothing logged
+
+Use a CTE for each crew's numbers and one for the grand total. Sort by \`crew\`.
+--- starter
+WITH crew_hours AS (
+  SELECT crew, COUNT(hours) AS tasks, SUM(hours) AS hours
+  FROM tasks
+  GROUP BY crew
+), everyone AS (
+  SELECT SUM(hours) AS total FROM crew_hours
+)
+SELECT c.crew, c.tasks, c.hours, ROUND(c.hours / e.total * 100, 1) AS share
+FROM crew_hours c
+CROSS JOIN everyone e
+ORDER BY c.crew;
+--- solution
+WITH crew_hours AS (
+  SELECT crew, COUNT(*) AS tasks, COALESCE(SUM(hours), 0) AS hours
+  FROM tasks
+  GROUP BY crew
+), everyone AS (
+  SELECT SUM(hours) AS total FROM crew_hours
+)
+SELECT c.crew, c.tasks, c.hours, ROUND(100.0 * c.hours / e.total, 1) AS share
+FROM crew_hours c
+CROSS JOIN everyone e
+ORDER BY c.crew;
+--- hint
+Run the starter and look at alpha: it has three tasks, but the starter says two. \`COUNT(hours)\` skips the NULLs. Which count counts every row?
+--- hint
+charlie has nothing logged, so \`SUM(hours)\` gives NULL for it. \`COALESCE(…, 0)\` turns that into 0.
+--- hint
+All the numbers are whole numbers, so \`c.hours / e.total\` is 0 before the \`* 100\` arrives. Put \`100.0 *\` at the front.
+--- check result | alpha 10 of 20 hours; charlie has two tasks and 0 hours
+ordered
+[["alpha", 3, 10, 50.0], ["bravo", 2, 5, 25.0], ["charlie", 2, 0, 0.0], ["delta", 1, 5, 25.0]]
+--- check source | Uses more than one CTE
+\\)\\s*,\\s*\\w+\\s+[Aa][Ss]\\s*\\(
+--- check source absent | Does not type the total in
+/\\s*20\\b
+
++++ practice | Every share says 0.0
+--- task
+This report should show each department's share of the company's staff, as a percentage rounded to 1 decimal place. It runs without an error, but every \`pct\` comes out as \`0.0\`.
+
+Find the line that loses the decimals and fix it. Keep the columns \`dept\`, \`people\` and \`pct\`, and the order.
+--- starter
+WITH dept_count AS (
+  SELECT dept, COUNT(*) AS people
+  FROM employees
+  GROUP BY dept
+), everyone AS (
+  SELECT SUM(people) AS total FROM dept_count
+)
+SELECT d.dept, d.people, ROUND(d.people / e.total * 100.0, 1) AS pct
+FROM dept_count d
+CROSS JOIN everyone e
+ORDER BY d.people DESC;
+--- solution
+WITH dept_count AS (
+  SELECT dept, COUNT(*) AS people
+  FROM employees
+  GROUP BY dept
+), everyone AS (
+  SELECT SUM(people) AS total FROM dept_count
+)
+SELECT d.dept, d.people, ROUND(100.0 * d.people / e.total, 1) AS pct
+FROM dept_count d
+CROSS JOIN everyone e
+ORDER BY d.people DESC;
+--- hint
+Work out \`7 / 11\` the way SQLite does with two whole numbers. What is left once the part after the decimal point is thrown away?
+--- hint
+The \`100.0\` is there, but it arrives after the division has already happened. Move it to the front.
+--- check result | eng 63.6, finance 27.3, exec 9.1
+ordered
+[["eng", 7, 63.6], ["finance", 3, 27.3], ["exec", 1, 9.1]]
+--- check source | Still uses both steps
+everyone
+--- check source absent | No division of two whole numbers before the 100.0
+people\\s*/\\s*e\\.total\\s*\\*
+
++++ practice | Each department against the company average
+--- task
+HR wants to see how each department's pay compares with the company as a whole. Return one row per department with four columns:
+
+- \`dept\` and \`headcount\`
+- \`avg_salary\`: the department's average salary, rounded to a whole number with \`ROUND(…)\`
+- \`vs_company\`: the department's average salary minus the company-wide average salary, rounded to a whole number
+
+The company-wide average is the average over all eleven people. It is not the average of the three department averages: a department of one must not count as much as a department of seven. Sort by \`vs_company\`, highest first.
+
+Build it in steps: one CTE for each department's headcount and payroll, and one, reading from it, for the company-wide average.
+--- starter
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, AVG(salary) AS avg_salary
+  FROM employees
+  GROUP BY dept
+), company AS (
+  SELECT AVG(avg_salary) AS avg_pay FROM dept_pay
+)
+SELECT d.dept, d.headcount, ROUND(d.avg_salary) AS avg_salary,
+       ROUND(d.avg_salary - c.avg_pay) AS vs_company
+FROM dept_pay d
+CROSS JOIN company c
+ORDER BY vs_company DESC;
+--- solution
+WITH dept_pay AS (
+  SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+  FROM employees
+  GROUP BY dept
+), company AS (
+  SELECT 1.0 * SUM(payroll) / SUM(headcount) AS avg_pay FROM dept_pay
+)
+SELECT d.dept, d.headcount,
+       ROUND(1.0 * d.payroll / d.headcount) AS avg_salary,
+       ROUND(1.0 * d.payroll / d.headcount - c.avg_pay) AS vs_company
+FROM dept_pay d
+CROSS JOIN company c
+ORDER BY vs_company DESC;
+--- hint
+Run the starter: it says the company average is about 166587, far above what most people earn. It averages the three department averages, so Maya alone counts as much as all seven engineers.
+--- hint
+The company average is the whole payroll divided by the whole headcount. Keep \`SUM(salary) AS payroll\` and \`COUNT(*) AS headcount\` in the first step, and add them up in the second.
+--- hint
+Both are whole numbers, so divide as \`1.0 * SUM(payroll) / SUM(headcount)\`. A department's average is \`1.0 * d.payroll / d.headcount\`.
+--- check result | exec is 113182 above the company average; eng and finance are below it
+ordered
+[["exec", 1, 250000.0, 113182.0], ["eng", 7, 126429.0, -10390.0], ["finance", 3, 123333.0, -13485.0]]
+--- check source | Uses more than one CTE
+\\)\\s*,\\s*\\w+\\s+[Aa][Ss]\\s*\\(
+--- check source absent | Does not type the company average in
+13681[78]
+
+=== sql3-01b | Recursive CTEs: a query that counts
+--- teach
+Last lesson each step in a \`WITH\` read the steps written above it. This lesson meets a step that reads **itself**. That lets a query count, with no table to count from. The next lessons use the same trick to fill in missing days and to walk down an org chart.
+
+### The picture
+
+Think of a launch countdown. The controller says "ten". Then, again and again, they take the number they said last and say one less: "nine", "eight", and so on. At "zero" they stop. Three rules make the whole countdown:
+
+1. where to start (ten);
+2. how to get the next number from the last one (one less);
+3. when to stop (after zero).
+
+### SQL has no loop
+
+Many programming languages have a **loop**: a command that repeats a job until something is true. SQL [[has no loop command|no-loop]]. It has **recursive CTEs** instead: a CTE whose query reads its own rows to make new ones. **[[Recursive|recursive-word]]** means "defined in terms of itself".
+
+Here is one that counts from 1 to 5:
+
+\`\`\`sql
+WITH RECURSIVE n(x) AS (
+  SELECT 1
+  UNION ALL
+  SELECT x + 1 FROM n WHERE x < 5
+)
+SELECT x FROM n;
+\`\`\`
+
+| x |
+| --- |
+| 1 |
+| 2 |
+| 3 |
+| 4 |
+| 5 |
+
+### The parts, one at a time
+
+- \`WITH RECURSIVE\` says "this CTE is allowed to read itself".
+- \`n(x)\` names the CTE \`n\` and gives it one column, \`x\`. The names in brackets are the column names for every row it makes.
+- \`SELECT 1\` is the **anchor**: the starting row. It runs once. It is the countdown's "start at ten".
+- \`UNION ALL\` stacks rows on top of each other, as in the lesson "DISTINCT, UNION and UNION ALL". Here it stacks each new batch of rows under the ones before.
+- \`SELECT x + 1 FROM n WHERE x < 5\` is the **step**, also called the recursive part. It reads rows of \`n\` and makes the next ones: "one more".
+- \`WHERE x < 5\` inside the step is the **stopping condition**: it says when the step may still make a row.
+
+### Round by round
+
+The step does not see all of \`n\` at once. It runs in **rounds**, and each round reads only [[the rows made in the round before|rounds]]:
+
+| Round | The step reads | It makes |
+| --- | --- | --- |
+| anchor | (nothing) | 1 |
+| 1 | 1 | 2 |
+| 2 | 2 | 3 |
+| 3 | 3 | 4 |
+| 4 | 4 | 5 |
+| 5 | 5 | nothing, because 5 < 5 is false |
+
+When a round makes nothing, the recursion stops. \`n\` then holds every row made along the way: 1, 2, 3, 4, 5. The final \`SELECT x FROM n\` reads them like any table.
+
+### The stopping condition comes first
+
+Without \`WHERE x < 5\`, every round makes a new row, and the query [[never ends|runaway]]. So when you write a step, write the stopping condition before anything else.
+
+The condition tests the row the step **reads**, not the row it makes. When the step reads 4, 4 < 5 is true, so it makes 5. When it reads 5, the condition is false, and nothing more is made.
+
+### Other steps
+
+The step can do any arithmetic. Here it counts in twos, from 2 to 10:
+
+\`\`\`sql
+WITH RECURSIVE n(x) AS (
+  SELECT 2
+  UNION ALL
+  SELECT x + 2 FROM n WHERE x < 10
+)
+SELECT x FROM n;    -- 2, 4, 6, 8, 10
+\`\`\`
+
+To count down, start high and subtract. The rows usually come out in the order they were made, but only \`ORDER BY\` [[promises an order|row-order]], so add one whenever the order matters.
+
+**Watch out:** \`WHERE x <= 5\` looks as if it stops at 5, but it makes a 6. The step reads 5, 5 <= 5 is true, so it makes 5 + 1. Test your condition on the last row you want: "when the step reads this, should it make another?"
+
+::: context no-loop Why SQL has no loop
+SQL is a **declarative** language: you describe the result you want, and the database works out the steps to get it. Python and C++ are the other kind: you write the steps yourself, loops included. For years this made some questions, like "everyone under this manager, at any depth", impossible to ask in one query. The SQL standard added recursive queries in 1999, and SQLite has had them since version 3.8.3, in 2014. Postgres, MySQL 8 and SQL Server have them too; SQL Server leaves out the word \`RECURSIVE\`.
+:::
+
+::: context recursive-word Where the word comes from
+"Recursive" comes from the Latin *recurrere*, "to run back". In maths, a list of numbers is defined recursively when each one is built from the one before: start at 1, and each next number is the last one plus 1. That is exactly an anchor and a step. Recursion turns up all over programming: a function that calls itself, a folder that holds folders. The idea is always the same three parts: a starting case, a rule for the next case, and a point where it stops.
+:::
+
+::: context rounds Each round reads only the last one
+Picture a relay race. Each runner takes the baton only from the runner right before, never from the whole team. The anchor makes the first row. Round 1 reads it and makes 2. Round 2 reads only 2, not 1 and 2, and so on. The round that makes nothing ends the race.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 125" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1d6fd1"/>
+    </marker>
+  </defs>
+  <text x="35" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">anchor</text>
+  <text x="93" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">round 1</text>
+  <text x="151" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">round 2</text>
+  <text x="209" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">round 3</text>
+  <text x="267" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">round 4</text>
+  <text x="325" y="30" font-size="11" fill="#6c7a93" text-anchor="middle">round 5</text>
+  <rect x="12" y="40" width="46" height="36" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="35" y="63" font-size="14" fill="#1f2a44" text-anchor="middle">1</text>
+  <rect x="70" y="40" width="46" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="93" y="63" font-size="14" fill="#1f2a44" text-anchor="middle">2</text>
+  <rect x="128" y="40" width="46" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="151" y="63" font-size="14" fill="#1f2a44" text-anchor="middle">3</text>
+  <rect x="186" y="40" width="46" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="209" y="63" font-size="14" fill="#1f2a44" text-anchor="middle">4</text>
+  <rect x="244" y="40" width="46" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="267" y="63" font-size="14" fill="#1f2a44" text-anchor="middle">5</text>
+  <rect x="302" y="40" width="46" height="36" rx="4" fill="#fff" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <text x="325" y="62" font-size="12" fill="#b4232c" text-anchor="middle">stop</text>
+  <line x1="58" y1="58" x2="69" y2="58" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="116" y1="58" x2="127" y2="58" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="174" y1="58" x2="185" y2="58" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="232" y1="58" x2="243" y2="58" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="290" y1="58" x2="301" y2="58" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <text x="180" y="98" font-size="11" fill="#1f2a44" text-anchor="middle">each round reads only the box before it</text>
+  <text x="180" y="116" font-size="11" fill="#b4232c" text-anchor="middle">round 5 reads 5; 5 &lt; 5 is false, so it makes nothing</text>
+</svg>
+\`\`\`
+:::
+
+::: context runaway What "never ends" looks like
+SQLite keeps making rows until it runs out of memory or you stop it, and the editor seems to hang. SQLite offers a safety net: a \`LIMIT\` at the end of the step, and the recursion stops after that many rows.
+
+\`\`\`sql
+WITH RECURSIVE n(x) AS (
+  SELECT 1 UNION ALL SELECT x + 1 FROM n LIMIT 10
+)
+SELECT x FROM n;
+\`\`\`
+
+That gives 1 to 10. SQL Server has a built-in limit instead: by default it stops a recursive query with an error after 100 rounds. Neither replaces a correct stopping condition. They only stop a mistake from running away.
+:::
+
+::: context row-order Which order the rows come out in
+SQLite keeps the rows it has made in a queue, like people waiting in line. It takes the oldest waiting row, runs the step on that one row, and puts whatever it makes at the back of the line. For a counter, that gives 1, 2, 3 in order, the same rows as the rounds picture. Other databases may work differently, and the SQL standard promises no order for a query without \`ORDER BY\`. So the habit is: when the order is part of the answer, say it with \`ORDER BY\`.
+:::
+--- task
+It is launch day. Return a countdown as one column named \`t\`: eleven rows, from 10 down to 0.
+
+Use a recursive CTE called \`countdown\` with one column, \`t\`. The anchor starts at 10. The step makes one less than the row it reads, and stops after 0. Sort with \`ORDER BY t DESC\`, so 10 comes first.
+--- starter
+SELECT 10 AS t;
+--- solution
+WITH RECURSIVE countdown(t) AS (
+  SELECT 10
+  UNION ALL
+  SELECT t - 1 FROM countdown WHERE t > 0
+)
+SELECT t FROM countdown
+ORDER BY t DESC;
+--- hint
+Same shape as the lesson's counter. The anchor is \`SELECT 10\`. The step is \`SELECT t - 1 FROM countdown\`, plus a stopping condition.
+--- hint
+The last row you want is 0. So the step must still run when it reads 1 (to make 0), and must stop when it reads 0. Which condition is true for 1 but false for 0?
+--- hint
+\`WITH RECURSIVE countdown(t) AS (SELECT 10 UNION ALL SELECT t - 1 FROM countdown WHERE t > 0)\`, then \`SELECT t FROM countdown ORDER BY t DESC;\`.
+--- check result | Eleven numbers, 10 down to 0
+ordered
+[[10], [9], [8], [7], [6], [5], [4], [3], [2], [1], [0]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+
++++ practice | Powers of two
+--- task
+Return the powers of two from 1 to 1024 as one column named \`p\`: 1, 2, 4, 8, and so on, eleven rows. Each number is double the one before.
+
+Use a recursive CTE called \`powers\` with one column, \`p\`. Sort with \`ORDER BY p\`.
+--- starter
+SELECT 1 AS p
+UNION ALL
+SELECT 2;
+--- solution
+WITH RECURSIVE powers(p) AS (
+  SELECT 1
+  UNION ALL
+  SELECT p * 2 FROM powers WHERE p < 1024
+)
+SELECT p FROM powers
+ORDER BY p;
+--- hint
+The anchor is 1. The step makes the next row from the one it reads: double it.
+--- hint
+The last row you want is 1024. The step must still run when it reads 512, and stop when it reads 1024.
+--- check result | Eleven powers of two, from 1 to 1024
+ordered
+[[1], [2], [4], [8], [16], [32], [64], [128], [256], [512], [1024]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the numbers out
+\\b(64|128|256)\\b
+
++++ practice | The seven times table
+--- task
+Return the seven times table as two columns: \`n\`, from 1 to 10, and \`product\`, which is \`n\` times 7. That is ten rows, from \`1, 7\` to \`10, 70\`.
+
+Count \`n\` with a recursive CTE, and work out \`product\` in the final \`SELECT\`. Sort by \`n\`.
+--- starter
+SELECT 1 AS n, 7 AS product;
+--- solution
+WITH RECURSIVE nums(n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1 FROM nums WHERE n < 10
+)
+SELECT n, n * 7 AS product
+FROM nums
+ORDER BY n;
+--- hint
+The CTE only counts from 1 to 10. It does not need to know about 7 at all.
+--- hint
+In the final \`SELECT\`, next to \`n\`, add the column \`n * 7 AS product\`.
+--- check result | 1 × 7 up to 10 × 7
+ordered
+[[1, 7], [2, 14], [3, 21], [4, 28], [5, 35], [6, 42], [7, 49], [8, 56], [9, 63], [10, 70]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the products out
+\\b(49|56|63)\\b
+
++++ practice | A seat map
+--- task
+A small plane has rows 1 to 3, and seats A, B, C and D in every row. Return every seat label as one column named \`seat\`: \`1A\`, \`1B\`, \`1C\`, \`1D\`, \`2A\`, and so on up to \`3D\`. That is twelve rows, in that order.
+
+Make the numbers with recursive CTEs, pair them with a \`CROSS JOIN\`, and turn a seat number into its letter with \`substr('ABCD', …, 1)\`: position 1 is \`A\`, position 2 is \`B\`, and so on.
+--- starter
+SELECT '1A' AS seat;
+--- solution
+WITH RECURSIVE seat_rows(r) AS (
+  SELECT 1
+  UNION ALL
+  SELECT r + 1 FROM seat_rows WHERE r < 3
+), letters(s) AS (
+  SELECT 1
+  UNION ALL
+  SELECT s + 1 FROM letters WHERE s < 4
+)
+SELECT r || substr('ABCD', s, 1) AS seat
+FROM seat_rows
+CROSS JOIN letters
+ORDER BY r, s;
+--- hint
+You need two counters: rows 1 to 3, and seat positions 1 to 4. After one \`WITH RECURSIVE\`, you can write several CTEs, separated by commas.
+--- hint
+A \`CROSS JOIN\` of 3 rows with 4 positions gives all 12 pairs. \`r || substr('ABCD', s, 1)\` joins a row number and a letter into one piece of text.
+--- hint
+Sort by the numbers, not by the label: \`ORDER BY r, s\`.
+--- check result | Twelve seats, 1A to 3D
+ordered
+[["1A"], ["1B"], ["1C"], ["1D"], ["2A"], ["2B"], ["2C"], ["2D"], ["3A"], ["3B"], ["3C"], ["3D"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Pairs the counters with CROSS JOIN
+[Cc][Rr][Oo][Ss][Ss]\\s+[Jj][Oo][Ii][Nn]
+
++++ practice | Down in threes, never below zero
+--- task
+Count down from 20 in steps of 3 as one column named \`t\`: 20, 17, 14, and so on. Stop at the last number that is still 0 or more. No negative number may appear.
+
+Use a recursive CTE called \`steps\`, and sort with \`ORDER BY t DESC\`.
+--- starter
+WITH RECURSIVE steps(t) AS (
+  SELECT 20
+  UNION ALL
+  SELECT t - 3 FROM steps WHERE t > 0
+)
+SELECT t FROM steps
+ORDER BY t DESC;
+--- solution
+WITH RECURSIVE steps(t) AS (
+  SELECT 20
+  UNION ALL
+  SELECT t - 3 FROM steps WHERE t >= 3
+)
+SELECT t FROM steps
+ORDER BY t DESC;
+--- hint
+Run the starter and look at the last row. The step read 2, and 2 > 0 is true, so it made 2 − 3.
+--- hint
+The step may only make a row when the row it reads is big enough that taking 3 away leaves 0 or more. What is the smallest such number?
+--- check result | 20 down to 2, with no negative number
+ordered
+[[20], [17], [14], [11], [8], [5], [2]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the numbers out
+\\b(17|14|11)\\b
+
++++ practice | One year too many
+--- task
+This query should list every year from 2019 to 2024, the years the company has hired in, as one column \`y\`. It runs, but it lists 2025 as well.
+
+Fix the stopping condition so the last row is 2024. Keep the anchor at 2019.
+--- starter
+WITH RECURSIVE years(y) AS (
+  SELECT 2019
+  UNION ALL
+  SELECT y + 1 FROM years WHERE y <= 2024
+)
+SELECT y FROM years
+ORDER BY y;
+--- solution
+WITH RECURSIVE years(y) AS (
+  SELECT 2019
+  UNION ALL
+  SELECT y + 1 FROM years WHERE y < 2024
+)
+SELECT y FROM years
+ORDER BY y;
+--- hint
+Ask the question from the lesson: when the step reads 2024, should it make another row?
+--- hint
+The condition tests the row the step reads. \`2024 <= 2024\` is true, so it makes 2025.
+--- check result | Six years, 2019 to 2024
+ordered
+[[2019], [2020], [2021], [2022], [2023], [2024]]
+--- check source | Keeps the anchor at 2019
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+2019
+--- check source absent | Does not type the years out
+\\b202[0-3]\\b
+
++++ practice | A probe's battery, hour by hour
+--- task
+A probe's battery starts at 100.0 percent. Every hour it loses a fifth of the charge it has left, so the next hour's charge is this hour's times 0.8.
+
+Return two columns: \`hour\`, starting at 0, and \`charge\`, rounded to 1 decimal place. Keep only the hours when the charge is at least 20 percent. Sort by \`hour\`.
+
+Use one recursive CTE that carries both values, \`hour\` and \`charge\`, from row to row.
+--- starter
+SELECT 0 AS hour, 100.0 AS charge;
+--- solution
+WITH RECURSIVE battery(hour, charge) AS (
+  SELECT 0, 100.0
+  UNION ALL
+  SELECT hour + 1, charge * 0.8
+  FROM battery
+  WHERE charge * 0.8 >= 20
+)
+SELECT hour, ROUND(charge, 1) AS charge
+FROM battery
+ORDER BY hour;
+--- hint
+Name two columns in the brackets: \`battery(hour, charge)\`. The anchor then gives two values, \`SELECT 0, 100.0\`, and so does the step.
+--- hint
+The step makes \`hour + 1\` and \`charge * 0.8\`. For the condition, ask about the row the step would make: is \`charge * 0.8\` still at least 20?
+--- hint
+Round only in the final \`SELECT\`, with \`ROUND(charge, 1)\`. Rounding inside the step would let the small errors pile up.
+--- check result | Eight hours, from 100.0 down to 21.0
+ordered
+[[0, 100.0], [1, 80.0], [2, 64.0], [3, 51.2], [4, 41.0], [5, 32.8], [6, 26.2], [7, 21.0]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Multiplies by 0.8 each round
+0?\\.8\\b
+
+=== sql3-02 | Recursive CTEs: generating a series
+--- teach
+Last lesson a recursive CTE counted: an anchor to start, a step to make the next row, and a stopping condition. This lesson counts in days instead of numbers. That gives you a calendar, and a calendar lets you show the days when nothing happened.
+
+### The problem: days that are not there
+
+Picture a class register where a student's absent days have no line at all. Reading it, you would never notice the absences. To spot them, you need a second list, every school day, and you compare the two.
+
+\`daily_sales\` is like that register. Here are the north region's rows:
+
+| day | amount |
+| --- | --- |
+| 2024-07-01 | 120 |
+| 2024-07-02 | 80 |
+| 2024-07-03 | 150 |
+| 2024-07-05 | 90 |
+| 2024-07-06 | 200 |
+| 2024-07-07 | 110 |
+
+There is no row for 4 July, because nothing was sold. A chart drawn from these rows would jump from the 3rd to the 5th without showing the empty day. An average "per day" would be wrong too: \`AVG(amount)\` gives 750 ÷ 6 = 125, but the week had 7 days, so the true figure is 750 ÷ 7, about 107.1.
+
+You need a row for **every** day, with 0 where nothing happened. That is called [[filling the gaps|gaps]].
+
+### Step 1: a calendar
+
+A **calendar** here means a list of every day in a range, one row per day. Build it with the same shape as last lesson's counter. The step uses \`date(day, '+1 day')\`, from the lesson "Date arithmetic and date ranges", which gives [[the day after|date-steps]] \`day\`:
+
+\`\`\`sql
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+)
+SELECT day FROM days;
+\`\`\`
+
+- Anchor: \`'2024-07-01'\`, the first day.
+- Step: the day after the one read last round.
+- Stopping condition: \`day < '2024-07-07'\`. When the step reads the 6th, it makes the 7th. When it reads the 7th, it stops.
+
+The result is seven rows, from \`2024-07-01\` to \`2024-07-07\`, with 4 July included. The condition compares text, and that works because [[dates written year-month-day sort in time order|iso-dates]].
+
+### Step 2: join the data onto the calendar
+
+Now \`LEFT JOIN\` the sales onto the calendar. The calendar is on the left, so every day survives, and [[the sales fill in what they have|calendar-picture]]:
+
+\`\`\`sql
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+)
+SELECT d.day, s.amount
+FROM days d
+LEFT JOIN daily_sales s ON s.day = d.day AND s.region = 'north'
+ORDER BY d.day;
+\`\`\`
+
+| day | amount |
+| --- | --- |
+| 2024-07-01 | 120 |
+| 2024-07-02 | 80 |
+| 2024-07-03 | 150 |
+| 2024-07-04 | NULL |
+| 2024-07-05 | 90 |
+| 2024-07-06 | 200 |
+| 2024-07-07 | 110 |
+
+4 July is back, with NULL: the calendar had the day, and no sales row matched it.
+
+### Step 3: turn NULL into 0
+
+\`COALESCE(x, 0)\`, from the lesson "Testing for NULL", gives back \`x\`, or 0 when \`x\` is NULL. So \`COALESCE(s.amount, 0)\` shows 0 on 4 July and the real amount on every other day.
+
+### Where the region filter goes
+
+The lesson "LEFT JOIN: where the filter goes" gave the rule: a filter on the right-hand table of a LEFT JOIN belongs in its \`ON\`. Here the region is a column of the right-hand table, \`daily_sales\`, so \`s.region = 'north'\` goes in the \`ON\`.
+
+**Watch out:** moving \`s.region = 'north'\` into a \`WHERE\` gives back only six rows. On 4 July's row, \`s.region\` is NULL, and \`NULL = 'north'\` is never true, so \`WHERE\` throws away the very row the calendar added. Keep the region in the \`ON\`.
+
+The same calendar can serve [[both regions at once|both-regions]], with one more join.
+
+::: context gaps Zero, or unknown?
+Filling gaps is everyday work with anything measured over time. Flight telemetry, the stream of sensor readings a spacecraft sends down, is stored second by second, and a chart of it must show a missing second as missing. There the right fill is often NULL, not 0: no reading does not mean the sensor read zero. Sales are different. No row means nothing was sold, so 0 is the true answer. Before you fill a gap, ask what the gap means.
+:::
+
+::: context date-steps Other step sizes
+The step can move by any amount SQLite's date functions understand. \`date(day, '+7 days')\` makes a calendar of weeks. For hours, use \`datetime\`, which keeps the time of day:
+
+\`\`\`sql
+WITH RECURSIVE t(ts) AS (
+  SELECT '2024-07-01 00:00:00'
+  UNION ALL
+  SELECT datetime(ts, '+1 hour') FROM t
+  WHERE ts < '2024-07-01 03:00:00'
+)
+SELECT ts FROM t;
+\`\`\`
+
+That gives four rows, from midnight to 3 a.m.
+:::
+
+::: context iso-dates Why comparing dates as text works
+\`'2024-07-06' < '2024-07-07'\` compares the text one character at a time, from the left, like words in a dictionary. The year comes first, then the month, then the day, and each always has the same number of digits. So dictionary order is time order. Drop the leading zeros and it breaks: in SQLite, \`'2024-7-10' < '2024-7-4'\` is true, because the character \`1\` comes before \`4\`. This is why dates are stored as \`'YYYY-MM-DD'\` text, as the lesson "Dates and times" said.
+:::
+
+::: context calendar-picture The calendar holds the days, the data fills them in
+Every day on the left comes from the calendar. Each day looks for a matching north sales row on the right. 4 July finds none, so the LEFT JOIN gives NULL, and \`COALESCE\` turns that into 0.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 195" font-family="Inter, Arial, sans-serif">
+  <text x="75" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">calendar</text>
+  <text x="265" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">north sales</text>
+  <rect x="20" y="28" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="42" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-01</text>
+  <rect x="20" y="51" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="65" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-02</text>
+  <rect x="20" y="74" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="88" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-03</text>
+  <rect x="20" y="97" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="111" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-04</text>
+  <rect x="20" y="120" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="134" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-05</text>
+  <rect x="20" y="143" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="157" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-06</text>
+  <rect x="20" y="166" width="110" height="19" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="75" y="180" font-size="12" fill="#1f2a44" text-anchor="middle">2024-07-07</text>
+  <rect x="210" y="28" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="42" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <rect x="210" y="51" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="65" font-size="12" fill="#1f2a44" text-anchor="middle">80</text>
+  <rect x="210" y="74" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="88" font-size="12" fill="#1f2a44" text-anchor="middle">150</text>
+  <rect x="210" y="97" width="110" height="19" fill="#f2b880" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <text x="265" y="111" font-size="12" fill="#1f2a44" text-anchor="middle">no row, so 0</text>
+  <rect x="210" y="120" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="134" font-size="12" fill="#1f2a44" text-anchor="middle">90</text>
+  <rect x="210" y="143" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="157" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <rect x="210" y="166" width="110" height="19" fill="#fff" stroke="#1f2a44"/>
+  <text x="265" y="180" font-size="12" fill="#1f2a44" text-anchor="middle">110</text>
+  <line x1="130" y1="37" x2="210" y2="37" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="60" x2="210" y2="60" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="83" x2="210" y2="83" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="106" x2="210" y2="106" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="130" y1="129" x2="210" y2="129" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="152" x2="210" y2="152" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="130" y1="175" x2="210" y2="175" stroke="#1d6fd1" stroke-width="1.5"/>
+</svg>
+\`\`\`
+:::
+
+::: context both-regions Every day for every region
+To fill the gaps for both regions, you need every pair of a day and a region. That is a CROSS JOIN, from the lesson "CTEs: a query in named steps". The region filter in the \`ON\` then matches each pair's own region:
+
+\`\`\`sql
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+)
+SELECT d.day, r.region, COALESCE(s.amount, 0) AS amount
+FROM days d
+CROSS JOIN (SELECT DISTINCT region FROM daily_sales) r
+LEFT JOIN daily_sales s ON s.day = d.day AND s.region = r.region
+ORDER BY d.day, r.region;
+\`\`\`
+
+That is 7 days × 2 regions = 14 rows. South shows 0 on 2 and 6 July.
+:::
+--- task
+Return one row for every day from \`2024-07-01\` to \`2024-07-07\` with the \`north\` region's sales. Use two columns: \`day\`, and \`amount\`, which shows \`0\` on a day with no sales row.
+
+Build the days with a recursive CTE, \`LEFT JOIN\` \`daily_sales\` onto them, and sort by \`day\`.
+--- starter
+SELECT day, amount
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+)
+SELECT d.day, COALESCE(s.amount, 0) AS amount
+FROM days d
+LEFT JOIN daily_sales s ON s.day = d.day AND s.region = 'north'
+ORDER BY d.day;
+--- hint
+Start with the calendar: \`WITH RECURSIVE days(day) AS (SELECT '2024-07-01' UNION ALL SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07')\`.
+--- hint
+After it, read \`FROM days d LEFT JOIN daily_sales s ON s.day = d.day AND s.region = 'north'\`. The region goes in the \`ON\`, not in a \`WHERE\`.
+--- hint
+Select \`d.day, COALESCE(s.amount, 0) AS amount\` and end with \`ORDER BY d.day\`.
+--- check result | Seven days; 4 July is 0
+ordered
+[["2024-07-01", 120.0], ["2024-07-02", 80.0], ["2024-07-03", 150.0], ["2024-07-04", 0], ["2024-07-05", 90.0], ["2024-07-06", 200.0], ["2024-07-07", 110.0]]
+
++++ practice | A calendar of weeks
+--- task
+Return one row for every Monday from \`2024-07-01\` to \`2024-08-26\`, with two columns:
+
+- \`week_start\`: the Monday
+- \`week_end\`: the Sunday six days later
+
+That is nine rows, from \`2024-07-01, 2024-07-07\` to \`2024-08-26, 2024-09-01\`. Build the Mondays with a recursive CTE, and sort by \`week_start\`.
+--- starter
+SELECT '2024-07-01' AS week_start, '2024-07-07' AS week_end;
+--- solution
+WITH RECURSIVE weeks(week_start) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(week_start, '+7 days') FROM weeks WHERE week_start < '2024-08-26'
+)
+SELECT week_start, date(week_start, '+6 days') AS week_end
+FROM weeks
+ORDER BY week_start;
+--- hint
+The step moves a whole week at a time: \`date(week_start, '+7 days')\`.
+--- hint
+The CTE only needs the Mondays. Work out each Sunday in the final \`SELECT\` with \`date(week_start, '+6 days') AS week_end\`.
+--- check result | Nine weeks, the last one ending on 1 September
+ordered
+[["2024-07-01", "2024-07-07"], ["2024-07-08", "2024-07-14"], ["2024-07-15", "2024-07-21"], ["2024-07-22", "2024-07-28"], ["2024-07-29", "2024-08-04"], ["2024-08-05", "2024-08-11"], ["2024-08-12", "2024-08-18"], ["2024-08-19", "2024-08-25"], ["2024-08-26", "2024-09-01"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the dates out
+2024-07-15|2024-08-05
+
++++ practice | The days north sold nothing
+--- task
+Return every day from \`2024-06-29\` to \`2024-07-08\` on which the \`north\` region has no row in \`daily_sales\`, as one column named \`day\`. Sort by \`day\`.
+
+Build the calendar with a recursive CTE, and use a \`LEFT JOIN\` to find the days with no match.
+--- starter
+SELECT day
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-06-29'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-08'
+)
+SELECT d.day
+FROM days d
+LEFT JOIN daily_sales s ON s.day = d.day AND s.region = 'north'
+WHERE s.day IS NULL
+ORDER BY d.day;
+--- hint
+Build the ten days first, then \`LEFT JOIN\` north's sales onto them. A day with no sale gets NULL in every sales column.
+--- hint
+Keep the region in the \`ON\`. Then keep only the days where the sales side found nothing: \`WHERE s.day IS NULL\`.
+--- check result | Four empty days: 29 and 30 June, 4 and 8 July
+ordered
+[["2024-06-29"], ["2024-06-30"], ["2024-07-04"], ["2024-07-08"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Finds the gaps with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+[Jj][Oo][Ii][Nn]
+
++++ practice | How many regions sold each day
+--- task
+For every day from \`2024-07-01\` to \`2024-07-08\`, return three columns:
+
+- \`day\`
+- \`regions\`: how many regions had a sale that day, and \`0\` when none did
+- \`total\`: the day's sales across all regions, and \`0\` when there were none
+
+Sort by \`day\`. There are no sales at all on 8 July, so it must show \`0\` and \`0\`.
+--- starter
+SELECT day, COUNT(*) AS regions, SUM(amount) AS total
+FROM daily_sales
+GROUP BY day
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-08'
+)
+SELECT d.day, COUNT(s.region) AS regions, COALESCE(SUM(s.amount), 0) AS total
+FROM days d
+LEFT JOIN daily_sales s ON s.day = d.day
+GROUP BY d.day
+ORDER BY d.day;
+--- hint
+Build the eight days, \`LEFT JOIN\` every sales row onto them, then \`GROUP BY d.day\`.
+--- hint
+On 8 July the join leaves one row full of NULLs. \`COUNT(*)\` counts that row as 1. \`COUNT(s.region)\` counts only the rows with a real region.
+--- hint
+\`SUM\` of nothing but NULL is NULL. Wrap it: \`COALESCE(SUM(s.amount), 0)\`.
+--- check result | Eight days; 8 July shows 0 regions and 0 sales
+ordered
+[["2024-07-01", 2, 180.0], ["2024-07-02", 1, 80.0], ["2024-07-03", 2, 225.0], ["2024-07-04", 1, 75.0], ["2024-07-05", 2, 130.0], ["2024-07-06", 1, 200.0], ["2024-07-07", 2, 205.0], ["2024-07-08", 0, 0]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Groups the calendar's days
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]
+
++++ practice | Bookings across a leap day
+--- schema
+CREATE TABLE bookings (
+  id INTEGER PRIMARY KEY,
+  day TEXT NOT NULL,
+  pad TEXT NOT NULL
+);
+INSERT INTO bookings (id, day, pad) VALUES
+  (1, '2024-02-27', 'A'), (2, '2024-02-27', 'B'),
+  (3, '2024-02-29', 'A'),
+  (4, '2024-03-02', 'B'),
+  (5, '2024-03-03', 'A'),
+  (6, '2024-02-26', 'B');
+--- task
+This problem has its own table, \`bookings\`: \`id\`, \`day\` and \`pad\`, one row per booking of a launch pad.
+
+Return one row for every day from \`2024-02-27\` to \`2024-03-02\`, both included, with two columns: \`day\`, and \`booked\`, the number of bookings that day (\`0\` when there are none). Sort by \`day\`.
+
+2024 is a leap year, so 29 February is a real day and must appear. Bookings before the first day or after the last one must not be counted anywhere.
+--- starter
+SELECT day, COUNT(*) AS booked
+FROM bookings
+WHERE day BETWEEN '2024-02-27' AND '2024-03-02'
+GROUP BY day
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-02-27'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-03-02'
+)
+SELECT d.day, COUNT(b.id) AS booked
+FROM days d
+LEFT JOIN bookings b ON b.day = d.day
+GROUP BY d.day
+ORDER BY d.day;
+--- hint
+The starter misses the days with no bookings. Build the five days with a recursive CTE, and let \`date(day, '+1 day')\` deal with the end of February.
+--- hint
+\`LEFT JOIN bookings\` onto the calendar, group by the calendar's day, and count \`b.id\`, not \`*\`, so an empty day counts 0.
+--- check result | Five days, with 29 February and the empty days at 0
+ordered
+[["2024-02-27", 2], ["2024-02-28", 0], ["2024-02-29", 1], ["2024-03-01", 0], ["2024-03-02", 1]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the dates out
+2024-02-28|2024-03-01
+
++++ practice | The quiet days vanished
+--- schema
+CREATE TABLE pings (
+  id INTEGER PRIMARY KEY,
+  craft TEXT NOT NULL,
+  ts TEXT NOT NULL
+);
+INSERT INTO pings (id, craft, ts) VALUES
+  (1, 'Kestrel', '2024-03-01 08:00:00'),
+  (2, 'Kestrel', '2024-03-01 20:00:00'),
+  (3, 'Osprey',  '2024-03-02 09:15:00'),
+  (4, 'Kestrel', '2024-03-03 11:30:00'),
+  (5, 'Kestrel', '2024-03-05 06:45:00'),
+  (6, 'Osprey',  '2024-03-05 07:00:00');
+--- task
+This problem has its own table, \`pings\`: \`id\`, \`craft\` and \`ts\`, a timestamp. Each row is one radio contact with a spacecraft.
+
+This query should list every day from \`2024-03-01\` to \`2024-03-05\` with the number of contacts with **Kestrel** that day, \`0\` on a quiet day. It runs, but it returns only three days: 2 and 4 March are missing.
+
+Find the line that throws the quiet days away and fix it. Keep the columns \`day\` and \`contacts\`, and the order.
+--- starter
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-03-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-03-05'
+)
+SELECT d.day, COUNT(p.id) AS contacts
+FROM days d
+LEFT JOIN pings p ON date(p.ts) = d.day
+WHERE p.craft = 'Kestrel'
+GROUP BY d.day
+ORDER BY d.day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-03-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-03-05'
+)
+SELECT d.day, COUNT(p.id) AS contacts
+FROM days d
+LEFT JOIN pings p ON date(p.ts) = d.day AND p.craft = 'Kestrel'
+GROUP BY d.day
+ORDER BY d.day;
+--- hint
+On 4 March there is no ping at all, so the join gives a row where \`p.craft\` is NULL. What does \`WHERE p.craft = 'Kestrel'\` do with that row?
+--- hint
+2 March has a ping, but from Osprey. A filter on the right-hand table of a \`LEFT JOIN\` belongs in its \`ON\`.
+--- check result | Five days; 2 and 4 March show 0
+ordered
+[["2024-03-01", 2], ["2024-03-02", 0], ["2024-03-03", 1], ["2024-03-04", 0], ["2024-03-05", 1]]
+--- check source | Still picks Kestrel by name
+'Kestrel'
+--- check source absent | No WHERE on the craft
+[Ww][Hh][Ee][Rr][Ee]\\s+p\\.craft
+
++++ practice | A week per region, gaps included
+--- task
+For each region, sum up its week from \`2024-07-01\` to \`2024-07-07\`, counting every calendar day, including the days it has no row. Return one row per region with five columns:
+
+- \`region\`
+- \`sales_days\`: the number of days with a sales row
+- \`zero_days\`: the number of calendar days with no sales row
+- \`total\`: the week's sales
+- \`per_day\`: the average per calendar day, rounded to 1 decimal place, where a day with no row counts as 0
+
+Sort by \`region\`. For example, north sold 750 over 7 days, so its \`per_day\` is about 107.1, not the 125.0 that \`AVG(amount)\` gives.
+--- starter
+SELECT region, COUNT(*) AS sales_days, 0 AS zero_days,
+       SUM(amount) AS total, ROUND(AVG(amount), 1) AS per_day
+FROM daily_sales
+GROUP BY region
+ORDER BY region;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+)
+SELECT r.region,
+       COUNT(s.amount) AS sales_days,
+       COUNT(*) - COUNT(s.amount) AS zero_days,
+       COALESCE(SUM(s.amount), 0) AS total,
+       ROUND(AVG(COALESCE(s.amount, 0)), 1) AS per_day
+FROM days d
+CROSS JOIN (SELECT DISTINCT region FROM daily_sales) r
+LEFT JOIN daily_sales s ON s.day = d.day AND s.region = r.region
+GROUP BY r.region
+ORDER BY r.region;
+--- hint
+You need every pair of a day and a region: the calendar \`CROSS JOIN\` the list of regions. Then \`LEFT JOIN\` the sales onto each pair.
+--- hint
+Group by the region. \`COUNT(*)\` counts all 7 calendar days, and \`COUNT(s.amount)\` only the days with a row. The difference is the empty days.
+--- hint
+For the average, turn each missing amount into 0 before averaging: \`AVG(COALESCE(s.amount, 0))\`.
+--- check result | north 6 days and 1 empty, 107.1 a day; south 5 and 2, 49.3 a day
+ordered
+[["north", 6, 1, 750.0, 107.1], ["south", 5, 2, 345.0, 49.3]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not divide by a typed 7
+/\\s*7(\\.0)?\\b
+
+=== sql3-03 | Recursive CTEs: walking an org chart
+--- teach
+Last lesson each round of the step made one new date. This time the step joins to a table, so each round can find several rows at once. That lets you walk down an org chart, through as many levels as it has.
+
+### The picture
+
+Think of a phone tree for a snow day. The head teacher phones the heads of year. Each of them phones their teachers. Each teacher phones the families in their class. Nobody needs to know how many levels there are. The calls stop on their own when the people called have nobody to phone.
+
+### The tree in the table
+
+In \`employees\`, \`manager_id\` holds the \`id\` of each person's manager. Drawn out, it looks like this:
+
+\`\`\`
+Maya (CEO)
+├── Omar (CTO)
+│   ├── Raj
+│   │   ├── Ivan
+│   │   │   └── Leo
+│   │   ├── Nora
+│   │   └── Paul
+│   └── Tess
+└── Lena (CFO)
+    ├── Zara
+    └── Amy
+\`\`\`
+
+This shape is a **[[tree|tree-words]]**: every row points to one parent (here, its manager). One row at the top has no parent: the **root**, Maya. Rows with nobody below them are **leaves**: Leo, Nora, Paul, Tess, Zara and Amy. Org charts, folders inside folders and [[the parts list of a rocket|parts-lists]] are all trees.
+
+### One level is a self-join
+
+In the lesson "Self-joins" you found the rows that point at one row. Raj's \`id\` is 4, so Raj's direct reports are:
+
+\`\`\`sql
+SELECT name FROM employees WHERE manager_id = 4;   -- Ivan, Nora, Paul
+\`\`\`
+
+That is one level. Leo reports to Ivan, one level further down, so reaching Leo needs another join, and each level after that needs one more. You [[do not know the depth in advance|unknown-depth]], so you cannot know how many joins to write.
+
+### The step is a join
+
+A recursive CTE makes those joins for you. The anchor finds the first level. The step joins \`employees\` to the rows found in the round before:
+
+\`\`\`sql
+WITH RECURSIVE chain(id, name, depth) AS (
+  SELECT id, name, 1 FROM employees WHERE manager_id = 4
+  UNION ALL
+  SELECT e.id, e.name, c.depth + 1
+  FROM employees e
+  JOIN chain c ON e.manager_id = c.id
+)
+SELECT * FROM chain;
+\`\`\`
+
+Read the \`ON\` aloud: "an employee whose manager is someone found last round". Round by round:
+
+| Round | The step reads | It finds |
+| --- | --- | --- |
+| anchor | (nothing) | Ivan, Nora, Paul, at depth 1 |
+| 1 | Ivan, Nora, Paul | Leo (who reports to Ivan), at depth 2 |
+| 2 | Leo | nobody |
+
+A round that finds nobody ends the recursion. There is no \`WHERE\` stopping condition this time: [[the leaves stop it|leaves-stop]]. The result:
+
+| id | name | depth |
+| --- | --- | --- |
+| 6 | Ivan | 1 |
+| 7 | Nora | 1 |
+| 8 | Paul | 1 |
+| 10 | Leo | 2 |
+
+Raj is not in it. The anchor starts at Raj's reports, not at Raj.
+
+### Carrying values along
+
+\`depth\` is a value carried from round to round. The anchor sets it to 1. The step updates it: \`c.depth + 1\` is one more than the row it came from. You can carry anything you need this way: a counter, a manager's name, or a path of names, as the next lesson does.
+
+### Starting from a name
+
+\`manager_id = 4\` meant looking up Raj's \`id\` first. To start from a name instead, put a subquery, from the lesson "Subqueries: a query inside a query", in the anchor:
+
+\`\`\`sql
+WHERE manager_id = (SELECT id FROM employees WHERE name = 'Raj')
+\`\`\`
+
+### Walking up
+
+Walking **up**, from one person to the CEO, is the same with the join flipped. The anchor is one person. The step finds "the employee who is the manager of the one found last round". For that, the CTE must carry \`manager_id\`:
+
+\`\`\`sql
+WITH RECURSIVE up(id, name, manager_id) AS (
+  SELECT id, name, manager_id FROM employees WHERE name = 'Leo'
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id
+  FROM employees e
+  JOIN up u ON e.id = u.manager_id
+)
+SELECT name FROM up;    -- Leo, Ivan, Raj, Omar, Maya
+\`\`\`
+
+It stops at Maya. Maya's \`manager_id\` is NULL, and NULL matches no \`id\`.
+
+### When the data has a loop
+
+Real data can contain a **cycle**: by mistake, A manages B and B manages A. Then every round finds someone, and [[the recursion never ends|cycles]]. A cheap guard is a limit on depth inside the step: add \`WHERE c.depth < 20\`.
+
+**Watch out:** the direction of the \`ON\`. \`e.manager_id = c.id\` walks down, to the reports. \`e.id = c.manager_id\` walks up, to the boss. Swap them by accident and you get the wrong people, with no error. Say the \`ON\` in words before you run it.
+
+::: context tree-words Why it is called a tree
+Draw it with the root at the bottom and the branches spreading upwards, and it looks like a tree. Computer scientists draw it upside down, root at the top, but they kept the words. A **parent** is the row one level up: Raj is Ivan's parent. A **child** is one level down. A proper tree has no loops: follow the parents up from anyone and you always reach the root. Storing each row's parent \`id\` in a column, as \`manager_id\` does, is the most common way to keep a tree in a database.
+:::
+
+::: context parts-lists Trees in engineering
+A launch vehicle is built as a tree of parts. The vehicle has stages, a stage has engines and tanks, an engine has turbopumps and valves, and so on down to single bolts. Engineers call this list a **bill of materials**. Questions such as "which parts are inside the second stage?" or "how many of this valve does the whole vehicle use?" are answered with recursive queries over a parts table, walking down the tree the way this lesson walks an org chart.
+:::
+
+::: context unknown-depth Why not write the joins by hand?
+For this table you could: the deepest chain, Maya to Omar to Raj to Ivan to Leo, is only four steps. But that depth is a fact about today's data, not about the query. Hire an intern under Leo, and a query with a fixed number of joins quietly misses them. A large company's chart can be a dozen levels deep, and different in every department. The recursive CTE keeps going for as many levels as there are, today and after the next reorganization.
+:::
+
+::: context leaves-stop How the walk under Raj ends
+The anchor finds Raj's three reports. Round 1 reads all three and finds Leo, who reports to Ivan. Nora and Paul are leaves, so they add nobody. Round 2 reads Leo, finds no employee whose \`manager_id\` is 10, and makes nothing, so the recursion ends.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 166" font-family="Inter, Arial, sans-serif">
+  <text x="8" y="27" font-size="11" fill="#6c7a93">start</text>
+  <text x="8" y="79" font-size="11" fill="#6c7a93">depth 1</text>
+  <text x="8" y="125" font-size="11" fill="#6c7a93">depth 2</text>
+  <line x1="200" y1="36" x2="120" y2="62" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="200" y1="36" x2="200" y2="62" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="200" y1="36" x2="280" y2="62" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="120" y1="88" x2="120" y2="108" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="170" y="10" width="60" height="26" rx="5" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="200" y="28" font-size="12" fill="#1f2a44" text-anchor="middle">Raj</text>
+  <rect x="90" y="62" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="120" y="80" font-size="12" fill="#1f2a44" text-anchor="middle">Ivan</text>
+  <rect x="170" y="62" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="200" y="80" font-size="12" fill="#1f2a44" text-anchor="middle">Nora</text>
+  <rect x="250" y="62" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="280" y="80" font-size="12" fill="#1f2a44" text-anchor="middle">Paul</text>
+  <rect x="90" y="108" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="120" y="126" font-size="12" fill="#1f2a44" text-anchor="middle">Leo</text>
+  <text x="120" y="156" font-size="11" fill="#b4232c" text-anchor="middle">round 2: nobody below Leo</text>
+</svg>
+\`\`\`
+:::
+
+::: context cycles How a cycle sneaks in, and the guard
+A cycle usually comes from a data-entry slip: someone sets Raj's manager to Ivan while Ivan still reports to Raj. Walking down from Raj then finds Ivan, then Raj again, then Ivan, forever. \`WHERE c.depth < 20\` in the step stops any walk after 20 levels, far deeper than any real chart here. Some databases can spot repeats themselves: Postgres 14 added a \`CYCLE\` clause for exactly this. SQLite has no such clause, so the depth guard is the usual habit.
+:::
+--- task
+Return everyone who reports to **Omar**, directly or through someone else: their \`name\`, and their \`depth\` (1 for Omar's direct reports, 2 for the people who report to those, and so on).
+
+Find Omar with a subquery on the name \`'Omar'\`, not by typing Omar's id. Sort by \`depth\`, then by \`name\`.
+--- starter
+SELECT name, 1 AS depth
+FROM employees
+WHERE manager_id = (SELECT id FROM employees WHERE name = 'Omar')
+ORDER BY name;
+--- solution
+WITH RECURSIVE reports(id, name, depth) AS (
+  SELECT id, name, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Omar')
+  UNION ALL
+  SELECT e.id, e.name, r.depth + 1
+  FROM employees e
+  JOIN reports r ON e.manager_id = r.id
+)
+SELECT name, depth
+FROM reports
+ORDER BY depth, name;
+--- hint
+The starter is already the anchor: Omar's direct reports, at depth 1. Put it inside \`WITH RECURSIVE reports(id, name, depth) AS ( … )\`, and select \`id\` too, so the step can join on it. Leave its \`ORDER BY\` for the end.
+--- hint
+The step: \`SELECT e.id, e.name, r.depth + 1 FROM employees e JOIN reports r ON e.manager_id = r.id\`, joined to the anchor with \`UNION ALL\`.
+--- hint
+After the closing bracket: \`SELECT name, depth FROM reports ORDER BY depth, name;\`.
+--- check result | Raj and Tess, then Ivan, Nora and Paul, then Leo
+ordered
+[["Raj", 1], ["Tess", 1], ["Ivan", 2], ["Nora", 2], ["Paul", 2], ["Leo", 3]]
+
++++ practice | Paul's chain of bosses
+--- task
+Return everyone above **Paul** in the org chart, from his own manager up to the CEO, with two columns: \`name\`, and \`steps\`, which is 1 for Paul's manager, 2 for that person's manager, and so on. Paul himself is not in the result. Sort by \`steps\`.
+
+Find Paul by his name with a subquery, not by typing an id.
+--- starter
+SELECT name, 1 AS steps
+FROM employees
+WHERE id = (SELECT manager_id FROM employees WHERE name = 'Paul');
+--- solution
+WITH RECURSIVE bosses(id, name, manager_id, steps) AS (
+  SELECT id, name, manager_id, 1
+  FROM employees
+  WHERE id = (SELECT manager_id FROM employees WHERE name = 'Paul')
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id, b.steps + 1
+  FROM employees e
+  JOIN bosses b ON e.id = b.manager_id
+)
+SELECT name, steps
+FROM bosses
+ORDER BY steps;
+--- hint
+The starter is the anchor: Paul's manager, at step 1. The CTE must carry \`manager_id\` too, so the next round can find that person's manager.
+--- hint
+This walks up, so the step's \`ON\` reads "the employee whose \`id\` is the manager of the one found last round": \`e.id = b.manager_id\`.
+--- check result | Raj, then Omar, then Maya
+ordered
+[["Raj", 1], ["Omar", 2], ["Maya", 3]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the bosses' names
+'(Raj|Omar|Maya)'
+
++++ practice | Raj's team in one row
+--- task
+Return one row about everyone below **Raj**, at any depth, with three columns:
+
+- \`people\`: how many there are
+- \`payroll\`: their total salary, not counting Raj
+- \`levels\`: how many levels deep Raj's team goes (1 if everyone reported to Raj directly)
+
+Walk the tree with a recursive CTE, then add up its rows.
+--- starter
+SELECT COUNT(*) AS people, SUM(salary) AS payroll, 1 AS levels
+FROM employees
+WHERE manager_id = (SELECT id FROM employees WHERE name = 'Raj');
+--- solution
+WITH RECURSIVE team(id, depth) AS (
+  SELECT id, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Raj')
+  UNION ALL
+  SELECT e.id, t.depth + 1
+  FROM employees e
+  JOIN team t ON e.manager_id = t.id
+)
+SELECT COUNT(*) AS people, SUM(e.salary) AS payroll, MAX(t.depth) AS levels
+FROM team t
+JOIN employees e ON e.id = t.id;
+--- hint
+Walk down from Raj as in the lesson, carrying \`id\` and \`depth\`. The starter only finds the first level.
+--- hint
+After the CTE, join its rows back to \`employees\` for the salaries, and use \`COUNT(*)\`, \`SUM(…)\` and \`MAX(t.depth)\`.
+--- check result | 4 people, 385000, 2 levels
+[[4, 385000, 2]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the answers
+\\b385000\\b
+
++++ practice | Who reports to whom under Omar
+--- task
+Return everyone under **Omar**, at any depth, with four columns:
+
+- \`name\` and \`title\`
+- \`boss\`: the name of the person they report to directly
+- \`depth\`: 1 for Omar's direct reports, 2 for theirs, and so on
+
+Carry the boss's name through the recursion: the anchor's boss is Omar, and in the step it is the name of the row found last round. Sort by \`depth\`, then by \`name\`.
+--- starter
+SELECT e.name, e.title, b.name AS boss, 1 AS depth
+FROM employees e
+JOIN employees b ON b.id = e.manager_id
+WHERE b.name = 'Omar'
+ORDER BY e.name;
+--- solution
+WITH RECURSIVE org(id, name, title, boss, depth) AS (
+  SELECT e.id, e.name, e.title, b.name, 1
+  FROM employees e
+  JOIN employees b ON b.id = e.manager_id
+  WHERE b.name = 'Omar'
+  UNION ALL
+  SELECT e.id, e.name, e.title, o.name, o.depth + 1
+  FROM employees e
+  JOIN org o ON e.manager_id = o.id
+)
+SELECT name, title, boss, depth
+FROM org
+ORDER BY depth, name;
+--- hint
+The starter is a fine anchor. Put it in \`WITH RECURSIVE org(id, name, title, boss, depth) AS ( … )\`, and select \`e.id\` too.
+--- hint
+In the step, the new person's boss is the person found last round, so the boss column is \`o.name\`, where \`o\` is the CTE.
+--- check result | Six people, each with their direct boss
+ordered
+[["Raj", "Eng manager", "Omar", 1], ["Tess", "Staff engineer", "Omar", 1], ["Ivan", "Engineer", "Raj", 2], ["Nora", "Engineer", "Raj", 2], ["Paul", "Engineer", "Raj", 2], ["Leo", "Intern", "Ivan", 3]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the bosses' names
+'(Raj|Ivan)'
+
++++ practice | Recent hires under Omar
+--- task
+Return everyone under **Omar**, at any depth, who was hired on or after \`2021-01-01\`, with three columns: \`name\`, \`hired\` and \`depth\` (1 for Omar's direct reports). Sort by \`depth\`, then by \`name\`.
+
+Careful: Raj was hired in 2020, but the people below him still count if they were hired later. The date filter must not stop the walk.
+--- starter
+WITH RECURSIVE team(id, name, hired, depth) AS (
+  SELECT id, name, hired, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Omar')
+    AND hired >= '2021-01-01'
+  UNION ALL
+  SELECT e.id, e.name, e.hired, t.depth + 1
+  FROM employees e
+  JOIN team t ON e.manager_id = t.id
+)
+SELECT name, hired, depth
+FROM team
+ORDER BY depth, name;
+--- solution
+WITH RECURSIVE team(id, name, hired, depth) AS (
+  SELECT id, name, hired, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Omar')
+  UNION ALL
+  SELECT e.id, e.name, e.hired, t.depth + 1
+  FROM employees e
+  JOIN team t ON e.manager_id = t.id
+)
+SELECT name, hired, depth
+FROM team
+WHERE hired >= '2021-01-01'
+ORDER BY depth, name;
+--- hint
+Run the starter: it returns nothing. The anchor throws away Raj and Tess, so the walk has nobody to start from.
+--- hint
+Walk the whole tree first, with no date filter. Filter the finished rows in the final \`SELECT\`.
+--- check result | Ivan, Nora and Paul at depth 2, Leo at depth 3
+ordered
+[["Ivan", "2021-01-11", 2], ["Nora", "2021-09-01", 2], ["Paul", "2022-04-18", 2], ["Leo", "2024-06-03", 3]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Filters on the hire date
+hired\\s*>=\\s*'2021-01-01'
+
++++ practice | The walk that climbed up
+--- task
+This query should list everyone under **Maya**, the CEO, with their \`depth\` (1 for Maya's direct reports). There are ten such people. It runs without an error, but it returns only four rows, and two of them are Maya herself.
+
+Find the wrong line and fix it. Keep the columns \`name\` and \`depth\`, and the order.
+--- starter
+WITH RECURSIVE team(id, name, manager_id, depth) AS (
+  SELECT id, name, manager_id, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Maya')
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id, t.depth + 1
+  FROM employees e
+  JOIN team t ON e.id = t.manager_id
+)
+SELECT name, depth
+FROM team
+ORDER BY depth, name;
+--- solution
+WITH RECURSIVE team(id, name, manager_id, depth) AS (
+  SELECT id, name, manager_id, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Maya')
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id, t.depth + 1
+  FROM employees e
+  JOIN team t ON e.manager_id = t.id
+)
+SELECT name, depth
+FROM team
+ORDER BY depth, name;
+--- hint
+Say the step's \`ON\` in words. \`e.id = t.manager_id\` finds "the employee who is the manager of the one found last round". Is that up or down?
+--- hint
+Walking down means "an employee whose manager is someone found last round".
+--- check result | Ten people, four levels deep
+ordered
+[["Lena", 1], ["Omar", 1], ["Amy", 2], ["Raj", 2], ["Tess", 2], ["Zara", 2], ["Ivan", 3], ["Nora", 3], ["Paul", 3], ["Leo", 4]]
+--- check source | Walks down: the new row's manager is the row found last round
+e\\.manager_id\\s*=\\s*t\\.id|t\\.id\\s*=\\s*e\\.manager_id
+--- check source absent | No longer walks up to the boss
+e\\.id\\s*=\\s*t\\.manager_id|t\\.manager_id\\s*=\\s*e\\.id
+
++++ practice | The company, level by level
+--- task
+HR wants a picture of the company by level below the CEO. Return one row per depth under **Maya** (1 for her direct reports), with four columns:
+
+- \`depth\`
+- \`people\`: how many people are at that depth
+- \`avg_salary\`: their average salary, rounded to a whole number with \`ROUND(…)\`
+- \`newest\`: the latest \`hired\` date at that depth
+
+Walk the tree with a recursive CTE, and add a guard so the walk can never go deeper than 20 levels, even if the data one day holds a loop. Sort by \`depth\`.
+--- starter
+SELECT 1 AS depth, COUNT(*) AS people, ROUND(AVG(salary)) AS avg_salary, MAX(hired) AS newest
+FROM employees
+WHERE manager_id = (SELECT id FROM employees WHERE name = 'Maya');
+--- solution
+WITH RECURSIVE org(id, depth) AS (
+  SELECT id, 1
+  FROM employees
+  WHERE manager_id = (SELECT id FROM employees WHERE name = 'Maya')
+  UNION ALL
+  SELECT e.id, o.depth + 1
+  FROM employees e
+  JOIN org o ON e.manager_id = o.id
+  WHERE o.depth < 20
+)
+SELECT o.depth, COUNT(*) AS people, ROUND(AVG(e.salary)) AS avg_salary, MAX(e.hired) AS newest
+FROM org o
+JOIN employees e ON e.id = o.id
+GROUP BY o.depth
+ORDER BY o.depth;
+--- hint
+Walk down from Maya carrying \`id\` and \`depth\`. The guard is a \`WHERE\` inside the step, on the depth of the row it reads.
+--- hint
+Then join the walk back to \`employees\` and \`GROUP BY\` the depth. \`MAX(hired)\` works on dates written year-month-day.
+--- check result | Four levels: 2, 4, 3 and 1 people
+ordered
+[[1, 2, 195000.0, "2019-06-15"], [2, 4, 120000.0, "2023-02-14"], [3, 3, 115000.0, "2022-04-18"], [4, 1, 40000.0, "2024-06-03"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Guards the depth inside the step
+depth\\s*<=?\\s*\\d+
+
+=== sql3-04 | Recursive CTEs: paths through a tree
+--- teach
+Last lesson you carried a number, \`depth\`, from round to round. This lesson carries a piece of text instead: each category's full **path** from the top of the tree, like \`All/Electronics/Audio\`.
+
+### The picture
+
+A file on a computer has an address made of every folder you pass through to reach it, starting from the top: \`Documents/School/Maths/homework.txt\`. One line tells you where it lives. And the path of any folder is its parent folder's path plus its own name.
+
+### The categories tree
+
+\`categories\` is [[a tree like the org chart|category-picture]]. \`parent_id\` holds the \`id\` of the category a row sits inside:
+
+\`\`\`
+All
+├── Electronics
+│   ├── Audio
+│   │   ├── Headphones
+│   │   │   └── Earbuds
+│   │   └── Speakers
+│   └── Cables
+└── Home
+    └── Kitchen
+\`\`\`
+
+[[Trees like this are everywhere|everyday-trees]]: shop menus, folders, comment threads where replies have replies.
+
+### Joining text, round by round
+
+You met \`||\` in the lesson "Working with text": it joins two pieces of text into one. \`'All' || '/' || 'Electronics'\` gives \`'All/Electronics'\`.
+
+Now carry a \`path\` column through the recursion:
+
+\`\`\`sql
+WITH RECURSIVE tree(id, path) AS (
+  SELECT id, name FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || '/' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT path FROM tree;
+\`\`\`
+
+- The anchor is the **root**, the category with no parent (\`parent_id IS NULL\`). Its path is its own name, \`All\`.
+- The step finds the children of the rows found last round (\`c.parent_id = t.id\`). It builds each child's path from three pieces: the parent's path, a \`/\`, and the child's name.
+
+This walks **down** from the root. Every category is reached through its parent, one round after it, so the parent's path is always ready when the child needs it. The rows come out level by level:
+
+| path |
+| --- |
+| All |
+| All/Electronics |
+| All/Home |
+| All/Electronics/Audio |
+| All/Electronics/Cables |
+| All/Home/Kitchen |
+| All/Electronics/Audio/Headphones |
+| All/Electronics/Audio/Speakers |
+| All/Electronics/Audio/Headphones/Earbuds |
+
+### Sorting by the path
+
+Add \`ORDER BY path\` at the end, and the tree comes out in reading order, each parent directly above its children:
+
+| path |
+| --- |
+| All |
+| All/Electronics |
+| All/Electronics/Audio |
+| All/Electronics/Audio/Headphones |
+| All/Electronics/Audio/Headphones/Earbuds |
+| All/Electronics/Audio/Speakers |
+| All/Electronics/Cables |
+| All/Home |
+| All/Home/Kitchen |
+
+This works because a parent's path is the start of each child's path, and [[a shorter text that starts a longer one sorts first|prefix-sort]], the way "car" comes before "cart" in a dictionary.
+
+### Finding a whole branch
+
+The path also makes [["everything under Electronics" easy|stored-paths]]. \`LIKE\`, from the basics course, matches a pattern, and \`%\` in a pattern means "any run of characters":
+
+\`\`\`sql
+WHERE path LIKE 'All/Electronics/%'
+\`\`\`
+
+Added to the query above, that keeps Audio, Headphones, Earbuds, Speakers and Cables: the five categories below Electronics. Electronics itself is left out, because its own path has no \`/\` after its name.
+
+### Counting levels
+
+You can carry a number as well. A \`level\` column that is 0 for the root and grows by 1 each round says how deep each category is. It is the same idea as \`depth\` last lesson, but it starts at 0: the anchor gives \`0\`, and the step gives \`t.level + 1\`. [[Apps use it to indent|level-indent]] each name under its parent.
+
+**Watch out:** the order inside the step. \`t.path || '/' || c.name\` puts the parent first. Write \`c.name || '/' || t.path\` and you build the path backwards, like \`Audio/Electronics/All\`, and sorting by it no longer gives the tree.
+
+::: context category-picture The tree, with its levels
+Each box is a row of \`categories\`, and each line joins a category to its parent. The level on the left is the number the \`level\` column gives: 0 for the root, one more for each step down. Earbuds, at level 4, is the deepest.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 212" font-family="Inter, Arial, sans-serif">
+  <text x="6" y="25" font-size="11" fill="#6c7a93">level 0</text>
+  <text x="6" y="67" font-size="11" fill="#6c7a93">level 1</text>
+  <text x="6" y="109" font-size="11" fill="#6c7a93">level 2</text>
+  <text x="6" y="151" font-size="11" fill="#6c7a93">level 3</text>
+  <text x="6" y="193" font-size="11" fill="#6c7a93">level 4</text>
+  <line x1="210" y1="34" x2="150" y2="50" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="210" y1="34" x2="290" y2="50" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="150" y1="76" x2="105" y2="92" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="150" y1="76" x2="195" y2="92" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="290" y1="76" x2="290" y2="92" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="105" y1="118" x2="100" y2="134" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="105" y1="118" x2="190" y2="134" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="100" y1="160" x2="100" y2="176" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="170" y="8" width="80" height="26" rx="5" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="210" y="25" font-size="11" fill="#1f2a44" text-anchor="middle">All</text>
+  <rect x="110" y="50" width="80" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="150" y="67" font-size="11" fill="#1f2a44" text-anchor="middle">Electronics</text>
+  <rect x="250" y="50" width="80" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="290" y="67" font-size="11" fill="#1f2a44" text-anchor="middle">Home</text>
+  <rect x="65" y="92" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="105" y="109" font-size="11" fill="#1f2a44" text-anchor="middle">Audio</text>
+  <rect x="155" y="92" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="195" y="109" font-size="11" fill="#1f2a44" text-anchor="middle">Cables</text>
+  <rect x="250" y="92" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="290" y="109" font-size="11" fill="#1f2a44" text-anchor="middle">Kitchen</text>
+  <rect x="60" y="134" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="100" y="151" font-size="11" fill="#1f2a44" text-anchor="middle">Headphones</text>
+  <rect x="150" y="134" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="190" y="151" font-size="11" fill="#1f2a44" text-anchor="middle">Speakers</text>
+  <rect x="60" y="176" width="80" height="26" rx="5" fill="#fff" stroke="#1f2a44"/>
+  <text x="100" y="193" font-size="11" fill="#1f2a44" text-anchor="middle">Earbuds</text>
+</svg>
+\`\`\`
+:::
+
+::: context everyday-trees Trees in the apps you use
+A shop's menu (Electronics, then Audio, then Headphones) is a category tree. So are the folders on your computer, the replies to replies under a video, and a book's chapters and sections. Each is usually stored the way \`categories\` is: one table, one row per item, and a column holding the \`id\` of its parent. The lesson "Problem solving: everyone under every manager" goes one step further and walks the tree below every row at once.
+:::
+
+::: context prefix-sort Why sorting by path lists the tree
+Text is sorted one character at a time, from the left. \`All/Electronics\` and \`All/Electronics/Audio\` agree all the way to the end of the shorter one, and when one text runs out first, it sorts first. So every parent lands directly above its children, and all of a child's own children come before that child's next sibling. One catch: characters that sort before \`/\`, such as a space, can spoil it. A sibling named "Audio Pro" would sort between \`All/Audio\` and \`All/Audio/Cable\`. The names in this table have no such characters.
+:::
+
+::: context stored-paths Storing the path instead
+Some databases save each row's path in a column, instead of working it out with recursion every time. Then "everything under Electronics" is one quick \`LIKE\`, with no CTE at all. The cost comes when the tree changes: move Audio under Home, and the stored path of Audio and of every category below it must be rewritten. Keeping only \`parent_id\`, as this table does, makes moves cheap but needs recursion to read. Designers choose by asking which happens more often: reading the tree, or changing it.
+:::
+
+::: context level-indent What the level is for
+A shop's sidebar shows categories indented, each child a little to the right of its parent. The app reads \`level\` and indents by that many steps: none for All, four for Earbuds. The level answers questions on its own too. \`WHERE level = 1\` gives the top-level departments, Electronics and Home, and \`MAX(level)\` says how deep the tree goes: 4 here.
+:::
+--- task
+Return every category with two columns:
+
+- \`path\`: its names from the root, joined by \`' > '\` (a space, a greater-than sign, a space), for example \`All > Electronics > Audio\`;
+- \`level\`: 0 for \`All\`, 1 for its children, and so on.
+
+Sort by \`path\`.
+--- starter
+SELECT name AS path, 0 AS level
+FROM categories
+WHERE parent_id IS NULL;
+--- solution
+WITH RECURSIVE tree(id, path, level) AS (
+  SELECT id, name, 0 FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || ' > ' || c.name, t.level + 1
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT path, level
+FROM tree
+ORDER BY path;
+--- hint
+Start from the lesson's query and add a third column. The anchor is the root, with its name as the path and level 0: \`SELECT id, name, 0 FROM categories WHERE parent_id IS NULL\`, inside \`WITH RECURSIVE tree(id, path, level) AS ( … )\`.
+--- hint
+The step joins \`categories c\` to the tree \`ON c.parent_id = t.id\` and builds \`t.path || ' > ' || c.name\` and \`t.level + 1\`.
+--- hint
+After the closing bracket: \`SELECT path, level FROM tree ORDER BY path;\`.
+--- check result | Nine categories in tree order, Earbuds four levels down
+ordered
+[["All", 0], ["All > Electronics", 1], ["All > Electronics > Audio", 2], ["All > Electronics > Audio > Headphones", 3], ["All > Electronics > Audio > Headphones > Earbuds", 4], ["All > Electronics > Audio > Speakers", 3], ["All > Electronics > Cables", 2], ["All > Home", 1], ["All > Home > Kitchen", 2]]
+
++++ practice | Every employee's chain of command
+--- task
+Return every employee with two columns:
+
+- \`name\`
+- \`chain\`: the names from the CEO down to this person, joined by \`/\`, for example \`Maya/Omar/Raj\`. The CEO's chain is just \`Maya\`.
+
+Build the chain with a recursive CTE that starts at the employee with no manager. Sort by \`chain\`, so each manager comes directly above their team.
+--- starter
+SELECT name, name AS chain
+FROM employees
+WHERE manager_id IS NULL;
+--- solution
+WITH RECURSIVE chains(id, name, chain) AS (
+  SELECT id, name, name FROM employees WHERE manager_id IS NULL
+  UNION ALL
+  SELECT e.id, e.name, c.chain || '/' || e.name
+  FROM employees e
+  JOIN chains c ON e.manager_id = c.id
+)
+SELECT name, chain
+FROM chains
+ORDER BY chain;
+--- hint
+The anchor is the root, the employee with \`manager_id IS NULL\`. Carry three columns: \`id\`, \`name\` and \`chain\`, where the root's chain is its own name.
+--- hint
+The step joins the people whose manager was found last round, and builds \`c.chain || '/' || e.name\`: the manager's chain first, then the new name.
+--- check result | Eleven chains in tree order
+ordered
+[["Maya", "Maya"], ["Lena", "Maya/Lena"], ["Amy", "Maya/Lena/Amy"], ["Zara", "Maya/Lena/Zara"], ["Omar", "Maya/Omar"], ["Raj", "Maya/Omar/Raj"], ["Ivan", "Maya/Omar/Raj/Ivan"], ["Leo", "Maya/Omar/Raj/Ivan/Leo"], ["Nora", "Maya/Omar/Raj/Nora"], ["Paul", "Maya/Omar/Raj/Paul"], ["Tess", "Maya/Omar/Tess"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Joins the pieces with ||
+\\|\\|
+
++++ practice | Earbuds' address, built from the bottom
+--- task
+Return one row with one column, \`path\`: the full path of the category **Earbuds**, from the root down, joined by \`/\`. It should read \`All/Electronics/Audio/Headphones/Earbuds\`.
+
+This time, walk **up**: start at Earbuds, and in each round put the parent's name in front of the path so far. Keep the row where the walk reaches the root, the category with no parent.
+--- starter
+SELECT name AS path
+FROM categories
+WHERE name = 'Earbuds';
+--- solution
+WITH RECURSIVE up(id, parent_id, path) AS (
+  SELECT id, parent_id, name FROM categories WHERE name = 'Earbuds'
+  UNION ALL
+  SELECT c.id, c.parent_id, c.name || '/' || u.path
+  FROM categories c
+  JOIN up u ON c.id = u.parent_id
+)
+SELECT path
+FROM up
+WHERE parent_id IS NULL;
+--- hint
+Walking up needs \`parent_id\` in the CTE, so the step can find "the category whose \`id\` is the parent of the one found last round": \`c.id = u.parent_id\`.
+--- hint
+Each round puts the new, higher name in front: \`c.name || '/' || u.path\`. The walk makes one row per level; the one you want is the root's, where \`parent_id IS NULL\`.
+--- check result | All/Electronics/Audio/Headphones/Earbuds
+[["All/Electronics/Audio/Headphones/Earbuds"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the path in
+'All/
+
++++ practice | Paths with a count of children
+--- task
+Return every category with two columns:
+
+- \`path\`: its names from the root, joined by \`/\`, as in the lesson
+- \`children\`: how many categories sit directly inside it, and \`0\` for a category with none
+
+Sort by \`path\`.
+--- starter
+SELECT name AS path,
+       (SELECT COUNT(*) FROM categories k WHERE k.parent_id = c.id) AS children
+FROM categories c
+ORDER BY name;
+--- solution
+WITH RECURSIVE tree(id, path) AS (
+  SELECT id, name FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || '/' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT t.path,
+       (SELECT COUNT(*) FROM categories k WHERE k.parent_id = t.id) AS children
+FROM tree t
+ORDER BY t.path;
+--- hint
+The starter already counts children with a correlated subquery. What it lacks is the path.
+--- hint
+Build the paths with the lesson's recursive CTE, carrying \`id\` as well, then use the same subquery against the CTE's \`id\`.
+--- check result | All has 2 children, Earbuds none
+ordered
+[["All", 2], ["All/Electronics", 2], ["All/Electronics/Audio", 2], ["All/Electronics/Audio/Headphones", 1], ["All/Electronics/Audio/Headphones/Earbuds", 0], ["All/Electronics/Audio/Speakers", 0], ["All/Electronics/Cables", 0], ["All/Home", 1], ["All/Home/Kitchen", 0]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type any path in
+'All/
+
++++ practice | Folders with more than one top
+--- schema
+CREATE TABLE folders (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id INTEGER REFERENCES folders(id)
+);
+INSERT INTO folders (id, name, parent_id) VALUES
+  (1, 'docs', NULL), (2, 'photos', NULL), (3, 'tmp', NULL),
+  (4, '2024', 1), (5, 'taxes', 4), (6, '2024', 2), (7, 'launch', 6), (8, 'drafts', 1);
+--- task
+This problem has its own table, \`folders\`: \`id\`, \`name\` and \`parent_id\` (NULL for a top-level folder).
+
+Return every folder with two columns:
+
+- \`path\`: its names from the top, joined by \`/\`, for example \`docs/2024/taxes\`
+- \`depth\`: 0 for a top-level folder, 1 for a folder inside one, and so on
+
+There are three top-level folders, and \`tmp\` has nothing inside it: it must still appear. Two different folders are both called \`2024\`; their paths tell them apart. Sort by \`path\`.
+--- starter
+WITH RECURSIVE tree(id, path, depth) AS (
+  SELECT id, name, 0 FROM folders WHERE id = 1
+  UNION ALL
+  SELECT f.id, t.path || '/' || f.name, t.depth + 1
+  FROM folders f
+  JOIN tree t ON f.parent_id = t.id
+)
+SELECT path, depth
+FROM tree
+ORDER BY path;
+--- solution
+WITH RECURSIVE tree(id, path, depth) AS (
+  SELECT id, name, 0 FROM folders WHERE parent_id IS NULL
+  UNION ALL
+  SELECT f.id, t.path || '/' || f.name, t.depth + 1
+  FROM folders f
+  JOIN tree t ON f.parent_id = t.id
+)
+SELECT path, depth
+FROM tree
+ORDER BY path;
+--- hint
+Run the starter: only the \`docs\` branch comes back. Its anchor starts at one folder by id.
+--- hint
+The anchor can return several rows. Start from every folder with no parent, and the step walks down from each of them.
+--- check result | Eight folders under three tops, tmp included
+ordered
+[["docs", 0], ["docs/2024", 1], ["docs/2024/taxes", 2], ["docs/drafts", 1], ["photos", 0], ["photos/2024", 1], ["photos/2024/launch", 2], ["tmp", 0]]
+--- check source | Starts from the folders with no parent
+[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]
+--- check source absent | Does not start from one folder by id
+[Ww][Hh][Ee][Rr][Ee]\\s+id\\s*=
+
++++ practice | Audio should not be under Audio
+--- task
+This query should list every category **below** Audio, at any depth, by its path. It runs, but it lists Audio itself as the first row.
+
+Fix the pattern so only the categories inside Audio are left. Keep the column \`path\` and the order.
+--- starter
+WITH RECURSIVE tree(id, path) AS (
+  SELECT id, name FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || '/' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT path
+FROM tree
+WHERE path LIKE 'All/Electronics/Audio%'
+ORDER BY path;
+--- solution
+WITH RECURSIVE tree(id, path) AS (
+  SELECT id, name FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || '/' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT path
+FROM tree
+WHERE path LIKE 'All/Electronics/Audio/%'
+ORDER BY path;
+--- hint
+\`%\` matches any run of characters, including none at all. So which path does \`'All/Electronics/Audio%'\` match with nothing after \`Audio\`?
+--- hint
+Every category inside Audio has a \`/\` after \`Audio\` in its path. Put that into the pattern.
+--- check result | Headphones, Earbuds and Speakers
+ordered
+[["All/Electronics/Audio/Headphones"], ["All/Electronics/Audio/Headphones/Earbuds"], ["All/Electronics/Audio/Speakers"]]
+--- check source | Still finds the branch with LIKE
+[Ll][Ii][Kk][Ee]
+--- check source absent | The pattern no longer matches Audio itself
+Audio%
+
++++ practice | Products in each branch of the shop
+--- schema
+CREATE TABLE categories (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id INTEGER REFERENCES categories(id)
+);
+INSERT INTO categories (id, name, parent_id) VALUES
+  (1, 'All', NULL), (2, 'Electronics', 1), (3, 'Home', 1), (4, 'Audio', 2),
+  (5, 'Headphones', 4), (6, 'Speakers', 4), (7, 'Cables', 2), (8, 'Kitchen', 3), (9, 'Earbuds', 5);
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  category_id INTEGER NOT NULL REFERENCES categories(id)
+);
+INSERT INTO products (id, name, category_id) VALUES
+  (1, 'Studio cans', 5), (2, 'Travel cans', 5),
+  (3, 'Buds Mini', 9), (4, 'Buds Pro', 9), (5, 'Buds Sport', 9),
+  (6, 'Boom box', 6),
+  (7, 'USB-C lead', 7), (8, 'HDMI lead', 7),
+  (9, 'Kettle', 8), (10, 'Toaster', 8),
+  (11, 'Gift card', 2);
+--- task
+This problem has the lesson's \`categories\` table plus a \`products\` table: \`id\`, \`name\` and \`category_id\`, the category the product is filed under.
+
+The shop's menu shows, next to each category, how many products are in it **or anywhere below it**. Return every category with two columns:
+
+- \`path\`: its names from the root, joined by \`/\`
+- \`products\`: the number of products filed in this category or in any category below it, and \`0\` if there are none
+
+Sort by \`path\`. For example, Audio has 6: two in Headphones, three in Earbuds (inside Headphones) and one in Speakers.
+--- starter
+SELECT c.name AS path, COUNT(p.id) AS products
+FROM categories c
+LEFT JOIN products p ON p.category_id = c.id
+GROUP BY c.id, c.name
+ORDER BY c.name;
+--- solution
+WITH RECURSIVE tree(id, path) AS (
+  SELECT id, name FROM categories WHERE parent_id IS NULL
+  UNION ALL
+  SELECT c.id, t.path || '/' || c.name
+  FROM categories c
+  JOIN tree t ON c.parent_id = t.id
+)
+SELECT t.path, COUNT(p.id) AS products
+FROM tree t
+JOIN tree b ON b.path = t.path OR b.path LIKE t.path || '/%'
+LEFT JOIN products p ON p.category_id = b.id
+GROUP BY t.id, t.path
+ORDER BY t.path;
+--- hint
+Build every category's path first. A category's branch is itself plus every category whose path starts with its own path and a \`/\`.
+--- hint
+Join the tree to itself: \`JOIN tree b ON b.path = t.path OR b.path LIKE t.path || '/%'\`. A pattern can be built with \`||\` like any other text.
+--- hint
+Then \`LEFT JOIN products p ON p.category_id = b.id\`, group by \`t.id, t.path\`, and count \`p.id\`, so a branch with no products shows 0.
+--- check result | All 11, Electronics 9, Audio 6, Home 2
+ordered
+[["All", 11], ["All/Electronics", 9], ["All/Electronics/Audio", 6], ["All/Electronics/Audio/Headphones", 5], ["All/Electronics/Audio/Headphones/Earbuds", 3], ["All/Electronics/Audio/Speakers", 1], ["All/Electronics/Cables", 2], ["All/Home", 2], ["All/Home/Kitchen", 2]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the counts
+\\b(11|9)\\s+[Aa][Ss]
+
+=== sql3-18 | Problem solving: everyone under every manager
+--- teach
+Last lesson you carried a path down the categories tree. In the lesson "Recursive CTEs: walking an org chart" you walked down from **one** person. This lesson walks down from **every** person at once, and [[adds up what it finds|rollup]]. It is a problem-solving lesson, so you will work through it in steps, the way you did in "Problem solving: the second-highest salary".
+
+### The problem
+
+HR wants one table about the managers. For each employee who manages anyone, it should show:
+
+- how many people are below them **at any depth**: their reports, their reports' reports, and so on down;
+- the total salary of those people. This is the team's **payroll**: the pay of everyone below the manager, not counting the manager.
+
+Maya, the CEO, has everyone else below. Ivan has only Leo, the intern.
+
+### Step 1: restate it with an example
+
+Pick one manager and work it out by hand. Here is Omar's part of the tree:
+
+\`\`\`
+Omar
+├── Raj
+│   ├── Ivan
+│   │   └── Leo
+│   ├── Nora
+│   └── Paul
+└── Tess
+\`\`\`
+
+Omar manages Raj and Tess. Raj manages Ivan, Nora and Paul. Ivan manages Leo. So Omar's team is 6 people. Its payroll is those six salaries added up:
+
+150000 + 150000 + 120000 + 120000 + 105000 + 40000 = 685000
+
+Omar's own salary is not in it. Now you have two numbers, 6 and 685000, to check your query against.
+
+### Step 2: brute force first
+
+**Brute force** means the plain, slow way that surely works. Here: take the query from "Recursive CTEs: walking an org chart", run it for Omar, then count and add up. Then change the name to Raj and run it again. Then Lena, Maya and Ivan.
+
+That gives the right numbers. But it is one query per manager. Five managers means five queries, and a new manager means you must remember to write another one. It is still [[worth having|brute-force]]: now you want one query that does all of them.
+
+### Step 3: find the pattern
+
+Line the five walks up side by side. Every walk starts the same way: a manager, and the people who report to them directly. Every step does the same thing: it adds the reports of the people found so far. The only difference is **whose** walk it is.
+
+So carry that along. Call the recursive CTE \`under\`, and make each of its rows a **pair** of two ids:
+
+- \`boss_id\`: whose walk this row belongs to;
+- \`emp_id\`: someone found below that boss.
+
+The row \`(2, 6)\` means "employee 6, Ivan, is somewhere under employee 2, Omar".
+
+**The anchor** is every direct link in the table. Each employee who has a manager gives one pair: (their manager, them). \`IS NOT NULL\` leaves out Maya, who has no manager:
+
+\`\`\`sql
+SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL;
+\`\`\`
+
+That gives 10 pairs, one for each employee except Maya. \`(1, 2)\` is Maya over Omar, \`(2, 4)\` is Omar over Raj, \`(4, 6)\` is Raj over Ivan, and so on.
+
+**The step** takes each pair found last round and moves one level down. It keeps the same \`boss_id\`, and finds the people managed by \`emp_id\`:
+
+\`\`\`sql
+SELECT u.boss_id, e.id
+FROM under u
+JOIN employees e ON e.manager_id = u.emp_id
+\`\`\`
+
+\`u\` is a short alias for \`under\`, the pairs found so far. Read the \`ON\` aloud: "an employee whose manager is the person this pair found". Take the pair \`(2, 4)\`, Omar over Raj. Raj manages Ivan, Nora and Paul, so the step makes \`(2, 6)\`, \`(2, 7)\` and \`(2, 8)\`: all three are under Omar too.
+
+Round by round, the pairs pile up:
+
+| Round | New pairs | For example |
+| --- | --- | --- |
+| anchor | 10 | (2, 4): Raj under Omar |
+| 1 | 8 | (2, 6): Ivan under Omar |
+| 2 | 4 | (2, 10): Leo under Omar |
+| 3 | 1 | (1, 10): Leo under Maya |
+| 4 | 0 | Leo manages nobody, so it stops |
+
+That makes 23 pairs in all. Here are Omar's, with the ids turned into names:
+
+| boss | emp |
+| --- | --- |
+| Omar | Raj |
+| Omar | Tess |
+| Omar | Ivan |
+| Omar | Nora |
+| Omar | Paul |
+| Omar | Leo |
+
+Six rows: the same six people as your count in step 1. This full list of "who is somewhere under whom" has a name: [[the transitive closure|closure]] of the tree.
+
+### Step 4: then it is ordinary grouping
+
+The hard part is done. The rest is \`GROUP BY\`, which you know well. Group the pairs by \`boss_id\`, and each group holds one boss's whole team:
+
+- \`COUNT(*)\`, "count the rows", is the team size.
+- For the payroll, join each \`emp_id\` to \`employees\` to get that person's salary, and \`SUM\` it.
+
+You need \`employees\` [[twice in the same query|join-twice]]: once as \`b\`, the boss, for the name, and once as \`e\`, the employee, for the salary. You did this in the lesson "Self-joins".
+
+### Step 5: check the edges
+
+An **edge case** is an unusual row that might trip the query up. Two to check here:
+
+- **People who manage nobody** (Leo, Nora, Tess, Zara…) never appear as a \`boss_id\`, so they get no row. That is right: the question asks only about managers.
+- **Nobody is counted twice.** Could Leo turn up twice under Maya? Only if there were [[two different routes up from Leo to Maya|one-way-up]]. In a tree each person has one manager, so there is only one route, and each pair appears once.
+
+Last, compare with step 1: Omar should show 6 and 685000.
+
+**Watch out:** do not count only the direct links. A plain self-join grouped by manager gives Maya 2, because only Omar and Lena report to Maya directly. The question says "at any depth", so Maya's number must be everyone below that row: 10. If your biggest number is small, the recursion is missing.
+
+::: context rollup Adding up a whole branch
+Engineers call this a **roll-up**: adding a number up through every level of a tree. A rocket's mass is worked out this way. Each part in the parts list has a mass, and the mass of a stage is the sum of every part below it, at any depth: engines, their pumps, the pumps' valves. The query shape is the one in this lesson. Pair each assembly with every part somewhere inside it, then group by the assembly and \`SUM\` the masses. Budgets, headcounts and file sizes in a folder are rolled up the same way.
+:::
+
+::: context brute-force Why start with the slow way
+A brute-force answer is easy to trust, because there is nothing clever in it to get wrong. That makes it a yardstick. Once you have the fast, clever query, run both and compare: if they disagree anywhere, the clever one has a bug. Engineers do this all the time. Software teams, flight software included, often keep a simple, slow version of a calculation next to the fast one they ship, and test the fast one against it over thousands of inputs.
+:::
+
+::: context closure Where "transitive" comes from
+A rule is **transitive** when it passes along a chain: if A is taller than B, and B is taller than C, then A is taller than C. "Is somewhere above" works the same way: Omar is above Raj, Raj is above Ivan, so Omar is above Ivan. The **transitive closure** is the list you get by following every chain to the end: every pair where the first is somewhere above the second. Here that is 23 pairs. Some databases store it as a table of its own, a **closure table**, so "everyone under Omar" becomes one quick lookup. The cost is that it must be updated whenever someone moves.
+:::
+
+::: context join-twice One table, two jobs
+Each pair holds two ids, and you need a different fact about each: the boss's name and the employee's salary. So the final query joins \`employees\` twice, under two aliases. Picture two copies of the same staff list on the desk. You look the boss up in one copy (\`b.id = u.boss_id\`) and the employee up in the other (\`e.id = u.emp_id\`). They are the same table; the aliases only let the query say which copy it means at each point. Group by \`b.id\` and \`b.name\`, so each boss is one group.
+:::
+
+::: context one-way-up Why a tree cannot double-count
+Each pair is made by walking one route down from the boss. In a tree, everyone has exactly one manager, so from Leo there is exactly one route up to Maya, and the pair (Maya, Leo) is made once. Not every structure is a tree. In a parts list, one valve type can sit inside both a tank and an engine. Then there are two routes from the stage down to it, and the pair (stage, valve) is made twice, so it is counted twice. Writing \`UNION\` instead of \`UNION ALL\` in the CTE throws such repeated rows away.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" font-family="Inter, Arial, sans-serif">
+  <line x1="90" y1="32" x2="90" y2="42" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="90" y1="64" x2="90" y2="74" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="90" y1="96" x2="90" y2="106" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="90" y1="128" x2="90" y2="138" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="60" y="10" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="90" y="25" font-size="12" fill="#1f2a44" text-anchor="middle">Maya</text>
+  <rect x="60" y="42" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="90" y="57" font-size="12" fill="#1f2a44" text-anchor="middle">Omar</text>
+  <rect x="60" y="74" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="90" y="89" font-size="12" fill="#1f2a44" text-anchor="middle">Raj</text>
+  <rect x="60" y="106" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="90" y="121" font-size="12" fill="#1f2a44" text-anchor="middle">Ivan</text>
+  <rect x="60" y="138" width="60" height="22" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="90" y="153" font-size="12" fill="#1f2a44" text-anchor="middle">Leo</text>
+  <text x="90" y="184" font-size="11" fill="#1f2a44" text-anchor="middle">a tree: one route up</text>
+  <line x1="270" y1="32" x2="225" y2="74" stroke="#b4232c" stroke-width="2"/>
+  <line x1="270" y1="32" x2="315" y2="74" stroke="#b4232c" stroke-width="2"/>
+  <line x1="225" y1="96" x2="270" y2="138" stroke="#b4232c" stroke-width="2"/>
+  <line x1="315" y1="96" x2="270" y2="138" stroke="#b4232c" stroke-width="2"/>
+  <rect x="240" y="10" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="270" y="25" font-size="12" fill="#1f2a44" text-anchor="middle">Stage</text>
+  <rect x="195" y="74" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="225" y="89" font-size="12" fill="#1f2a44" text-anchor="middle">Tank</text>
+  <rect x="285" y="74" width="60" height="22" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="315" y="89" font-size="12" fill="#1f2a44" text-anchor="middle">Engine</text>
+  <rect x="240" y="138" width="60" height="22" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="270" y="153" font-size="12" fill="#1f2a44" text-anchor="middle">Valve</text>
+  <text x="270" y="180" font-size="11" fill="#b4232c" text-anchor="middle">not a tree: two routes up,</text>
+  <text x="270" y="194" font-size="11" fill="#b4232c" text-anchor="middle">so Valve is counted twice</text>
+</svg>
+\`\`\`
+:::
+--- task
+For every employee who manages at least one person, return three columns:
+
+- \`name\`: the manager's name;
+- \`reports\`: the number of people under them at any depth;
+- \`team_payroll\`: the total salary of those people, not counting the manager.
+
+Use one recursive CTE of \`(boss_id, emp_id)\` pairs for all managers at once. Sort by \`reports\`, largest first, then by \`name\`.
+--- starter
+SELECT b.name, COUNT(*) AS reports, SUM(e.salary) AS team_payroll
+FROM employees e
+JOIN employees b ON b.id = e.manager_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- solution
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, COUNT(*) AS reports, SUM(e.salary) AS team_payroll
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- hint
+Run the starter first. It counts only direct reports: Maya shows 2, but everyone else is under Maya. You need the whole tree below each manager, which means recursion.
+--- hint
+Build the pairs in \`WITH RECURSIVE under(boss_id, emp_id) AS ( … )\`. The anchor is every direct link: \`SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL\`. After \`UNION ALL\`, the step keeps the boss and moves one level down: \`SELECT u.boss_id, e.id FROM under u JOIN employees e ON e.manager_id = u.emp_id\`.
+--- hint
+After the closing bracket, read from \`under u\` and join \`employees\` twice: \`JOIN employees b ON b.id = u.boss_id\` for the boss's name, and \`JOIN employees e ON e.id = u.emp_id\` for the salaries. Then the starter's last three lines fit as they are: \`SELECT b.name, COUNT(*) AS reports, SUM(e.salary) AS team_payroll\`, \`GROUP BY b.id, b.name\`, \`ORDER BY reports DESC, b.name\`.
+--- check result | Five managers, with whole-tree headcounts and payrolls
+ordered
+[["Maya", 10, 1255000], ["Omar", 6, 685000], ["Raj", 4, 385000], ["Lena", 2, 180000], ["Ivan", 1, 40000]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+
++++ practice | How many bosses above each person
+--- task
+For every employee who has a manager, return \`name\`, and \`bosses\`: how many people are above them in the org chart at any height (their manager, their manager's manager, and so on up to the CEO).
+
+Use one recursive CTE of pairs for everybody at once. Sort by \`bosses\`, largest first, then by \`name\`.
+--- starter
+SELECT e.name, COUNT(*) AS bosses
+FROM employees e
+JOIN employees b ON b.id = e.manager_id
+GROUP BY e.id, e.name
+ORDER BY bosses DESC, e.name;
+--- solution
+WITH RECURSIVE above(emp_id, boss_id) AS (
+  SELECT id, manager_id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT a.emp_id, e.manager_id
+  FROM above a
+  JOIN employees e ON e.id = a.boss_id
+  WHERE e.manager_id IS NOT NULL
+)
+SELECT e.name, COUNT(*) AS bosses
+FROM above a
+JOIN employees e ON e.id = a.emp_id
+GROUP BY e.id, e.name
+ORDER BY bosses DESC, e.name;
+--- hint
+This is the lesson's pairs, grouped the other way: by the person below instead of the boss. The anchor is still every direct link, (employee, their manager).
+--- hint
+To climb one level, keep the employee and look up the boss's own manager: join \`employees e ON e.id = a.boss_id\` and take \`e.manager_id\`. Stop when that is NULL.
+--- hint
+Or build the pairs exactly as in the lesson, \`(boss_id, emp_id)\`, and group by \`emp_id\` instead of \`boss_id\`. Both give the same pairs.
+--- check result | Leo has 4 bosses; Omar and Lena have 1
+ordered
+[["Leo", 4], ["Ivan", 3], ["Nora", 3], ["Paul", 3], ["Amy", 2], ["Raj", 2], ["Tess", 2], ["Zara", 2], ["Lena", 1], ["Omar", 1]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type any counts
+\\b[1-4]\\s+[Aa][Ss]\\s+bosses
+
++++ practice | Categories below each category
+--- task
+For every category that has anything inside it, return \`name\`, and \`below\`: how many categories sit inside it at any depth. Sort by \`below\`, largest first, then by \`name\`.
+
+Use one recursive CTE of \`(top_id, sub_id)\` pairs for all categories at once.
+--- starter
+SELECT t.name, COUNT(*) AS below
+FROM categories s
+JOIN categories t ON t.id = s.parent_id
+GROUP BY t.id, t.name
+ORDER BY below DESC, t.name;
+--- solution
+WITH RECURSIVE inside(top_id, sub_id) AS (
+  SELECT parent_id, id FROM categories WHERE parent_id IS NOT NULL
+  UNION ALL
+  SELECT i.top_id, c.id
+  FROM inside i
+  JOIN categories c ON c.parent_id = i.sub_id
+)
+SELECT t.name, COUNT(*) AS below
+FROM inside i
+JOIN categories t ON t.id = i.top_id
+GROUP BY t.id, t.name
+ORDER BY below DESC, t.name;
+--- hint
+The anchor is every direct link: \`(parent_id, id)\` for each category that has a parent.
+--- hint
+The step keeps \`top_id\` and moves one level down: the categories whose \`parent_id\` is the \`sub_id\` found last round.
+--- check result | All 8, Electronics 5, Audio 3, then Headphones and Home 1
+ordered
+[["All", 8], ["Electronics", 5], ["Audio", 3], ["Headphones", 1], ["Home", 1]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type any counts
+\\b[1358]\\s+[Aa][Ss]\\s+below
+
++++ practice | Each manager's share of the payroll
+--- task
+For every employee who manages at least one person, return three columns:
+
+- \`name\`
+- \`team_payroll\`: the total salary of everyone under them at any depth, not counting the manager
+- \`pct\`: that team payroll as a percentage of the whole company's payroll, rounded to 1 decimal place
+
+Build the \`(boss_id, emp_id)\` pairs in one recursive CTE, and the company's total payroll in another CTE. Sort by \`pct\`, largest first.
+--- starter
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, SUM(e.salary) AS team_payroll
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY team_payroll DESC;
+--- solution
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+), company AS (
+  SELECT SUM(salary) AS total FROM employees
+)
+SELECT b.name, SUM(e.salary) AS team_payroll,
+       ROUND(100.0 * SUM(e.salary) / c.total, 1) AS pct
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+CROSS JOIN company c
+GROUP BY b.id, b.name
+ORDER BY pct DESC;
+--- hint
+Add a second CTE after the first, separated by a comma: \`company AS (SELECT SUM(salary) AS total FROM employees)\`.
+--- hint
+\`CROSS JOIN company c\` puts the total on every row. The percentage is \`ROUND(100.0 * SUM(e.salary) / c.total, 1)\`, with \`100.0\` at the front.
+--- check result | Maya's team is 83.4% of the payroll, Ivan's 2.7%
+ordered
+[["Maya", 1255000, 83.4], ["Omar", 685000, 45.5], ["Raj", 385000, 25.6], ["Lena", 180000, 12.0], ["Ivan", 40000, 2.7]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the company total
+1505000
+
++++ practice | Everyone, including those who manage nobody
+--- task
+Return **every** employee, all eleven, with three columns:
+
+- \`name\`
+- \`reports\`: how many people are under them at any depth, and \`0\` for someone who manages nobody
+- \`team_payroll\`: the total salary of those people, and \`0\` for someone who manages nobody
+
+Sort by \`reports\`, largest first, then by \`name\`.
+--- starter
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, COUNT(*) AS reports, SUM(e.salary) AS team_payroll
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- solution
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, COUNT(u.emp_id) AS reports, COALESCE(SUM(e.salary), 0) AS team_payroll
+FROM employees b
+LEFT JOIN under u ON u.boss_id = b.id
+LEFT JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- hint
+The starter starts from the pairs, so someone who is nobody's boss never appears. Start from \`employees b\` instead, and \`LEFT JOIN\` the pairs onto it.
+--- hint
+Both joins after \`employees b\` must be \`LEFT JOIN\`s, or the people with no pairs drop out again.
+--- hint
+For someone with no pairs, the joins leave one row of NULLs. \`COUNT(*)\` counts it as 1; \`COUNT(u.emp_id)\` gives 0. \`SUM\` gives NULL, so wrap it in \`COALESCE(…, 0)\`.
+--- check result | Eleven people; six of them manage nobody and show 0
+ordered
+[["Maya", 10, 1255000], ["Omar", 6, 685000], ["Raj", 4, 385000], ["Lena", 2, 180000], ["Ivan", 1, 40000], ["Amy", 0, 0], ["Leo", 0, 0], ["Nora", 0, 0], ["Paul", 0, 0], ["Tess", 0, 0], ["Zara", 0, 0]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Keeps everyone with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+[Jj][Oo][Ii][Nn]
+
++++ practice | The pairs that lost their boss
+--- task
+This query should give, for each manager, \`reports\` (the number of people under them at any depth) and \`newest\` (the latest \`hired\` date among those people). Maya should have 10 reports, and her newest is Leo's \`2024-06-03\`.
+
+It runs, but the numbers are wrong: Maya shows only 2, and Omar shows 4. One line in the recursive step builds the wrong pairs. Find it and fix it. Keep the columns \`name\`, \`reports\` and \`newest\`, and the order.
+--- starter
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.emp_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, COUNT(*) AS reports, MAX(e.hired) AS newest
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- solution
+WITH RECURSIVE under(boss_id, emp_id) AS (
+  SELECT manager_id, id FROM employees WHERE manager_id IS NOT NULL
+  UNION ALL
+  SELECT u.boss_id, e.id
+  FROM under u
+  JOIN employees e ON e.manager_id = u.emp_id
+)
+SELECT b.name, COUNT(*) AS reports, MAX(e.hired) AS newest
+FROM under u
+JOIN employees b ON b.id = u.boss_id
+JOIN employees e ON e.id = u.emp_id
+GROUP BY b.id, b.name
+ORDER BY reports DESC, b.name;
+--- hint
+Follow one pair through the step by hand. Start with (1, 2): Maya over Omar. Omar manages Raj. Which pair should the step make, and which does it make?
+--- hint
+Each pair belongs to one boss's walk, so the step must keep that boss. It puts the person found last round in the boss column instead.
+--- check result | Maya 10, Omar 6, Raj 4, Lena 2, Ivan 1
+ordered
+[["Maya", 10, "2024-06-03"], ["Omar", 6, "2024-06-03"], ["Raj", 4, "2024-06-03"], ["Lena", 2, "2023-02-14"], ["Ivan", 1, "2024-06-03"]]
+--- check source | The step keeps the boss of the pair
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+u\\.boss_id\\s*,\\s*e\\.id
+--- check source | Still uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+
++++ practice | Rolling up a rocket stage's mass
+--- schema
+CREATE TABLE parts (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  parent_id INTEGER REFERENCES parts(id),
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO parts (id, name, parent_id, mass_kg) VALUES
+  (1, 'Stage 2', NULL, 400),
+  (2, 'Engine', 1, 150),
+  (3, 'Turbopump', 2, 60),
+  (4, 'Valve A', 3, 5),
+  (5, 'Nozzle', 2, 90),
+  (6, 'Tank', 1, 300),
+  (7, 'Valve B', 6, 5),
+  (8, 'Avionics', 1, 40),
+  (9, 'Flight computer', 8, 12);
+--- task
+This problem has its own table, \`parts\`: a rocket stage as a tree. Each part has \`id\`, \`name\`, \`parent_id\` (the part it is fitted inside, NULL for the stage itself) and \`mass_kg\`, the mass of that part on its own.
+
+For every part that has other parts inside it, return three columns:
+
+- \`name\`
+- \`parts\`: how many parts sit inside it at any depth
+- \`total_kg\`: its own mass plus the mass of every part inside it, at any depth
+
+Sort by \`total_kg\`, largest first, then by \`name\`. For example, the Engine is 150 + 60 + 5 + 90 = 305 kg.
+--- starter
+SELECT a.name, COUNT(*) AS parts, a.mass_kg + SUM(p.mass_kg) AS total_kg
+FROM parts p
+JOIN parts a ON a.id = p.parent_id
+GROUP BY a.id, a.name, a.mass_kg
+ORDER BY total_kg DESC, a.name;
+--- solution
+WITH RECURSIVE inside(top_id, part_id) AS (
+  SELECT parent_id, id FROM parts WHERE parent_id IS NOT NULL
+  UNION ALL
+  SELECT i.top_id, p.id
+  FROM inside i
+  JOIN parts p ON p.parent_id = i.part_id
+)
+SELECT a.name, COUNT(*) AS parts, a.mass_kg + SUM(p.mass_kg) AS total_kg
+FROM inside i
+JOIN parts a ON a.id = i.top_id
+JOIN parts p ON p.id = i.part_id
+GROUP BY a.id, a.name, a.mass_kg
+ORDER BY total_kg DESC, a.name;
+--- hint
+The starter only adds each assembly's direct parts: the Engine misses Valve A, which sits inside the Turbopump. You need every (assembly, part inside it) pair, at any depth.
+--- hint
+Build the pairs as in the lesson: the anchor is every direct link \`(parent_id, id)\`, and the step keeps the assembly and moves one level down.
+--- hint
+Then group by the assembly. The pairs do not include the assembly itself, so add its own \`mass_kg\` to the \`SUM\` of the parts inside it.
+--- check result | Stage 2 is 1062 kg; Engine and Tank tie on 305
+ordered
+[["Stage 2", 8, 1062], ["Engine", 3, 305], ["Tank", 1, 305], ["Turbopump", 1, 65], ["Avionics", 1, 52]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type any totals
+\\b(1062|305)\\b
+
+=== sql3-05 | Window functions: ranking
+--- teach
+Last lesson finished the recursion part of this course. Now you meet the second big tool [[analysts reach for|analyst-tool]]: **window functions**. This first lesson uses them to number and rank rows, like places in a race, while every row stays in the result.
+
+### The picture
+
+Think of the results board after a school race. Every runner keeps their own line: name and time. Next to each line, someone writes a place: 1st, 2nd, 3rd. To write "3rd" next to one runner, you must look at the other runners' times too. But no runner's line is thrown away.
+
+### What GROUP BY does instead
+
+You know \`GROUP BY\` well. It squashes each group into one row:
+
+\`\`\`sql
+SELECT dept, COUNT(*) FROM employees GROUP BY dept;
+\`\`\`
+
+| dept | COUNT(*) |
+| --- | --- |
+| eng | 7 |
+| exec | 1 |
+| finance | 3 |
+
+Eleven people went in, and three rows came out. The names are gone. That is right for "how many per department", but no use for the race board, where every runner keeps their line.
+
+### A window function keeps every row
+
+A **window function** works out a value for each row by looking at a set of other rows, and keeps every row in the result. The set of rows it looks at is its **[[window|window-word]]**.
+
+Here is the simplest one. \`ROW_NUMBER()\` gives the rows the numbers 1, 2, 3 and on. The word \`OVER\` is what makes it a window function, and the brackets after \`OVER\` describe the window:
+
+\`\`\`sql
+SELECT name, salary,
+       ROW_NUMBER() OVER (ORDER BY salary DESC, name) AS pos
+FROM employees
+ORDER BY pos;
+\`\`\`
+
+Read the \`OVER\` part aloud: "number the rows going from the highest salary down; when two salaries are equal, go by name". \`DESC\`, from the lesson "Sorting and limiting", means descending: biggest first.
+
+| name | salary | pos |
+| --- | --- | --- |
+| Maya | 250000 | 1 |
+| Omar | 200000 | 2 |
+| Lena | 190000 | 3 |
+| Raj | 150000 | 4 |
+| Tess | 150000 | 5 |
+| Ivan | 120000 | 6 |
+| Nora | 120000 | 7 |
+| Paul | 105000 | 8 |
+| Amy | 90000 | 9 |
+| Zara | 90000 | 10 |
+| Leo | 40000 | 11 |
+
+Eleven rows went in and eleven came out, each with its place written next to it. That is the race board.
+
+### Two ORDER BYs, two jobs
+
+That query has two \`ORDER BY\`s, and they do different jobs:
+
+- The one **inside** \`OVER (...)\` decides how the numbers are handed out. Here, the highest salary gets 1.
+- The one at the **end** of the query decides the order the rows are shown in, as always.
+
+They do not have to agree. End the query with \`ORDER BY name\` instead, and Amy is shown first, still with \`pos\` 9. The numbers stay the same; only the display order changes.
+
+### PARTITION BY: a separate ranking per group
+
+Often you want places within each group: the top earner in each department, not in the whole company. Picture three separate races, one per department, each with its own winner.
+
+\`PARTITION BY dept\` does that. A **partition** is one group of rows that gets its own numbering, starting again at 1. The rows are split up by \`dept\`, and each department is ranked [[on its own|partition-picture]]:
+
+\`\`\`sql
+SELECT name, dept, salary,
+       RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS pos
+FROM employees
+ORDER BY dept, pos;
+\`\`\`
+
+\`RANK()\` is another numbering function; the next step shows how it differs from \`ROW_NUMBER()\`. Here are the exec and finance rows of the result:
+
+| name | dept | salary | pos |
+| --- | --- | --- | --- |
+| Maya | exec | 250000 | 1 |
+| Lena | finance | 190000 | 1 |
+| Zara | finance | 90000 | 2 |
+| Amy | finance | 90000 | 2 |
+
+Each department starts again at 1, and the eng rows get their own numbering the same way. Nothing is squashed: all 11 rows are still there. Leave \`PARTITION BY\` out, and there is one ranking over everybody, as in the first example.
+
+### Three ways to number ties
+
+Zara and Amy both earn 90000, and both got 2. That is because of how \`RANK()\` treats **ties**: rows with the same value in the \`ORDER BY\` inside \`OVER\`. There are three numbering functions, and ties are the only place they differ.
+
+Here are all three side by side, over the whole company. Each column has its own \`OVER (...)\`: a query can hold as many window functions as you like.
+
+\`\`\`sql
+SELECT name, salary,
+       ROW_NUMBER() OVER (ORDER BY salary DESC, name) AS rn,
+       RANK()       OVER (ORDER BY salary DESC) AS rnk,
+       DENSE_RANK() OVER (ORDER BY salary DESC) AS dense
+FROM employees
+ORDER BY rn;
+\`\`\`
+
+These are the rows from the middle of the list, where Raj and Tess tie on 150000 and Ivan and Nora tie on 120000:
+
+| name | salary | rn | rnk | dense |
+| --- | --- | --- | --- | --- |
+| Lena | 190000 | 3 | 3 | 3 |
+| Raj | 150000 | 4 | 4 | 4 |
+| Tess | 150000 | 5 | 4 | 4 |
+| Ivan | 120000 | 6 | 6 | 5 |
+| Nora | 120000 | 7 | 6 | 5 |
+| Paul | 105000 | 8 | 8 | 6 |
+
+Look at Raj, Tess and Ivan in each column:
+
+| function | Raj, Tess, Ivan get | meaning |
+| --- | --- | --- |
+| \`ROW_NUMBER()\` | 4, 5, 6 | always different numbers; a tie is split [[in no fixed order|arbitrary-ties]] unless you add a tie-breaker |
+| \`RANK()\` | 4, 4, 6 | ties share a place, then a number is skipped: "joint 4th, then 6th" |
+| \`DENSE_RANK()\` | 4, 4, 5 | ties share a place, and no number is skipped: "the 5th-highest salary" |
+
+A **tie-breaker** is a second column in the \`ORDER BY\` that settles ties, like \`name\` in the \`rn\` column above.
+
+### Picking one
+
+Pick by [[the question you are answering|which-rank]]:
+
+- "Exactly one row per place" wants \`ROW_NUMBER\`, with a tie-breaker in its \`ORDER BY\`. Then the result is the same every time you run it.
+- "Everyone who shares the top spot" wants \`RANK\` or \`DENSE_RANK\`: both give tied rows the same number.
+- "The 3rd-highest salary, counting equal salaries once" wants \`DENSE_RANK\`, because it skips no numbers.
+
+### When the numbers are worked out
+
+A query runs in stages. \`WHERE\` throws rows away and \`GROUP BY\` squashes them, and only [[after those stages|query-order]] are window functions worked out. So \`WHERE\` cannot use them yet, and this fails:
+
+\`\`\`sql
+SELECT name FROM employees
+WHERE RANK() OVER (ORDER BY salary DESC) = 1;   -- error
+\`\`\`
+
+SQLite says \`misuse of window function RANK()\`. To filter on a rank, work the rank out in a CTE first, then filter the CTE's rows. You will do that in the expert course, in "Top N per group".
+
+**Watch out:** \`ROW_NUMBER\` without a tie-breaker. With only \`ORDER BY salary DESC\`, Raj and Tess tie, and which of them gets 4 and which gets 5 is up to the database. It can change when the data changes, and nothing warns you. Add a column that settles every tie, such as \`name\` or \`id\`.
+
+::: context analyst-tool What analysts use them for
+Window functions answer the questions that need a row and its neighbors at once: a leaderboard, each month's growth over the month before, a running bank balance, the latest reading from each sensor. They joined the SQL standard in the early 2000s, and SQLite has had them since version 3.25.0, in 2018. This lesson ranks rows. The next lessons add running totals and comparisons with the row before, and the expert course uses them for top-N-per-group, streaks and removing duplicates.
+:::
+
+::: context window-word Why it is called a window
+Picture each row looking out through a window at the rows around it. What it sees through the window is what its function uses. \`GROUP BY\` puts many rows in and gets one row per group out. A window function puts rows in and gets the same rows out, each with a new column. In later lessons the window moves with the row, like the view from a train: a running total sees every row up to the current one.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 180" font-family="Inter, Arial, sans-serif">
+  <text x="90" y="16" font-size="12" fill="#1f2a44" text-anchor="middle">GROUP BY</text>
+  <text x="270" y="16" font-size="12" fill="#1f2a44" text-anchor="middle">window function</text>
+  <rect x="20" y="26" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="37" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="48" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="59" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="70" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="81" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="92" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="103" width="50" height="8" fill="#f2b880" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="114" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="125" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="20" y="136" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <line x1="76" y1="85" x2="96" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M96 81 L104 85 L96 89 z" fill="#1f2a44"/>
+  <rect x="110" y="70" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="110" y="81" width="50" height="8" fill="#f2b880" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="110" y="92" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <text x="90" y="166" font-size="11" fill="#6c7a93" text-anchor="middle">11 rows in, 3 rows out</text>
+  <rect x="200" y="26" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="37" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="48" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="59" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="70" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="81" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="92" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="103" width="50" height="8" fill="#f2b880" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="114" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="125" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="200" y="136" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <line x1="256" y1="85" x2="272" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <path d="M272 81 L280 85 L272 89 z" fill="#1f2a44"/>
+  <rect x="286" y="26" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="37" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="48" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="59" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="70" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="81" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="92" width="50" height="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="103" width="50" height="8" fill="#f2b880" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="114" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="125" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="286" y="136" width="50" height="8" fill="#fff" stroke="#1f2a44" stroke-width="0.5"/>
+  <rect x="338" y="26" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="37" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="48" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="59" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="70" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="81" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="92" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="103" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="114" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="125" width="12" height="8" fill="#1d6fd1"/>
+  <rect x="338" y="136" width="12" height="8" fill="#1d6fd1"/>
+  <text x="270" y="166" font-size="11" fill="#6c7a93" text-anchor="middle">11 rows in, 11 out, plus a column</text>
+</svg>
+\`\`\`
+
+The colors are the three departments: eng, exec and finance.
+:::
+
+::: context partition-picture All three partitions
+Here is the whole result of the \`PARTITION BY dept\` query, drawn as three separate races. Each box is a partition, and each numbers its own rows from 1. Salaries are in thousands. The ties (Raj and Tess, Ivan and Nora, Zara and Amy) share a number, because this is \`RANK()\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" font-family="Inter, Arial, sans-serif">
+  <text x="70" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">eng</text>
+  <text x="190" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">exec</text>
+  <text x="300" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">finance</text>
+  <rect x="10" y="26" width="120" height="150" rx="5" fill="#fff" stroke="#1d6fd1" stroke-width="1.5"/>
+  <rect x="140" y="26" width="100" height="30" rx="5" fill="#fff" stroke="#f2b880" stroke-width="1.5"/>
+  <rect x="250" y="26" width="100" height="70" rx="5" fill="#fff" stroke="#6c7a93" stroke-width="1.5"/>
+  <text x="22" y="46" font-size="12" fill="#1d6fd1">1</text>
+  <text x="40" y="46" font-size="12" fill="#1f2a44">Omar</text>
+  <text x="122" y="46" font-size="11" fill="#6c7a93" text-anchor="end">200</text>
+  <text x="22" y="66" font-size="12" fill="#1d6fd1">2</text>
+  <text x="40" y="66" font-size="12" fill="#1f2a44">Raj</text>
+  <text x="122" y="66" font-size="11" fill="#6c7a93" text-anchor="end">150</text>
+  <text x="22" y="86" font-size="12" fill="#1d6fd1">2</text>
+  <text x="40" y="86" font-size="12" fill="#1f2a44">Tess</text>
+  <text x="122" y="86" font-size="11" fill="#6c7a93" text-anchor="end">150</text>
+  <text x="22" y="106" font-size="12" fill="#1d6fd1">4</text>
+  <text x="40" y="106" font-size="12" fill="#1f2a44">Ivan</text>
+  <text x="122" y="106" font-size="11" fill="#6c7a93" text-anchor="end">120</text>
+  <text x="22" y="126" font-size="12" fill="#1d6fd1">4</text>
+  <text x="40" y="126" font-size="12" fill="#1f2a44">Nora</text>
+  <text x="122" y="126" font-size="11" fill="#6c7a93" text-anchor="end">120</text>
+  <text x="22" y="146" font-size="12" fill="#1d6fd1">6</text>
+  <text x="40" y="146" font-size="12" fill="#1f2a44">Paul</text>
+  <text x="122" y="146" font-size="11" fill="#6c7a93" text-anchor="end">105</text>
+  <text x="22" y="166" font-size="12" fill="#1d6fd1">7</text>
+  <text x="40" y="166" font-size="12" fill="#1f2a44">Leo</text>
+  <text x="122" y="166" font-size="11" fill="#6c7a93" text-anchor="end">40</text>
+  <text x="152" y="46" font-size="12" fill="#1d6fd1">1</text>
+  <text x="170" y="46" font-size="12" fill="#1f2a44">Maya</text>
+  <text x="232" y="46" font-size="11" fill="#6c7a93" text-anchor="end">250</text>
+  <text x="262" y="46" font-size="12" fill="#1d6fd1">1</text>
+  <text x="280" y="46" font-size="12" fill="#1f2a44">Lena</text>
+  <text x="342" y="46" font-size="11" fill="#6c7a93" text-anchor="end">190</text>
+  <text x="262" y="66" font-size="12" fill="#1d6fd1">2</text>
+  <text x="280" y="66" font-size="12" fill="#1f2a44">Zara</text>
+  <text x="342" y="66" font-size="11" fill="#6c7a93" text-anchor="end">90</text>
+  <text x="262" y="86" font-size="12" fill="#1d6fd1">2</text>
+  <text x="280" y="86" font-size="12" fill="#1f2a44">Amy</text>
+  <text x="342" y="86" font-size="11" fill="#6c7a93" text-anchor="end">90</text>
+  <text x="250" y="130" font-size="11" fill="#1f2a44">each box</text>
+  <text x="250" y="145" font-size="11" fill="#1f2a44">starts again at 1</text>
+</svg>
+\`\`\`
+:::
+
+::: context arbitrary-ties Why a tie has no fixed order
+When two rows tie, the database hands out the numbers in whatever order it happens to meet the rows. That can depend on how the rows are stored on disk, which index it used, or how the data was loaded. Change any of those and Raj and Tess can swap places, even though no salary changed. A report that gives different answers on different days, from the same data, is confusing, and a test that checks it will pass one day and fail the next. A tie-breaker on a column that is different for every row, such as the primary key \`id\`, rules that out.
+:::
+
+::: context which-rank The same three rules in sport
+Sport uses all three. The Olympics mostly work like \`RANK()\`: if two swimmers tie for gold, both get gold, no silver is given, and the next swimmer gets bronze. This style is called "standard competition ranking", or "1224" ranking. \`DENSE_RANK()\` is "dense ranking", or "1223": no place is skipped. \`ROW_NUMBER()\` is like the order runners cross the line on a photo finish: everyone gets their own number, and something has to settle who was first.
+:::
+
+::: context query-order The order a query really runs in
+You write \`SELECT\` first, but the database does not start there. Roughly, it works in this order:
+
+1. \`FROM\` and the joins: gather the rows.
+2. \`WHERE\`: throw rows away.
+3. \`GROUP BY\`, then \`HAVING\`: squash rows into groups, then filter the groups.
+4. Window functions: number and total the rows that are left.
+5. \`ORDER BY\`, then \`LIMIT\`: sort and cut the result.
+
+So a window function sees only the rows that survived \`WHERE\`, and \`WHERE\` runs too early to see the window's numbers. The final \`ORDER BY\` comes after, which is why \`ORDER BY pos\` works.
+:::
+--- task
+For every employee in the \`eng\` department, return \`name\`, \`salary\`, and three rankings by salary, highest first:
+
+- \`rn\`, made with \`ROW_NUMBER()\`, with ties broken by \`name\` from A to Z;
+- \`rnk\`, made with \`RANK()\`;
+- \`dense\`, made with \`DENSE_RANK()\`.
+
+Sort the result by \`rn\`.
+--- starter
+SELECT name, salary
+FROM employees
+WHERE dept = 'eng'
+ORDER BY salary DESC;
+--- solution
+SELECT name, salary,
+       ROW_NUMBER() OVER (ORDER BY salary DESC, name) AS rn,
+       RANK()       OVER (ORDER BY salary DESC) AS rnk,
+       DENSE_RANK() OVER (ORDER BY salary DESC) AS dense
+FROM employees
+WHERE dept = 'eng'
+ORDER BY rn;
+--- hint
+The starter already keeps only the eng rows with \`WHERE dept = 'eng'\`, so you need no \`PARTITION BY\`. Add one window-function column per ranking, each with its own \`OVER (...)\`.
+--- hint
+One column looks like \`RANK() OVER (ORDER BY salary DESC) AS rnk\`. \`DENSE_RANK()\` is the same shape. \`ROW_NUMBER()\` also needs the tie-breaker: \`OVER (ORDER BY salary DESC, name)\`.
+--- hint
+Put the three columns after \`name, salary\` in the \`SELECT\`, separated by commas, and change the last line to \`ORDER BY rn;\`.
+--- check result | Ties share a RANK (with gaps) and a DENSE_RANK (without)
+ordered
+[["Omar", 200000, 1, 1, 1], ["Raj", 150000, 2, 2, 2], ["Tess", 150000, 3, 2, 2], ["Ivan", 120000, 4, 4, 3], ["Nora", 120000, 5, 4, 3], ["Paul", 105000, 6, 6, 4], ["Leo", 40000, 7, 7, 5]]
+
++++ practice | The best sales days
+--- task
+Rank every row of \`daily_sales\`, from both regions together, by \`amount\`, biggest first. Return four columns: \`day\`, \`region\`, \`amount\` and \`place\`, made with \`RANK()\`, so two equal amounts share a place and the next place is skipped.
+
+Sort by \`place\`, then by \`day\`, then by \`region\`.
+--- starter
+SELECT day, region, amount
+FROM daily_sales
+ORDER BY amount DESC;
+--- solution
+SELECT day, region, amount,
+       RANK() OVER (ORDER BY amount DESC) AS place
+FROM daily_sales
+ORDER BY place, day, region;
+--- hint
+There is no grouping here: one ranking over all eleven rows, so the \`OVER (...)\` needs only an \`ORDER BY\`.
+--- hint
+The column is \`RANK() OVER (ORDER BY amount DESC) AS place\`.
+--- check result | South's two 75s share 8th place, and 9th is skipped
+ordered
+[["2024-07-06", "north", 200.0, 1], ["2024-07-03", "north", 150.0, 2], ["2024-07-01", "north", 120.0, 3], ["2024-07-07", "north", 110.0, 4], ["2024-07-07", "south", 95.0, 5], ["2024-07-05", "north", 90.0, 6], ["2024-07-02", "north", 80.0, 7], ["2024-07-03", "south", 75.0, 8], ["2024-07-04", "south", 75.0, 8], ["2024-07-01", "south", 60.0, 10], ["2024-07-05", "south", 40.0, 11]]
+--- check source | Ranks with RANK()
+[Rr][Aa][Nn][Kk]\\s*\\(\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source absent | Does not use DENSE_RANK
+[Dd][Ee][Nn][Ss][Ee]_
+
++++ practice | Seniority inside each department
+--- task
+Give each employee a seniority number inside their own department: 1 for the person hired first in that department, 2 for the next, and so on. Return \`name\`, \`dept\`, \`hired\` and \`seniority\`, made with \`ROW_NUMBER()\`.
+
+Sort by \`dept\`, then by \`seniority\`.
+--- starter
+SELECT name, dept, hired,
+       ROW_NUMBER() OVER (ORDER BY hired) AS seniority
+FROM employees
+ORDER BY dept, seniority;
+--- solution
+SELECT name, dept, hired,
+       ROW_NUMBER() OVER (PARTITION BY dept ORDER BY hired) AS seniority
+FROM employees
+ORDER BY dept, seniority;
+--- hint
+Run the starter: the numbers run across the whole company, so Lena in finance gets 3. Each department needs its own numbering, starting again at 1.
+--- hint
+Add \`PARTITION BY dept\` inside the \`OVER (...)\`, before the \`ORDER BY\`.
+--- check result | eng runs from Omar (1) to Leo (7); Maya and Lena are each 1
+ordered
+[["Omar", "eng", "2019-03-01", 1], ["Raj", "eng", "2020-02-01", 2], ["Tess", "eng", "2020-05-20", 3], ["Ivan", "eng", "2021-01-11", 4], ["Nora", "eng", "2021-09-01", 5], ["Paul", "eng", "2022-04-18", 6], ["Leo", "eng", "2024-06-03", 7], ["Maya", "exec", "2019-01-10", 1], ["Lena", "finance", "2019-06-15", 1], ["Zara", "finance", "2021-07-07", 2], ["Amy", "finance", "2023-02-14", 3]]
+--- check source | Numbers with ROW_NUMBER()
+[Rr][Oo][Ww]_[Nn][Uu][Mm][Bb][Ee][Rr]
+--- check source | Restarts for each department
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+dept
+
++++ practice | The busiest hiring years
+--- task
+Count the hires in each year, and rank the years by how many people were hired, most first. Return four columns:
+
+- \`year\`: the year, as text like \`'2021'\`
+- \`hires\`: the number of people hired that year
+- \`rnk\`: made with \`RANK()\`
+- \`dense\`: made with \`DENSE_RANK()\`
+
+Sort by \`hires\`, most first, then by \`year\`.
+--- starter
+SELECT strftime('%Y', hired) AS year, COUNT(*) AS hires
+FROM employees
+GROUP BY year
+ORDER BY hires DESC, year;
+--- solution
+SELECT strftime('%Y', hired) AS year,
+       COUNT(*) AS hires,
+       RANK()       OVER (ORDER BY COUNT(*) DESC) AS rnk,
+       DENSE_RANK() OVER (ORDER BY COUNT(*) DESC) AS dense
+FROM employees
+GROUP BY year
+ORDER BY hires DESC, year;
+--- hint
+Window functions are worked out after \`GROUP BY\`, so they can rank the groups. Inside \`OVER (...)\`, order by the group's count.
+--- hint
+The ranking is \`RANK() OVER (ORDER BY COUNT(*) DESC)\`. \`DENSE_RANK()\` takes the same window.
+--- check result | 2019 and 2021 tie at 3 hires; the three single-hire years are 4th by RANK and 3rd by DENSE_RANK
+ordered
+[["2019", 3, 1, 1], ["2021", 3, 1, 1], ["2020", 2, 3, 2], ["2022", 1, 4, 3], ["2023", 1, 4, 3], ["2024", 1, 4, 3]]
+--- check source | Uses RANK()
+[Rr][Aa][Nn][Kk]\\s*\\(\\s*\\)
+--- check source | Uses DENSE_RANK()
+[Dd][Ee][Nn][Ss][Ee]_[Rr][Aa][Nn][Kk]
+
++++ practice | Race results with ties and non-finishers
+--- schema
+CREATE TABLE results (
+  id INTEGER PRIMARY KEY,
+  runner TEXT NOT NULL,
+  time_s INTEGER
+);
+INSERT INTO results (id, runner, time_s) VALUES
+  (1, 'Ada', 3605), (2, 'Ben', 3590), (3, 'Cleo', NULL), (4, 'Dev', 3590),
+  (5, 'Ada', 3720), (6, 'Eve', 3650), (7, 'Finn', NULL);
+--- task
+This problem has its own table, \`results\`: \`id\`, \`runner\` and \`time_s\`, the finishing time in seconds. \`time_s\` is NULL for a runner who did not finish. Two different runners are both called Ada.
+
+Return every row with five columns:
+
+- \`id\`, \`runner\` and \`time_s\`
+- \`place\`: made with \`RANK()\`, fastest time first. Equal times share a place. Runners who did not finish come after every finisher, and share the last place.
+- \`line\`: made with \`ROW_NUMBER()\` in the same order, with ties settled by \`id\`, so every row gets its own number
+
+Sort by \`line\`. Careful: when SQLite sorts from smallest to biggest, NULL comes first, so a plain \`ORDER BY time_s\` would put the non-finishers on top. Turn a missing time into a huge number, such as 999999, before ranking.
+--- starter
+SELECT id, runner, time_s,
+       RANK() OVER (ORDER BY time_s) AS place,
+       ROW_NUMBER() OVER (ORDER BY time_s, runner) AS line
+FROM results
+ORDER BY line;
+--- solution
+SELECT id, runner, time_s,
+       RANK() OVER (ORDER BY COALESCE(time_s, 999999)) AS place,
+       ROW_NUMBER() OVER (ORDER BY COALESCE(time_s, 999999), id) AS line
+FROM results
+ORDER BY line;
+--- hint
+Run the starter: Cleo and Finn, who did not finish, are placed first. \`COALESCE(time_s, 999999)\` gives a non-finisher a time slower than anyone's.
+--- hint
+Use that same expression in both \`ORDER BY\`s inside \`OVER\`. For \`line\`, settle ties with \`id\`: a name cannot do it, because two runners share one.
+--- check result | Ben and Dev share 1st; Cleo and Finn share 6th, after every finisher
+ordered
+[[2, "Ben", 3590, 1, 1], [4, "Dev", 3590, 1, 2], [1, "Ada", 3605, 3, 3], [6, "Eve", 3650, 4, 4], [5, "Ada", 3720, 5, 5], [3, "Cleo", null, 6, 6], [7, "Finn", null, 6, 7]]
+--- check source | Uses RANK()
+[Rr][Aa][Nn][Kk]\\s*\\(\\s*\\)
+--- check source | Uses ROW_NUMBER()
+[Rr][Oo][Ww]_[Nn][Uu][Mm][Bb][Ee][Rr]
+
++++ practice | One pay scale for the whole company
+--- task
+This query should give each employee a pay level **inside their own department**: 1 for the highest salary in that department, equal salaries sharing a level, and no level skipped. It runs, but Lena, the top earner in finance, shows level 3, and Maya is the only 1.
+
+Fix the window. Keep the columns \`name\`, \`dept\`, \`salary\` and \`pay_level\`, and the order.
+--- starter
+SELECT name, dept, salary,
+       DENSE_RANK() OVER (ORDER BY salary DESC) AS pay_level
+FROM employees
+ORDER BY dept, pay_level, name;
+--- solution
+SELECT name, dept, salary,
+       DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS pay_level
+FROM employees
+ORDER BY dept, pay_level, name;
+--- hint
+Levels that start again at 1 in each group need the window split up by that group.
+--- hint
+Add \`PARTITION BY dept\` inside \`OVER (...)\`, before the \`ORDER BY\`.
+--- check result | Each department starts at 1; Amy and Zara share finance's level 2
+ordered
+[["Omar", "eng", 200000, 1], ["Raj", "eng", 150000, 2], ["Tess", "eng", 150000, 2], ["Ivan", "eng", 120000, 3], ["Nora", "eng", 120000, 3], ["Paul", "eng", 105000, 4], ["Leo", "eng", 40000, 5], ["Maya", "exec", 250000, 1], ["Lena", "finance", 190000, 1], ["Amy", "finance", 90000, 2], ["Zara", "finance", 90000, 2]]
+--- check source | Still uses DENSE_RANK()
+[Dd][Ee][Nn][Ss][Ee]_[Rr][Aa][Nn][Kk]
+--- check source | Splits the window by department
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+dept
+
++++ practice | The fourth-highest salary
+--- task
+Find everyone who earns the **fourth-highest salary** in the company, counting equal salaries once. Return \`name\` and \`salary\`, sorted by \`name\`.
+
+Work the ranking out in a CTE with a window function, then filter the CTE's rows in the final \`SELECT\`. Do not type the salary in.
+--- starter
+SELECT name, salary
+FROM employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET 3;
+--- solution
+WITH ranked AS (
+  SELECT name, salary,
+         DENSE_RANK() OVER (ORDER BY salary DESC) AS level
+  FROM employees
+)
+SELECT name, salary
+FROM ranked
+WHERE level = 4
+ORDER BY name;
+--- hint
+"Counting equal salaries once" means no level is skipped after a tie. Which of the three numbering functions does that?
+--- hint
+\`WHERE\` cannot use a window function directly. Give each row its level with \`DENSE_RANK() OVER (ORDER BY salary DESC)\` inside a CTE, then select \`WHERE level = 4\` from the CTE.
+--- check result | Raj and Tess, both on 150000
+ordered
+[["Raj", 150000], ["Tess", 150000]]
+--- check source | Ranks with DENSE_RANK()
+[Dd][Ee][Nn][Ss][Ee]_[Rr][Aa][Nn][Kk]
+--- check source absent | Does not type the salary
+150000
+
+=== sql3-06 | Running totals with SUM() OVER
+--- teach
+Last lesson you met window functions through ranking: \`ROW_NUMBER\`, \`RANK\` and \`DENSE_RANK\`. This lesson takes aggregates you already know, like \`SUM\` and \`AVG\`, and turns them into window functions too. That gives you running totals, and each row's share of a total, with every row kept.
+
+### The picture
+
+Think of a savings jar with a notebook beside it. Each time you put money in, you write a line: the day, the amount, and how much is in the jar now.
+
+| day | put in | in the jar |
+| --- | --- | --- |
+| Mon | 5 | 5 |
+| Wed | 3 | 8 |
+| Sat | 4 | 12 |
+
+Each line's last number is the line above plus this line's amount. That column is a **[[running total|running-uses]]**: the sum of every amount up to and including this line.
+
+### An aggregate with OVER
+
+An **aggregate**, such as \`SUM(amount)\`, squashes many rows into one number. Put \`OVER (...)\` after it and it becomes a window function instead: every row stays, and each row gets its own sum.
+
+Put an \`ORDER BY\` inside the \`OVER\`, and each row's sum covers the rows up to and including it, in that order:
+
+\`\`\`sql
+SELECT day, amount,
+       SUM(amount) OVER (ORDER BY day) AS so_far
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+| day | amount | so_far |
+| --- | --- | --- |
+| 2024-07-01 | 120 | 120 |
+| 2024-07-02 | 80 | 200 |
+| 2024-07-03 | 150 | 350 |
+| 2024-07-05 | 90 | 440 |
+| 2024-07-06 | 200 | 640 |
+| 2024-07-07 | 110 | 750 |
+
+Check one line: 200 + 150 = 350. Each \`so_far\` is the line above plus this row's \`amount\`, like the jar notebook. The last row, 750, is north's total for the whole week.
+
+### PARTITION BY restarts the total
+
+With both regions in the query, you want two notebooks, one per region. \`PARTITION BY region\`, which you met last lesson, [[starts the running total again|restart-picture]] for each region:
+
+\`\`\`sql
+SELECT region, day, amount,
+       SUM(amount) OVER (PARTITION BY region ORDER BY day) AS so_far
+FROM daily_sales
+ORDER BY region, day;
+\`\`\`
+
+North's rows count up to 750, as before. Then south starts again from its own first row: 60, then 60 + 75 = 135, and so on up to 345. Without \`PARTITION BY\`, north and south would share one total, mixed together by date.
+
+### No ORDER BY: the total on every row
+
+Now leave the \`ORDER BY\` out of the \`OVER\`:
+
+\`\`\`sql
+SELECT region, day, amount,
+       SUM(amount) OVER (PARTITION BY region) AS total
+FROM daily_sales
+ORDER BY region, day;
+\`\`\`
+
+With no order inside \`OVER\`, there is no "so far". The window is the whole partition, so every row gets its partition's grand total: 750 on every north row, 345 on every south row.
+
+That looks dull, but it is exactly what you need for **share of total**: what part of the whole each row is. Divide the row's amount by the total, and multiply by 100 for a percentage:
+
+\`\`\`sql
+amount * 100.0 / SUM(amount) OVER (PARTITION BY region)
+\`\`\`
+
+For north on 1 July: 120 × 100.0 ÷ 750 = 16.0. That day brought in 16% of north's week. Write [[100.0, not 100|decimal-point]], so the division keeps its decimals. To show one decimal place, wrap the whole thing in \`ROUND(…, 1)\`, from the basics course.
+
+So the \`ORDER BY\` inside \`OVER\` is the switch:
+
+- \`OVER (PARTITION BY region ORDER BY day)\` gives the total **so far**.
+- \`OVER (PARTITION BY region)\` gives the **whole** total.
+
+### Other aggregates work too
+
+\`AVG\`, \`COUNT\`, \`MIN\` and \`MAX\` work the same way. With \`ORDER BY day\` inside \`OVER\`:
+
+- \`COUNT(*) OVER (ORDER BY day)\` is a running count: 1, 2, 3 and on.
+- \`MAX(amount) OVER (ORDER BY day)\` is the [[best so far|best-so-far]]: the biggest amount on any day up to this one.
+
+\`\`\`sql
+SELECT day, amount,
+       MAX(amount) OVER (ORDER BY day) AS best
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+| day | amount | best |
+| --- | --- | --- |
+| 2024-07-01 | 120 | 120 |
+| 2024-07-02 | 80 | 120 |
+| 2024-07-03 | 150 | 150 |
+| 2024-07-05 | 90 | 150 |
+| 2024-07-06 | 200 | 200 |
+| 2024-07-07 | 110 | 200 |
+
+\`best\` only changes when a new record is set.
+
+### A hidden rule: rows that tie
+
+One more rule, quiet but important. With an \`ORDER BY\` inside \`OVER\`, "up to and including this row" really means "up to and including every row with the **same** sort value as this row". Rows that tie on the sort value are called **peers**, and they always go into the total together.
+
+You can see it if you drop \`PARTITION BY\`, so both regions share one total ordered by \`day\`:
+
+\`\`\`sql
+SELECT day, region, amount,
+       SUM(amount) OVER (ORDER BY day) AS so_far
+FROM daily_sales
+ORDER BY day, region;
+\`\`\`
+
+Here are the first three rows:
+
+| day | region | amount | so_far |
+| --- | --- | --- | --- |
+| 2024-07-01 | north | 120 | 180 |
+| 2024-07-01 | south | 60 | 180 |
+| 2024-07-02 | north | 80 | 260 |
+
+Both 1 July rows show 180: north's 120 plus south's 60. The two rows share a \`day\`, so they are [[peers|peers-why]], and the total takes both at once.
+
+With \`PARTITION BY region\` you never meet this. \`(day, region)\` is the table's **primary key**, the columns that are different for every row. So within one region no two rows share a \`day\`, and there are no peers. The lesson "Window frames: moving averages" shows how to take control of this rule.
+
+**Watch out:** the \`ORDER BY\` inside \`OVER\` is what makes a total "running". The \`ORDER BY\` at the end of the query only sorts the rows you see. If every row in a region shows the same big number, you left the \`ORDER BY\` out of the \`OVER\`.
+
+::: context running-uses Running totals in the real world
+A bank statement's balance column is a running total of every payment in and out. So is the mileage on a car. In spaceflight, a flight computer keeps running totals as it goes: propellant used so far, for example, so it knows how much is left. On the ground, analysts rebuild the same numbers from logged telemetry with a query like this lesson's, ordered by time, to check what the vehicle reported.
+:::
+
+::: context restart-picture Two notebooks, not one
+Each box is one row's running total, and the gray number above it is that day's amount. North adds up to 750. \`PARTITION BY region\` then starts south from nothing, so south's first box is its own 60, not 750 + 60.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="8" y="47" font-size="12" fill="#1f2a44">north</text>
+  <text x="8" y="113" font-size="12" fill="#1f2a44">south</text>
+  <text x="82" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">120</text>
+  <text x="132" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">+80</text>
+  <text x="182" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">+150</text>
+  <text x="232" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">+90</text>
+  <text x="282" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">+200</text>
+  <text x="332" y="24" font-size="11" fill="#6c7a93" text-anchor="middle">+110</text>
+  <rect x="60" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="110" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="160" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="210" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="260" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="310" y="30" width="44" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="82" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <text x="132" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <text x="182" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">350</text>
+  <text x="232" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">440</text>
+  <text x="282" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">640</text>
+  <text x="332" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">750</text>
+  <text x="82" y="90" font-size="11" fill="#6c7a93" text-anchor="middle">60</text>
+  <text x="132" y="90" font-size="11" fill="#6c7a93" text-anchor="middle">+75</text>
+  <text x="182" y="90" font-size="11" fill="#6c7a93" text-anchor="middle">+75</text>
+  <text x="232" y="90" font-size="11" fill="#6c7a93" text-anchor="middle">+40</text>
+  <text x="282" y="90" font-size="11" fill="#6c7a93" text-anchor="middle">+95</text>
+  <rect x="60" y="96" width="44" height="26" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="110" y="96" width="44" height="26" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="160" y="96" width="44" height="26" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="210" y="96" width="44" height="26" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="260" y="96" width="44" height="26" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="82" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">60</text>
+  <text x="132" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">135</text>
+  <text x="182" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">210</text>
+  <text x="232" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">250</text>
+  <text x="282" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">345</text>
+  <text x="180" y="150" font-size="11" fill="#b4232c" text-anchor="middle">PARTITION BY region: south starts again</text>
+</svg>
+\`\`\`
+:::
+
+::: context decimal-point Why 100.0 and not 100
+When SQLite divides one whole number by another, it throws the remainder away: \`7 / 2\` gives 3, not 3.5. That is called **integer division**. If even one side has a decimal point, the answer keeps its decimals: \`7 * 100.0 / 20\` gives 35.0. In this table \`amount\` is already a decimal number (its type is REAL), so 100 would happen to work here. Writing 100.0 is the safe habit, because the same formula on a column of whole numbers, like counts, would otherwise round many shares down to 0.
+:::
+
+::: context best-so-far Records and peaks
+A best-so-far column is how records work: a new record is set only when a value beats every value before it. Engineers track peaks the same way. During a launch, the air pushes hardest on the rocket at one moment, called **max Q**, the point of maximum dynamic pressure, often about a minute after liftoff. A running \`MAX\` over the pressure readings, ordered by time, shows when that peak was reached and that nothing later beat it.
+:::
+
+::: context peers-why Why tied rows go in together
+With only an \`ORDER BY\` inside \`OVER\`, the database cannot tell which of two same-day rows came "first": the sort value says they are level. Rather than guess, SQL gives every peer the same answer, the total after all of them. It is a fair rule, but it surprises people when they expected one row at a time. The lesson "Debugging: the running balance that repeats" is a real bug caused by it, and there you fix it with a tie-breaker and a frame.
+:::
+--- task
+Return one row per row of \`daily_sales\`, with five columns:
+
+- \`region\`, \`day\` and \`amount\`;
+- \`running\`: the region's running total up to and including that day;
+- \`pct\`: that day's amount as a percentage of the region's total for the week, rounded to 1 decimal place.
+
+Sort by \`region\`, then by \`day\`.
+--- starter
+SELECT region, day, amount
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       SUM(amount) OVER (PARTITION BY region ORDER BY day) AS running,
+       ROUND(amount * 100.0 / SUM(amount) OVER (PARTITION BY region), 1) AS pct
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+Both new columns use \`SUM(amount)\` with \`OVER\`, and both need \`PARTITION BY region\` so north and south stay apart. The difference is whether there is an \`ORDER BY\` inside the \`OVER\`.
+--- hint
+The running total is \`SUM(amount) OVER (PARTITION BY region ORDER BY day) AS running\`. The region's whole total is the same without the \`ORDER BY\`: \`SUM(amount) OVER (PARTITION BY region)\`.
+--- hint
+The percentage is \`ROUND(amount * 100.0 / SUM(amount) OVER (PARTITION BY region), 1) AS pct\`. Add both columns after \`amount\` in the \`SELECT\`, with commas between.
+--- check result | Running totals restart per region
+ordered
+[["north", "2024-07-01", 120.0, 120.0, 16.0], ["north", "2024-07-02", 80.0, 200.0, 10.7], ["north", "2024-07-03", 150.0, 350.0, 20.0], ["north", "2024-07-05", 90.0, 440.0, 12.0], ["north", "2024-07-06", 200.0, 640.0, 26.7], ["north", "2024-07-07", 110.0, 750.0, 14.7], ["south", "2024-07-01", 60.0, 60.0, 17.4], ["south", "2024-07-03", 75.0, 135.0, 21.7], ["south", "2024-07-04", 75.0, 210.0, 21.7], ["south", "2024-07-05", 40.0, 250.0, 11.6], ["south", "2024-07-07", 95.0, 345.0, 27.5]]
+
++++ practice | The payroll as people joined
+--- task
+List every employee in the order they were hired, with four columns: \`name\`, \`hired\`, \`salary\`, and \`payroll_so_far\`: the total salary of everyone hired up to and including this person. Sort by \`hired\`.
+--- starter
+SELECT name, hired, salary
+FROM employees
+ORDER BY hired;
+--- solution
+SELECT name, hired, salary,
+       SUM(salary) OVER (ORDER BY hired) AS payroll_so_far
+FROM employees
+ORDER BY hired;
+--- hint
+A running total is \`SUM(...)\` with \`OVER (ORDER BY ...)\`. Which column puts people in the order they joined?
+--- hint
+The column is \`SUM(salary) OVER (ORDER BY hired) AS payroll_so_far\`.
+--- check result | From Maya's 250000 up to the full 1505000
+ordered
+[["Maya", "2019-01-10", 250000, 250000], ["Omar", "2019-03-01", 200000, 450000], ["Lena", "2019-06-15", 190000, 640000], ["Raj", "2020-02-01", 150000, 790000], ["Tess", "2020-05-20", 150000, 940000], ["Ivan", "2021-01-11", 120000, 1060000], ["Zara", "2021-07-07", 90000, 1150000], ["Nora", "2021-09-01", 120000, 1270000], ["Paul", "2022-04-18", 105000, 1375000], ["Amy", "2023-02-14", 90000, 1465000], ["Leo", "2024-06-03", 40000, 1505000]]
+--- check source | A running SUM with OVER
+[Ss][Uu][Mm]\\s*\\(\\s*salary\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source absent | Does not type the totals
+1505000
+
++++ practice | Each person's share of their department
+--- task
+Return every employee with four columns: \`name\`, \`dept\`, \`salary\`, and \`pct_of_dept\`: their salary as a percentage of their department's total payroll, rounded to 1 decimal place.
+
+Sort by \`dept\`, then by \`salary\` (highest first), then by \`name\`.
+--- starter
+SELECT name, dept, salary,
+       ROUND(salary * 100.0 / SUM(salary) OVER (), 1) AS pct_of_dept
+FROM employees
+ORDER BY dept, salary DESC, name;
+--- solution
+SELECT name, dept, salary,
+       ROUND(salary * 100.0 / SUM(salary) OVER (PARTITION BY dept), 1) AS pct_of_dept
+FROM employees
+ORDER BY dept, salary DESC, name;
+--- hint
+Run the starter: Maya shows 16.6, but she is the whole of exec. Empty brackets after \`OVER\` make the window the whole table.
+--- hint
+The window should be the department, with no \`ORDER BY\`, so each row sees its whole department's total: \`OVER (PARTITION BY dept)\`.
+--- check result | Maya is 100% of exec; Lena is 51.4% of finance
+ordered
+[["Omar", "eng", 200000, 22.6], ["Raj", "eng", 150000, 16.9], ["Tess", "eng", 150000, 16.9], ["Ivan", "eng", 120000, 13.6], ["Nora", "eng", 120000, 13.6], ["Paul", "eng", 105000, 11.9], ["Leo", "eng", 40000, 4.5], ["Maya", "exec", 250000, 100.0], ["Lena", "finance", 190000, 51.4], ["Amy", "finance", 90000, 24.3], ["Zara", "finance", 90000, 24.3]]
+--- check source | Totals each department
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+dept
+--- check source absent | Does not type any department's payroll
+885000|370000
+
++++ practice | Three of seven
+--- task
+For every employee, show how far their department had grown when they joined. Return \`name\`, \`dept\`, \`hired\`, and \`progress\`: a piece of text like \`3 of 7\`, meaning this person was the third to join a department that now has seven people.
+
+Build \`progress\` from two window functions joined with \`||\`: a running count in hiring order, and the department's whole count. Sort by \`dept\`, then by \`hired\`.
+--- starter
+SELECT name, dept, hired,
+       COUNT(*) OVER (PARTITION BY dept) AS progress
+FROM employees
+ORDER BY dept, hired;
+--- solution
+SELECT name, dept, hired,
+       COUNT(*) OVER (PARTITION BY dept ORDER BY hired)
+         || ' of ' ||
+       COUNT(*) OVER (PARTITION BY dept) AS progress
+FROM employees
+ORDER BY dept, hired;
+--- hint
+With \`ORDER BY hired\` inside the \`OVER\`, \`COUNT(*)\` counts up: 1, 2, 3. Without it, every row gets the department's whole count.
+--- hint
+Join the pieces: \`COUNT(*) OVER (PARTITION BY dept ORDER BY hired) || ' of ' || COUNT(*) OVER (PARTITION BY dept)\`.
+--- check result | Omar is 1 of 7 in eng; Amy is 3 of 3 in finance
+ordered
+[["Omar", "eng", "2019-03-01", "1 of 7"], ["Raj", "eng", "2020-02-01", "2 of 7"], ["Tess", "eng", "2020-05-20", "3 of 7"], ["Ivan", "eng", "2021-01-11", "4 of 7"], ["Nora", "eng", "2021-09-01", "5 of 7"], ["Paul", "eng", "2022-04-18", "6 of 7"], ["Leo", "eng", "2024-06-03", "7 of 7"], ["Maya", "exec", "2019-01-10", "1 of 1"], ["Lena", "finance", "2019-06-15", "1 of 3"], ["Zara", "finance", "2021-07-07", "2 of 3"], ["Amy", "finance", "2023-02-14", "3 of 3"]]
+--- check source | Counts with COUNT(*) OVER
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source | Joins the text with ||
+\\|\\|
+
++++ practice | Everyone who earns at least this much
+--- task
+For each employee, work out \`at_least\`: the total salary of everyone who earns **at least as much** as they do, themselves included. People with the same salary therefore get the same \`at_least\`, because each of them counts the other.
+
+Return \`name\`, \`salary\` and \`at_least\`, sorted by \`salary\` (highest first), then by \`name\`.
+--- starter
+SELECT name, salary,
+       SUM(salary) OVER (ORDER BY salary DESC, name) AS at_least
+FROM employees
+ORDER BY salary DESC, name;
+--- solution
+SELECT name, salary,
+       SUM(salary) OVER (ORDER BY salary DESC) AS at_least
+FROM employees
+ORDER BY salary DESC, name;
+--- hint
+Run the starter and look at Raj and Tess, who both earn 150000. Raj's total leaves Tess out, though she earns as much as he does.
+--- hint
+Rows that tie on the \`ORDER BY\` inside \`OVER\` are peers, and a running total takes peers together. The starter's tie-breaker splits them up. Order the window by salary alone.
+--- check result | Raj and Tess both show 940000; Amy and Zara both show 1465000
+ordered
+[["Maya", 250000, 250000], ["Omar", 200000, 450000], ["Lena", 190000, 640000], ["Raj", 150000, 940000], ["Tess", 150000, 940000], ["Ivan", 120000, 1180000], ["Nora", 120000, 1180000], ["Paul", 105000, 1285000], ["Amy", 90000, 1465000], ["Zara", 90000, 1465000], ["Leo", 40000, 1505000]]
+--- check source | A running SUM with OVER
+[Ss][Uu][Mm]\\s*\\(\\s*salary\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source absent | Does not type the totals
+940000|1465000
+
++++ practice | The record never changes
+--- task
+This query should show, for each region, the best day so far: on each row, the biggest \`amount\` on any day up to and including that one, in that region. It runs, but every north row shows 200 and every south row shows 95.
+
+Fix the window. Keep the columns \`region\`, \`day\`, \`amount\` and \`best\`, and the order.
+--- starter
+SELECT region, day, amount,
+       MAX(amount) OVER (PARTITION BY region) AS best
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       MAX(amount) OVER (PARTITION BY region ORDER BY day) AS best
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+With no \`ORDER BY\` inside \`OVER\`, the window is the whole partition, so every row sees the region's best of the week.
+--- hint
+"So far" needs an order inside the window: add \`ORDER BY day\` after \`PARTITION BY region\`.
+--- check result | North's best climbs 120, 150, 200; south's 60, 75, 95
+ordered
+[["north", "2024-07-01", 120.0, 120.0], ["north", "2024-07-02", 80.0, 120.0], ["north", "2024-07-03", 150.0, 150.0], ["north", "2024-07-05", 90.0, 150.0], ["north", "2024-07-06", 200.0, 200.0], ["north", "2024-07-07", 110.0, 200.0], ["south", "2024-07-01", 60.0, 60.0], ["south", "2024-07-03", 75.0, 75.0], ["south", "2024-07-04", 75.0, 75.0], ["south", "2024-07-05", 40.0, 75.0], ["south", "2024-07-07", 95.0, 95.0]]
+--- check source | Still uses MAX with OVER
+[Mm][Aa][Xx]\\s*\\(\\s*amount\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source | Keeps the regions apart
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+region
+
++++ practice | When each region passed half its week
+--- task
+For every row of \`daily_sales\`, return five columns:
+
+- \`region\`, \`day\` and \`running\`: the region's running total up to and including that day
+- \`pct_so_far\`: \`running\` as a percentage of the region's total for the week, rounded to 1 decimal place
+- \`half\`: \`'yes'\` once the running total has reached at least half of the region's week, \`'no'\` before that
+
+Sort by \`region\`, then by \`day\`.
+--- starter
+SELECT region, day,
+       SUM(amount) OVER (PARTITION BY region ORDER BY day) AS running
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day,
+       SUM(amount) OVER (PARTITION BY region ORDER BY day) AS running,
+       ROUND(SUM(amount) OVER (PARTITION BY region ORDER BY day) * 100.0
+             / SUM(amount) OVER (PARTITION BY region), 1) AS pct_so_far,
+       CASE WHEN SUM(amount) OVER (PARTITION BY region ORDER BY day) * 2
+                 >= SUM(amount) OVER (PARTITION BY region)
+            THEN 'yes' ELSE 'no' END AS half
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+You need two totals on every row: the running one, \`OVER (PARTITION BY region ORDER BY day)\`, and the week's, \`OVER (PARTITION BY region)\`.
+--- hint
+The percentage divides the first by the second. For \`half\`, use \`CASE WHEN … THEN 'yes' ELSE 'no' END\`, comparing twice the running total with the week's total.
+--- hint
+A window function can sit inside \`ROUND(…)\` and inside a \`CASE\`, like any other value. It is fine to write the same \`SUM(amount) OVER (…)\` more than once.
+--- check result | North passes half on 5 July, south on 4 July
+ordered
+[["north", "2024-07-01", 120.0, 16.0, "no"], ["north", "2024-07-02", 200.0, 26.7, "no"], ["north", "2024-07-03", 350.0, 46.7, "no"], ["north", "2024-07-05", 440.0, 58.7, "yes"], ["north", "2024-07-06", 640.0, 85.3, "yes"], ["north", "2024-07-07", 750.0, 100.0, "yes"], ["south", "2024-07-01", 60.0, 17.4, "no"], ["south", "2024-07-03", 135.0, 39.1, "no"], ["south", "2024-07-04", 210.0, 60.9, "yes"], ["south", "2024-07-05", 250.0, 72.5, "yes"], ["south", "2024-07-07", 345.0, 100.0, "yes"]]
+--- check source | Uses a running SUM
+[Ss][Uu][Mm]\\s*\\(\\s*amount\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source absent | Does not type the weekly totals
+\\b(750|345)\\b
+
+=== sql3-07 | LAG and LEAD: comparing with neighbors
+--- teach
+Last lesson each row's running total looked back at all the rows before it and added them up. This lesson looks back at only **one** row: the one right before. That answers questions like "[[how did today compare with yesterday?|day-over-day]]"
+
+### The picture
+
+Think of the height marks on a kitchen door frame. Each new mark comes with a question: how much taller than last time? To answer it, you look at the mark right below it. One mark on its own is not enough; you need its neighbor.
+
+In a normal query, each row sees only its own columns. North's 2 July row knows it sold 80. It cannot see that 1 July sold 120.
+
+### LAG: the row before
+
+\`LAG(amount)\` gives the \`amount\` from the **previous row** of the window. The \`OVER (ORDER BY day)\` says what "previous" means: the row before, in day order.
+
+\`\`\`sql
+SELECT day, amount,
+       LAG(amount) OVER (ORDER BY day) AS prev
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+| day | amount | prev |
+| --- | --- | --- |
+| 2024-07-01 | 120 | NULL |
+| 2024-07-02 | 80 | 120 |
+| 2024-07-03 | 150 | 80 |
+| 2024-07-05 | 90 | 150 |
+| 2024-07-06 | 200 | 90 |
+| 2024-07-07 | 110 | 200 |
+
+Each \`prev\` is the \`amount\` one line up: the column has [[slid down by one row|slide-picture]]. The first row has no row before it, so \`LAG\` gives NULL there. **NULL**, as you know, means "no value".
+
+### The change from the row before
+
+Now subtract, to get the change:
+
+\`\`\`sql
+SELECT day, amount,
+       amount - LAG(amount) OVER (ORDER BY day) AS change
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+On 2 July the change is 80 − 120 = −40: down 40. On 3 July it is 150 − 80 = 70: up 70. On 1 July it is NULL, because any sum with a NULL in it gives NULL.
+
+### LEAD: the row after
+
+\`LEAD\` is [[the mirror image|lag-lead-words]]. \`LEAD(amount)\` gives the \`amount\` from the **next** row. For north, 1 July's \`LEAD(amount)\` is 80, 2 July's is 150, and so on. The last row, 7 July, gets NULL: there is no row after it.
+
+### Further back, or a default
+
+\`LAG\` can take two more values inside its brackets:
+
+- \`LAG(amount, 2)\` looks **2** rows back instead of 1. On 3 July that gives 120, the amount from 1 July. In general, \`LAG(x, n)\` looks \`n\` rows back, and the first \`n\` rows get NULL.
+- \`LAG(amount, 1, 0)\` looks 1 row back, and gives **0** instead of NULL when there is no row there. The third value is the **default**: what to use when there is nothing to look at.
+
+\`LEAD\` takes the same two extras, counting forwards.
+
+Think before you use a default. Is "no previous day" really a sale of zero? With a default of 0, 1 July shows a change of +120, as if sales jumped, when really there was nothing to compare with. Usually [[NULL is the honest answer|null-honest]].
+
+### One region at a time
+
+With both regions in the query, "the row before" must stay inside one region. Otherwise a south row could be compared with a north row. \`PARTITION BY region\` keeps them apart, as it did for running totals:
+
+\`\`\`sql
+LAG(amount) OVER (PARTITION BY region ORDER BY day)
+\`\`\`
+
+Each region's first row then gets NULL, because nothing comes before it in its own region.
+
+### The previous row is not always yesterday
+
+Here is the catch. \`LAG\` means the previous **row**, not the previous **day**. North has no row for 4 July, so on 5 July the "previous" row is 3 July, two days earlier. The change of −60 on 5 July compares with 3 July.
+
+That may be what you want: a comparison with the last day that had sales. If it is not, build a full calendar first, as you did in "Recursive CTEs: generating a series", so every day has a row.
+
+Either way, it helps to show how far back the previous row was. \`julianday\`, from the lesson "Date arithmetic and date ranges", turns a date into a [[day number|julian-day]], so subtracting two of them gives the days between. \`LAG(day)\` fetches the previous row's date, the same way \`LAG(amount)\` fetched its amount:
+
+\`\`\`sql
+SELECT day,
+       julianday(day) - julianday(LAG(day) OVER (ORDER BY day)) AS gap_days
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+| day | gap_days |
+| --- | --- |
+| 2024-07-01 | NULL |
+| 2024-07-02 | 1.0 |
+| 2024-07-03 | 1.0 |
+| 2024-07-05 | 2.0 |
+| 2024-07-06 | 1.0 |
+| 2024-07-07 | 1.0 |
+
+The 2.0 on 5 July [[flags the missing day|gaps-real]]. The answers are decimal numbers, 1.0 rather than 1, because \`julianday\` gives decimals.
+
+### Naming a window
+
+When several columns use the same \`OVER (...)\`, you can write the window once and give it a name. The **WINDOW clause** does that. It goes after \`WHERE\` (and after any \`GROUP BY\`), and before the final \`ORDER BY\`:
+
+\`\`\`sql
+SELECT day, amount,
+       LAG(amount)  OVER w AS prev,
+       LEAD(amount) OVER w AS next
+FROM daily_sales
+WHERE region = 'north'
+WINDOW w AS (ORDER BY day)
+ORDER BY day;
+\`\`\`
+
+\`OVER w\` means "use the window called \`w\`". It saves typing, and when you change the window, you change it in one place. Writing \`OVER (...)\` out in full each time works the same.
+
+**Watch out:** a missing \`PARTITION BY\`. Without it, the window runs through both regions in day order, so many rows take their \`prev\` from the other region. South's 1 July row can get 120, north's amount from the same day, and no error warns you. Whenever the table holds several groups, ask: should "the row before" stay inside the same group?
+
+::: context day-over-day How analysts say it
+Comparing each period with the one before has names: **day-over-day**, week-over-week, month-over-month. Often it is given as a percentage change: (today − yesterday) ÷ yesterday × 100. For north on 3 July that is (150 − 80) ÷ 80 × 100 = 87.5, so sales rose 87.5%. Every sales dashboard has columns like this, and every one is built on \`LAG\`.
+:::
+
+::: context slide-picture The column slides down one row
+\`LAG\` copies each amount one row down into \`prev\`. The first row has nothing above it to copy, so it gets NULL. \`LEAD\` does the opposite: it slides the column up, and the last row gets NULL.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1d6fd1"/>
+    </marker>
+  </defs>
+  <text x="40" y="18" font-size="11" fill="#6c7a93" text-anchor="middle">day</text>
+  <text x="130" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">amount</text>
+  <text x="250" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">prev</text>
+  <text x="40" y="43" font-size="11" fill="#6c7a93" text-anchor="middle">07-01</text>
+  <text x="40" y="67" font-size="11" fill="#6c7a93" text-anchor="middle">07-02</text>
+  <text x="40" y="91" font-size="11" fill="#6c7a93" text-anchor="middle">07-03</text>
+  <text x="40" y="115" font-size="11" fill="#6c7a93" text-anchor="middle">07-05</text>
+  <text x="40" y="139" font-size="11" fill="#6c7a93" text-anchor="middle">07-06</text>
+  <text x="40" y="163" font-size="11" fill="#6c7a93" text-anchor="middle">07-07</text>
+  <rect x="100" y="28" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="52" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="76" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="100" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="124" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="148" width="60" height="22" rx="3" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="130" y="43" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <text x="130" y="67" font-size="12" fill="#1f2a44" text-anchor="middle">80</text>
+  <text x="130" y="91" font-size="12" fill="#1f2a44" text-anchor="middle">150</text>
+  <text x="130" y="115" font-size="12" fill="#1f2a44" text-anchor="middle">90</text>
+  <text x="130" y="139" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <text x="130" y="163" font-size="12" fill="#1f2a44" text-anchor="middle">110</text>
+  <rect x="220" y="28" width="60" height="22" rx="3" fill="#fff" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <rect x="220" y="52" width="60" height="22" rx="3" fill="#fff" stroke="#1f2a44"/>
+  <rect x="220" y="76" width="60" height="22" rx="3" fill="#fff" stroke="#1f2a44"/>
+  <rect x="220" y="100" width="60" height="22" rx="3" fill="#fff" stroke="#1f2a44"/>
+  <rect x="220" y="124" width="60" height="22" rx="3" fill="#fff" stroke="#1f2a44"/>
+  <rect x="220" y="148" width="60" height="22" rx="3" fill="#fff" stroke="#1f2a44"/>
+  <text x="250" y="43" font-size="11" fill="#b4232c" text-anchor="middle">NULL</text>
+  <text x="250" y="67" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <text x="250" y="91" font-size="12" fill="#1f2a44" text-anchor="middle">80</text>
+  <text x="250" y="115" font-size="12" fill="#1f2a44" text-anchor="middle">150</text>
+  <text x="250" y="139" font-size="12" fill="#1f2a44" text-anchor="middle">90</text>
+  <text x="250" y="163" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <line x1="162" y1="39" x2="217" y2="61" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="162" y1="63" x2="217" y2="85" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="162" y1="87" x2="217" y2="109" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="162" y1="111" x2="217" y2="133" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <line x1="162" y1="135" x2="217" y2="157" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#head)"/>
+  <text x="180" y="190" font-size="11" fill="#1f2a44" text-anchor="middle">each amount moves one row down; 110 has no row below</text>
+</svg>
+\`\`\`
+:::
+
+::: context lag-lead-words Where the names come from
+To **lag** is to trail behind, like a runner at the back of the group; \`LAG\` reads a value from behind the current row. To **lead** is to be out in front; \`LEAD\` reads from ahead of it. Engineers use the same words for signals: a sensor reading that "lags" arrives a moment after the thing it measures. SQLite added both in version 3.25.0, together with its other window functions.
+:::
+
+::: context null-honest Zero and "unknown" are different
+Zero is a real measurement: the shop was open and sold nothing. NULL says "there is nothing to compare with". Mixing them up makes reports lie. With a default of 0, the first day looks like a jump of +120, and an average of the changes would count that fake jump. With NULL, \`AVG\` skips the first row, as it should. Use a default only when zero is truly the right answer, for example when every region really started the week at zero.
+:::
+
+::: context julian-day Counting days from long ago
+A **Julian day number** counts the days since a starting point astronomers chose long ago: noon on 1 January 4713 BC, in the old Julian calendar. Because it is one plain count, subtracting two of them gives the days between two dates, with no month lengths or leap years to worry about. \`julianday('2024-07-05')\` gives 2460496.5. The .5 is there because Julian days start at noon, so midnight is halfway through one. That is also why the answers come out as decimals, like 2.0.
+:::
+
+::: context gaps-real Gaps in real data
+A gap between two rows can be innocent, like a day with no sales. It can also mean data went missing. A spacecraft sends its telemetry in numbered frames, and ground software checks each frame's number against the one before; a jump means frames were lost on the way down. The query is this lesson's: \`LAG\` over the frame numbers or the timestamps, ordered by time, then a check on how big each step is.
+:::
+--- task
+For both regions, return one row per row of \`daily_sales\` with these columns:
+
+- \`region\`, \`day\` and \`amount\`;
+- \`change\`: the amount minus the region's previous recorded amount, and NULL for the region's first row;
+- \`gap_days\`: the number of days since the region's previous row, as a number, and NULL for the region's first row.
+
+Keep each region's rows apart: north's first row must not look at south, or south's at north. Sort by \`region\`, then by \`day\`.
+--- starter
+SELECT region, day, amount,
+       amount - LAG(amount) OVER (ORDER BY day) AS change
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       amount - LAG(amount) OVER w AS change,
+       julianday(day) - julianday(LAG(day) OVER w) AS gap_days
+FROM daily_sales
+WINDOW w AS (PARTITION BY region ORDER BY day)
+ORDER BY region, day;
+--- hint
+Run the starter and look at each region's first row, 1 July. Both should show NULL for \`change\`, but one of them has a number. The starter's window has no \`PARTITION BY region\`, so it compares one region with the other.
+--- hint
+Use \`OVER (PARTITION BY region ORDER BY day)\` for the change. For \`gap_days\`, subtract the day numbers: \`julianday(day) - julianday(LAG(day) OVER (PARTITION BY region ORDER BY day))\`.
+--- hint
+To avoid writing the window twice, add \`WINDOW w AS (PARTITION BY region ORDER BY day)\` after \`FROM daily_sales\`, and write \`OVER w\` in both columns.
+--- check result | Changes and gaps within each region
+ordered
+[["north", "2024-07-01", 120.0, null, null], ["north", "2024-07-02", 80.0, -40.0, 1.0], ["north", "2024-07-03", 150.0, 70.0, 1.0], ["north", "2024-07-05", 90.0, -60.0, 2.0], ["north", "2024-07-06", 200.0, 110.0, 1.0], ["north", "2024-07-07", 110.0, -90.0, 1.0], ["south", "2024-07-01", 60.0, null, null], ["south", "2024-07-03", 75.0, 15.0, 2.0], ["south", "2024-07-04", 75.0, 0.0, 1.0], ["south", "2024-07-05", 40.0, -35.0, 1.0], ["south", "2024-07-07", 95.0, 55.0, 2.0]]
+
++++ practice | Who joined the department just before
+--- task
+List every employee with four columns: \`name\`, \`dept\`, \`hired\`, and \`joined_after\`: the name of the person hired just before them **in the same department**. The first person hired in a department has nobody before them there, so their \`joined_after\` is NULL.
+
+Sort by \`dept\`, then by \`hired\`.
+--- starter
+SELECT name, dept, hired
+FROM employees
+ORDER BY dept, hired;
+--- solution
+SELECT name, dept, hired,
+       LAG(name) OVER (PARTITION BY dept ORDER BY hired) AS joined_after
+FROM employees
+ORDER BY dept, hired;
+--- hint
+\`LAG\` can fetch any column of the previous row, not only a number. Here it fetches a name.
+--- hint
+"The previous row" must stay inside one department: \`LAG(name) OVER (PARTITION BY dept ORDER BY hired)\`.
+--- check result | Each department's first hire is NULL; Leo joined eng after Paul
+ordered
+[["Omar", "eng", "2019-03-01", null], ["Raj", "eng", "2020-02-01", "Omar"], ["Tess", "eng", "2020-05-20", "Raj"], ["Ivan", "eng", "2021-01-11", "Tess"], ["Nora", "eng", "2021-09-01", "Ivan"], ["Paul", "eng", "2022-04-18", "Nora"], ["Leo", "eng", "2024-06-03", "Paul"], ["Maya", "exec", "2019-01-10", null], ["Lena", "finance", "2019-06-15", null], ["Zara", "finance", "2021-07-07", "Lena"], ["Amy", "finance", "2023-02-14", "Zara"]]
+--- check source | Uses LAG
+[Ll][Aa][Gg]\\s*\\(
+--- check source absent | Does not type any names
+'(Omar|Paul|Zara)'
+
++++ practice | Days until the next hire
+--- task
+List every employee in hiring order with three columns: \`name\`, \`hired\`, and \`days_to_next\`: the number of days from this person's hire date to the next person's, across the whole company. The last person hired gets NULL.
+
+Sort by \`hired\`.
+--- starter
+SELECT name, hired,
+       julianday(hired) - julianday(LAG(hired) OVER (ORDER BY hired)) AS days_to_next
+FROM employees
+ORDER BY hired;
+--- solution
+SELECT name, hired,
+       julianday(LEAD(hired) OVER (ORDER BY hired)) - julianday(hired) AS days_to_next
+FROM employees
+ORDER BY hired;
+--- hint
+The starter looks back: it gives days since the previous hire, and puts the NULL on the first row. This task looks forward, to the row after.
+--- hint
+Fetch the next hire date with \`LEAD(hired) OVER (ORDER BY hired)\`, and subtract this row's date from it, so the answer is positive.
+--- check result | Maya to Omar is 50 days; Leo, the last, gets NULL
+ordered
+[["Maya", "2019-01-10", 50.0], ["Omar", "2019-03-01", 106.0], ["Lena", "2019-06-15", 231.0], ["Raj", "2020-02-01", 109.0], ["Tess", "2020-05-20", 236.0], ["Ivan", "2021-01-11", 177.0], ["Zara", "2021-07-07", 56.0], ["Nora", "2021-09-01", 229.0], ["Paul", "2022-04-18", 302.0], ["Amy", "2023-02-14", 475.0], ["Leo", "2024-06-03", null]]
+--- check source | Uses LEAD
+[Ll][Ee][Aa][Dd]\\s*\\(
+--- check source | Counts days with julianday
+[Jj][Uu][Ll][Ii][Aa][Nn][Dd][Aa][Yy]
+
++++ practice | Percentage change, day over day
+--- task
+For each region, work out how much each recorded day's sales rose or fell compared with that region's previous recorded day, as a percentage: (amount − previous) × 100 ÷ previous, rounded to 1 decimal place. Call it \`pct_change\`. A region's first row has nothing to compare with, so it gets NULL.
+
+Return \`region\`, \`day\`, \`amount\` and \`pct_change\`, sorted by \`region\`, then by \`day\`.
+--- starter
+SELECT region, day, amount,
+       amount - LAG(amount) OVER (PARTITION BY region ORDER BY day) AS pct_change
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       ROUND((amount - LAG(amount) OVER w) * 100.0 / LAG(amount) OVER w, 1) AS pct_change
+FROM daily_sales
+WINDOW w AS (PARTITION BY region ORDER BY day)
+ORDER BY region, day;
+--- hint
+The starter has the change, but not as a percentage. Divide the change by the previous amount, and multiply by \`100.0\`.
+--- hint
+You need \`LAG(amount)\` twice with the same window. A \`WINDOW w AS (PARTITION BY region ORDER BY day)\` clause lets you write \`OVER w\` both times.
+--- check result | North rose 87.5% on 3 July; south rose 137.5% on 7 July
+ordered
+[["north", "2024-07-01", 120.0, null], ["north", "2024-07-02", 80.0, -33.3], ["north", "2024-07-03", 150.0, 87.5], ["north", "2024-07-05", 90.0, -40.0], ["north", "2024-07-06", 200.0, 122.2], ["north", "2024-07-07", 110.0, -45.0], ["south", "2024-07-01", 60.0, null], ["south", "2024-07-03", 75.0, 25.0], ["south", "2024-07-04", 75.0, 0.0], ["south", "2024-07-05", 40.0, -46.7], ["south", "2024-07-07", 95.0, 137.5]]
+--- check source | Uses LAG
+[Ll][Aa][Gg]\\s*\\(
+--- check source | Keeps the regions apart
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+region
+
++++ practice | Raises, cuts and first salaries
+--- schema
+CREATE TABLE pay_history (
+  person TEXT NOT NULL,
+  changed TEXT NOT NULL,
+  salary INTEGER NOT NULL,
+  PRIMARY KEY (person, changed)
+);
+INSERT INTO pay_history (person, changed, salary) VALUES
+  ('Kai', '2022-01-01', 70000), ('Kai', '2023-01-01', 76000), ('Kai', '2024-01-01', 76000),
+  ('Mo',  '2021-06-01', 90000), ('Mo',  '2023-06-01', 85000), ('Mo', '2024-06-01', 95000),
+  ('Uma', '2024-03-01', 60000);
+--- task
+This problem has its own table, \`pay_history\`: \`person\`, \`changed\` (the date a salary started) and \`salary\`. Each row is one salary a person had.
+
+Return every row with four columns: \`person\`, \`changed\`, \`salary\`, and \`raise\`: this salary minus the same person's previous salary. Make sure of these cases:
+
+- a person's first salary has no previous one, so \`raise\` is NULL;
+- Uma has only one salary, so her only row is NULL;
+- a pay cut shows as a negative number, and an unchanged salary as \`0\`;
+- one person's first row must never be compared with another person's last.
+
+Sort by \`person\`, then by \`changed\`.
+--- starter
+SELECT person, changed, salary,
+       salary - LAG(salary, 1, 0) OVER (ORDER BY person, changed) AS raise
+FROM pay_history
+ORDER BY person, changed;
+--- solution
+SELECT person, changed, salary,
+       salary - LAG(salary) OVER (PARTITION BY person ORDER BY changed) AS raise
+FROM pay_history
+ORDER BY person, changed;
+--- hint
+Run the starter and look at each person's first row. The default of 0 turns "no previous salary" into a raise of the whole salary.
+--- hint
+Drop the default, so the first row gets NULL, and give each person their own window with \`PARTITION BY person\`.
+--- check result | Kai +6000 then 0; Mo −5000 then +10000; every first row and Uma are NULL
+ordered
+[["Kai", "2022-01-01", 70000, null], ["Kai", "2023-01-01", 76000, 6000], ["Kai", "2024-01-01", 76000, 0], ["Mo", "2021-06-01", 90000, null], ["Mo", "2023-06-01", 85000, -5000], ["Mo", "2024-06-01", 95000, 10000], ["Uma", "2024-03-01", 60000, null]]
+--- check source | Uses LAG
+[Ll][Aa][Gg]\\s*\\(
+--- check source | One window per person
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+person
+
++++ practice | Days since the last hire went negative
+--- task
+This query should show, for each employee, the number of days since the previous person was hired **in the same department**, and NULL for the first hire of each department. It runs, but most numbers are negative, and the NULLs sit on each department's last hire instead of its first.
+
+Fix it. Keep the columns \`name\`, \`dept\`, \`hired\` and \`days_since\`, and the order.
+--- starter
+SELECT name, dept, hired,
+       julianday(hired) - julianday(LEAD(hired) OVER (PARTITION BY dept ORDER BY hired)) AS days_since
+FROM employees
+ORDER BY dept, hired;
+--- solution
+SELECT name, dept, hired,
+       julianday(hired) - julianday(LAG(hired) OVER (PARTITION BY dept ORDER BY hired)) AS days_since
+FROM employees
+ORDER BY dept, hired;
+--- hint
+Which function reads the row before, and which reads the row after?
+--- hint
+The subtraction is the right way round for "since the previous one". Only the function that fetches the other date is wrong.
+--- check result | Raj joined eng 337 days after Omar; each department's first hire is NULL
+ordered
+[["Omar", "eng", "2019-03-01", null], ["Raj", "eng", "2020-02-01", 337.0], ["Tess", "eng", "2020-05-20", 109.0], ["Ivan", "eng", "2021-01-11", 236.0], ["Nora", "eng", "2021-09-01", 233.0], ["Paul", "eng", "2022-04-18", 229.0], ["Leo", "eng", "2024-06-03", 777.0], ["Maya", "exec", "2019-01-10", null], ["Lena", "finance", "2019-06-15", null], ["Zara", "finance", "2021-07-07", 753.0], ["Amy", "finance", "2023-02-14", 587.0]]
+--- check source | Reads the previous row with LAG
+[Ll][Aa][Gg]\\s*\\(\\s*hired
+--- check source absent | No longer reads the next row
+[Ll][Ee][Aa][Dd]\\s*\\(
+
++++ practice | Up, down, or after a gap
+--- task
+Label each row of \`daily_sales\` with a \`trend\`, compared with the same region's previous recorded row:
+
+- \`'first'\` for the region's first row;
+- \`'after gap'\` when the previous row is more than one calendar day earlier, because then the comparison is not with yesterday;
+- otherwise \`'up'\`, \`'down'\` or \`'same'\`, comparing \`amount\` with the previous row's amount.
+
+Return \`region\`, \`day\`, \`amount\` and \`trend\`, sorted by \`region\`, then by \`day\`. Use a CTE to fetch the previous row's \`day\` and \`amount\` first, then decide the label with \`CASE\` in the final \`SELECT\`.
+--- starter
+SELECT region, day, amount,
+       CASE WHEN amount > LAG(amount) OVER (PARTITION BY region ORDER BY day) THEN 'up'
+            ELSE 'down' END AS trend
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+WITH prev AS (
+  SELECT region, day, amount,
+         LAG(day)    OVER w AS prev_day,
+         LAG(amount) OVER w AS prev_amount
+  FROM daily_sales
+  WINDOW w AS (PARTITION BY region ORDER BY day)
+)
+SELECT region, day, amount,
+       CASE WHEN prev_day IS NULL THEN 'first'
+            WHEN julianday(day) - julianday(prev_day) > 1 THEN 'after gap'
+            WHEN amount > prev_amount THEN 'up'
+            WHEN amount < prev_amount THEN 'down'
+            ELSE 'same' END AS trend
+FROM prev
+ORDER BY region, day;
+--- hint
+In the CTE, fetch two things from the previous row with the same window: \`LAG(day)\` and \`LAG(amount)\`.
+--- hint
+A \`CASE\` checks its \`WHEN\`s from the top and stops at the first true one, so put \`'first'\` and \`'after gap'\` before the comparisons.
+--- hint
+The gap is \`julianday(day) - julianday(prev_day)\`. More than 1 means at least one day is missing in between.
+--- check result | North's 5 July and south's 3 and 7 July come after a gap; south's 4 July is the same
+ordered
+[["north", "2024-07-01", 120.0, "first"], ["north", "2024-07-02", 80.0, "down"], ["north", "2024-07-03", 150.0, "up"], ["north", "2024-07-05", 90.0, "after gap"], ["north", "2024-07-06", 200.0, "up"], ["north", "2024-07-07", 110.0, "down"], ["south", "2024-07-01", 60.0, "first"], ["south", "2024-07-03", 75.0, "after gap"], ["south", "2024-07-04", 75.0, "same"], ["south", "2024-07-05", 40.0, "down"], ["south", "2024-07-07", 95.0, "after gap"]]
+--- check source | Uses LAG
+[Ll][Aa][Gg]\\s*\\(
+--- check source | Decides with CASE
+[Cc][Aa][Ss][Ee]\\s+[Ww][Hh][Ee][Nn]
+
+=== sql3-08 | Window frames: moving averages
+--- teach
+In the lesson "LAG and LEAD: comparing with neighbors", each row reached back to one other row. This lesson lets each row look at a small group of rows around it and average them. That smooths out a bumpy series, so you can see the trend underneath.
+
+### The picture
+
+Imagine a list of daily sales on paper, and a card with a slot cut in it, three lines tall. You lay the card on the list, read the three numbers through the slot, and write down their average. Then you slide the card down one line and do it again. Each position of the card gives one smoothed number.
+
+### The frame
+
+That slot has a name. A window function's **frame** is the set of rows, around the current row, that the function works on. The **current row** is the row the answer is being worked out for.
+
+You have already used frames without the name. In "Running totals with SUM() OVER", each row's frame was every row from the start up to that row. That is why the total grew as it went.
+
+You can set the frame yourself. It goes inside \`OVER (...)\`, after the \`ORDER BY\`:
+
+\`\`\`sql
+SELECT day, amount,
+       AVG(amount) OVER (
+         ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ) AS moving_avg
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+Read the new line in words: "rows between two rows before this one, and this row". \`PRECEDING\` means "before", in the order the \`ORDER BY\` sets. So each row's frame is itself plus the two rows before it: three rows.
+
+An average over a frame like this is a **moving average**: an average whose frame [[slides along with the current row|sliding-frame]]. It is the standard way to [[smooth a noisy daily series|smoothing]].
+
+| day | amount | rows in the frame | moving_avg |
+| --- | --- | --- | --- |
+| 2024-07-01 | 120 | 120 | 120 |
+| 2024-07-02 | 80 | 120, 80 | 100 |
+| 2024-07-03 | 150 | 120, 80, 150 | 116.666… |
+| 2024-07-05 | 90 | 80, 150, 90 | 106.666… |
+| 2024-07-06 | 200 | 150, 90, 200 | 146.666… |
+| 2024-07-07 | 110 | 90, 200, 110 | 133.333… |
+
+Look at the first two rows. There are no rows before 1 July, so its frame holds only itself. 2 July has one row before it, so it averages two. The frame never reaches past the start, so [[the first rows use fewer numbers|edges]].
+
+Look at 5 July too. Its frame reaches back to 2 July, because the two rows before it are 2 and 3 July. As with \`LAG\`, a frame counts [[rows, not days|rows-not-days]].
+
+### The frame's two ends
+
+Each end of a frame is one of these five:
+
+- \`UNBOUNDED PRECEDING\`: from the first row of the partition. **Unbounded** means "with no limit". (The **partition** is the group of rows \`PARTITION BY\` makes, or the whole result when there is no \`PARTITION BY\`.)
+- \`n PRECEDING\`: n rows before the current row.
+- \`CURRENT ROW\`: the current row itself.
+- \`n FOLLOWING\`: n rows after the current row.
+- \`UNBOUNDED FOLLOWING\`: to the last row of the partition.
+
+The start goes after \`BETWEEN\`, the end after \`AND\`. For example, a frame centered on each row, one row either side:
+
+\`\`\`sql
+AVG(amount) OVER (ORDER BY day ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)
+\`\`\`
+
+Frames can also give you "the rest of the partition", everything after the current row:
+
+\`\`\`sql
+SUM(amount) OVER (ORDER BY day ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING)
+\`\`\`
+
+For north that gives 630 on 1 July (the sales still to come that week), and NULL on 7 July, because nothing comes after the last row.
+
+### ROWS or RANGE
+
+The word at the start of the frame is the **frame type**. There are two you need.
+
+Think of a race's results list. "The two runners listed above me" counts places in the list. "Everyone whose time was the same as mine or faster" looks at the times themselves, so two runners who tie always come as a pair.
+
+- \`ROWS\` counts physical rows, like places in the list. \`2 PRECEDING\` means two rows back, whatever their values.
+- \`RANGE\` works on the sort value, like the times. It takes every row whose sort value falls in the range. Rows that tie on the sort value are called **peers**, and \`RANGE\` always takes [[peers together|peers]].
+
+### The default frame
+
+If \`OVER\` has an \`ORDER BY\` and no frame, SQL uses this one:
+
+\`\`\`sql
+RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+\`\`\`
+
+That is the running total from "Running totals with SUM() OVER": every row from the start up to this one. Because it is \`RANGE\`, two rows that tie on the sort value are peers. Both get a total that includes both, so the running total jumps two rows at once.
+
+When you want exactly one row at a time, say so with \`ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\`, and give the \`ORDER BY\` a **tie-breaker**: one more column that makes the order unique, such as an \`id\`. The next lesson is a real bug caused by exactly this.
+
+(And, as before, with no \`ORDER BY\` inside \`OVER\` at all, the frame is the whole partition.)
+
+**Watch out:** leaving the frame out is not an error. \`AVG(amount) OVER (ORDER BY day)\` runs and gives a number on every row, so it looks fine. But it is a running average of every row so far, not a moving one: on 5 July it shows 110 (all four rows so far) instead of 106.7 (the last three). If you want a moving average, write the frame.
+
+::: context sliding-frame The frame slides one row at a time
+Each row gets its own frame. Move to the next row and the frame moves with it: the earliest row drops out on the left, and the next row joins on the right.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160" font-family="Inter, Arial, sans-serif">
+  <rect x="12" y="30" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="37" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <rect x="70" y="30" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="95" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">80</text>
+  <rect x="128" y="30" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="153" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">150</text>
+  <rect x="186" y="30" width="50" height="26" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="211" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">90</text>
+  <rect x="244" y="30" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="269" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <rect x="302" y="30" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="327" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">110</text>
+  <text x="37" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">1 Jul</text>
+  <text x="95" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">2 Jul</text>
+  <text x="153" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">3 Jul</text>
+  <text x="211" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">5 Jul</text>
+  <text x="269" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">6 Jul</text>
+  <text x="327" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">7 Jul</text>
+  <rect x="66" y="26" width="174" height="34" fill="none" stroke="#1d6fd1" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="180" y="78" font-size="12" fill="#1f2a44" text-anchor="middle">frame for 5 Jul: 80, 150, 90, average 106.7</text>
+  <rect x="12" y="96" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="37" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">120</text>
+  <rect x="70" y="96" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="95" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">80</text>
+  <rect x="128" y="96" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="153" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">150</text>
+  <rect x="186" y="96" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="211" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">90</text>
+  <rect x="244" y="96" width="50" height="26" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="269" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">200</text>
+  <rect x="302" y="96" width="50" height="26" fill="#fff" stroke="#1f2a44"/>
+  <text x="327" y="114" font-size="12" fill="#1f2a44" text-anchor="middle">110</text>
+  <rect x="124" y="92" width="174" height="34" fill="none" stroke="#1d6fd1" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="180" y="146" font-size="12" fill="#1f2a44" text-anchor="middle">frame for 6 Jul: 150, 90, 200, average 146.7</text>
+</svg>
+\`\`\`
+
+The orange box is the current row. The dashed blue box is its frame.
+:::
+
+::: context smoothing Why engineers smooth data
+Real measurements jump about. A sensor on a rocket engine reads temperature many times a second, and each reading wobbles a little from electrical noise. Plotted raw, the line looks like a saw blade, and a slow, real rise is hard to spot. A moving average replaces each point with the average of its neighbors, so the random wobbles partly cancel out and the trend shows. The price is delay: a smoothed line reacts to a real change a few points late. A wider frame is smoother but slower, so engineers pick the width to suit the job. Shops use 7-day averages for the same reason: they hide the weekly pattern of busy Saturdays.
+:::
+
+::: context edges The short frames at the start
+The first two rows of a 3-row moving average are averages of fewer numbers, so they wobble more than the rest. You can see which rows are short by counting the frame:
+
+\`\`\`sql
+SELECT day,
+       COUNT(*) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS n
+FROM daily_sales
+WHERE region = 'north';
+\`\`\`
+
+\`n\` is 1, 2, then 3 on every other row. A chart often hides rows where \`n\` is below the full width, or marks them, so nobody reads too much into them. You will learn to filter on a window function's result in the expert course.
+:::
+
+::: context rows-not-days Moving over days instead of rows
+North has no row for 4 July, so a 3-row frame on 5 July reaches back to 2 July: that is four calendar days, not three. You have two fixes. One is to fill the gaps first with a calendar, as in "Recursive CTEs: generating a series". The other is a \`RANGE\` frame on a number that counts days, such as \`julianday(day)\`:
+
+\`\`\`sql
+AVG(amount) OVER (
+  ORDER BY julianday(day)
+  RANGE BETWEEN 2 PRECEDING AND CURRENT ROW
+)
+\`\`\`
+
+Now "2 preceding" means "up to two days earlier". On 5 July the frame holds only 3 and 5 July, so the average is 120.
+:::
+
+::: context peers What RANGE does with ties
+Say three rows sort as 10, 20, 20. With \`ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\`, the second row's frame is the first two rows. With \`RANGE\`, the second row's frame also takes the third row, because its sort value, 20, is the same: they are peers. The two 20 rows always get the same answer. SQLite also has a third frame type, \`GROUPS\`, which counts groups of peers instead of rows, but you will rarely need it.
+:::
+--- task
+For the \`north\` region, return \`day\`, \`amount\` and \`moving_avg\`: the average of that row and the two rows before it (fewer at the start), rounded to 1 decimal. Sort by \`day\`.
+
+Use \`daily_sales\`, and set the frame yourself inside \`OVER\`.
+--- starter
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (ORDER BY day), 1) AS moving_avg
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- solution
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (
+         ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ), 1) AS moving_avg
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- hint
+Run the starter and look at 5 July. The starter uses the default frame, which runs from the first row: it is a running average, not a moving one.
+--- hint
+The frame goes inside \`OVER\`, after \`ORDER BY day\`. It should hold the current row and the two rows before it.
+--- hint
+The \`OVER\` should read \`OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)\`. Keep the \`ROUND(..., 1)\` around the whole \`AVG(...) OVER (...)\`.
+--- check result | A three-row moving average
+ordered
+[["2024-07-01", 120.0, 120.0], ["2024-07-02", 80.0, 100.0], ["2024-07-03", 150.0, 116.7], ["2024-07-05", 90.0, 106.7], ["2024-07-06", 200.0, 146.7], ["2024-07-07", 110.0, 133.3]]
+--- check source | Sets the frame with ROWS
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+
++++ practice | A centred average for the south
+--- task
+For the \`south\` region, return \`day\`, \`amount\` and \`smooth\`: the average of the row before, the row itself and the row after, rounded to 1 decimal place. The first and last rows have a neighbour on one side only, so they average two rows. Sort by \`day\`.
+--- starter
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (ORDER BY day), 1) AS smooth
+FROM daily_sales
+WHERE region = 'south'
+ORDER BY day;
+--- solution
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (
+         ORDER BY day
+         ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+       ), 1) AS smooth
+FROM daily_sales
+WHERE region = 'south'
+ORDER BY day;
+--- hint
+The frame reaches one row back and one row forward. The words for "back" and "forward" are \`PRECEDING\` and \`FOLLOWING\`.
+--- hint
+Inside \`OVER\`, after \`ORDER BY day\`: \`ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING\`.
+--- check result | 67.5 at both ends, 70.0, 63.3 and 70.0 between
+ordered
+[["2024-07-01", 60.0, 67.5], ["2024-07-03", 75.0, 70.0], ["2024-07-04", 75.0, 63.3], ["2024-07-05", 40.0, 70.0], ["2024-07-07", 95.0, 67.5]]
+--- check source | Sets the frame with ROWS
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+--- check source | Reaches forward with FOLLOWING
+[Ff][Oo][Ll][Ll][Oo][Ww][Ii][Nn][Gg]
+
++++ practice | The two rows before
+--- task
+For both regions, return \`region\`, \`day\`, \`amount\` and \`prev_two\`: the sum of the region's **two rows before** this one, not counting this row. A region's first row has no rows before it, so \`prev_two\` is NULL there, and its second row sums only one.
+
+Sort by \`region\`, then by \`day\`.
+--- starter
+SELECT region, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY region ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ) AS prev_two
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY region ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING
+       ) AS prev_two
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+The frame does not have to include the current row. Both of its ends can be before it.
+--- hint
+The frame starts two rows back and ends one row back: \`ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING\`.
+--- check result | NULL on each region's first day; north's 5 July sums 80 and 150
+ordered
+[["north", "2024-07-01", 120.0, null], ["north", "2024-07-02", 80.0, 120.0], ["north", "2024-07-03", 150.0, 200.0], ["north", "2024-07-05", 90.0, 230.0], ["north", "2024-07-06", 200.0, 240.0], ["north", "2024-07-07", 110.0, 290.0], ["south", "2024-07-01", 60.0, null], ["south", "2024-07-03", 75.0, 60.0], ["south", "2024-07-04", 75.0, 135.0], ["south", "2024-07-05", 40.0, 150.0], ["south", "2024-07-07", 95.0, 115.0]]
+--- check source | Sets the frame with ROWS
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+--- check source | Keeps the regions apart
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+region
+
++++ practice | A moving average over every calendar day
+--- task
+North has no row for 4 July, so a three-row frame on 5 July reaches back to 2 July. Fix that by averaging over calendar days instead.
+
+Return one row for every day from \`2024-07-01\` to \`2024-07-07\` with three columns: \`day\`, \`amount\` (\`0\` on a day with no north row), and \`moving_avg\`: the average of that day's amount and the two days before it (fewer at the start), rounded to 1 decimal place, where a missing day counts as 0. Sort by \`day\`.
+--- starter
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS moving_avg
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-07'
+), filled AS (
+  SELECT d.day, COALESCE(s.amount, 0) AS amount
+  FROM days d
+  LEFT JOIN daily_sales s ON s.day = d.day AND s.region = 'north'
+)
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS moving_avg
+FROM filled
+ORDER BY day;
+--- hint
+First make a row for every day: a recursive calendar, \`LEFT JOIN\` north's sales onto it, and \`COALESCE(s.amount, 0)\`. Put that in a CTE.
+--- hint
+Then the starter's window works as it is, reading from your filled-in CTE instead of \`daily_sales\`.
+--- check result | 4 July is 0, so 5 July averages 150, 0 and 90
+ordered
+[["2024-07-01", 120.0, 120.0], ["2024-07-02", 80.0, 100.0], ["2024-07-03", 150.0, 116.7], ["2024-07-04", 0, 76.7], ["2024-07-05", 90.0, 80.0], ["2024-07-06", 200.0, 96.7], ["2024-07-07", 110.0, 133.3]]
+--- check source | Uses a recursive calendar
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Sets the frame with ROWS
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+
++++ practice | No average until the frame is full
+--- task
+A three-row moving average is shaky on its first two rows, because it averages fewer numbers there. For the \`north\` region, return \`day\`, \`amount\` and \`moving_avg\`: the average of that row and the two rows before it, rounded to 1 decimal place, but NULL on any row whose frame holds fewer than three rows.
+
+Sort by \`day\`. Count the rows in each frame with \`COUNT(*)\` over the same window.
+--- starter
+SELECT day, amount,
+       ROUND(AVG(amount) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS moving_avg
+FROM daily_sales
+WHERE region = 'north'
+ORDER BY day;
+--- solution
+SELECT day, amount,
+       CASE WHEN COUNT(*) OVER w = 3
+            THEN ROUND(AVG(amount) OVER w, 1)
+       END AS moving_avg
+FROM daily_sales
+WHERE region = 'north'
+WINDOW w AS (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)
+ORDER BY day;
+--- hint
+\`COUNT(*) OVER (the same window)\` is 1 on the first row, 2 on the second, and 3 after that.
+--- hint
+Use \`CASE WHEN … = 3 THEN … END\`. A \`CASE\` with no \`ELSE\` gives NULL when no \`WHEN\` is true.
+--- hint
+A \`WINDOW w AS (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)\` clause saves writing the frame twice: then use \`OVER w\`.
+--- check result | NULL on 1 and 2 July, then 116.7, 106.7, 146.7 and 133.3
+ordered
+[["2024-07-01", 120.0, null], ["2024-07-02", 80.0, null], ["2024-07-03", 150.0, 116.7], ["2024-07-05", 90.0, 106.7], ["2024-07-06", 200.0, 146.7], ["2024-07-07", 110.0, 133.3]]
+--- check source | Counts the rows in the frame
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)\\s*[Oo][Vv][Ee][Rr]
+--- check source | Sets the frame with ROWS
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+
++++ practice | An average of four, not three
+--- task
+This query should give each region a three-row moving average: each row averaged with the two rows before it in the same region, rounded to 1 decimal place. It runs, but from the fourth row of north onwards the numbers are wrong: north's 5 July shows 110.0 instead of 106.7.
+
+Find the mistake in the frame and fix it. Keep the columns \`region\`, \`day\`, \`amount\` and \`moving_avg\`, and the order.
+--- starter
+SELECT region, day, amount,
+       ROUND(AVG(amount) OVER (
+         PARTITION BY region ORDER BY day
+         ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+       ), 1) AS moving_avg
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       ROUND(AVG(amount) OVER (
+         PARTITION BY region ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ), 1) AS moving_avg
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+Count the rows in the starter's frame: three before, plus the current row. How many is that?
+--- hint
+Three rows in all means the current row and **two** before it.
+--- check result | Each region averages at most three rows
+ordered
+[["north", "2024-07-01", 120.0, 120.0], ["north", "2024-07-02", 80.0, 100.0], ["north", "2024-07-03", 150.0, 116.7], ["north", "2024-07-05", 90.0, 106.7], ["north", "2024-07-06", 200.0, 146.7], ["north", "2024-07-07", 110.0, 133.3], ["south", "2024-07-01", 60.0, 60.0], ["south", "2024-07-03", 75.0, 67.5], ["south", "2024-07-04", 75.0, 70.0], ["south", "2024-07-05", 40.0, 63.3], ["south", "2024-07-07", 95.0, 70.0]]
+--- check source | Still a ROWS frame
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+--- check source absent | The frame no longer reaches three rows back
+3\\s+[Pp][Rr][Ee][Cc][Ee][Dd][Ii][Nn][Gg]
+
++++ practice | Sales in the last three calendar days
+--- task
+For each row of \`daily_sales\`, work out \`last3\`: the region's total sales over the three calendar days ending on that row's day (that day and the two days before it). Days with no row add nothing. So north's 5 July covers 3, 4 and 5 July: 150 + 90 = 240, because 4 July has no row.
+
+Return \`region\`, \`day\`, \`amount\` and \`last3\`, sorted by \`region\`, then by \`day\`. A frame that counts rows would reach back to 2 July here, so the frame must count calendar days, not rows.
+--- starter
+SELECT region, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY region ORDER BY day
+         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+       ) AS last3
+FROM daily_sales
+ORDER BY region, day;
+--- solution
+SELECT region, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY region ORDER BY julianday(day)
+         RANGE BETWEEN 2 PRECEDING AND CURRENT ROW
+       ) AS last3
+FROM daily_sales
+ORDER BY region, day;
+--- hint
+A \`ROWS\` frame counts rows. A \`RANGE\` frame looks at the sort value itself: with \`RANGE\`, "2 preceding" means "a sort value up to 2 smaller". If the sort value is a day number, that is up to two days earlier.
+--- hint
+Order the window by \`julianday(day)\`, and change \`ROWS\` to \`RANGE\`, keeping \`BETWEEN 2 PRECEDING AND CURRENT ROW\`.
+--- check result | North's 5 July is 240; south's 7 July is 135
+ordered
+[["north", "2024-07-01", 120.0, 120.0], ["north", "2024-07-02", 80.0, 200.0], ["north", "2024-07-03", 150.0, 350.0], ["north", "2024-07-05", 90.0, 240.0], ["north", "2024-07-06", 200.0, 290.0], ["north", "2024-07-07", 110.0, 400.0], ["south", "2024-07-01", 60.0, 60.0], ["south", "2024-07-03", 75.0, 135.0], ["south", "2024-07-04", 75.0, 150.0], ["south", "2024-07-05", 40.0, 190.0], ["south", "2024-07-07", 95.0, 135.0]]
+--- check source | Keeps the regions apart
+[Pp][Aa][Rr][Tt][Ii][Tt][Ii][Oo][Nn]\\s+[Bb][Yy]\\s+region
+--- check source absent | Does not type the totals
+\\b(240|290|400)\\b
+
+=== sql3-19 | Debugging: the running balance that repeats
+--- schema
+CREATE TABLE ledger (
+  id INTEGER PRIMARY KEY,
+  account TEXT NOT NULL,
+  day TEXT NOT NULL,
+  amount INTEGER NOT NULL
+);
+INSERT INTO ledger (id, account, day, amount) VALUES
+  (1, 'ana', '2024-07-01', 100),
+  (2, 'ana', '2024-07-02', -30),
+  (3, 'ana', '2024-07-02', -20),
+  (4, 'ana', '2024-07-04', 50),
+  (5, 'bo',  '2024-07-01', 200),
+  (6, 'bo',  '2024-07-03', -50),
+  (7, 'bo',  '2024-07-03', 25),
+  (8, 'bo',  '2024-07-03', -75);
+--- teach
+Last lesson ended on a warning: with only an \`ORDER BY\`, the default frame is a \`RANGE\` frame, and it takes tied rows, the peers, together. This lesson you meet that as a real bug on a real page, and you track it down step by step, the way you did in "Debugging: the join that double-counts".
+
+### This lesson's table
+
+Picture a bank book. Every time money goes in or out, the bank writes one line. That list of lines is a [[ledger|ledger]].
+
+This lesson has its own table, \`ledger\`, with one row per transaction:
+
+- \`id\`: the order the transactions happened in.
+- \`account\`: whose account, \`ana\` or \`bo\`.
+- \`day\`: the date.
+- \`amount\`: money in (positive) or out (negative).
+
+Some days have several rows. Here are the \`ana\` rows:
+
+| id | day | amount |
+| --- | --- | --- |
+| 1 | 2024-07-01 | 100 |
+| 2 | 2024-07-02 | -30 |
+| 3 | 2024-07-02 | -20 |
+| 4 | 2024-07-04 | 50 |
+
+An account's **balance** is how much money is in it: the running total of its amounts.
+
+### The bug report
+
+The statement page shows each transaction with the account's balance after it. This is its query:
+
+\`\`\`sql
+SELECT id, account, day, amount,
+       SUM(amount) OVER (PARTITION BY account ORDER BY day) AS balance
+FROM ledger
+ORDER BY account, day, id;
+\`\`\`
+
+Someone reports: "The \`ana\` account's two payments on 2 July both show a balance of **50**. After the first one (−30) the balance was 70. The \`bo\` account's three transactions on 3 July all show **100**. But the balance at the end of each day is right."
+
+### Step 1: reproduce it small
+
+Shrink the problem until you can read all of it. Add \`WHERE account = 'ana'\` and put the raw rows next to the balance:
+
+| id | day | amount | balance shown | should be |
+| --- | --- | --- | --- | --- |
+| 1 | 2024-07-01 | 100 | 100 | 100 |
+| 2 | 2024-07-02 | -30 | 50 | 70 |
+| 3 | 2024-07-02 | -20 | 50 | 50 |
+| 4 | 2024-07-04 | 50 | 100 | 100 |
+
+The bug is there: row 2 shows 50 instead of 70.
+
+### Step 2: look for the pattern in what is wrong
+
+Which rows are wrong? Only row 2. Rows 2 and 3 share a day. In \`bo\`'s rows, the three wrong ones all share 3 July. Every row that is alone on its day is right.
+
+So the bug has something to do with rows that tie on \`day\`.
+
+### Step 3: check your assumption
+
+The query assumes that \`SUM(amount) OVER (... ORDER BY day)\` adds one row at a time. Check that against what you learned in "Window frames: moving averages".
+
+With only an \`ORDER BY\`, the frame is \`RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\`. \`RANGE\` takes every [[peer|peer-picture]] together: every row with the same \`day\`. So rows 2 and 3 both get the total after both of them: 100 − 30 − 20 = 50. The assumption was wrong.
+
+### Step 4: fix the cause, not the symptom
+
+The real cause: \`day\` does not fully decide the order. Two rows on 2 July, and nothing says which came first.
+
+The fix has two parts.
+
+First, a tie-breaker. \`id\` is the order the transactions happened, so sort the window by \`day\`, then \`id\`:
+
+\`\`\`sql
+ORDER BY day, id
+\`\`\`
+
+Now no two rows tie, so there are no peers left. Picking \`id\` is not a guess: it is [[the column that records the real order|tie-breaker]].
+
+Second, say that you mean one row at a time, with a \`ROWS\` frame:
+
+\`\`\`sql
+ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+\`\`\`
+
+Both parts go inside the window's \`OVER (...)\`, after \`PARTITION BY account\`. Writing both is [[belt and braces|both-parts]].
+
+What about hiding repeated numbers on the page, or grouping by day? Those treat the [[symptom|symptom]]. They would lose the balance after each transaction, which is the whole point of the page.
+
+### Step 5: check that the fix did not break what was right
+
+The end-of-day balances were right before, so they must not change. For \`ana\`: 100 after 1 July, 50 after 2 July, 100 after 4 July. For \`bo\`: 200 after 1 July, 100 after 3 July. After the fix, \`bo\`'s 3 July rows read 150, 175, 100, and the last is still 100.
+
+**Watch out:** the starter already ends with \`ORDER BY account, day, id\`, and it is still wrong. That last \`ORDER BY\` only sorts the finished rows for display. The window has its own \`ORDER BY\`, inside \`OVER\`, and that is the one that decides which rows go into each sum. The tie-breaker has to go there.
+
+::: context ledger An old word for a list that only grows
+A ledger was the big book a bookkeeper wrote every payment in, one line each, in the order they happened. Lines were never rubbed out: a mistake was fixed by writing a new line that undoes it. Software still works this way. Banks, shops and space missions keep **append-only** logs, where rows are only ever added. A mission's command log records every command sent to a spacecraft, in order, and nobody edits old lines. A balance, or the craft's current state, is then worked out by adding up the log, exactly as this lesson does with \`SUM() OVER\`.
+:::
+
+::: context peer-picture The frame for row 2, two ways
+Row 2 is the current row. Row 3 has the same day, so it is a peer of row 2.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="180" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">frames for row 2 (the current row)</text>
+  <rect x="110" y="30" width="140" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="180" y="46" font-size="12" fill="#1f2a44" text-anchor="middle">1 · 07-01 · +100</text>
+  <rect x="110" y="58" width="140" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="74" font-size="12" fill="#1f2a44" text-anchor="middle">2 · 07-02 · -30</text>
+  <rect x="110" y="86" width="140" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="180" y="102" font-size="12" fill="#1f2a44" text-anchor="middle">3 · 07-02 · -20</text>
+  <rect x="110" y="114" width="140" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="180" y="130" font-size="12" fill="#1f2a44" text-anchor="middle">4 · 07-04 · +50</text>
+  <path d="M102 30 H92 V110 H102" fill="none" stroke="#b4232c" stroke-width="2"/>
+  <text x="48" y="66" font-size="12" fill="#b4232c" text-anchor="middle">RANGE</text>
+  <text x="48" y="82" font-size="12" fill="#b4232c" text-anchor="middle">sum 50</text>
+  <path d="M258 30 H268 V82 H258" fill="none" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="312" y="52" font-size="12" fill="#1d6fd1" text-anchor="middle">ROWS</text>
+  <text x="312" y="68" font-size="12" fill="#1d6fd1" text-anchor="middle">sum 70</text>
+  <text x="180" y="160" font-size="12" fill="#1f2a44" text-anchor="middle">Row 3 shares row 2's day, so RANGE takes it too.</text>
+</svg>
+\`\`\`
+
+The \`ROWS\` frame on the right assumes the tie-breaker is in place, so the window knows row 2 comes before row 3.
+:::
+
+::: context tie-breaker Choosing the tie-breaker
+A tie-breaker has to make the order unique, and it has to match the order you mean. \`id\` does both here: it is the primary key, so no two rows share it, and it counts up in the order the transactions happened. Sorting by \`amount\` as a tie-breaker would also make the order unique for these rows, but it would be the wrong order: a balance "after −30" would depend on the size of the payment, not on when it happened. You met the same idea in "Pagination with LIMIT and OFFSET": always end an \`ORDER BY\` with something that fully decides the order.
+:::
+
+::: context both-parts Why write both parts?
+With \`ORDER BY day, id\`, no two rows tie, so even the default \`RANGE\` frame would add one row at a time. And a \`ROWS\` frame alone, with only \`ORDER BY day\`, happens to give the right numbers on this data today. Neither is safe alone. Without the tie-breaker, \`ROWS\` still has to pick an order among rows on the same day, and nothing promises it will pick \`id\` order next time. Without \`ROWS\`, a future change to the \`ORDER BY\` could bring ties back. Writing both says exactly what you mean, so the next reader, and the database, cannot get it wrong. That habit of a second safety line is what "belt and braces" means.
+:::
+
+::: context symptom Symptom and cause
+A **symptom** is what you see going wrong: two identical balances on the page. The **cause** is why it happens: the window adds tied rows together. A doctor who only treats a symptom, say a fever, without finding the infection, leaves the patient ill. In code it is the same. If you hid the repeated numbers, the page would look tidier, but every balance on a busy day would still be wrong, and the next report built on this query would carry the same bug. Fix the cause, and the symptom goes away by itself.
+:::
+--- task
+Fix the statement query so \`balance\` is each account's running balance after **each** transaction, in the order they happened (\`day\`, then \`id\`).
+
+Keep the columns \`id\`, \`account\`, \`day\`, \`amount\`, \`balance\` and the final \`ORDER BY account, day, id\`. Change only the window inside \`OVER (...)\`.
+--- starter
+SELECT id, account, day, amount,
+       SUM(amount) OVER (PARTITION BY account ORDER BY day) AS balance
+FROM ledger
+ORDER BY account, day, id;
+--- solution
+SELECT id, account, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY account
+         ORDER BY day, id
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS balance
+FROM ledger
+ORDER BY account, day, id;
+--- hint
+Run the starter and look only at the \`ana\` rows. Which rows show a wrong balance, and what do they have in common?
+--- hint
+With only \`ORDER BY day\` inside \`OVER\`, rows that share a day are peers and are summed together. The window needs to know which of them came first.
+--- hint
+Inside \`OVER\`, keep \`PARTITION BY account\`, change the order to \`ORDER BY day, id\`, and add \`ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\` after it.
+--- check result | A balance after every transaction, in order
+ordered
+[[1, "ana", "2024-07-01", 100, 100], [2, "ana", "2024-07-02", -30, 70], [3, "ana", "2024-07-02", -20, 50], [4, "ana", "2024-07-04", 50, 100], [5, "bo", "2024-07-01", 200, 200], [6, "bo", "2024-07-03", -50, 150], [7, "bo", "2024-07-03", 25, 175], [8, "bo", "2024-07-03", -75, 100]]
+
++++ practice | Which transaction of the day
+--- task
+Number each account's transactions within each day, in the order they happened: 1 for the first transaction on that day, 2 for the second, and so on, starting again at 1 on every new day and for every account. Call the number \`nth_today\`.
+
+Return \`id\`, \`account\`, \`day\`, \`amount\` and \`nth_today\`, sorted by \`account\`, \`day\`, then \`id\`.
+--- starter
+SELECT id, account, day, amount,
+       ROW_NUMBER() OVER (PARTITION BY account ORDER BY day) AS nth_today
+FROM ledger
+ORDER BY account, day, id;
+--- solution
+SELECT id, account, day, amount,
+       ROW_NUMBER() OVER (PARTITION BY account, day ORDER BY id) AS nth_today
+FROM ledger
+ORDER BY account, day, id;
+--- hint
+The numbering must start again for each account **and** each day. \`PARTITION BY\` can take more than one column, separated by commas, like \`GROUP BY\`.
+--- hint
+Within one day, \`id\` records the order the transactions happened: \`OVER (PARTITION BY account, day ORDER BY id)\`.
+--- check result | bo's three transactions on 3 July are 1, 2 and 3
+ordered
+[[1, "ana", "2024-07-01", 100, 1], [2, "ana", "2024-07-02", -30, 1], [3, "ana", "2024-07-02", -20, 2], [4, "ana", "2024-07-04", 50, 1], [5, "bo", "2024-07-01", 200, 1], [6, "bo", "2024-07-03", -50, 1], [7, "bo", "2024-07-03", 25, 2], [8, "bo", "2024-07-03", -75, 3]]
+--- check source | Numbers with ROW_NUMBER()
+[Rr][Oo][Ww]_[Nn][Uu][Mm][Bb][Ee][Rr]
+--- check source | Settles the order within a day by id
+[Oo][Rr][Dd][Ee][Rr]\\s+[Bb][Yy]\\s+id
+
++++ practice | The balance before each transaction
+--- task
+The statement page wants the opening balance too. For each transaction, return \`id\`, \`account\`, \`day\`, \`amount\` and \`before\`: the account's balance just **before** this transaction, in the order they happened (\`day\`, then \`id\`). An account's first transaction starts from \`0\`.
+
+Sort by \`account\`, \`day\`, then \`id\`.
+--- starter
+SELECT id, account, day, amount,
+       SUM(amount) OVER (PARTITION BY account ORDER BY day) - amount AS before
+FROM ledger
+ORDER BY account, day, id;
+--- solution
+SELECT id, account, day, amount,
+       COALESCE(SUM(amount) OVER (
+         PARTITION BY account
+         ORDER BY day, id
+         ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+       ), 0) AS before
+FROM ledger
+ORDER BY account, day, id;
+--- hint
+Run the starter and look at ana's two rows on 2 July. It still adds up same-day rows together.
+--- hint
+"Before this transaction" is a frame that stops one row back: \`ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING\`, with \`ORDER BY day, id\` as the tie-breaker.
+--- hint
+On an account's first row that frame is empty, so the \`SUM\` is NULL. Wrap it in \`COALESCE(…, 0)\`.
+--- check result | ana starts at 0, then 100, 70 and 50; bo's 3 July rows open at 200, 150 and 175
+ordered
+[[1, "ana", "2024-07-01", 100, 0], [2, "ana", "2024-07-02", -30, 100], [3, "ana", "2024-07-02", -20, 70], [4, "ana", "2024-07-04", 50, 50], [5, "bo", "2024-07-01", 200, 0], [6, "bo", "2024-07-03", -50, 200], [7, "bo", "2024-07-03", 25, 150], [8, "bo", "2024-07-03", -75, 175]]
+--- check source | Sets a ROWS frame
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+--- check source | Breaks ties by id
+day\\s*,\\s*id
+
++++ practice | One line per day
+--- task
+A shorter statement shows one line per account per day: \`account\`, \`day\`, \`day_total\` (the sum of that day's amounts) and \`balance\`, the account's balance at the end of that day.
+
+Group the transactions by account and day, and work out \`balance\` as a running total of the day totals. Sort by \`account\`, then by \`day\`.
+--- starter
+SELECT account, day, SUM(amount) AS day_total
+FROM ledger
+GROUP BY account, day
+ORDER BY account, day;
+--- solution
+SELECT account, day,
+       SUM(amount) AS day_total,
+       SUM(SUM(amount)) OVER (PARTITION BY account ORDER BY day) AS balance
+FROM ledger
+GROUP BY account, day
+ORDER BY account, day;
+--- hint
+Window functions run after \`GROUP BY\`, so they see one row per account per day. A running total of those rows is the end-of-day balance.
+--- hint
+The day total is \`SUM(amount)\`. A running total of it is \`SUM(SUM(amount)) OVER (PARTITION BY account ORDER BY day)\`: the inner \`SUM\` is the group's, the outer one is the window's.
+--- check result | ana ends the days on 100, 50 and 100; bo on 200 and 100
+ordered
+[["ana", "2024-07-01", 100, 100], ["ana", "2024-07-02", -50, 50], ["ana", "2024-07-04", 50, 100], ["bo", "2024-07-01", 200, 200], ["bo", "2024-07-03", -100, 100]]
+--- check source | Groups by account and day
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+account\\s*,\\s*day
+--- check source | A running total with OVER
+[Oo][Vv][Ee][Rr]\\s*\\(
+
++++ practice | The overdraft hidden inside a day
+--- schema
+CREATE TABLE ledger (
+  id INTEGER PRIMARY KEY,
+  account TEXT NOT NULL,
+  day TEXT NOT NULL,
+  amount INTEGER NOT NULL
+);
+INSERT INTO ledger (id, account, day, amount) VALUES
+  (1, 'cy', '2024-07-01', 100),
+  (2, 'cy', '2024-07-02', -150),
+  (3, 'cy', '2024-07-02', 100),
+  (4, 'cy', '2024-07-03', -20),
+  (5, 'di', '2024-07-01', 40),
+  (6, 'ed', '2024-07-01', 50),
+  (7, 'ed', '2024-07-01', -50),
+  (8, 'ed', '2024-07-02', 10);
+--- task
+This problem has its own \`ledger\`, with the same columns as the lesson's: \`id\`, \`account\`, \`day\` and \`amount\`.
+
+The bank wants to know which accounts ever went below zero. For each account, return:
+
+- \`account\`
+- \`lowest\`: the lowest balance the account had after any single transaction, in the order they happened (\`day\`, then \`id\`)
+- \`overdrawn\`: \`'yes'\` if \`lowest\` is below 0, otherwise \`'no'\`. A balance of exactly 0 is not overdrawn.
+
+Sort by \`account\`. Careful: cy dips to −50 in the middle of 2 July and is back to 50 by the evening. A running total that adds same-day rows together never sees the dip.
+--- starter
+SELECT account, MIN(amount) AS lowest, 'no' AS overdrawn
+FROM ledger
+GROUP BY account
+ORDER BY account;
+--- solution
+WITH balances AS (
+  SELECT account,
+         SUM(amount) OVER (
+           PARTITION BY account
+           ORDER BY day, id
+           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+         ) AS balance
+  FROM ledger
+)
+SELECT account,
+       MIN(balance) AS lowest,
+       CASE WHEN MIN(balance) < 0 THEN 'yes' ELSE 'no' END AS overdrawn
+FROM balances
+GROUP BY account
+ORDER BY account;
+--- hint
+First work out the balance after every transaction, in a CTE, with the tie-breaker and the \`ROWS\` frame from the lesson.
+--- hint
+Then group the CTE's rows by account: \`MIN(balance)\` is the lowest point. Use \`CASE WHEN MIN(balance) < 0 THEN 'yes' ELSE 'no' END\` for the label.
+--- check result | cy dipped to −50; ed touched 0 but was never overdrawn
+ordered
+[["cy", -50, "yes"], ["di", 40, "no"], ["ed", 0, "no"]]
+--- check source | Breaks ties by id
+day\\s*,\\s*id
+--- check source | Uses a window function
+[Oo][Vv][Ee][Rr]\\s*\\(
+
++++ practice | A tie-breaker in the wrong order
+--- schema
+CREATE TABLE ledger (
+  id INTEGER PRIMARY KEY,
+  account TEXT NOT NULL,
+  day TEXT NOT NULL,
+  amount INTEGER NOT NULL
+);
+INSERT INTO ledger (id, account, day, amount) VALUES
+  (1, 'fay', '2024-07-01', 300),
+  (2, 'fay', '2024-07-02', -100),
+  (3, 'fay', '2024-07-02', 40),
+  (4, 'fay', '2024-07-02', -10),
+  (5, 'gus', '2024-07-01', 80),
+  (6, 'gus', '2024-07-03', -30),
+  (7, 'gus', '2024-07-03', -60);
+--- task
+This problem has its own \`ledger\`, with the same columns as the lesson's, for two accounts, \`fay\` and \`gus\`.
+
+Someone fixed the statement query by adding a tie-breaker, but picked the wrong one. The balance should follow the order the transactions happened (\`day\`, then \`id\`). Now fay's three rows on 2 July show 200, 230 and 190 instead of 200, 240 and 230, and gus's two rows on 3 July show −10 and 20 instead of 50 and −10.
+
+Fix the tie-breaker. Keep the columns \`id\`, \`account\`, \`day\`, \`amount\` and \`balance\`, and the order.
+--- starter
+SELECT id, account, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY account
+         ORDER BY day, amount
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS balance
+FROM ledger
+ORDER BY account, day, id;
+--- solution
+SELECT id, account, day, amount,
+       SUM(amount) OVER (
+         PARTITION BY account
+         ORDER BY day, id
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS balance
+FROM ledger
+ORDER BY account, day, id;
+--- hint
+The tie-breaker decides which same-day row is added first. With \`amount\`, fay's −10 is added before her +40, although it happened last.
+--- hint
+Which column records the order the transactions really happened?
+--- check result | fay's 2 July rows read 200, 240, 230; gus goes to 50, then −10
+ordered
+[[1, "fay", "2024-07-01", 300, 300], [2, "fay", "2024-07-02", -100, 200], [3, "fay", "2024-07-02", 40, 240], [4, "fay", "2024-07-02", -10, 230], [5, "gus", "2024-07-01", 80, 80], [6, "gus", "2024-07-03", -30, 50], [7, "gus", "2024-07-03", -60, -10]]
+--- check source | Breaks ties by id
+day\\s*,\\s*id
+--- check source absent | No longer sorts the window by amount
+[Oo][Rr][Dd][Ee][Rr]\\s+[Bb][Yy]\\s+day\\s*,\\s*amount
+
++++ practice | A statement for every calendar day
+--- task
+The monthly statement shows every account's balance at the end of **every** calendar day from \`2024-07-01\` to \`2024-07-04\`, including days with no transactions, when the balance stays what it was.
+
+Return \`account\`, \`day\` and \`balance\`, one row per account per calendar day: eight rows in all. Sort by \`account\`, then by \`day\`. For example, bo has no transactions on 2 July, so that row shows 200, the balance from 1 July.
+--- starter
+SELECT account, day,
+       SUM(SUM(amount)) OVER (PARTITION BY account ORDER BY day) AS balance
+FROM ledger
+GROUP BY account, day
+ORDER BY account, day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-07-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-07-04'
+), daily AS (
+  SELECT a.account, d.day, COALESCE(SUM(l.amount), 0) AS day_total
+  FROM days d
+  CROSS JOIN (SELECT DISTINCT account FROM ledger) a
+  LEFT JOIN ledger l ON l.day = d.day AND l.account = a.account
+  GROUP BY a.account, d.day
+)
+SELECT account, day,
+       SUM(day_total) OVER (PARTITION BY account ORDER BY day) AS balance
+FROM daily
+ORDER BY account, day;
+--- hint
+Build the four days with a recursive CTE, and pair each day with each account using a \`CROSS JOIN\`.
+--- hint
+\`LEFT JOIN\` the ledger onto each pair and group by account and day. A day with no transactions then has a total of 0, with \`COALESCE\`.
+--- hint
+The balance is a running total of those day totals, per account, in day order.
+--- check result | Eight rows; quiet days repeat the balance before them
+ordered
+[["ana", "2024-07-01", 100], ["ana", "2024-07-02", 50], ["ana", "2024-07-03", 50], ["ana", "2024-07-04", 100], ["bo", "2024-07-01", 200], ["bo", "2024-07-02", 200], ["bo", "2024-07-03", 100], ["bo", "2024-07-04", 100]]
+--- check source | Builds the calendar with a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source | Pairs days with accounts
+[Cc][Rr][Oo][Ss][Ss]\\s+[Jj][Oo][Ii][Nn]
+
+=== sql3-09 | Constraints: rules the database enforces
+--- schema
+CREATE TABLE plans (
+  name TEXT PRIMARY KEY,
+  monthly_cents INTEGER NOT NULL
+);
+INSERT INTO plans (name, monthly_cents) VALUES ('free', 0), ('team', 1200), ('enterprise', 4900);
+--- teach
+Last lesson you fixed a query that added up the wrong rows. The rest of this course turns from reading data to protecting it. This lesson: rules the database itself enforces, so bad rows never get in at all.
+
+### The picture
+
+Think of a post office counter. Whoever hands in a parcel form, the clerk checks it: an address filled in, a real postcode, a weight above zero. An incomplete form is handed back, however important the person is. Because every parcel goes through that one counter, no bad form gets past.
+
+### Why the database should check
+
+Your data is written by many hands. The **application code**, the program behind a website or app that talks to the database, has bugs. It may run [[in several versions at once|many-writers]]. Scripts and admin tools write to the same tables and skip its checks.
+
+The only rule that holds for **every** writer is one the database enforces. That rule is a **constraint**: a rule attached to a table that every inserted or changed row must pass.
+
+You met some constraints in the basics lesson "Creating tables". Here is a table of club members that uses them all:
+
+\`\`\`sql
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  username TEXT NOT NULL,
+  nickname TEXT UNIQUE,
+  role TEXT CHECK (role IN ('owner', 'admin', 'viewer')),
+  points INTEGER DEFAULT 0 CHECK (points >= 0)
+);
+\`\`\`
+
+Several constraints can stack after one column's type, with spaces between them, as on the \`points\` line. Now take them one at a time.
+
+### NOT NULL: a value is required
+
+\`username TEXT NOT NULL\` refuses a row with no username:
+
+\`\`\`sql
+INSERT INTO members (username, role) VALUES (NULL, 'viewer');
+\`\`\`
+
+That fails with an error like \`NOT NULL constraint failed: members.username\`.
+
+### UNIQUE: no two rows share a value
+
+\`nickname TEXT UNIQUE\` refuses a second row with a nickname that is already there. If \`ace\` exists, adding another \`ace\` fails with \`UNIQUE constraint failed\`.
+
+One exception: [[NULLs do not count|unique-null]]. A \`UNIQUE\` column may hold NULL in many rows. \`nickname\` has no \`NOT NULL\`, so any number of members can have no nickname at all.
+
+### CHECK: any rule you can write as a condition
+
+\`CHECK (condition)\` refuses a row for which the condition is false. You write the condition like a \`WHERE\`:
+
+- \`CHECK (role IN ('owner', 'admin', 'viewer'))\`: \`IN (...)\` means "is one of these". A role of \`'boss'\` is refused.
+- \`CHECK (points >= 0)\`: \`>=\` means "at least". Negative points are refused.
+
+### DEFAULT: a value to fill in
+
+\`DEFAULT 0\` is not a rule. It fills in the column when an insert leaves it out:
+
+\`\`\`sql
+INSERT INTO members (username, role) VALUES ('mo', 'viewer');
+\`\`\`
+
+This row gets \`points\` = 0.
+
+### PRIMARY KEY: one row per key
+
+\`PRIMARY KEY\` refuses a second row with the same key. In SQLite, \`INTEGER PRIMARY KEY\` is special: it becomes [[the row's own id|rowid]], and SQLite fills it in when you leave it out. That is why the insert above did not give an \`id\`.
+
+### All five at a glance
+
+| constraint | refuses |
+| --- | --- |
+| \`PRIMARY KEY\` | a second row with the same key |
+| \`NOT NULL\` | a missing value |
+| \`UNIQUE\` | a value that is already in the column (NULLs excepted) |
+| \`CHECK (expr)\` | a row for which \`expr\` is false |
+| \`DEFAULT v\` | (not a rule) fills the column when an insert leaves it out |
+
+### A rule across several columns
+
+A constraint can also go at the end of the table, after the last column, and cover several columns together:
+
+\`\`\`sql
+UNIQUE (team_id, email)
+\`\`\`
+
+This means one email per team. The same email may join two different teams, but not the same team twice.
+
+### What happens when a rule is broken
+
+The statement fails with an error and changes **nothing**. If one \`INSERT\` adds three rows and the third breaks a rule, none of the three is added.
+
+You can choose a different reaction:
+
+- \`INSERT OR IGNORE\`: skip the bad row without an error.
+- \`INSERT OR REPLACE\`: [[delete the old row that clashes, then insert|or-replace]].
+
+The checks in this lesson use \`INSERT OR IGNORE ... RETURNING id\`. [[RETURNING|returning]] hands back columns from the rows actually added. So a row your table accepts comes back, and a row it refuses returns nothing.
+
+### Column types are only a hint
+
+In SQLite, a column's type is a hint, not a rule. SQLite will store \`'abc'\` in an \`INTEGER\` column without complaint. That is one more reason to write \`CHECK\`s for [[what really matters|type-hint]].
+
+**Watch out:** a \`CHECK\` only refuses a row when its condition is **false**. When the value is NULL, the condition gives NULL, not false, and the row gets in. So \`role TEXT CHECK (role IN (...))\`, as in the table above, lets a row with no role through. If a value is required, add \`NOT NULL\` as well.
+
+::: context many-writers One database, many writers
+A real app's database is rarely written by one program. While a new version rolls out, the old and new versions run side by side for a while. A support engineer fixes a customer's record with a one-off script. A nightly job imports data from a partner. Each of these is a separate writer, and a check that lives in only one of them protects nothing from the others.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="15" width="120" height="28" fill="#fff" stroke="#1f2a44"/>
+  <text x="70" y="33" font-size="12" fill="#1f2a44" text-anchor="middle">app, version 2</text>
+  <rect x="10" y="60" width="120" height="28" fill="#fff" stroke="#1f2a44"/>
+  <text x="70" y="78" font-size="12" fill="#1f2a44" text-anchor="middle">app, version 1</text>
+  <rect x="10" y="105" width="120" height="28" fill="#fff" stroke="#1f2a44"/>
+  <text x="70" y="123" font-size="12" fill="#1f2a44" text-anchor="middle">admin script</text>
+  <line x1="130" y1="29" x2="214" y2="29" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="214,24 222,29 214,34" fill="#1d6fd1"/>
+  <line x1="130" y1="74" x2="214" y2="74" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="214,69 222,74 214,79" fill="#1d6fd1"/>
+  <line x1="130" y1="119" x2="214" y2="119" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="214,114 222,119 214,124" fill="#1d6fd1"/>
+  <rect x="222" y="8" width="128" height="134" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="286" y="34" font-size="12" fill="#1f2a44" text-anchor="middle">the database</text>
+  <text x="286" y="60" font-size="12" fill="#1f2a44" text-anchor="middle">NOT NULL</text>
+  <text x="286" y="80" font-size="12" fill="#1f2a44" text-anchor="middle">UNIQUE</text>
+  <text x="286" y="100" font-size="12" fill="#1f2a44" text-anchor="middle">CHECK</text>
+  <text x="286" y="126" font-size="12" fill="#1f2a44" text-anchor="middle">checks every write</text>
+</svg>
+\`\`\`
+
+Every writer goes through the database, so that is where the rules belong.
+:::
+
+::: context unique-null Why UNIQUE lets NULLs repeat
+NULL means "unknown", not "empty". Two unknown values are not known to be equal, so \`UNIQUE\` does not count them as a clash. That is useful: think of an optional phone number column. Many users have not given one, and they should not all be refused because their NULLs "match". If you want at most one NULL as well, that needs a different rule, and if you want no NULLs at all, add \`NOT NULL\`. PostgreSQL behaves the same way by default.
+:::
+
+::: context rowid The row's own id
+Every ordinary SQLite table keeps a hidden whole number for each row, called the **rowid**, which it uses to find the row fast. A column declared exactly \`INTEGER PRIMARY KEY\` becomes another name for that rowid. When an insert leaves it out, SQLite picks a number one higher than the largest id in the table (it can reuse a deleted top number unless the column also says \`AUTOINCREMENT\`). Only the exact spelling \`INTEGER\` does this: \`INT PRIMARY KEY\` makes an ordinary column that is not filled in for you.
+:::
+
+::: context or-replace Why OR REPLACE can surprise you
+\`INSERT OR REPLACE\` does not update the old row. It deletes it and inserts a brand-new one. Any column you did not give in the new insert gets its default, not the old value. So replacing an account with only \`email\` and \`plan\` would reset \`seats\` to 1, and the customer's paid seats are gone. \`OR IGNORE\` has its own risk: a refused row disappears without an error, so a bug can hide. Later, the lesson "UPSERT: insert or update" shows a safer way to say "add it, or update the one that is there".
+:::
+
+::: context returning A first look at RETURNING
+\`RETURNING\` goes at the end of an \`INSERT\`, \`UPDATE\` or \`DELETE\` and hands back columns from the rows that statement changed, like a receipt. \`INSERT ... RETURNING id\` tells you which ids were really added, including ids SQLite filled in itself. With \`OR IGNORE\`, a refused row is not added, so it does not appear on the receipt. The lesson "RETURNING: see what you changed" covers it properly.
+:::
+
+::: context type-hint When the type is not enough
+Even \`CHECK (points >= 0)\` does not stop \`'abc'\`. In SQLite, text always sorts above numbers, so \`'abc' >= 0\` is true and the row gets in. To insist on a whole number, check its type too:
+
+\`\`\`sql
+points INTEGER CHECK (typeof(points) = 'integer' AND points >= 0)
+\`\`\`
+
+\`typeof(x)\` gives the kind of value stored: \`'integer'\`, \`'real'\`, \`'text'\`, \`'blob'\` or \`'null'\`. Newer SQLite versions also offer **STRICT** tables, written \`CREATE TABLE ... ( ... ) STRICT;\`, which refuse a value of the wrong type in every column.
+:::
+--- task
+Create a table \`accounts\` with these four columns:
+
+- \`id\`: integer primary key
+- \`email\`: text, required, and unique
+- \`plan\`: text, required, and only \`'free'\`, \`'team'\` or \`'enterprise'\`
+- \`seats\`: integer, required, at least 1, defaulting to 1
+--- starter
+CREATE TABLE accounts (
+  id INTEGER PRIMARY KEY,
+  email TEXT,
+  plan TEXT,
+  seats INTEGER
+);
+--- solution
+CREATE TABLE accounts (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  plan TEXT NOT NULL CHECK (plan IN ('free', 'team', 'enterprise')),
+  seats INTEGER NOT NULL DEFAULT 1 CHECK (seats >= 1)
+);
+--- hint
+"Required" is \`NOT NULL\`. Stack a column's constraints after its type, with spaces between them: \`email TEXT NOT NULL UNIQUE\`.
+--- hint
+"Only these values" is a \`CHECK\` with \`IN\`: \`CHECK (plan IN ('free', 'team', 'enterprise'))\`. Keep \`NOT NULL\` too, or a missing plan slips past the \`CHECK\`.
+--- hint
+The last column needs three constraints: \`seats INTEGER NOT NULL DEFAULT 1 CHECK (seats >= 1)\`.
+--- check query | A valid account is accepted
+INSERT OR IGNORE INTO accounts (id, email, plan, seats) VALUES (1, 'ops@acme.io', 'team', 5) RETURNING id
+=> [[1]]
+--- check query | A second account with the same email is refused
+INSERT OR IGNORE INTO accounts (id, email, plan, seats) VALUES (2, 'ops@acme.io', 'free', 1) RETURNING id
+=> []
+--- check query | An unknown plan is refused
+INSERT OR IGNORE INTO accounts (id, email, plan, seats) VALUES (3, 'x@acme.io', 'gold', 1) RETURNING id
+=> []
+--- check query | Zero seats are refused
+INSERT OR IGNORE INTO accounts (id, email, plan, seats) VALUES (4, 'y@acme.io', 'team', 0) RETURNING id
+=> []
+--- check query | A missing email or plan is refused
+INSERT OR IGNORE INTO accounts (id, email, plan, seats) VALUES (5, NULL, 'free', 1), (6, 'z@acme.io', NULL, 1) RETURNING id
+=> []
+--- check query | seats defaults to 1
+INSERT OR IGNORE INTO accounts (id, email, plan) VALUES (7, 'solo@acme.io', 'free') RETURNING seats
+=> [[1]]
+
++++ practice | A table of sensors
+--- task
+Create a table \`sensors\` with four columns:
+
+- \`id\`: integer primary key
+- \`code\`: text, required, and unique
+- \`kind\`: text, required, and only \`'temp'\`, \`'pressure'\` or \`'voltage'\`
+- \`active\`: integer, required, only \`0\` or \`1\`, defaulting to \`1\`
+--- starter
+CREATE TABLE sensors (
+  id INTEGER PRIMARY KEY,
+  code TEXT,
+  kind TEXT,
+  active INTEGER
+);
+--- solution
+CREATE TABLE sensors (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('temp', 'pressure', 'voltage')),
+  active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
+);
+--- hint
+"Required" is \`NOT NULL\`, and "only these values" is a \`CHECK\` with \`IN\`. Stack each column's constraints after its type.
+--- hint
+The last column needs three: \`NOT NULL\`, \`DEFAULT 1\` and \`CHECK (active IN (0, 1))\`.
+--- check query | A valid sensor is accepted
+INSERT OR IGNORE INTO sensors (id, code, kind, active) VALUES (1, 'T-01', 'temp', 1) RETURNING id
+=> [[1]]
+--- check query | A second sensor with the same code is refused
+INSERT OR IGNORE INTO sensors (id, code, kind, active) VALUES (2, 'T-01', 'pressure', 1) RETURNING id
+=> []
+--- check query | An unknown kind is refused
+INSERT OR IGNORE INTO sensors (id, code, kind, active) VALUES (3, 'H-01', 'humidity', 1) RETURNING id
+=> []
+--- check query | active must be 0 or 1
+INSERT OR IGNORE INTO sensors (id, code, kind, active) VALUES (4, 'V-01', 'voltage', 2) RETURNING id
+=> []
+--- check query | A missing code or kind is refused
+INSERT OR IGNORE INTO sensors (id, code, kind, active) VALUES (5, NULL, 'temp', 1), (6, 'P-02', NULL, 1) RETURNING id
+=> []
+--- check query | active defaults to 1
+INSERT OR IGNORE INTO sensors (id, code, kind) VALUES (7, 'P-01', 'pressure') RETURNING active
+=> [[1]]
+
++++ practice | One passenger per seat
+--- task
+Create a table \`seats\` for a flight booking system, with three columns, all text and all required:
+
+- \`flight\`, for example \`'LX-318'\`
+- \`seat\`, for example \`'12A'\`
+- \`passenger\`
+
+Two rules cover several columns at once, so write them at the end of the table: a seat can be booked only once on the same flight, and a passenger can hold only one seat on the same flight. The same seat on a different flight is fine, and so is the same passenger on a different flight.
+--- starter
+CREATE TABLE seats (
+  flight TEXT NOT NULL,
+  seat TEXT NOT NULL UNIQUE,
+  passenger TEXT NOT NULL
+);
+--- solution
+CREATE TABLE seats (
+  flight TEXT NOT NULL,
+  seat TEXT NOT NULL,
+  passenger TEXT NOT NULL,
+  UNIQUE (flight, seat),
+  UNIQUE (flight, passenger)
+);
+--- hint
+The starter makes a seat unique across every flight, so 12A can only be sold once in the whole system. The rule is about the pair of flight and seat.
+--- hint
+After the last column, add a comma and \`UNIQUE (flight, seat)\`, then a second rule of the same kind for the flight and the passenger.
+--- check query | Bookings on two flights are accepted
+INSERT OR IGNORE INTO seats (flight, seat, passenger) VALUES ('LX-318', '12A', 'Ines'), ('LX-318', '12B', 'Olu'), ('LX-320', '12A', 'Ines') RETURNING seat
+=> [["12A"], ["12B"], ["12A"]]
+--- check query | The same seat on the same flight is refused
+INSERT OR IGNORE INTO seats (flight, seat, passenger) VALUES ('LX-318', '12A', 'Pia') RETURNING seat
+=> []
+--- check query | The same passenger twice on one flight is refused
+INSERT OR IGNORE INTO seats (flight, seat, passenger) VALUES ('LX-318', '14C', 'Olu') RETURNING seat
+=> []
+--- check query | A missing passenger is refused
+INSERT OR IGNORE INTO seats (flight, seat, passenger) VALUES ('LX-320', '3D', NULL) RETURNING seat
+=> []
+
++++ practice | A flight that lands before it leaves
+--- task
+Create a table \`flights\` with four columns:
+
+- \`id\`: integer primary key
+- \`code\`: text, required, unique, and between 3 and 6 characters long
+- \`departs\`: text, required: a date and time like \`'2024-07-01 09:30'\`
+- \`arrives\`: text, required, in the same format
+
+One more rule compares two columns, so write it at the end of the table: \`arrives\` must be later than \`departs\`. Times in this format compare correctly as text, like the dates in this course.
+--- starter
+CREATE TABLE flights (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  departs TEXT NOT NULL,
+  arrives TEXT NOT NULL
+);
+--- solution
+CREATE TABLE flights (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE CHECK (length(code) BETWEEN 3 AND 6),
+  departs TEXT NOT NULL,
+  arrives TEXT NOT NULL,
+  CHECK (arrives > departs)
+);
+--- hint
+A \`CHECK\` can use any function you know. \`length(code)\` gives the number of characters.
+--- hint
+The rule across two columns goes after the last column, with a comma before it: \`CHECK (arrives > departs)\`.
+--- check query | A valid flight is accepted
+INSERT OR IGNORE INTO flights (id, code, departs, arrives) VALUES (1, 'LX318', '2024-07-01 09:30', '2024-07-01 11:05') RETURNING id
+=> [[1]]
+--- check query | Landing before take-off is refused
+INSERT OR IGNORE INTO flights (id, code, departs, arrives) VALUES (2, 'BA117', '2024-07-01 18:00', '2024-07-01 07:45') RETURNING id
+=> []
+--- check query | Landing at the moment of take-off is refused
+INSERT OR IGNORE INTO flights (id, code, departs, arrives) VALUES (3, 'AF12', '2024-07-02 10:00', '2024-07-02 10:00') RETURNING id
+=> []
+--- check query | A code that is too long or too short is refused
+INSERT OR IGNORE INTO flights (id, code, departs, arrives) VALUES (4, 'LONGCODE', '2024-07-03 08:00', '2024-07-03 09:00'), (5, 'AB', '2024-07-03 08:00', '2024-07-03 09:00') RETURNING id
+=> []
+--- check query | A flight overnight, into the next day, is accepted
+INSERT OR IGNORE INTO flights (id, code, departs, arrives) VALUES (6, 'QF1', '2024-07-03 23:10', '2024-07-04 06:40') RETURNING id
+=> [[6]]
+
++++ practice | Optional, but checked when given
+--- task
+Create a table \`users\` with four columns:
+
+- \`id\`: integer primary key
+- \`email\`: text and **optional**, but no two users may share one. Many users may have no email at all.
+- \`age\`: integer and **optional**, but when it is given it must be between 13 and 120
+- \`role\`: text, **required**, and only \`'member'\` or \`'admin'\`
+
+Think about what each rule does with NULL.
+--- starter
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  age INTEGER NOT NULL CHECK (age BETWEEN 13 AND 120),
+  role TEXT CHECK (role IN ('member', 'admin'))
+);
+--- solution
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  email TEXT UNIQUE,
+  age INTEGER CHECK (age BETWEEN 13 AND 120),
+  role TEXT NOT NULL CHECK (role IN ('member', 'admin'))
+);
+--- hint
+\`UNIQUE\` does not count NULLs as a clash, and a \`CHECK\` lets NULL through. So an optional column needs no \`NOT NULL\`, and its other rules still hold when a value is given.
+--- hint
+A required column is the other way round: its \`CHECK\` alone lets a missing value through, so it needs \`NOT NULL\` as well.
+--- check query | Two users with no email are both accepted
+INSERT OR IGNORE INTO users (id, email, age, role) VALUES (1, NULL, 30, 'member'), (2, NULL, 41, 'admin') RETURNING id
+=> [[1], [2]]
+--- check query | A user with no age is accepted
+INSERT OR IGNORE INTO users (id, email, age, role) VALUES (3, 'kim@example.com', NULL, 'member') RETURNING id
+=> [[3]]
+--- check query | A second user with the same email is refused
+INSERT OR IGNORE INTO users (id, email, age, role) VALUES (4, 'kim@example.com', 25, 'member') RETURNING id
+=> []
+--- check query | An age of 12 or 121 is refused
+INSERT OR IGNORE INTO users (id, email, age, role) VALUES (5, 'a@example.com', 12, 'member'), (6, 'b@example.com', 121, 'member') RETURNING id
+=> []
+--- check query | A missing role is refused
+INSERT OR IGNORE INTO users (id, email, age, role) VALUES (7, 'c@example.com', 20, NULL) RETURNING id
+=> []
+
++++ practice | One member per team, and no role at all
+--- task
+This table should hold team memberships, with these rules: each member row needs a \`role\`, which is \`'lead'\` or \`'dev'\`; and the same email may join several teams, but only once per team.
+
+It is created without an error, but it gets both rules wrong. It refuses a second member on the same team, and it accepts a member with no role. Fix the two lines at fault.
+--- starter
+CREATE TABLE memberships (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT CHECK (role IN ('lead', 'dev')),
+  UNIQUE (team_id)
+);
+--- solution
+CREATE TABLE memberships (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('lead', 'dev')),
+  UNIQUE (team_id, email)
+);
+--- hint
+\`UNIQUE (team_id)\` says one row per team. The rule is about the pair of a team and an email.
+--- hint
+A \`CHECK\` lets NULL through, so a required value also needs \`NOT NULL\`.
+--- check query | Two members of one team, and one email in two teams, are accepted
+INSERT OR IGNORE INTO memberships (id, team_id, email, role) VALUES (1, 1, 'ana@acme.io', 'lead'), (2, 1, 'bo@acme.io', 'dev'), (3, 2, 'ana@acme.io', 'dev') RETURNING id
+=> [[1], [2], [3]]
+--- check query | The same email twice in one team is refused
+INSERT OR IGNORE INTO memberships (id, team_id, email, role) VALUES (4, 1, 'ana@acme.io', 'dev') RETURNING id
+=> []
+--- check query | A member with no role is refused
+INSERT OR IGNORE INTO memberships (id, team_id, email, role) VALUES (5, 3, 'cy@acme.io', NULL) RETURNING id
+=> []
+--- check query | An unknown role is refused
+INSERT OR IGNORE INTO memberships (id, team_id, email, role) VALUES (6, 4, 'di@acme.io', 'boss') RETURNING id
+=> []
+
++++ practice | A launch manifest that guards itself
+--- task
+Create a table \`payloads\` for a launch manifest, with these columns and rules:
+
+- \`id\`: integer primary key
+- \`mission\`: text, required
+- \`name\`: text, required. No two payloads on the same mission may share a name; two missions may each have a payload with the same name.
+- \`mass_kg\`: required, and must be a number above 0. Text such as \`'heavy'\` must be refused too.
+- \`orbit\`: text, required, only \`'LEO'\`, \`'MEO'\` or \`'GEO'\`, defaulting to \`'LEO'\`
+- \`priority\`: integer, required, from 1 to 5
+
+One more rule: a payload going to \`'GEO'\` may weigh at most 6000 kg. Payloads for the other orbits have no such limit.
+--- starter
+CREATE TABLE payloads (
+  id INTEGER PRIMARY KEY,
+  mission TEXT NOT NULL,
+  name TEXT NOT NULL,
+  mass_kg REAL NOT NULL CHECK (mass_kg > 0),
+  orbit TEXT NOT NULL,
+  priority INTEGER NOT NULL
+);
+--- solution
+CREATE TABLE payloads (
+  id INTEGER PRIMARY KEY,
+  mission TEXT NOT NULL,
+  name TEXT NOT NULL,
+  mass_kg REAL NOT NULL CHECK (typeof(mass_kg) IN ('integer', 'real') AND mass_kg > 0),
+  orbit TEXT NOT NULL DEFAULT 'LEO' CHECK (orbit IN ('LEO', 'MEO', 'GEO')),
+  priority INTEGER NOT NULL CHECK (priority BETWEEN 1 AND 5),
+  UNIQUE (mission, name),
+  CHECK (orbit <> 'GEO' OR mass_kg <= 6000)
+);
+--- hint
+Text sorts above every number in SQLite, so \`'heavy' > 0\` is true and the starter lets it in. \`typeof(mass_kg)\` gives \`'integer'\`, \`'real'\` or \`'text'\`: check it as well.
+--- hint
+"Unique within a mission" is a rule on two columns, written at the end: \`UNIQUE (mission, name)\`.
+--- hint
+"If GEO, then at most 6000" can be said as "not GEO, or at most 6000": \`CHECK (orbit <> 'GEO' OR mass_kg <= 6000)\`.
+--- check query | Valid payloads are accepted, and orbit defaults to LEO
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, priority) VALUES (1, 'M-7', 'Relay', 850, 2) RETURNING orbit
+=> [["LEO"]]
+--- check query | A heavy payload is fine outside GEO, and 6000 kg is fine in GEO
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, orbit, priority) VALUES (2, 'M-7', 'Station module', 18000, 'LEO', 1), (3, 'M-8', 'Comsat', 6000, 'GEO', 3) RETURNING id
+=> [[2], [3]]
+--- check query | Over 6000 kg to GEO is refused
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, orbit, priority) VALUES (4, 'M-8', 'Big comsat', 6500, 'GEO', 3) RETURNING id
+=> []
+--- check query | A mass given as text is refused
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, priority) VALUES (5, 'M-9', 'Cubesat', 'heavy', 4) RETURNING id
+=> []
+--- check query | The same name twice on one mission is refused, but not on another mission
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, priority) VALUES (6, 'M-7', 'Relay', 300, 4), (7, 'M-9', 'Relay', 300, 4) RETURNING id
+=> [[7]]
+--- check query | A priority of 0 or 6, or an unknown orbit, is refused
+INSERT OR IGNORE INTO payloads (id, mission, name, mass_kg, orbit, priority) VALUES (8, 'M-9', 'A', 10, 'LEO', 0), (9, 'M-9', 'B', 10, 'LEO', 6), (10, 'M-9', 'C', 10, 'HEO', 2) RETURNING id
+=> []
+
+=== sql3-10 | Foreign keys
+--- schema
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO teams (id, name) VALUES (1, 'Platform'), (2, 'Growth');
+--- teach
+Last lesson each constraint looked at one table on its own. This lesson's rule links two tables: a row in one must point at a real row in the other. You also decide what happens to the pointing rows when the row they point at is deleted.
+
+### The picture
+
+Think of a school's sports day. Every pupil wears a badge with a team number, and the team numbers match the list of teams on the noticeboard. A badge saying "team 7" when there are only teams 1 and 2 makes no sense: nobody knows where that pupil should stand.
+
+### The foreign key
+
+A **foreign key** is a column whose values must match the key of a row in another table. You met the word in the basics lesson "Creating tables". There it was a promise. Here you make the database keep it.
+
+This lesson's \`teams\` table already exists, with two teams: \`1\` Platform and \`2\` Growth. Here is a \`projects\` table that points at it:
+
+\`\`\`sql
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  team_id INTEGER REFERENCES teams(id)
+);
+\`\`\`
+
+Read \`REFERENCES teams(id)\` in words: "must match an \`id\` in \`teams\`". The table being pointed at, \`teams\`, is the [[parent|parent-child]]. The table doing the pointing, \`projects\`, is the child.
+
+### No orphans
+
+With the foreign key on, the database refuses a project whose \`team_id\` names no team:
+
+\`\`\`sql
+INSERT INTO projects (id, title, team_id) VALUES (1, 'Website', 99);
+\`\`\`
+
+That fails with \`FOREIGN KEY constraint failed\`, because there is no team 99. So you never get [[orphans|orphans]]: rows that point at nothing.
+
+### ON DELETE: when the parent goes
+
+What should happen to a team's projects when the team is deleted? You say so with an \`ON DELETE\` part, written straight after \`REFERENCES teams(id)\` on the same line:
+
+| action | effect |
+| --- | --- |
+| \`NO ACTION\` (the default) or \`RESTRICT\` | refuse to delete a team that still has projects |
+| \`CASCADE\` | delete its projects too |
+| \`SET NULL\` | keep the projects, and set their \`team_id\` to NULL (the column must allow NULL) |
+
+**Cascade** means "flow down", like a waterfall: the delete flows down from the team to its projects. If \`team_id\` ended in \`ON DELETE CASCADE\`, this one statement would remove team 1 and every project of team 1:
+
+\`\`\`sql
+DELETE FROM teams WHERE id = 1;
+\`\`\`
+
+Projects of team 2 would be untouched. To do this, SQLite first has to [[find every project of team 1|cascade-index]].
+
+### Choosing the action
+
+Choose by what the data means.
+
+- A team's memberships make no sense without the team, so \`CASCADE\`.
+- Invoices must survive a customer being removed, because the money was real. Use \`RESTRICT\`, and [[archive customers instead of deleting them|archive]].
+
+### The SQLite catch: switch it on
+
+For backwards compatibility, SQLite does **not** enforce foreign keys until you switch them on. You do that with a **PRAGMA**: a SQLite command that reads or changes a setting.
+
+\`\`\`sql
+PRAGMA foreign_keys = ON;
+\`\`\`
+
+It lasts for one [[connection|connection]], so it must run again each time the database is opened. Without it, \`REFERENCES\` is only a note to the reader: the team-99 insert above would be accepted. Every app that uses SQLite should run this pragma as soon as it opens the database.
+
+The same pragma without \`= ON\` tells you the current setting:
+
+\`\`\`sql
+PRAGMA foreign_keys;
+\`\`\`
+
+It gives 1 when enforcement is on and 0 when it is off.
+
+**Watch out:** a missing pragma makes no noise. With enforcement off, nothing fails, so everything looks as if it works: orphans slip in and cascades never happen. Run \`PRAGMA foreign_keys = ON;\` first, before the statements you want checked, and check it with \`PRAGMA foreign_keys;\` if in doubt.
+
+::: context parent-child Parent and child tables
+The parent holds the rows being pointed at. The child holds the pointers. One team can have many projects, but each project points at one team.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="85" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">members (child)</text>
+  <text x="275" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">teams (parent)</text>
+  <rect x="20" y="30" width="130" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="85" y="46" font-size="12" fill="#1f2a44" text-anchor="middle">ana · team_id 1</text>
+  <rect x="20" y="60" width="130" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="85" y="76" font-size="12" fill="#1f2a44" text-anchor="middle">bo · team_id 1</text>
+  <rect x="20" y="90" width="130" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="85" y="106" font-size="12" fill="#1f2a44" text-anchor="middle">cy · team_id 2</text>
+  <rect x="20" y="120" width="130" height="24" fill="#f2b880" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <text x="85" y="136" font-size="12" fill="#1f2a44" text-anchor="middle">dee · team_id 99</text>
+  <rect x="210" y="45" width="130" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="275" y="61" font-size="12" fill="#1f2a44" text-anchor="middle">1 · Platform</text>
+  <rect x="210" y="95" width="130" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="275" y="111" font-size="12" fill="#1f2a44" text-anchor="middle">2 · Growth</text>
+  <line x1="150" y1="42" x2="210" y2="57" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="150" y1="72" x2="210" y2="57" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="150" y1="102" x2="210" y2="107" stroke="#1d6fd1" stroke-width="1.5"/>
+  <line x1="150" y1="132" x2="205" y2="150" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="275" y="155" font-size="12" fill="#b4232c" text-anchor="middle">no team 99: refused</text>
+</svg>
+\`\`\`
+
+The red row is the orphan the foreign key keeps out.
+:::
+
+::: context orphans Why orphans hurt
+An orphan row points at a parent that does not exist. Every report then has to step around it. An inner join quietly drops it, so totals come out too low. A left join shows it with NULLs where the team's name should be. Someone has to decide whether it is a bug or real data. In a mission's telemetry store, a reading tagged with a sensor id that is not in the sensors table cannot be turned into a temperature or pressure, because nobody knows which instrument sent it. Refusing orphans at the door is far cheaper than cleaning them up later.
+:::
+
+::: context cascade-index Foreign keys and indexes
+When you delete a team, SQLite has to find that team's projects, to cascade the delete or to refuse it. Without help, it reads the whole \`projects\` table to look for them. On a big table that is slow. The fix is an index on the child column, \`CREATE INDEX projects_team ON projects(team_id);\`, which lets SQLite jump straight to the matching rows. The SQLite documentation recommends one for nearly every foreign key. You will meet indexes properly in "Indexes and EXPLAIN QUERY PLAN".
+:::
+
+::: context archive Archive instead of delete
+Many real systems almost never delete important rows. Instead they add a column such as \`archived_at TEXT\` and fill in the date when a customer leaves. Everyday queries add \`WHERE archived_at IS NULL\` to hide archived customers, but their invoices still point at a real row, so the history stays complete and the foreign key stays happy. This is often called a **soft delete**. With \`ON DELETE RESTRICT\` as well, a real delete of a customer who has invoices is refused, so nobody can destroy that history by accident.
+:::
+
+::: context connection What a connection is
+A **connection** is one open line between a program and a database file, like one phone call. An app may open several at once, and each starts with SQLite's default settings, so each one needs its own \`PRAGMA foreign_keys = ON;\`. Two more details catch people. The pragma does nothing if it runs in the middle of a transaction (a group of changes saved as one, which comes later in this course), so run it first. And switching it on does not check rows that are already there. To find existing orphans, run \`PRAGMA foreign_key_check;\`, which lists every child row whose parent is missing.
+:::
+--- task
+Turn foreign key enforcement on. Then create a table \`members\` with three columns:
+
+- \`id\`: integer primary key
+- \`team_id\`: integer, required, referencing \`teams(id)\`, where deleting a team deletes its members
+- \`email\`: text, required
+--- starter
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL,
+  email TEXT NOT NULL
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  email TEXT NOT NULL
+);
+--- hint
+Enforcement is off until you run \`PRAGMA foreign_keys = ON;\`. Put it on the first line, before the \`CREATE TABLE\`.
+--- hint
+The pointing goes on the \`team_id\` column, after \`NOT NULL\`: \`REFERENCES teams(id)\`.
+--- hint
+"Deleting a team deletes its members" is \`ON DELETE CASCADE\`. The whole column reads \`team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE\`.
+--- check query | Foreign keys are enforced
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | team_id references teams(id) and cascades on delete
+SELECT "table", "from", "to", on_delete FROM pragma_foreign_key_list('members')
+=> [["teams", "team_id", "id", "CASCADE"]]
+--- check query | Members can be added to real teams
+INSERT INTO members (id, team_id, email) VALUES (1, 1, 'ana@acme.io'), (2, 1, 'bo@acme.io'), (3, 2, 'cy@acme.io') RETURNING id
+=> [[1], [2], [3]]
+--- check query | Deleting Platform removes its members, and only them
+DELETE FROM teams WHERE id = 1;
+SELECT id FROM members ORDER BY id
+=> [[3]]
+
++++ practice | Projects that outlive their team
+--- task
+Turn foreign key enforcement on. Then create a table \`projects\` with three columns:
+
+- \`id\`: integer primary key
+- \`title\`: text, required
+- \`team_id\`: integer, referencing \`teams(id)\`. When a team is deleted, its projects stay, with no team: their \`team_id\` becomes NULL.
+--- starter
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  team_id INTEGER
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL
+);
+--- hint
+Enforcement starts with \`PRAGMA foreign_keys = ON;\`, before the \`CREATE TABLE\`.
+--- hint
+"Keep the rows, and set the pointer to NULL" is the action \`ON DELETE SET NULL\`. \`team_id\` must not be \`NOT NULL\`, or there would be nowhere to put the NULL.
+--- check query | Foreign keys are enforced
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | team_id references teams(id) and is set to NULL on delete
+SELECT "table", "from", "to", on_delete FROM pragma_foreign_key_list('projects')
+=> [["teams", "team_id", "id", "SET NULL"]]
+--- check query | Projects can be added to real teams
+INSERT INTO projects (id, title, team_id) VALUES (1, 'Website', 1), (2, 'Billing', 1), (3, 'Referrals', 2) RETURNING id
+=> [[1], [2], [3]]
+--- check query | Deleting Platform keeps its projects, with no team
+DELETE FROM teams WHERE id = 1;
+SELECT id, team_id FROM projects ORDER BY id
+=> [[1, null], [2, null], [3, 2]]
+
++++ practice | Find the orphans
+--- schema
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO teams (id, name) VALUES (1, 'Platform'), (2, 'Growth'), (4, 'Data');
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER REFERENCES teams(id),
+  email TEXT NOT NULL
+);
+INSERT INTO members (id, team_id, email) VALUES
+  (1, 1, 'ana@acme.io'), (2, 3, 'bo@acme.io'), (3, 2, 'cy@acme.io'),
+  (4, 9, 'di@acme.io'), (5, NULL, 'ed@acme.io'), (6, 4, 'fay@acme.io'), (7, 3, 'gus@acme.io');
+--- task
+This problem has its own tables. \`teams\` has \`id\` and \`name\`. \`members\` has \`id\`, \`team_id\` and \`email\`, and \`team_id\` says \`REFERENCES teams(id)\`. But the rows were loaded while enforcement was off, so some members point at teams that do not exist.
+
+Return the orphans: every member whose \`team_id\` is not NULL and matches no team. Use three columns, \`id\`, \`email\` and \`team_id\`, sorted by \`id\`. A member with no team at all (NULL) is not an orphan; it points at nothing on purpose.
+--- starter
+SELECT m.id, m.email, m.team_id
+FROM members m
+JOIN teams t ON t.id = m.team_id
+ORDER BY m.id;
+--- solution
+SELECT m.id, m.email, m.team_id
+FROM members m
+LEFT JOIN teams t ON t.id = m.team_id
+WHERE t.id IS NULL
+  AND m.team_id IS NOT NULL
+ORDER BY m.id;
+--- hint
+The starter's inner join keeps only the members that did find a team: the opposite of what you want.
+--- hint
+\`LEFT JOIN teams\` keeps every member. The orphans are the rows where the team side came back empty, \`t.id IS NULL\`, and there was a \`team_id\` to look up.
+--- check result | Members 2, 4 and 7 point at teams 3 and 9, which do not exist; ed has no team and is not listed
+ordered
+[[2, "bo@acme.io", 3], [4, "di@acme.io", 9], [7, "gus@acme.io", 3]]
+--- check source | Compares members with teams
+teams
+--- check source absent | Does not type the missing team ids
+(=|IN)\\s*\\(?\\s*(3|9)\\b
+
++++ practice | Clean up, then switch it on
+--- schema
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO teams (id, name) VALUES (1, 'Platform'), (2, 'Growth');
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id),
+  email TEXT NOT NULL
+);
+INSERT INTO members (id, team_id, email) VALUES
+  (1, 1, 'ana@acme.io'), (2, 5, 'bo@acme.io'), (3, 2, 'cy@acme.io'), (4, 7, 'di@acme.io'), (5, 2, 'ed@acme.io');
+--- task
+This problem has its own \`teams\` and \`members\` tables, with the same columns as the lesson's. \`members.team_id\` references \`teams(id)\`, but the rows were loaded with enforcement off, and some point at teams that do not exist.
+
+Make the database trustworthy, in this order:
+
+1. Delete every member whose team does not exist. Find them by comparing with \`teams\`, not by typing their ids.
+2. Turn foreign key enforcement on.
+
+After that, no row may point at a missing team.
+--- starter
+PRAGMA foreign_keys = ON;
+--- solution
+DELETE FROM members
+WHERE NOT EXISTS (SELECT 1 FROM teams t WHERE t.id = members.team_id);
+
+PRAGMA foreign_keys = ON;
+--- hint
+Switching enforcement on does not check the rows already there, so the orphans must be removed by hand first.
+--- hint
+Delete the members for which no team exists: \`DELETE FROM members WHERE NOT EXISTS (SELECT 1 FROM teams t WHERE t.id = members.team_id);\`.
+--- check query | Only the members of real teams are left
+SELECT id FROM members ORDER BY id
+=> [[1], [3], [5]]
+--- check query | Foreign keys are enforced
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | SQLite's own check finds no broken links
+SELECT COUNT(*) FROM pragma_foreign_key_check
+=> [[0]]
+--- check source absent | Does not delete the orphans by typing their ids
+[Ii][Dd]\\s*(=|[Ii][Nn])\\s*\\(?\\s*[24]\\b
+
++++ practice | A delete that flows down two levels
+--- task
+Turn foreign key enforcement on. Then create two tables under \`teams\`:
+
+- \`projects\`: \`id\` (integer primary key), \`team_id\` (integer, required, referencing \`teams(id)\`), \`title\` (text, required)
+- \`tasks\`: \`id\` (integer primary key), \`project_id\` (integer, required, referencing \`projects(id)\`), \`title\` (text, required)
+
+Deleting a team must delete its projects, and deleting a project must delete its tasks. So one delete of a team removes its projects **and** their tasks, and nothing belonging to other teams.
+--- starter
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  title TEXT NOT NULL
+);
+
+CREATE TABLE tasks (
+  id INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL,
+  title TEXT NOT NULL
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  title TEXT NOT NULL
+);
+
+CREATE TABLE tasks (
+  id INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL
+);
+--- hint
+Each link needs its own foreign key. The starter links projects to teams, but nothing links tasks to projects.
+--- hint
+Give \`project_id\` the same kind of rule: \`REFERENCES projects(id) ON DELETE CASCADE\`. A cascade that deletes a project then sets off the next cascade.
+--- check query | Both links cascade
+SELECT "table", "to", on_delete FROM pragma_foreign_key_list('tasks')
+UNION ALL
+SELECT "table", "to", on_delete FROM pragma_foreign_key_list('projects')
+=> [["projects", "id", "CASCADE"], ["teams", "id", "CASCADE"]]
+--- check query | Projects and tasks can be added
+INSERT INTO projects (id, team_id, title) VALUES (1, 1, 'Website'), (2, 1, 'Billing'), (3, 2, 'Referrals');
+INSERT INTO tasks (id, project_id, title) VALUES (1, 1, 'Header'), (2, 1, 'Footer'), (3, 2, 'Invoices'), (4, 3, 'Codes')
+RETURNING id
+=> [[1], [2], [3], [4]]
+--- check query | Deleting Platform removes its projects and their tasks, and only those
+DELETE FROM teams WHERE id = 1;
+SELECT (SELECT COUNT(*) FROM projects), (SELECT COUNT(*) FROM tasks), (SELECT title FROM tasks)
+=> [[1, 1, "Codes"]]
+
++++ practice | The cascade that never happened
+--- task
+This script should make each team's members disappear when the team is deleted. The table is created without an error, and \`ON DELETE CASCADE\` is there, but deleting team 1 leaves its members behind, and a member of team 99, which does not exist, is accepted.
+
+Add the one missing line. Keep the table as it is.
+--- starter
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  email TEXT NOT NULL
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE members (
+  id INTEGER PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  email TEXT NOT NULL
+);
+--- hint
+In SQLite, a foreign key does nothing until it is switched on, and nothing warns you.
+--- hint
+The missing line is the pragma that switches enforcement on. It goes first.
+--- check query | Foreign keys are enforced
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | Members can be added to real teams
+INSERT INTO members (id, team_id, email) VALUES (1, 1, 'ana@acme.io'), (2, 2, 'bo@acme.io'), (3, 1, 'cy@acme.io') RETURNING id
+=> [[1], [2], [3]]
+--- check query | Deleting team 1 removes its members
+DELETE FROM teams WHERE id = 1;
+SELECT id FROM members ORDER BY id
+=> [[2]]
+
++++ practice | Posts, comments and deleted users
+--- schema
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO users (id, name) VALUES (1, 'Ines'), (2, 'Olu'), (3, 'Pia');
+--- task
+This problem has its own \`users\` table: \`id\` and \`name\`, with Ines (1), Olu (2) and Pia (3). Turn foreign key enforcement on, then design a small blog on top of it:
+
+- \`posts\`: \`id\` (integer primary key), \`author_id\` (integer, required, referencing \`users(id)\`), \`title\` (text, required). A user who still has posts may **not** be deleted: the database must refuse.
+- \`comments\`: \`id\` (integer primary key), \`post_id\` (integer, required, referencing \`posts(id)\`), \`author_id\` (integer, referencing \`users(id)\`), \`body\` (text, required). Deleting a post deletes its comments. Deleting a user keeps their comments, shown with no author: \`author_id\` becomes NULL.
+
+Pick the \`ON DELETE\` action for each of the three links.
+--- starter
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE posts (
+  id INTEGER PRIMARY KEY,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL
+);
+
+CREATE TABLE comments (
+  id INTEGER PRIMARY KEY,
+  post_id INTEGER NOT NULL REFERENCES posts(id),
+  author_id INTEGER REFERENCES users(id),
+  body TEXT NOT NULL
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE posts (
+  id INTEGER PRIMARY KEY,
+  author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  title TEXT NOT NULL
+);
+
+CREATE TABLE comments (
+  id INTEGER PRIMARY KEY,
+  post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  body TEXT NOT NULL
+);
+--- hint
+Go link by link and ask what the data means. A post without its author is refused; a comment without its post is meaningless; a comment without its author still makes sense.
+--- hint
+The three actions are \`RESTRICT\` (refuse), \`CASCADE\` (delete too) and \`SET NULL\` (keep, with no pointer). Each goes straight after its \`REFERENCES …\`.
+--- check query | Each link has the right action
+SELECT "table", "from", on_delete FROM pragma_foreign_key_list('comments')
+UNION ALL
+SELECT "table", "from", on_delete FROM pragma_foreign_key_list('posts')
+ORDER BY 1, 2, 3
+=> [["posts", "post_id", "CASCADE"], ["users", "author_id", "RESTRICT"], ["users", "author_id", "SET NULL"]]
+--- check query | Posts and comments can be added
+INSERT INTO posts (id, author_id, title) VALUES (1, 1, 'Launch day'), (2, 2, 'Orbit maths');
+INSERT INTO comments (id, post_id, author_id, body) VALUES (1, 1, 2, 'Great!'), (2, 1, 3, 'When is the next one?'), (3, 2, 3, 'Nice diagrams')
+RETURNING id
+=> [[1], [2], [3]]
+--- check query | Deleting a post deletes its comments
+DELETE FROM posts WHERE id = 1;
+SELECT id FROM comments ORDER BY id
+=> [[3]]
+--- check query | Deleting a user with no posts keeps their comments, with no author
+DELETE FROM users WHERE id = 3;
+SELECT id, author_id FROM comments ORDER BY id
+=> [[3, null]]
+
+=== sql3-11 | Design: normalizing a flat table
+--- schema
+CREATE TABLE orders_flat (
+  order_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  unit_price REAL NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO orders_flat VALUES
+  (101, '2024-05-01', 'ana@mail.com', 'Ana Ruiz', 'MUG-1', 'Mug',       9.00, 2),
+  (101, '2024-05-01', 'ana@mail.com', 'Ana Ruiz', 'PEN-2', 'Pen',       3.50, 4),
+  (102, '2024-05-03', 'bo@mail.com',  'Bo Chen',  'MUG-1', 'Mug',       9.00, 1),
+  (103, '2024-05-09', 'ana@mail.com', 'Ana Ruiz', 'LMP-3', 'Desk lamp', 45.00, 1),
+  (104, '2024-06-02', 'bo@mail.com',  'Bo Chen',  'MUG-1', 'Mug',       10.00, 3),
+  (104, '2024-06-02', 'bo@mail.com',  'Bo Chen',  'PEN-2', 'Pen',       3.50, 1);
+--- teach
+The last two lessons, "Constraints: rules the database enforces" and "Foreign keys", gave you rules that guard a table and the links between tables. This lesson uses them to design. You take one wide, messy table and split it into four tidy ones, without losing a single fact.
+
+### The picture
+
+Imagine a shop that writes every sale in one notebook. Each line copies out the customer's name and email, and the product's name and price, even if the same customer bought something yesterday. It is quick to write. But say a customer changes the name on their account. Now you must find and fix every line that customer ever appears on.
+
+### The flat table
+
+\`orders_flat\` is that notebook. Data exported from a spreadsheet often looks like this: one wide table, where each row is one **order line**, meaning one product in one order.
+
+| order_id | placed | customer_email | customer_name | sku | product_name | unit_price | qty |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 101 | 2024-05-01 | ana@mail.com | Ana Ruiz | MUG-1 | Mug | 9.0 | 2 |
+| 101 | 2024-05-01 | ana@mail.com | Ana Ruiz | PEN-2 | Pen | 3.5 | 4 |
+| 102 | 2024-05-03 | bo@mail.com | Bo Chen | MUG-1 | Mug | 9.0 | 1 |
+| 103 | 2024-05-09 | ana@mail.com | Ana Ruiz | LMP-3 | Desk lamp | 45.0 | 1 |
+| 104 | 2024-06-02 | bo@mail.com | Bo Chen | MUG-1 | Mug | 10.0 | 3 |
+| 104 | 2024-06-02 | bo@mail.com | Bo Chen | PEN-2 | Pen | 3.5 | 1 |
+
+A [[SKU|sku]] is the shop's code for one product, like \`MUG-1\`. Order 101 has two lines: two mugs and four pens. Count how many times "Ana Ruiz" and "Mug" are written out.
+
+### Three ways it goes wrong
+
+Copying one fact onto many rows invites **anomalies**: ways the data can end up wrong, or stuck.
+
+- **Update anomaly.** Ana Ruiz changes the name on the account. You must update every one of that customer's rows. Miss one, and the same customer now has two names.
+- **Insert anomaly.** You cannot record a new product until someone orders it, because every row has to be an order line.
+- **Delete anomaly.** Delete Bo Chen's orders, and you lose the fact that Bo Chen exists at all.
+
+### One fact, one place
+
+**Normalizing** means splitting a table so that [[every fact is stored once|normal-forms]], in the table it describes. For each column, ask: *what is this a fact about?*
+
+- \`customer_name\` is a fact about a customer, so it goes in a \`customers\` table.
+- \`product_name\` is a fact about a product, so it goes in \`products\`.
+- \`placed\`, the date of the order, is a fact about an order, so it goes in \`orders\`.
+- \`qty\` is a fact about one product in one order, so it goes in \`order_items\`.
+
+### The tricky one: unit_price
+
+Is the price a fact about the product? Look at the data. The Mug cost 9.00 in May (orders 101 and 102) and 10.00 in June (order 104). So \`unit_price\` is what was **charged on that line**. It belongs on \`order_items\`.
+
+If the price lived on \`products\`, raising the Mug to 10.00 would [[rewrite history|price-history]]: old orders would suddenly seem to have cost more.
+
+### A key for every table
+
+Each new table needs a primary key: the column, or columns, that pick out exactly one row.
+
+- \`customers\` gets an \`id\` number. Leave an \`INTEGER PRIMARY KEY\` out of an insert, and SQLite numbers the rows 1, 2, 3 for you.
+- \`products\` uses the \`sku\`. It already names one product, so it can be the key. A key that comes from the data itself is called a [[natural key|natural-key]].
+- \`orders\` gets an \`id\` that holds the old \`order_id\`.
+- \`order_items\` has one row per product per order. Neither \`order_id\` nor \`sku\` is unique on its own, but the pair is. So the key is both columns together, a **composite primary key**. As in the lesson "Constraints: rules the database enforces", it goes at the end of the table, after the columns:
+
+\`\`\`sql
+  PRIMARY KEY (order_id, sku)
+\`\`\`
+
+The links between the tables become foreign keys, written with \`REFERENCES\` as in the lesson "Foreign keys". \`orders.customer_id\` points at \`customers(id)\`. \`order_items\` points at \`orders(id)\` and at \`products(sku)\`. Here is [[how the four tables fit together|table-map]].
+
+### Filling a table from a query
+
+You have used \`INSERT … VALUES\` to type rows in by hand, and you met **\`INSERT … SELECT\`** in the intermediate course: it takes its rows from a query instead. Whatever the \`SELECT\` returns is inserted, row by row.
+
+\`\`\`sql
+INSERT INTO customers (email, name)
+SELECT DISTINCT customer_email, customer_name FROM orders_flat;
+\`\`\`
+
+\`DISTINCT\`, from the lesson "DISTINCT, UNION and UNION ALL", keeps one copy of each repeated row. So the \`SELECT\` returns 2 rows, not 6, and 2 customers go in. The \`id\` column is left out, so SQLite numbers them:
+
+| id | email | name |
+| --- | --- | --- |
+| 1 | ana@mail.com | Ana Ruiz |
+| 2 | bo@mail.com | Bo Chen |
+
+Fill \`products\` the same way, from \`sku\` and \`product_name\`. That gives 3 products.
+
+### Finding the new ids
+
+\`orders\` needs a \`customer_id\`. But \`orders_flat\` only has the email, and the customer's number now lives in \`customers\`. So join back on the email, which is the same in both tables:
+
+\`\`\`sql
+SELECT DISTINCT f.order_id, c.id, f.placed
+FROM orders_flat f
+JOIN customers c ON c.email = f.customer_email;
+\`\`\`
+
+| order_id | id | placed |
+| --- | --- | --- |
+| 101 | 1 | 2024-05-01 |
+| 102 | 2 | 2024-05-03 |
+| 103 | 1 | 2024-05-09 |
+| 104 | 2 | 2024-06-02 |
+
+Put \`INSERT INTO orders (id, customer_id, placed)\` on the line above that \`SELECT\`, and every order is stored once, linked to its customer.
+
+\`order_items\` needs no join. Every line of \`orders_flat\` already has its \`order_id\`, \`sku\`, \`qty\` and \`unit_price\`, so all 6 lines go straight in.
+
+Fill the tables in this order: \`customers\` and \`products\` first, then \`orders\`, then \`order_items\`. A row can only point at a row that is already there.
+
+### Did you lose anything?
+
+Here is the test of a good split: [[joining the four tables back together|join-back]] must give exactly the rows of \`orders_flat\`. No row missing, no row extra, no value changed.
+
+**Watch out:** leave out \`DISTINCT\` and the insert fails. The \`SELECT\` then returns Ana Ruiz's email three times. \`email\` is \`UNIQUE\`, so the second copy is refused, and the whole statement stops with nothing inserted. The same happens with \`orders\`: order 101 is on two lines, and \`id\` is its primary key.
+
+::: context sku What SKU stands for
+SKU is short for **stock keeping unit**: a shop's own code for one thing it sells. A red mug and a blue mug get different SKUs, because the shop counts and restocks them separately. The codes here, \`MUG-1\`, \`PEN-2\` and \`LMP-3\`, were made up by this shop. That makes a SKU different from the number under a barcode, which is shared by every shop that sells the product. In a warehouse app, the SKU is how shelf labels, scanners and order lines all name the same product.
+:::
+
+::: context normal-forms Where "normalizing" comes from
+Edgar F. Codd, a researcher at IBM, described the **relational model** in 1970: data kept in tables that are linked by keys. He also set out rules called **normal forms**, numbered first, second and third, each stricter than the last. You do not need the numbers. A saying from 1983, by William Kent, sums up the goal: every column should be a fact about "the key, the whole key, and nothing but the key". \`qty\` depends on the whole key \`(order_id, sku)\`. \`product_name\` depends on \`sku\` alone, which is why it moved out.
+:::
+
+::: context price-history Why receipts copy the price
+A paper receipt prints the price you paid, not a pointer to today's price list. Databases follow the same rule for anything that can change later. The price charged is copied onto the order line. The delivery address is often copied onto the order, because the customer may move. Many shops also keep a *current* price on the product, for the website to show, and copy it onto each new line at the moment of sale. Mission logs work the same way: a command log records the value that was really sent, not a link to today's setting.
+:::
+
+::: context natural-key Natural keys and invented numbers
+An email or a SKU is a **natural key**: it comes from the real world. Natural keys can change. People change emails, and shops rename products. If every other table pointed at the email, one change would mean updating rows all over the database. So many designs give each table an invented number as its key, called a **surrogate key**, and keep the natural key \`UNIQUE\`. That is exactly what \`customers\` does here: \`id\` is the key that \`orders\` points at, and \`email\` stays unique. When an email changes, one row changes.
+:::
+
+::: context table-map The four tables, drawn
+Each box is a table, and each arrow is a foreign key: it points from the column that holds a key to the table that key belongs to. \`order_items\` sits in the middle of the design. It is the table that links orders and products, one row for each product in each order.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 205" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="fk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2a44"/>
+    </marker>
+  </defs>
+  <rect x="10" y="14" width="140" height="62" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="80" y="33" font-size="12" font-weight="bold" fill="#1f2a44" text-anchor="middle">customers</text>
+  <text x="80" y="51" font-size="11" fill="#1f2a44" text-anchor="middle">id, email,</text>
+  <text x="80" y="66" font-size="11" fill="#1f2a44" text-anchor="middle">name</text>
+  <rect x="210" y="14" width="140" height="62" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="280" y="33" font-size="12" font-weight="bold" fill="#1f2a44" text-anchor="middle">products</text>
+  <text x="280" y="51" font-size="11" fill="#1f2a44" text-anchor="middle">sku, name</text>
+  <rect x="10" y="112" width="140" height="62" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="131" font-size="12" font-weight="bold" fill="#1f2a44" text-anchor="middle">orders</text>
+  <text x="80" y="149" font-size="11" fill="#1f2a44" text-anchor="middle">id, customer_id,</text>
+  <text x="80" y="164" font-size="11" fill="#1f2a44" text-anchor="middle">placed</text>
+  <rect x="210" y="112" width="140" height="62" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="280" y="131" font-size="12" font-weight="bold" fill="#1f2a44" text-anchor="middle">order_items</text>
+  <text x="280" y="149" font-size="11" fill="#1f2a44" text-anchor="middle">order_id, sku,</text>
+  <text x="280" y="164" font-size="11" fill="#1f2a44" text-anchor="middle">qty, unit_price</text>
+  <line x1="80" y1="112" x2="80" y2="79" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fk)"/>
+  <text x="86" y="99" font-size="11" fill="#1d6fd1">customer_id</text>
+  <line x1="280" y1="112" x2="280" y2="79" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fk)"/>
+  <text x="286" y="99" font-size="11" fill="#1d6fd1">sku</text>
+  <line x1="210" y1="146" x2="153" y2="146" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fk)"/>
+  <text x="180" y="140" font-size="11" fill="#1d6fd1" text-anchor="middle">order_id</text>
+  <text x="180" y="196" font-size="11" fill="#6c7a93" text-anchor="middle">each arrow points at the table whose key it holds</text>
+</svg>
+\`\`\`
+:::
+
+::: context join-back Proving nothing was lost
+\`EXCEPT\` sits between two queries and returns the rows of the first that are missing from the second. After your split, this returns no rows:
+
+\`\`\`sql
+SELECT order_id, sku, qty FROM orders_flat
+EXCEPT
+SELECT order_id, sku, qty FROM order_items;
+\`\`\`
+
+No rows means every line of the old table is in the new one. This lesson's checks do the same with all eight columns, joining \`order_items\` to \`orders\`, \`customers\` and \`products\` to rebuild each old row. Engineers run checks like this whenever they move data into a new design, before they delete the old table.
+:::
+--- task
+Split \`orders_flat\` into four tables, then fill them from it.
+
+- \`customers\`: \`id\` (integer primary key), \`email\` (text, required, unique), \`name\` (text, required). The starter already has this one.
+- \`products\`: \`sku\` (text primary key), \`name\` (text, required). No price here.
+- \`orders\`: \`id\` (integer primary key, holding the old \`order_id\`), \`customer_id\` (integer, required, references \`customers(id)\`), \`placed\` (text, required).
+- \`order_items\`: \`order_id\` (integer, required, references \`orders(id)\`), \`sku\` (text, required, references \`products(sku)\`), \`qty\` (integer, required), \`unit_price\` (real, required), with the composite primary key \`(order_id, sku)\`.
+
+Then fill all four with \`INSERT … SELECT\` from \`orders_flat\`, in this order: customers, products, orders, order_items.
+--- starter
+-- Design the four tables, then fill them from orders_flat.
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+--- solution
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+CREATE TABLE products (
+  sku TEXT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  placed TEXT NOT NULL
+);
+CREATE TABLE order_items (
+  order_id INTEGER NOT NULL REFERENCES orders(id),
+  sku TEXT NOT NULL REFERENCES products(sku),
+  qty INTEGER NOT NULL,
+  unit_price REAL NOT NULL,
+  PRIMARY KEY (order_id, sku)
+);
+
+INSERT INTO customers (email, name)
+SELECT DISTINCT customer_email, customer_name FROM orders_flat;
+
+INSERT INTO products (sku, name)
+SELECT DISTINCT sku, product_name FROM orders_flat;
+
+INSERT INTO orders (id, customer_id, placed)
+SELECT DISTINCT f.order_id, c.id, f.placed
+FROM orders_flat f
+JOIN customers c ON c.email = f.customer_email;
+
+INSERT INTO order_items (order_id, sku, qty, unit_price)
+SELECT order_id, sku, qty, unit_price FROM orders_flat;
+--- hint
+Write the three missing \`CREATE TABLE\`s first. \`order_items\` lists its four columns, then ends with \`PRIMARY KEY (order_id, sku)\` after a comma. \`products\` has only \`sku\` and \`name\`: the price stays on the order line.
+--- hint
+Fill \`customers\` and \`products\` with \`INSERT … SELECT DISTINCT\` from \`orders_flat\`. For \`orders\`, use the lesson's \`SELECT DISTINCT f.order_id, c.id, f.placed\` with the join on the email.
+--- hint
+The last one needs no \`DISTINCT\` and no join: \`INSERT INTO order_items (order_id, sku, qty, unit_price) SELECT order_id, sku, qty, unit_price FROM orders_flat;\`
+--- check query | Each fact stored once: 2 customers, 3 products, 4 orders, 6 items
+SELECT (SELECT COUNT(*) FROM customers), (SELECT COUNT(*) FROM products), (SELECT COUNT(*) FROM orders), (SELECT COUNT(*) FROM order_items)
+=> [[2, 3, 4, 6]]
+--- check query | Joining the tables back reproduces the flat table exactly
+SELECT COUNT(*) FROM (
+  SELECT order_id, placed, customer_email, customer_name, sku, product_name, unit_price, qty FROM orders_flat
+  EXCEPT
+  SELECT o.id, o.placed, c.email, c.name, p.sku, p.name, oi.unit_price, oi.qty
+  FROM order_items oi
+  JOIN orders o    ON o.id = oi.order_id
+  JOIN customers c ON c.id = o.customer_id
+  JOIN products p  ON p.sku = oi.sku
+)
+=> [[0]]
+--- check query | order_items has the composite primary key (order_id, sku)
+SELECT name FROM pragma_table_info('order_items') WHERE pk > 0 ORDER BY pk
+=> [["order_id"], ["sku"]]
+--- check query | Customer emails are unique
+SELECT COUNT(*) FROM pragma_index_list('customers') WHERE "unique" = 1
+=> [[1]]
+--- check query | products has no price column (the price lives on the order line)
+SELECT COUNT(*) FROM pragma_table_info('products') WHERE name LIKE '%price%'
+=> [[0]]
+
++++ practice | One row per weather station
+--- schema
+CREATE TABLE readings_flat (
+  station_code TEXT NOT NULL,
+  station_name TEXT NOT NULL,
+  day TEXT NOT NULL,
+  temp_c REAL NOT NULL
+);
+INSERT INTO readings_flat VALUES
+  ('KSC', 'Kennedy', '2024-07-01', 31.5),
+  ('KSC', 'Kennedy', '2024-07-02', 32.0),
+  ('VSF', 'Vandenberg', '2024-07-01', 18.5),
+  ('KSC', 'Kennedy', '2024-07-03', 30.5),
+  ('VSF', 'Vandenberg', '2024-07-02', 19.0),
+  ('WAL', 'Wallops', '2024-07-01', 27.0);
+--- task
+This problem has its own flat table, \`readings_flat\`: \`station_code\`, \`station_name\`, \`day\` and \`temp_c\`, one row per daily reading. Each station's name is copied onto every one of its readings.
+
+Store each station once. Create a table \`stations\` with two columns, \`code\` (text primary key) and \`name\` (text, required), and fill it from \`readings_flat\` with one \`INSERT … SELECT\`.
+--- starter
+CREATE TABLE stations (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+--- solution
+CREATE TABLE stations (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+
+INSERT INTO stations (code, name)
+SELECT DISTINCT station_code, station_name FROM readings_flat;
+--- hint
+\`INSERT INTO stations (code, name)\` followed by a \`SELECT\` fills the table from the query's rows.
+--- hint
+Each station appears on several readings, and \`code\` is the primary key, so the \`SELECT\` must return each station once: \`SELECT DISTINCT\`.
+--- check query | Three stations, each stored once
+SELECT code, name FROM stations ORDER BY code
+=> [["KSC", "Kennedy"], ["VSF", "Vandenberg"], ["WAL", "Wallops"]]
+--- check query | code is the primary key
+SELECT name FROM pragma_table_info('stations') WHERE pk > 0
+=> [["code"]]
+--- check source | Fills the table from a query
+[Ii][Nn][Ss][Ee][Rr][Tt]\\s+[Ii][Nn][Tt][Oo]\\s+stations[^;]*[Ss][Ee][Ll][Ee][Cc][Tt]
+
++++ practice | One email, two names
+--- schema
+CREATE TABLE orders_flat (
+  order_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO orders_flat VALUES
+  (201, '2024-05-01', 'ana@mail.com', 'Ana Ruiz',  'MUG-1', 'Mug', 2),
+  (202, '2024-05-02', 'bo@mail.com',  'Bo Chen',   'PEN-2', 'Pen', 1),
+  (203, '2024-05-04', 'ana@mail.com', 'Ana Ruis',  'PEN-2', 'Pen', 3),
+  (204, '2024-05-06', 'cy@mail.com',  'Cy Okafor', 'MUG-1', 'Mug', 1),
+  (205, '2024-05-09', 'bo@mail.com',  'Bo Chen',   'LMP-3', 'Lamp', 1),
+  (206, '2024-05-11', 'ana@mail.com', 'Ana Ruiz',  'LMP-3', 'Lamp', 1),
+  (207, '2024-05-12', 'cy@mail.com',  'Cy Okafor', 'PEN-2', 'Pens', 2);
+--- task
+This problem has its own flat table, \`orders_flat\`, like the lesson's. Because every fact is copied onto many rows, some copies have drifted apart: the update anomaly, already happened.
+
+Find them. Return one row per email that appears with **more than one** \`customer_name\`, with two columns: \`customer_email\`, and \`names\`, the number of different names it appears with. Sort by \`customer_email\`.
+--- starter
+SELECT customer_email, COUNT(*) AS names
+FROM orders_flat
+GROUP BY customer_email
+ORDER BY customer_email;
+--- solution
+SELECT customer_email, COUNT(DISTINCT customer_name) AS names
+FROM orders_flat
+GROUP BY customer_email
+HAVING COUNT(DISTINCT customer_name) > 1
+ORDER BY customer_email;
+--- hint
+The starter counts rows, not names. \`COUNT(DISTINCT customer_name)\` counts each different name once.
+--- hint
+Keep only the groups with more than one name, with \`HAVING\`.
+--- check result | Only ana@mail.com, written as Ana Ruiz and Ana Ruis
+ordered
+[["ana@mail.com", 2]]
+--- check source | Counts different names
+[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]\\s+customer_name
+--- check source | Filters the groups with HAVING
+[Hh][Aa][Vv][Ii][Nn][Gg]
+
++++ practice | A report from the tidy tables
+--- schema
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+INSERT INTO customers (id, email, name) VALUES (1, 'ana@mail.com', 'Ana Ruiz'), (2, 'bo@mail.com', 'Bo Chen'), (3, 'cy@mail.com', 'Cy Okafor');
+CREATE TABLE products (
+  sku TEXT PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO products (sku, name) VALUES ('MUG-1', 'Mug'), ('PEN-2', 'Pen'), ('LMP-3', 'Desk lamp');
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  placed TEXT NOT NULL
+);
+INSERT INTO orders (id, customer_id, placed) VALUES (101, 1, '2024-05-01'), (102, 2, '2024-05-03'), (103, 1, '2024-05-09'), (104, 2, '2024-06-02');
+CREATE TABLE order_items (
+  order_id INTEGER NOT NULL REFERENCES orders(id),
+  sku TEXT NOT NULL REFERENCES products(sku),
+  qty INTEGER NOT NULL,
+  unit_price REAL NOT NULL,
+  PRIMARY KEY (order_id, sku)
+);
+INSERT INTO order_items (order_id, sku, qty, unit_price) VALUES
+  (101, 'MUG-1', 2, 9.0), (101, 'PEN-2', 4, 3.5), (102, 'MUG-1', 1, 9.0),
+  (103, 'LMP-3', 1, 45.0), (104, 'MUG-1', 3, 10.0), (104, 'PEN-2', 1, 3.5);
+--- task
+This problem has the four tidy tables from the lesson, already filled: \`customers\`, \`products\`, \`orders\` and \`order_items\`. There is also a third customer, Cy, who has not ordered anything yet.
+
+Return one row per customer, all three, with four columns:
+
+- \`name\`
+- \`orders\`: how many orders they placed
+- \`items\`: how many items they bought (the total \`qty\`)
+- \`spent\`: the total of \`qty * unit_price\` over their order lines
+
+A customer with no orders shows \`0\`, \`0\` and \`0\`. Sort by \`spent\`, highest first.
+--- starter
+SELECT c.name, COUNT(*) AS orders, SUM(oi.qty) AS items, SUM(oi.qty * oi.unit_price) AS spent
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+JOIN order_items oi ON oi.order_id = o.id
+GROUP BY c.id, c.name
+ORDER BY spent DESC;
+--- solution
+SELECT c.name,
+       COUNT(DISTINCT o.id) AS orders,
+       COALESCE(SUM(oi.qty), 0) AS items,
+       COALESCE(SUM(oi.qty * oi.unit_price), 0) AS spent
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id
+LEFT JOIN order_items oi ON oi.order_id = o.id
+GROUP BY c.id, c.name
+ORDER BY spent DESC;
+--- hint
+Run the starter: Ana shows 3 orders, but she placed two. After the join there is one row per order **line**, so \`COUNT(*)\` counts lines. Count each order once with \`COUNT(DISTINCT o.id)\`.
+--- hint
+Cy is missing because the inner joins drop a customer with no orders. Use \`LEFT JOIN\`s, and \`COALESCE(…, 0)\` around the sums.
+--- check result | Ana 2 orders and 77.0; Bo 42.5; Cy 0
+ordered
+[["Ana Ruiz", 2, 7, 77.0], ["Bo Chen", 2, 5, 42.5], ["Cy Okafor", 0, 0, 0]]
+--- check source | Counts each order once
+[Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt]\\s+o\\.id
+--- check source | Keeps customers with no orders
+[Ll][Ee][Ff][Tt]\\s+[Jj][Oo][Ii][Nn]
+
++++ practice | A customer who changed their name
+--- schema
+CREATE TABLE orders_flat (
+  order_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO orders_flat VALUES
+  (301, '2024-05-01', 'ana@mail.com', 'Ana Ruiz',       'MUG-1', 2),
+  (301, '2024-05-01', 'ana@mail.com', 'Ana Ruiz',       'PEN-2', 1),
+  (302, '2024-05-03', 'bo@mail.com',  'Bo Chen',        'MUG-1', 1),
+  (303, '2024-06-10', 'ana@mail.com', 'Ana Ruiz-Lopez', 'LMP-3', 1),
+  (303, '2024-06-10', 'ana@mail.com', 'Ana Ruiz-Lopez', 'PEN-2', 2),
+  (304, '2024-06-12', 'cy@mail.com',  'Cy Okafor',      'PEN-2', 5);
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+--- task
+This problem has its own \`orders_flat\` and an empty \`customers\` table (\`id\`, \`email\` unique, \`name\`). One customer changed their name: ana@mail.com ordered as \`Ana Ruiz\` in May and as \`Ana Ruiz-Lopez\` in June.
+
+Fill \`customers\` with one \`INSERT … SELECT\`: one row per email, with the name from that customer's **most recent** order (the latest \`placed\`). Leave \`id\` out, so SQLite numbers the rows.
+--- starter
+INSERT INTO customers (email, name)
+SELECT DISTINCT customer_email, customer_name FROM orders_flat;
+--- solution
+INSERT INTO customers (email, name)
+SELECT DISTINCT f.customer_email, f.customer_name
+FROM orders_flat f
+WHERE f.placed = (
+  SELECT MAX(g.placed) FROM orders_flat g
+  WHERE g.customer_email = f.customer_email
+);
+--- hint
+Run the starter: it fails with "UNIQUE constraint failed: customers.email". \`DISTINCT\` keeps both of Ana's names, because the two rows differ.
+--- hint
+Keep only each customer's rows from their latest date: \`WHERE f.placed = (SELECT MAX(g.placed) FROM orders_flat g WHERE g.customer_email = f.customer_email)\`. That latest order may have several lines, so keep the \`DISTINCT\`.
+--- check query | Three customers; Ana has her new name
+SELECT email, name FROM customers ORDER BY email
+=> [["ana@mail.com", "Ana Ruiz-Lopez"], ["bo@mail.com", "Bo Chen"], ["cy@mail.com", "Cy Okafor"]]
+--- check query | One row per email
+SELECT COUNT(*), COUNT(DISTINCT email) FROM customers
+=> [[3, 3]]
+--- check source absent | Does not type the name in
+Ruiz-Lopez
+
++++ practice | Two customers called Sam Lee
+--- schema
+CREATE TABLE orders_flat (
+  order_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO orders_flat VALUES
+  (401, '2024-05-02', 'sam.lee@mail.com', 'Sam Lee', 'MUG-1', 1),
+  (402, '2024-05-04', 'sam@lee.dev',      'Sam Lee', 'PEN-2', 3),
+  (403, '2024-05-05', 'bo@mail.com',      'Bo Chen', 'MUG-1', 2),
+  (403, '2024-05-05', 'bo@mail.com',      'Bo Chen', 'PEN-2', 1);
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+INSERT INTO customers (id, email, name) VALUES (1, 'sam.lee@mail.com', 'Sam Lee'), (2, 'sam@lee.dev', 'Sam Lee'), (3, 'bo@mail.com', 'Bo Chen');
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  placed TEXT NOT NULL
+);
+--- task
+This problem has its own \`orders_flat\`, a \`customers\` table that is already filled, and an empty \`orders\` table (\`id\`, \`customer_id\`, \`placed\`). Two different customers are both called Sam Lee; they have different emails.
+
+The statement below should fill \`orders\`, one row per order, linked to the right customer. It fails with "UNIQUE constraint failed: orders.id". Fix the join so each order finds exactly its own customer.
+--- starter
+INSERT INTO orders (id, customer_id, placed)
+SELECT DISTINCT f.order_id, c.id, f.placed
+FROM orders_flat f
+JOIN customers c ON c.name = f.customer_name;
+--- solution
+INSERT INTO orders (id, customer_id, placed)
+SELECT DISTINCT f.order_id, c.id, f.placed
+FROM orders_flat f
+JOIN customers c ON c.email = f.customer_email;
+--- hint
+Order 401 matches both Sam Lees by name, so the \`SELECT\` returns it twice, with two different customer ids, and \`DISTINCT\` cannot merge them.
+--- hint
+Join on the column that tells customers apart: the email, which is unique in \`customers\`.
+--- check query | Three orders, each linked to its own customer
+SELECT id, customer_id, placed FROM orders ORDER BY id
+=> [[401, 1, "2024-05-02"], [402, 2, "2024-05-04"], [403, 3, "2024-05-05"]]
+--- check source | Joins on the email
+c\\.email\\s*=\\s*f\\.customer_email|f\\.customer_email\\s*=\\s*c\\.email
+--- check source absent | No longer joins on the name
+c\\.name\\s*=\\s*f\\.customer_name|f\\.customer_name\\s*=\\s*c\\.name
+
++++ practice | Normalizing a crew list
+--- schema
+CREATE TABLE crew_flat (
+  mission_code TEXT NOT NULL,
+  mission_name TEXT NOT NULL,
+  launch_date TEXT NOT NULL,
+  astronaut_email TEXT NOT NULL,
+  astronaut_name TEXT NOT NULL,
+  role TEXT NOT NULL
+);
+INSERT INTO crew_flat VALUES
+  ('ART2', 'Artemis II', '2025-09-01', 'reid@nasa.gov',   'Reid Wiseman',   'commander'),
+  ('ART2', 'Artemis II', '2025-09-01', 'victor@nasa.gov', 'Victor Glover',  'pilot'),
+  ('ART2', 'Artemis II', '2025-09-01', 'jeremy@csa.ca',   'Jeremy Hansen',  'specialist'),
+  ('GW1',  'Gateway 1',  '2027-03-15', 'victor@nasa.gov', 'Victor Glover',  'commander'),
+  ('GW1',  'Gateway 1',  '2027-03-15', 'mae@nasa.gov',    'Mae Carter',     'pilot'),
+  ('LB1',  'Lunar Base', '2029-06-30', 'jeremy@csa.ca',   'Jeremy Hansen',  'pilot'),
+  ('LB1',  'Lunar Base', '2029-06-30', 'mae@nasa.gov',    'Mae Carter',     'commander');
+--- task
+This problem has its own flat table, \`crew_flat\`: one row per seat on a mission, with the mission's \`mission_code\`, \`mission_name\` and \`launch_date\`, and the astronaut's \`astronaut_email\`, \`astronaut_name\` and \`role\` on that mission.
+
+Split it into three tables, then fill them from it:
+
+- \`missions\`: \`code\` (text primary key), \`name\` (text, required), \`launch_date\` (text, required)
+- \`astronauts\`: \`id\` (integer primary key), \`email\` (text, required, unique), \`name\` (text, required)
+- \`crew\`: \`mission_code\` (text, required, references \`missions(code)\`), \`astronaut_id\` (integer, required, references \`astronauts(id)\`), \`role\` (text, required), with the composite primary key \`(mission_code, astronaut_id)\`
+
+Fill them in that order, each with \`INSERT … SELECT\`. Leave \`astronauts.id\` out so SQLite numbers the rows. No fact may be lost: joining the three tables back together must give exactly the rows of \`crew_flat\`.
+--- starter
+-- Design the three tables, then fill them from crew_flat.
+--- solution
+CREATE TABLE missions (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  launch_date TEXT NOT NULL
+);
+CREATE TABLE astronauts (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+CREATE TABLE crew (
+  mission_code TEXT NOT NULL REFERENCES missions(code),
+  astronaut_id INTEGER NOT NULL REFERENCES astronauts(id),
+  role TEXT NOT NULL,
+  PRIMARY KEY (mission_code, astronaut_id)
+);
+
+INSERT INTO missions (code, name, launch_date)
+SELECT DISTINCT mission_code, mission_name, launch_date FROM crew_flat;
+
+INSERT INTO astronauts (email, name)
+SELECT DISTINCT astronaut_email, astronaut_name FROM crew_flat;
+
+INSERT INTO crew (mission_code, astronaut_id, role)
+SELECT f.mission_code, a.id, f.role
+FROM crew_flat f
+JOIN astronauts a ON a.email = f.astronaut_email;
+--- hint
+Ask what each column is a fact about. The name and date belong to a mission, the name to an astronaut, and the role to one astronaut on one mission.
+--- hint
+Missions and astronauts are filled with \`SELECT DISTINCT\`. \`crew\` needs each astronaut's new \`id\`: join \`crew_flat\` to \`astronauts\` on the email.
+--- hint
+The crew table ends with \`PRIMARY KEY (mission_code, astronaut_id)\` after its columns, and each of its two pointer columns has its own \`REFERENCES\`.
+--- check query | 3 missions, 4 astronauts, 7 seats
+SELECT (SELECT COUNT(*) FROM missions), (SELECT COUNT(*) FROM astronauts), (SELECT COUNT(*) FROM crew)
+=> [[3, 4, 7]]
+--- check query | Joining the tables back gives exactly the flat table
+SELECT COUNT(*) FROM (
+  SELECT mission_code, mission_name, launch_date, astronaut_email, astronaut_name, role FROM crew_flat
+  EXCEPT
+  SELECT m.code, m.name, m.launch_date, a.email, a.name, c.role
+  FROM crew c
+  JOIN missions m   ON m.code = c.mission_code
+  JOIN astronauts a ON a.id = c.astronaut_id
+)
+=> [[0]]
+--- check query | crew has the composite primary key (mission_code, astronaut_id)
+SELECT name FROM pragma_table_info('crew') WHERE pk > 0 ORDER BY pk
+=> [["mission_code"], ["astronaut_id"]]
+--- check query | crew points at missions and astronauts
+SELECT "table", "from" FROM pragma_foreign_key_list('crew') ORDER BY 1
+=> [["astronauts", "astronaut_id"], ["missions", "mission_code"]]
+--- check query | Astronaut emails are unique
+SELECT COUNT(*) FROM pragma_index_list('astronauts') WHERE "unique" = 1
+=> [[1]]
+
+=== sql3-12 | Indexes and EXPLAIN QUERY PLAN
+--- schema
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  total REAL NOT NULL
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+INSERT INTO orders (id, customer_id, placed, total)
+SELECT i, i % 200, date('2024-01-01', '+' || (i % 300) || ' days'), (i * 37 % 500) / 4.0 FROM n;
+--- teach
+Last lesson you split one table into several. Real tables also grow: an app's \`orders\` table can hold millions of rows. This lesson is about finding rows fast, and about asking the database how it plans to find them.
+
+### The table
+
+This lesson's \`orders\` has 2,000 rows, with the columns \`id\`, \`customer_id\`, \`placed\` (the date) and \`total\`. There are 200 customers. Customer 7 has 10 orders.
+
+### The picture
+
+Think of a thick textbook. To find every page that mentions Mars, you could read the whole book, page by page. Or you could turn to the index at the back: every topic in alphabetical order, each with its page numbers. You find "Mars" in seconds and turn straight to those pages.
+
+### A full scan
+
+With no help, \`WHERE customer_id = 7\` makes the database read all 2,000 rows and keep the 10 that match. Reading a whole table like this is a **full scan**. For a small table it is fine. For millions of rows it is slow.
+
+Finding one order by its \`id\` is already fast, because [[the primary key works like an index|primary-key-index]].
+
+### An index
+
+An **index** is a separate, sorted copy of one or more columns, with a [[pointer back to each row|index-picture]]. Like the book's index, it lets the database jump to the right place instead of reading everything.
+
+\`\`\`sql
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+\`\`\`
+
+- \`CREATE INDEX\` makes a new index.
+- \`idx_orders_customer\` is its name. Any name works. \`idx_\`, then the table, then the column, is a common habit.
+- \`ON orders(customer_id)\` says which table, and which column to sort by.
+
+An index never changes an answer. Every query returns the same rows as before, only faster. And you never tell a query to use it: [[the database decides by itself|planner]].
+
+### Asking for the plan
+
+To see what the database will do, put \`EXPLAIN QUERY PLAN\` in front of a query. It does not run the query. It describes how it would run it.
+
+\`\`\`sql
+EXPLAIN QUERY PLAN
+SELECT id, total FROM orders WHERE customer_id = 7;
+\`\`\`
+
+The answer comes back as rows. Read the \`detail\` column. Before the index exists, it says:
+
+\`\`\`
+SCAN orders
+\`\`\`
+
+After \`CREATE INDEX idx_orders_customer\`, it says:
+
+\`\`\`
+SEARCH orders USING INDEX idx_orders_customer (customer_id=?)
+\`\`\`
+
+- \`SCAN orders\` means "read the whole table".
+- \`SEARCH orders USING INDEX …\` means "jump straight to the matching rows through this index".
+- \`(customer_id=?)\` says what it looks up in the index. The [[question mark|placeholder]] stands for the value, here 7.
+
+### The sort step
+
+Now ask for that customer's orders, biggest total first:
+
+\`\`\`sql
+EXPLAIN QUERY PLAN
+SELECT id, placed FROM orders WHERE customer_id = 7 ORDER BY total DESC;
+\`\`\`
+
+\`\`\`
+SEARCH orders USING INDEX idx_orders_customer (customer_id=?)
+USE TEMP B-TREE FOR ORDER BY
+\`\`\`
+
+The second line is new. It means the database found the rows, then had to sort them itself afterwards. A **B-tree** is the sorted structure databases keep their indexes in. "Temp" means it built one for this query only, and threw it away after. For 10 rows that is quick. For a customer with 50,000 orders, it is a big sort on every run.
+
+### An index on two columns
+
+A **composite index** covers several columns. It is sorted by the first column, and then by the second among rows with the same first value. A phone book works like this: sorted by surname, then by first name among people with the same surname.
+
+\`\`\`sql
+CREATE INDEX idx_orders_customer_total ON orders(customer_id, total);
+\`\`\`
+
+Inside this index, all of customer 7's orders sit together, **already in order of total**. So the plan loses its sort step:
+
+\`\`\`
+SEARCH orders USING INDEX idx_orders_customer_total (customer_id=?)
+\`\`\`
+
+\`DESC\` costs nothing extra. The database reads that stretch of the index from the end backwards.
+
+### Column order matters
+
+Put the column you test with \`=\` first. Put the column you sort by, or compare with \`<\` and \`>\`, after it.
+
+The other way round, \`(total, customer_id)\`, is like a phone book sorted by first name: the Smiths are scattered all through it. For this query that index gives the plan \`SCAN orders USING INDEX …\`, a walk through every entry.
+
+### Indexes have a cost
+
+An index is not free. Each one takes space. And every \`INSERT\`, \`UPDATE\` and \`DELETE\` must [[keep every index in step|index-cost]], so each extra index slows writing a little. Index for the queries your app really runs, not for every column.
+
+**Watch out:** \`USING INDEX\` in a plan does not always mean fast. Read the first word. \`SEARCH\` jumps to the rows it needs. \`SCAN … USING INDEX\` still reads every entry; it only reads them in the index's order. An index on \`(total)\` alone gives exactly that for the query above.
+
+::: context primary-key-index Indexes you already have
+An \`INTEGER PRIMARY KEY\` is the row's own id, and SQLite stores the table sorted by it. So \`EXPLAIN QUERY PLAN SELECT * FROM orders WHERE id = 7;\` shows \`SEARCH orders USING INTEGER PRIMARY KEY (rowid=?)\` with no index created at all. \`UNIQUE\` and other primary keys get an index too: SQLite makes one automatically, named like \`sqlite_autoindex_customers_1\`, because it needs a fast way to spot a repeated value. That is how SQLite enforces \`UNIQUE\` on \`email\` in last lesson's \`customers\` table.
+:::
+
+::: context index-picture What an index holds
+The index keeps \`customer_id\` values in sorted order, and next to each one, the id of the row it came from. All three of customer 7's entries shown here sit side by side in the index, even though their rows are far apart in the table. The database finds the first 7, reads along until the 7s end, and follows each pointer to its row.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 205" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="pt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1d6fd1"/>
+    </marker>
+  </defs>
+  <text x="80" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">index: customer_id → row</text>
+  <text x="285" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">table rows, by id</text>
+  <rect x="20" y="32" width="120" height="24" fill="#fff" stroke="#6c7a93"/>
+  <text x="80" y="48" font-size="12" fill="#1f2a44" text-anchor="middle">6 → id 6</text>
+  <rect x="20" y="56" width="120" height="24" fill="#fff" stroke="#6c7a93"/>
+  <text x="80" y="72" font-size="12" fill="#1f2a44" text-anchor="middle">6 → id 206</text>
+  <rect x="20" y="80" width="120" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="96" font-size="12" fill="#1f2a44" text-anchor="middle">7 → id 7</text>
+  <rect x="20" y="104" width="120" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="120" font-size="12" fill="#1f2a44" text-anchor="middle">7 → id 207</text>
+  <rect x="20" y="128" width="120" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="144" font-size="12" fill="#1f2a44" text-anchor="middle">7 → id 407</text>
+  <rect x="20" y="152" width="120" height="24" fill="#fff" stroke="#6c7a93"/>
+  <text x="80" y="168" font-size="12" fill="#1f2a44" text-anchor="middle">8 → id 8</text>
+  <rect x="230" y="32" width="110" height="18" fill="#fff" stroke="#6c7a93"/>
+  <text x="285" y="45" font-size="11" fill="#1f2a44" text-anchor="middle">id 6</text>
+  <rect x="230" y="50" width="110" height="18" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="285" y="63" font-size="11" fill="#1f2a44" text-anchor="middle">id 7</text>
+  <rect x="230" y="68" width="110" height="18" fill="#fff" stroke="#6c7a93"/>
+  <text x="285" y="81" font-size="11" fill="#1f2a44" text-anchor="middle">id 8</text>
+  <text x="285" y="99" font-size="11" fill="#6c7a93" text-anchor="middle">…</text>
+  <rect x="230" y="104" width="110" height="18" fill="#fff" stroke="#6c7a93"/>
+  <text x="285" y="117" font-size="11" fill="#1f2a44" text-anchor="middle">id 206</text>
+  <rect x="230" y="122" width="110" height="18" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="285" y="135" font-size="11" fill="#1f2a44" text-anchor="middle">id 207</text>
+  <text x="285" y="153" font-size="11" fill="#6c7a93" text-anchor="middle">…</text>
+  <rect x="230" y="158" width="110" height="18" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="285" y="171" font-size="11" fill="#1f2a44" text-anchor="middle">id 407</text>
+  <line x1="140" y1="92" x2="228" y2="59" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#pt)"/>
+  <line x1="140" y1="116" x2="228" y2="131" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#pt)"/>
+  <line x1="140" y1="140" x2="228" y2="167" stroke="#1d6fd1" stroke-width="1.5" marker-end="url(#pt)"/>
+  <text x="180" y="196" font-size="11" fill="#6c7a93" text-anchor="middle">sorted entries point to rows spread through the table</text>
+</svg>
+\`\`\`
+:::
+
+::: context planner The query planner
+The part of the database that chooses how to run a query is the **query planner**. For each query it looks at the indexes that exist and estimates what each way would cost: scan the table, or search this index, or that one. Then it picks the cheapest. That is why you create an index once and every matching query can use it. It is also why the planner sometimes ignores an index: when a condition matches most of the table, reading the whole table can be cheaper than jumping back and forth. \`EXPLAIN QUERY PLAN\` is how you see what it chose.
+:::
+
+::: context placeholder Why the plan shows a question mark
+The plan is about the *shape* of the query, not one value: it would be the same for customer 7 or customer 150, so SQLite writes \`?\`. The same mark has a second life in app code. Programs send queries like \`SELECT id, total FROM orders WHERE customer_id = ?\` and pass the value separately. That is called a **parameter**. It stops a user from sneaking their own SQL into a query by typing it into a form, an attack called **SQL injection**.
+:::
+
+::: context index-cost What an index costs
+Picture the textbook again. Every time a page is added, someone has to update the index at the back too. A database does that for every index on a table, on every insert, update and delete. Tables that are written constantly, like a log that stores thousands of telemetry readings a second, often keep only one or two indexes for that reason. An index you no longer need can be removed with \`DROP INDEX idx_orders_customer;\`. The table and its rows stay as they are.
+:::
+--- task
+The app's busiest query is:
+
+\`\`\`sql
+SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC;
+\`\`\`
+
+Create an index named \`idx_orders_customer_placed\` that lets this query find the customer's rows **and** return them in date order with no separate sort step. When you are done, its plan should be one \`SEARCH\` line and no \`USE TEMP B-TREE FOR ORDER BY\`.
+--- starter
+CREATE INDEX idx_orders_customer_placed ON orders(placed);
+--- solution
+CREATE INDEX idx_orders_customer_placed ON orders(customer_id, placed);
+--- hint
+Look at the plan first. Run the starter, then \`EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC;\` and read the \`detail\` column. It says \`SCAN\`.
+--- hint
+You need a composite index. The column tested with \`=\` goes first, and the column you sort by goes second.
+--- hint
+Inside the brackets, two columns separated by a comma: \`orders(customer_id, placed)\`.
+--- check query | The index covers customer_id, then placed
+SELECT name FROM pragma_index_info('idx_orders_customer_placed') ORDER BY seqno
+=> [["customer_id"], ["placed"]]
+--- check query | The query searches the index and needs no sort step
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC
+=> [[4, 0, 63, "SEARCH orders USING INDEX idx_orders_customer_placed (customer_id=?)"]]
+
++++ practice | Every order on one day
+--- task
+The warehouse screen runs this query all day, with a different date each time:
+
+\`\`\`sql
+SELECT id, customer_id, total FROM orders WHERE placed = '2024-03-15';
+\`\`\`
+
+Create an index named \`idx_orders_placed\` so that this query jumps straight to the day's rows instead of reading the whole table. Its plan should be one \`SEARCH\` line.
+--- starter
+CREATE INDEX idx_orders_placed ON orders(total);
+--- solution
+CREATE INDEX idx_orders_placed ON orders(placed);
+--- hint
+An index helps a \`WHERE\` on the column it is sorted by. Which column does this query test?
+--- hint
+\`ON orders(placed)\`.
+--- check query | The index is on placed
+SELECT name FROM pragma_index_info('idx_orders_placed') ORDER BY seqno
+=> [["placed"]]
+--- check query | The query searches the index
+EXPLAIN QUERY PLAN SELECT id, customer_id, total FROM orders WHERE placed = '2024-03-15'
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_placed (placed=?)"]]
+--- check query | The index belongs to orders
+SELECT COUNT(*) FROM pragma_index_list('orders') WHERE name = 'idx_orders_placed'
+=> [[1]]
+
++++ practice | Swap the index that does not help
+--- schema
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  total REAL NOT NULL
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+INSERT INTO orders (id, customer_id, placed, total)
+SELECT i, i % 200, date('2024-01-01', '+' || (i % 300) || ' days'), (i * 37 % 500) / 4.0 FROM n;
+CREATE INDEX idx_orders_total ON orders(total);
+--- task
+This problem's \`orders\` table already has one index, \`idx_orders_total\`, on \`total\`. Nothing in the app filters or sorts by \`total\`, so it only slows every write down. The query the app does run is:
+
+\`\`\`sql
+SELECT id, placed, total FROM orders WHERE customer_id = 42;
+\`\`\`
+
+Remove \`idx_orders_total\`, and create \`idx_orders_customer\` on \`customer_id\`. When you are done, \`orders\` has exactly one index, and the query's plan is a \`SEARCH\`.
+--- starter
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+--- solution
+DROP INDEX idx_orders_total;
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+--- hint
+An index is removed with \`DROP INDEX\` and its name. The table and its rows stay as they are.
+--- hint
+\`DROP INDEX idx_orders_total;\`, then the \`CREATE INDEX\` line.
+--- check query | orders has only the new index
+SELECT name FROM pragma_index_list('orders') ORDER BY name
+=> [["idx_orders_customer"]]
+--- check query | The query searches the new index
+EXPLAIN QUERY PLAN SELECT id, placed, total FROM orders WHERE customer_id = 42
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_customer (customer_id=?)"]]
+--- check query | Every order is still there
+SELECT COUNT(*) FROM orders
+=> [[2000]]
+
++++ practice | An index for a join
+--- schema
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 200)
+INSERT INTO customers (id, email) SELECT i, 'user' || i || '@mail.com' FROM n;
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  placed TEXT NOT NULL,
+  total REAL NOT NULL
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+INSERT INTO orders (id, customer_id, placed, total)
+SELECT i, i % 200 + 1, date('2024-01-01', '+' || (i % 300) || ' days'), (i * 37 % 500) / 4.0 FROM n;
+--- task
+This problem has its own tables: \`customers\` (\`id\`, \`email\`, 200 rows) and \`orders\` (\`id\`, \`customer_id\`, \`placed\`, \`total\`, 2,000 rows). The account page finds a customer by email and lists their orders:
+
+\`\`\`sql
+SELECT o.id, o.placed, o.total
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+WHERE c.email = 'user7@mail.com';
+\`\`\`
+
+Without help, SQLite reads all 2,000 orders to run this join. Create one index, named \`idx_orders_by_customer\`, so that the plan finds the customer through the email's own index (the one SQLite made by itself for the \`UNIQUE\` column), then **searches** \`orders\` for that customer's rows.
+--- starter
+CREATE INDEX idx_orders_by_customer ON orders(id);
+--- solution
+CREATE INDEX idx_orders_by_customer ON orders(customer_id);
+--- hint
+Put \`EXPLAIN QUERY PLAN\` in front of the query and read the \`detail\` lines. The line for \`orders\` says \`SCAN\`.
+--- hint
+The join looks orders up by \`o.customer_id\`, the foreign key column. Index that column.
+--- check query | The index is on the foreign key column
+SELECT name FROM pragma_index_info('idx_orders_by_customer') ORDER BY seqno
+=> [["customer_id"]]
+--- check query | The join finds the customer, then searches orders
+EXPLAIN QUERY PLAN SELECT o.id, o.placed, o.total FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.email = 'user7@mail.com'
+=> [[3, 0, 0, "SEARCH c USING COVERING INDEX sqlite_autoindex_customers_1 (email=?)"], [7, 0, 0, "SEARCH o USING INDEX idx_orders_by_customer (customer_id=?)"]]
+--- check query | The query still finds customer 7's ten orders
+SELECT COUNT(*) FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.email = 'user7@mail.com'
+=> [[10]]
+
++++ practice | One index for two queries
+--- task
+The app runs two queries on \`orders\`:
+
+\`\`\`sql
+SELECT id, placed FROM orders WHERE customer_id = 7 ORDER BY total;
+SELECT id, placed FROM orders WHERE customer_id = 7 AND total > 50;
+\`\`\`
+
+Create **one** index, named \`idx_orders_cust_total\`, that serves both: each plan should be a single \`SEARCH\` line, with no \`USE TEMP B-TREE FOR ORDER BY\`. The column order matters: one order serves both queries, the other serves neither well.
+--- starter
+CREATE INDEX idx_orders_cust_total ON orders(total, customer_id);
+--- solution
+CREATE INDEX idx_orders_cust_total ON orders(customer_id, total);
+--- hint
+Both queries test \`customer_id\` with \`=\`. The first sorts by \`total\`, and the second compares \`total\` with \`>\`.
+--- hint
+The column tested with \`=\` goes first; the column you sort by or compare with \`<\` and \`>\` goes second.
+--- check query | The first query searches and needs no sort step
+EXPLAIN QUERY PLAN SELECT id, placed FROM orders WHERE customer_id = 7 ORDER BY total
+=> [[4, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_total (customer_id=?)"]]
+--- check query | The second query searches both columns
+EXPLAIN QUERY PLAN SELECT id, placed FROM orders WHERE customer_id = 7 AND total > 50
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_total (customer_id=? AND total>?)"]]
+--- check query | orders has exactly one index
+SELECT COUNT(*) FROM pragma_index_list('orders')
+=> [[1]]
+
++++ practice | An index that reads the whole of June
+--- task
+This query finds one customer's orders from June onwards:
+
+\`\`\`sql
+SELECT id, total FROM orders WHERE customer_id = 42 AND placed >= '2024-06-01';
+\`\`\`
+
+Someone created the index below for it. The plan now says \`SEARCH orders USING INDEX idx_orders_cust_date (placed>?)\`: it jumps to 1 June, then reads every order of every customer from then on and throws most of them away.
+
+Fix the index so the plan searches on both columns: \`(customer_id=? AND placed>?)\`. Keep the name \`idx_orders_cust_date\`.
+--- starter
+CREATE INDEX idx_orders_cust_date ON orders(placed, customer_id);
+--- solution
+CREATE INDEX idx_orders_cust_date ON orders(customer_id, placed);
+--- hint
+The index is sorted by its first column, then by the second among equal first values. With \`placed\` first, one customer's rows are scattered through it.
+--- hint
+Put the column tested with \`=\` first, and the range column after it.
+--- check query | The index covers customer_id, then placed
+SELECT name FROM pragma_index_info('idx_orders_cust_date') ORDER BY seqno
+=> [["customer_id"], ["placed"]]
+--- check query | The plan searches on both columns
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 42 AND placed >= '2024-06-01'
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_date (customer_id=? AND placed>?)"]]
+--- check query | The query still finds the same orders
+SELECT COUNT(*) FROM orders WHERE customer_id = 42 AND placed >= '2024-06-01'
+=> [[3]]
+
++++ practice | Two indexes for three queries
+--- task
+The app runs three queries on \`orders\`, each with different values:
+
+\`\`\`sql
+SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC;
+SELECT id, total FROM orders WHERE customer_id = 7 AND placed >= '2024-06-01';
+SELECT id, customer_id FROM orders WHERE placed = '2024-03-15';
+\`\`\`
+
+Every index slows down writing, so you may create **at most two**. Choose them so that every one of the three plans is a single \`SEARCH\` line, with no \`SCAN\` and no \`USE TEMP B-TREE FOR ORDER BY\`. Name them \`idx_orders_cust_placed\` and \`idx_orders_placed\`.
+--- starter
+CREATE INDEX idx_orders_cust_placed ON orders(customer_id);
+CREATE INDEX idx_orders_placed ON orders(placed, customer_id);
+--- solution
+CREATE INDEX idx_orders_cust_placed ON orders(customer_id, placed);
+CREATE INDEX idx_orders_placed ON orders(placed);
+
+-- Check each plan: every one should be a single SEARCH line.
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC;
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 AND placed >= '2024-06-01';
+EXPLAIN QUERY PLAN SELECT id, customer_id FROM orders WHERE placed = '2024-03-15';
+--- hint
+The first two queries both test \`customer_id\` with \`=\`, then use \`placed\`: one sorts by it, one compares it. One composite index can serve both.
+--- hint
+The third query tests only \`placed\`. An index that starts with \`customer_id\` cannot help it, so it needs its own index, starting with \`placed\`.
+--- check query | Query 1 searches and needs no sort step
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 ORDER BY placed DESC
+=> [[4, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_placed (customer_id=?)"]]
+--- check query | Query 2 searches on both columns
+EXPLAIN QUERY PLAN SELECT id, total FROM orders WHERE customer_id = 7 AND placed >= '2024-06-01'
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_placed (customer_id=? AND placed>?)"]]
+--- check query | Query 3 searches by date
+EXPLAIN QUERY PLAN SELECT id, customer_id FROM orders WHERE placed = '2024-03-15'
+=> [[3, 0, 0, "SEARCH orders USING INDEX idx_orders_placed (placed=?)"]]
+--- check query | No more than two indexes
+SELECT COUNT(*) FROM pragma_index_list('orders')
+=> [[2]]
+
+=== sql3-12b | Indexes: queries that skip them
+--- schema
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  total REAL NOT NULL
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+INSERT INTO orders (id, customer_id, placed, total)
+SELECT i, i % 200, date('2024-01-01', '+' || (i % 300) || ' days'), (i * 37 % 500) / 4.0 FROM n;
+CREATE INDEX idx_orders_placed ON orders(placed);
+--- teach
+Last lesson an index turned a full scan into a quick search. But an index only helps when the query asks for what the index holds. This lesson shows a common way to write a query that cannot use an index, and how to fix it. The lesson "Dates and times" promised you this one.
+
+### The table
+
+This is the same \`orders\` table as last lesson: 2,000 rows, with dates through 2024 in \`placed\`. This time it already has an index on the date:
+
+\`\`\`sql
+CREATE INDEX idx_orders_placed ON orders(placed);
+\`\`\`
+
+### The picture
+
+A phone book is sorted by surname. Finding "Smith" is fast: you open near S. Now try to find every surname that *ends* in "son". The sorting is no help at all, because it is by the start of the name. You have to read every page. A sorted list only speeds up the question it was sorted for.
+
+### A function hides the column
+
+In the lesson "Dates and times" you turned a date into its month with \`strftime('%Y-%m', placed)\`. Here is a June report written that way: how many orders, and the biggest one.
+
+\`\`\`sql
+SELECT COUNT(*) AS orders, MAX(total) AS biggest
+FROM orders
+WHERE strftime('%Y-%m', placed) = '2024-06';
+\`\`\`
+
+| orders | biggest |
+| --- | --- |
+| 210 | 124.5 |
+
+The answer is right. But put \`EXPLAIN QUERY PLAN\` in front, and the plan says:
+
+\`\`\`
+SCAN orders
+\`\`\`
+
+A full scan, with the index sitting right there. The index holds \`placed\` values, sorted: \`'2024-06-01'\`, \`'2024-06-02'\` and so on. It does not hold \`strftime('%Y-%m', placed)\`. To find the rows whose month is \`'2024-06'\`, the database must [[work out strftime for every row|slow-later]] and compare. Wrapping a column in a function, or in any calculation, [[hides it from the index|sargable]].
+
+### Ask for the column as it is stored
+
+Say the same thing as a range on \`placed\` itself:
+
+\`\`\`sql
+SELECT COUNT(*) AS orders, MAX(total) AS biggest
+FROM orders
+WHERE placed >= '2024-06-01' AND placed < '2024-07-01';
+\`\`\`
+
+\`>=\` means "on or after", and \`<\` means "before". As you saw in "Dates and times", dates written as \`'YYYY-MM-DD'\` text sort in time order, so this is every day in June. The answer is the same 210 orders and 124.5. The plan is not:
+
+\`\`\`
+SEARCH orders USING INDEX idx_orders_placed (placed>? AND placed<?)
+\`\`\`
+
+The database jumps to \`'2024-06-01'\` in the index and reads forward until it reaches July. It never looks at the other months.
+
+### Why "before the first of next month"
+
+You could write \`placed <= '2024-06-30'\`. For plain dates that works. But if \`placed\` ever holds a time too, \`'2024-06-30 18:40:00'\` sorts *after* \`'2024-06-30'\`, so an evening order on the last day would be missed. "Before the first of next month" catches every moment of June. It also saves you remembering how many days each month has. This shape is called a [[half-open range|half-open]].
+
+**Watch out:** the same trap hides in arithmetic. \`WHERE total * 2 > 100\` cannot use an index on \`total\`, but \`WHERE total > 50\` asks the same question and can. Keep the column bare on one side of the comparison, and do the maths on the other side. When you truly need the calculated value, SQLite can also [[index the result of a function|expression-index]].
+
+::: context slow-later Fast in testing, slow for real
+On 2,000 rows a full scan takes a blink, so this mistake hides while you build an app. It shows up months later, when the table has millions of rows and a dashboard that used to load at once starts timing out. Engineers find these queries by looking at the slowest ones the database reports, then running \`EXPLAIN QUERY PLAN\` on each. A \`SCAN\` on a big table, where you expected a \`SEARCH\`, is the usual culprit, and the fix is often the rewrite in this lesson.
+:::
+
+::: context sargable The word engineers use
+A condition the database can look up in an index is called **sargable**, a squashed form of "Search ARGument ABLE". \`placed >= '2024-06-01'\` is sargable: the index is sorted by \`placed\`, so the database can find the starting point. \`strftime('%Y-%m', placed) = '2024-03'\` is not, because the index is not sorted by that. You will hear the word in code reviews: "this \`WHERE\` isn't sargable" means "this condition forces a full scan".
+:::
+
+::: context half-open Including the start, leaving out the end
+A **half-open range** includes its starting point and leaves out its end: \`>=\` at the start, \`<\` at the end. June is "from June 1st, up to but not including July 1st". The ranges fit end to end with no gap and no overlap: July starts exactly where June stops, so no order is counted twice or lost.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <line x1="15" y1="60" x2="345" y2="60" stroke="#6c7a93" stroke-width="1.5"/>
+  <line x1="70" y1="60" x2="290" y2="60" stroke="#1d6fd1" stroke-width="6"/>
+  <circle cx="70" cy="60" r="6" fill="#1d6fd1" stroke="#1f2a44"/>
+  <circle cx="290" cy="60" r="6" fill="#fff" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="270" y1="52" x2="270" y2="68" stroke="#b4232c" stroke-width="2"/>
+  <text x="270" y="42" font-size="11" fill="#b4232c" text-anchor="middle">Mar 31, 18:40</text>
+  <text x="70" y="86" font-size="12" fill="#1f2a44" text-anchor="middle">Mar 1</text>
+  <text x="290" y="86" font-size="12" fill="#1f2a44" text-anchor="middle">Apr 1</text>
+  <text x="70" y="104" font-size="11" fill="#1d6fd1" text-anchor="middle">&gt;= : included</text>
+  <text x="290" y="104" font-size="11" fill="#1f2a44" text-anchor="middle">&lt; : left out</text>
+  <text x="180" y="124" font-size="11" fill="#6c7a93" text-anchor="middle">every moment of March is inside, April 1 is not</text>
+</svg>
+\`\`\`
+:::
+
+::: context expression-index Indexing a calculation
+SQLite can build an index on the result of a function instead of on a bare column:
+
+\`\`\`sql
+CREATE INDEX idx_orders_month ON orders(strftime('%Y-%m', placed));
+\`\`\`
+
+After that, the query with \`WHERE strftime('%Y-%m', placed) = '2024-06'\` gets a \`SEARCH\` plan too. This is called an **index on an expression**. The query must use exactly the same expression as the index, or the planner will not match them. Most of the time the range rewrite is simpler, and one index on \`placed\` serves every date range, not only whole months.
+:::
+--- task
+The March report below scans the whole table. Rewrite its \`WHERE\` so it compares \`placed\` itself, as a range from \`'2024-03-01'\` up to, but not including, \`'2024-04-01'\`. Keep the same two columns, \`orders\` and \`takings\`, so the answer stays 217 orders and 13693.75. Do not use \`strftime\` anywhere.
+
+Then check your work: put \`EXPLAIN QUERY PLAN\` in front and look for \`SEARCH … USING INDEX idx_orders_placed\`.
+--- starter
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE strftime('%Y-%m', placed) = '2024-03';
+--- solution
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed >= '2024-03-01' AND placed < '2024-04-01';
+--- hint
+Only the \`WHERE\` line changes. The index is sorted by \`placed\`, so the condition must use \`placed\` on its own, with no function around it.
+--- hint
+Two comparisons joined with \`AND\`: one says "on or after the first of March", the other "before the first of April".
+--- hint
+\`WHERE placed >= '2024-03-01' AND placed < '2024-04-01';\`
+--- check result | 217 orders in March, 13693.75 taken
+[[217, 13693.75]]
+--- check source | Compares placed itself with >=
+placed\\s*>=
+--- check source absent | Does not wrap placed in strftime
+strftime
+
++++ practice | One day, without date()
+--- task
+The daily report below wraps \`placed\` in \`date(…)\`. Every date in \`placed\` is already a plain \`'YYYY-MM-DD'\` date, so \`date(placed)\` changes nothing, but it still hides the column from the index, and the query scans the whole table.
+
+Rewrite the \`WHERE\` so it compares \`placed\` itself with \`'2024-05-05'\`. Keep the two columns, \`orders\` and \`takings\`. Do not use \`date(\` anywhere.
+--- starter
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE date(placed) = '2024-05-05';
+--- solution
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed = '2024-05-05';
+--- hint
+Any function around the column hides it from the index, even one that gives back the same value.
+--- hint
+Compare the bare column: \`WHERE placed = '2024-05-05'\`.
+--- check result | 7 orders, 368.75 taken
+[[7, 368.75]]
+--- check source | Compares placed itself
+placed\\s*=\\s*'2024-05-05'
+--- check source absent | Does not wrap placed in a function
+\\(\\s*placed\\s*\\)
+
++++ practice | The first two weeks, without julianday
+--- task
+This report counts the orders from the first two weeks of the year: every day from \`2024-01-01\` up to, but not including, \`2024-01-15\`. It works out the days since New Year for every row, so it cannot use the index on \`placed\`.
+
+Rewrite the \`WHERE\` so \`placed\` stands alone on one side of the comparison. Keep the two columns, \`orders\` and \`takings\`. Do not use \`julianday\` anywhere.
+--- starter
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE julianday(placed) - julianday('2024-01-01') < 14;
+--- solution
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed < '2024-01-15';
+--- hint
+"Fewer than 14 days after 1 January" is the same as "before 15 January".
+--- hint
+Keep the column bare, and put the date on the other side: \`placed < '2024-01-15'\`. Nothing in this table is earlier than 1 January, but \`placed >= '2024-01-01' AND\` in front does no harm.
+--- check result | 97 orders, 5992.25 taken
+[[97, 5992.25]]
+--- check source | Compares placed with <
+placed\\s*<\\s*'2024-01-15'
+--- check source absent | Does not use julianday
+[Jj][Uu][Ll][Ii][Aa][Nn][Dd][Aa][Yy]
+
++++ practice | A quarter, month by month
+--- task
+Return the second quarter of 2024 (April, May and June) as three rows, one per month, with three columns:
+
+- \`month\`: text like \`'2024-04'\`
+- \`orders\`: the number of orders that month
+- \`takings\`: the sum of \`total\`
+
+Sort by \`month\`. The \`WHERE\` must let the index on \`placed\` find the quarter's rows: compare \`placed\` itself as a range, from \`'2024-04-01'\` up to, but not including, \`'2024-07-01'\`. Working out the month for each row in the \`SELECT\` and \`GROUP BY\` is fine.
+--- starter
+SELECT strftime('%Y-%m', placed) AS month, COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE strftime('%Y-%m', placed) IN ('2024-04', '2024-05', '2024-06')
+GROUP BY month
+ORDER BY month;
+--- solution
+SELECT strftime('%Y-%m', placed) AS month, COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed >= '2024-04-01' AND placed < '2024-07-01'
+GROUP BY month
+ORDER BY month;
+--- hint
+Only the \`WHERE\` decides which rows the index must find. A function in the \`SELECT\` or \`GROUP BY\` runs on the rows already found, so it does not stop the index.
+--- hint
+Replace the \`WHERE\` with a half-open range on \`placed\`: on or after 1 April, before 1 July.
+--- check result | April 210, May 217, June 210 orders
+ordered
+[["2024-04", 210, 13058.75], ["2024-05", 217, 13386.0], ["2024-06", 210, 13051.25]]
+--- check source | Compares placed itself with >=
+placed\\s*>=\\s*'2024-04-01'
+--- check source absent | No function around placed in the WHERE
+[Ww][Hh][Ee][Rr][Ee]\\s+\\w+\\(\\s*'?[^)]*placed
+
++++ practice | The last evening of June
+--- schema
+CREATE TABLE events (
+  id INTEGER PRIMARY KEY,
+  ts TEXT NOT NULL
+);
+INSERT INTO events (id, ts) VALUES
+  (1, '2024-05-31 23:59:59'),
+  (2, '2024-06-01 00:00:00'),
+  (3, '2024-06-15 12:30:00'),
+  (4, '2024-06-30 00:00:00'),
+  (5, '2024-06-30 18:40:00'),
+  (6, '2024-06-30 23:59:59'),
+  (7, '2024-07-01 00:00:00');
+CREATE INDEX idx_events_ts ON events(ts);
+--- task
+This problem has its own table, \`events\`: \`id\` and \`ts\`, a timestamp with a time of day, like \`'2024-06-30 18:40:00'\`. There is an index on \`ts\`.
+
+Return one row with one column, \`june\`: the number of events in June 2024, at any time of day. Write the \`WHERE\` as a range on \`ts\` itself, so it can use the index. An event at midnight at the very start of 1 June counts; one at midnight at the start of 1 July does not.
+--- starter
+SELECT COUNT(*) AS june
+FROM events
+WHERE ts >= '2024-06-01' AND ts <= '2024-06-30';
+--- solution
+SELECT COUNT(*) AS june
+FROM events
+WHERE ts >= '2024-06-01' AND ts < '2024-07-01';
+--- hint
+Run the starter: it misses every event on 30 June. \`'2024-06-30 18:40:00'\`, and even \`'2024-06-30 00:00:00'\`, sort after \`'2024-06-30'\`, because they are longer and start the same way.
+--- hint
+End the range at the first moment of the next month, and leave it out: \`ts < '2024-07-01'\`.
+--- check result | Five events: from midnight on 1 June to one second before July
+[[5]]
+--- check source absent | Does not use <= for the end
+<=
+--- check source absent | No function around ts
+\\(\\s*ts\\s*\\)
+
++++ practice | February lost a day
+--- task
+The February report below was rewritten to use the index on \`placed\`, but now it reports fewer orders than the old \`strftime\` version, which found 203 orders and 12723.75 taken. 2024 is a leap year.
+
+Fix the range so it covers every day of February, with \`placed\` still bare on each side. Keep the columns \`orders\` and \`takings\`.
+--- starter
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed >= '2024-02-01' AND placed < '2024-02-29';
+--- solution
+SELECT COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed >= '2024-02-01' AND placed < '2024-03-01';
+--- hint
+Which day does \`placed < '2024-02-29'\` leave out?
+--- hint
+The half-open range ends at the first day of the next month, so you never have to remember how long a month is.
+--- check result | 203 orders, 12723.75 taken
+[[203, 12723.75]]
+--- check source | Still compares placed itself with >=
+placed\\s*>=\\s*'2024-02-01'
+--- check source absent | Does not use strftime
+strftime
+
++++ practice | This month against last month
+--- task
+Compare the 30 days before \`2024-08-01\` with the 30 days before those. Return two rows with three columns:
+
+- \`period\`: \`'recent'\` for the days from \`date('2024-08-01', '-30 days')\` up to, but not including, \`'2024-08-01'\`; \`'earlier'\` for the 30 days before that, from \`date('2024-08-01', '-60 days')\` up to, but not including, the start of \`'recent'\`
+- \`orders\` and \`takings\`
+
+Sort by \`period\`. Keep \`placed\` bare in the \`WHERE\`: functions may appear on the **other** side of a comparison, because they are worked out once, not once per row.
+--- starter
+SELECT CASE WHEN julianday('2024-08-01') - julianday(placed) <= 30 THEN 'recent' ELSE 'earlier' END AS period,
+       COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE julianday('2024-08-01') - julianday(placed) BETWEEN 1 AND 60
+GROUP BY period
+ORDER BY period;
+--- solution
+SELECT CASE WHEN placed >= date('2024-08-01', '-30 days') THEN 'recent' ELSE 'earlier' END AS period,
+       COUNT(*) AS orders, SUM(total) AS takings
+FROM orders
+WHERE placed >= date('2024-08-01', '-60 days') AND placed < '2024-08-01'
+GROUP BY period
+ORDER BY period;
+--- hint
+The whole 60 days is one half-open range: \`placed >= date('2024-08-01', '-60 days') AND placed < '2024-08-01'\`. The date function is on the constant side, so the index can still find the start.
+--- hint
+Inside that range, a \`CASE\` in the \`SELECT\` sorts each row into a period: on or after \`date('2024-08-01', '-30 days')\` is \`'recent'\`. Then \`GROUP BY period\`.
+--- check result | earlier 210 orders, recent 198
+ordered
+[["earlier", 210, 13118.75], ["recent", 198, 12422.25]]
+--- check source absent | No function around placed
+\\(\\s*placed\\s*[,)]
+--- check source | Uses a half-open range
+placed\\s*<\\s*'2024-08-01'
+
+=== sql3-13 | Transactions: all or nothing
+--- schema
+CREATE TABLE accounts (
+  id INTEGER PRIMARY KEY,
+  owner TEXT NOT NULL,
+  balance INTEGER NOT NULL
+);
+INSERT INTO accounts (id, owner, balance) VALUES (1, 'Ana', 100), (2, 'Bo', 50), (3, 'Cy', 0);
+CREATE TABLE transfers (
+  id INTEGER PRIMARY KEY,
+  from_id INTEGER NOT NULL,
+  to_id INTEGER NOT NULL,
+  amount INTEGER NOT NULL
+);
+--- teach
+The lessons since "Constraints: rules the database enforces" taught the database to guard single rows and to find them fast. Some jobs take several statements, and they must either all happen or not happen at all. This lesson shows how to tie statements together into one unit.
+
+### The picture
+
+Think of swapping trading cards with a friend. You hand yours over, and they hand theirs back. If only the first half happens, one of you has been robbed. The swap has to be both halves, or neither.
+
+### The tables
+
+- \`accounts\`: \`id\`, \`owner\`, \`balance\`. Ana (id 1) has 100, Bo (id 2) has 50, Cy (id 3) has 0.
+- \`transfers\`: \`id\`, \`from_id\`, \`to_id\`, \`amount\`. A record of each transfer. It starts empty.
+
+### A transfer is three statements
+
+Moving 30 from Ana to Bo takes three statements: take from one account, add to the other, and record the transfer.
+
+\`\`\`sql
+UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+UPDATE accounts SET balance = balance + 30 WHERE id = 2;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 30);
+\`\`\`
+
+Now say the program crashes right after the first line. Ana has lost 30, Bo got nothing, and no transfer was recorded. The money has vanished.
+
+### A transaction
+
+A **transaction** is a group of statements that the database treats as one unit: either all of them happen, or none do.
+
+\`\`\`sql
+BEGIN;
+UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+UPDATE accounts SET balance = balance + 30 WHERE id = 2;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 30);
+COMMIT;
+\`\`\`
+
+- \`BEGIN\` starts the transaction. The changes after it are not final yet.
+- \`COMMIT\` makes every change since \`BEGIN\` permanent, all together.
+
+After the \`COMMIT\`, the accounts are:
+
+| id | owner | balance |
+| --- | --- | --- |
+| 1 | Ana | 70 |
+| 2 | Bo | 80 |
+| 3 | Cy | 0 |
+
+### Changing your mind: ROLLBACK
+
+\`ROLLBACK\` throws away every change since \`BEGIN\`, as if none of it had happened. Use it when something inside the transaction went wrong. Go back to the starting balances, with Ana at 100. Say Ana tries to send 500 to Cy:
+
+\`\`\`sql
+BEGIN;
+UPDATE accounts SET balance = balance - 500 WHERE id = 1;
+UPDATE accounts SET balance = balance + 500 WHERE id = 3;
+SELECT balance FROM accounts WHERE id = 1;   -- -400
+ROLLBACK;
+\`\`\`
+
+Inside the transaction, your own \`SELECT\` sees the change: Ana is at -400, which is not allowed. So instead of \`COMMIT\`, the transaction ends with \`ROLLBACK\`. Afterwards Ana is back at 100 and Cy at 0, as if the transfer had never started.
+
+### Nobody sees half a transfer
+
+Until \`COMMIT\`, [[other connections|connection]] to the database do not see any of the changes. And if the program dies in the middle, [[the database recovers|crash-recovery]] to exactly how it was before \`BEGIN\`.
+
+These two promises have names. **Atomic** means all or nothing: the unit cannot be split. **Isolated** means no one else sees it half-done. They are the A and the I in [[ACID|acid]], the promises a good database makes about every transaction.
+
+### The pattern in an app
+
+In a real program, every transaction follows the same steps:
+
+1. \`BEGIN\`.
+2. Do the work.
+3. Check that everything went as expected.
+4. \`COMMIT\` if it did. \`ROLLBACK\` on any error, or any failed check.
+
+A failed check might be a balance going below zero. Or it might be an \`UPDATE\` that changed 0 rows, because the account id was wrong. \`SELECT changes();\` tells you [[how many rows the last statement changed|changes]].
+
+### Faster, too
+
+A transaction also saves time. SQLite writes to disk once per commit, not once per statement. So [[10,000 inserts inside one transaction|batching]] can be hundreds of times faster than 10,000 inserts on their own.
+
+**Watch out:** without \`BEGIN\`, every statement is its own tiny transaction and is saved the moment it runs. If you forget \`BEGIN\` and later write \`ROLLBACK\`, SQLite answers \`cannot rollback - no transaction is active\`, and the money has already moved. \`BEGIN\` must come first.
+
+::: context connection What a connection is
+A **connection** is one program's open line to a database. Your code in this editor runs over one connection. A web app may open dozens at once, one for each request it is handling. Two connections are like two people looking at the same shared spreadsheet from two computers. While your transaction is open, the other connection keeps seeing the old balances, the ones from before your \`BEGIN\`. The moment you \`COMMIT\`, it sees all your changes at once, never half of them.
+:::
+
+::: context crash-recovery How SQLite survives a crash
+In its usual setup, SQLite keeps a second file next to the database, called a **journal**. Before it changes anything in the database file, it notes how to undo that change in the journal. If the power fails halfway through a transaction, the journal is still there the next time the database opens. SQLite reads it and puts every half-done change back. Here is a transfer that crashes before \`COMMIT\`:
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="tm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2a44"/>
+    </marker>
+  </defs>
+  <rect x="8" y="20" width="70" height="32" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="43" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">BEGIN</text>
+  <rect x="98" y="20" width="70" height="32" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="133" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">Ana −30</text>
+  <rect x="188" y="20" width="70" height="32" rx="4" fill="#fff" stroke="#1f2a44"/>
+  <text x="223" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">Bo +30</text>
+  <rect x="278" y="20" width="74" height="32" rx="4" fill="#fff" stroke="#b4232c" stroke-width="2"/>
+  <text x="315" y="40" font-size="12" fill="#b4232c" text-anchor="middle">crash</text>
+  <line x1="78" y1="36" x2="96" y2="36" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#tm)"/>
+  <line x1="168" y1="36" x2="186" y2="36" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#tm)"/>
+  <line x1="258" y1="36" x2="276" y2="36" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#tm)"/>
+  <rect x="60" y="78" width="240" height="30" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="97" font-size="12" fill="#1f2a44" text-anchor="middle">after restart: Ana 100, Bo 50</text>
+  <text x="180" y="124" font-size="11" fill="#6c7a93" text-anchor="middle">no COMMIT, so the journal undoes both changes</text>
+</svg>
+\`\`\`
+:::
+
+::: context acid The four ACID promises
+**Atomic**: all of a transaction happens, or none of it. **Consistent**: every rule, like your constraints and foreign keys, still holds after each transaction. **Isolated**: transactions running at the same time do not see each other's half-done work. **Durable**: once \`COMMIT\` has finished, the change survives even a power cut. Banks, airline seat bookings and spacecraft command logs all lean on these promises. Without them, two people could book the same seat, or a command could be half recorded.
+:::
+
+::: context changes Counting the rows you changed
+\`changes()\` returns the number of rows changed by the most recent \`INSERT\`, \`UPDATE\` or \`DELETE\` on this connection. Try it:
+
+\`\`\`sql
+UPDATE accounts SET balance = balance + 10 WHERE id = 99;
+SELECT changes();   -- 0: there is no account 99
+\`\`\`
+
+An \`UPDATE\` that matches no row is not an error. It succeeds, quietly, having done nothing. So a careful transfer checks that each \`UPDATE\` changed exactly 1 row, and rolls back if not. App code usually reads the same number from its database library, often under a name like \`rowcount\`.
+:::
+
+::: context batching Why one commit is faster than many
+A commit is only safe once the data has truly reached the disk, so on every commit SQLite waits for the disk to confirm. That wait is slow compared with the work itself. Commit after every insert, and you wait 10,000 times. Put all the inserts in one transaction, and you wait once. A flight data logger that saves many sensor readings a second can gather each second's readings into one transaction for exactly this reason.
+:::
+--- task
+Run two transfers, each as its own transaction.
+
+1. Move **40** from Ana (id 1) to Cy (id 3). Inside one transaction: take 40 from Ana's balance, add 40 to Cy's, and insert a row into \`transfers\` with \`from_id\` 1, \`to_id\` 3 and \`amount\` 40. Then commit it.
+2. Start moving **80** from Bo (id 2) to Cy (id 3). Begin a transaction, update both balances, then select Bo's balance. It is negative, so **roll the whole transfer back** instead of committing.
+
+When you finish, Ana should have 60, Bo 50 and Cy 40.
+--- starter
+UPDATE accounts SET balance = balance - 40 WHERE id = 1;
+UPDATE accounts SET balance = balance + 40 WHERE id = 3;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 3, 40);
+
+UPDATE accounts SET balance = balance - 80 WHERE id = 2;
+UPDATE accounts SET balance = balance + 80 WHERE id = 3;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 3, 80);
+--- solution
+BEGIN;
+UPDATE accounts SET balance = balance - 40 WHERE id = 1;
+UPDATE accounts SET balance = balance + 40 WHERE id = 3;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 3, 40);
+COMMIT;
+
+BEGIN;
+UPDATE accounts SET balance = balance - 80 WHERE id = 2;
+UPDATE accounts SET balance = balance + 80 WHERE id = 3;
+SELECT balance FROM accounts WHERE id = 2;
+ROLLBACK;
+--- hint
+The starter has the right statements but no transactions. The first three lines are transfer one: put \`BEGIN;\` above them and \`COMMIT;\` below.
+--- hint
+For transfer two, put \`BEGIN;\` above its two \`UPDATE\`s. Replace its \`INSERT\` with \`SELECT balance FROM accounts WHERE id = 2;\`, which shows Bo at -30.
+--- hint
+End transfer two with \`ROLLBACK;\` instead of \`COMMIT;\`, so both of its balance changes are thrown away.
+--- check query | Only the first transfer moved money
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 60], [2, 50], [3, 40]]
+--- check query | Only the first transfer was recorded
+SELECT from_id, to_id, amount FROM transfers
+=> [[1, 3, 40]]
+--- check query | Money was neither created nor destroyed
+SELECT SUM(balance) FROM accounts
+=> [[150]]
+--- check source | Rolls back the failed transfer
+\\b[Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk]\\b
+
++++ practice | Bo pays Ana back
+--- task
+Bo (id 2) pays Ana (id 1) **20**. As one transaction: take 20 from Bo's balance, add 20 to Ana's, and insert a row into \`transfers\` with \`from_id\` 2, \`to_id\` 1 and \`amount\` 20.
+
+Before you commit, check your work: select \`id\` and \`balance\` of Ana and Bo, sorted by \`id\`. It should show Ana on 120 and Bo on 30. Then commit.
+--- starter
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
+UPDATE accounts SET balance = balance + 20 WHERE id = 1;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 1, 20);
+--- solution
+BEGIN;
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
+UPDATE accounts SET balance = balance + 20 WHERE id = 1;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 1, 20);
+SELECT id, balance FROM accounts WHERE id IN (1, 2) ORDER BY id;
+COMMIT;
+--- hint
+The three statements are right. They only need to be tied into one unit, with a look at the result before it is made permanent.
+--- hint
+Put \`BEGIN;\` above them. Below them, the check \`SELECT id, balance FROM accounts WHERE id IN (1, 2) ORDER BY id;\`, then \`COMMIT;\`.
+--- check result | The check shows Ana on 120 and Bo on 30
+ordered
+[[1, 120], [2, 30]]
+--- check query | The money moved
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 120], [2, 30], [3, 0]]
+--- check query | The transfer was recorded
+SELECT from_id, to_id, amount FROM transfers
+=> [[2, 1, 20]]
+--- check source | Starts a transaction
+\\b[Bb][Ee][Gg][Ii][Nn]\\b
+--- check source | Commits it
+\\b[Cc][Oo][Mm][Mm][Ii][Tt]\\b
+
++++ practice | An account that does not exist
+--- task
+Ana (id 1) tries to send **25** to account 9, which does not exist. Run it as a transaction that checks its own work:
+
+1. Begin a transaction.
+2. Take 25 from Ana's balance.
+3. Add 25 to account 9's balance.
+4. Run \`SELECT changes();\`, which shows how many rows the last statement changed. It shows 0: no account 9 was found.
+5. Because of that, roll the whole transfer back.
+
+When you finish, every balance is as it started (Ana 100, Bo 50, Cy 0), and \`transfers\` is empty.
+--- starter
+BEGIN;
+UPDATE accounts SET balance = balance - 25 WHERE id = 1;
+UPDATE accounts SET balance = balance + 25 WHERE id = 9;
+COMMIT;
+--- solution
+BEGIN;
+UPDATE accounts SET balance = balance - 25 WHERE id = 1;
+UPDATE accounts SET balance = balance + 25 WHERE id = 9;
+SELECT changes();
+ROLLBACK;
+--- hint
+An \`UPDATE\` that matches no row is not an error. It quietly changes nothing, so the starter commits a transfer where money left Ana and arrived nowhere.
+--- hint
+After the second \`UPDATE\`, add \`SELECT changes();\`. It shows 0, so end with \`ROLLBACK;\` instead of \`COMMIT;\`.
+--- check query | Every balance is back where it started
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 100], [2, 50], [3, 0]]
+--- check query | No transfer was recorded
+SELECT COUNT(*) FROM transfers
+=> [[0]]
+--- check source | Checks how many rows changed
+[Cc][Hh][Aa][Nn][Gg][Ee][Ss]\\s*\\(\\s*\\)
+--- check source | Rolls back
+\\b[Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk]\\b
+
++++ practice | Half of Ana's balance
+--- task
+Ana (id 1) sends **half of her balance** to Cy (id 3), in one transaction. Do not type the amount: work it out from Ana's balance, with \`balance / 2\`.
+
+There is a trap. Once Ana's balance has gone down, half of it is a different number. So record the transfer **first**, with \`INSERT … SELECT\`, working the amount out from Ana's balance. Then move the money in both accounts using the amount stored in \`transfers\`. Commit at the end.
+
+When you finish, Ana has 50, Cy has 50, and \`transfers\` holds one row: from 1 to 3, amount 50.
+--- starter
+BEGIN;
+UPDATE accounts SET balance = balance - (SELECT balance / 2 FROM accounts WHERE id = 1) WHERE id = 1;
+UPDATE accounts SET balance = balance + (SELECT balance / 2 FROM accounts WHERE id = 1) WHERE id = 3;
+COMMIT;
+--- solution
+BEGIN;
+INSERT INTO transfers (from_id, to_id, amount)
+SELECT 1, 3, balance / 2 FROM accounts WHERE id = 1;
+UPDATE accounts SET balance = balance - (SELECT amount FROM transfers WHERE from_id = 1 AND to_id = 3) WHERE id = 1;
+UPDATE accounts SET balance = balance + (SELECT amount FROM transfers WHERE from_id = 1 AND to_id = 3) WHERE id = 3;
+COMMIT;
+--- hint
+Run the starter: Ana ends on 50 but Cy gets only 25. The second \`UPDATE\` halves Ana's balance again, after it has already gone down.
+--- hint
+\`INSERT INTO transfers (from_id, to_id, amount) SELECT 1, 3, balance / 2 FROM accounts WHERE id = 1;\` stores the amount once, before anything moves.
+--- hint
+Then each \`UPDATE\` reads that stored amount: \`(SELECT amount FROM transfers WHERE from_id = 1 AND to_id = 3)\`.
+--- check query | Ana and Cy each have 50
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 50], [2, 50], [3, 50]]
+--- check query | One transfer of 50 was recorded
+SELECT from_id, to_id, amount FROM transfers
+=> [[1, 3, 50]]
+--- check query | Money was neither created nor destroyed
+SELECT SUM(balance) FROM accounts
+=> [[150]]
+--- check source absent | Does not type the amount
+[-+]\\s*50\\b|,\\s*50\\s*\\)
+
++++ practice | Down to exactly zero
+--- task
+Run two transfers, each as its own transaction. A balance may reach 0, but never go below it.
+
+1. Bo (id 2) sends **all 50** of his balance to Ana (id 1). Begin, update both balances, insert the row into \`transfers\` (2 to 1, amount 50), then select Bo's balance. It is exactly 0, which is allowed, so commit.
+2. Cy (id 3) sends **10** to Ana. Begin, update both balances, then select Cy's balance. It is below 0, so roll the whole transfer back.
+
+When you finish, Ana has 150, Bo 0 and Cy 0.
+--- starter
+BEGIN;
+UPDATE accounts SET balance = balance - 50 WHERE id = 2;
+UPDATE accounts SET balance = balance + 50 WHERE id = 1;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 1, 50);
+SELECT balance FROM accounts WHERE id = 2;
+ROLLBACK;
+
+BEGIN;
+UPDATE accounts SET balance = balance - 10 WHERE id = 3;
+UPDATE accounts SET balance = balance + 10 WHERE id = 1;
+SELECT balance FROM accounts WHERE id = 3;
+COMMIT;
+--- solution
+BEGIN;
+UPDATE accounts SET balance = balance - 50 WHERE id = 2;
+UPDATE accounts SET balance = balance + 50 WHERE id = 1;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 1, 50);
+SELECT balance FROM accounts WHERE id = 2;
+COMMIT;
+
+BEGIN;
+UPDATE accounts SET balance = balance - 10 WHERE id = 3;
+UPDATE accounts SET balance = balance + 10 WHERE id = 1;
+SELECT balance FROM accounts WHERE id = 3;
+ROLLBACK;
+--- hint
+Read each \`SELECT\` and decide: 0 is allowed, anything below 0 is not.
+--- hint
+The starter has the two endings the wrong way round. Bo's transfer, which reaches exactly 0, should be committed; Cy's, which goes to −10, rolled back.
+--- check query | Bo's transfer happened; Cy's did not
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 150], [2, 0], [3, 0]]
+--- check query | Only Bo's transfer was recorded
+SELECT from_id, to_id, amount FROM transfers
+=> [[2, 1, 50]]
+--- check query | Nobody is below zero
+SELECT COUNT(*) FROM accounts WHERE balance < 0
+=> [[0]]
+
++++ practice | A transaction inside a transaction
+--- task
+This script should run two transfers, each as its own transaction: Ana (id 1) sends 10 to Bo (id 2), then Bo sends 20 to Cy (id 3). Each transfer is also recorded in \`transfers\`. The script stops with the error "cannot start a transaction within a transaction".
+
+Find what is missing and fix it. When it works, the script's last line shows Ana on 90, Bo on 40 and Cy on 20, and both transfers are recorded.
+--- starter
+BEGIN;
+UPDATE accounts SET balance = balance - 10 WHERE id = 1;
+UPDATE accounts SET balance = balance + 10 WHERE id = 2;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 10);
+
+BEGIN;
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
+UPDATE accounts SET balance = balance + 20 WHERE id = 3;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 3, 20);
+COMMIT;
+
+SELECT id, balance FROM accounts ORDER BY id;
+--- solution
+BEGIN;
+UPDATE accounts SET balance = balance - 10 WHERE id = 1;
+UPDATE accounts SET balance = balance + 10 WHERE id = 2;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 10);
+COMMIT;
+
+BEGIN;
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
+UPDATE accounts SET balance = balance + 20 WHERE id = 3;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (2, 3, 20);
+COMMIT;
+
+SELECT id, balance FROM accounts ORDER BY id;
+--- hint
+Count the \`BEGIN\`s and the \`COMMIT\`s. Every transaction that is begun must be ended before the next one begins.
+--- hint
+The first transfer never ends. Add \`COMMIT;\` after its \`INSERT\`.
+--- check result | The last line shows both transfers moved money
+ordered
+[[1, 90], [2, 40], [3, 20]]
+--- check query | Both transfers were recorded
+SELECT from_id, to_id, amount FROM transfers ORDER BY id
+=> [[1, 2, 10], [2, 3, 20]]
+--- check query | Money was neither created nor destroyed
+SELECT SUM(balance) FROM accounts
+=> [[150]]
+
++++ practice | A batch of transfers in one go
+--- task
+At the end of the day, the bank settles a batch of three transfers at once:
+
+- Ana (1) to Bo (2): 30
+- Bo (2) to Cy (3): 20
+- Ana (1) to Cy (3): 10
+
+In **one** transaction, first insert all three rows into \`transfers\` with one \`INSERT\`. Then apply them to the balances with **one** \`UPDATE\` of \`accounts\`: each account gains the total of the transfers it received and loses the total of the transfers it sent. Use correlated subqueries on \`transfers\`, and count an account with no transfers in one direction as 0. Commit at the end.
+
+When you finish, Ana has 60, Bo 60 and Cy 30.
+--- starter
+BEGIN;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 30), (2, 3, 20), (1, 3, 10);
+UPDATE accounts SET balance = balance
+  + (SELECT SUM(amount) FROM transfers WHERE to_id = accounts.id)
+  - (SELECT SUM(amount) FROM transfers WHERE from_id = accounts.id);
+COMMIT;
+--- solution
+BEGIN;
+INSERT INTO transfers (from_id, to_id, amount) VALUES (1, 2, 30), (2, 3, 20), (1, 3, 10);
+UPDATE accounts SET balance = balance
+  + COALESCE((SELECT SUM(amount) FROM transfers WHERE to_id = accounts.id), 0)
+  - COALESCE((SELECT SUM(amount) FROM transfers WHERE from_id = accounts.id), 0);
+COMMIT;
+--- hint
+Run the starter: it fails with "NOT NULL constraint failed: accounts.balance". Ana received nothing, so her "received" \`SUM\` is NULL, and a sum with a NULL in it is NULL.
+--- hint
+Wrap each subquery in \`COALESCE(…, 0)\`, so "no transfers" counts as 0.
+--- check query | Everyone's balance is settled
+SELECT id, balance FROM accounts ORDER BY id
+=> [[1, 60], [2, 60], [3, 30]]
+--- check query | All three transfers were recorded
+SELECT COUNT(*), SUM(amount) FROM transfers
+=> [[3, 60]]
+--- check query | Money was neither created nor destroyed
+SELECT SUM(balance) FROM accounts
+=> [[150]]
+--- check source | Runs as a transaction
+\\b[Bb][Ee][Gg][Ii][Nn]\\b
+
+=== sql3-14 | UPSERT: insert or update
+--- schema
+CREATE TABLE daily_views (
+  page TEXT NOT NULL,
+  day TEXT NOT NULL,
+  views INTEGER NOT NULL,
+  PRIMARY KEY (page, day)
+);
+INSERT INTO daily_views (page, day, views) VALUES
+  ('/pricing', '2024-07-01', 10),
+  ('/docs',    '2024-07-01', 4);
+CREATE TABLE raw_hits (
+  page TEXT NOT NULL,
+  ts TEXT NOT NULL
+);
+INSERT INTO raw_hits (page, ts) VALUES
+  ('/pricing', '2024-07-01 22:10:00'),
+  ('/pricing', '2024-07-01 23:59:59'),
+  ('/pricing', '2024-07-02 00:00:01'),
+  ('/docs',    '2024-07-02 09:30:00'),
+  ('/blog',    '2024-07-01 12:00:00'),
+  ('/blog',    '2024-07-01 12:05:00'),
+  ('/blog',    '2024-07-01 13:00:00');
+--- teach
+Last lesson, Transactions: all or nothing, you grouped several changes so that they all happen or none do. This lesson handles [[one of the most common changes an app makes|upsert-uses]]: "add this row, or, if it is already there, update it". You will do it in one statement.
+
+### The picture
+
+Picture a tally sheet on a café wall, with one line per cake per day. When a slice sells, you look for today's line for that cake. If the line is there, you add to its count. If it is not, you start a new line. You never want two lines for the same cake on the same day.
+
+### The tables in this lesson
+
+\`daily_views\` counts visits to each page of a website, with one row per page per day. Its columns are \`page\`, \`day\` and \`views\`. Its primary key is \`(page, day)\`: the two columns together. So there can be only one row for \`/pricing\` on \`2024-07-01\`. It starts with two rows:
+
+| page | day | views |
+| --- | --- | --- |
+| /pricing | 2024-07-01 | 10 |
+| /docs | 2024-07-01 | 4 |
+
+\`raw_hits\` has one row per single visit: the \`page\`, and \`ts\`, a **timestamp** (a date and a time, like \`'2024-07-01 22:10:00'\`).
+
+### Why two statements are not enough
+
+The first idea most people have is two statements. First a \`SELECT\` to see whether the row exists, then an \`INSERT\` or an \`UPDATE\`.
+
+The trouble is that a busy website serves many visitors at the same moment. Two requests can both look, both see "no row yet", and both insert. That is a [[race condition|race]]: the result depends on which one gets there first.
+
+And a plain \`INSERT\` of a row that already exists fails. The primary key from the lesson Constraints: rules the database enforces refuses a second row with the same key:
+
+\`\`\`sql
+INSERT INTO daily_views (page, day, views)
+VALUES ('/pricing', '2024-07-01', 3);
+-- Error: UNIQUE constraint failed: daily_views.page, daily_views.day
+\`\`\`
+
+### Insert, or else update
+
+**[[UPSERT|upsert-name]]** is an \`INSERT\` that carries a plan for that clash. The word is "update" and "insert" squeezed together.
+
+\`\`\`sql
+INSERT INTO daily_views (page, day, views)
+VALUES ('/pricing', '2024-07-01', 3)
+ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views;
+\`\`\`
+
+Read it aloud: "Try to insert this row. If it clashes on \`(page, day)\`, update the row that is already there instead." The \`/pricing\` row for \`2024-07-01\` goes from 10 to 13. No error, and still one row.
+
+Run the same statement for \`'/blog'\` instead, and there is no clash. The row is inserted as normal, with \`views\` = 3.
+
+### ON CONFLICT names the rule
+
+A **conflict** is an insert that would break a "no two rows alike" rule: a primary key or a \`UNIQUE\` constraint. \`ON CONFLICT (page, day)\` names which rule you are handling.
+
+The columns in the brackets must match a primary key or \`UNIQUE\` constraint exactly. \`ON CONFLICT (page)\` on its own fails with "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint", because no rule says a page may appear only once.
+
+### excluded: the row that did not get in
+
+During a conflict there are two rows in play: the one already in the table, and the one you tried to insert. The one you tried to insert was kept out, so SQL calls it **[[excluded|excluded-name]]**. Inside \`DO UPDATE SET\`:
+
+- \`views\` is the value already in the table: 10.
+- \`excluded.views\` is the value you tried to insert: 3.
+- \`views + excluded.views\` is 10 + 3 = 13.
+
+To overwrite instead of adding, write \`SET views = excluded.views\`.
+
+### DO NOTHING
+
+Sometimes you only want to make sure a row exists. Then the plan for a clash is "leave it alone":
+
+\`\`\`sql
+INSERT INTO daily_views (page, day, views)
+VALUES ('/docs', '2024-07-01', 1)
+ON CONFLICT (page, day) DO NOTHING;
+\`\`\`
+
+The \`/docs\` row stays at 4, and there is no error.
+
+### Many rows at once
+
+In the lesson Changing data with conditions you filled a table from a \`SELECT\` with \`INSERT … SELECT\`. An upsert works with that too: each row the \`SELECT\` returns is either inserted or folded into the row that is already there.
+
+There is one trap in how SQLite reads it. The word \`ON\` also starts a join's condition (\`JOIN … ON …\`). If the \`SELECT\` ends straight after its \`FROM\`, SQLite cannot tell whether \`ON\` begins a join condition or \`ON CONFLICT\`. It gives up with a syntax error. The fix is to always give that \`SELECT\` a \`WHERE\`. [[WHERE true|where-true]] keeps every row, because \`true\` is a condition that always holds:
+
+\`\`\`sql
+INSERT INTO t (a, b)
+SELECT a, b FROM staging WHERE true
+ON CONFLICT (a) DO UPDATE SET b = excluded.b;
+\`\`\`
+
+Here \`t\` is the table being filled, with \`a\` as its key, and \`staging\` is a holding table where new rows wait. \`WHERE\` comes before \`GROUP BY\`, as always, so a grouped \`SELECT\` reads \`FROM … WHERE true GROUP BY …\`.
+
+### Not the same as INSERT OR REPLACE
+
+The lesson on constraints showed \`INSERT OR REPLACE\`. It looks similar but works differently: it **deletes** the old row, then inserts the new one. Any column you did not supply is lost, and comes back empty or as its default. An upsert [[updates the row in place|replace-vs-upsert]]: every column not named in \`SET\` keeps its value.
+
+**Watch out:** \`views\` and \`excluded.views\` are different values. A counter needs \`SET views = views + excluded.views\`. If you write \`SET views = excluded.views\`, the old count is thrown away: \`/pricing\` would show 3, not 13, and no error warns you.
+
+::: context upsert-uses Where upserts show up
+Any table that keeps "the latest" or "the total so far" for each thing needs this pattern. A website keeps a view count per page per day. A settings table keeps one row per user per setting, and saving a setting upserts it. A mission control ground station keeps one row per satellite with the last position heard, and every incoming radio packet upserts that satellite's row. The table stays small, one row per thing, however many packets arrive.
+:::
+
+::: context race Two requests, one gap
+Each request does two things: look, then write. Between the look and the write there is a tiny gap, and another request can slip into it. Here both requests look before either writes, so both decide to insert. With the primary key in place, the second insert fails with an error. Without a key, you would get two rows for one page and day. An upsert closes the gap: the look and the write are one statement, and the database does not let another writer in half-way through it.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <text x="8" y="44" font-size="12" fill="#1f2a44">request A</text>
+  <text x="8" y="104" font-size="12" fill="#1f2a44">request B</text>
+  <line x1="80" y1="40" x2="352" y2="40" stroke="#6c7a93"/>
+  <line x1="80" y1="100" x2="352" y2="100" stroke="#6c7a93"/>
+  <rect x="90" y="26" width="84" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="132" y="44" font-size="11" fill="#1f2a44" text-anchor="middle">look: no row</text>
+  <rect x="130" y="86" width="84" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="172" y="104" font-size="11" fill="#1f2a44" text-anchor="middle">look: no row</text>
+  <rect x="220" y="26" width="60" height="28" rx="4" fill="#fff" stroke="#1d6fd1"/>
+  <text x="250" y="44" font-size="11" fill="#1f2a44" text-anchor="middle">INSERT</text>
+  <rect x="270" y="86" width="80" height="28" rx="4" fill="#fff" stroke="#b4232c"/>
+  <text x="310" y="104" font-size="11" fill="#b4232c" text-anchor="middle">INSERT: clash</text>
+  <text x="180" y="140" font-size="11" fill="#6c7a93" text-anchor="middle">time runs left to right</text>
+</svg>
+\`\`\`
+:::
+
+::: context upsert-name The same idea in other databases
+SQLite added \`ON CONFLICT … DO UPDATE\` in version 3.24, in 2018. It copied the spelling from PostgreSQL, which has had it since version 9.5, so the statement in this lesson runs in both, \`excluded\` included. MySQL writes the same idea as \`INSERT … ON DUPLICATE KEY UPDATE\`. The SQL standard has a bigger statement called \`MERGE\`, which some databases offer as well. The name "upsert" is not a keyword in any of them. It is the word engineers use when they talk about the pattern.
+:::
+
+::: context excluded-name Naming both rows plainly
+\`excluded\` is a made-up table name that only exists inside \`DO UPDATE\`. It always has the same columns as the table you are inserting into. The existing row can be named with the table's own name, which some people find easier to read: \`SET views = daily_views.views + excluded.views\` does exactly the same as \`SET views = views + excluded.views\`. You may also put a \`WHERE\` after the \`SET\`, for example \`WHERE excluded.views > 0\`, and then the update only happens when that condition holds.
+:::
+
+::: context where-true Why a harmless WHERE fixes it
+A computer reads SQL word by word, left to right, and decides what each word means as it goes. After \`FROM staging\`, the word \`ON\` could be the start of a join condition, so SQLite reads it that way and then trips over \`CONFLICT\`. Any clause between \`FROM\` and \`ON\` removes the doubt. A \`WHERE\` does, and so does a \`GROUP BY\`. The SQLite documentation recommends \`WHERE true\` for every \`INSERT … SELECT … ON CONFLICT\`, so you never have to work out whether you needed it. \`true\` is the number 1 in SQLite, and a condition of 1 holds for every row.
+:::
+
+::: context replace-vs-upsert Why REPLACE can surprise you
+Say a table \`s\` has a primary key \`k\`, plus \`v\` and \`note\`, and one row: \`'a'\`, 1, \`'keep me'\`. \`INSERT OR REPLACE INTO s (k, v) VALUES ('a', 2)\` deletes that row and inserts a fresh one, so \`note\` comes back NULL. The upsert \`INSERT INTO s (k, v) VALUES ('a', 2) ON CONFLICT (k) DO UPDATE SET v = excluded.v\` changes only \`v\`, and \`'keep me'\` survives. The delete inside a REPLACE can also set off other rules: a delete trigger, which the lesson after next introduces, runs for it if the setting \`PRAGMA recursive_triggers\` is on.
+:::
+--- task
+Fold the raw hits into the daily counters with **one** \`INSERT … SELECT … ON CONFLICT\` statement:
+
+- Count the rows of \`raw_hits\` for each page and calendar day. The day is \`date(ts)\`, which keeps only the date part of the timestamp.
+- Insert those counts into \`daily_views\` (\`page\`, \`day\`, \`views\`).
+- Where a row for that page and day already exists, add the count to its \`views\`. Where none exists, a new row is created.
+--- starter
+INSERT INTO daily_views (page, day, views)
+SELECT page, date(ts), COUNT(*)
+FROM raw_hits
+GROUP BY page, date(ts);
+--- solution
+INSERT INTO daily_views (page, day, views)
+SELECT page, date(ts), COUNT(*)
+FROM raw_hits
+WHERE true
+GROUP BY page, date(ts)
+ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views;
+--- hint
+Run the starter first. It fails with "UNIQUE constraint failed", because \`/pricing\` on \`2024-07-01\` already has a row. The statement needs a plan for that clash.
+--- hint
+At the end, before the \`;\`, add \`ON CONFLICT (page, day) DO UPDATE SET …\`. The new count is \`excluded.views\`, and it should be added to the \`views\` already there.
+--- hint
+Add \`WHERE true\` between \`FROM raw_hits\` and \`GROUP BY\`, and finish with \`ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views;\`.
+--- check query | Existing counters were added to, new ones created
+SELECT page, day, views FROM daily_views ORDER BY page, day
+=> [["/blog", "2024-07-01", 3], ["/docs", "2024-07-01", 4], ["/docs", "2024-07-02", 1], ["/pricing", "2024-07-01", 12], ["/pricing", "2024-07-02", 1]]
+--- check source | Uses ON CONFLICT … DO UPDATE
+[Oo][Nn]\\s+[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt][\\s\\S]*[Dd][Oo]\\s+[Uu][Pp][Dd][Aa][Tt][Ee]
+
++++ practice | Two counters, one new
+--- task
+Record two batches of page views in \`daily_views\`, each with one upsert:
+
+1. 5 views of \`'/docs'\` on \`'2024-07-01'\`. That row already exists with 4 views, so it should become 9.
+2. 2 views of \`'/about'\` on \`'2024-07-02'\`. There is no such row yet, so it is created with 2.
+
+Each statement is an \`INSERT\` with an \`ON CONFLICT\` plan, and neither may overwrite an existing count.
+--- starter
+INSERT INTO daily_views (page, day, views) VALUES ('/docs', '2024-07-01', 5);
+INSERT INTO daily_views (page, day, views) VALUES ('/about', '2024-07-02', 2);
+--- solution
+INSERT INTO daily_views (page, day, views) VALUES ('/docs', '2024-07-01', 5)
+ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views;
+
+INSERT INTO daily_views (page, day, views) VALUES ('/about', '2024-07-02', 2)
+ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views;
+--- hint
+Run the starter: the first insert fails, because \`/docs\` on 1 July already has a row. Each insert needs a plan for that clash.
+--- hint
+Add \`ON CONFLICT (page, day) DO UPDATE SET views = views + excluded.views\` to each one. The second never clashes, so it simply inserts.
+--- check query | /docs went from 4 to 9, and /about was created
+SELECT page, day, views FROM daily_views ORDER BY page, day
+=> [["/about", "2024-07-02", 2], ["/docs", "2024-07-01", 9], ["/pricing", "2024-07-01", 10]]
+--- check source | Uses ON CONFLICT … DO UPDATE
+[Oo][Nn]\\s+[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt][\\s\\S]*[Dd][Oo]\\s+[Uu][Pp][Dd][Aa][Tt][Ee]
+--- check source | Adds to the count already there
+excluded\\.views
+
++++ practice | Saving settings
+--- schema
+CREATE TABLE settings (
+  user_id INTEGER NOT NULL,
+  key TEXT NOT NULL,
+  value TEXT NOT NULL,
+  PRIMARY KEY (user_id, key)
+);
+INSERT INTO settings (user_id, key, value) VALUES
+  (1, 'theme', 'light'), (1, 'lang', 'en'), (2, 'theme', 'dark');
+--- task
+This problem has its own table, \`settings\`: one row per user per setting, with \`user_id\`, \`key\` and \`value\`. Its primary key is \`(user_id, key)\`.
+
+User 1 presses Save with two settings: \`theme\` is now \`'dark'\`, and \`tz\`, which they never set before, is \`'UTC'\`. Save both with **one** \`INSERT\` of two rows. A setting that already exists takes the new value; a new one is created. User 1's \`lang\` and user 2's settings must not change.
+--- starter
+INSERT INTO settings (user_id, key, value) VALUES (1, 'theme', 'dark'), (1, 'tz', 'UTC')
+ON CONFLICT (user_id, key) DO NOTHING;
+--- solution
+INSERT INTO settings (user_id, key, value) VALUES (1, 'theme', 'dark'), (1, 'tz', 'UTC')
+ON CONFLICT (user_id, key) DO UPDATE SET value = excluded.value;
+--- hint
+Run the starter: \`tz\` is saved, but the theme stays \`'light'\`. \`DO NOTHING\` leaves a clashing row alone.
+--- hint
+Here the new value should replace the old one, not be added to it: \`DO UPDATE SET value = excluded.value\`.
+--- check query | theme is dark, tz is new, and nothing else changed
+SELECT user_id, key, value FROM settings ORDER BY user_id, key
+=> [[1, "lang", "en"], [1, "theme", "dark"], [1, "tz", "UTC"], [2, "theme", "dark"]]
+--- check query | Still one row per user per setting
+SELECT COUNT(*) FROM settings
+=> [[4]]
+--- check source | Takes the new value from excluded
+excluded\\.value
+
++++ practice | A mailing list with messy emails
+--- schema
+CREATE TABLE contacts (
+  email TEXT PRIMARY KEY,
+  source TEXT NOT NULL
+);
+INSERT INTO contacts (email, source) VALUES ('ana@mail.com', 'shop');
+CREATE TABLE signups (
+  raw_email TEXT NOT NULL
+);
+INSERT INTO signups (raw_email) VALUES
+  ('  Ana@Mail.com '), ('bo@mail.com'), ('BO@mail.com'), ('cy@mail.com   ');
+--- task
+This problem has its own tables. \`contacts\` holds one row per email, with \`email\` (the primary key) and \`source\`, where the contact came from. \`signups\` holds new sign-ups exactly as people typed them, in \`raw_email\`: with stray spaces and capital letters.
+
+Add every sign-up to \`contacts\` with **one** \`INSERT … SELECT\`:
+
+- store each email cleaned: spaces trimmed from both ends, and all small letters;
+- give new contacts the source \`'signup'\`;
+- an email that is already in \`contacts\` is left exactly as it is, source included, and so is a second copy of the same email within the batch. No error.
+--- starter
+INSERT INTO contacts (email, source)
+SELECT raw_email, 'signup' FROM signups;
+--- solution
+INSERT INTO contacts (email, source)
+SELECT lower(trim(raw_email)), 'signup' FROM signups WHERE true
+ON CONFLICT (email) DO NOTHING;
+--- hint
+Clean each email in the \`SELECT\` with \`lower(trim(raw_email))\`. Now \`' Ana@Mail.com '\` and the stored \`'ana@mail.com'\` are the same, and they clash.
+--- hint
+"Leave it as it is" is \`ON CONFLICT (email) DO NOTHING\`. Put \`WHERE true\` after \`FROM signups\`, so SQLite does not read \`ON\` as part of a join.
+--- check query | Three contacts; Ana keeps the source 'shop'
+SELECT email, source FROM contacts ORDER BY email
+=> [["ana@mail.com", "shop"], ["bo@mail.com", "signup"], ["cy@mail.com", "signup"]]
+--- check source | Cleans the emails
+[Ll][Oo][Ww][Ee][Rr]\\s*\\(\\s*[Tt][Rr][Ii][Mm]|[Tt][Rr][Ii][Mm]\\s*\\(\\s*[Ll][Oo][Ww][Ee][Rr]
+--- check source | Does nothing on a clash
+[Dd][Oo]\\s+[Nn][Oo][Tt][Hh][Ii][Nn][Gg]
+
++++ practice | Only newer readings win
+--- schema
+CREATE TABLE sensor_latest (
+  sensor TEXT PRIMARY KEY,
+  reading REAL NOT NULL,
+  at TEXT NOT NULL
+);
+INSERT INTO sensor_latest (sensor, reading, at) VALUES
+  ('T1', 20.5, '2024-07-01 10:00'),
+  ('T2', 18.0, '2024-07-01 10:00');
+--- task
+This problem has its own table, \`sensor_latest\`: the latest \`reading\` from each \`sensor\`, and the time \`at\` it was taken. Readings travel over a radio link, so they can arrive late and out of order.
+
+Store this batch with **one** \`INSERT\` of five rows, in this order:
+
+- \`('T1', 21.0, '2024-07-01 10:05')\`
+- \`('T2', 17.5, '2024-07-01 09:55')\`
+- \`('T3', 25.0, '2024-07-01 10:01')\`
+- \`('T1', 19.0, '2024-07-01 10:02')\`
+- \`('T2', 99.0, '2024-07-01 10:00')\`
+
+A sensor that is not in the table yet is added. For a sensor that is there, the stored row changes only if the new reading is **strictly newer** than the stored one. An older reading, or one taken at exactly the same time, changes nothing.
+--- starter
+INSERT INTO sensor_latest (sensor, reading, at) VALUES
+  ('T1', 21.0, '2024-07-01 10:05'),
+  ('T2', 17.5, '2024-07-01 09:55'),
+  ('T3', 25.0, '2024-07-01 10:01'),
+  ('T1', 19.0, '2024-07-01 10:02'),
+  ('T2', 99.0, '2024-07-01 10:00')
+ON CONFLICT (sensor) DO UPDATE SET reading = excluded.reading, at = excluded.at;
+--- solution
+INSERT INTO sensor_latest (sensor, reading, at) VALUES
+  ('T1', 21.0, '2024-07-01 10:05'),
+  ('T2', 17.5, '2024-07-01 09:55'),
+  ('T3', 25.0, '2024-07-01 10:01'),
+  ('T1', 19.0, '2024-07-01 10:02'),
+  ('T2', 99.0, '2024-07-01 10:00')
+ON CONFLICT (sensor) DO UPDATE SET reading = excluded.reading, at = excluded.at
+WHERE excluded.at > sensor_latest.at;
+--- hint
+Run the starter: T1 ends on 19.0, because the late 10:02 reading overwrote the 10:05 one. The update must only happen when the new row is newer.
+--- hint
+A \`DO UPDATE\` can end with a \`WHERE\`, and then it only updates when that holds. Compare \`excluded.at\` with the stored \`sensor_latest.at\`, using \`>\` so an equal time changes nothing.
+--- check query | T1 keeps 10:05, T2 keeps its reading, T3 is new
+SELECT sensor, reading, at FROM sensor_latest ORDER BY sensor
+=> [["T1", 21.0, "2024-07-01 10:05"], ["T2", 18.0, "2024-07-01 10:00"], ["T3", 25.0, "2024-07-01 10:01"]]
+--- check source | Uses ON CONFLICT … DO UPDATE
+[Oo][Nn]\\s+[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt][\\s\\S]*[Dd][Oo]\\s+[Uu][Pp][Dd][Aa][Tt][Ee]
+--- check source | Compares the times
+excluded\\.at\\s*[<>]|[<>]\\s*excluded\\.at
+
++++ practice | The word counts that forgot
+--- schema
+CREATE TABLE word_counts (
+  word TEXT PRIMARY KEY,
+  n INTEGER NOT NULL
+);
+INSERT INTO word_counts (word, n) VALUES ('orbit', 3), ('burn', 1);
+CREATE TABLE new_words (
+  word TEXT NOT NULL
+);
+INSERT INTO new_words (word) VALUES ('orbit'), ('orbit'), ('apogee'), ('burn'), ('orbit');
+--- task
+This problem has its own tables. \`word_counts\` keeps a running count, \`n\`, of how often each \`word\` has appeared in mission logs. \`new_words\` holds the words from today's log, one row per appearance.
+
+The statement below should add today's counts to the running counts. It runs without an error, but afterwards \`orbit\` shows 3, although it had 3 already and appeared 3 more times today. Fix it so \`orbit\` ends on 6, \`burn\` on 2 and \`apogee\` on 1.
+--- starter
+INSERT INTO word_counts (word, n)
+SELECT word, COUNT(*) FROM new_words WHERE true
+GROUP BY word
+ON CONFLICT (word) DO UPDATE SET n = excluded.n;
+--- solution
+INSERT INTO word_counts (word, n)
+SELECT word, COUNT(*) FROM new_words WHERE true
+GROUP BY word
+ON CONFLICT (word) DO UPDATE SET n = n + excluded.n;
+--- hint
+Inside \`DO UPDATE SET\`, \`n\` is the count already in the table and \`excluded.n\` is today's count. Which one does the starter keep?
+--- hint
+A running count adds the two: \`SET n = n + excluded.n\`.
+--- check query | orbit 6, burn 2, apogee 1
+SELECT word, n FROM word_counts ORDER BY word
+=> [["apogee", 1], ["burn", 2], ["orbit", 6]]
+--- check source | Adds today's count to the old one
+n\\s*\\+\\s*excluded\\.n|excluded\\.n\\s*\\+\\s*n\\b
+--- check source | Still one INSERT … ON CONFLICT
+[Oo][Nn]\\s+[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt]
+
++++ practice | Last heard from each satellite
+--- schema
+CREATE TABLE last_heard (
+  sat TEXT PRIMARY KEY,
+  at TEXT NOT NULL,
+  packets INTEGER NOT NULL
+);
+INSERT INTO last_heard (sat, at, packets) VALUES
+  ('SAT-1', '2024-07-01 10:00', 12),
+  ('SAT-2', '2024-07-01 09:00', 5);
+CREATE TABLE packets (
+  sat TEXT NOT NULL,
+  at TEXT NOT NULL
+);
+INSERT INTO packets (sat, at) VALUES
+  ('SAT-1', '2024-07-01 10:05'),
+  ('SAT-1', '2024-07-01 10:07'),
+  ('SAT-1', '2024-07-01 09:58'),
+  ('SAT-3', '2024-07-01 10:02'),
+  ('SAT-2', '2024-07-01 08:30');
+--- task
+This problem has its own tables. \`last_heard\` keeps one row per satellite: \`sat\`, \`at\` (the time of the newest packet heard from it) and \`packets\` (how many packets have been heard from it in all). \`packets\` is a batch of newly received packets, one row each, \`sat\` and \`at\`. Some arrived late, so their time can be older than what \`last_heard\` already knows.
+
+Fold the batch into \`last_heard\` with **one** \`INSERT … SELECT … ON CONFLICT\` statement:
+
+- \`packets\` grows by the number of packets in the batch for that satellite;
+- \`at\` becomes the newest time known: the batch's newest packet if it is newer than the stored \`at\`, otherwise the stored \`at\` stays;
+- a satellite heard for the first time gets a new row.
+--- starter
+INSERT INTO last_heard (sat, at, packets)
+SELECT sat, MAX(at), COUNT(*) FROM packets WHERE true
+GROUP BY sat
+ON CONFLICT (sat) DO UPDATE SET at = excluded.at, packets = excluded.packets;
+--- solution
+INSERT INTO last_heard (sat, at, packets)
+SELECT sat, MAX(at), COUNT(*) FROM packets WHERE true
+GROUP BY sat
+ON CONFLICT (sat) DO UPDATE SET
+  packets = packets + excluded.packets,
+  at = CASE WHEN excluded.at > at THEN excluded.at ELSE at END;
+--- hint
+Group the batch first: one row per satellite, with \`MAX(at)\` and \`COUNT(*)\`. That is what the starter's \`SELECT\` does already.
+--- hint
+The two columns need different rules. The count adds: \`packets = packets + excluded.packets\`. The time keeps the later of the two: a \`CASE\` comparing \`excluded.at\` with \`at\`.
+--- hint
+On the right-hand side of \`SET\`, a plain column name always means the value already in the table, even if another part of the same \`SET\` changes it.
+--- check query | SAT-1 has 15 packets, newest 10:07; SAT-2 keeps 09:00; SAT-3 is new
+SELECT sat, at, packets FROM last_heard ORDER BY sat
+=> [["SAT-1", "2024-07-01 10:07", 15], ["SAT-2", "2024-07-01 09:00", 6], ["SAT-3", "2024-07-01 10:02", 1]]
+--- check source | Uses ON CONFLICT … DO UPDATE
+[Oo][Nn]\\s+[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt][\\s\\S]*[Dd][Oo]\\s+[Uu][Pp][Dd][Aa][Tt][Ee]
+--- check source | Adds to the packet count
+packets\\s*\\+\\s*excluded\\.packets|excluded\\.packets\\s*\\+\\s*packets
+
+=== sql3-15 | Views: saved queries
+--- teach
+Last lesson you used an upsert to insert a row or update the one already there. That changed data. This lesson saves a *query* inside the database under a name, so that anyone can then use it as if it were a table.
+
+This lesson uses the course's \`employees\` table again: \`name\`, \`title\`, \`dept\`, \`salary\` and the rest.
+
+### The picture
+
+Picture a saved search in a shopping app: "red trainers under 50". The app does not keep a copy of the trainers. Each time you open the saved search, it searches again, so new trainers show up and sold-out ones drop away. What is saved is the *question*, not the answers.
+
+### Saving a query
+
+A **view** is a query with a name, stored in the database. You create one with \`CREATE VIEW\`, a name, \`AS\`, and a \`SELECT\`:
+
+\`\`\`sql
+CREATE VIEW eng_team AS
+SELECT name, title, salary FROM employees WHERE dept = 'eng';
+\`\`\`
+
+Here \`AS\` means "is defined as". Running this returns no rows. It only saves the query under the name \`eng_team\`.
+
+### Using it like a table
+
+Now \`eng_team\` can go anywhere a table name can go, including after \`FROM\` with a \`WHERE\` of its own:
+
+\`\`\`sql
+SELECT * FROM eng_team WHERE salary >= 150000;
+\`\`\`
+
+| name | title | salary |
+| --- | --- | --- |
+| Omar | CTO | 200000 |
+| Raj | Eng manager | 150000 |
+| Tess | Staff engineer | 150000 |
+
+The view gave the engineers, and this \`WHERE\` kept the ones earning at least 150000.
+
+### A view holds no data
+
+A view [[holds no data|no-data]] of its own. Each time you use it, its saved query runs again against the tables as they are right now. So a view is always up to date:
+
+\`\`\`sql
+UPDATE employees SET salary = 160000 WHERE name = 'Raj';
+SELECT * FROM eng_team WHERE salary >= 150000;
+\`\`\`
+
+Raj's row now shows 160000. You never touched the view.
+
+You have named a query before: [[a CTE|view-vs-cte]], from the lesson CTEs: a query in named steps. A CTE's name lasts for one statement. A view is saved in the database, so its name lasts until someone removes it, and every query and every person can use it.
+
+### What views are good for
+
+- **[[One definition of a business number|one-definition]].** If "active customer" or "net revenue" is defined in one view, every report that uses the view agrees. When the definition changes, it changes in one place.
+- **Simpler queries.** A five-table join can hide behind one short name.
+- **[[A narrower surface|narrow-surface]].** A reporting tool can be given the view, with only the columns it needs, instead of the raw tables with salaries and emails in them.
+
+### Name the columns
+
+The columns of a view are named by its \`SELECT\`. Those names are what everyone who uses the view sees and types. So give every worked-out column a clear name with \`AS\`:
+
+\`\`\`sql
+SELECT dept, MAX(salary) AS top_salary FROM employees GROUP BY dept;
+\`\`\`
+
+### The price: it runs every time
+
+A view is re-run every time you use it. That keeps it fresh, but a slow query behind a view is still slow, every time. Other databases offer [[materialized views|materialized]], which store the result. SQLite has none. There you build the same thing yourself, with a table and triggers.
+
+### Changing or removing a view
+
+SQLite has no command to edit a view. Creating \`eng_team\` a second time fails with "view eng_team already exists". To change it, remove it with \`DROP VIEW\`, then create it again:
+
+\`\`\`sql
+DROP VIEW eng_team;
+\`\`\`
+
+\`DROP VIEW\` removes only the saved query. The rows in \`employees\` are not touched. And [[you cannot write into a view|read-only]]: to change data, you change the tables underneath it.
+
+**Watch out:** a column with no \`AS\` is named after its own expression. \`ROUND(AVG(salary))\` is the average salary rounded to a whole number (\`ROUND\` with no second number rounds to 0 decimal places). Without a name it gives a column called \`ROUND(AVG(salary))\`, brackets and all, and everyone using the view has to type that. Name every worked-out column.
+
+::: context no-data What the database actually saves
+The database keeps the text of the query and nothing else. You can read it back from \`sqlite_master\`, SQLite's own table that lists everything in the database: \`SELECT type, sql FROM sqlite_master WHERE name = 'eng_team';\` gives the type \`view\` and the \`CREATE VIEW\` statement you wrote. When you select from the view, SQLite slots that saved query into yours and runs the lot against \`employees\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2a44"/>
+    </marker>
+  </defs>
+  <rect x="8" y="30" width="96" height="44" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="56" y="50" font-size="12" fill="#1f2a44" text-anchor="middle">your SELECT</text>
+  <text x="56" y="65" font-size="11" fill="#1f2a44" text-anchor="middle">FROM eng_team</text>
+  <rect x="132" y="30" width="96" height="44" rx="4" fill="#fff" stroke="#1d6fd1" stroke-dasharray="4 3"/>
+  <text x="180" y="50" font-size="12" fill="#1f2a44" text-anchor="middle">eng_team</text>
+  <text x="180" y="65" font-size="11" fill="#6c7a93" text-anchor="middle">saved query, 0 rows</text>
+  <rect x="256" y="30" width="96" height="44" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="304" y="50" font-size="12" fill="#1f2a44" text-anchor="middle">employees</text>
+  <text x="304" y="65" font-size="11" fill="#1f2a44" text-anchor="middle">11 real rows</text>
+  <line x1="104" y1="52" x2="130" y2="52" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="228" y1="52" x2="254" y2="52" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="180" y="106" font-size="11" fill="#6c7a93" text-anchor="middle">each use runs the saved query again</text>
+</svg>
+\`\`\`
+:::
+
+::: context view-vs-cte View, CTE or table?
+All three give you something with a name that you can select from. A **CTE** lives for one statement: good for breaking up one long query. A **view** is saved in the database: good for a query many people or reports need. A **table** stores real rows: good for data that must be kept, or for a result that is too slow to work out every time. A view can use CTEs inside it, and a query can use views inside its CTEs, so they combine freely.
+:::
+
+::: context one-definition One number, one definition
+In a real company, "how many active users do we have?" can get three different answers from three teams. One counts anyone who logged in this month, another anyone who logged in this week, a third leaves out test accounts. The numbers disagree and meetings go in circles. The cure is to write the definition down once, as a view such as \`active_users\`, and have every dashboard read from it. Data teams call a view like this part of a "semantic layer": the place where business words get their exact SQL meaning.
+:::
+
+::: context narrow-surface Views as a guard rail
+Big database servers such as PostgreSQL let an administrator control who may read what, with the \`GRANT\` command. A common setup gives a reporting tool permission to read one view and nothing else. The view leaves out the salary and email columns, so the tool cannot leak them even by accident. SQLite has no user accounts, because it is a file used by one program, so there the same idea is a habit rather than a lock: the rest of the code agrees to read the view.
+:::
+
+::: context materialized Storing the answer
+A **materialized view** saves the result of its query as real rows, like a table, and refreshes them when asked. In PostgreSQL that is \`CREATE MATERIALIZED VIEW\` and later \`REFRESH MATERIALIZED VIEW\`. Reading it is fast, because nothing is worked out, but the rows can be out of date between refreshes. In SQLite you build the same thing with a summary table, filled with \`INSERT … SELECT\`, and kept up to date either by a scheduled job or by triggers, which are next lesson.
+:::
+
+::: context read-only Why you cannot insert into a view
+Try \`UPDATE eng_team SET salary = 1;\` and SQLite answers "cannot modify eng_team because it is a view". A view's rows are worked out from other tables, so the database would have to guess which real row an edit should land in. SQLite does offer a way to spell it out: an \`INSTEAD OF\` trigger on the view, which says exactly what to do to the real tables instead. Triggers are the next lesson.
+:::
+--- task
+Create a view named \`dept_summary\` from \`employees\`, with one row per department and these four columns:
+
+- \`dept\`
+- \`headcount\`: the number of people in the department
+- \`avg_salary\`: the average salary, rounded to the nearest whole number
+- \`top_salary\`: the highest salary
+--- starter
+SELECT dept, COUNT(*) AS headcount
+FROM employees
+GROUP BY dept;
+--- solution
+CREATE VIEW dept_summary AS
+SELECT dept,
+       COUNT(*) AS headcount,
+       ROUND(AVG(salary)) AS avg_salary,
+       MAX(salary) AS top_salary
+FROM employees
+GROUP BY dept;
+--- hint
+The starter is already the start of the view's query. Put \`CREATE VIEW dept_summary AS\` on the line above it.
+--- hint
+Add two more columns to the \`SELECT\`, each with its own \`AS\` name. \`AVG(salary)\` gives the average, and \`ROUND(…)\` with no second number rounds to a whole number.
+--- hint
+The two new columns are \`ROUND(AVG(salary)) AS avg_salary\` and \`MAX(salary) AS top_salary\`, each after a comma.
+--- check query | The view gives one row per department
+SELECT dept, headcount, avg_salary, top_salary FROM dept_summary ORDER BY dept
+=> [["eng", 7, 126429.0, 200000], ["exec", 1, 250000.0, 250000], ["finance", 3, 123333.0, 190000]]
+--- check query | It is a view, not a table
+SELECT type FROM sqlite_master WHERE name = 'dept_summary'
+=> [["view"]]
+--- check query | It reflects changes to employees immediately
+UPDATE employees SET salary = 260000 WHERE name = 'Lena';
+SELECT top_salary FROM dept_summary WHERE dept = 'finance'
+=> [[260000]]
+
++++ practice | A view of recent hires
+--- task
+Create a view named \`recent_hires\` that shows everyone hired on or after \`2022-01-01\`, with three columns: \`name\`, \`dept\` and \`hired\`.
+--- starter
+SELECT name, dept, hired
+FROM employees
+WHERE hired >= '2022-01-01';
+--- solution
+CREATE VIEW recent_hires AS
+SELECT name, dept, hired
+FROM employees
+WHERE hired >= '2022-01-01';
+--- hint
+The starter is already the view's query. It only needs saving under a name.
+--- hint
+Put \`CREATE VIEW recent_hires AS\` on the line above the \`SELECT\`.
+--- check query | Paul, Amy and Leo
+SELECT name, dept, hired FROM recent_hires ORDER BY hired
+=> [["Paul", "eng", "2022-04-18"], ["Amy", "finance", "2023-02-14"], ["Leo", "eng", "2024-06-03"]]
+--- check query | It is a view, not a table
+SELECT type FROM sqlite_master WHERE name = 'recent_hires'
+=> [["view"]]
+--- check query | A new hire shows up at once
+INSERT INTO employees (id, name, title, manager_id, dept, salary, hired) VALUES (12, 'Kim', 'Engineer', 4, 'eng', 110000, '2024-09-02');
+SELECT name FROM recent_hires ORDER BY hired DESC LIMIT 1
+=> [["Kim"]]
+
++++ practice | Who manages whom
+--- task
+Create a view named \`reporting_lines\` with one row for every employee, all eleven, and two columns:
+
+- \`employee\`: the employee's name
+- \`manager\`: their manager's name, or NULL for the CEO, who has no manager
+--- starter
+CREATE VIEW reporting_lines AS
+SELECT e.name AS employee, m.name AS manager
+FROM employees e
+JOIN employees m ON m.id = e.manager_id;
+--- solution
+CREATE VIEW reporting_lines AS
+SELECT e.name AS employee, m.name AS manager
+FROM employees e
+LEFT JOIN employees m ON m.id = e.manager_id;
+--- hint
+Count the starter's rows: ten. Maya has no manager, so the inner join finds no match for her and drops her row.
+--- hint
+Keep every employee with a \`LEFT JOIN\`. Maya's \`manager\` then comes out NULL.
+--- check query | Eleven rows, Maya with no manager
+SELECT employee, manager FROM reporting_lines ORDER BY employee
+=> [["Amy", "Lena"], ["Ivan", "Raj"], ["Lena", "Maya"], ["Leo", "Ivan"], ["Maya", null], ["Nora", "Raj"], ["Omar", "Maya"], ["Paul", "Raj"], ["Raj", "Omar"], ["Tess", "Omar"], ["Zara", "Lena"]]
+--- check query | It is a view, not a table
+SELECT type FROM sqlite_master WHERE name = 'reporting_lines'
+=> [["view"]]
+--- check query | A change of manager shows up at once
+UPDATE employees SET manager_id = 5 WHERE name = 'Leo';
+SELECT manager FROM reporting_lines WHERE employee = 'Leo'
+=> [["Tess"]]
+
++++ practice | A view that ranks, filtered from outside
+--- task
+Create a view named \`pay_ranks\` with one row per employee and four columns: \`name\`, \`dept\`, \`salary\`, and \`dept_rank\`: their place by salary within their own department, made with \`RANK()\`, highest salary first.
+
+Then, below it, use the view: select the \`name\` of every employee whose \`dept_rank\` is 1, sorted by \`name\`. A \`WHERE\` cannot use a window function directly, but it can filter a view's column.
+--- starter
+SELECT name, dept, salary,
+       RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS dept_rank
+FROM employees
+WHERE dept_rank = 1;
+--- solution
+CREATE VIEW pay_ranks AS
+SELECT name, dept, salary,
+       RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS dept_rank
+FROM employees;
+
+SELECT name
+FROM pay_ranks
+WHERE dept_rank = 1
+ORDER BY name;
+--- hint
+Run the starter: it fails, because \`WHERE\` runs before the window function has worked anything out. Save the ranking as a view first, without the \`WHERE\`.
+--- hint
+Then a second statement reads the view like a table: \`SELECT name FROM pay_ranks WHERE dept_rank = 1 ORDER BY name;\`.
+--- check result | Lena, Maya and Omar each top their department
+ordered
+[["Lena"], ["Maya"], ["Omar"]]
+--- check query | The view ranks inside each department
+SELECT name, dept_rank FROM pay_ranks WHERE dept = 'finance' ORDER BY dept_rank, name
+=> [["Lena", 1], ["Amy", 2], ["Zara", 2]]
+--- check query | It is a view, not a table
+SELECT type FROM sqlite_master WHERE name = 'pay_ranks'
+=> [["view"]]
+
++++ practice | Team sizes, zeros included
+--- task
+Create a view named \`team_sizes\` with one row for every employee, all eleven, and two columns: \`name\`, and \`direct_reports\`: how many people report to them directly. Someone who manages nobody shows \`0\`.
+
+Name both columns exactly, since that is what everyone who uses the view will type.
+--- starter
+CREATE VIEW team_sizes AS
+SELECT m.name, COUNT(*)
+FROM employees m
+JOIN employees e ON e.manager_id = m.id
+GROUP BY m.id, m.name;
+--- solution
+CREATE VIEW team_sizes AS
+SELECT m.name, COUNT(e.id) AS direct_reports
+FROM employees m
+LEFT JOIN employees e ON e.manager_id = m.id
+GROUP BY m.id, m.name;
+--- hint
+The starter's inner join drops everyone who manages nobody. A \`LEFT JOIN\` keeps them, with NULLs on the report's side.
+--- hint
+Count \`e.id\`, not \`*\`, so a person with no reports counts 0. And name the column with \`AS direct_reports\`, or it is called \`COUNT(*)\`.
+--- check query | The view's columns are name and direct_reports
+SELECT name FROM pragma_table_info('team_sizes') ORDER BY cid
+=> [["name"], ["direct_reports"]]
+--- check query | Eleven people; those who manage nobody show 0
+SELECT name, direct_reports FROM team_sizes ORDER BY direct_reports DESC, name
+=> [["Raj", 3], ["Lena", 2], ["Maya", 2], ["Omar", 2], ["Ivan", 1], ["Amy", 0], ["Leo", 0], ["Nora", 0], ["Paul", 0], ["Tess", 0], ["Zara", 0]]
+--- check query | A new hire under Leo shows up at once
+INSERT INTO employees (id, name, title, manager_id, dept, salary, hired) VALUES (12, 'Kim', 'Intern', 10, 'eng', 35000, '2024-09-02');
+SELECT direct_reports FROM team_sizes WHERE name = 'Leo'
+=> [[1]]
+
++++ practice | The report that cannot find its columns
+--- task
+The script below saves a view of each department's pay, then runs a report from it. The view is created, but the report fails with "no such column: payroll".
+
+Fix the **view** so the report runs as it is. The view's columns should be \`dept\`, \`payroll\` (the total salary) and \`avg_salary\` (the average salary, rounded to a whole number). Do not change the report.
+--- starter
+CREATE VIEW dept_pay AS
+SELECT dept, SUM(salary), ROUND(AVG(salary))
+FROM employees
+GROUP BY dept;
+
+SELECT dept, payroll, avg_salary FROM dept_pay ORDER BY payroll DESC;
+--- solution
+CREATE VIEW dept_pay AS
+SELECT dept, SUM(salary) AS payroll, ROUND(AVG(salary)) AS avg_salary
+FROM employees
+GROUP BY dept;
+
+SELECT dept, payroll, avg_salary FROM dept_pay ORDER BY payroll DESC;
+--- hint
+A worked-out column with no \`AS\` is named after its own expression, so the view's second column is really called \`SUM(salary)\`.
+--- hint
+Give each worked-out column its name inside the view: \`SUM(salary) AS payroll\` and \`ROUND(AVG(salary)) AS avg_salary\`.
+--- check result | The report runs: eng, finance, exec
+ordered
+[["eng", 885000, 126429.0], ["finance", 370000, 123333.0], ["exec", 250000, 250000.0]]
+--- check query | The view's columns have their names
+SELECT name FROM pragma_table_info('dept_pay') ORDER BY cid
+=> [["dept"], ["payroll"], ["avg_salary"]]
+--- check source | The report is unchanged
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+dept\\s*,\\s*payroll\\s*,\\s*avg_salary\\s+[Ff][Rr][Oo][Mm]\\s+dept_pay
+
++++ practice | Views built on views
+--- task
+Build a small reporting layer out of two views:
+
+1. \`dept_payroll\`: one row per department, with \`dept\`, \`headcount\` (the number of people) and \`payroll\` (their total salary).
+2. \`dept_share\`: built **on top of** \`dept_payroll\`, reading from it and not from \`employees\`. It has \`dept\`, \`payroll\`, and \`share\`: the department's payroll as a percentage of the whole company's, rounded to 1 decimal place.
+
+Because views run their query every time, a salary change must show up in \`dept_share\` at once.
+--- starter
+CREATE VIEW dept_payroll AS
+SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+FROM employees
+GROUP BY dept;
+--- solution
+CREATE VIEW dept_payroll AS
+SELECT dept, COUNT(*) AS headcount, SUM(salary) AS payroll
+FROM employees
+GROUP BY dept;
+
+CREATE VIEW dept_share AS
+SELECT d.dept, d.payroll,
+       ROUND(100.0 * d.payroll / t.total, 1) AS share
+FROM dept_payroll d
+CROSS JOIN (SELECT SUM(payroll) AS total FROM dept_payroll) t;
+--- hint
+A view can read from another view, just as a CTE can read from the one above it. The company total is the sum of the department payrolls.
+--- hint
+Pair each department with the total: \`FROM dept_payroll d CROSS JOIN (SELECT SUM(payroll) AS total FROM dept_payroll) t\`. Then \`ROUND(100.0 * d.payroll / t.total, 1) AS share\`.
+--- check query | Shares of 58.8, 24.6 and 16.6
+SELECT dept, payroll, share FROM dept_share ORDER BY payroll DESC
+=> [["eng", 885000, 58.8], ["finance", 370000, 24.6], ["exec", 250000, 16.6]]
+--- check query | dept_share reads from dept_payroll, not from employees
+SELECT (sql LIKE '%dept_payroll%') AND NOT (sql LIKE '%employees%') FROM sqlite_master WHERE name = 'dept_share'
+=> [[1]]
+--- check query | A raise shows up in the shares at once
+UPDATE employees SET salary = salary + 100000 WHERE name = 'Maya';
+SELECT dept, share FROM dept_share ORDER BY dept
+=> [["eng", 55.1], ["exec", 21.8], ["finance", 23.1]]
+
+=== sql3-16 | Triggers: reacting to changes
+--- schema
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  stock INTEGER NOT NULL
+);
+INSERT INTO products (id, name, stock) VALUES (1, 'Mug', 20), (2, 'Lamp', 5);
+CREATE TABLE order_lines (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  qty INTEGER NOT NULL
+);
+--- teach
+Last lesson a view saved a query inside the database. This lesson saves an *action*: SQL that the database runs by itself whenever rows are added, changed or removed.
+
+### The picture
+
+Picture a porch light with a motion sensor. You never switch it on. Someone walks up the path, and the light comes on by itself. The walk is the [[event|event]], and the light is the reaction someone set up once, in advance.
+
+### The tables in this lesson
+
+- \`products\`: \`id\`, \`name\`, \`stock\` (how many are on the shelf). It starts with a Mug (id 1, stock 20) and a Lamp (id 2, stock 5).
+- \`order_lines\`: \`id\`, \`product_id\` (which product), \`qty\` (how many were ordered). It starts empty.
+
+Every time a line is added to an order, that product's stock should go down. You want this to happen whichever program adds the line.
+
+### A trigger
+
+A **trigger** is SQL the database runs by itself when something happens to a table. Here is one:
+
+\`\`\`sql
+CREATE TRIGGER line_added
+AFTER INSERT ON order_lines
+BEGIN
+  UPDATE products SET stock = stock - NEW.qty WHERE id = NEW.product_id;
+END;
+\`\`\`
+
+Line by line:
+
+- \`CREATE TRIGGER line_added\` gives the trigger a name.
+- \`AFTER INSERT ON order_lines\` says when it runs: after a row is inserted into \`order_lines\`.
+- \`BEGIN\` … \`END;\` wrap the **body**: the statements it runs. Each statement inside ends with its own \`;\`.
+- \`NEW.qty\` and \`NEW.product_id\` are columns of the row that was inserted.
+
+This \`BEGIN\` is [[not the BEGIN of a transaction|two-begins]]. Here it only marks where the body starts.
+
+### Watching it fire
+
+Insert a line: 3 mugs.
+
+\`\`\`sql
+INSERT INTO order_lines (product_id, qty) VALUES (1, 3);
+SELECT * FROM products;
+\`\`\`
+
+| id | name | stock |
+| --- | --- | --- |
+| 1 | Mug | 17 |
+| 2 | Lamp | 5 |
+
+You never ran the \`UPDATE\`. The trigger did.
+
+### NEW and OLD
+
+Inside a trigger, two names stand for the row being changed:
+
+| event | \`NEW\` is | \`OLD\` is |
+| --- | --- | --- |
+| \`INSERT\` | the row as inserted | (none) |
+| \`UPDATE\` | the row after the change | the row before the change |
+| \`DELETE\` | (none) | the row as it was, right before it went |
+
+An insert has no \`OLD\`, because there was nothing before. A delete has no \`NEW\`, because there is nothing after.
+
+### Once for each row
+
+A trigger runs [[once for each row|each-row]] the statement touches. Insert two lines in one statement, and it fires twice:
+
+\`\`\`sql
+INSERT INTO order_lines (product_id, qty) VALUES (1, 2), (2, 1);
+\`\`\`
+
+The Mug goes from 17 to 15, and the Lamp from 5 to 4.
+
+### When it runs
+
+The timing is \`BEFORE\` or \`AFTER\` the change. The event is one of:
+
+- \`INSERT\`: a row is added.
+- \`UPDATE\`: a row is changed. \`UPDATE OF price\` narrows it to changes of the \`price\` column.
+- \`DELETE\`: a row is removed.
+
+### Only sometimes: WHEN
+
+A \`WHEN\` condition after the event limits when the trigger fires. This one is for a shop whose \`products\` table has a \`price\` column, plus a \`price_log\` table to keep a history:
+
+\`\`\`sql
+CREATE TRIGGER price_changed
+AFTER UPDATE OF price ON products
+WHEN NEW.price <> OLD.price
+BEGIN
+  INSERT INTO price_log (product_id, old_price, new_price)
+  VALUES (NEW.id, OLD.price, NEW.price);
+END;
+\`\`\`
+
+\`<>\` means "not equal". An \`UPDATE\` that sets a price to the value it already had writes no log row.
+
+### Refusing a change
+
+A \`BEFORE\` trigger can stop a change before it happens. \`RAISE(ABORT, 'message')\` cancels the statement with that error message. \`RAISE\` only works inside a trigger:
+
+\`\`\`sql
+CREATE TRIGGER check_stock
+BEFORE INSERT ON order_lines
+WHEN NEW.qty > (SELECT stock FROM products WHERE id = NEW.product_id)
+BEGIN
+  SELECT RAISE(ABORT, 'not enough stock');
+END;
+\`\`\`
+
+Ordering 9 lamps when only 4 are on the shelf now fails with "not enough stock", and nothing is inserted. The trigger runs inside the same statement as the change, so when it fails, the whole change is undone with it.
+
+### Use them sparingly
+
+Triggers are [[invisible to someone reading the application code|use-sparingly]]. A change seems to do more than it says, and a chain of triggers setting off more triggers is hard to follow. They shine for rules that must hold whatever program writes the data: stock counts, audit logs (a record of who changed what), and \`updated_at\` stamps (the time a row last changed).
+
+**Watch out:** a delete trigger must use \`OLD\`. \`NEW\` does not exist for a delete. SQLite accepts the trigger when you create it and only complains the first time a row is deleted, with "no such column: NEW.qty". So test a new trigger by firing it.
+
+::: context event What counts as an event
+In programming, an **event** is something that happens which code can react to: a click, a key press, a message arriving. For a table, the events are an insert, an update and a delete. Code that waits for an event and then runs is often called a *handler* or a *listener*. A trigger is the database's own kind of listener, and it cannot be skipped: a script, an admin tool and the app all set it off the same way.
+:::
+
+::: context two-begins Two different BEGINs
+In the lesson Transactions: all or nothing, \`BEGIN;\` on its own started a transaction, closed by \`COMMIT\` or \`ROLLBACK\`. Inside \`CREATE TRIGGER\`, \`BEGIN\` and \`END\` are only brackets around the body. They start no transaction. You do not need one: the trigger's work already belongs to the statement that set it off. If you ran that statement inside your own \`BEGIN;\` … \`COMMIT;\`, the trigger's changes are committed or rolled back with everything else.
+:::
+
+::: context each-row One firing per row
+One \`INSERT\` statement with two rows sets the trigger off twice, once with \`NEW\` as each row. The standard also has "statement-level" triggers that fire once per statement. PostgreSQL offers both, but SQLite only has the per-row kind. You may see \`FOR EACH ROW\` written after the event: in SQLite it is allowed and changes nothing.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2a44"/>
+    </marker>
+  </defs>
+  <rect x="8" y="14" width="120" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="68" y="32" font-size="11" fill="#1f2a44" text-anchor="middle">row: Mug, qty 2</text>
+  <rect x="8" y="70" width="120" height="28" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="68" y="88" font-size="11" fill="#1f2a44" text-anchor="middle">row: Lamp, qty 1</text>
+  <rect x="220" y="14" width="132" height="28" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="286" y="32" font-size="11" fill="#1f2a44" text-anchor="middle">Mug stock 17 to 15</text>
+  <rect x="220" y="70" width="132" height="28" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="286" y="88" font-size="11" fill="#1f2a44" text-anchor="middle">Lamp stock 5 to 4</text>
+  <line x1="128" y1="28" x2="218" y2="28" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="128" y1="84" x2="218" y2="84" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="174" y="22" font-size="11" fill="#6c7a93" text-anchor="middle">fires</text>
+  <text x="174" y="78" font-size="11" fill="#6c7a93" text-anchor="middle">fires</text>
+  <text x="180" y="122" font-size="11" fill="#6c7a93" text-anchor="middle">one INSERT, two rows, two firings</text>
+</svg>
+\`\`\`
+:::
+
+::: context use-sparingly Why engineers are wary of triggers
+Someone reading the app's code sees \`INSERT INTO order_lines\` and has no hint that stock changed too. When a number looks wrong, the trigger is the last place anyone thinks to look. That is why many teams keep triggers few, short, and written down. Where they earn their place is an **audit log**: a flight-software team may keep every change to a configuration table in a history table, filled by triggers, so the record is complete even when someone edits the table by hand. By default SQLite also stops a trigger from setting itself off again, which is what lets an \`updated_at\` trigger update its own table without looping forever.
+:::
+--- task
+Create two triggers that keep \`products.stock\` in step with \`order_lines\`:
+
+- \`order_line_added\`: after a row is inserted into \`order_lines\`, take its \`qty\` off that product's \`stock\`.
+- \`order_line_removed\`: after a row is deleted from \`order_lines\`, add its \`qty\` back to that product's \`stock\`.
+
+The product is the one whose \`id\` equals the line's \`product_id\`.
+--- starter
+CREATE TRIGGER order_line_added
+AFTER INSERT ON order_lines
+BEGIN
+  SELECT 1;
+END;
+--- solution
+CREATE TRIGGER order_line_added
+AFTER INSERT ON order_lines
+BEGIN
+  UPDATE products SET stock = stock - NEW.qty WHERE id = NEW.product_id;
+END;
+
+CREATE TRIGGER order_line_removed
+AFTER DELETE ON order_lines
+BEGIN
+  UPDATE products SET stock = stock + OLD.qty WHERE id = OLD.product_id;
+END;
+--- hint
+The first trigger is the lesson's \`line_added\` with a different name. Replace the starter's \`SELECT 1;\` with its \`UPDATE\`.
+--- hint
+The second trigger runs \`AFTER DELETE ON order_lines\`, and adds with \`+\` instead of taking away. A deleted row has no \`NEW\`, so it reads the row through \`OLD\`.
+--- hint
+Inside the second trigger: \`UPDATE products SET stock = stock + OLD.qty WHERE id = OLD.product_id;\`, between \`BEGIN\` and \`END;\`.
+--- check query | Adding lines takes stock
+INSERT INTO order_lines (id, product_id, qty) VALUES (1, 1, 3), (2, 2, 2), (3, 1, 4);
+SELECT id, stock FROM products ORDER BY id
+=> [[1, 13], [2, 3]]
+--- check query | Deleting a line gives its stock back
+DELETE FROM order_lines WHERE id = 3;
+SELECT id, stock FROM products ORDER BY id
+=> [[1, 17], [2, 3]]
+--- check query | Both triggers exist
+SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name
+=> [["order_line_added"], ["order_line_removed"]]
+
++++ practice | A log of every stock change
+--- schema
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  stock INTEGER NOT NULL
+);
+INSERT INTO products (id, name, stock) VALUES (1, 'Mug', 20), (2, 'Lamp', 5);
+CREATE TABLE stock_log (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL,
+  change INTEGER NOT NULL
+);
+--- task
+This problem has its own tables: \`products\` (\`id\`, \`name\`, \`stock\`) and an empty \`stock_log\` (\`id\`, \`product_id\`, \`change\`).
+
+Create a trigger named \`stock_changed\` that, after the \`stock\` of a product is updated, adds a row to \`stock_log\` with the product's \`id\` and \`change\`: the new stock minus the old stock, so a sale of 3 logs \`-3\`. Leave \`stock_log.id\` out, so SQLite numbers the rows.
+
+An update that leaves the stock as it was, or changes only the product's \`name\`, must not add a row.
+--- starter
+CREATE TRIGGER stock_changed
+AFTER UPDATE ON products
+BEGIN
+  SELECT 1;
+END;
+--- solution
+CREATE TRIGGER stock_changed
+AFTER UPDATE OF stock ON products
+WHEN NEW.stock <> OLD.stock
+BEGIN
+  INSERT INTO stock_log (product_id, change) VALUES (NEW.id, NEW.stock - OLD.stock);
+END;
+--- hint
+During an \`UPDATE\`, \`OLD\` is the row before the change and \`NEW\` the row after. Replace \`SELECT 1;\` with an \`INSERT INTO stock_log …\` whose \`change\` is \`NEW.stock - OLD.stock\`.
+--- hint
+\`AFTER UPDATE OF stock ON products\` fires only when the \`stock\` column is updated, so renaming sets nothing off. A \`WHEN NEW.stock <> OLD.stock\` after it skips an update that sets the same number again.
+--- check query | A sale of 3 mugs and a delivery of 10 lamps are logged
+UPDATE products SET stock = 17 WHERE id = 1;
+UPDATE products SET stock = 15 WHERE id = 2;
+SELECT product_id, change FROM stock_log ORDER BY id
+=> [[1, -3], [2, 10]]
+--- check query | Renaming a product, or setting the same stock again, logs nothing
+UPDATE products SET name = 'Travel mug' WHERE id = 1;
+UPDATE products SET stock = 17 WHERE id = 1;
+SELECT COUNT(*) FROM stock_log
+=> [[2]]
+--- check query | The trigger exists
+SELECT name FROM sqlite_master WHERE type = 'trigger'
+=> [["stock_changed"]]
+
++++ practice | Keep a copy of cancelled lines
+--- schema
+CREATE TABLE order_lines (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO order_lines (id, product_id, qty) VALUES (1, 1, 3), (2, 2, 1), (3, 1, 2), (4, 2, 4);
+CREATE TABLE cancelled_lines (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL,
+  qty INTEGER NOT NULL
+);
+--- task
+This problem has its own tables: \`order_lines\` (\`id\`, \`product_id\`, \`qty\`), which already has four lines, and an empty \`cancelled_lines\` with the same three columns.
+
+When a customer cancels, the line is deleted from \`order_lines\`. The shop wants to keep a copy. Create a trigger named \`line_cancelled\` that, whenever a row is deleted from \`order_lines\`, copies it into \`cancelled_lines\`, keeping its \`id\`, \`product_id\` and \`qty\`.
+--- starter
+CREATE TRIGGER line_cancelled
+AFTER DELETE ON order_lines
+BEGIN
+  INSERT INTO cancelled_lines (id, product_id, qty) VALUES (NEW.id, NEW.product_id, NEW.qty);
+END;
+--- solution
+CREATE TRIGGER line_cancelled
+AFTER DELETE ON order_lines
+BEGIN
+  INSERT INTO cancelled_lines (id, product_id, qty) VALUES (OLD.id, OLD.product_id, OLD.qty);
+END;
+--- hint
+Delete a row with the starter in place, and it fails with "no such column: NEW.id". A deleted row has nothing after it.
+--- hint
+Inside a delete trigger, the row as it was right before it went is \`OLD\`.
+--- check query | Deleting two lines copies both
+DELETE FROM order_lines WHERE product_id = 2;
+SELECT id, product_id, qty FROM cancelled_lines ORDER BY id
+=> [[2, 2, 1], [4, 2, 4]]
+--- check query | The other lines are untouched
+SELECT id FROM order_lines ORDER BY id
+=> [[1], [3]]
+--- check query | The trigger exists
+SELECT name FROM sqlite_master WHERE type = 'trigger'
+=> [["line_cancelled"]]
+
++++ practice | Alert once, when stock runs low
+--- schema
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  stock INTEGER NOT NULL
+);
+INSERT INTO products (id, name, stock) VALUES (1, 'Mug', 20), (2, 'Lamp', 5), (3, 'Pen', 2);
+CREATE TABLE alerts (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL,
+  stock INTEGER NOT NULL
+);
+--- task
+This problem has its own tables: \`products\` (\`id\`, \`name\`, \`stock\`) and an empty \`alerts\` (\`id\`, \`product_id\`, \`stock\`).
+
+The warehouse wants one alert when a product's stock **drops below 5**, not a new alert on every sale after that. Create a trigger named \`low_stock\` that, after a product's \`stock\` is updated, adds a row to \`alerts\` (the product's \`id\` and its new stock) only when the stock was 5 or more before the change and is below 5 after it.
+--- starter
+CREATE TRIGGER low_stock
+AFTER UPDATE OF stock ON products
+WHEN NEW.stock < 5
+BEGIN
+  INSERT INTO alerts (product_id, stock) VALUES (NEW.id, NEW.stock);
+END;
+--- solution
+CREATE TRIGGER low_stock
+AFTER UPDATE OF stock ON products
+WHEN OLD.stock >= 5 AND NEW.stock < 5
+BEGIN
+  INSERT INTO alerts (product_id, stock) VALUES (NEW.id, NEW.stock);
+END;
+--- hint
+The starter alerts on every update while the stock is low, so the Pen, already at 2, would alert again on every sale.
+--- hint
+The \`WHEN\` can test both rows: it should be true only when the old stock was at least 5 **and** the new stock is below 5.
+--- check query | The Mug falling from 20 to 3 alerts once; the Lamp from 5 to 4 alerts too
+UPDATE products SET stock = 3 WHERE id = 1;
+UPDATE products SET stock = 4 WHERE id = 2;
+SELECT product_id, stock FROM alerts ORDER BY id
+=> [[1, 3], [2, 4]]
+--- check query | Selling more of a product that is already low adds no alert
+UPDATE products SET stock = 2 WHERE id = 1;
+UPDATE products SET stock = 1 WHERE id = 3;
+SELECT COUNT(*) FROM alerts
+=> [[2]]
+--- check query | A drop that stays at 5 or above adds no alert
+UPDATE products SET stock = 30 WHERE id = 2;
+UPDATE products SET stock = 5 WHERE id = 2;
+SELECT COUNT(*) FROM alerts
+=> [[2]]
+
++++ practice | When an order line changes
+--- schema
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  stock INTEGER NOT NULL
+);
+INSERT INTO products (id, name, stock) VALUES (1, 'Mug', 15), (2, 'Lamp', 4);
+CREATE TABLE order_lines (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  qty INTEGER NOT NULL
+);
+INSERT INTO order_lines (id, product_id, qty) VALUES (1, 1, 3), (2, 2, 1), (3, 1, 2);
+--- task
+This problem has its own \`products\` and \`order_lines\`. The stock already allows for the three lines that exist: the Mug has 15 left and the Lamp 4.
+
+Customers can also **change** a line: a different quantity, or even a different product. Create a trigger named \`line_changed\` that, after an order line is updated, keeps the stock right:
+
+- the old quantity goes back to the old product;
+- the new quantity is taken from the new product.
+
+That one rule handles every case: a bigger quantity, a smaller one, and a switch to another product.
+--- starter
+CREATE TRIGGER line_changed
+AFTER UPDATE ON order_lines
+BEGIN
+  UPDATE products SET stock = stock - NEW.qty WHERE id = NEW.product_id;
+END;
+--- solution
+CREATE TRIGGER line_changed
+AFTER UPDATE ON order_lines
+BEGIN
+  UPDATE products SET stock = stock + OLD.qty WHERE id = OLD.product_id;
+  UPDATE products SET stock = stock - NEW.qty WHERE id = NEW.product_id;
+END;
+--- hint
+Run the starter's trigger on a line that goes from 3 mugs to 5: it takes 5 more, but only 2 more mugs left the shelf. The old 3 were never given back.
+--- hint
+The body can hold two statements, each ending in \`;\`. First give \`OLD.qty\` back to \`OLD.product_id\`, then take \`NEW.qty\` from \`NEW.product_id\`.
+--- check query | Raising a line from 3 mugs to 5 takes 2 more
+UPDATE order_lines SET qty = 5 WHERE id = 1;
+SELECT id, stock FROM products ORDER BY id
+=> [[1, 13], [2, 4]]
+--- check query | Lowering a line from 2 mugs to 1 gives 1 back
+UPDATE order_lines SET qty = 1 WHERE id = 3;
+SELECT id, stock FROM products ORDER BY id
+=> [[1, 14], [2, 4]]
+--- check query | Switching a line from 1 lamp to 2 mugs moves the stock
+UPDATE order_lines SET product_id = 1, qty = 2 WHERE id = 2;
+SELECT id, stock FROM products ORDER BY id
+=> [[1, 12], [2, 5]]
+
++++ practice | Every flight lost a seat
+--- schema
+CREATE TABLE flights (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL,
+  seats_left INTEGER NOT NULL
+);
+INSERT INTO flights (id, code, seats_left) VALUES (1, 'LX318', 40), (2, 'BA117', 12), (3, 'AF12', 3);
+CREATE TABLE bookings (
+  id INTEGER PRIMARY KEY,
+  flight_id INTEGER NOT NULL REFERENCES flights(id),
+  passenger TEXT NOT NULL
+);
+--- task
+This problem has its own tables: \`flights\` (\`id\`, \`code\`, \`seats_left\`) and an empty \`bookings\` (\`id\`, \`flight_id\`, \`passenger\`).
+
+The trigger below should take one seat off a flight each time someone books it. It is created without an error, but after one booking on LX318, **every** flight has one seat fewer. Fix the trigger.
+--- starter
+CREATE TRIGGER seat_booked
+AFTER INSERT ON bookings
+BEGIN
+  UPDATE flights SET seats_left = seats_left - 1;
+END;
+--- solution
+CREATE TRIGGER seat_booked
+AFTER INSERT ON bookings
+BEGIN
+  UPDATE flights SET seats_left = seats_left - 1 WHERE id = NEW.flight_id;
+END;
+--- hint
+An \`UPDATE\` with no \`WHERE\` changes every row of the table, inside a trigger as anywhere else.
+--- hint
+Only the booked flight should change: the one whose \`id\` is the new booking's \`flight_id\`.
+--- check query | One booking on LX318 takes one of its seats, and no one else's
+INSERT INTO bookings (id, flight_id, passenger) VALUES (1, 1, 'Ines');
+SELECT id, seats_left FROM flights ORDER BY id
+=> [[1, 39], [2, 12], [3, 3]]
+--- check query | Two bookings at once on two flights
+INSERT INTO bookings (id, flight_id, passenger) VALUES (2, 3, 'Olu'), (3, 3, 'Pia'), (4, 2, 'Raf');
+SELECT id, seats_left FROM flights ORDER BY id
+=> [[1, 39], [2, 11], [3, 1]]
+--- check source | Picks the flight from NEW
+NEW\\.flight_id
+
++++ practice | A running total kept by triggers
+--- schema
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO products (id, name) VALUES (1, 'Mug'), (2, 'Lamp'), (3, 'Pen');
+CREATE TABLE order_lines (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  qty INTEGER NOT NULL
+);
+CREATE TABLE sales_totals (
+  product_id INTEGER PRIMARY KEY,
+  units INTEGER NOT NULL
+);
+--- task
+This problem has its own tables: \`products\`, an empty \`order_lines\` (\`id\`, \`product_id\`, \`qty\`), and an empty \`sales_totals\` (\`product_id\`, the primary key, and \`units\`). The dashboard reads \`sales_totals\` many times a second, so instead of adding up \`order_lines\` every time, triggers keep it up to date.
+
+Create two triggers:
+
+- \`sales_line_added\`: after a line is inserted, add its \`qty\` to that product's \`units\`. A product's first line creates its row in \`sales_totals\`.
+- \`sales_line_removed\`: after a line is deleted, take its \`qty\` off that product's \`units\`. The row stays, even when it reaches 0.
+
+Use an upsert in the first trigger, so it works whether or not the product already has a row.
+--- starter
+CREATE TRIGGER sales_line_added
+AFTER INSERT ON order_lines
+BEGIN
+  INSERT INTO sales_totals (product_id, units) VALUES (NEW.product_id, NEW.qty);
+END;
+--- solution
+CREATE TRIGGER sales_line_added
+AFTER INSERT ON order_lines
+BEGIN
+  INSERT INTO sales_totals (product_id, units) VALUES (NEW.product_id, NEW.qty)
+  ON CONFLICT (product_id) DO UPDATE SET units = units + excluded.units;
+END;
+
+CREATE TRIGGER sales_line_removed
+AFTER DELETE ON order_lines
+BEGIN
+  UPDATE sales_totals SET units = units - OLD.qty WHERE product_id = OLD.product_id;
+END;
+--- hint
+Run the starter with two Mug lines: the second fails with "UNIQUE constraint failed", because the Mug already has a row. Give the insert an \`ON CONFLICT (product_id) DO UPDATE\` plan that adds \`excluded.units\`.
+--- hint
+The delete trigger only ever changes a row that exists: \`UPDATE sales_totals SET units = units - OLD.qty WHERE product_id = OLD.product_id;\`.
+--- check query | Four lines give Mug 5, Lamp 1, Pen 10
+INSERT INTO order_lines (id, product_id, qty) VALUES (1, 1, 3), (2, 2, 1), (3, 1, 2), (4, 3, 10);
+SELECT product_id, units FROM sales_totals ORDER BY product_id
+=> [[1, 5], [2, 1], [3, 10]]
+--- check query | Deleting lines takes their units off; the Lamp stays at 0
+DELETE FROM order_lines WHERE id IN (2, 3);
+SELECT product_id, units FROM sales_totals ORDER BY product_id
+=> [[1, 3], [2, 0], [3, 10]]
+--- check query | The totals match the lines exactly
+SELECT COUNT(*) FROM sales_totals t
+WHERE t.units <> (SELECT COALESCE(SUM(qty), 0) FROM order_lines l WHERE l.product_id = t.product_id)
+=> [[0]]
+--- check query | Both triggers exist
+SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name
+=> [["sales_line_added"], ["sales_line_removed"]]
+
+=== sql3-17 | RETURNING: see what you changed
+--- schema
+CREATE TABLE tickets (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  opened TEXT NOT NULL,
+  closed TEXT
+);
+INSERT INTO tickets (id, title, status, opened, closed) VALUES
+  (1, 'Login fails on Safari',   'open',    '2024-06-02', NULL),
+  (2, 'Export is slow',          'open',    '2024-06-20', NULL),
+  (3, 'Typo on pricing page',    'closed',  '2024-06-05', '2024-06-06'),
+  (4, 'Webhook retries',         'open',    '2024-07-03', NULL),
+  (5, 'Dark mode contrast',      'pending', '2024-06-11', NULL);
+--- teach
+Last lesson a trigger reacted to changes by itself. This last lesson of the course is about seeing a change: getting back the exact rows an \`INSERT\`, \`UPDATE\` or \`DELETE\` touched, from the same statement that touched them.
+
+### The picture
+
+Picture paying at a shop till. The receipt comes out of the same machine, at the same moment, and lists exactly what you bought. You do not walk back later and ask "what did I buy?", when the shop might have changed its prices in the meantime.
+
+### The table in this lesson
+
+\`tickets\` is a list of bug reports: \`id\`, \`title\`, \`status\` (\`open\`, \`pending\` or \`closed\`, and \`open\` by default), \`opened\` (the date it was reported) and \`closed\` (the date it was closed, or NULL while it is not).
+
+| id | title | status | opened | closed |
+| --- | --- | --- | --- | --- |
+| 1 | Login fails on Safari | open | 2024-06-02 | NULL |
+| 2 | Export is slow | open | 2024-06-20 | NULL |
+| 3 | Typo on pricing page | closed | 2024-06-05 | 2024-06-06 |
+| 4 | Webhook retries | open | 2024-07-03 | NULL |
+| 5 | Dark mode contrast | pending | 2024-06-11 | NULL |
+
+### The problem
+
+After a change, the app often needs to know what happened. Which [[id did the new row get|new-id]]? Which rows did a bulk update touch?
+
+Without help, that means a second query after the change. But on a busy system another program can write in between, so the second query can see [[a different table|another-writer]] from the one your change left behind.
+
+### RETURNING
+
+**\`RETURNING\`** is a clause you add to the end of an \`INSERT\`, \`UPDATE\` or \`DELETE\`. It hands back the rows that statement changed, as if the statement were also a \`SELECT\`.
+
+\`\`\`sql
+INSERT INTO tickets (title, opened) VALUES ('New bug', '2024-07-09')
+RETURNING id, status;
+\`\`\`
+
+| id | status |
+| --- | --- |
+| 6 | open |
+
+The insert left out \`id\` and \`status\`. \`RETURNING\` shows what the database filled in: the next id, 6, and the default status, \`open\`.
+
+### After a DELETE
+
+For a delete, \`RETURNING\` shows each row as it was right before it went:
+
+\`\`\`sql
+DELETE FROM tickets WHERE status = 'closed'
+RETURNING id, title;
+\`\`\`
+
+| id | title |
+| --- | --- |
+| 3 | Typo on pricing page |
+
+That is exactly what was deleted: a record you can log or show to the user.
+
+### After an UPDATE
+
+For an update, \`RETURNING\` shows each row **after** the change. \`*\` means "every column", as in a \`SELECT\`:
+
+\`\`\`sql
+UPDATE tickets SET status = 'pending' WHERE id = 4
+RETURNING *;
+\`\`\`
+
+| id | title | status | opened | closed |
+| --- | --- | --- | --- | --- |
+| 4 | Webhook retries | pending | 2024-07-03 | NULL |
+
+The list after \`RETURNING\` works like a \`SELECT\` list. It can name columns, use \`*\`, or work out values with \`AS\` names, such as \`RETURNING id, title || ' is closed' AS message\`, where \`||\` joins two pieces of text. There are [[a few limits|limits]] on what it may contain.
+
+### Nothing back is an answer too
+
+\`RETURNING\` gives one row for each row changed, and no rows at all if nothing matched:
+
+\`\`\`sql
+UPDATE tickets SET status = 'closed' WHERE id = 42
+RETURNING id;
+\`\`\`
+
+There is no ticket 42, so this returns nothing. That answers a real question: "did that update find its row?" In the lesson Transactions: all or nothing you asked the same with \`SELECT changes()\`. \`RETURNING\` tells you *which* rows, not only how many.
+
+### A receipt for the safe routine
+
+In the lesson Changing data with conditions you learned the safe routine: look with a \`SELECT\` first, then change, then check. \`RETURNING\` makes the check part of the change itself. Put it inside a transaction and you can [[look before you commit|with-transaction]].
+
+**Watch out:** \`RETURNING\` shows you what a statement did. It does not stop a wrong change. \`WHERE opened < '2024-07-01'\` on its own also catches ticket 3, already closed, and ticket 5, which is pending. Get the \`WHERE\` right first, with a \`SELECT\` as in the safe routine. Then read the returned rows to confirm.
+
+### What this course covered
+
+You started with CTEs: long queries as named steps. Recursive CTEs made queries that count, fill gaps and walk trees. Window functions ranked rows, kept running totals and compared each row with its neighbors. Then the course turned to design: constraints, foreign keys, normalizing a flat table, indexes, transactions, upserts, views, triggers and now \`RETURNING\`. A database built this way [[protects its own data|next-course]], whatever program writes to it.
+
+::: context new-id Getting the new row's id
+When you insert without an \`id\`, SQLite fills in the \`INTEGER PRIMARY KEY\` itself, usually one more than the largest id so far. The app almost always needs that number next: to show "Ticket 6 created", or to insert rows in another table that point back to it with a foreign key. The older way to ask is \`SELECT last_insert_rowid();\`, which gives the id from this connection's most recent insert. \`RETURNING id\` gives it as part of the insert, and it also works when one \`INSERT\` adds several rows at once.
+:::
+
+::: context another-writer Why a second query can mislead you
+Say your app inserts a ticket and then runs \`SELECT MAX(id) FROM tickets\` to find its id. If another user's insert lands between the two, \`MAX(id)\` is their ticket, not yours, and your app now links things to the wrong row. Bugs like this appear only under load, when two things happen at nearly the same moment, which makes them hard to reproduce. It is the same gap as the race in the lesson UPSERT: insert or update. \`RETURNING\` closes it, because there is no second statement.
+:::
+
+::: context limits What RETURNING cannot do
+A few rules in SQLite. It can name only columns of the table being changed. It cannot use aggregate functions like \`COUNT(*)\` or window functions: \`RETURNING count(*)\` fails with "misuse of aggregate function count()". The rows come back in no promised order, so do not rely on them being sorted. And it shows the values as the statement itself set them: if an \`AFTER\` trigger then changes the same row, \`RETURNING\` does not show that later change. SQLite added \`RETURNING\` in version 3.35, in 2021. PostgreSQL has had it since 2006.
+:::
+
+::: context with-transaction Look, then decide
+A careful script can combine the last few lessons. \`BEGIN;\` starts a transaction. Then the \`UPDATE … RETURNING id, title;\` makes the change and shows the rows it touched. If they are the rows you meant, \`COMMIT;\` keeps them. If the list is too long or holds a surprise, \`ROLLBACK;\` puts every row back. Operations teams use this pattern for fixes made by hand on a live database, where a wrong \`WHERE\` could otherwise damage thousands of rows before anyone notices.
+:::
+
+::: context next-course Where SQL goes next
+The expert course builds on this one in three directions. Speed: reading the query plan and shaping indexes so slow queries become fast. Hard questions: the top few rows in every group, streaks, sessions, cohorts and funnels, all built from the CTEs and window functions you learned here. Trustworthy data: finding and repairing broken rows, where constraints, transactions and \`RETURNING\` all come back.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" font-family="Inter, Arial, sans-serif">
+  <rect x="8" y="20" width="106" height="44" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="61" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">CTEs and</text>
+  <text x="61" y="55" font-size="12" fill="#1f2a44" text-anchor="middle">recursion</text>
+  <rect x="127" y="20" width="106" height="44" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="180" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">window</text>
+  <text x="180" y="55" font-size="12" fill="#1f2a44" text-anchor="middle">functions</text>
+  <rect x="246" y="20" width="106" height="44" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="299" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">a database that</text>
+  <text x="299" y="55" font-size="12" fill="#1f2a44" text-anchor="middle">guards itself</text>
+  <text x="180" y="94" font-size="11" fill="#6c7a93" text-anchor="middle">the three parts of this course</text>
+</svg>
+\`\`\`
+:::
+--- task
+Close every **open** ticket that was opened before \`2024-07-01\`, in one \`UPDATE\`:
+
+- Set its \`status\` to \`'closed'\` and its \`closed\` to \`'2024-07-10'\`.
+- Only tickets whose \`status\` is \`'open'\` change. The pending ticket and the already-closed one stay as they are.
+- In the same statement, return the \`id\` and \`title\` of each ticket you closed.
+--- starter
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE opened < '2024-07-01';
+--- solution
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE status = 'open' AND opened < '2024-07-01'
+RETURNING id, title;
+--- hint
+The starter's \`WHERE\` also catches ticket 3 (already closed) and ticket 5 (pending). It needs a second condition, joined with \`AND\`.
+--- hint
+The \`WHERE\` becomes \`status = 'open' AND opened < '2024-07-01'\`. Then the statement needs one more clause at the end.
+--- hint
+Before the final \`;\`, add \`RETURNING id, title\`. It should give back tickets 1 and 2.
+--- check result | Returns tickets 1 and 2
+[[1, "Login fails on Safari"], [2, "Export is slow"]]
+--- check query | Exactly those two changed
+SELECT id, status, closed FROM tickets ORDER BY id
+=> [[1, "closed", "2024-07-10"], [2, "closed", "2024-07-10"], [3, "closed", "2024-06-06"], [4, "open", null], [5, "pending", null]]
+
++++ practice | Two new tickets and their numbers
+--- task
+Add two tickets with **one** \`INSERT\`, giving only their \`title\` and \`opened\` date:
+
+- \`'Search is broken'\`, opened \`'2024-07-11'\`
+- \`'Add CSV export'\`, opened \`'2024-07-12'\`
+
+In the same statement, return the \`id\`, \`title\` and \`status\` the database gave each new row.
+--- starter
+INSERT INTO tickets (title, opened) VALUES ('Search is broken', '2024-07-11'), ('Add CSV export', '2024-07-12');
+--- solution
+INSERT INTO tickets (title, opened) VALUES ('Search is broken', '2024-07-11'), ('Add CSV export', '2024-07-12')
+RETURNING id, title, status;
+--- hint
+Add a clause at the end of the \`INSERT\`, before the \`;\`, that hands back the new rows.
+--- hint
+\`RETURNING id, title, status\`. The ids and the status are filled in by the database.
+--- check result | Tickets 6 and 7, both open by default
+[[6, "Search is broken", "open"], [7, "Add CSV export", "open"]]
+--- check query | Both tickets are in the table
+SELECT COUNT(*) FROM tickets
+=> [[7]]
+--- check source | Uses RETURNING
+[Rr][Ee][Tt][Uu][Rr][Nn][Ii][Nn][Gg]
+
++++ practice | Clear out everything that is not open
+--- task
+Delete every ticket whose \`status\` is anything other than \`'open'\`, in one \`DELETE\`. In the same statement, return the \`id\` and \`status\` of each ticket it deleted.
+--- starter
+SELECT id, status FROM tickets WHERE status <> 'open';
+--- solution
+DELETE FROM tickets
+WHERE status <> 'open'
+RETURNING id, status;
+--- hint
+The starter finds the right rows, but only looks at them. The \`DELETE\` needs the same \`WHERE\`.
+--- hint
+\`RETURNING\` after a \`DELETE\` shows each row as it was right before it went: \`RETURNING id, status\`.
+--- check result | Ticket 3 (closed) and ticket 5 (pending) were deleted
+[[3, "closed"], [5, "pending"]]
+--- check query | Only the open tickets are left
+SELECT id FROM tickets ORDER BY id
+=> [[1], [2], [4]]
+--- check source | Uses RETURNING
+[Rr][Ee][Tt][Uu][Rr][Nn][Ii][Nn][Gg]
+
++++ practice | How long each ticket stayed open
+--- task
+Close tickets 1 and 2 in one \`UPDATE\`: set \`status\` to \`'closed'\` and \`closed\` to \`'2024-07-10'\`.
+
+In the same statement, return each closed ticket's \`id\` and \`days_open\`: the number of days from \`opened\` to \`closed\`, worked out with \`julianday\`.
+--- starter
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE id IN (1, 2)
+RETURNING id;
+--- solution
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE id IN (1, 2)
+RETURNING id, julianday(closed) - julianday(opened) AS days_open;
+--- hint
+The list after \`RETURNING\` works like a \`SELECT\` list: it can work out a value and name it with \`AS\`.
+--- hint
+\`RETURNING\` shows each row after the change, so \`closed\` already holds the new date: \`julianday(closed) - julianday(opened) AS days_open\`.
+--- check result | Ticket 1 was open 38 days, ticket 2 for 20
+[[1, 38.0], [2, 20.0]]
+--- check query | Both are closed on 10 July
+SELECT id, status, closed FROM tickets WHERE id IN (1, 2) ORDER BY id
+=> [[1, "closed", "2024-07-10"], [2, "closed", "2024-07-10"]]
+--- check source | Counts days with julianday
+[Jj][Uu][Ll][Ii][Aa][Nn][Dd][Aa][Yy]
+
++++ practice | Archive the old closed tickets
+--- schema
+CREATE TABLE tickets (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  opened TEXT NOT NULL,
+  closed TEXT
+);
+INSERT INTO tickets (id, title, status, opened, closed) VALUES
+  (1, 'Broken link in footer', 'closed',  '2024-05-01', '2024-06-01'),
+  (2, 'Slow search',           'closed',  '2024-05-20', '2024-06-10'),
+  (3, 'Wrong tax on invoice',  'closed',  '2024-05-02', NULL),
+  (4, 'App crashes on start',  'open',    '2024-05-03', NULL),
+  (5, 'Missing translations',  'pending', '2024-05-04', '2024-06-02'),
+  (6, 'Old logo on emails',    'closed',  '2024-04-10', '2024-04-30');
+--- task
+This problem has its own \`tickets\` table, with the same columns as the lesson's, and some messy rows.
+
+Delete every ticket whose \`status\` is \`'closed'\` **and** whose \`closed\` date is before \`'2024-06-10'\`, in one \`DELETE\`, returning the \`id\` and \`title\` of each ticket deleted. Watch the edges:
+
+- a ticket closed on exactly \`2024-06-10\` is not before that day, so it stays;
+- ticket 3 says \`'closed'\` but has no \`closed\` date, so nobody knows when: it stays;
+- ticket 5 has a \`closed\` date but is \`'pending'\`: it stays.
+--- starter
+DELETE FROM tickets
+WHERE status = 'closed' OR closed <= '2024-06-10'
+RETURNING id, title;
+--- solution
+DELETE FROM tickets
+WHERE status = 'closed' AND closed < '2024-06-10'
+RETURNING id, title;
+--- hint
+Both conditions must hold, so they are joined with \`AND\`. With \`OR\`, every closed ticket and every ticket with an early date goes.
+--- hint
+"Before 10 June" is \`<\`, not \`<=\`. A missing date is NULL, and \`NULL < '2024-06-10'\` is not true, so ticket 3 stays by itself.
+--- check result | Only tickets 1 and 6 are deleted
+[[1, "Broken link in footer"], [6, "Old logo on emails"]]
+--- check query | Tickets 2, 3, 4 and 5 stay
+SELECT id FROM tickets ORDER BY id
+=> [[2], [3], [4], [5]]
+--- check source | Uses RETURNING
+[Rr][Ee][Tt][Uu][Rr][Nn][Ii][Nn][Gg]
+
++++ practice | The report that counted ticket 5
+--- task
+The script below moves every **open** ticket to \`'pending'\`, then reports which tickets it moved. The update is right, but the report lists tickets 1, 2, 4 and 5, and ticket 5 was already pending before the script ran.
+
+Rewrite it as **one** statement that makes the change and reports exactly the tickets it changed, by \`id\`.
+--- starter
+UPDATE tickets SET status = 'pending' WHERE status = 'open';
+SELECT id FROM tickets WHERE status = 'pending';
+--- solution
+UPDATE tickets SET status = 'pending' WHERE status = 'open' RETURNING id;
+--- hint
+The second query asks "which tickets are pending now?", not "which did the update change?". Ticket 5 answers the first question too.
+--- hint
+Drop the second query, and let the \`UPDATE\` hand back its own rows with \`RETURNING id\`.
+--- check result | Tickets 1, 2 and 4, not 5
+[[1], [2], [4]]
+--- check query | Every ticket that was open is now pending
+SELECT id, status FROM tickets ORDER BY id
+=> [[1, "pending"], [2, "pending"], [3, "closed"], [4, "pending"], [5, "pending"]]
+--- check source absent | No second query to find the changed rows
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+id\\s+[Ff][Rr][Oo][Mm]\\s+tickets
+
++++ practice | Close the duplicates
+--- schema
+CREATE TABLE tickets (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  opened TEXT NOT NULL,
+  closed TEXT
+);
+INSERT INTO tickets (id, title, status, opened, closed) VALUES
+  (1, 'Login fails on Safari',    'open',   '2024-06-02', NULL),
+  (2, 'Export is slow',           'open',   '2024-06-20', NULL),
+  (3, 'login fails on safari ',   'open',   '2024-06-21', NULL),
+  (4, 'Webhook retries',          'closed', '2024-06-05', '2024-06-09'),
+  (5, 'Export is slow',           'open',   '2024-06-25', NULL),
+  (6, 'Webhook Retries',          'open',   '2024-07-01', NULL),
+  (7, 'Dark mode contrast',       'open',   '2024-07-02', NULL);
+--- task
+This problem has its own \`tickets\` table. Some open tickets repeat an earlier ticket: the same title once spaces are trimmed from both ends and capital letters are ignored.
+
+In **one** \`UPDATE\`, close every open ticket that has an earlier ticket (a smaller \`id\`, open or not) with the same cleaned-up title: set \`status\` to \`'closed'\` and \`closed\` to \`'2024-07-10'\`. The earliest ticket of each title stays as it is.
+
+Return three columns for each ticket you closed: \`id\`, \`title\`, and \`duplicate_of\`, the \`id\` of the earliest ticket with that title.
+--- starter
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE status = 'open'
+  AND title IN (SELECT title FROM tickets GROUP BY title HAVING COUNT(*) > 1)
+RETURNING id, title;
+--- solution
+UPDATE tickets
+SET status = 'closed', closed = '2024-07-10'
+WHERE status = 'open'
+  AND EXISTS (
+    SELECT 1 FROM tickets o
+    WHERE lower(trim(o.title)) = lower(trim(tickets.title))
+      AND o.id < tickets.id
+  )
+RETURNING id, title,
+  (SELECT MIN(o.id) FROM tickets o WHERE lower(trim(o.title)) = lower(trim(tickets.title))) AS duplicate_of;
+--- hint
+Run the starter: it closes both "Export is slow" tickets, the original too, and misses the ones that differ only in spaces or capitals.
+--- hint
+A ticket is a duplicate when an earlier one exists with the same cleaned title: \`EXISTS (SELECT 1 FROM tickets o WHERE lower(trim(o.title)) = lower(trim(tickets.title)) AND o.id < tickets.id)\`.
+--- hint
+\`RETURNING\` can hold a subquery too: the smallest \`id\` with the same cleaned title is \`(SELECT MIN(o.id) FROM tickets o WHERE …) AS duplicate_of\`.
+--- check result | 3 repeats 1, 5 repeats 2, 6 repeats the closed ticket 4
+[[3, "login fails on safari ", 1], [5, "Export is slow", 2], [6, "Webhook Retries", 4]]
+--- check query | The originals are untouched
+SELECT id, status FROM tickets ORDER BY id
+=> [[1, "open"], [2, "open"], [3, "closed"], [4, "closed"], [5, "closed"], [6, "closed"], [7, "open"]]
+--- check source | Uses RETURNING
+[Rr][Ee][Tt][Uu][Rr][Nn][Ii][Nn][Gg]
+
+=== sql3-gate | SQL, advanced: mastery gate
+--- teach
+This gate covers the whole course: CTEs and recursion, window functions, and a database that protects itself with constraints, foreign keys, indexes, transactions, upserts, views and triggers. Most problems bring two or three of those ideas together, on tables you have not seen before, and there are no hints. To get ready, redo the practice problems of the lessons that felt hardest, and make sure you can say in words what each window, frame and \`ON\` does before you run it.
+--- gate
+pass 7
+questions 10
+minutes 110
+
++++ problem | A rolling three-day total with the empty days in
+--- schema
+CREATE TABLE shop_orders (
+  id INTEGER PRIMARY KEY,
+  day TEXT NOT NULL,
+  amount INTEGER NOT NULL
+);
+INSERT INTO shop_orders (id, day, amount) VALUES
+  (1, '2024-02-28', 999),
+  (2, '2024-03-01', 50), (3, '2024-03-01', 30),
+  (4, '2024-03-03', 20),
+  (5, '2024-03-04', 100), (6, '2024-03-04', 10), (7, '2024-03-04', 5),
+  (8, '2024-03-07', 60),
+  (9, '2024-03-08', 40);
+--- task
+The table \`shop_orders\` has one row per order: \`id\`, \`day\` and \`amount\`. A day can have several orders, or none.
+
+Return one row for **every** day from \`2024-03-01\` to \`2024-03-07\`, with three columns:
+
+- \`day\`
+- \`revenue\`: the day's total, and \`0\` on a day with no orders
+- \`rolling_3\`: the revenue of that day plus the two calendar days before it, counting only days from \`2024-03-01\` onwards (so 1 March counts only itself)
+
+Sort by \`day\`. Orders outside the seven days must not count anywhere.
+--- starter
+SELECT day, SUM(amount) AS revenue
+FROM shop_orders
+GROUP BY day
+ORDER BY day;
+--- solution
+WITH RECURSIVE days(day) AS (
+  SELECT '2024-03-01'
+  UNION ALL
+  SELECT date(day, '+1 day') FROM days WHERE day < '2024-03-07'
+), daily AS (
+  SELECT d.day, COALESCE(SUM(o.amount), 0) AS revenue
+  FROM days d
+  LEFT JOIN shop_orders o ON o.day = d.day
+  GROUP BY d.day
+)
+SELECT day, revenue,
+       SUM(revenue) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_3
+FROM daily
+ORDER BY day;
+--- check result | Seven days; the empty days are 0 and still count in the window
+ordered
+[["2024-03-01", 80, 80], ["2024-03-02", 0, 80], ["2024-03-03", 20, 100], ["2024-03-04", 115, 135], ["2024-03-05", 0, 135], ["2024-03-06", 0, 115], ["2024-03-07", 60, 60]]
+--- check source | Builds the calendar with a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the totals
+\\b(115|135)\\b
+
++++ problem | Which branch each person is in
+--- schema
+CREATE TABLE staff (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  boss_id INTEGER REFERENCES staff(id)
+);
+INSERT INTO staff (id, name, boss_id) VALUES
+  (1, 'Ada', NULL), (2, 'Ben', 1), (3, 'Cy', 1), (4, 'Dee', 2), (5, 'Eli', 4),
+  (6, 'Fox', 5), (7, 'Gia', 3), (8, 'Hal', 3), (9, 'Ivy', 8), (10, 'Jon', 2);
+--- task
+The table \`staff\` is an org chart: \`id\`, \`name\` and \`boss_id\` (NULL only for the head of the company). The people who report straight to the head each lead a **branch**, and everyone below them belongs to that branch.
+
+Return everyone except the head, with three columns:
+
+- \`name\`
+- \`branch_lead\`: the name of the person at the top of their branch. A branch lead's own \`branch_lead\` is their own name.
+- \`depth\`: 0 for a branch lead, 1 for the people who report to them, and so on
+
+Find the head by the NULL \`boss_id\`, not by typing an id or a name. Sort by \`branch_lead\`, then \`depth\`, then \`name\`.
+--- starter
+SELECT s.name, s.name AS branch_lead, 0 AS depth
+FROM staff s
+WHERE s.boss_id = 1
+ORDER BY branch_lead, depth, s.name;
+--- solution
+WITH RECURSIVE branch(id, name, lead, depth) AS (
+  SELECT id, name, name, 0
+  FROM staff
+  WHERE boss_id = (SELECT id FROM staff WHERE boss_id IS NULL)
+  UNION ALL
+  SELECT s.id, s.name, b.lead, b.depth + 1
+  FROM staff s
+  JOIN branch b ON s.boss_id = b.id
+)
+SELECT name, lead AS branch_lead, depth
+FROM branch
+ORDER BY branch_lead, depth, name;
+--- check result | Ben's branch goes three deep; Cy's two
+ordered
+[["Ben", "Ben", 0], ["Dee", "Ben", 1], ["Jon", "Ben", 1], ["Eli", "Ben", 2], ["Fox", "Ben", 3], ["Cy", "Cy", 0], ["Gia", "Cy", 1], ["Hal", "Cy", 1], ["Ivy", "Cy", 2]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type the head's id or a lead's name
+boss_id\\s*=\\s*1\\b|'(Ada|Ben|Cy)'
+
++++ problem | The closest shared manager
+--- schema
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  manager_id INTEGER REFERENCES employees(id),
+  dept TEXT NOT NULL,
+  salary INTEGER NOT NULL,
+  hired TEXT NOT NULL
+);
+INSERT INTO employees (id, name, title, manager_id, dept, salary, hired) VALUES
+  (1,  'Maya', 'CEO',              NULL, 'exec',    250000, '2019-01-10'),
+  (2,  'Omar', 'CTO',              1,    'eng',     200000, '2019-03-01'),
+  (3,  'Lena', 'CFO',              1,    'finance', 190000, '2019-06-15'),
+  (4,  'Raj',  'Eng manager',      2,    'eng',     150000, '2020-02-01'),
+  (5,  'Tess', 'Staff engineer',   2,    'eng',     150000, '2020-05-20'),
+  (6,  'Ivan', 'Engineer',         4,    'eng',     120000, '2021-01-11'),
+  (7,  'Nora', 'Engineer',         4,    'eng',     120000, '2021-09-01'),
+  (8,  'Paul', 'Engineer',         4,    'eng',     105000, '2022-04-18'),
+  (9,  'Zara', 'Accountant',       3,    'finance',  90000, '2021-07-07'),
+  (10, 'Leo',  'Intern',           6,    'eng',      40000, '2024-06-03'),
+  (11, 'Amy',  'Analyst',          3,    'finance',  90000, '2023-02-14');
+CREATE TABLE pairs (
+  id INTEGER PRIMARY KEY,
+  a TEXT NOT NULL,
+  b TEXT NOT NULL
+);
+INSERT INTO pairs (id, a, b) VALUES
+  (1, 'Leo', 'Paul'), (2, 'Leo', 'Tess'), (3, 'Zara', 'Nora'),
+  (4, 'Ivan', 'Leo'), (5, 'Amy', 'Amy'), (6, 'Maya', 'Lena');
+--- task
+This problem has the course's \`employees\` table, plus a table \`pairs\`: \`id\`, and two employee names, \`a\` and \`b\`.
+
+For each pair, find the **closest shared manager**: the lowest person in the org chart who is either one of the two or above both of them. For Leo and Paul that is Raj. When one of the pair manages the other, directly or not, it is that person: for Ivan and Leo it is Ivan. A person paired with themselves is their own answer.
+
+Return \`id\`, \`a\`, \`b\` and \`closest\` (a name), sorted by \`id\`.
+--- starter
+SELECT p.id, p.a, p.b, m.name AS closest
+FROM pairs p
+JOIN employees ea ON ea.name = p.a
+JOIN employees eb ON eb.name = p.b
+JOIN employees m ON m.id = ea.manager_id AND m.id = eb.manager_id
+ORDER BY p.id;
+--- solution
+WITH RECURSIVE up(emp_id, anc_id, dist) AS (
+  SELECT id, id, 0 FROM employees
+  UNION ALL
+  SELECT u.emp_id, e.manager_id, u.dist + 1
+  FROM up u
+  JOIN employees e ON e.id = u.anc_id
+  WHERE e.manager_id IS NOT NULL
+), shared AS (
+  SELECT p.id, p.a, p.b, ua.anc_id,
+         ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY ua.dist) AS rn
+  FROM pairs p
+  JOIN employees ea ON ea.name = p.a
+  JOIN employees eb ON eb.name = p.b
+  JOIN up ua ON ua.emp_id = ea.id
+  JOIN up ub ON ub.emp_id = eb.id AND ub.anc_id = ua.anc_id
+)
+SELECT s.id, s.a, s.b, e.name AS closest
+FROM shared s
+JOIN employees e ON e.id = s.anc_id
+WHERE s.rn = 1
+ORDER BY s.id;
+--- check result | Raj, Omar, Maya, Ivan, Amy and Maya
+ordered
+[[1, "Leo", "Paul", "Raj"], [2, "Leo", "Tess", "Omar"], [3, "Zara", "Nora", "Maya"], [4, "Ivan", "Leo", "Ivan"], [5, "Amy", "Amy", "Amy"], [6, "Maya", "Lena", "Maya"]]
+--- check source | Uses a recursive CTE
+[Rr][Ee][Cc][Uu][Rr][Ss][Ii][Vv][Ee]
+--- check source absent | Does not type any answers
+'(Raj|Omar|Ivan)'
+
++++ problem | A sales league, month by month
+--- schema
+CREATE TABLE deals (
+  id INTEGER PRIMARY KEY,
+  rep TEXT NOT NULL,
+  closed_on TEXT NOT NULL,
+  amount INTEGER NOT NULL
+);
+INSERT INTO deals (id, rep, closed_on, amount) VALUES
+  (1, 'Ann', '2024-01-05', 100), (2, 'Ann', '2024-01-20', 50), (3, 'Bob', '2024-01-11', 150), (4, 'Cai', '2024-01-30', 90),
+  (5, 'Ann', '2024-02-02', 80), (6, 'Bob', '2024-02-14', 200), (7, 'Bob', '2024-02-28', 20), (8, 'Cai', '2024-02-19', 80),
+  (9, 'Ann', '2024-03-08', 300), (10, 'Cai', '2024-03-21', 60),
+  (11, 'Bob', '2024-04-03', 100);
+--- task
+The table \`deals\` has one row per closed deal: \`id\`, \`rep\` (a salesperson), \`closed_on\` (a date) and \`amount\`.
+
+Return one row per rep per month in which they closed anything, with five columns:
+
+- \`month\`: text like \`'2024-01'\`
+- \`rep\`
+- \`total\`: the rep's deals that month added up
+- \`month_rank\`: the rep's place that month by \`total\`, highest first. Equal totals share a place, and no place is skipped.
+- \`change\`: \`total\` minus the same rep's total in their **previous month with deals**, and NULL for their first such month
+
+Sort by \`month\`, then \`month_rank\`, then \`rep\`.
+--- starter
+SELECT strftime('%Y-%m', closed_on) AS month, rep, SUM(amount) AS total
+FROM deals
+GROUP BY month, rep
+ORDER BY month, total DESC, rep;
+--- solution
+WITH monthly AS (
+  SELECT strftime('%Y-%m', closed_on) AS month, rep, SUM(amount) AS total
+  FROM deals
+  GROUP BY month, rep
+)
+SELECT month, rep, total,
+       DENSE_RANK() OVER (PARTITION BY month ORDER BY total DESC) AS month_rank,
+       total - LAG(total) OVER (PARTITION BY rep ORDER BY month) AS change
+FROM monthly
+ORDER BY month, month_rank, rep;
+--- check result | Ann and Bob tie in January; Bob's April is compared with February
+ordered
+[["2024-01", "Ann", 150, 1, null], ["2024-01", "Bob", 150, 1, null], ["2024-01", "Cai", 90, 2, null], ["2024-02", "Bob", 220, 1, 70], ["2024-02", "Ann", 80, 2, -70], ["2024-02", "Cai", 80, 2, -10], ["2024-03", "Ann", 300, 1, 220], ["2024-03", "Cai", 60, 2, -20], ["2024-04", "Bob", 100, 1, -120]]
+--- check source | Ranks with DENSE_RANK()
+[Dd][Ee][Nn][Ss][Ee]_[Rr][Aa][Nn][Kk]
+--- check source | Compares with LAG
+[Ll][Aa][Gg]\\s*\\(
+
++++ problem | Spikes in the telemetry
+--- schema
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor TEXT NOT NULL,
+  ts TEXT NOT NULL,
+  value INTEGER NOT NULL
+);
+INSERT INTO readings (id, sensor, ts, value) VALUES
+  (1,  'A', '2024-07-01 10:00', 10), (2,  'A', '2024-07-01 10:01', 11), (3,  'A', '2024-07-01 10:02', 9),
+  (4,  'A', '2024-07-01 10:03', 10), (5,  'A', '2024-07-01 10:04', 20), (6,  'A', '2024-07-01 10:05', 12),
+  (7,  'A', '2024-07-01 10:06', 30),
+  (8,  'B', '2024-07-01 10:00', 100), (9,  'B', '2024-07-01 10:01', 250), (10, 'B', '2024-07-01 10:02', 110),
+  (11, 'B', '2024-07-01 10:03', 120), (12, 'B', '2024-07-01 10:04', 170), (13, 'B', '2024-07-01 10:05', 400),
+  (14, 'C', '2024-07-01 10:00', 10), (15, 'C', '2024-07-01 10:01', 10), (16, 'C', '2024-07-01 10:02', 10),
+  (17, 'C', '2024-07-01 10:03', 15);
+--- task
+The table \`readings\` holds sensor telemetry: \`id\`, \`sensor\`, \`ts\` (a timestamp) and \`value\`.
+
+A reading is a **spike** when its value is more than 1.5 times its **baseline**: the average of the same sensor's three readings just before it. A reading with fewer than three earlier readings from its sensor has no baseline, so it is never a spike. Exactly 1.5 times the baseline is not a spike.
+
+Return only the spikes, with four columns: \`sensor\`, \`ts\`, \`value\`, and \`baseline\` rounded to 1 decimal place. Sort by \`sensor\`, then \`ts\`.
+--- starter
+SELECT sensor, ts, value,
+       ROUND(AVG(value) OVER (PARTITION BY sensor ORDER BY ts), 1) AS baseline
+FROM readings
+ORDER BY sensor, ts;
+--- solution
+WITH w AS (
+  SELECT sensor, ts, value,
+         AVG(value) OVER prev3 AS baseline,
+         COUNT(*)   OVER prev3 AS n
+  FROM readings
+  WINDOW prev3 AS (PARTITION BY sensor ORDER BY ts ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING)
+)
+SELECT sensor, ts, value, ROUND(baseline, 1) AS baseline
+FROM w
+WHERE n = 3 AND value > 1.5 * baseline
+ORDER BY sensor, ts;
+--- check result | A at 10:04 and 10:06, B at 10:05; C's 15 is exactly 1.5 times and does not count
+ordered
+[["A", "2024-07-01 10:04", 20, 10.0], ["A", "2024-07-01 10:06", 30, 14.0], ["B", "2024-07-01 10:05", 400, 133.3]]
+--- check source | Sets a ROWS frame
+[Rr][Oo][Ww][Ss]\\s+[Bb][Ee][Tt][Ww][Ee][Ee][Nn]
+--- check source | Uses a window function
+[Oo][Vv][Ee][Rr]
+
++++ problem | Launch pads that guard their data
+--- task
+Turn foreign key enforcement on, then create two tables.
+
+\`pads\`:
+
+- \`id\`: integer primary key
+- \`name\`: text, required, unique
+- \`status\`: text, required, only \`'active'\` or \`'retired'\`, defaulting to \`'active'\`
+
+\`launches\`:
+
+- \`id\`: integer primary key
+- \`pad_id\`: integer, required, referencing \`pads(id)\`. Deleting a pad deletes its launches.
+- \`day\`: text, required, and a real calendar date written \`'YYYY-MM-DD'\`. \`'2024-02-30'\`, \`'2024-2-3'\` and \`'soon'\` must all be refused.
+- \`payload_kg\`: integer and optional (a test flight carries none), but above 0 when given
+- A pad can host at most one launch per day.
+
+\`date(x)\` gives back \`x\` itself for a real date written \`'YYYY-MM-DD'\`, and NULL for anything else.
+--- starter
+CREATE TABLE pads (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT
+);
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  pad_id INTEGER NOT NULL,
+  day TEXT NOT NULL,
+  payload_kg INTEGER
+);
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE pads (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'retired'))
+);
+
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  pad_id INTEGER NOT NULL REFERENCES pads(id) ON DELETE CASCADE,
+  day TEXT NOT NULL CHECK (date(day) IS NOT NULL AND date(day) = day),
+  payload_kg INTEGER CHECK (payload_kg > 0),
+  UNIQUE (pad_id, day)
+);
+--- check query | Pads are added, active by default; a repeated name is refused
+INSERT OR IGNORE INTO pads (id, name) VALUES (1, 'LC-39A'), (2, 'SLC-40'), (3, 'LC-39A') RETURNING status
+=> [["active"], ["active"]]
+--- check query | Valid launches are accepted, including a test flight with no payload
+INSERT OR IGNORE INTO launches (id, pad_id, day, payload_kg) VALUES (1, 1, '2024-03-01', 5000), (2, 1, '2024-03-02', NULL), (3, 2, '2024-03-01', 800), (4, 1, '2024-02-29', 1200) RETURNING id
+=> [[1], [2], [3], [4]]
+--- check query | A second launch from the same pad on the same day is refused
+INSERT OR IGNORE INTO launches (id, pad_id, day, payload_kg) VALUES (5, 1, '2024-03-01', 300) RETURNING id
+=> []
+--- check query | Dates that are not real YYYY-MM-DD dates are refused
+INSERT OR IGNORE INTO launches (id, pad_id, day, payload_kg) VALUES (6, 2, '2024-02-30', 100), (7, 2, '2024-2-3', 100), (8, 2, 'soon', 100) RETURNING id
+=> []
+--- check query | A payload of 0, or an unknown status, is refused
+INSERT OR IGNORE INTO launches (id, pad_id, day, payload_kg) VALUES (9, 2, '2024-04-01', 0) RETURNING id;
+INSERT OR IGNORE INTO pads (id, name, status) VALUES (4, 'LC-36', 'building') RETURNING id
+=> []
+--- check query | Deleting a pad deletes its launches
+DELETE FROM pads WHERE id = 1;
+SELECT id FROM launches ORDER BY id
+=> [[3]]
+--- check query | Foreign keys are enforced
+PRAGMA foreign_keys
+=> [[1]]
+
++++ problem | Normalizing hotel bookings
+--- schema
+CREATE TABLE bookings_flat (
+  booking_id INTEGER NOT NULL,
+  booked_on TEXT NOT NULL,
+  guest_email TEXT NOT NULL,
+  guest_name TEXT NOT NULL,
+  room_no INTEGER NOT NULL,
+  room_type TEXT NOT NULL,
+  nightly_rate REAL NOT NULL,
+  nights INTEGER NOT NULL
+);
+INSERT INTO bookings_flat VALUES
+  (1, '2024-06-01', 'ana@mail.com', 'Ana Ruiz',  101, 'double', 120.0, 2),
+  (2, '2024-06-03', 'bo@mail.com',  'Bo Chen',   102, 'single',  80.0, 1),
+  (3, '2024-07-10', 'ana@mail.com', 'Ana Ruiz',  101, 'double', 150.0, 3),
+  (4, '2024-07-12', 'cy@mail.com',  'Cy Okafor', 201, 'suite',  300.0, 2),
+  (5, '2024-07-15', 'bo@mail.com',  'Bo Chen',   101, 'double', 150.0, 1);
+--- task
+The table \`bookings_flat\` is a hotel's export: one row per booking, with the guest's email and name, the room's number and type, the nightly rate charged, and the number of nights, all on every row.
+
+Split it into three tables, then fill them from it with \`INSERT … SELECT\`:
+
+- \`guests\`: \`id\` (integer primary key, filled in by SQLite), \`email\` (text, required, unique), \`name\` (text, required)
+- \`rooms\`: \`room_no\` (integer primary key), \`room_type\` (text, required)
+- \`bookings\`: \`id\` (integer primary key, holding the old \`booking_id\`), \`guest_id\` (integer, required, references \`guests(id)\`), \`room_no\` (integer, required, references \`rooms(room_no)\`), \`booked_on\` (text, required), \`nights\` (integer, required), and \`nightly_rate\` (real, required)
+
+Look at the data before you decide that the rate is a fact about the room: it must end up where no fact is lost. Joining the three tables back together must give exactly the rows of \`bookings_flat\`.
+--- starter
+-- Design the three tables, then fill them from bookings_flat.
+--- solution
+CREATE TABLE guests (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL
+);
+CREATE TABLE rooms (
+  room_no INTEGER PRIMARY KEY,
+  room_type TEXT NOT NULL
+);
+CREATE TABLE bookings (
+  id INTEGER PRIMARY KEY,
+  guest_id INTEGER NOT NULL REFERENCES guests(id),
+  room_no INTEGER NOT NULL REFERENCES rooms(room_no),
+  booked_on TEXT NOT NULL,
+  nights INTEGER NOT NULL,
+  nightly_rate REAL NOT NULL
+);
+
+INSERT INTO guests (email, name)
+SELECT DISTINCT guest_email, guest_name FROM bookings_flat;
+
+INSERT INTO rooms (room_no, room_type)
+SELECT DISTINCT room_no, room_type FROM bookings_flat;
+
+INSERT INTO bookings (id, guest_id, room_no, booked_on, nights, nightly_rate)
+SELECT f.booking_id, g.id, f.room_no, f.booked_on, f.nights, f.nightly_rate
+FROM bookings_flat f
+JOIN guests g ON g.email = f.guest_email;
+--- check query | 3 guests, 3 rooms, 5 bookings
+SELECT (SELECT COUNT(*) FROM guests), (SELECT COUNT(*) FROM rooms), (SELECT COUNT(*) FROM bookings)
+=> [[3, 3, 5]]
+--- check query | Joining the tables back gives exactly the flat table
+SELECT COUNT(*) FROM (
+  SELECT booking_id, booked_on, guest_email, guest_name, room_no, room_type, nightly_rate, nights FROM bookings_flat
+  EXCEPT
+  SELECT b.id, b.booked_on, g.email, g.name, r.room_no, r.room_type, b.nightly_rate, b.nights
+  FROM bookings b
+  JOIN guests g ON g.id = b.guest_id
+  JOIN rooms r  ON r.room_no = b.room_no
+)
+=> [[0]]
+--- check query | rooms holds no rate: room 101 cost 120 in June and 150 in July
+SELECT COUNT(*) FROM pragma_table_info('rooms') WHERE name LIKE '%rate%'
+=> [[0]]
+--- check query | bookings points at guests and rooms
+SELECT "table", "from" FROM pragma_foreign_key_list('bookings') ORDER BY 1
+=> [["guests", "guest_id"], ["rooms", "room_no"]]
+
++++ problem | One customer's month, found by the index
+--- schema
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL,
+  placed TEXT NOT NULL,
+  total REAL NOT NULL
+);
+WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 2000)
+INSERT INTO orders (id, customer_id, placed, total)
+SELECT i, i % 200, date('2024-01-01', '+' || (i % 300) || ' days'), (i * 37 % 500) / 4.0 FROM n;
+--- task
+This problem has the 2,000-row \`orders\` table from the lessons on indexes: \`id\`, \`customer_id\`, \`placed\` (a date) and \`total\`. It has no index yet. The account page runs this slow query:
+
+\`\`\`sql
+SELECT id, placed, total FROM orders
+WHERE customer_id = 17 AND strftime('%Y-%m', placed) = '2024-04'
+ORDER BY placed, id;
+\`\`\`
+
+Do two things:
+
+1. Create an index named \`idx_orders_cust_placed\` that lets the rewritten query below find the rows with one \`SEARCH\` on both columns, and return them in date order with no sort step.
+2. Rewrite the query so that \`placed\` is compared as itself, with a half-open range for April 2024. It must return the same rows, in the same order. Do not use \`strftime\`.
+--- starter
+SELECT id, placed, total FROM orders
+WHERE customer_id = 17 AND strftime('%Y-%m', placed) = '2024-04'
+ORDER BY placed, id;
+--- solution
+CREATE INDEX idx_orders_cust_placed ON orders(customer_id, placed);
+
+SELECT id, placed, total FROM orders
+WHERE customer_id = 17 AND placed >= '2024-04-01' AND placed < '2024-05-01'
+ORDER BY placed, id;
+--- check result | Customer 17's three April orders, in order
+ordered
+[[417, "2024-04-27", 107.25], [1017, "2024-04-27", 32.25], [1617, "2024-04-27", 82.25]]
+--- check query | The index covers customer_id, then placed
+SELECT name FROM pragma_index_info('idx_orders_cust_placed') ORDER BY seqno
+=> [["customer_id"], ["placed"]]
+--- check query | The rewritten query searches on both columns, with no sort step
+EXPLAIN QUERY PLAN SELECT id, placed, total FROM orders WHERE customer_id = 17 AND placed >= '2024-04-01' AND placed < '2024-05-01' ORDER BY placed, id
+=> [[4, 0, 0, "SEARCH orders USING INDEX idx_orders_cust_placed (customer_id=? AND placed>? AND placed<?)"]]
+--- check source absent | Does not use strftime
+strftime
+
++++ problem | A delivery batch, all or nothing
+--- schema
+CREATE TABLE stock (
+  sku TEXT PRIMARY KEY,
+  qty INTEGER NOT NULL CHECK (qty >= 0)
+);
+INSERT INTO stock (sku, qty) VALUES ('MUG', 10), ('PEN', 0), ('LAMP', 3);
+CREATE TABLE shipments (
+  id INTEGER PRIMARY KEY,
+  sku TEXT NOT NULL,
+  qty INTEGER NOT NULL
+);
+INSERT INTO shipments (id, sku, qty) VALUES (1, 'MUG', 5), (2, 'PEN', 20), (3, 'MUG', 2), (4, 'BOOK', 7);
+--- task
+The table \`stock\` has one row per product: \`sku\` (the primary key) and \`qty\` on the shelf. \`shipments\` holds deliveries that have arrived but are not counted yet: \`id\`, \`sku\` and \`qty\`. A product can appear in several shipments, and a shipment can bring a product the shop has never stocked.
+
+In **one transaction**:
+
+1. Add every shipment into \`stock\` with one \`INSERT … SELECT … ON CONFLICT\` statement: each product's shipped quantities are added to its \`qty\`, and a new product gets a new row. The same statement returns the \`sku\` and new \`qty\` of every row it inserted or changed.
+2. Delete all rows from \`shipments\`, so they cannot be counted twice.
+3. Commit.
+--- starter
+INSERT INTO stock (sku, qty)
+SELECT sku, qty FROM shipments;
+DELETE FROM shipments;
+--- solution
+BEGIN;
+INSERT INTO stock (sku, qty)
+SELECT sku, SUM(qty) FROM shipments WHERE true
+GROUP BY sku
+ON CONFLICT (sku) DO UPDATE SET qty = qty + excluded.qty
+RETURNING sku, qty;
+DELETE FROM shipments;
+COMMIT;
+--- check result | MUG 17, PEN 20 and BOOK 7 come back; LAMP was not touched
+[["MUG", 17], ["PEN", 20], ["BOOK", 7]]
+--- check query | The shelf counts are right
+SELECT sku, qty FROM stock ORDER BY sku
+=> [["BOOK", 7], ["LAMP", 3], ["MUG", 17], ["PEN", 20]]
+--- check query | The shipments are cleared
+SELECT COUNT(*) FROM shipments
+=> [[0]]
+--- check source | Runs as a transaction
+\\b[Bb][Ee][Gg][Ii][Nn]\\b[\\s\\S]*\\b[Cc][Oo][Mm][Mm][Ii][Tt]\\b
+
++++ problem | A document's version history
+--- schema
+CREATE TABLE docs (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  revision INTEGER NOT NULL DEFAULT 1
+);
+INSERT INTO docs (id, title, body) VALUES
+  (1, 'Launch plan', 'T-minus checklist'),
+  (2, 'Crew roster', 'Four seats');
+CREATE TABLE doc_versions (
+  id INTEGER PRIMARY KEY,
+  doc_id INTEGER NOT NULL REFERENCES docs(id),
+  revision INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL
+);
+--- task
+The table \`docs\` holds documents: \`id\`, \`title\`, \`body\` and \`revision\`, which starts at 1. \`doc_versions\` is empty, with \`id\`, \`doc_id\`, \`revision\`, \`title\` and \`body\`.
+
+1. Create a trigger named \`keep_version\`. After a document's \`title\` or \`body\` is updated, and only if one of them really changed, it saves the document **as it was before** into \`doc_versions\` (its \`id\` as \`doc_id\`, its old \`revision\`, \`title\` and \`body\`; leave \`doc_versions.id\` out), and adds 1 to the document's \`revision\`.
+2. Create a view named \`doc_summary\` with one row per document and three columns: \`title\`, \`revision\`, and \`older_versions\`, the number of saved versions of it (\`0\` if none).
+--- starter
+CREATE VIEW doc_summary AS
+SELECT d.title, d.revision, COUNT(*) AS older_versions
+FROM docs d
+JOIN doc_versions v ON v.doc_id = d.id
+GROUP BY d.id, d.title, d.revision;
+--- solution
+CREATE TRIGGER keep_version
+AFTER UPDATE OF title, body ON docs
+WHEN NEW.title <> OLD.title OR NEW.body <> OLD.body
+BEGIN
+  INSERT INTO doc_versions (doc_id, revision, title, body)
+  VALUES (OLD.id, OLD.revision, OLD.title, OLD.body);
+  UPDATE docs SET revision = OLD.revision + 1 WHERE id = NEW.id;
+END;
+
+CREATE VIEW doc_summary AS
+SELECT d.title, d.revision, COUNT(v.id) AS older_versions
+FROM docs d
+LEFT JOIN doc_versions v ON v.doc_id = d.id
+GROUP BY d.id, d.title, d.revision;
+--- check query | Two edits save two old versions
+UPDATE docs SET title = 'Launch plan v2' WHERE id = 1;
+UPDATE docs SET body = 'T-minus checklist, revised' WHERE id = 1;
+SELECT doc_id, revision, title, body FROM doc_versions ORDER BY revision
+=> [[1, 1, "Launch plan", "T-minus checklist"], [1, 2, "Launch plan v2", "T-minus checklist"]]
+--- check query | An update that changes nothing saves nothing
+UPDATE docs SET title = 'Crew roster' WHERE id = 2;
+SELECT COUNT(*) FROM doc_versions
+=> [[2]]
+--- check query | The summary counts versions, 0 for an untouched document
+SELECT title, revision, older_versions FROM doc_summary ORDER BY title
+=> [["Crew roster", 1, 0], ["Launch plan v2", 3, 2]]
+--- check query | doc_summary is a view
+SELECT type FROM sqlite_master WHERE name = 'doc_summary'
+=> [["view"]]
+
++++ question | Where the recursion stops
+--- ask
+What does this print?
+
+\`\`\`sql
+WITH RECURSIVE n(x) AS (
+  SELECT 1
+  UNION ALL
+  SELECT x * 3 FROM n WHERE x < 30
+)
+SELECT MAX(x) FROM n;
+\`\`\`
+--- answer
+81
+--- why
+The stopping condition tests the row the step **reads**. The rows are 1, 3, 9 and 27; when the step reads 27, 27 < 30 is still true, so it makes 81. Only when it reads 81 does it stop. To stop at 27 or below, the condition must ask about the row it would make: \`WHERE x * 3 < 30\`.
+
++++ question | Whole numbers divided
+--- ask
+What does this print? Give the two values separated by a comma, in order.
+
+\`\`\`sql
+SELECT 100 * 3 / 8, 3 / 8 * 100;
+\`\`\`
+--- answer
+37, 0
+37,0
+37 0
+--- why
+SQLite works from left to right, and dividing one whole number by another throws the remainder away. \`100 * 3\` is 300, and 300 / 8 is 37. In the second, \`3 / 8\` is 0 before the multiplication happens, and 0 × 100 is 0. That is why a percentage puts \`100.0 *\` at the front.
+
++++ question | RANK and DENSE_RANK after a tie
+--- ask
+The scores are 90, 80, 80 and 70. What do \`RANK() OVER (ORDER BY score DESC)\` and \`DENSE_RANK() OVER (ORDER BY score DESC)\` give the row with 70? Give \`RANK\` first, then \`DENSE_RANK\`, separated by a comma.
+--- answer
+4, 3
+4,3
+4 3
+--- why
+Both give the two 80s place 2. \`RANK\` then skips a number, the way sport does ("joint 2nd, then 4th"), so 70 is 4th. \`DENSE_RANK\` skips nothing, so 70 is 3rd: the third-highest distinct score.
+
++++ question | The running total that jumps
+--- ask
+A query shows \`SUM(amount) OVER (ORDER BY day)\` next to each sale. Two sales on the same day both show the total after **both** of them. Why?
+--- choice
+The final \`ORDER BY\` of the query sorted the two rows into the wrong order.
+--- choice correct
+With an \`ORDER BY\` and no frame, the frame is \`RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\`, and \`RANGE\` takes rows that tie on the sort value, the peers, together.
+--- choice
+\`SUM\` cannot be used as a window function, so SQLite falls back to a grouped sum per day.
+--- choice
+The rows need a \`PARTITION BY day\` to be added one at a time.
+--- why
+Rows that tie on the window's \`ORDER BY\` are peers, and the default \`RANGE\` frame always includes every peer of the current row. The fix is a tie-breaker that records the real order, such as \`ORDER BY day, id\`, and a \`ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\` frame. The query's final \`ORDER BY\` only sorts the finished rows; it never decides what goes into a window.
+
++++ question | A filter after a calendar join
+--- ask
+A recursive CTE makes every day of a week, and \`LEFT JOIN daily_sales s ON s.day = d.day\` fills in the sales. What happens if you then add \`WHERE s.region = 'north'\`?
+--- choice
+Nothing changes: \`WHERE\` and \`ON\` mean the same for a \`LEFT JOIN\`.
+--- choice
+The days with no north sale show 0, because \`LEFT JOIN\` fills them in.
+--- choice correct
+The days with no north sale disappear: on those rows \`s.region\` is NULL, and \`NULL = 'north'\` is never true.
+--- choice
+SQLite refuses the query, because a \`WHERE\` cannot test the right-hand table of a \`LEFT JOIN\`.
+--- why
+\`WHERE\` runs after the join and throws away every row where the condition is not true. The calendar's empty days carry NULL in every sales column, so the filter removes exactly the rows the calendar was built to add. A filter on the right-hand table of a \`LEFT JOIN\` belongs in its \`ON\`.
+
++++ question | A CHECK and a missing value
+--- ask
+A table has the column \`role TEXT CHECK (role IN ('admin', 'member'))\`, and nothing else on it. What happens to \`INSERT INTO users (role) VALUES (NULL)\`?
+--- choice correct
+It is accepted: the condition gives NULL, not false, and a \`CHECK\` only refuses a row when its condition is false.
+--- choice
+It is refused, because NULL is not in the list.
+--- choice
+It is accepted, but the role is stored as \`'member'\`, the last value in the list.
+--- choice
+It fails with a syntax error, because NULL cannot be compared with \`IN\`.
+--- why
+\`NULL IN ('admin', 'member')\` is NULL: unknown. A \`CHECK\` lets a row through unless its condition is definitely false. When a value is required, the column needs \`NOT NULL\` as well as the \`CHECK\`.
+
++++ question | The cascade that did not happen
+--- ask
+In a fresh SQLite connection, a table is created with \`team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE\`. Then team 1 is deleted. What happens to the rows whose \`team_id\` is 1?
+--- choice
+They are deleted too, as \`ON DELETE CASCADE\` says.
+--- choice
+The delete of team 1 is refused with an error.
+--- choice correct
+Nothing: they stay, pointing at a team that no longer exists, because SQLite enforces foreign keys only after \`PRAGMA foreign_keys = ON;\`.
+--- choice
+Their \`team_id\` is set to NULL.
+--- why
+For backwards compatibility, SQLite starts every connection with foreign keys switched off. Until \`PRAGMA foreign_keys = ON;\` runs, \`REFERENCES\` and \`ON DELETE\` are only notes to the reader: orphans get in and cascades never happen, all without an error.
+
++++ question | What an index saves
+--- ask
+\`orders\` has \`n\` rows, and \`k\` of them belong to customer 7. There is an index on \`customer_id\`. Roughly how much work is \`SELECT * FROM orders WHERE customer_id = 7\` with the index, and without it?
+--- choice
+O(1) with the index, O(k) without it.
+--- choice correct
+About O(log n + k) with the index, and O(n) without it: a full scan reads every row.
+--- choice
+O(n) either way, because the database still has to check every row.
+--- choice
+O(k log n) with the index, O(n log n) without it, because the rows have to be sorted first.
+--- why
+The index is sorted, like a B-tree, so finding the first 7 takes about log n steps, and reading the k matching entries after it takes k more. Without an index, the only way to be sure is a full scan of all n rows. That difference is small on 2,000 rows and huge on millions.
+
++++ question | Which filter the index can use
+--- ask
+\`orders\` has an index on \`placed\`, which holds dates like \`'2024-06-15'\`. Which \`WHERE\` lets the database **search** that index for June?
+--- choice
+\`WHERE strftime('%Y-%m', placed) = '2024-06'\`
+--- choice
+\`WHERE substr(placed, 1, 7) = '2024-06'\`
+--- choice correct
+\`WHERE placed >= '2024-06-01' AND placed < '2024-07-01'\`
+--- choice
+\`WHERE julianday(placed) - julianday('2024-06-01') BETWEEN 0 AND 29\`
+--- why
+The index holds \`placed\` values in sorted order, and nothing else. Any function or calculation around the column hides it, so the database must work that value out for every row: a full scan. A range on the bare column lets it jump to 1 June and read forward until July.
+
++++ question | Why the column order matters
+--- ask
+The query is \`SELECT * FROM orders WHERE customer_id = 7 ORDER BY placed\`. Why does an index on \`(customer_id, placed)\` serve it with no sort step, while \`(placed, customer_id)\` does not?
+--- choice
+SQLite can only use the first column of any index.
+--- choice correct
+In \`(customer_id, placed)\`, all of customer 7's entries sit together, already in date order. In \`(placed, customer_id)\`, they are scattered through the whole index.
+--- choice
+An index on two columns is always slower than two indexes on one column each.
+--- choice
+\`ORDER BY\` can only use an index whose first column is the one being sorted.
+--- why
+A composite index is sorted by its first column, then by the second among equal first values, like a phone book sorted by surname, then first name. Put the column tested with \`=\` first and the one you sort or range over second; then one stretch of the index holds exactly the rows you want, in order.
+
++++ question | ROLLBACK without BEGIN
+--- ask
+You forget \`BEGIN\`, run two \`UPDATE\`s that move money between accounts, see that one balance went negative, and run \`ROLLBACK;\`. What happens?
+--- choice
+Both updates are undone, because \`ROLLBACK\` undoes everything since the last \`COMMIT\`.
+--- choice
+Only the second update is undone.
+--- choice correct
+SQLite answers "cannot rollback - no transaction is active": each update was its own transaction and was saved the moment it ran.
+--- choice
+The database refuses the negative balance on its own and undoes the update.
+--- why
+Without \`BEGIN\`, every statement is a tiny transaction of its own, committed at once. There is nothing left for \`ROLLBACK\` to undo. The pattern is always \`BEGIN\` first, then the work, then the check, then \`COMMIT\` or \`ROLLBACK\`.
+
++++ question | REPLACE is not an update
+--- ask
+A table \`s\` has a primary key \`k\` and two more columns, \`v\` and \`note\`. It holds one row: \`k\` = \`'a'\`, \`v\` = 1, \`note\` = \`'keep me'\`. What does \`SELECT note FROM s;\` print after this?
+
+\`\`\`sql
+INSERT OR REPLACE INTO s (k, v) VALUES ('a', 2);
+\`\`\`
+--- answer
+NULL
+--- why
+\`INSERT OR REPLACE\` deletes the clashing row and inserts a brand-new one, so every column the new insert left out, here \`note\`, gets its default, which is NULL. An upsert, \`ON CONFLICT (k) DO UPDATE SET v = excluded.v\`, would change only \`v\` and keep \`'keep me'\`.
+`;export{e as default};

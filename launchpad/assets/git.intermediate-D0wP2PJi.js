@@ -1,0 +1,5633 @@
+var e=`@track git
+@level intermediate
+@title Git · Intermediate
+@name Git, intermediate: reading history, undoing mistakes and resolving conflicts
+@blurb Keep junk and secrets out of your repository, read and compare history, fix and undo commits the right way for each situation, set work aside, tag releases, and resolve merge conflicts yourself.
+@plainvoice true
+
+=== git2-01 | Ignoring files: .gitignore
+--- teach
+The last course ended with a merge where both branches had moved: git joined them with a merge commit, and you met the word *conflict* for a clash on the same lines. That course gave you the everyday local loop: status, add, commit, diff, branches and merges.
+
+This course is about the moments that loop does not cover: keeping files out, reading and comparing history, undoing mistakes the right way for each situation, and resolving a conflict yourself.
+
+It starts with keeping files out. By the end of this lesson you can tell git, once, "never save these files", and it will remember.
+
+Think of packing for a trip with a note taped inside the suitcase lid: *do not pack*. Whatever is on that note stays home, no matter how fast you throw things in. Git gets a note like that too.
+
+**Step 1: files that should stay out**
+
+Some files must never be committed:
+
+- **secrets** — \`.env\` files full of passwords and **API keys** (an API key is a password a program uses to log in to an online service). Committing one is a [[real security leak|leaked-secrets]];
+- **dependencies** — \`node_modules/\`, a folder of thousands of files written by other people, which [[anyone can reinstall|reinstall]];
+- **generated files** — build output, logs, caches, editor settings. A program made them, so a program can make them again.
+
+**Step 2: the .gitignore file**
+
+The note is a file called \`.gitignore\`, at the top of the repository (the main project folder, the one that holds \`.git\`). Its name starts with a dot, so it is a hidden file, like \`.git\` itself.
+
+It is a plain text file with one **pattern** per line. A pattern is a name, or a name with wildcards in it, that says which files a rule is about. The simplest pattern is a plain name:
+
+\`\`\`
+~/project $ echo ".env" > .gitignore
+~/project $ cat .gitignore
+.env
+\`\`\`
+
+That one line tells git to ignore any file called \`.env\`.
+
+**Step 3: the pattern rules**
+
+A few characters change what a pattern means. Here is a \`.gitignore\` that uses each of them, with a comment above every rule:
+
+\`\`\`
+# this name, in any folder
+.env
+# a trailing / means folders only
+node_modules/
+# wildcards work: every .log file
+*.log
+# a leading / means only at the top level
+/build
+# ! makes an exception to an earlier rule
+!keep.log
+\`\`\`
+
+Rule by rule:
+
+- \`.env\` — a plain name matches that name in any folder.
+- \`node_modules/\` — a slash at the end ("trailing") means folders only. Everything inside the folder is ignored with it.
+- \`*.log\` — the star is a [[wildcard, as in the Terminal course|patterns]]: every name that ends in \`.log\`.
+- \`/build\` — a slash at the front ("leading") means only at the top of the repository, not in folders further in.
+- \`!keep.log\` — the exclamation mark, read "not", makes an exception to an earlier rule. \`*.log\` ignores every log; \`!keep.log\` brings that one back.
+
+A line that starts with \`#\` (the hash sign) is a **comment**: a note for people, which git skips. A \`#\` later in a line is not a comment. It becomes part of the pattern, so keep comments on lines of their own.
+
+**Step 4: what git stops showing**
+
+Ignored files disappear from \`git status\`. Before the \`.gitignore\`, this project lists four untracked files:
+
+\`\`\`
+~/project $ git status
+On branch main
+
+No commits yet
+
+Untracked files:
+        .env
+        app.js
+        debug.log
+        node_modules/lodash/index.js
+\`\`\`
+
+After a \`.gitignore\` with \`.env\`, \`node_modules/\` and \`*.log\` in it:
+
+\`\`\`
+~/project $ git status
+On branch main
+
+No commits yet
+
+Untracked files:
+        .gitignore
+        app.js
+\`\`\`
+
+The \`.gitignore\` itself shows up, because it is a new file too. And \`git add .\` now skips the ignored files, so "add everything" is safe again.
+
+**Step 5: asking git why**
+
+When you are not sure why a file is (or is not) ignored, ask git. \`git check-ignore -v file\` names the rule that matched. \`-v\` is short for "verbose": say more than yes or no.
+
+\`\`\`
+~/project $ git check-ignore -v debug.log
+.gitignore:3:*.log	debug.log
+\`\`\`
+
+Read it left to right: in \`.gitignore\`, on line \`3\`, the pattern \`*.log\` matched \`debug.log\`. If no rule matches, it prints nothing.
+
+**Step 6: commit the .gitignore**
+
+Commit the \`.gitignore\` itself, like any other file. Then [[everyone on the project|shared-rules]] ignores the same things.
+
+**Watch out:** a \`.gitignore\` only affects files git is **not yet tracking**. A file that was committed before it was ignored [[stays tracked|already-tracked]], and its changes keep showing up. That is a debugging lesson of its own, later in this course. The habit that avoids it: write the \`.gitignore\` first, before your first \`git add .\`.
+
+::: context leaked-secrets Why a secret must never be committed
+Everything you commit is copied to everyone who gets the repository. It also stays in the history, even if you delete the file in a later commit. On a public project anyone in the world can read it, and automated programs search public code for keys and passwords all day long. GitHub runs its own secret scanning to warn people when this happens. If a key does leak, deleting the file is not enough: the fix is to cancel that key and make a new one, because the old one is out there for good.
+:::
+
+::: context reinstall Why node_modules can be rebuilt
+A JavaScript project lists the packages it needs in a small file called \`package.json\`. The command \`npm install\` reads that list and downloads every package into \`node_modules/\`. So the list is worth committing, and the downloaded folder is not: anyone can rebuild it with one command, and it is often many thousands of files. Python projects do the same with a \`requirements.txt\` list and a folder of installed packages. The rule of thumb: commit the recipe, ignore what it cooks.
+:::
+
+::: context patterns Checking names against the rules
+In the Terminal course, \`ls *.txt\` found every name ending in \`.txt\`. A \`.gitignore\` line uses the same idea, but git reads the pattern, not the shell. Git checks each file name against the lines from top to bottom, and the last line that matches decides. That is why \`!keep.log\` has to come after \`*.log\`. One catch: when a whole folder is ignored, git does not look inside it, so \`!\` cannot bring back a file within it.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="20" y="20" font-size="12" font-weight="bold" fill="#1f2a44">file</text>
+  <text x="170" y="20" font-size="12" font-weight="bold" fill="#1f2a44">last matching line</text>
+  <line x1="20" y1="28" x2="340" y2="28" stroke="#6c7a93" stroke-width="1"/>
+  <g font-size="12">
+    <text x="20" y="50" fill="#b4232c">.env</text>
+    <text x="170" y="50" fill="#b4232c">.env: ignored</text>
+    <text x="20" y="76" fill="#b4232c">node_modules/</text>
+    <text x="170" y="76" fill="#b4232c">node_modules/: ignored</text>
+    <text x="20" y="102" fill="#b4232c">debug.log</text>
+    <text x="170" y="102" fill="#b4232c">*.log: ignored</text>
+    <text x="20" y="128" fill="#1d6fd1">keep.log</text>
+    <text x="170" y="128" fill="#1d6fd1">!keep.log: kept</text>
+    <text x="20" y="154" fill="#1d6fd1">app.js</text>
+    <text x="170" y="154" fill="#1d6fd1">no match: kept</text>
+  </g>
+</svg>
+\`\`\`
+:::
+
+::: context shared-rules One list for the whole team
+Because the \`.gitignore\` is committed, it travels with the project. Everyone who copies the repository gets the same rules, so nobody commits their logs or secrets by accident. GitHub keeps a public collection of ready-made \`.gitignore\` files for many languages, in its \`github/gitignore\` repository, and offers one when you create a new project. For clutter that only your own computer makes, like your editor's settings, git also lets you keep a personal ignore file that applies to every repository on your machine and is never shared.
+:::
+
+::: context already-tracked Ignoring is only about new files
+Git sorts files into two kinds. **Tracked** files are ones git already has in a commit, or staged. **Untracked** files are new to git. The \`.gitignore\` only filters the untracked ones: it stops new files from being listed and from being added. A tracked file stays tracked whatever the \`.gitignore\` says, and git keeps showing its changes. Near the end of this course a debugging lesson hands you exactly that mess, a \`.env\` committed before anyone ignored it, and shows the command that makes git let go of it.
+:::
+--- task
+This new project has a secrets file \`.env\`, a \`node_modules\` folder and a \`debug.log\`. Create a \`.gitignore\` with one pattern per line: one for \`.env\`, one for the \`node_modules\` folder, and one for every \`.log\` file. Check that \`git status\` shows **only** \`.gitignore\` and \`app.js\` as untracked, then commit both with \`git add .\` and a message of your choice.
+--- starter
+git init
+echo "API_KEY=secret" > .env
+mkdir -p node_modules/lodash
+echo "module.exports = {}" > node_modules/lodash/index.js
+echo "boot ok" > debug.log
+echo "console.log('hi')" > app.js
+--- solution
+echo ".env" > .gitignore
+echo "node_modules/" >> .gitignore
+echo "*.log" >> .gitignore
+git status
+git add .
+git commit -m "Add the app and ignore rules"
+--- hint
+Make the file with \`echo ".env" > .gitignore\`. For each next line, use \`>>\`, which adds to the end of a file instead of replacing it.
+--- hint
+The other two lines are \`node_modules/\` (a folder, so a trailing slash) and \`*.log\` (every log). \`cat .gitignore\` shows your three lines; then run \`git status\`.
+--- hint
+When \`git status\` lists only \`.gitignore\` and \`app.js\`, run \`git add .\` and then \`git commit -m "Add the app and ignore rules"\`.
+--- check shell | The secrets, dependencies and logs are ignored
+git . ignored .env
+git . ignored node_modules/lodash/index.js
+git . ignored debug.log
+--- check shell | app.js and .gitignore are committed, and nothing else
+git . commits == 1
+git . at HEAD file app.js
+git . at HEAD file .gitignore
+git . at HEAD missing .env
+
++++ practice | A Python project's junk
+--- task
+This new Python project has a secrets file \`passwords.txt\`, a folder \`venv\` full of installed packages, and two compiled files that end in \`.pyc\`: \`main.pyc\` and \`utils/helpers.pyc\`. Create a \`.gitignore\` with three patterns, one per line: one for \`passwords.txt\`, one for the \`venv\` folder, and one for every \`.pyc\` file, in any folder. Then commit everything that is left with \`git add .\` and a message of your choice.
+--- starter
+git init
+echo "admin=hunter2" > passwords.txt
+mkdir -p venv/lib utils
+echo "packages" > venv/lib/site.txt
+echo "compiled" > main.pyc
+echo "compiled" > utils/helpers.pyc
+echo "print('hi')" > main.py
+echo "def help(): pass" > utils/helpers.py
+--- solution
+echo "passwords.txt" > .gitignore
+echo "venv/" >> .gitignore
+echo "*.pyc" >> .gitignore
+git status
+git add .
+git commit -m "Add the project and its ignore rules"
+--- hint
+Start the file with \`>\` and add each next line with \`>>\`. A plain name matches that name anywhere.
+--- hint
+A folder gets a slash at the end, and a star matches any start of a name: \`venv/\` and \`*.pyc\`.
+--- hint
+When \`git status\` lists only \`.gitignore\`, \`main.py\` and \`utils/helpers.py\`, run \`git add .\` and commit.
+--- check shell | The secrets, packages and compiled files are ignored
+git . ignored passwords.txt
+git . ignored venv/lib/site.txt
+git . ignored main.pyc
+git . ignored utils/helpers.pyc
+--- check shell | The code and the .gitignore are committed
+git . commits == 1
+git . at HEAD file main.py
+git . at HEAD file utils/helpers.py
+git . at HEAD file .gitignore
+--- check shell | Nothing ignored was committed
+git . at HEAD missing passwords.txt
+git . at HEAD missing utils/helpers.pyc
+git . at HEAD missing venv/lib/site.txt
+
++++ practice | Which rule is it?
+--- task
+Someone else wrote this project's \`.gitignore\`, and two files never show up in \`git status\`: \`draft.pdf\` and \`cache/index.db\`. Find out which line of \`.gitignore\` ignores each one, with \`git check-ignore -v\`. Then save the two line numbers in a new file \`lines.txt\`, one per line: the number for \`draft.pdf\` first, then the number for \`cache/index.db\`. For example, if the rules were on lines 7 and 3, \`lines.txt\` would hold \`7\`, then \`3\`. Do not change \`.gitignore\`.
+--- starter
+git init
+mkdir cache
+echo "db" > cache/index.db
+echo "pdf" > draft.pdf
+echo "notes" > notes.md
+echo "# editor files" > .gitignore
+echo "*.swp" >> .gitignore
+echo "# generated" >> .gitignore
+echo "cache/" >> .gitignore
+echo "*.pdf" >> .gitignore
+--- solution
+git check-ignore -v draft.pdf
+git check-ignore -v cache/index.db
+echo "5" > lines.txt
+echo "4" >> lines.txt
+--- hint
+\`git check-ignore -v\` followed by a file name prints the file the rule is in, the line number, and the pattern, separated by colons.
+--- hint
+Comment lines count too: the number counts every line of the file from the top, the same way \`grep -n\` numbers lines.
+--- hint
+Ask about each file on its own, then write the two numbers with \`echo "…" > lines.txt\` and \`echo "…" >> lines.txt\`.
+--- check shell | You asked git about both files
+printed .gitignore:5:*.pdf
+printed .gitignore:4:cache/
+--- check shell | lines.txt holds the two line numbers, in order
+file lines.txt ~= 5\\n4
+--- check shell | The .gitignore is unchanged
+file .gitignore lines == 5
+file .gitignore contains *.pdf
+
++++ practice | Staged by mistake
+--- task
+You ran \`git add .\` before writing a \`.gitignore\`, so the secrets file \`.env\` and the log \`server.log\` are now staged, along with \`server.js\`. None of them is committed yet. Un-stage \`.env\` and \`server.log\` with \`git restore --staged\`. Then write a \`.gitignore\` with two patterns, one per line: \`.env\`, and one for every \`.log\` file. Finally commit \`server.js\` and \`.gitignore\` together, with a message of your choice. \`.env\` and \`server.log\` must never reach a commit.
+--- starter
+git init
+echo "# Server" > README.md
+git add .
+git commit -m "Start"
+echo "DB_PASSWORD=orbit42" > .env
+echo "listening" > server.log
+echo "start()" > server.js
+git add .
+--- solution
+git restore --staged .env server.log
+echo ".env" > .gitignore
+echo "*.log" >> .gitignore
+git status
+git add .
+git commit -m "Add the server and its ignore rules"
+--- hint
+A \`.gitignore\` only filters files git is not tracking yet. A staged file is already on its way into the next commit, so writing the rule alone is not enough.
+--- hint
+\`git restore --staged .env server.log\` takes both out of the staging box and leaves them in your folder.
+--- hint
+Write the two rules with \`>\` and \`>>\`, check \`git status\`, then \`git add .\` and commit.
+--- check shell | The secret and the log never reached a commit
+git . at HEAD missing .env
+git . at HEAD missing server.log
+git . ignored .env
+git . ignored server.log
+--- check shell | The server and the rules are committed
+git . commits == 2
+git . at HEAD file server.js
+git . at HEAD file .gitignore
+--- check shell | Nothing is left staged
+git . clean
+
++++ practice | All logs but one, and only the top tmp
+--- task
+Write a \`.gitignore\` for this project, one pattern per line, so that:
+
+- every \`.log\` file is ignored, in any folder, **except** \`audit.log\`, which must stay visible;
+- the \`tmp\` folder at the top of the project is ignored, but \`src/tmp\`, a folder of real source code, is **not**.
+
+Afterwards \`git status\` must list exactly three untracked files: \`.gitignore\`, \`audit.log\` and \`src/tmp/parser.js\`. Do not commit anything.
+--- starter
+git init
+mkdir -p logs tmp src/tmp
+echo "audit" > audit.log
+echo "app" > app.log
+echo "boot" > logs/boot.log
+echo "scratch" > tmp/scratch.txt
+echo "parse()" > src/tmp/parser.js
+--- solution
+echo "*.log" > .gitignore
+echo "!audit.log" >> .gitignore
+echo "/tmp" >> .gitignore
+git status
+--- hint
+Git reads the patterns from top to bottom, and the last one that matches a file decides. An exception has to come after the rule it breaks.
+--- hint
+A slash at the front of a pattern means "only at the top of the project". Without it, \`tmp\` would also match \`src/tmp\`.
+--- hint
+Three lines: the rule for every log, then \`!audit.log\`, then \`/tmp\`.
+--- check shell | The logs and the top tmp folder are ignored
+git . ignored app.log
+git . ignored logs/boot.log
+git . ignored tmp/scratch.txt
+--- check shell | audit.log and src/tmp stay visible
+git . untracked audit.log
+git . untracked src/tmp/parser.js
+git . untracked .gitignore
+--- check shell | Nothing was committed
+git . commits == 0
+
++++ practice | The comment that broke a rule
+--- task
+This \`.gitignore\` should ignore the \`cache\` folder and every \`.log\` file, but \`git status\` still lists \`server.log\`. Look at the file with \`cat .gitignore\` and ask git with \`git check-ignore -v server.log\`, then find the broken line.
+
+Write the file again so that it works and keeps its comment. It must end up with exactly three lines: \`cache/\`, then the comment \`# log files\` on a line of its own, then the rule for every \`.log\` file. Afterwards \`git status\` should list only \`.gitignore\` and \`app.js\` as untracked.
+--- starter
+git init
+mkdir cache
+echo "c" > cache/data.bin
+echo "listening" > server.log
+echo "run()" > app.js
+echo "cache/" > .gitignore
+echo "*.log # log files" >> .gitignore
+--- solution
+cat .gitignore
+git check-ignore -v server.log
+echo "cache/" > .gitignore
+echo "# log files" >> .gitignore
+echo "*.log" >> .gitignore
+git status
+--- hint
+\`git check-ignore -v server.log\` prints nothing, so no rule matches. Read the second line of the file slowly: what is the pattern, really?
+--- hint
+A \`#\` only starts a comment at the very beginning of a line. Later in a line, it becomes part of the pattern, so the pattern is the whole of \`*.log # log files\`.
+--- hint
+Write the file again with \`>\` for the first line and \`>>\` for the other two: \`cache/\`, \`# log files\`, \`*.log\`.
+--- check shell | server.log and the cache are ignored
+git . ignored server.log
+git . ignored cache/data.bin
+--- check shell | Only app.js and .gitignore are left untracked
+git . untracked app.js
+git . untracked .gitignore
+--- check shell | The comment is kept, on a line of its own
+file .gitignore ~= cache/\\n# log files\\n*.log
+
++++ practice | Setting up a telemetry project
+--- task
+A new telemetry project needs its first commit. Write a \`.gitignore\`, one pattern per line, so that:
+
+- \`.env\`, which holds the ground-station password, is ignored;
+- every \`.csv\` file is ignored, in any folder, because the raw readings are huge and can be downloaded again;
+- but \`sample.csv\`, a tiny example file, is **not** ignored, so new people can try the tools;
+- the \`output\` folder at the top of the project is ignored, but \`docs/output\`, which holds a hand-written guide, is **not**.
+
+Then commit with \`git add .\`, in a single commit with the message \`Set up the telemetry project\`. The commit must hold exactly \`.gitignore\`, \`plot.py\`, \`sample.csv\` and \`docs/output/guide.md\`.
+--- starter
+git init
+mkdir -p readings output docs/output
+echo "GS_PASSWORD=apollo" > .env
+echo "t,temp" > readings/day1.csv
+echo "t,temp" > readings/day2.csv
+echo "t,temp" > sample.csv
+echo "png" > output/plot.png
+echo "How to read the plots" > docs/output/guide.md
+echo "import csv" > plot.py
+--- solution
+echo ".env" > .gitignore
+echo "*.csv" >> .gitignore
+echo "!sample.csv" >> .gitignore
+echo "/output" >> .gitignore
+git status
+git add .
+git commit -m "Set up the telemetry project"
+--- hint
+Four rules: a plain name, a wildcard, an exception, and a folder that only counts at the top of the project.
+--- hint
+The exception \`!sample.csv\` has to come after \`*.csv\`. The top-level folder needs a slash at the front: \`/output\`.
+--- hint
+Check \`git status\` before you add: it should list \`.gitignore\`, \`docs/output/guide.md\`, \`plot.py\` and \`sample.csv\`, and nothing else.
+--- check shell | One commit, with the right message
+git . commits == 1
+git . at HEAD message == Set up the telemetry project
+--- check shell | The code, the sample and the guide are committed
+git . at HEAD file plot.py
+git . at HEAD file sample.csv
+git . at HEAD file docs/output/guide.md
+git . at HEAD file .gitignore
+--- check shell | The password, the readings and the output stayed out
+git . at HEAD missing .env
+git . at HEAD missing readings/day1.csv
+git . at HEAD missing output/plot.png
+git . ignored readings/day2.csv
+
+=== git2-02 | Reading history: log --graph
+--- teach
+Last lesson you kept junk and secrets out of the repository. This lesson is about reading what *is* in it. You will draw the history as a picture, see every branch at once, and then tidy up the branches you have finished with, safely.
+
+At the end of the last course, \`git log --oneline\` put commits from two branches into one flat list, which hid the fork. Think of a subway map instead: you can see where the lines split and where they join again. Git can draw its history like that.
+
+**Step 1: drawing the history**
+
+\`git log --oneline\` lists commits. Add \`--graph\` and it [[draws how they connect|graph-picture]]:
+
+\`\`\`
+~/project $ git log --oneline --graph
+*   67e4820 (HEAD -> main) Merge branch 'user-guide'
+|\\
+* | d1de340 (crash-fix) Fix the start-up crash
+| * 7938076 (user-guide) Write the guide
+|/
+* 0e13d9b Start the app
+\`\`\`
+
+Your ids will be different; the shape is what matters. Here is how to read it:
+
+- Each \`*\` is a commit. The newest is at the top, as in a plain \`git log\`.
+- The lines lead from each commit down to its [[parent|parent-lines]], the commit that came before it.
+- \`|/\` is where two lines of work split. Read from the bottom: after *Start the app*, the history forks into two lines.
+- \`|\\\` is where a merge commit's second parent joins in. The merge commit at the top has two parents: *Fix the start-up crash* and *Write the guide*.
+- The names in brackets show where branches and [[tags|tags-preview]] point. \`HEAD -> main\` means you are on \`main\`. (HEAD is git's name for the commit you are on.)
+
+**Step 2: every branch, not only yours**
+
+A plain \`git log\` shows only the history that leads to where you are. A branch with commits that \`main\` does not have is left out. Add \`--all\` and git shows every branch:
+
+\`\`\`
+~/project $ git log --oneline --graph --all
+* 6d956c4 (wild-idea) Try a wild idea
+*   67e4820 (HEAD -> main) Merge branch 'user-guide'
+|\\
+* | d1de340 (crash-fix) Fix the start-up crash
+| * 7938076 (user-guide) Write the guide
+|/
+* 0e13d9b Start the app
+\`\`\`
+
+Now *Try a wild idea*, on the \`wild-idea\` branch, shows up at the top. Its line leads down to the merge commit, which is where \`wild-idea\` was made. But no line leads from \`main\` up to it: \`main\` does not have that work.
+
+**Step 3: merged branches**
+
+Look at \`crash-fix\` and \`user-guide\`. The **tip** of a branch is its newest commit. Both tips sit inside \`main\`'s history, below the merge commit. A branch whose tip already appears in \`main\`'s history is **merged**: all of its work is in \`main\`, so [[deleting it loses nothing|label-only]].
+
+\`wild-idea\` is different. Its tip is above \`main\`, on a line of its own. Its work exists nowhere else.
+
+\`git branch --merged\` lists the branches that are merged into the branch you are on, so they are safe to delete:
+
+\`\`\`
+~/project $ git branch --merged
+  crash-fix
+  user-guide
+* main
+\`\`\`
+
+The \`*\` marks \`main\` because you are on it, not because you should delete it.
+
+**Step 4: deleting a branch safely**
+
+\`git branch -d name\` deletes a branch. \`-d\` is short for "delete". It only deletes a branch that is merged, and refuses otherwise:
+
+\`\`\`
+~/project $ git branch -d user-guide
+Deleted branch user-guide (was 7938076).
+~/project $ git branch -d wild-idea
+error: the branch 'wild-idea' is not fully merged.
+If you are sure you want to delete it, run 'git branch -D wild-idea'.
+\`\`\`
+
+That refusal makes \`-d\` the safe way to [[clean up|cleanup-habit]]. The capital \`-D\` [[deletes anyway|capital-d]], merged or not. Keep it for work you really want to throw away.
+
+**Watch out:** when \`-d\` refuses, git is protecting work that exists nowhere else. The mistake is to copy the \`-D\` command from the message without thinking. Stop and look at the graph first: if you still need those commits, keep the branch.
+
+::: context graph-picture The same history, drawn as dots
+Here is the history from Step 1 drawn as a picture. Each dot is a commit, and each line joins a commit to its parent. The history forks after *Start the app*, each side adds one commit, and the merge commit joins them again. The text graph in your terminal is this same picture, turned on its side and drawn with the characters \`*\`, \`|\`, \`/\` and \`\\\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <line x1="40" y1="90" x2="140" y2="45" stroke="#1d6fd1" stroke-width="3"/>
+  <line x1="40" y1="90" x2="140" y2="135" stroke="#f2b880" stroke-width="3"/>
+  <line x1="140" y1="45" x2="240" y2="90" stroke="#1d6fd1" stroke-width="3"/>
+  <line x1="140" y1="135" x2="240" y2="90" stroke="#f2b880" stroke-width="3"/>
+  <circle cx="40" cy="90" r="10" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="140" cy="45" r="10" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="140" cy="135" r="10" fill="#f2b880" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="240" cy="90" r="12" fill="#ffffff" stroke="#b4232c" stroke-width="3"/>
+  <text x="40" y="116" font-size="11" text-anchor="middle" fill="#1f2a44">Start the app</text>
+  <text x="140" y="26" font-size="11" text-anchor="middle" fill="#1f2a44">fix: Fix the crash</text>
+  <text x="140" y="162" font-size="11" text-anchor="middle" fill="#1f2a44">user-guide: Write the guide</text>
+  <text x="262" y="87" font-size="12" font-weight="bold" fill="#b4232c">main:</text>
+  <text x="262" y="102" font-size="12" font-weight="bold" fill="#b4232c">the merge</text>
+</svg>
+\`\`\`
+:::
+
+::: context parent-lines Why the lines point down
+Every commit stores the id of the commit that came right before it, its **parent**. It does not store what comes after, because that did not exist yet when it was made. So git always walks history backwards, from the newest commit down through the parents. A merge commit stores two parents. The first is the branch you were on when you merged (here \`main\`, with *Fix the start-up crash*). The second is the branch you merged in (\`user-guide\`). That second one is the line that joins at \`|\\\`.
+:::
+
+::: context tags-preview Names that stay put
+A **tag** is a name for one commit, like \`v1.0\`, that never moves. A branch name moves forward every time you commit on it; a tag stays on the commit you gave it. Teams tag the exact commit they released, so they can always find it again. Tags appear in the same brackets in \`git log\`, next to branch names. You will make your own later in this course.
+:::
+
+::: context label-only Deleting a label, not the work
+Inside the hidden \`.git\` folder, a branch is a tiny file holding one commit id: its tip. Deleting a branch deletes only that label, never the commits. For a merged branch, every commit can still be reached by walking back from \`main\`, so nothing is lost. For an unmerged branch, the label was the only way to its newest commits. Without it they are hidden, and git eventually clears away commits that no name leads to. The last lesson of this course shows a way to find such commits again, if you act soon.
+:::
+
+::: context cleanup-habit Tidying up on a real team
+On a busy project, branches pile up fast: one for every feature and every fix. Once a branch is merged, it is only clutter. On GitHub, a merged pull request shows a button to delete its branch, and a project can turn on a setting that deletes merged branches automatically. On your own computer, \`git branch --merged\` followed by \`git branch -d\` does the same job. Because \`-d\` refuses anything unmerged, you can tidy up without worrying.
+:::
+
+::: context capital-d Small d, big D
+In git, a capital letter is often the forceful version of a flag. \`-D\` is short for two long flags together, \`--delete --force\`: delete, and skip the safety check. Git spells the dangerous version with a capital so that it is harder to type by accident. You will meet more commands later in this course that can throw work away, and each one asks you to say so on purpose.
+:::
+--- task
+This repository has three branches besides \`main\`. Draw the whole history with \`git log --oneline --graph --all\`. Two of the branches are merged into \`main\`; one is not. Delete the **two merged** branches with \`git branch -d\`, and keep the unmerged one.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start the app"
+git switch -c docs
+echo "how to launch" > GUIDE.md
+git add .
+git commit -m "Write the guide"
+git switch main
+git switch -c fix
+echo "v1.1" > app.txt
+git commit -am "Fix the start-up crash"
+git switch main
+git merge fix
+git merge docs
+git switch -c experiment
+echo "wild" > idea.txt
+git add .
+git commit -m "Try a wild idea"
+git switch main
+--- solution
+git log --oneline --graph --all
+git branch -d docs
+git branch -d fix
+--- hint
+In the graph, find each branch name and follow its line down: does its commit sit inside \`main\`'s history, below \`HEAD -> main\`? \`git branch --merged\` gives you the same answer as a list.
+--- hint
+\`docs\` and \`fix\` are part of \`main\`. \`git branch -d experiment\` would refuse, because that work exists nowhere else.
+--- hint
+Run \`git branch -d docs\`, then \`git branch -d fix\`. Leave \`experiment\` alone.
+--- check shell | You drew the whole history
+ran git log
+used --graph
+used --all
+--- check shell | The merged branches are gone
+git . no-branch docs
+git . no-branch fix
+--- check shell | The unmerged work is kept
+git . has-branch experiment
+git . branch main
+
++++ practice | Tidy up after a sprint
+--- task
+You are on \`main\`, and this repository has four other branches. Ask git which of them are merged into \`main\` with \`git branch --merged\`. Delete every branch it lists, apart from \`main\`, with \`git branch -d\`. Keep the branches that are not merged.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+git switch -c radar
+echo "radar" > radar.txt
+git add .
+git commit -m "Add radar"
+git switch main
+git merge radar
+git switch -c comms
+echo "comms" > comms.txt
+git add .
+git commit -m "Add comms"
+git switch main
+git merge comms
+git switch -c thermal
+echo "thermal" > thermal.txt
+git add .
+git commit -m "Add the thermal model"
+git switch main
+git switch -c ui
+echo "ui" > ui.txt
+git add .
+git commit -m "Draft the UI"
+git switch main
+--- solution
+git branch --merged
+git branch -d radar
+git branch -d comms
+--- hint
+\`git branch --merged\` lists the branches whose work is already all in \`main\`. The \`*\` only marks the branch you are on.
+--- hint
+Delete each listed branch with \`git branch -d\` and its name. Leave \`main\` alone.
+--- check shell | You asked which branches are merged
+ran git branch --merged
+--- check shell | The merged branches are gone
+git . no-branch radar
+git . no-branch comms
+--- check shell | The unmerged work and main are kept
+git . has-branch thermal
+git . has-branch ui
+git . branch main
+
++++ practice | Throwing an experiment away on purpose
+--- task
+The team tried a new engine model on the branch \`spike\`, and agreed to throw it away. \`spike\` is not merged into \`main\`. First try \`git branch -d spike\` and read git's refusal. Then delete \`spike\` anyway, on purpose, with the flag that skips the safety check. The branch \`docs\`, which is also not merged, must stay.
+--- starter
+git init
+echo "v1" > engine.txt
+git add .
+git commit -m "Start"
+git switch -c spike
+echo "v2, experimental" > engine.txt
+git commit -am "Try the new engine model"
+git switch main
+git switch -c docs
+echo "how to fly" > GUIDE.md
+git add .
+git commit -m "Write the guide"
+git switch main
+--- solution
+git branch -d spike
+git branch -D spike
+git branch
+--- hint
+Small \`-d\` refuses to delete a branch whose work exists nowhere else. Read its message: it names the other flag.
+--- hint
+The capital letter is the forceful version: \`git branch -D spike\`.
+--- check shell | You met the refusal first
+printed not fully merged
+--- check shell | spike is gone, on purpose
+git . no-branch spike
+ran git branch -D spike
+--- check shell | docs is kept
+git . has-branch docs
+git . branch main
+
++++ practice | Merge first, then tidy
+--- task
+You are on \`main\`. The branch \`hud\` has finished work that is not in \`main\` yet, and \`physics\` is still in progress. Merge \`hud\` into \`main\`. Now \`hud\` counts as merged, so delete it with \`git branch -d\`. Finally draw the whole history with \`git log --oneline --graph --all\`, and check that \`physics\` is still there, on a line of its own.
+--- starter
+git init
+echo "v1" > game.txt
+git add .
+git commit -m "Start the game"
+git switch -c hud
+echo "health bar" > hud.txt
+git add .
+git commit -m "Add the health bar"
+git switch main
+git switch -c physics
+echo "gravity" > physics.txt
+git add .
+git commit -m "Add gravity"
+git switch main
+echo "v1.1" > game.txt
+git commit -am "Fix the title screen"
+--- solution
+git merge hud
+git branch -d hud
+git log --oneline --graph --all
+--- hint
+Before the merge, \`git branch -d hud\` would refuse. Merge first: \`git merge hud\`.
+--- hint
+After the merge, \`hud\`'s commit sits inside \`main\`'s history, so \`-d\` deletes it. Then draw the graph with both \`--graph\` and \`--all\`.
+--- check shell | hud's work is in main
+git . branch main
+git . at main file hud.txt
+git . merges == 1
+--- check shell | hud is deleted, physics is kept
+git . no-branch hud
+git . has-branch physics
+--- check shell | You drew every branch
+used --graph
+used --all
+
++++ practice | Branches that refuse to go
+--- task
+Delete three branches: \`cleanup\` and \`trial\`, which are both merged into \`main\`, and \`scratch\`, which someone made and never committed on. Keep \`ideas\`, which holds work that is not merged. You are standing on \`cleanup\` right now, and git will not delete the branch you are on. Finish on \`main\`.
+--- starter
+git init
+echo "v1" > site.txt
+git add .
+git commit -m "Start the site"
+git branch scratch
+git switch -c trial
+echo "banner" > banner.txt
+git add .
+git commit -m "Try a banner"
+git switch main
+git merge trial
+git switch -c ideas
+echo "maybe" > ideas.txt
+git add .
+git commit -m "Note some ideas"
+git switch main
+git switch -c cleanup
+echo "v1, tidy" > site.txt
+git commit -am "Tidy the site"
+git switch main
+git merge cleanup
+git switch cleanup
+--- solution
+git switch main
+git branch --merged
+git branch -d cleanup
+git branch -d trial
+git branch -d scratch
+--- hint
+Try \`git branch -d cleanup\` first and read the error. Which branch should you be on instead?
+--- hint
+\`git switch main\`, then \`git branch --merged\`. A branch with no commits of its own points at a commit inside \`main\`'s history, so it counts as merged too.
+--- hint
+Delete \`cleanup\`, \`trial\` and \`scratch\` with \`-d\`, one at a time. Leave \`ideas\`.
+--- check shell | You finished on main
+git . branch main
+--- check shell | The three branches are gone
+git . no-branch cleanup
+git . no-branch trial
+git . no-branch scratch
+--- check shell | The unmerged work is kept
+git . has-branch ideas
+git . log-of ideas contains Note some ideas
+
++++ practice | The cleanup that went wrong
+--- task
+A teammate wrote these commands to delete the branches that are merged into \`main\`:
+
+\`\`\`
+git switch fuel-fix
+git branch --merged
+git branch -D fuel-fix
+git branch -D landing
+\`\`\`
+
+It goes wrong. \`git branch -D fuel-fix\` fails with an error, and \`git branch -D landing\` deletes \`landing\`, whose work is **not** in \`main\` and exists nowhere else. Work out why, and type a fixed version. You are on \`main\`. The goal: every branch merged into \`main\` is deleted, and every branch that is not merged is kept.
+--- starter
+git init
+echo "fuel = 80" > fuel.txt
+git add .
+git commit -m "Start"
+git switch -c fuel-fix
+echo "fuel = 85" > fuel.txt
+git commit -am "Fix the fuel reading"
+git switch main
+git merge fuel-fix
+git switch -c radio
+echo "radio on" > radio.txt
+git add .
+git commit -m "Add the radio"
+git switch main
+git merge radio
+git switch -c landing
+echo "legs down" > landing.txt
+git add .
+git commit -m "Draft the landing"
+git switch main
+--- solution
+git branch --merged
+git branch -d fuel-fix
+git branch -d radio
+--- hint
+Two things are wrong. \`--merged\` answers for the branch you are standing on, and git never deletes the branch you are on. And capital \`-D\` skips the safety check that would have saved \`landing\`.
+--- hint
+Stay on \`main\`, ask \`git branch --merged\` there, and delete only what it lists, with small \`-d\`.
+--- hint
+It lists \`fuel-fix\` and \`radio\`. Delete those two.
+--- check shell | The merged branches are gone
+git . no-branch fuel-fix
+git . no-branch radio
+--- check shell | landing is kept
+git . has-branch landing
+git . log-of landing contains Draft the landing
+--- check shell | You checked from main, with the safe flag
+git . branch main
+ran git branch --merged
+not-printed Deleted branch landing
+
++++ practice | Which branches still hold work?
+--- task
+After a busy week, this repository has five branches besides \`main\`. Draw the whole history with \`git log --oneline --graph --all\` to see how they relate. Delete every branch that is merged into \`main\`, with \`git branch -d\`. Then make a file \`unmerged.txt\` that lists the branches you kept, apart from \`main\`, one per line, in alphabetical order.
+
+A branch that is merged into some other branch, but not into \`main\`, still counts as not merged.
+--- starter
+git init
+echo "v1" > craft.txt
+git add .
+git commit -m "Start the craft"
+git switch -c docking
+echo "port" > dock.txt
+git add .
+git commit -m "Draft the docking port"
+git switch main
+echo "v2" > craft.txt
+git commit -am "Update the craft"
+git switch -c antenna
+echo "antenna" > antenna.txt
+git add .
+git commit -m "Add the antenna"
+git switch main
+echo "v3" > craft.txt
+git commit -am "Tune the craft"
+git merge antenna
+git switch -c camera
+echo "camera" > camera.txt
+git add .
+git commit -m "Add the camera"
+git switch main
+git merge camera
+git switch -c solar
+echo "panels" > solar.txt
+git add .
+git commit -m "Add solar panels"
+git switch -c battery
+echo "battery" > battery.txt
+git add .
+git commit -m "Add the battery"
+git switch main
+--- solution
+git log --oneline --graph --all
+git branch --merged
+git branch -d antenna
+git branch -d camera
+echo "battery" > unmerged.txt
+echo "docking" >> unmerged.txt
+echo "solar" >> unmerged.txt
+--- hint
+In the graph, follow each branch name down. If its commit sits inside \`main\`'s history, below \`HEAD -> main\`, it is merged. \`git branch --merged\` gives the same answer as a list.
+--- hint
+\`solar\` sits inside \`battery\`'s history, but neither of them is inside \`main\`'s. \`docking\` split off early and never came back.
+--- hint
+Delete \`antenna\` and \`camera\`. Then write \`battery\`, \`docking\` and \`solar\` into \`unmerged.txt\` with \`>\` and \`>>\`.
+--- check shell | You drew every branch
+used --graph
+used --all
+--- check shell | The merged branches are gone, the others kept
+git . no-branch antenna
+git . no-branch camera
+git . has-branch battery
+git . has-branch docking
+git . has-branch solar
+--- check shell | unmerged.txt lists the kept branches, in order
+file unmerged.txt ~= battery\\ndocking\\nsolar
+
+=== git2-03 | Looking inside a commit: git show
+--- teach
+Last lesson you drew the history, one line per commit. This lesson opens one of those commits to see exactly what it changed. Then you will pull an old version of a file out of the history and bring it back.
+
+Think of \`git log\` as the table of contents of a book: one line per chapter. \`git show\` turns to one page and lets you read it.
+
+**Step 1: show the commit you are on**
+
+\`git show\` prints a commit: its id, [[its author|author-line]] and its message, then the diff of what it changed.
+
+\`\`\`
+~/project $ git show
+commit 83860dd (HEAD -> main)
+Author: you
+
+    Spin much faster
+
+diff --git a/fan-speed.txt b/fan-speed.txt
+--- a/fan-speed.txt
++++ b/fan-speed.txt
+-speed = 5
++speed = 50
+\`\`\`
+
+The diff reads like the ones from \`git diff\` in the last course: a line starting \`-\` was taken out, a line starting \`+\` was put in. This commit changed \`speed = 5\` to \`speed = 50\`.
+
+With nothing after it, \`git show\` shows the commit you are on, HEAD.
+
+**Step 2: naming other commits**
+
+To look at a different commit, name it. One way is its id, as \`git log --oneline\` shows it:
+
+\`\`\`
+~/project $ git log --oneline
+83860dd (HEAD -> main) Spin much faster
+4e87491 Spin faster
+c05d82e Add fan speed
+~/project $ git show 4e87491
+\`\`\`
+
+The other way is to count back from where you are. \`HEAD~1\`, read "HEAD tilde one", means [[one commit before HEAD|counting-back]]. \`HEAD~2\` is two before, and so on:
+
+\`\`\`
+git show            # the commit you are on (HEAD)
+git show 4e87491    # a commit by its id, as git log shows it
+git show HEAD~1     # one before HEAD; HEAD~2 is two before, and so on
+\`\`\`
+
+The \`~\` here is [[not your home folder|tilde-sign]]. It only means "go back".
+
+\`HEAD~n\` works anywhere git wants a commit, and so do branch names: \`main~3\` is three commits before the tip of \`main\`.
+
+**Step 3: a file as it was**
+
+With a colon, \`git show\` prints **a file as it was** in that commit. Put the commit on the left of the colon and the file name on the right:
+
+\`\`\`
+~/project $ git show HEAD~1:fan-speed.txt
+speed = 5
+\`\`\`
+
+Read it as "[[fan-speed.txt, as it was at HEAD~1|commit-colon]]". It only prints. Nothing in your folder changes.
+
+**Step 4: bringing the old version back**
+
+You met \`git restore fan-speed.txt\` in the last course: it puts a file back the way it was in the last commit. Give it \`--source\` and it takes the file from any commit you name instead:
+
+\`\`\`
+~/project $ git restore --source=HEAD~1 fan-speed.txt
+~/project $ cat fan-speed.txt
+speed = 5
+\`\`\`
+
+\`--source\` is a flag that takes a value, the commit to copy from. The \`=\` joins the flag and its value into one word.
+
+That only changes the file in your folder. \`git status\` now lists \`fan-speed.txt\` as modified, like any change you make by hand. Commit it like any other change.
+
+**Step 5: a shortcut for committing**
+
+A shortcut you will see from here on:
+
+\`\`\`
+~/project $ git commit -am "Go back to speed 5"
+\`\`\`
+
+\`git commit -am "…"\` stages every change to files git already tracks and commits them, in one step. It is two flags [[squeezed together|combined-flags]]: \`-a\` for "all" and \`-m\` for "message". \`-a\` skips new, untracked files, so those still need \`git add\`.
+
+The history keeps every version, so you have undone a change [[without losing the record of it|keep-the-record]].
+
+**Watch out:** counting back is easy to get wrong by one. HEAD is the top line of \`git log --oneline\`, so \`HEAD~1\` is the second line and \`HEAD~2\` is the third. Before you restore, print the file with \`git show\` and check it is the version you want.
+
+::: context author-line Who made the commit
+On a real computer, git stamps every commit with a name and an email, which you set once with \`git config --global user.name\` and \`git config --global user.email\`. It also records the date and time, so a real \`git show\` has a \`Date:\` line too. This practice terminal writes \`you\` and leaves the date out. On a team, the author line is how you know who to ask about a change.
+:::
+
+::: context counting-back Counting back from HEAD
+Each step of \`~\` moves one commit back, from a commit to its parent. In this lesson's project, HEAD is *Spin much faster*, \`HEAD~1\` is *Spin faster*, and \`HEAD~2\` is *Add fan speed*. The names move as you commit: after one more commit, *Add fan speed* becomes \`HEAD~3\`. When a commit has two parents, as a merge commit does, \`~\` follows the first parent: the branch you were on when you merged.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <line x1="70" y1="55" x2="170" y2="55" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="190" y1="55" x2="290" y2="55" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="60" cy="55" r="12" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="180" cy="55" r="12" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="300" cy="55" r="12" fill="#ffffff" stroke="#b4232c" stroke-width="3"/>
+  <g font-size="12" font-weight="bold" text-anchor="middle">
+    <text x="60" y="28" fill="#1d6fd1">HEAD~2</text>
+    <text x="180" y="28" fill="#1d6fd1">HEAD~1</text>
+    <text x="300" y="28" fill="#b4232c">HEAD</text>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#1f2a44">
+    <text x="60" y="88">Add fan speed</text>
+    <text x="180" y="88">Spin faster</text>
+    <text x="300" y="88">Spin much faster</text>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#6c7a93">
+    <text x="60" y="108">retries = 3</text>
+    <text x="180" y="108">speed = 5</text>
+    <text x="300" y="108">speed = 50</text>
+  </g>
+</svg>
+\`\`\`
+:::
+
+::: context tilde-sign Not your home folder
+In the Terminal course, \`~\` meant your home folder, as in \`cd ~\`. The shell only swaps \`~\` for your home folder when it starts a word. In \`HEAD~2\` the \`~\` sits in the middle of a word, so the shell leaves it alone and git receives it as typed. Git reads it as "go back along the parents". You may also see \`HEAD^\`, read "HEAD caret", which means "the parent of HEAD", the same commit as \`HEAD~1\`.
+:::
+
+::: context commit-colon Any file, from any commit
+The part before the colon can be any way of naming a commit: an id like \`c05d82e\`, a branch name like \`main\`, or \`HEAD~2\`. The part after it is the file's path from the top of the repository, not from the folder you are standing in. Because \`git show\` only prints, you can also keep an old copy next to the new one with a redirect from the Terminal course: \`git show HEAD~1:fan-speed.txt > old-fan-speed.txt\`. Git never loses the old versions; this is how you read them.
+:::
+
+::: context combined-flags Two flags in one
+Single-letter flags after one dash can often be squeezed together: \`ls -la\` is the same as \`ls -l -a\`. \`git commit -am "…"\` is \`-a\` and then \`-m\`. Order matters here, because \`-m\` takes a value. The message has to come straight after the \`m\`, so the \`m\` goes last. Type \`-ma "…"\` instead and git takes the letter \`a\` as your message. \`-a\` skips untracked files on purpose, so that a stray new file never sneaks into a commit.
+:::
+
+::: context keep-the-record Undoing by moving forward
+You did not erase the bad commit. You added a new one on top that puts the old value back. So the log still tells the whole story: what was tried, when, and when it was undone. In aerospace this matters a great deal. Flight software is kept under strict configuration management, where every change must be traceable, and standards for airborne software such as DO-178C require it. Later in this course \`git revert\` does this kind of undo for a whole commit at once, and \`git reset\` shows the other kind, which rewrites history instead.
+:::
+--- task
+\`config.txt\` was changed in each of the last three commits, and the newest value is wrong. Look at the version from **two commits ago** with \`git show HEAD~2:config.txt\`. Bring that version back into your working folder with \`git restore --source=HEAD~2\`, and commit it with the message \`Restore the stable config\`.
+--- starter
+git init
+echo "retries = 3" > config.txt
+git add .
+git commit -m "Add config"
+echo "retries = 5" > config.txt
+git commit -am "Try more retries"
+echo "retries = 50" > config.txt
+git commit -am "Retry forever"
+--- solution
+git show HEAD~2:config.txt
+git restore --source=HEAD~2 config.txt
+git commit -am "Restore the stable config"
+--- hint
+\`git show HEAD~2:config.txt\` prints the old file. \`git log --oneline\` helps you count back: HEAD~2 is the third line.
+--- hint
+\`git restore --source=HEAD~2 config.txt\` puts that version in your folder. \`cat config.txt\` should now say \`retries = 3\`.
+--- hint
+Commit the change with \`git commit -am "Restore the stable config"\`.
+--- check shell | You looked at the old version
+used HEAD~2
+printed-line retries = 3
+--- check shell | The stable config is committed
+git . commits == 4
+git . at HEAD message == Restore the stable config
+git . at HEAD file config.txt == retries = 3
+
++++ practice | Bring the crew member back
+--- task
+The last commit, \`Update the crew\`, dropped \`Mae\` from \`crew.txt\` by mistake. Print \`crew.txt\` as it was **one** commit before HEAD with \`git show\`. Bring that version back into your folder with \`git restore --source\`, and commit it with the message \`Bring Mae back\`.
+--- starter
+git init
+printf "Ada\\nMae\\n" > crew.txt
+git add .
+git commit -m "Add the crew"
+printf "Ada\\nMae\\nYuri\\n" > crew.txt
+git commit -am "Add Yuri"
+printf "Ada\\nYuri\\n" > crew.txt
+git commit -am "Update the crew"
+--- solution
+git show HEAD~1:crew.txt
+git restore --source=HEAD~1 crew.txt
+git commit -am "Bring Mae back"
+--- hint
+One commit before HEAD is \`HEAD~1\`. Put the commit, a colon and the file name after \`git show\`.
+--- hint
+\`git restore --source=HEAD~1 crew.txt\` copies that version into your folder. \`cat crew.txt\` should list Ada, Mae and Yuri.
+--- hint
+Commit the change with \`git commit -am "Bring Mae back"\`.
+--- check shell | You printed the old version
+ran git show
+printed-exactly Ada\\nMae\\nYuri
+--- check shell | Mae is back, in a new commit
+git . commits == 4
+git . at HEAD message == Bring Mae back
+git . at HEAD file crew.txt contains Mae
+git . at HEAD file crew.txt contains Yuri
+--- check shell | The history still holds the mistake
+git . log contains Update the crew
+
++++ practice | A file from another branch
+--- task
+The branch \`night-mode\` has its own version of \`theme.txt\`. **Without switching branches**, save night-mode's version of the file into a new file called \`night-theme.txt\`, next to yours. Use \`git show\` with a branch name, a colon and the file name, and a redirect (\`>\`). Your own \`theme.txt\` must not change, and you must stay on \`main\`.
+--- starter
+git init
+echo "background = white" > theme.txt
+git add .
+git commit -m "Add the theme"
+git switch -c night-mode
+echo "background = black" > theme.txt
+git commit -am "Try a dark background"
+git switch main
+--- solution
+git show night-mode:theme.txt > night-theme.txt
+cat night-theme.txt
+--- hint
+A branch name works anywhere git wants a commit, including on the left of the colon.
+--- hint
+\`git show\` only prints. The \`>\` from the Terminal course sends what it prints into a file instead of the screen.
+--- hint
+\`git show night-mode:theme.txt > night-theme.txt\`, then \`cat night-theme.txt\` to check.
+--- check shell | night-theme.txt holds night-mode's version
+file night-theme.txt == background = black
+--- check shell | Your own theme.txt is unchanged, and you are still on main
+file theme.txt == background = white
+git . branch main
+--- check shell | You read it with git show
+used night-mode:theme.txt
+
++++ practice | Undo one file, keep the other
+--- task
+The last commit, \`Release v2\`, changed two files. The new \`README.md\` is right, but the new \`limits.txt\` has a typo. Bring back \`limits.txt\` as it was **one** commit before HEAD, and leave \`README.md\` as it is. Before you commit, run \`git diff\` to see exactly what you are about to save. Then commit with the message \`Fix the speed limit\`.
+--- starter
+git init
+echo "max_speed = 80" > limits.txt
+echo "Rover v1" > README.md
+git add .
+git commit -m "Add limits"
+echo "max_speed = 800" > limits.txt
+echo "Rover v2" > README.md
+git commit -am "Release v2"
+--- solution
+git restore --source=HEAD~1 limits.txt
+git diff
+git commit -am "Fix the speed limit"
+--- hint
+\`git restore --source\` takes one file name, so it only touches the file you name.
+--- hint
+After the restore, \`git diff\` shows \`-max_speed = 800\` and \`+max_speed = 80\`: the change you want.
+--- hint
+\`git restore --source=HEAD~1 limits.txt\`, \`git diff\`, then \`git commit -am "Fix the speed limit"\`.
+--- check shell | You checked the change before committing
+ran git diff
+printed-line +max_speed = 80
+--- check shell | limits.txt is fixed and README.md is kept
+git . at HEAD file limits.txt == max_speed = 80
+git . at HEAD file README.md == Rover v2
+--- check shell | A new commit, with the right message
+git . commits == 3
+git . at HEAD message == Fix the speed limit
+
++++ practice | All the way back, with a new file
+--- task
+\`net.txt\` changed in each of the four commits. Put back its **very first** version, from the commit \`Add network settings\`. You also wrote a new file, \`NOTES.md\`, which explains why: it must go into the **same** new commit. Commit both with the message \`Go back to one retry\`.
+--- starter
+git init
+echo "retries = 1" > net.txt
+git add .
+git commit -m "Add network settings"
+echo "retries = 2" > net.txt
+git commit -am "Retry twice"
+echo "retries = 4" > net.txt
+git commit -am "Retry four times"
+echo "retries = 8" > net.txt
+git commit -am "Retry eight times"
+echo "Retries must stay at 1." > NOTES.md
+--- solution
+git log --oneline
+git show HEAD~3:net.txt
+git restore --source=HEAD~3 net.txt
+git add NOTES.md
+git commit -am "Go back to one retry"
+--- hint
+Count down \`git log --oneline\`: the top line is HEAD, the next is \`HEAD~1\`, and so on. How far back is \`Add network settings\`?
+--- hint
+It is \`HEAD~3\`. Check it with \`git show HEAD~3:net.txt\` before you restore.
+--- hint
+\`-a\` only stages files git already tracks, so a new file needs \`git add NOTES.md\` first. Then \`git commit -am "Go back to one retry"\`.
+--- check shell | The first version is back
+git . at HEAD file net.txt == retries = 1
+--- check shell | NOTES.md is in the same commit
+git . at HEAD file NOTES.md
+git . commits == 5
+--- check shell | The right message
+git . at HEAD message == Go back to one retry
+
++++ practice | One commit short
+--- task
+\`speed.txt\` has changed in each of the four commits. A teammate wanted it back as it was in the very first commit, \`Add speed\`, and ran:
+
+\`\`\`
+git restore --source=HEAD~2 speed.txt
+\`\`\`
+
+Instead of \`speed = 10\`, the file now says \`speed = 20\`. Nothing is committed yet. Find the mistake, put the first version in your folder, and commit it with the message \`Go back to the first speed\`.
+--- starter
+git init
+echo "speed = 10" > speed.txt
+git add .
+git commit -m "Add speed"
+echo "speed = 20" > speed.txt
+git commit -am "Speed up"
+echo "speed = 30" > speed.txt
+git commit -am "Speed up more"
+echo "speed = 40" > speed.txt
+git commit -am "Speed up again"
+git restore --source=HEAD~2 speed.txt
+--- solution
+git log --oneline
+git restore --source=HEAD~3 speed.txt
+cat speed.txt
+git commit -am "Go back to the first speed"
+--- hint
+Look at \`git log --oneline\` and count again. HEAD is the top line, so \`HEAD~2\` is the third line, not the fourth.
+--- hint
+\`Add speed\` is \`HEAD~3\`. Restoring again simply overwrites the wrong version in your folder.
+--- hint
+\`git restore --source=HEAD~3 speed.txt\`, check it with \`cat\`, then commit with \`-am\`.
+--- check shell | The first speed is committed
+git . at HEAD file speed.txt == speed = 10
+git . at HEAD message == Go back to the first speed
+--- check shell | One new commit on top of the four
+git . commits == 5
+git . log contains Speed up again
+--- check shell | Your folder matches the commit
+file speed.txt == speed = 10
+
++++ practice | Hunting the bad burn
+--- task
+\`burn.txt\` now says \`duration = 999\`, which is wrong. One of the recent commits made that change, and the commits after it only changed \`crew.txt\`. Use \`git show\` to find the commit that set \`duration = 999\`. Put \`burn.txt\` back as it was in the commit **just before** that one, keep \`crew.txt\` as it is now, and commit with the message \`Restore the last good burn\`.
+--- starter
+git init
+echo "duration = 42" > burn.txt
+echo "Ada" > crew.txt
+git add .
+git commit -m "Plan the burn"
+echo "duration = 45" > burn.txt
+git commit -am "Lengthen the burn"
+echo "duration = 999" > burn.txt
+git commit -am "Adjust the burn"
+echo "Ada, Yuri" > crew.txt
+git commit -am "Add Yuri to the crew"
+echo "Ada, Yuri, Mae" > crew.txt
+git commit -am "Add Mae to the crew"
+--- solution
+git show
+git show HEAD~1
+git show HEAD~2
+git restore --source=HEAD~3 burn.txt
+git commit -am "Restore the last good burn"
+--- hint
+Walk back one commit at a time: \`git show\`, \`git show HEAD~1\`, \`git show HEAD~2\`. Look for the diff line \`+duration = 999\`.
+--- hint
+\`HEAD~2\` made the change. The commit just before it is one step further back.
+--- hint
+\`git restore --source=HEAD~3 burn.txt\` brings back \`duration = 45\`. Then commit with \`-am\`.
+--- check shell | You found the bad commit
+ran git show
+printed-line +duration = 999
+--- check shell | The last good burn is back, and the crew is kept
+git . at HEAD file burn.txt == duration = 45
+git . at HEAD file crew.txt == Ada, Yuri, Mae
+--- check shell | One new commit, with the right message
+git . commits == 6
+git . at HEAD message == Restore the last good burn
+
+=== git2-04 | Before you merge: comparing branches
+--- teach
+Last lesson you looked inside one commit with \`git show\`, and named older commits by counting back, like \`HEAD~2\`. This lesson puts two whole branches side by side, so you can see exactly what a merge would bring into \`main\` **before** you run it.
+
+Think of a delivery arriving at a shop. Before anyone unpacks the boxes onto the shelves, someone reads the packing list and opens a box or two, to check it is what was ordered. Here the shelves are \`main\`, the delivery is a branch called \`feature\`, and you are the one who checks.
+
+There are two questions to ask. Which commits are new? And how do the files differ? Each one gets its own command.
+
+**Step 1: which commits are new.** Put two dots between two branch names:
+
+\`\`\`
+~/project $ git log --oneline main..feature
+dfa4663 (feature) Link the about page
+4a1db69 Add the about page
+\`\`\`
+
+Two names with two dots between them make a **range**: a set of commits picked out by two end points. Read \`main..feature\` as "commits you can [[reach|reachable]] from \`feature\`, but not from \`main\`". In plain words: the new work on \`feature\` that \`main\` does not have yet.
+
+The order matters. Swap the names and you ask the opposite question:
+
+\`\`\`
+~/project $ git log --oneline feature..main
+~/project $
+\`\`\`
+
+\`feature..main\` means "what does \`main\` have that \`feature\` does not?" Here the answer is nothing, so git prints nothing.
+
+The list of new commits is exactly what a teammate reads first when you ask for your branch to be merged, in a [[pull request|pr-review]].
+
+**Step 2: how the files differ.** Give \`git diff\` two branch names, and it compares the newest commit on each one, the branch's **tip**:
+
+\`\`\`
+~/project $ git diff main feature
+diff --git a/about.html b/about.html
+--- /dev/null
++++ b/about.html
++about
+diff --git a/debug.txt b/debug.txt
+--- /dev/null
++++ b/debug.txt
++x = 1
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+-home
++home, about
+\`\`\`
+
+It reads the same way as the diffs you know. The first name, \`main\`, is the old side: its lines get a \`-\` (minus). The second name, \`feature\`, is the new side: its lines get a \`+\` (plus). \`/dev/null\` is git's way of saying "no file here", so a file with \`--- /dev/null\` above it is brand new on \`feature\`.
+
+**Step 3: a shorter summary.** On a big branch the full diff runs for pages. Add \`--stat\`, short for "statistics", and you get one line per file instead:
+
+\`\`\`
+~/project $ git diff --stat main feature
+ about.html | 1 +
+ debug.txt  | 1 +
+ index.html | 2 +-
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+\`\`\`
+
+Each line names a file and counts its changed lines, with a little bar of pluses and minuses. \`index.html | 2 +-\` means two lines touched: one removed and one added, because a [[changed line counts twice|changed-lines]].
+
+Want only the names? \`--name-only\` prints just those:
+
+\`\`\`
+~/project $ git diff --name-only main feature
+about.html
+debug.txt
+index.html
+\`\`\`
+
+**Step 4: any two commits.** \`git diff\` is not only for branches. It compares any two commits you name, old one first:
+
+\`\`\`
+git diff HEAD~1 HEAD     # what the last commit changed
+\`\`\`
+
+With only one name, it compares that commit with the files in your folder right now:
+
+\`\`\`
+git diff HEAD~3          # your folder, compared with three commits ago
+\`\`\`
+
+\`--stat\` and \`--name-only\` work with all of these.
+
+**Step 5: taking a file out.** Say the review turned up a file that should not be there. \`git rm\` ("remove") takes a file out of the project. It [[deletes the file and stages the deletion|git-rm]] in one step:
+
+\`\`\`
+~/project $ git rm debug.txt
+rm 'debug.txt'
+~/project $ git status
+On branch feature
+
+Changes to be committed:
+        deleted:    debug.txt
+\`\`\`
+
+The deletion now sits in the staging box. Commit it like any other change, and the file is gone from that branch from then on.
+
+Reviewing first is how you catch the debug file, the stray print line or the file deleted by accident **before** it lands in \`main\`, [[instead of after|before-not-after]].
+
+**Watch out:** get the order of the range right. The branch you want to merge in goes on the **right**: \`main..feature\`. Written the other way round, \`git log\` prints nothing, and it is easy to think the branch has no new work. And remove the stray file on the branch that has it. On \`main\`, \`git rm debug.txt\` fails with \`fatal: pathspec 'debug.txt' did not match any files\`, because \`main\` never had it.
+
+::: context reachable What "reachable" means
+Every commit remembers its parent, the commit it was built on. Start at a branch's tip and follow those parent links back, one by one: every commit you pass is **reachable** from that branch. \`main..feature\` keeps the commits reachable from \`feature\` and throws away any that are also reachable from \`main\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <line x1="152" y1="60" x2="68" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="252" y1="60" x2="168" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="60" cy="60" r="12" fill="#ffffff" stroke="#6c7a93" stroke-width="2"/>
+  <circle cx="160" cy="60" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="260" cy="60" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <text x="60" y="96">Add the</text><text x="60" y="110">home page</text>
+    <text x="160" y="96">Add the</text><text x="160" y="110">about page</text>
+    <text x="260" y="96">Link the</text><text x="260" y="110">about page</text>
+  </g>
+  <text x="60" y="30" font-size="12" fill="#b4232c" text-anchor="middle">main</text>
+  <text x="260" y="30" font-size="12" fill="#b4232c" text-anchor="middle">feature</text>
+  <rect x="136" y="38" width="148" height="44" rx="10" fill="none" stroke="#1d6fd1" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="210" y="138" font-size="12" fill="#1d6fd1" text-anchor="middle">main..feature: the two blue commits</text>
+</svg>
+\`\`\`
+:::
+
+::: context pr-review What a reviewer sees first
+On GitHub, a pull request page has a tab listing the branch's commits and another showing every changed file as a diff. Those are the same two answers you get from \`git log main..feature\` and \`git diff main feature\`. Running them yourself first means you see what your reviewer will see, and can tidy up before anyone else has to point out the stray file. Many teams do exactly this as a habit before they open a pull request.
+:::
+
+::: context changed-lines Why a changed line counts twice
+Git does not store "this line was edited". It compares the old file and the new one line by line, and a line whose text changed simply does not match any more. So git reports it as the old line removed and the new line added. That is why \`index.html\`, where one line went from \`home\` to \`home, about\`, shows \`2 +-\` and adds to both totals: 1 insertion and 1 deletion.
+:::
+
+::: context git-rm Plain rm or git rm?
+The \`rm\` you know from the Terminal courses deletes the file from your folder, and that is all. Git notices the file is missing, but the deletion is not staged: you would still need \`git add debug.txt\` (yes, \`add\`, to stage a deletion) before committing. \`git rm debug.txt\` does both jobs at once. Either way the file stays in the older commits, so \`git show\` can still print it if you ever need it.
+:::
+
+::: context before-not-after Why before is cheaper than after
+Once a commit is merged into \`main\` and your teammates have copies of it, it is part of everyone's history. You can still delete the file with a new commit, but the old commits keep it, and anyone can read it there. For a scratch file that is only untidy. For a password or an API key it is a leak, as a debugging lesson later in this course shows. A minute of reviewing costs far less than cleaning up.
+:::
+--- task
+Review the \`feature\` branch before merging it. First list the commits \`main\` does not have with \`git log --oneline main..feature\`. Then see which files differ with \`git diff --stat main feature\`.
+
+One of feature's commits added a scratch file, \`debug.txt\`, by mistake. Switch to \`feature\`, remove \`debug.txt\` with \`git rm\`, and commit that with a message of your choice. Then switch back to \`main\` and merge \`feature\` into it.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+git switch -c feature
+echo "about" > about.html
+git add .
+git commit -m "Add the about page"
+echo "home, about" > index.html
+echo "x = 1" > debug.txt
+git add .
+git commit -m "Link the about page"
+git switch main
+--- solution
+git log --oneline main..feature
+git diff --stat main feature
+git switch feature
+git rm debug.txt
+git commit -m "Remove the scratch file"
+git switch main
+git merge feature
+--- hint
+Start with the two review commands from the task. \`debug.txt\` shows up in the \`--stat\` list, as a new file on \`feature\`.
+--- hint
+The file lives on \`feature\`, so go there first: \`git switch feature\`, then \`git rm debug.txt\`, then commit.
+--- hint
+\`git commit -m "Remove the scratch file"\`, then \`git switch main\` and \`git merge feature\`.
+--- check shell | You reviewed the branch first
+used main..feature
+used git diff
+printed debug.txt
+--- check shell | The feature is merged, without the scratch file
+git . branch main
+git . at main file about.html
+git . at main missing debug.txt
+git . log contains Link the about page
+
++++ practice | What is new on fixes?
+--- task
+Before anyone merges the branch \`fixes\`, list the commits it has that \`main\` does not, with \`git log --oneline\` and a range. Then save the names of the files that differ between \`main\` and \`fixes\` into a new file \`changed.txt\`, using \`git diff --name-only\` and a redirect (\`>\`). Stay on \`main\`, and do not merge.
+--- starter
+git init
+echo "home | shop" > nav.html
+git add .
+git commit -m "Add the menu"
+git switch -c fixes
+echo "home | shop | help" > nav.html
+git commit -am "Fix the menu links"
+echo "page not found" > 404.html
+git add .
+git commit -m "Add a not-found page"
+git switch main
+--- solution
+git log --oneline main..fixes
+git diff --name-only main fixes > changed.txt
+cat changed.txt
+--- hint
+In a range, the branch you want to merge in goes on the right of the two dots.
+--- hint
+\`git log --oneline main..fixes\` lists the new commits. \`git diff --name-only main fixes\` prints only the file names.
+--- hint
+Add \`> changed.txt\` to the end of the diff command, then \`cat changed.txt\` to check.
+--- check shell | You listed the new commits
+used main..fixes
+printed Fix the menu links
+printed Add a not-found page
+--- check shell | changed.txt names the two files
+file changed.txt ~= 404.html\\nnav.html
+--- check shell | Nothing was merged
+git . branch main
+git . commits == 1
+
++++ practice | What main has that you do not
+--- task
+You are on \`feature\`. While you worked, teammates added commits to \`main\`. Save the list of commits that \`main\` has and \`feature\` does not yet into a new file \`behind.txt\`, using \`git log --oneline\` with a range and a redirect (\`>\`). The list must not include your own work on \`feature\`, or the first commit, which both branches share.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+git switch -c feature
+echo "dark" > theme.txt
+git add .
+git commit -m "Add dark mode"
+git switch main
+echo "v1.1" > app.txt
+git commit -am "Fix the login crash"
+echo "fast" > search.txt
+git add .
+git commit -m "Speed up the search"
+git switch feature
+--- solution
+git log --oneline feature..main > behind.txt
+cat behind.txt
+--- hint
+\`A..B\` means "commits you can reach from B but not from A". Which branch has the commits you want?
+--- hint
+You want \`main\`'s commits that \`feature\` lacks, so \`main\` goes on the right: \`feature..main\`.
+--- check shell | behind.txt lists main's two new commits
+file behind.txt contains Fix the login crash
+file behind.txt contains Speed up the search
+file behind.txt lines == 2
+--- check shell | It leaves out feature's work and the shared start
+file behind.txt excludes Add dark mode
+file behind.txt excludes Start
+--- check shell | You are still on feature
+git . branch feature
+
++++ practice | Review, then put a file back
+--- task
+Review the branch \`docs\` before merging it into \`main\`. See which files differ with \`git diff --stat main docs\`: besides adding \`GUIDE.md\`, the branch deleted \`LICENSE\` by accident. Fix that **on \`docs\`**: bring \`LICENSE\` back as it is on \`main\` with \`git restore --source\`, and commit it. Then switch to \`main\` and merge \`docs\`. At the end, \`main\` must have \`GUIDE.md\` and its \`LICENSE\`, unchanged.
+--- starter
+git init
+echo "MIT License" > LICENSE
+echo "app" > app.txt
+git add .
+git commit -m "Start"
+git switch -c docs
+echo "how to fly" > GUIDE.md
+git add .
+git rm LICENSE
+git commit -m "Write the guide"
+git switch main
+--- solution
+git diff --stat main docs
+git switch docs
+git restore --source=main LICENSE
+git add LICENSE
+git commit -m "Bring back the license"
+git switch main
+git merge docs
+--- hint
+A branch name works as the \`--source\`: \`git restore --source=main LICENSE\`, while you are on \`docs\`.
+--- hint
+The branch's last commit has no \`LICENSE\`, so the restored file shows up as untracked. \`-a\` skips untracked files: stage it with \`git add LICENSE\`, then commit.
+--- hint
+Then \`git switch main\` and \`git merge docs\`.
+--- check shell | You reviewed first
+used git diff
+printed LICENSE
+--- check shell | main has the guide and still has its license
+git . branch main
+git . at main file GUIDE.md
+git . at main file LICENSE == MIT License
+--- check shell | The fix was made on docs
+git . at docs file LICENSE == MIT License
+git . log-of docs contains Write the guide
+
++++ practice | Which branches have new work?
+--- task
+There are four branches besides \`main\`: \`alpha\`, \`beta\`, \`delta\` and \`gamma\`. For each one, check with \`git log --oneline main..\` and the branch's name whether it has commits that \`main\` does not. Save the names of the branches that do into a new file \`todo.txt\`, one per line, in alphabetical order. A range with nothing in it prints nothing at all. Do not merge or delete anything.
+--- starter
+git init
+echo "v1" > core.txt
+git add .
+git commit -m "Start"
+git branch gamma
+git switch -c delta
+echo "d" > delta.txt
+git add .
+git commit -m "Try a new core"
+git switch main
+git switch -c alpha
+echo "a" > alpha.txt
+git add .
+git commit -m "Add alpha"
+git switch main
+git merge alpha
+git switch -c beta
+echo "b" > beta.txt
+git add .
+git commit -m "Add beta"
+git switch main
+--- solution
+git log --oneline main..alpha
+git log --oneline main..beta
+git log --oneline main..delta
+git log --oneline main..gamma
+echo "beta" > todo.txt
+echo "delta" >> todo.txt
+--- hint
+Plain \`git log alpha\` lists every commit that leads to \`alpha\`, including the ones \`main\` has too. The range leaves those out.
+--- hint
+\`alpha\` is already merged, and \`gamma\` was made and never committed on, so their ranges are empty.
+--- hint
+Write \`beta\` and \`delta\` into \`todo.txt\` with \`>\` and \`>>\`.
+--- check shell | You checked the branches with ranges
+used main..alpha
+used main..gamma
+--- check shell | todo.txt lists exactly the branches with new work
+file todo.txt ~= beta\\ndelta
+--- check shell | Nothing was merged or deleted
+git . commits == 2
+git . has-branch alpha
+git . has-branch gamma
+
++++ practice | The deletion that never happened
+--- task
+A teammate tried to take the scratch file \`debug.txt\` out of the branch \`feature\`. They deleted it with plain \`rm\`, then ran \`git commit -m "Remove the scratch file"\`. But no commit was made, so \`debug.txt\` is still in feature's last commit, and a merge would bring it into \`main\`.
+
+Find out why with \`git status\`. Then finish the job: make the commit that removes \`debug.txt\` on \`feature\`, with the same message, switch to \`main\`, and merge \`feature\`.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+git switch -c feature
+echo "about" > about.html
+echo "x = 1" > debug.txt
+git add .
+git commit -m "Add the about page"
+rm debug.txt
+git commit -m "Remove the scratch file"
+--- solution
+git status
+git rm debug.txt
+git commit -m "Remove the scratch file"
+git switch main
+git merge feature
+--- hint
+\`git status\` lists the deletion under "Changes not staged for commit". A commit only saves what is staged.
+--- hint
+\`git rm debug.txt\` stages the deletion, even though the file is already gone from the folder.
+--- hint
+Commit with the same message, then \`git switch main\` and \`git merge feature\`.
+--- check shell | The scratch file never reached main
+git . at main missing debug.txt
+--- check shell | main has the about page, and you are on it
+git . branch main
+git . at main file about.html
+git . log contains Add the about page
+--- check shell | The removal is a commit of its own on feature
+git . at feature message == Remove the scratch file
+git . at feature missing debug.txt
+git . commits-on feature == 3
+
++++ practice | A full review
+--- task
+Review the branch \`telemetry\` before it goes into \`main\`. It should only add one new file, \`telemetry.py\`. Use \`git log --oneline main..telemetry\` and \`git diff --stat main telemetry\` to find what else it changed: it added a big data dump, and it changed \`config.txt\` by accident.
+
+On \`telemetry\`, remove the dump with \`git rm\`, put \`config.txt\` back to the version on \`main\`, and commit both fixes as **one** commit with the message \`Clean up before merging\`. Then merge \`telemetry\` into \`main\`.
+--- starter
+git init
+echo "rate = 1" > config.txt
+git add .
+git commit -m "Start"
+git switch -c telemetry
+echo "import time" > telemetry.py
+echo "t,v,v,v,v" > dump.csv
+git add .
+git commit -m "Add telemetry"
+echo "rate = 50" > config.txt
+git commit -am "Tune the rate"
+git switch main
+--- solution
+git log --oneline main..telemetry
+git diff --stat main telemetry
+git switch telemetry
+git rm dump.csv
+git restore --source=main config.txt
+git commit -am "Clean up before merging"
+git switch main
+git merge telemetry
+--- hint
+The \`--stat\` list names three files. \`telemetry.py\` is the one that belongs; the other two need fixing on \`telemetry\`.
+--- hint
+\`git rm dump.csv\` stages the removal, and \`git restore --source=main config.txt\` brings back main's version. \`-a\` then stages the config change too.
+--- hint
+\`git commit -am "Clean up before merging"\`, then \`git switch main\` and \`git merge telemetry\`.
+--- check shell | You reviewed the branch
+used main..telemetry
+used --stat
+--- check shell | main got the new code, and nothing else
+git . branch main
+git . at main file telemetry.py
+git . at main missing dump.csv
+git . at main file config.txt == rate = 1
+--- check shell | Both fixes are one commit on telemetry
+git . at telemetry message == Clean up before merging
+git . commits-on telemetry == 4
+
+=== git2-05 | Fixing the last commit: --amend
+--- teach
+Last lesson you reviewed a branch and removed a stray file with a fresh commit. Sometimes the mistake is smaller and more recent: you commit, and one second later you spot a file you forgot, or a typo in the message. This lesson shows how to fix the commit you just made, instead of adding another one.
+
+Think of a letter you have sealed but not yet posted. If you forgot to put the photo in, you do not send a second envelope saying "here is the photo". You open a fresh envelope, put in the letter and the photo together, and throw the first envelope away.
+
+In git that is \`--amend\`. To **[[amend|amend-word]]** means to correct. \`git commit --amend\` replaces the last commit with a corrected one.
+
+**Adding a forgotten file.** Stage the file first, the usual way. Then commit with \`--amend\`:
+
+\`\`\`
+~/project $ git add high-scores.css
+~/project $ git commit --amend --no-edit
+[main f5558b8] Add the scores page
+ 2 files changed
+\`\`\`
+
+\`--no-edit\` means "do not change the message": the corrected commit keeps the old one. The history still has the same number of commits, and the last one now holds both files.
+
+**Fixing the message.** Give \`-m\` ("message") a new one instead:
+
+\`\`\`
+~/project $ git commit --amend -m "Add the scores page and its styles"
+[main 3601d6e] Add the scores page and its styles
+ 2 files changed
+\`\`\`
+
+If nothing is staged, only the message changes.
+
+In a [[real terminal|real-editor]], \`--amend\` with neither \`--no-edit\` nor \`-m\` opens a text editor with the old message in it, for you to change. This practice terminal has no editor, so it keeps the old message.
+
+**What really happens.** Look at the ids above: \`f5558b8\`, then \`3601d6e\`. Amending does not edit the old commit. Commits never change. Git makes a **new** commit, with a [[new id|new-id]], and moves the branch label to it. The old commit is left behind, no longer on any branch.
+
+That is harmless for a commit only you have. It is a problem for a commit you have already [[shared|shared-commits]]: other people's copies still hold the old commit, and their history would no longer match yours.
+
+So the rule is: **amend only what you have not shared.** For a commit other people already have, fix the mistake with a new commit on top, the way you removed \`debug.txt\` last lesson.
+
+You will [[use amend again|amend-later]] before this course is over.
+
+**Watch out:** \`--amend\` only ever changes the **last** commit, the one you are on. If the forgotten file belongs to an older commit, amending puts it in the wrong place. And do not forget to \`git add\` the file first: amend saves what is in the staging box, so an unstaged file stays left out again.
+
+::: context amend-word Where "amend" comes from
+To amend something is to correct or improve it. Laws are changed by amendments, and the First Amendment to the US Constitution is a famous example. The word fits: you are not writing a new piece of history, you are correcting the piece you just wrote. Git's own help describes \`--amend\` as a way to "replace the tip of the current branch by creating a new commit", which is exactly what happens.
+:::
+
+::: context real-editor The editor, once more
+You met this in the basics course with merges: on a real computer, git opens a text editor when it wants you to write or check a message. With \`git commit --amend\`, the editor opens with the old message already in it. Change it, save, and close, and the corrected commit is made. The editor is often Vim; there, \`:wq\` then Enter saves and quits. Passing \`--no-edit\` or \`-m\` skips the editor completely, which is why people use them.
+:::
+
+::: context new-id Why the id has to change
+A commit's id, its hash, is worked out from everything in it: the files, the message, the author, the time and its parent. Amend changes at least one of those, so the new commit gets a new id. Both commits point back to the same parent; only the branch label moves.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <circle cx="60" cy="90" r="13" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="250" cy="45" r="13" fill="#ffffff" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="250" cy="135" r="13" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="237" y1="50" x2="80" y2="84" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="237" y1="130" x2="80" y2="96" stroke="#1f2a44" stroke-width="2"/>
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <text x="60" y="124">687486b</text>
+    <text x="250" y="20">f543eaa</text>
+    <text x="250" y="163">f5558b8</text>
+  </g>
+  <text x="272" y="49" font-size="12" fill="#6c7a93">left behind</text>
+  <text x="272" y="139" font-size="12" fill="#b4232c">main</text>
+</svg>
+\`\`\`
+:::
+
+::: context shared-commits What "shared" means
+Right now your repository lives only on your computer. On a real project, you also send your commits to a copy on a server such as GitHub. That is called **pushing**, and your teammates **pull** from there. Once a commit is pushed, other people may have it and may have built new commits on top of it. If you then amend it, your branch and theirs disagree about what the last commit even is. The advanced course covers pushing and pulling.
+:::
+
+::: context amend-later Where amend comes back
+You will use \`--amend\` again at the end of this course. After rescuing some lost commits, the last one turns out to be called \`wip asdf\`, and \`git commit --amend -m\` gives it a proper name. The next lesson meets another command that, like amend, rewrites history: \`git reset\`. The same rule applies to it. Rewrite only what you have not shared.
+:::
+--- task
+You just committed the login page, but forgot \`login.css\`. Put it into **that same commit** with \`--amend\`. The history must still have two commits, and the message must stay \`Add the login page\`.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+echo "<form>" > login.html
+echo "form { margin: 0 }" > login.css
+git add login.html
+git commit -m "Add the login page"
+--- solution
+git add login.css
+git commit --amend --no-edit
+--- hint
+\`git status\` shows that \`login.css\` is still untracked. Amend saves what is in the staging box, so stage it first.
+--- hint
+\`git add login.css\`, then amend the last commit without changing its message.
+--- hint
+\`git commit --amend --no-edit\` folds the file into the last commit and keeps \`Add the login page\`.
+--- check shell | Still two commits, with the same message
+git . commits == 2
+git . at HEAD message == Add the login page
+--- check shell | The login commit now has both files
+git . at HEAD file login.css
+git . at HEAD file login.html
+git . clean
+
++++ practice | A typo in the message
+--- task
+The last commit's message has a typo: \`Fix teh landing gear\`. You have not shared the commit yet. Correct the message to \`Fix the landing gear\` with \`--amend\`. The history must still have two commits, and the commit must keep its change to \`gear.txt\`.
+--- starter
+git init
+echo "gear = up" > gear.txt
+git add .
+git commit -m "Add the landing gear"
+echo "gear = down" > gear.txt
+git commit -am "Fix teh landing gear"
+--- solution
+git commit --amend -m "Fix the landing gear"
+git log --oneline
+--- hint
+Nothing needs staging this time: you only want a new message.
+--- hint
+\`--amend\` with \`-m\` and the corrected message replaces the last commit's message.
+--- check shell | The message is fixed
+git . at HEAD message == Fix the landing gear
+git . log excludes teh
+--- check shell | Still two commits
+git . commits == 2
+--- check shell | The commit still holds its change
+git . at HEAD file gear.txt == gear = down
+
++++ practice | A forgotten edit, and a better message
+--- task
+You just committed \`Bump the version\`, which changed \`version.txt\`. You forgot to stage your edit to \`CHANGELOG.md\`, a file git already tracks. Put that edit into **the same** commit, and at the same time change the message to \`Release version 2.1\`. The history must still have two commits.
+--- starter
+git init
+echo "2.0" > version.txt
+echo "2.0: first release" > CHANGELOG.md
+git add .
+git commit -m "Release version 2.0"
+echo "2.1" > version.txt
+echo "2.1: faster start" > CHANGELOG.md
+git add version.txt
+git commit -m "Bump the version"
+--- solution
+git status
+git add CHANGELOG.md
+git commit --amend -m "Release version 2.1"
+--- hint
+Amend saves what is in the staging box. \`git status\` shows \`CHANGELOG.md\` is modified but not staged.
+--- hint
+Stage it with \`git add\`, then amend with \`-m\` and the new message, instead of \`--no-edit\`.
+--- check shell | The commit holds both changes
+git . at HEAD file CHANGELOG.md == 2.1: faster start
+git . at HEAD file version.txt == 2.1
+--- check shell | The message is new, and the count is the same
+git . at HEAD message == Release version 2.1
+git . commits == 2
+git . log excludes Bump the version
+--- check shell | Nothing is left staged
+git . clean
+
++++ practice | A scratch file slipped in
+--- task
+Your last commit, \`Add the parser\`, has not been shared. It holds \`parser.js\`, which is right, and \`scratch.txt\`, a note to yourself that should never have been committed and that you no longer need. Take \`scratch.txt\` out of that commit, and out of your folder, with \`git rm\` and \`--amend\`, keeping the message. Then look at the corrected commit with \`git show\`.
+--- starter
+git init
+echo "# Parser" > README.md
+git add .
+git commit -m "Start"
+echo "export function parse() {}" > parser.js
+echo "remember to buy milk" > scratch.txt
+git add .
+git commit -m "Add the parser"
+--- solution
+git rm scratch.txt
+git commit --amend --no-edit
+git show
+--- hint
+\`git rm scratch.txt\` deletes the file and stages the deletion. Amend then saves what is staged.
+--- hint
+\`git commit --amend --no-edit\` keeps the message. \`git show\` should now list only \`parser.js\`.
+--- check shell | The commit no longer holds the scratch file
+git . at HEAD missing scratch.txt
+git . at HEAD file parser.js
+missing scratch.txt
+--- check shell | Same message, same number of commits
+git . at HEAD message == Add the parser
+git . commits == 2
+--- check shell | You looked at the result
+ran git show
+
++++ practice | Only one of the two edits
+--- task
+You just committed \`Set the launch window\`, then noticed that the time in \`window.txt\` was wrong, and fixed it in the file. You are also halfway through an edit to \`fuel.txt\`, which is **not** ready. Put the \`window.txt\` fix into the last commit, keeping its message. The \`fuel.txt\` edit must stay out of every commit, and stay in your file.
+--- starter
+git init
+echo "fuel = 50%" > fuel.txt
+git add .
+git commit -m "Add the fuel plan"
+echo "window = 14:50" > window.txt
+git add .
+git commit -m "Set the launch window"
+echo "window = 14:05" > window.txt
+echo "fuel = 75%" > fuel.txt
+--- solution
+git add window.txt
+git commit --amend --no-edit
+git status
+--- hint
+Amend saves exactly what is staged, so choose what to stage. \`-a\` would sweep \`fuel.txt\` in too.
+--- hint
+\`git add window.txt\`, then \`git commit --amend --no-edit\`.
+--- check shell | The window fix is in the last commit
+git . at HEAD file window.txt == window = 14:05
+git . at HEAD message == Set the launch window
+git . commits == 2
+--- check shell | The fuel edit stayed out of the commit
+git . at HEAD file fuel.txt == fuel = 50%
+--- check shell | The fuel edit is still in your file
+file fuel.txt == fuel = 75%
+git . modified fuel.txt
+
++++ practice | The amend that went wrong
+--- task
+A teammate wanted to put \`map.css\` into the last commit, \`Add the map page\`. They ran:
+
+\`\`\`
+git commit --amend -m "add css"
+\`\`\`
+
+Now the last commit is called \`add css\`, and it still holds only \`map.html\`. Fix it: the last commit must hold both \`map.html\` and \`map.css\`, and be called \`Add the map page\` again. The history must still have two commits.
+--- starter
+git init
+echo "home" > index.html
+git add .
+git commit -m "Add the home page"
+echo "<div id=map>" > map.html
+echo "#map { height: 100% }" > map.css
+git add map.html
+git commit -m "Add the map page"
+git commit --amend -m "add css"
+--- solution
+git status
+git add map.css
+git commit --amend -m "Add the map page"
+git show
+--- hint
+Two things went wrong. \`map.css\` was never staged, and \`-m\` replaced the message.
+--- hint
+Stage the file first. Then amend once more, and give the message back with \`-m\`.
+--- hint
+\`git add map.css\`, then \`git commit --amend -m "Add the map page"\`.
+--- check shell | The last commit holds both files
+git . at HEAD file map.html
+git . at HEAD file map.css
+--- check shell | Its message is back
+git . at HEAD message == Add the map page
+git . log excludes add css
+--- check shell | Still two commits
+git . commits == 2
+
++++ practice | Polish before you share
+--- task
+Before you share your last commit, fix three things in it, without adding a new commit:
+
+- the message has a typo: it should be \`Add the telemetry parser\`;
+- \`parser.py\` still has a debugging line: it must hold only the line \`import csv\`;
+- \`tests.py\`, a new file you wrote, belongs in the commit too.
+
+Then check the result with \`git show\`. The history must still have two commits.
+--- starter
+git init
+echo "# Telemetry" > README.md
+git add .
+git commit -m "Start"
+printf "import csv\\nprint(\\"DEBUG\\")\\n" > parser.py
+git add .
+git commit -m "Add teh telemetry parser"
+echo "assert True" > tests.py
+--- solution
+echo "import csv" > parser.py
+git add parser.py tests.py
+git commit --amend -m "Add the telemetry parser"
+git show
+--- hint
+Make the files right first: rewrite \`parser.py\` with \`echo\` and \`>\`. Then stage everything that should be in the commit.
+--- hint
+\`tests.py\` is new, so it needs \`git add\`. So does the changed \`parser.py\`.
+--- hint
+One amend with \`-m\` fixes the message and saves both files: \`git commit --amend -m "Add the telemetry parser"\`.
+--- check shell | One commit, with the fixed message
+git . commits == 2
+git . at HEAD message == Add the telemetry parser
+git . log excludes teh
+--- check shell | The parser is clean and the tests are in
+git . at HEAD file parser.py == import csv
+git . at HEAD file tests.py
+--- check shell | Nothing is left out
+git . clean
+ran git show
+
+=== git2-06 | Putting work aside: git stash
+--- teach
+Last lesson you fixed the commit you had just made. This lesson is about work you are not ready to commit at all. You are halfway through a change when something urgent comes up on another branch. You will learn to put the half-done work aside, deal with the urgent thing, and pick your work up again exactly where you left it.
+
+Picture doing a jigsaw puzzle on the dining table when someone says dinner is in five minutes. You do not glue the half-finished puzzle together. You slide it carefully onto a tray, put the tray on a shelf, and bring it back after dinner.
+
+**The problem.** You have changed \`app.js\` on \`main\`, and you need to switch to another branch. If that branch has a different version of \`app.js\`, switching would wipe out your change, so git refuses:
+
+\`\`\`
+~/project $ git switch hotfix
+error: Your local changes to the following files would be overwritten by checkout:
+	app.js
+Commit them, or stash them (git stash), before you switch branches.
+Aborting
+\`\`\`
+
+Even when git does let you switch, because the other branch has the same version of the file, your half-done change comes along with you and gets mixed into the urgent work. And committing half-finished work would put a broken step in your history. There is a better way.
+
+**Step 1: put the work aside.** \`git stash\` saves your uncommitted changes in a safe place, then puts your files back the way they were at the [[last commit|clean-tree]]:
+
+\`\`\`
+~/project $ git stash
+Saved working directory and index state WIP on main: 7bdad31 Start
+~/project $ git status
+On branch main
+
+nothing to commit, working tree clean
+\`\`\`
+
+A **[[stash|stash-word]]** is a saved bundle of uncommitted changes. (The **index** in that message is git's own name for the staging box.) Your change to \`app.js\` is not gone. It is in the stash, and \`app.js\` in your folder is back to the committed version. Now git lets you switch, and you can make the [[urgent fix|hotfix]] on the other branch.
+
+**Step 2: see what is stashed.**
+
+\`\`\`
+~/project $ git stash list
+stash@{0}: WIP on main: 7bdad31 Start
+\`\`\`
+
+Each line is one stash. \`WIP\` stands for "work in progress". The line also says which branch you were on and which commit you started from.
+
+**Step 3: bring it back.** Back on \`main\`, \`git stash pop\` puts the newest stash back into your files, and removes it from the list:
+
+\`\`\`
+~/project $ git stash pop
+On branch main
+
+Changes not staged for commit:
+        modified:   app.js
+Dropped stash@{0}
+\`\`\`
+
+Your change to \`app.js\` is back, not staged, exactly as you left it. \`Dropped\` means the stash was taken off the list.
+
+\`git stash apply\` also brings the stash back, but keeps it in the list too. That is handy if you want the same changes on two branches. Delete a stash you no longer need with \`git stash drop\`.
+
+**Stashes pile up like a stack.** Stash twice and you have two. The newest is always on top, called \`stash@{0}\`, and the older one moves down to \`stash@{1}\`. \`pop\` and \`apply\` take the [[top one|stack]] unless you name another.
+
+**New files need \`-u\`.** Plain \`git stash\` saves changes to files git already tracks. A brand-new, [[untracked file|untracked-u]] is left where it is. Add \`-u\`, short for "untracked", to stash those as well:
+
+\`\`\`
+git stash -u
+\`\`\`
+
+**Watch out:** two mistakes are common. The first is forgetting you stashed anything. When work seems to have vanished, run \`git stash list\` before you panic. The second is popping on the wrong branch: \`pop\` puts the changes into whichever branch you are on now. Check with \`git status\` or \`git branch\` that you are back where you started before you pop.
+
+::: context clean-tree What "working tree clean" means
+The **working tree** is the ordinary files in your folder. "Clean" means they match the last commit exactly: nothing modified, nothing staged, no new files waiting. After \`git stash\`, \`git status\` says \`nothing to commit, working tree clean\`. That is how you know the stash took everything, and that switching branches is now safe.
+:::
+
+::: context stash-word Where "stash" comes from
+To stash something is to hide it away safely for later, like a squirrel burying acorns for the winter or a snack kept at the back of a drawer. Git's stash is a private hiding place on your computer. It is not on any branch. That is why a stash never shows up in a plain \`git log\`, and why it is easy to forget it is there.
+:::
+
+::: context hotfix What a hotfix is
+A **hotfix** is a small, urgent fix, usually for a bug that people are already running into. Teams often make a short-lived branch for it, fix just that one thing, and merge it quickly, while bigger work carries on elsewhere. Being able to drop what you are doing, make the fix on a clean branch and come back is exactly why stash exists: the urgent fix goes out on its own, without your half-finished work mixed in.
+:::
+
+::: context stack A stack, like a pile of plates
+A **stack** is a pile where you add to the top and take from the top, like plates in a kitchen cupboard. The last one put on is the first one taken off. Programmers use stacks everywhere, and you will meet the word again in programming languages.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="60" y="30" width="170" height="30" rx="6" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="60" y="66" width="170" height="30" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="60" y="102" width="170" height="30" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <text x="145" y="50">stash@{0}  newest</text>
+    <text x="145" y="86">stash@{1}</text>
+    <text x="145" y="122">stash@{2}  oldest</text>
+  </g>
+  <text x="248" y="50" font-size="12" fill="#b4232c">pop takes this one</text>
+</svg>
+\`\`\`
+:::
+
+::: context untracked-u Why new files are left out
+A file is **untracked** until you \`git add\` it for the first time: git can see it, but has never saved it. Plain \`git stash\` only looks after tracked files, so a new file stays in your folder and comes along when you switch branches. If a stash seems to have "missed" your new file, that is why. With \`git stash -u\`, the new file goes into the stash too, and leaves your folder until you pop it.
+:::
+--- task
+You are halfway through a change to \`app.js\` on \`main\` when a typo report arrives. Put your work aside with \`git stash\`, then switch to the existing \`hotfix\` branch. There, fix the typo in \`README.md\` so it says \`Rocket launcher\`, and commit that. Then switch back to \`main\` and bring your work back with \`git stash pop\`.
+--- starter
+git init
+echo "Rocket lanucher" > README.md
+echo "start()" > app.js
+git add .
+git commit -m "Start"
+git branch hotfix
+echo "start(); fly()" > app.js
+--- solution
+git stash
+git switch hotfix
+echo "Rocket launcher" > README.md
+git commit -am "Fix the typo in the README"
+git switch main
+git stash pop
+--- hint
+Run \`git stash\` first. \`git status\` should then say \`working tree clean\`.
+--- hint
+\`git switch hotfix\`, fix the file with \`echo "Rocket launcher" > README.md\`, commit it with \`git commit -am\` and a message, then \`git switch main\`.
+--- hint
+Back on \`main\`, \`git stash pop\` brings \`start(); fly()\` back into \`app.js\`.
+--- check shell | The typo is fixed, on hotfix
+git . commits-on hotfix == 2
+git . at hotfix file README.md == Rocket launcher
+--- check shell | You are back on main, with your work in progress
+git . branch main
+file app.js == start(); fly()
+git . modified app.js
+git . stashes == 0
+
++++ practice | A quick fix in the middle of your work
+--- task
+You are halfway through a change to \`menu.txt\` on \`main\`, and it is not ready. Then you notice that \`prices.txt\` has a wrong price. Put your \`menu.txt\` work aside with \`git stash\`. Fix \`prices.txt\` so it says \`soup = 4\`, and commit only that, with a message of your choice. Then bring your \`menu.txt\` work back with \`git stash pop\`, still uncommitted.
+--- starter
+git init
+echo "menu = soup" > menu.txt
+echo "soup = 40" > prices.txt
+git add .
+git commit -m "Open the cafe"
+echo "menu = soup, salad" > menu.txt
+--- solution
+git stash
+echo "soup = 4" > prices.txt
+git commit -am "Fix the soup price"
+git stash pop
+--- hint
+With your menu change put aside, \`git commit -am\` can only pick up the price fix.
+--- hint
+\`git stash\`, then \`echo "soup = 4" > prices.txt\` and commit it. Finish with \`git stash pop\`.
+--- check shell | The price fix is a commit of its own
+git . commits == 2
+git . at HEAD file prices.txt == soup = 4
+git . at HEAD file menu.txt == menu = soup
+--- check shell | Your menu work is back, uncommitted
+file menu.txt == menu = soup, salad
+git . modified menu.txt
+--- check shell | You used the stash, and emptied it
+ran git stash
+git . stashes == 0
+
++++ practice | The same change on two branches
+--- task
+You changed \`config.txt\` on \`main\` to \`timeout = 30\`, but have not committed it. The same change belongs on the \`release\` branch too. Stash it. Switch to \`release\`, bring the change back with \`git stash apply\`, which keeps the stash in the list, and commit it with the message \`Raise the timeout\`. Then switch to \`main\`, bring the change back again, and commit it with the same message. At the end, the stash list must be empty.
+--- starter
+git init
+echo "timeout = 5" > config.txt
+git add .
+git commit -m "Start"
+git branch release
+echo "timeout = 30" > config.txt
+--- solution
+git stash
+git switch release
+git stash apply
+git commit -am "Raise the timeout"
+git switch main
+git stash pop
+git commit -am "Raise the timeout"
+git stash list
+--- hint
+\`apply\` brings the stash back and keeps it, so you can use it a second time. \`pop\` brings it back and removes it.
+--- hint
+On \`release\`: \`git stash apply\`, then commit with \`-am\`. On \`main\`: \`git stash pop\`, which also empties the list, then commit again.
+--- check shell | release has the change
+git . at release file config.txt == timeout = 30
+git . at release message == Raise the timeout
+--- check shell | main has it too
+git . at main file config.txt == timeout = 30
+git . at main message == Raise the timeout
+--- check shell | The stash was applied, and is gone now
+ran git stash apply
+git . stashes == 0
+
++++ practice | Stash, fix, merge, resume
+--- task
+You are halfway through a change to \`engine.js\` on \`main\` when a bug report arrives. Put your work aside, switch to the existing \`hotfix\` branch, change \`limits.txt\` there so it says \`max = 100\`, and commit that. Switch back to \`main\` and **merge \`hotfix\` into \`main\`**. Only then bring your work back. It must stay uncommitted.
+--- starter
+git init
+echo "thrust()" > engine.js
+echo "max = 10" > limits.txt
+git add .
+git commit -m "Start the engine"
+git branch hotfix
+echo "thrust(); glide()" > engine.js
+--- solution
+git stash
+git switch hotfix
+echo "max = 100" > limits.txt
+git commit -am "Fix the limit"
+git switch main
+git merge hotfix
+git stash pop
+--- hint
+Three parts: put the work aside, make the fix on \`hotfix\`, then merge and bring the work back on \`main\`.
+--- hint
+\`git stash\`, \`git switch hotfix\`, fix the file and commit it with \`-am\`, \`git switch main\`.
+--- hint
+\`git merge hotfix\`, then \`git stash pop\`.
+--- check shell | main has the fix
+git . branch main
+git . at main file limits.txt == max = 100
+--- check shell | Your work is back, uncommitted
+file engine.js == thrust(); glide()
+git . modified engine.js
+git . stashes == 0
+--- check shell | The fix never picked up your half-done work
+git . at hotfix file engine.js == thrust()
+git . commits-on hotfix == 2
+
++++ practice | Two stashes, and the older one wins
+--- task
+You tried two colours for \`paint.txt\` and stashed each attempt. \`git stash list\` shows them: \`try blue\` on top, and \`try red\` below it. The team picked **red**. Bring back the red attempt, and delete the blue one. At the end, \`paint.txt\` must say \`colour = red\`, not committed, and the stash list must be empty.
+--- starter
+git init
+echo "colour = grey" > paint.txt
+git add .
+git commit -m "Start"
+echo "colour = red" > paint.txt
+git stash push -m "try red"
+echo "colour = blue" > paint.txt
+git stash push -m "try blue"
+--- solution
+git stash list
+git stash pop stash@{1}
+git stash drop
+git stash list
+--- hint
+Plain \`pop\` takes the top stash, \`stash@{0}\`, and that is blue. Name the one you want instead.
+--- hint
+\`git stash pop stash@{1}\` brings back red. After that, blue is the only stash left, on top.
+--- hint
+\`git stash drop\` deletes the top stash.
+--- check shell | paint.txt has the red colour
+file paint.txt == colour = red
+git . modified paint.txt
+--- check shell | Both stashes are gone
+git . stashes == 0
+--- check shell | Nothing was committed
+git . commits == 1
+
++++ practice | Popped on the wrong branch
+--- task
+A teammate stashed their work on \`main\`, made a fix on \`hotfix\`, and then ran \`git stash pop\` while still on \`hotfix\`. Their half-done change to \`app.js\` is now sitting in the folder on the wrong branch.
+
+Move it back where it belongs: on \`main\`, with \`app.js\` saying \`start(); fly()\`, not committed, and nothing left in the stash. \`hotfix\` must not get the change.
+--- starter
+git init
+echo "start()" > app.js
+echo "v1" > version.txt
+git add .
+git commit -m "Start"
+git branch hotfix
+echo "start(); fly()" > app.js
+git stash
+git switch hotfix
+echo "v1.0.1" > version.txt
+git commit -am "Bump the patch version"
+git stash pop
+--- solution
+git status
+git stash
+git switch main
+git stash pop
+cat app.js
+--- hint
+\`git status\` shows you are on \`hotfix\`, with \`app.js\` modified. The stash is a way to carry changes from one branch to another.
+--- hint
+Stash the change again, switch to \`main\`, and pop it there.
+--- check shell | You are on main, with the work in progress
+git . branch main
+file app.js == start(); fly()
+git . modified app.js
+--- check shell | Nothing is left in the stash
+git . stashes == 0
+--- check shell | hotfix did not get the change
+git . at hotfix file app.js == start()
+git . commits-on hotfix == 2
+
++++ practice | An interrupted afternoon
+--- task
+You are redesigning the navigation on \`main\`. You changed \`nav.js\` and made a new file, \`nav.css\`, and neither is committed. An urgent request comes in: on the \`release\` branch, \`version.txt\` must say \`1.4.1\`.
+
+Put **both** changes aside, including the new file, so your folder is clean. On \`release\`, make the fix and commit it with the message \`Release 1.4.1\`. Come back to \`main\`, bring your work back, and finish it: commit both files with the message \`Redesign the navigation\`. The stash must be empty at the end.
+--- starter
+git init
+echo "links()" > nav.js
+echo "1.4.0" > version.txt
+git add .
+git commit -m "Ship 1.4.0"
+git branch release
+echo "links(); menu()" > nav.js
+echo "nav { display: flex }" > nav.css
+--- solution
+git stash -u
+git status
+git switch release
+echo "1.4.1" > version.txt
+git commit -am "Release 1.4.1"
+git switch main
+git stash pop
+git add .
+git commit -m "Redesign the navigation"
+--- hint
+Plain \`git stash\` leaves new, untracked files in your folder. One flag makes it take them too.
+--- hint
+\`git stash -u\`, then \`git status\` should say the working tree is clean. Make the fix on \`release\` with \`-am\`.
+--- hint
+Back on \`main\`, \`git stash pop\`, then \`git add .\` (the new file needs it) and commit.
+--- check shell | release got only the version fix
+git . at release file version.txt == 1.4.1
+git . at release message == Release 1.4.1
+git . at release missing nav.css
+--- check shell | The new file was stashed too
+used stash -u
+git . stashes == 0
+--- check shell | main has the finished redesign
+git . branch main
+git . at main message == Redesign the navigation
+git . at main file nav.css
+git . at main file nav.js == links(); menu()
+
+=== git2-07 | Undoing commits: git reset
+--- teach
+Two lessons ago, \`--amend\` fixed the last commit. This lesson goes further: it undoes whole commits, one or several at once, and lets you choose what happens to the work inside them.
+
+Picture a bookmark in a diary. You wrote three entries, then decide the last two were written too soon. You slide the bookmark back two pages, and as far as the diary is concerned, the bookmarked page is the latest entry again. And the words on those two pages? You choose: keep them ready to hand in again, keep them as loose notes on your desk, or tear them out.
+
+In git, the bookmark is your branch. A branch is a [[label that points at one commit|branch-label]], its newest one. **\`git reset\`** means "move my branch back to an earlier commit":
+
+\`\`\`
+git reset HEAD~2
+\`\`\`
+
+\`HEAD~2\` is the name you met with \`git show\`: two commits before the one you are on. A commit id from \`git log --oneline\` works too.
+
+The commits after that point drop out of your branch's history, as if they had never been made. What happens to the **changes** they made depends on the **mode**, which you pick with a flag. There are three modes. Here they are one at a time, each starting from the same three commits.
+
+**Mode 1: mixed, the default.** Plain \`git reset\` is the same as \`git reset --mixed\` ("mixed"). It undoes the commits and leaves their changes in your files, but not staged. Nothing is lost:
+
+\`\`\`
+~/project $ git log --oneline
+bf896b1 (HEAD -> main) Add the countdown
+1359ee3 Add the timer
+86cbb10 Start
+~/project $ git reset HEAD~1
+~/project $ git log --oneline
+1359ee3 (HEAD -> main) Add the timer
+86cbb10 Start
+~/project $ git status
+On branch main
+
+Untracked files:
+        countdown.txt
+\`\`\`
+
+\`Add the countdown\` is gone from the log, but \`countdown.txt\` is still in your folder. Git lists it as untracked because no commit has it any more. (Your ids will be different.)
+
+This is the mode for "I committed too early, let me [[redo that properly|tidy-commits]]". You can now stage and commit the pieces the way they should have been.
+
+**Mode 2: soft.** \`git reset --soft\` ("soft") undoes the commits and leaves their changes **staged**, ready to commit again:
+
+\`\`\`
+~/project $ git reset --soft HEAD~1
+~/project $ git status
+On branch main
+
+Changes to be committed:
+        new file:   countdown.txt
+\`\`\`
+
+**Mode 3: hard.** \`git reset --hard\` ("hard") undoes the commits and **throws their changes away**. Your files go back to exactly how they were in that earlier commit:
+
+\`\`\`
+~/project $ git reset --hard HEAD~1
+HEAD is now at 1359ee3 Add the timer
+~/project $ ls
+app.txt  timer.txt
+\`\`\`
+
+This time \`countdown.txt\` has gone from your folder too.
+
+All three side by side. The only difference is how far the undo reaches into [[the three places your work lives|three-places]]:
+
+| Command | The commits | Their changes |
+| --- | --- | --- |
+| \`git reset --soft HEAD~2\` | undone | kept, and staged |
+| \`git reset HEAD~2\` (same as \`--mixed\`) | undone | kept in your files, not staged |
+| \`git reset --hard HEAD~2\` | undone | **thrown away** |
+
+**Watch out:** \`--hard\` also wipes every change you have not committed yet, not only the changes from the commits it undoes. If you edited \`app.txt\` and never committed it, \`git reset --hard\` puts \`app.txt\` back too. Those edits were never in any commit, so git [[cannot get them back|hard-lost]]. Run \`git status\` before a hard reset. \`--hard\` is useful and dangerous; the last lesson of this course shows how to recover commits from one used by mistake.
+
+Like \`--amend\`, reset rewrites history. Use it only on commits you have not [[pushed|pushed]] yet. For commits other people already have, there is \`git revert\`, the next lesson.
+
+::: context branch-label A branch is only a label
+A commit never changes and never moves. A branch is much lighter than it sounds: it is a name that points at one commit, the newest one on that branch. Committing moves the label forward. \`git reset\` moves it backward.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <line x1="168" y1="80" x2="84" y2="80" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="82,80 92,75 92,85" fill="#1f2a44"/>
+  <line x1="278" y1="80" x2="194" y2="80" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="192,80 202,75 202,85" fill="#6c7a93"/>
+  <circle cx="70" cy="80" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="180" cy="80" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="290" cy="80" r="12" fill="#ffffff" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="150" y="18" width="60" height="24" rx="4" fill="#1d6fd1"/>
+  <text x="180" y="35" font-size="12" fill="#ffffff" text-anchor="middle">main</text>
+  <line x1="180" y1="42" x2="180" y2="66" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="250" y="18" width="80" height="24" rx="4" fill="#ffffff" stroke="#6c7a93" stroke-dasharray="4 3"/>
+  <text x="290" y="35" font-size="11" fill="#6c7a93" text-anchor="middle">main was here</text>
+  <g font-size="11" fill="#1f2a44" text-anchor="middle">
+    <text x="70" y="112">Start</text>
+    <text x="180" y="112">Add the timer</text>
+    <text x="290" y="112" fill="#6c7a93">Add the countdown</text>
+  </g>
+  <text x="180" y="140" font-size="11" fill="#1f2a44" text-anchor="middle">git reset HEAD~1 moves the label back one commit</text>
+</svg>
+\`\`\`
+
+The commit the label left behind is not deleted straight away. It is only no longer part of the branch.
+:::
+
+::: context tidy-commits Save points first, tidy commits later
+Engineers often commit while they work, as cheap save points with messages like \`WIP\`, short for "work in progress". Before they share the work for review, they tidy up: undo the save points with a reset, then commit again as a few clear commits, one per idea. A reviewer then reads "Add the feature" instead of "WIP", "More WIP", "fix". The advanced Git course uses \`git reset --soft\` for exactly this, and calls it squashing.
+:::
+
+::: context three-places Three places your work can be
+Your work can sit in three places. The **commits** are the saved history. The **staging area** is the box of changes waiting for the next commit. Your **working folder** holds the files you see and edit. A reset always moves the branch, which changes the commits. \`--soft\` stops there. \`--mixed\` also makes the staging area match the earlier commit, so the changes drop out of the box but stay in your files. \`--hard\` goes one step further and makes your working folder match too, so the changes are gone from your files as well.
+:::
+
+::: context hard-lost Why uncommitted work is gone for good
+Git can only bring back what it has saved. A commit that a reset left behind still exists for a while, and git keeps a record of where your branch pointed before, so the commit can be found again. An edit you never committed was never saved anywhere in git: it lived only in your file. When \`--hard\` overwrites that file, there is no copy to go back to. That is why careful engineers commit, or stash, before any command that throws changes away.
+:::
+
+::: context pushed What "pushed" means
+Your repository lives on your computer. Teams also keep a shared copy on a server, for example on GitHub. **Pushing** means sending your new commits to that shared copy, where your teammates pick them up. You will learn to push in the advanced Git course. Once others have a commit, you should not rewrite it: your history and theirs would no longer match, and git refuses a plain push of history that drops commits the shared copy already has.
+:::
+--- task
+The last two commits, \`WIP\` and \`More WIP\` ("WIP" is short for "work in progress"), were made too early. Together they mix a finished feature, \`feature.js\`, with half-done notes, \`notes.txt\`.
+
+Undo both commits with \`git reset\` in its default mode, so their changes stay in your files but nothing is committed or staged. Then stage and commit **only** \`feature.js\`, with the message \`Add the feature\`. Leave \`notes.txt\` uncommitted.
+--- starter
+git init
+echo "# App" > README.md
+git add .
+git commit -m "Start"
+echo "export function feature() {}" > feature.js
+git add .
+git commit -m "WIP"
+echo "half an idea" > notes.txt
+git add .
+git commit -m "More WIP"
+--- solution
+git reset HEAD~2
+git add feature.js
+git commit -m "Add the feature"
+--- hint
+You want the mode that keeps the changes in your files but not staged: the default one, with no flag. You are going back two commits, so the name is \`HEAD~2\`.
+--- hint
+\`git reset HEAD~2\`, then \`git status\`: both \`feature.js\` and \`notes.txt\` are listed as untracked.
+--- hint
+Now \`git add feature.js\` and \`git commit -m "Add the feature"\`. Leave \`notes.txt\` out.
+--- check shell | The WIP commits are gone, replaced by one real commit
+git . commits == 2
+git . at HEAD message == Add the feature
+git . log excludes WIP
+--- check shell | Only the feature was committed; the notes are still here
+git . at HEAD file feature.js
+git . at HEAD missing notes.txt
+git . untracked notes.txt
+
++++ practice | Throw two experiments away
+--- task
+The last two commits, \`Try a spiral layout\` and \`Try a zigzag layout\`, were experiments that did not work, and nobody else has them. Throw them away completely, changes and all, so that \`main\` ends at \`Add the map\` and your folder matches that commit exactly.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+echo "layout = grid" > layout.txt
+git add .
+git commit -m "Add the map"
+echo "layout = spiral" > layout.txt
+git commit -am "Try a spiral layout"
+echo "layout = zigzag" > layout.txt
+echo "zig" > zigzag.txt
+git add .
+git commit -am "Try a zigzag layout"
+--- solution
+git reset --hard HEAD~2
+git log --oneline
+cat layout.txt
+--- hint
+You want the mode that throws the changes away, not the one that keeps them.
+--- hint
+Two commits back is \`HEAD~2\`. Use \`--hard\`, then check \`layout.txt\` with \`cat\`.
+--- check shell | main ends at Add the map
+git . commits == 2
+git . at HEAD message == Add the map
+--- check shell | The experiments' changes are gone from your folder
+file layout.txt == layout = grid
+missing zigzag.txt
+--- check shell | The history no longer has them
+git . log excludes Try a
+
++++ practice | Three save points, one commit
+--- task
+Your last three commits are save points: \`wip\`, \`wip again\` and \`almost\`. Together they add a finished parser, and nobody else has them. Undo all three with the mode of \`git reset\` that keeps their changes **staged**, then make one commit with the message \`Add the parser\`.
+--- starter
+git init
+echo "# Tools" > README.md
+git add .
+git commit -m "Start"
+echo "parse() {" > parser.js
+git add .
+git commit -m "wip"
+echo "test(parse)" > parser.test.js
+git add .
+git commit -m "wip again"
+echo "parse() { return [] }" > parser.js
+git commit -am "almost"
+--- solution
+git reset --soft HEAD~3
+git status
+git commit -m "Add the parser"
+--- hint
+Of the three modes, \`--soft\` is the one that leaves the changes staged, ready to commit again.
+--- hint
+Three commits back is \`HEAD~3\`. After the reset, \`git status\` lists both parser files under "Changes to be committed".
+--- hint
+\`git reset --soft HEAD~3\`, then \`git commit -m "Add the parser"\`.
+--- check shell | One commit replaces the three
+git . commits == 2
+git . at HEAD message == Add the parser
+git . log excludes wip
+--- check shell | The commit holds the finished parser
+git . at HEAD file parser.js == parse() { return [] }
+git . at HEAD file parser.test.js
+--- check shell | Nothing is left over
+git . clean
+
++++ practice | Keep today's edit, drop the bad commit
+--- task
+The last commit, \`Break the log viewer\`, must go, changes and all, and nobody else has it. But you also have an uncommitted edit in \`notes.txt\` that you want to keep, and a hard reset would wipe it. Put your edit aside with \`git stash\`, throw the commit away with a hard reset, then bring your edit back.
+--- starter
+git init
+echo "todo: nothing" > notes.txt
+git add .
+git commit -m "Start"
+echo "show(logs)" > viewer.js
+git add .
+git commit -m "Add the log viewer"
+echo "show(logs" > viewer.js
+git commit -am "Break the log viewer"
+echo "todo: add search" > notes.txt
+--- solution
+git stash
+git reset --hard HEAD~1
+git stash pop
+cat notes.txt
+--- hint
+\`--hard\` makes every tracked file match the commit you reset to, including files you edited but never committed.
+--- hint
+\`git stash\` first. Then \`git reset --hard HEAD~1\`.
+--- hint
+Finish with \`git stash pop\`, and check \`notes.txt\` with \`cat\`.
+--- check shell | The bad commit is gone, changes and all
+git . commits == 2
+git . at HEAD message == Add the log viewer
+file viewer.js == show(logs)
+--- check shell | Your notes edit survived
+file notes.txt == todo: add search
+git . modified notes.txt
+--- check shell | The stash is empty again
+git . stashes == 0
+ran git stash
+
++++ practice | One commit, split in two
+--- task
+The last commit, \`Add login and fix typo\`, mixes two ideas, and nobody else has it. Split it into two commits: first \`Fix the README typo\`, holding only the change to \`README.md\`, then \`Add the login page\`, holding only \`login.html\`. Undo the commit with the default mode of \`git reset\`, then make the two commits in that order.
+--- starter
+git init
+echo "Welcom to the app" > README.md
+git add .
+git commit -m "Start"
+echo "Welcome to the app" > README.md
+echo "<form>" > login.html
+git add .
+git commit -m "Add login and fix typo"
+--- solution
+git reset HEAD~1
+git status
+git add README.md
+git commit -m "Fix the README typo"
+git add login.html
+git commit -m "Add the login page"
+--- hint
+After the reset, \`git status\` shows \`README.md\` as modified and \`login.html\` as untracked. \`git add .\` would take both at once.
+--- hint
+Stage one file, commit it, then stage the other and commit it.
+--- hint
+\`git add README.md\` and commit, then \`git add login.html\` and commit.
+--- check shell | Two commits replace the mixed one
+git . commits == 3
+git . log excludes Add login and fix typo
+--- check shell | The first holds only the typo fix
+git . at HEAD~1 message == Fix the README typo
+git . at HEAD~1 file README.md == Welcome to the app
+git . at HEAD~1 missing login.html
+--- check shell | The second adds the login page
+git . at HEAD message == Add the login page
+git . at HEAD file login.html
+
++++ practice | Soft kept the secret
+--- task
+The commit \`Add config\` included \`secrets.txt\` by accident, and nobody else has it. A teammate tried to redo the commit without it. They ran:
+
+\`\`\`
+git reset --soft HEAD~1
+git commit -m "Add config"
+\`\`\`
+
+But \`secrets.txt\` is still in the new commit. Fix it: \`Add config\` must hold only \`config.txt\`, and \`secrets.txt\` must stay in your folder, untracked. The history must have two commits.
+--- starter
+git init
+echo "# App" > README.md
+git add .
+git commit -m "Start"
+echo "port = 8080" > config.txt
+echo "TOKEN=abc123" > secrets.txt
+git add .
+git commit -m "Add config"
+git reset --soft HEAD~1
+git commit -m "Add config"
+--- solution
+git reset HEAD~1
+git add config.txt
+git commit -m "Add config"
+git status
+--- hint
+\`--soft\` leaves the undone changes staged, so committing again saves exactly the same files.
+--- hint
+The default mode, with no flag, leaves the changes in your files but unstaged. Then you choose what to stage.
+--- hint
+\`git reset HEAD~1\`, then \`git add config.txt\` and \`git commit -m "Add config"\`.
+--- check shell | Add config holds only the config
+git . commits == 2
+git . at HEAD message == Add config
+git . at HEAD file config.txt
+git . at HEAD missing secrets.txt
+--- check shell | The secret is still on your disk
+file secrets.txt == TOKEN=abc123
+--- check shell | And git is not tracking it
+git . untracked secrets.txt
+
++++ practice | Tidy a branch before merging
+--- task
+The \`feature\` branch has four messy save-point commits on top of \`main\`: \`wip\`, \`wip 2\`, \`fix typo\` and \`more\`. Nobody else has them. Turn them into **one** commit on \`feature\` called \`Add the search box\`, holding all of their changes. Then merge \`feature\` into \`main\`. At the end, \`main\` must have exactly two commits, \`Start\` and \`Add the search box\`.
+--- starter
+git init
+echo "# Shop" > README.md
+git add .
+git commit -m "Start"
+git switch -c feature
+echo "search(" > search.js
+git add .
+git commit -m "wip"
+echo "input {}" > search.css
+git add .
+git commit -m "wip 2"
+echo "search()" > search.js
+git commit -am "fix typo"
+echo "search(); suggest()" > search.js
+git commit -am "more"
+--- solution
+git log --oneline
+git reset --soft HEAD~4
+git commit -m "Add the search box"
+git switch main
+git merge feature
+git log --oneline
+--- hint
+\`--soft\` undoes commits and keeps all of their changes staged, ready for one new commit.
+--- hint
+Count the save points: four commits back from HEAD is \`Start\`, the tip of \`main\`. \`HEAD~4\` works, and so does the name \`main\`.
+--- hint
+\`git reset --soft HEAD~4\`, commit with the new message, then \`git switch main\` and \`git merge feature\`.
+--- check shell | main has exactly the two commits
+git . branch main
+git . commits == 2
+git . at main message == Add the search box
+git . log excludes wip
+--- check shell | Nothing was lost in the squash
+git . at main file search.js == search(); suggest()
+git . at main file search.css
+--- check shell | feature and main point at the same commit
+git . same feature main
+
+=== git2-08 | Undoing a shared commit: git revert
+--- teach
+Last lesson, \`git reset\` undid commits by moving your branch back, as if they had never happened. That is fine for commits only you have. This lesson undoes a commit that other people already have, without rewriting any history.
+
+Picture a shop's record book of payments. If the shopkeeper wrote down a wrong payment yesterday, they do not rub it out. They write a new line today that cancels it. Both lines stay in the book, so anyone reading it later sees what went wrong and when it was fixed. That is how [[bookkeepers|ledger]] work, and it is how git undoes a shared commit.
+
+Why not reset? Once a commit is [[shared|shared-commit]] (pushed, pulled by teammates, maybe already running in the real product), rewriting history with \`reset\` would pull the floor from under everyone else. Their copies would still have the commit; yours would not.
+
+The safe undo is **\`git revert\`**, which means "make a new commit that cancels an old one".
+
+First, find the commit you want to cancel:
+
+\`\`\`
+~/project $ git log --oneline
+1d44bba (HEAD -> main) Add the countdown
+257235d Double the thrust
+4b2fa52 Add the engine
+\`\`\`
+
+\`Double the thrust\` was a mistake. It is one commit before HEAD, so one name for it is \`HEAD~1\`. Its id, \`257235d\`, works just as well. Here the id is used:
+
+\`\`\`
+~/project $ git revert 257235d
+[main 591c204] Revert "Double the thrust"
+ 1 file changed
+\`\`\`
+
+The history now has one more commit. Nothing was removed:
+
+\`\`\`
+~/project $ git log --oneline
+591c204 (HEAD -> main) Revert "Double the thrust"
+1d44bba Add the countdown
+257235d Double the thrust
+4b2fa52 Add the engine
+\`\`\`
+
+The new commit [[does the exact opposite|opposite-commit]] of the one you named: lines it added are removed, and lines it removed come back. \`git show\` lets you see it:
+
+\`\`\`
+~/project $ git show
+commit 591c204 (HEAD -> main)
+Author: you
+
+    Revert "Double the thrust"
+
+    This reverts commit 257235d.
+
+diff --git a/engine.txt b/engine.txt
+--- a/engine.txt
++++ b/engine.txt
+-thrust = 200
++thrust = 100
+\`\`\`
+
+Three things to notice:
+
+- You can revert any commit, not only the last one. Later commits stay as they are: \`Add the countdown\` is still there, and so is \`countdown.txt\`.
+- The new commit's message is \`Revert "…original message…"\`, and git adds a line saying [[which commit it reverts|revert-trail]].
+- If later commits changed the same lines, the revert can hit a [[conflict|revert-conflict]]. You resolve it like a merge conflict, which is coming up in this course.
+
+Which undo to use comes down to one question: does anyone else have the commit?
+
+| Situation | Use |
+| --- | --- |
+| Commit only you have | \`reset\` or \`--amend\` |
+| Commit others have | \`revert\` |
+
+**Watch out:** you name the commit you want to **cancel**, not the one you want to go back to. \`git revert HEAD~1\` does not take the project back to how it was one commit ago. It cancels the one change that \`HEAD~1\` made, and keeps everything after it. Before you revert, run \`git show\` on that name, for example \`git show HEAD~1\`, and check it is the change you mean.
+
+::: context ledger Never rub out, always add a line
+Bookkeepers keep the money records of a shop or company in a **ledger**. Their rule is that a written entry is never erased. A mistake is fixed with a new entry that reverses it, so the book shows both the mistake and its fix. Nobody can quietly change the past, and anyone checking the book can follow every step. Git's shared history works on the same idea: the past stays as it was, and every fix is a new commit on top.
+:::
+
+::: context shared-commit When a commit is "shared"
+A commit is shared as soon as it has left your computer. Maybe you pushed it to the team's shared copy, maybe a teammate pulled it into their own repository, maybe it was **deployed**, which means put into use in the real product. From then on, other copies of the history contain it. If you reset it away on your side, the copies disagree, and the next time you share your work git refuses or makes a mess to untangle. A revert is only a new commit, so everyone can take it in the normal way.
+:::
+
+::: context opposite-commit A revert is a mirror image
+A revert does not delete the bad commit. It adds a new commit whose change is the mirror image of the bad one.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" font-family="Inter, Arial, sans-serif">
+  <path d="M303,50 Q225,4 142,50" fill="none" stroke="#1d6fd1" stroke-width="2" stroke-dasharray="5 3"/>
+  <polygon points="140,51 150,49 146,41" fill="#1d6fd1"/>
+  <text x="225" y="18" font-size="11" fill="#1d6fd1" text-anchor="middle">cancels</text>
+  <g stroke="#1f2a44" stroke-width="2">
+    <line x1="123" y1="64" x2="59" y2="64"/>
+    <line x1="213" y1="64" x2="149" y2="64"/>
+    <line x1="303" y1="64" x2="239" y2="64"/>
+  </g>
+  <g fill="#1f2a44">
+    <polygon points="57,64 66,60 66,68"/>
+    <polygon points="147,64 156,60 156,68"/>
+    <polygon points="237,64 246,60 246,68"/>
+  </g>
+  <circle cx="45" cy="64" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="135" cy="64" r="12" fill="#f2b880" stroke="#b4232c" stroke-width="2"/>
+  <circle cx="225" cy="64" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="315" cy="64" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="11" fill="#1f2a44" text-anchor="middle">
+    <text x="45" y="96">Add engine</text>
+    <text x="135" y="96">Double thrust</text>
+    <text x="225" y="96">Add countdown</text>
+    <text x="315" y="96">Revert</text>
+    <text x="45" y="114">thrust = 100</text>
+    <text x="135" y="114" fill="#b4232c">100 to 200</text>
+    <text x="225" y="114">new file</text>
+    <text x="315" y="114" fill="#1d6fd1">200 to 100</text>
+  </g>
+  <text x="180" y="134" font-size="11" fill="#6c7a93" text-anchor="middle">each arrow points back to the commit before</text>
+</svg>
+\`\`\`
+
+After the revert, \`engine.txt\` says \`thrust = 100\` again, and \`countdown.txt\` is untouched.
+:::
+
+::: context revert-trail Revert first, investigate later
+The line \`This reverts commit 257235d.\` is a trail: anyone reading the history can jump straight to the change that was cancelled. Many software teams have a habit built on this. When a change breaks the product, they revert it at once to get back to a working state, then work out calmly what went wrong. Because the original commit is still in the history, it can be fixed and brought back later. Reverting the revert re-applies the change, and git names that commit \`Revert "Revert "…""\`.
+:::
+
+::: context revert-conflict When a revert collides
+Git makes the mirror-image change line by line. If a later commit edited the same lines, git no longer finds the lines it expects to change back, so it cannot tell which version you want. It stops and asks you to decide, exactly like a merge conflict. You will learn to read and fix conflicts in the lesson on resolving a merge conflict, later in this course.
+:::
+--- task
+The commit \`Make the button red\` is two commits before the newest one, and everyone on the team already has it. Undo only that change with \`git revert\`, keeping the two newer commits, \`Add a footer\` and \`Add a header\`. Look at the history with \`git log --oneline\` first to find the commit.
+--- starter
+git init
+echo "colour: blue" > style.css
+git add .
+git commit -m "Add styles"
+echo "colour: red" > style.css
+git commit -am "Make the button red"
+echo "footer" > footer.html
+git add .
+git commit -m "Add a footer"
+echo "header" > header.html
+git add .
+git commit -m "Add a header"
+--- solution
+git log --oneline
+git revert HEAD~2
+--- hint
+Everyone has the commit, so this is a job for \`git revert\`, not \`reset\`. Start with \`git log --oneline\` and count down from the top.
+--- hint
+\`Make the button red\` is two commits before HEAD, so its name is \`HEAD~2\`. Its id from the log works too.
+--- hint
+\`git revert HEAD~2\`. Then \`cat style.css\` should say \`colour: blue\`.
+--- check shell | A new commit undoes the red button
+git . commits == 5
+git . at HEAD message contains Revert "Make the button red"
+file style.css == colour: blue
+--- check shell | The history and the newer work are kept
+git . log contains Make the button red
+file footer.html
+file header.html
+
++++ practice | Cancel the last commit
+--- task
+The last commit, \`Max out the volume\`, is already shared with the team, and it was a mistake. Cancel it with \`git revert\`, without removing it from the history. Then check \`volume.txt\` with \`cat\`.
+--- starter
+git init
+echo "volume = 5" > volume.txt
+git add .
+git commit -m "Add the volume setting"
+echo "volume = 11" > volume.txt
+git commit -am "Max out the volume"
+--- solution
+git revert HEAD
+cat volume.txt
+--- hint
+The commit you want to cancel is the one you are on: HEAD.
+--- hint
+\`git revert HEAD\` makes a new commit that does the opposite.
+--- check shell | A new commit cancels the change
+git . commits == 3
+git . at HEAD message == Revert "Max out the volume"
+file volume.txt == volume = 5
+--- check shell | The mistake is still in the history
+git . log contains Max out the volume
+--- check shell | You checked the file, and nothing is left half-done
+ran cat volume.txt
+git . idle
+
++++ practice | Cancel a commit by its id
+--- task
+Three commits ago, \`Add the debug overlay\` added a file, \`overlay.js\`, that must not ship. The team already has that commit and the two after it. Find its id with \`git log --oneline\`, and cancel it with \`git revert\` and that id. The two newer commits, \`Add the scoreboard\` and \`Add sound\`, must stay as they are.
+--- starter
+git init
+echo "score = 0" > game.txt
+git add .
+git commit -m "Start the game"
+echo "show fps" > overlay.js
+git add .
+git commit -m "Add the debug overlay"
+echo "high scores" > scoreboard.txt
+git add .
+git commit -m "Add the scoreboard"
+echo "beep" > sound.txt
+git add .
+git commit -m "Add sound"
+--- solution
+git log --oneline
+git revert 8976eee
+ls
+--- hint
+\`git log --oneline\` puts each commit's id at the start of its line.
+--- hint
+Reverting a commit that added a file makes a new commit that deletes it.
+--- hint
+\`git revert\` followed by the id on the \`Add the debug overlay\` line.
+--- check shell | overlay.js is gone, by a new commit
+missing overlay.js
+git . at HEAD message == Revert "Add the debug overlay"
+git . commits == 5
+--- check shell | The newer work is kept
+file scoreboard.txt
+file sound.txt
+--- check shell | The history still holds the original
+git . log contains Add the debug overlay
+
++++ practice | Find it, then cancel it
+--- task
+Someone reports that the speed limit is wrong: \`limits.txt\` says \`limit = 400\`, and it should say \`limit = 40\`. The commit messages do not say which commit changed it. Use \`git show\` on the recent commits to find the one that did, and cancel that commit with \`git revert\`. Everyone already has these commits, and the other changes must stay.
+--- starter
+git init
+echo "limit = 40" > limits.txt
+echo "home | map" > nav.txt
+git add .
+git commit -m "Start"
+echo "home | map | help" > nav.txt
+git commit -am "Tidy the menu"
+echo "limit = 400" > limits.txt
+git commit -am "Update settings"
+echo "how to drive" > help.html
+git add .
+git commit -m "Add a help page"
+--- solution
+git show
+git show HEAD~1
+git revert HEAD~1
+cat limits.txt
+--- hint
+Look inside the newest commits one by one: \`git show\`, then \`git show HEAD~1\`, and so on. You are looking for \`+limit = 400\`.
+--- hint
+Name the commit you want to cancel, not the one you want to go back to.
+--- hint
+It is \`HEAD~1\`, \`Update settings\`: \`git revert HEAD~1\`.
+--- check shell | You looked inside the commits
+ran git show
+printed-line +limit = 400
+--- check shell | The limit is back, by a revert
+file limits.txt == limit = 40
+git . at HEAD message == Revert "Update settings"
+--- check shell | The other changes are kept
+git . commits == 5
+file help.html
+file nav.txt == home | map | help
+
++++ practice | Bring it back: revert the revert
+--- task
+Last week the team reverted \`Add dark mode\` because of a bug. The bug is fixed now, and dark mode should come back. Everyone has all of these commits. Bring dark mode back without rewriting any history, by reverting the revert. \`dark.css\` must be back, and \`footer.html\` must stay.
+--- starter
+git init
+echo "body {}" > style.css
+git add .
+git commit -m "Start"
+echo "body { background: black }" > dark.css
+git add .
+git commit -m "Add dark mode"
+echo "footer" > footer.html
+git add .
+git commit -m "Add the footer"
+git revert HEAD~1
+--- solution
+git log --oneline
+git revert HEAD
+ls
+--- hint
+A revert is a commit like any other, so it can be reverted too.
+--- hint
+\`git log --oneline\` shows the revert at the top: it is HEAD.
+--- check shell | Dark mode is back
+file dark.css == body { background: black }
+file footer.html
+--- check shell | A revert of the revert, on top
+git . commits == 5
+git . at HEAD message == Revert "Revert "Add dark mode""
+--- check shell | The history is untouched
+git . log contains Revert "Add dark mode"
+git . log contains Add the footer
+
++++ practice | Reverted the wrong one
+--- task
+\`Double the speed\`, the newest commit, was a mistake, and everyone already has it. A teammate tried to cancel it with \`git revert HEAD~1\`, thinking that meant "go back one commit". Instead, \`map.txt\` has disappeared, and \`speed.txt\` still says \`speed = 20\`.
+
+Nothing may be removed from the history. Put things right with more reverts: \`map.txt\` must come back, and \`speed.txt\` must say \`speed = 10\`.
+--- starter
+git init
+echo "speed = 10" > speed.txt
+git add .
+git commit -m "Start"
+echo "craters" > map.txt
+git add .
+git commit -m "Add the map"
+echo "speed = 20" > speed.txt
+git commit -am "Double the speed"
+git revert HEAD~1
+--- solution
+git log --oneline
+git revert HEAD
+git log --oneline
+git revert HEAD~2
+cat speed.txt
+--- hint
+\`git revert HEAD~1\` cancelled the commit \`HEAD~1\` pointed at then, \`Add the map\`. Look at \`git log --oneline\`.
+--- hint
+Two reverts fix it: one that cancels the wrong revert, and one that cancels \`Double the speed\`. Check the log again between them, because the names move.
+--- hint
+\`git revert HEAD\` brings the map back. After that, \`Double the speed\` is \`HEAD~2\`.
+--- check shell | map.txt is back and the speed is fixed
+file map.txt == craters
+file speed.txt == speed = 10
+--- check shell | Nothing was removed from the history
+git . commits == 6
+git . log contains Revert "Add the map"
+git . log contains Double the speed
+--- check shell | Double the speed was cancelled by a revert
+git . log contains Revert "Double the speed"
+
++++ practice | Two bad commits in a shared history
+--- task
+Two commits in this shared history were mistakes: \`Raise the thrust\` and \`Turn on debug mode\`. Cancel both with \`git revert\`, one revert for each, **newest mistake first**. Keep every other change. At the end, \`thrust.txt\` says \`thrust = 100\`, \`debug.txt\` is gone, and the history has exactly two more commits than now.
+--- starter
+git init
+echo "thrust = 100" > thrust.txt
+echo "Ada" > crew.txt
+git add .
+git commit -m "Start"
+echo "10 9 8" > countdown.txt
+git add .
+git commit -m "Add the countdown"
+echo "thrust = 250" > thrust.txt
+git commit -am "Raise the thrust"
+echo "Ada, Yuri" > crew.txt
+git commit -am "Add Yuri to the crew"
+echo "debug = on" > debug.txt
+git add .
+git commit -m "Turn on debug mode"
+echo "abort()" > abort.txt
+git add .
+git commit -m "Add the abort button"
+--- solution
+git log --oneline
+git revert HEAD~1
+git log --oneline
+git revert HEAD~4
+--- hint
+\`Turn on debug mode\` is the newer mistake: revert it first. Count down \`git log --oneline\` to name it.
+--- hint
+Each revert adds a commit on top, so every \`HEAD~n\` name moves down by one. Run \`git log --oneline\` again before the second revert, or use the ids.
+--- hint
+First \`git revert HEAD~1\`. After that, \`Raise the thrust\` is \`HEAD~4\`.
+--- check shell | Both mistakes are cancelled
+file thrust.txt == thrust = 100
+missing debug.txt
+--- check shell | Newest mistake first, one revert each
+git . commits == 8
+git . at HEAD message == Revert "Raise the thrust"
+git . at HEAD~1 message == Revert "Turn on debug mode"
+--- check shell | Every other change is kept
+file countdown.txt
+file abort.txt
+file crew.txt == Ada, Yuri
+
+=== git2-09 | Marking releases: tags
+--- teach
+The last two lessons undid commits. This one does something different: it marks a commit so you can always find it again.
+
+Go back to the diary bookmark from the reset lesson. A branch is a bookmark that moves: every commit carries it forward to the newest page. Sometimes you want the opposite, a name written in ink on one page that stays there forever: "the day we launched".
+
+That is a **tag**: a name stuck to one commit for good. Branches move every time you commit; a tag never does. That makes a tag the way to mark [[releases|release]]: \`v1.0\` always means exactly the code you shipped. (\`v\` is short for "version".)
+
+**Step 1: a lightweight tag.** \`git tag\` followed by a name tags the commit you are on:
+
+\`\`\`
+~/project $ git tag v0.2
+~/project $ git log --oneline
+bf896b1 (HEAD -> main, tag: v0.2) Add the countdown
+1359ee3 Add the timer
+86cbb10 Start
+\`\`\`
+
+The log now shows \`tag: v0.2\` next to that commit. This kind is called **lightweight**: it is only a name.
+
+**Step 2: an annotated tag.** \`-a\` means "annotated", and \`-m\` means "message", the same as in \`git commit -m\`. An **annotated** tag stores a message, who made the tag, and when:
+
+\`\`\`
+~/project $ git tag -a v0.3 -m "Test flight"
+~/project $ git show v0.3
+tag v0.3
+Tagger: you
+
+Test flight
+
+commit bf896b1 (HEAD -> main, tag: v0.2, tag: v0.3)
+Author: you
+
+    Add the countdown
+...
+\`\`\`
+
+\`git show\` with a tag's name prints the tag's own details first, then the commit it marks. (A real terminal also prints the tagger's email and the date.) Use [[annotated tags for releases|annotated-object]]. Lightweight tags are fine for private bookmarks.
+
+**Step 3: tag an older commit.** Put the commit after the name, as \`HEAD~2\` or as an id from \`git log --oneline\`:
+
+\`\`\`
+~/project $ git tag v0.1 86cbb10
+~/project $ git log --oneline
+bf896b1 (HEAD -> main, tag: v0.2, tag: v0.3) Add the countdown
+1359ee3 Add the timer
+86cbb10 (tag: v0.1) Start
+\`\`\`
+
+\`git tag v0.1 HEAD~2\` would do the same: \`Start\` is two commits before HEAD.
+
+**Step 4: list your tags.** \`git tag\` on its own lists them:
+
+\`\`\`
+~/project $ git tag
+v0.1
+v0.2
+v0.3
+\`\`\`
+
+**Step 5: a tag stays put.** Make another commit, here one called \`Add the abort button\`. The branch moves on to it, while the tags [[stay where they were|tag-stays]]:
+
+\`\`\`
+~/project $ git log --oneline
+c3d03c4 (HEAD -> main) Add the abort button
+bf896b1 (tag: v0.2, tag: v0.3) Add the countdown
+...
+\`\`\`
+
+Most projects name releases with **[[semantic versioning|semver]]**: three numbers, \`MAJOR.MINOR.PATCH\`. Bump PATCH for fixes, MINOR for new features, and MAJOR for changes that break things for existing users.
+
+Tags are not sent by a plain \`git push\`. You [[push them on purpose|push-tags]], for example \`git push origin v1.0\`; the advanced course covers that.
+
+**Watch out:** a tag name can be used only once in a repository. Try to reuse it and git refuses:
+
+\`\`\`
+~/project $ git tag v0.3
+fatal: tag 'v0.3' already exists
+\`\`\`
+
+Do not try to move a release tag to a different commit. If the code changed, it is a new release, so give it a new number, such as \`v0.3.1\`.
+
+::: context release What a release is
+A **release** is a version of your software that you hand to other people: users, customers, or a test team. Whoever uses it needs to know exactly which code they have. For flight software this matters a lot: teams keep careful records of exactly which version is loaded on a vehicle, so that any problem can be traced to the precise code that ran. A tag gives that exact commit a name, so months later anyone can look at \`v1.0\` and see the same files, line for line.
+:::
+
+::: context annotated-object Why annotated tags for releases
+A lightweight tag is only a name pointing at a commit, stored much like a branch name that never moves. An annotated tag is a small record of its own in git's database, with its own id. It holds the tag name, your message, who made it, when, and which commit it marks. That extra record is why releases use annotated tags: the message can say what the release is for, and the "who and when" is kept for good. Some git commands, such as \`git describe\`, look only at annotated tags unless you tell them otherwise.
+:::
+
+::: context tag-stays A branch moves, a tag stays
+When you commit, your branch label moves forward to the new commit. A tag stays on the commit you gave it.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <line x1="168" y1="70" x2="84" y2="70" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="82,70 92,65 92,75" fill="#1f2a44"/>
+  <line x1="278" y1="70" x2="194" y2="70" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="192,70 202,65 202,75" fill="#1f2a44"/>
+  <circle cx="70" cy="70" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="180" cy="70" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="290" cy="70" r="12" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="150" y="14" width="60" height="24" rx="4" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="31" font-size="12" fill="#1f2a44" text-anchor="middle">v0.3</text>
+  <line x1="180" y1="38" x2="180" y2="56" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="260" y="14" width="60" height="24" rx="4" fill="#1d6fd1"/>
+  <text x="290" y="31" font-size="12" fill="#ffffff" text-anchor="middle">main</text>
+  <line x1="290" y1="38" x2="290" y2="56" stroke="#1d6fd1" stroke-width="2"/>
+  <g font-size="11" fill="#1f2a44" text-anchor="middle">
+    <text x="70" y="102">Add the timer</text>
+    <text x="180" y="102">Add the countdown</text>
+    <text x="290" y="102">Add the abort button</text>
+  </g>
+  <text x="180" y="124" font-size="11" fill="#6c7a93" text-anchor="middle">main moved on to the new commit; v0.3 did not</text>
+</svg>
+\`\`\`
+:::
+
+::: context semver Reading a version number
+Take version \`2.4.1\`. The 2 is MAJOR, the 4 is MINOR, the 1 is PATCH. A bug fix makes it \`2.4.2\`. A new feature makes it \`2.5.0\`. A change that breaks things for existing users makes it \`3.0.0\`. When you bump one number, every number to its right goes back to zero. The rules are written up at semver.org. Versions that start with \`0.\`, like \`0.9\`, mean "still in early development, anything may change", which is why a project's first stable release is often \`1.0.0\`.
+:::
+
+::: context push-tags Sharing a tag
+Pushing sends your commits to the team's shared copy of the repository. A plain \`git push\` sends your branch's commits but leaves your tags behind, so a private bookmark never escapes by accident. To share a release tag, name it: \`git push origin v1.0\`, where \`origin\` is the usual name of the shared copy. \`git push --tags\` sends all of them. The advanced Git course ends with a whole team workflow: branch, share, merge, tag the release, and push the tag.
+:::
+--- task
+Mark the current commit, \`Polish the login page\`, as release \`v1.0\` with an **annotated** tag whose message is \`First public release\`. Look at it with \`git show v1.0\`.
+
+Then tag the older commit \`Add login\`, one commit before the current one, as \`v0.9\`. A lightweight tag is fine for that one.
+--- starter
+git init
+echo "app" > app.txt
+git add .
+git commit -m "Start"
+echo "login" > login.txt
+git add .
+git commit -m "Add login"
+echo "login, polished" > login.txt
+git commit -am "Polish the login page"
+--- solution
+git tag -a v1.0 -m "First public release"
+git show v1.0
+git log --oneline
+git tag v0.9 HEAD~1
+--- hint
+An annotated tag needs two flags: \`-a\` for "annotated" and \`-m\` for its message.
+--- hint
+\`git tag -a v1.0 -m "First public release"\`, then \`git show v1.0\` to see it.
+--- hint
+\`Add login\` is one commit before HEAD, so it is \`HEAD~1\`: \`git tag v0.9 HEAD~1\` (or use its id from \`git log --oneline\`).
+--- check shell | v1.0 marks the current commit, with its message
+git . tag v1.0
+git . same v1.0 HEAD
+printed First public release
+--- check shell | v0.9 marks the Add login commit
+git . at v0.9 message == Add login
+
++++ practice | Tag the release you are on
+--- task
+The current commit, \`Finish the star map\`, is version 2.0. Mark it with a lightweight tag called \`v2.0\`. The older tag \`v1.0\` must stay where it is.
+--- starter
+git init
+echo "stars" > map.txt
+git add .
+git commit -m "Draw the stars"
+git tag v1.0
+echo "stars, planets" > map.txt
+git commit -am "Add the planets"
+echo "stars, planets, labels" > map.txt
+git commit -am "Finish the star map"
+--- solution
+git tag v2.0
+--- hint
+\`git tag\` followed by a name tags the commit you are on.
+--- check shell | v2.0 exists
+git . tag v2.0
+--- check shell | It marks the current commit
+git . same v2.0 HEAD
+git . at v2.0 message == Finish the star map
+--- check shell | v1.0 has not moved
+git . at v1.0 message == Draw the stars
+
++++ practice | An annotated tag on an older commit
+--- task
+\`Fix the fuel gauge\`, two commits before the current one, was sent to the test team as version 1.1, but nobody tagged it. Tag it now with an **annotated** tag called \`v1.1\`, whose message is \`Fuel gauge fix for testers\`. Then show the tag with \`git show v1.1\`.
+--- starter
+git init
+echo "gauge" > gauge.txt
+git add .
+git commit -m "Add the fuel gauge"
+echo "gauge, fixed" > gauge.txt
+git commit -am "Fix the fuel gauge"
+echo "alarm" > alarm.txt
+git add .
+git commit -m "Add the low-fuel alarm"
+echo "alarm, louder" > alarm.txt
+git commit -am "Make the alarm louder"
+--- solution
+git tag -a v1.1 -m "Fuel gauge fix for testers" HEAD~2
+git show v1.1
+--- hint
+An annotated tag needs \`-a\` and \`-m\`. The commit to tag goes at the very end.
+--- hint
+Two commits before the current one is \`HEAD~2\`.
+--- hint
+\`git tag -a v1.1 -m "Fuel gauge fix for testers" HEAD~2\`, then \`git show v1.1\`.
+--- check shell | v1.1 marks the fuel gauge fix
+git . tag v1.1
+git . at v1.1 message == Fix the fuel gauge
+--- check shell | It is annotated, with its message
+printed Tagger: you
+printed-line Fuel gauge fix for testers
+--- check shell | You showed it
+ran git show v1.1
+
++++ practice | What changed between releases
+--- task
+The team wants notes for version 2.0. Save the list of commits that are in \`v2.0\` but not in \`v1.0\` into a new file \`notes.txt\`, using \`git log --oneline\` with a range made of the two tags, and a redirect (\`>\`). Then save \`engine.txt\` as it was in \`v1.0\` into a new file \`old-engine.txt\`, using \`git show\`.
+--- starter
+git init
+echo "thrust = 100" > engine.txt
+git add .
+git commit -m "Start"
+git tag v1.0
+echo "shield" > shield.txt
+git add .
+git commit -m "Add the heat shield"
+echo "thrust = 150" > engine.txt
+git commit -am "Raise the thrust"
+git tag v2.0
+echo "chute" > chute.txt
+git add .
+git commit -m "Add the parachute"
+--- solution
+git log --oneline v1.0..v2.0 > notes.txt
+git show v1.0:engine.txt > old-engine.txt
+cat notes.txt
+--- hint
+Tags work anywhere git wants a commit: in a range, and on the left of the colon.
+--- hint
+\`v1.0..v2.0\` means "in v2.0 but not in v1.0".
+--- hint
+\`git log --oneline v1.0..v2.0 > notes.txt\`, then \`git show v1.0:engine.txt > old-engine.txt\`.
+--- check shell | notes.txt lists the commits of 2.0
+file notes.txt contains Add the heat shield
+file notes.txt contains Raise the thrust
+file notes.txt lines == 2
+--- check shell | Nothing from before 1.0 or after 2.0
+file notes.txt excludes Start
+file notes.txt excludes Add the parachute
+--- check shell | old-engine.txt holds the 1.0 engine
+file old-engine.txt == thrust = 100
+
++++ practice | The next version numbers
+--- task
+\`v1.4.2\` is already taken: it marks an older commit, \`Tidy the settings\`. Since then there are two new commits: a bug fix, \`Fix the crash on start\`, and after it a new feature, \`Add night mode\`. Following semantic versioning, give each of them its own **annotated** tag: the bug-fix commit gets the next patch version after \`v1.4.2\`, and the feature commit gets the next minor version. Use \`v\` and the three numbers for the names, and the message \`Release\` and the number for each, for example \`Release 1.4.2\`. Do not change \`v1.4.2\`.
+--- starter
+git init
+echo "night = off" > settings.txt
+git add .
+git commit -m "Tidy the settings"
+git tag -a v1.4.2 -m "Release 1.4.2"
+echo "start = safe" > start.txt
+git add .
+git commit -m "Fix the crash on start"
+echo "night = on" > settings.txt
+git commit -am "Add night mode"
+--- solution
+git tag
+git log --oneline
+git tag -a v1.4.3 -m "Release 1.4.3" HEAD~1
+git tag -a v1.5.0 -m "Release 1.5.0"
+--- hint
+A bug fix bumps the last number. A new feature bumps the middle number, and the number to its right goes back to zero.
+--- hint
+The fix is \`v1.4.3\`, on \`HEAD~1\`. The feature is \`v1.5.0\`, on the current commit.
+--- hint
+\`git tag -a v1.4.3 -m "Release 1.4.3" HEAD~1\`, then the same shape for \`v1.5.0\`, without a commit at the end.
+--- check shell | The bug fix is v1.4.3
+git . at v1.4.3 message == Fix the crash on start
+--- check shell | The feature is v1.5.0
+git . same v1.5.0 HEAD
+--- check shell | v1.4.2 has not moved
+git . at v1.4.2 message == Tidy the settings
+
++++ practice | Two tag commands that failed
+--- task
+A teammate typed these two lines to tag releases, and both failed:
+
+\`\`\`
+git tag HEAD~1 v0.9
+git tag -a v1.0 "First release"
+\`\`\`
+
+The first should tag the commit before HEAD as \`v0.9\`. The second should tag the current commit with an annotated tag \`v1.0\` whose message is \`First release\`. Run them to see git's errors if you like, then type fixed versions of both. Finish by showing the new tag with \`git show v1.0\`.
+--- starter
+git init
+echo "v0" > rocket.txt
+git add .
+git commit -m "Start the rocket"
+echo "chute" > chute.txt
+git add .
+git commit -m "Add the parachute"
+echo "legs" > legs.txt
+git add .
+git commit -m "Add the landing legs"
+--- solution
+git tag v0.9 HEAD~1
+git tag -a v1.0 -m "First release"
+git show v1.0
+--- hint
+The tag's name comes first, and the commit, when there is one, comes last.
+--- hint
+An annotated tag's message needs its own flag, the same one as in \`git commit\`.
+--- check shell | v0.9 marks the commit before HEAD
+git . at v0.9 message == Add the parachute
+--- check shell | v1.0 marks the current commit
+git . same v1.0 HEAD
+--- check shell | v1.0 is annotated, with its message
+ran git show v1.0
+printed-line First release
+printed Tagger: you
+
++++ practice | Tag the release history
+--- task
+This project never tagged its releases. The file \`RELEASES.txt\` lists each release number next to the message of the commit it was. Tag each release with an **annotated** tag named \`v\` and its number, for example \`v0.1.0\`, with the message \`Release\` and its number, for example \`Release 0.1.0\`. Then save the list of commits that are in \`v0.3.0\` but not in \`v0.2.0\` into a new file \`changes.txt\`, with \`git log --oneline\` and a range.
+--- starter
+git init
+echo "v0" > rocket.txt
+git add .
+git commit -m "Start"
+echo "engine" > engine.txt
+git add .
+git commit -m "Add the engine"
+echo "chute" > chute.txt
+git add .
+git commit -m "Add the parachute"
+echo "chute, fixed" > chute.txt
+git commit -am "Fix the parachute"
+echo "shield" > shield.txt
+git add .
+git commit -m "Add the heat shield"
+echo "legs" > legs.txt
+git add .
+git commit -m "Add the landing legs"
+echo "0.1.0 Add the engine" > RELEASES.txt
+echo "0.2.0 Add the parachute" >> RELEASES.txt
+echo "0.2.1 Fix the parachute" >> RELEASES.txt
+echo "0.3.0 Add the landing legs" >> RELEASES.txt
+--- solution
+cat RELEASES.txt
+git log --oneline
+git tag -a v0.1.0 -m "Release 0.1.0" HEAD~4
+git tag -a v0.2.0 -m "Release 0.2.0" HEAD~3
+git tag -a v0.2.1 -m "Release 0.2.1" HEAD~2
+git tag -a v0.3.0 -m "Release 0.3.0"
+git log --oneline v0.2.0..v0.3.0 > changes.txt
+--- hint
+Match each line of \`RELEASES.txt\` to a line of \`git log --oneline\`, and name that commit by its id or by counting back from HEAD.
+--- hint
+\`Add the landing legs\` is HEAD, \`Fix the parachute\` is \`HEAD~2\`, and \`Add the engine\` is \`HEAD~4\`.
+--- hint
+For the list, the range is \`v0.2.0..v0.3.0\`, with \`> changes.txt\` at the end.
+--- check shell | Each release tag marks the right commit
+git . at v0.1.0 message == Add the engine
+git . at v0.2.0 message == Add the parachute
+git . at v0.2.1 message == Fix the parachute
+git . same v0.3.0 HEAD
+--- check shell | changes.txt lists what came after 0.2.0
+file changes.txt contains Fix the parachute
+file changes.txt contains Add the heat shield
+file changes.txt contains Add the landing legs
+file changes.txt lines == 3
+--- check shell | Nothing from 0.2.0 or before
+file changes.txt excludes Add the parachute
+file changes.txt excludes Add the engine
+
+=== git2-10 | Resolving a merge conflict
+--- teach
+Last lesson you stuck a permanent name on a commit with a tag. This lesson goes back to something the basics course only showed you from a distance: a **conflict**. This time you resolve one yourself, from start to finish.
+
+Picture a shopping list on the fridge. You cross out "2 eggs" and write "3 eggs". Your brother, at the same time, changes the same line to "6 eggs". Nobody can merge those two edits by rule. Someone has to decide. Git is in the same spot when two branches changed **the same lines** of a file. It will not guess, so it hands the decision to you.
+
+**Step 1: the merge stops**
+
+You are on \`main\` and merge a branch called \`tuning\`. Both branches changed the thrust line of \`engine.txt\`:
+
+\`\`\`
+~/project $ git merge tuning
+Auto-merging engine.txt
+CONFLICT (content): Merge conflict in engine.txt
+Automatic merge failed; fix conflicts and then commit the result.
+\`\`\`
+
+Read it line by line. *Auto-merging* means git tried to join the file by itself. *CONFLICT* names the file where it could not. The last line says the merge is now [[waiting for you|merge-in-progress]]: no merge commit has been made yet.
+
+**Step 2: ask git what it sees**
+
+\`git status\` shows the conflicted file under a new heading:
+
+\`\`\`
+~/project $ git status
+On branch main
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+
+Unmerged paths:
+  (use "git add <file>..." to mark resolution)
+        both modified:   engine.txt
+\`\`\`
+
+**Unmerged paths** are files with a conflict nobody has settled yet. *both modified* means both branches changed this file.
+
+**Step 3: look inside the file**
+
+Git has written both versions into the file, fenced off by three **[[conflict markers|conflict-markers]]** — lines git adds to show where the two versions start and end:
+
+\`\`\`
+~/project $ cat engine.txt
+<<<<<<< HEAD
+thrust = 120
+=======
+thrust = 150
+>>>>>>> tuning
+fuel = full
+\`\`\`
+
+- \`<<<<<<< HEAD\` starts **your side**. HEAD is the branch you are on, here \`main\`.
+- \`=======\` is the divider between the two sides.
+- \`>>>>>>> tuning\` ends **their side**, the branch being merged in.
+- Everything outside the markers, like \`fuel = full\`, merged cleanly. Leave it as it is.
+
+**Step 4: write the version you want**
+
+Now you decide. The file should end up exactly as you want it: your side, their side, or a mix of both. All three marker lines must go.
+
+On a real computer you would open the file in an editor. This practice terminal has no editor, so you write the whole file again yourself. For one line, \`echo "…" > file\` does it. For several lines at once, use **[[printf|printf-name]]** — a command that prints its text as given. Inside its quotes, \`\\n\` (backslash, then n) means "new line". Unlike \`echo\`, printf adds no line break of its own, so end the text with \`\\n\`:
+
+\`\`\`
+~/project $ printf "one\\ntwo\\n" > list.txt
+~/project $ cat list.txt
+one
+two
+\`\`\`
+
+For the engine, that is \`printf "thrust = 150\\nfuel = full\\n" > engine.txt\`. Then \`cat engine.txt\` to check it.
+
+**Step 5: search for leftover markers**
+
+A single forgotten marker line breaks the file. Search for one with \`grep\` (from the Terminal course; \`-n\` means "show line numbers"). Before you fix the file, it finds one:
+
+\`\`\`
+~/project $ grep -n "<<<<<<<" engine.txt
+1:<<<<<<< HEAD
+\`\`\`
+
+Keep the quotes around the marker: without them, the shell would read \`<\` as a redirect, the way it reads \`>\`. After you fix it, the same command prints nothing. Nothing is the answer you want.
+
+**Step 6: mark it resolved**
+
+\`git add engine.txt\` tells git "this file is settled". \`git status\` agrees:
+
+\`\`\`
+~/project $ git status
+On branch main
+All conflicts fixed but you are still merging.
+  (use "git commit" to conclude merge)
+\`\`\`
+
+**Step 7: finish the merge**
+
+Run \`git commit\`, this time without \`-m\` (message). Git already has [[a message ready|merge-message]] for a merge, so it uses that:
+
+\`\`\`
+~/project $ git commit
+[main 61cbc56] Merge branch 'tuning'
+ 1 file changed
+\`\`\`
+
+That is the merge commit, the same kind you met at the end of the basics course. The conflict is over.
+
+**Watch out:** \`git add\` does not look inside the file. If a marker line is still in it, git accepts it anyway and you commit a broken file. So always run the \`grep\` check from Step 5 before \`git add\`. And remember that a merge with no markers left is not always a merge that [[works|resolved-vs-right]].
+
+If you ever get lost half-way through, there is a way to call the whole merge off. That is the next lesson.
+
+::: context merge-in-progress A merge that is waiting for you
+Between the conflict and your final \`git commit\`, git is in the middle of a merge. It remembers this with a small file inside the hidden \`.git\` folder called \`MERGE_HEAD\`, which holds the id of the commit being merged in. While it is there, \`git status\` keeps reminding you, and \`git commit\` refuses to run until every conflicted file has been added:
+
+\`\`\`
+error: Committing is not possible because you have unmerged files.
+\`\`\`
+
+Nothing is broken. Git is holding the door open until you finish, or until you cancel.
+:::
+
+::: context conflict-markers Which side is which
+Each marker is seven characters long, so it cannot be mistaken for normal text. The top half, after \`<<<<<<<\`, is always the branch you are standing on. The bottom half, before \`>>>>>>>\`, is always the branch you named in \`git merge\`. The label after each arrow tells you which is which, so read it instead of guessing.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="10" width="200" height="150" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="11" y="40" width="198" height="24" fill="#8fb8f0"/>
+  <rect x="11" y="88" width="198" height="24" fill="#f2b880"/>
+  <text x="20" y="32" font-size="12" fill="#6c7a93">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</text>
+  <text x="20" y="57" font-size="12" fill="#1f2a44">thrust = 120</text>
+  <text x="20" y="81" font-size="12" fill="#6c7a93">=======</text>
+  <text x="20" y="105" font-size="12" fill="#1f2a44">thrust = 150</text>
+  <text x="20" y="129" font-size="12" fill="#6c7a93">&gt;&gt;&gt;&gt;&gt;&gt;&gt; tuning</text>
+  <text x="20" y="151" font-size="12" fill="#1f2a44">fuel = full</text>
+  <text x="222" y="57" font-size="12" font-weight="bold" fill="#1d6fd1">your side (main)</text>
+  <text x="222" y="105" font-size="12" font-weight="bold" fill="#1f2a44">their side (tuning)</text>
+  <text x="222" y="151" font-size="12" fill="#6c7a93">merged cleanly</text>
+</svg>
+\`\`\`
+:::
+
+::: context printf-name Where printf comes from
+The name means "print formatted". It began as a function in the C programming language in the 1970s, and a command version became standard in Unix shells, so it works the same in the Terminal on Mac and Linux. The \`\\n\` inside the quotes is an **escape sequence**: a backslash followed by a letter that stands for a character you cannot type directly. \`\\n\` is a new line and \`\\t\` is a tab. You will meet printf again whenever a program needs to print text in an exact shape.
+:::
+
+::: context merge-message The editor that opens on a real computer
+In this practice terminal, \`git commit\` during a merge finishes at once with the message *Merge branch 'tuning'*. On a real computer it usually opens a text editor with that message already written, so you can add a note, such as which side you kept and why. Save and close the editor, and the commit is made. If the editor is Vim, type \`:wq\` and press Enter. To keep git's message and skip the editor, use \`git commit --no-edit\`.
+:::
+
+::: context resolved-vs-right Resolved is not the same as right
+Git only checks that the markers are gone. It cannot tell whether the result makes sense. Say one branch renamed a variable and the other added a new line that still uses the old name. Git may merge that with no conflict at all, and the program still breaks. That is why teams build and test the code again after every merge, and why a merge is usually checked in code review before it lands. For software that flies, a test run after a merge is never optional.
+:::
+--- task
+Merge \`tuning\` into \`main\`. Both branches changed the thrust line of \`engine.txt\`, so the merge stops with a conflict. The team agreed on \`thrust = 150\`, the value from \`tuning\`. Resolve the conflict so that \`engine.txt\` reads exactly:
+\`\`\`
+thrust = 150
+fuel = full
+\`\`\`
+Then mark it resolved with \`git add\` and finish the merge with \`git commit\`.
+--- starter
+git init
+printf "thrust = 100\\nfuel = full\\n" > engine.txt
+git add .
+git commit -m "Add the engine"
+git switch -c tuning
+printf "thrust = 150\\nfuel = full\\n" > engine.txt
+git commit -am "Tune thrust to 150"
+git switch main
+printf "thrust = 120\\nfuel = full\\n" > engine.txt
+git commit -am "Raise thrust to 120"
+--- solution
+git merge tuning
+cat engine.txt
+printf "thrust = 150\\nfuel = full\\n" > engine.txt
+git add engine.txt
+git commit
+--- hint
+Start with \`git merge tuning\`, then \`cat engine.txt\` to see the two sides between the markers.
+--- hint
+Write the whole resolved file in one go, with no marker lines: \`printf "thrust = 150\\nfuel = full\\n" > engine.txt\`. Check it with \`cat engine.txt\`.
+--- hint
+Then \`git add engine.txt\` to mark it resolved, and \`git commit\` (no \`-m\` needed) to finish the merge.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in engine.txt
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+--- check shell | The agreed values were committed, without markers
+file engine.txt ~= thrust = 150\\nfuel = full
+git . at HEAD file engine.txt contains thrust = 150
+git . at HEAD file engine.txt excludes <<<<<<<
+
++++ practice | Keep your own side
+--- task
+Merge \`bright\` into \`main\`. Both branches changed the brightness line of \`screen.txt\`, so the merge stops with a conflict. This time the team wants **your** side, the value from \`main\`. Resolve the conflict so that \`screen.txt\` reads exactly:
+\`\`\`
+brightness = 70
+contrast = 1
+\`\`\`
+Then mark it resolved and finish the merge.
+--- starter
+git init
+printf "brightness = 50\\ncontrast = 1\\n" > screen.txt
+git add .
+git commit -m "Add the screen settings"
+git switch -c bright
+printf "brightness = 90\\ncontrast = 1\\n" > screen.txt
+git commit -am "Make the screen brighter"
+git switch main
+printf "brightness = 70\\ncontrast = 1\\n" > screen.txt
+git commit -am "Raise the brightness a little"
+--- solution
+git merge bright
+cat screen.txt
+printf "brightness = 70\\ncontrast = 1\\n" > screen.txt
+git add screen.txt
+git commit
+--- hint
+Your side is the part between \`<<<<<<< HEAD\` and \`=======\`.
+--- hint
+Write the whole file again with \`printf\`, with \`\\n\` after each line and no marker lines.
+--- hint
+Then \`git add screen.txt\` and \`git commit\`.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in screen.txt
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+--- check shell | Your side was kept, with no markers
+file screen.txt ~= brightness = 70\\ncontrast = 1
+git . at HEAD file screen.txt excludes =======
+
++++ practice | Keep both sides
+--- task
+Merge \`recruits\` into \`main\`. Each branch added a new crew member on the same line of \`crew.txt\`, so the merge stops with a conflict. Both people are really joining the crew. Resolve it by keeping both: \`crew.txt\` must read exactly \`Ada\`, \`Mae\` and \`Yuri\`, one per line, in that order. Then finish the merge.
+--- starter
+git init
+echo "Ada" > crew.txt
+git add .
+git commit -m "Start the crew list"
+git switch -c recruits
+printf "Ada\\nYuri\\n" > crew.txt
+git commit -am "Add Yuri"
+git switch main
+printf "Ada\\nMae\\n" > crew.txt
+git commit -am "Add Mae"
+--- solution
+git merge recruits
+cat crew.txt
+printf "Ada\\nMae\\nYuri\\n" > crew.txt
+git add crew.txt
+git commit
+--- hint
+A resolution does not have to pick one side. The file can hold whatever is right, as long as every marker line is gone.
+--- hint
+\`Ada\` merged cleanly. \`Mae\` is on your side and \`Yuri\` on theirs. Write all three with \`printf\`.
+--- hint
+\`git add crew.txt\`, then \`git commit\`.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in crew.txt
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+--- check shell | Both new people are kept, in order
+file crew.txt ~= Ada\\nMae\\nYuri
+git . at HEAD file crew.txt excludes >>>>>>>
+
++++ practice | A conflict, a clean file, and tidying up
+--- task
+Merge \`settings\` into \`main\`. The branch changed two things: \`timeout.txt\`, which conflicts, and a new file \`retry.txt\`, which merges cleanly. Keep the value from \`settings\` for the timeout: \`timeout = 30\`. Before you mark the file resolved, check it for leftover markers with \`grep\`. Finish the merge. Then delete the \`settings\` branch with \`git branch -d\`, since it is now merged.
+--- starter
+git init
+echo "timeout = 5" > timeout.txt
+git add .
+git commit -m "Start"
+git switch -c settings
+echo "timeout = 30" > timeout.txt
+echo "retries = 3" > retry.txt
+git add .
+git commit -m "Tune the network"
+git switch main
+echo "timeout = 10" > timeout.txt
+git commit -am "Double the timeout"
+--- solution
+git merge settings
+cat timeout.txt
+echo "timeout = 30" > timeout.txt
+grep -n "<<<<<<<" timeout.txt
+git add timeout.txt
+git commit
+git branch -d settings
+--- hint
+One line in the file needs deciding, so \`echo\` is enough to write it.
+--- hint
+\`grep -n "<<<<<<<" timeout.txt\` should print nothing. Keep the quotes around the marker.
+--- hint
+\`git add timeout.txt\`, \`git commit\`, then \`git branch -d settings\`.
+--- check shell | The merge is finished, with both changes
+git . idle
+git . merges == 1
+git . at HEAD file timeout.txt == timeout = 30
+git . at HEAD file retry.txt == retries = 3
+--- check shell | You checked for markers
+ran grep
+--- check shell | The merged branch is gone
+git . no-branch settings
+
++++ practice | Two files in conflict
+--- task
+Merge \`upgrade\` into \`main\`. This time **two** files conflict: \`engine.txt\` and \`fuel.txt\`. The team's decision: take the side from \`upgrade\` in \`engine.txt\` (\`thrust = 200\`), and the side from \`main\` in \`fuel.txt\` (\`fuel = 80\`). Resolve both and finish the merge.
+--- starter
+git init
+echo "thrust = 100" > engine.txt
+echo "fuel = 50" > fuel.txt
+git add .
+git commit -m "Start"
+git switch -c upgrade
+echo "thrust = 200" > engine.txt
+echo "fuel = 60" > fuel.txt
+git commit -am "Upgrade the engine"
+git switch main
+echo "thrust = 120" > engine.txt
+echo "fuel = 80" > fuel.txt
+git commit -am "Top up the fuel"
+--- solution
+git merge upgrade
+git status
+echo "thrust = 200" > engine.txt
+echo "fuel = 80" > fuel.txt
+git add engine.txt fuel.txt
+git commit
+--- hint
+\`git status\` lists every file under "Unmerged paths". Git will not make the merge commit until all of them are marked resolved.
+--- hint
+Write each file with its agreed line, then \`git add\` both of them.
+--- hint
+\`git add engine.txt fuel.txt\`, then \`git commit\`.
+--- check shell | Both conflicts are resolved and the merge is finished
+git . conflicts == 0
+git . idle
+git . merges == 1
+--- check shell | Each file has the agreed side
+git . at HEAD file engine.txt == thrust = 200
+git . at HEAD file fuel.txt == fuel = 80
+--- check shell | No markers anywhere
+git . at HEAD file engine.txt excludes <<<<<<<
+git . at HEAD file fuel.txt excludes >>>>>>>
+
++++ practice | A marker left behind
+--- task
+A teammate resolved a merge conflict in \`orbit.txt\`, marked it resolved with \`git add\`, and has not committed yet. \`orbit.txt\` should read exactly:
+\`\`\`
+altitude = 420
+inclination = 51.6
+\`\`\`
+But one conflict marker line is still in it, and \`git add\` did not complain. Find it, fix the file, and finish the merge.
+--- starter
+git init
+printf "altitude = 400\\ninclination = 51.6\\n" > orbit.txt
+git add .
+git commit -m "Set the orbit"
+git switch -c survey
+printf "altitude = 420\\ninclination = 51.6\\n" > orbit.txt
+git commit -am "Raise the orbit"
+git switch main
+printf "altitude = 380\\ninclination = 51.6\\n" > orbit.txt
+git commit -am "Lower the orbit"
+git merge survey
+printf "altitude = 420\\n=======\\ninclination = 51.6\\n" > orbit.txt
+git add orbit.txt
+--- solution
+cat orbit.txt
+grep -n "=======" orbit.txt
+printf "altitude = 420\\ninclination = 51.6\\n" > orbit.txt
+git add orbit.txt
+git commit
+--- hint
+\`cat orbit.txt\` shows the file. Which of the three kinds of marker line is still there?
+--- hint
+\`git add\` never looks inside a file. Write the file again without the divider, then add it again.
+--- hint
+\`printf "altitude = 420\\ninclination = 51.6\\n" > orbit.txt\`, \`git add orbit.txt\`, \`git commit\`.
+--- check shell | orbit.txt is right
+file orbit.txt ~= altitude = 420\\ninclination = 51.6
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+--- check shell | The committed file has no marker
+git . at HEAD file orbit.txt excludes =======
+
++++ practice | Merge the tuning, then tag it
+--- task
+Merge \`tuning\` into \`main\`. The conflict in \`config.txt\` covers several lines. The team's decision, line by line: keep \`name = probe\`, take the thrust from \`tuning\`, take the fuel from \`main\`, and take the mode from \`tuning\`. The file must end up with those four lines, in that order. Finish the merge, then mark the merge commit with an annotated tag \`v2.0\` whose message is \`Tuned engine\`.
+--- starter
+git init
+printf "name = probe\\nthrust = 100\\nfuel = half\\nmode = test\\n" > config.txt
+git add .
+git commit -m "Add the config"
+git switch -c tuning
+printf "name = probe\\nthrust = 150\\nfuel = half\\nmode = live\\n" > config.txt
+git commit -am "Tune for the live run"
+git switch main
+printf "name = probe\\nthrust = 120\\nfuel = full\\nmode = test\\n" > config.txt
+git commit -am "Fill the tank"
+--- solution
+git merge tuning
+cat config.txt
+printf "name = probe\\nthrust = 150\\nfuel = full\\nmode = live\\n" > config.txt
+grep -n "=======" config.txt
+git add config.txt
+git commit
+git tag -a v2.0 -m "Tuned engine"
+--- hint
+Read the two sides line by line: the top half is \`main\`, the bottom half is \`tuning\`. \`name = probe\` is outside the markers.
+--- hint
+The result is \`name = probe\`, \`thrust = 150\`, \`fuel = full\`, \`mode = live\`. Write all four with one \`printf\`.
+--- hint
+Add, commit, then \`git tag -a v2.0 -m "Tuned engine"\` while you are on the merge commit.
+--- check shell | config.txt has the agreed line from each side
+file config.txt ~= name = probe\\nthrust = 150\\nfuel = full\\nmode = live
+--- check shell | The merge is finished
+git . idle
+git . merges == 1
+git . at HEAD parents == 2
+--- check shell | v2.0 marks the merge commit
+git . tag v2.0
+git . same v2.0 HEAD
+
+=== git2-10b | Backing out of a merge: git merge --abort
+--- teach
+Last lesson you took a conflicted merge all the way to the finish. Sometimes you should not. Maybe you merged the wrong branch. Maybe the conflict is in code [[a teammate wrote|ask-the-author]], and you need to ask them which side is right. This lesson shows the way out: calling the whole merge off.
+
+Think of a board game you set up on the table, then realize you are missing a piece. You do not play half a game. You put everything back in the box, exactly as it was, and try again later.
+
+**Step 1: a merge you are not ready for**
+
+You are on \`main\` and merge a branch called \`new-site\`. Both changed the same line of \`landing-plan.txt\`:
+
+\`\`\`
+~/project $ git merge new-site
+Auto-merging landing-plan.txt
+CONFLICT (content): Merge conflict in landing-plan.txt
+Automatic merge failed; fix conflicts and then commit the result.
+\`\`\`
+
+\`cat landing-plan.txt\` shows \`main\` wants crater A and \`new-site\` wants crater B. You do not know which is right.
+
+**Step 2: git already tells you the way out**
+
+Look at \`git status\` again. Its third line is the hint:
+
+\`\`\`
+~/project $ git status
+On branch main
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+\`\`\`
+
+**\`git merge --abort\`** cancels a merge that stopped half-way. \`--abort\` means "call it off".
+
+**Step 3: call it off**
+
+\`\`\`
+~/project $ git merge --abort
+~/project $ git status
+On branch main
+
+nothing to commit, working tree clean
+~/project $ cat landing-plan.txt
+site = crater A
+\`\`\`
+
+The abort prints nothing, and that means it worked. The markers are gone. \`landing-plan.txt\` is back to \`main\`'s version. No merge commit was made, and \`git log --oneline\` looks the same as before you typed \`git merge\`. It is as if you [[never started|merge-head-file]].
+
+**Step 4: come back later**
+
+Nothing is lost. The \`new-site\` branch still has its commit. Once you know which site is right, run \`git merge new-site\` again and resolve it the way last lesson showed.
+
+If you run the abort when no merge is going on, git tells you so, and nothing changes:
+
+\`\`\`
+~/project $ git merge --abort
+fatal: There is no merge to abort (MERGE_HEAD missing).
+\`\`\`
+
+**Watch out:** an abort also throws away any resolving you already did. If you fixed ten conflicts in a big file and then abort, those ten fixes are gone too. And it works best when you [[started from a clean status|clean-before-merge]]: commit or stash your changes before you merge, so the abort has one clear "before" to go back to.
+
+This "call it off" switch is not only for merges. Several other git commands that can stop half-way [[have one too|abort-family]].
+
+::: context ask-the-author Who settles a conflict
+On a team, the person who resolves a conflict is often not the person who understands both sides. So people ask. \`git log --oneline new-site\` shows the commits on the other branch, and their messages usually say who changed the line and why. In the advanced course, \`git blame\` answers it line by line. Flight software teams take this seriously: a wrong value picked in a hurry can pass every check git makes and still be wrong. Pausing to ask is part of the job.
+:::
+
+::: context merge-head-file How git knows what to undo
+When a merge stops on a conflict, git writes a small file inside the hidden \`.git\` folder called \`MERGE_HEAD\`. It holds the id of the commit being merged in. That file is how \`git status\` knows you are mid-merge. \`git merge --abort\` puts your files back to match your last commit, clears the conflict, and deletes \`MERGE_HEAD\`. That is why, with no merge going on, the error says *MERGE_HEAD missing*: there is nothing to undo.
+:::
+
+::: context clean-before-merge Why start from a clean status
+The abort puts your files back to your last commit. Changes you had not committed before the merge are not part of that commit. Real git tries to keep them, but if the merge touched the same files, it may not be able to rebuild them exactly. The git manual itself warns about this. The safe habit is one command before every merge: \`git status\`. If it is not clean, commit your work or put it aside with \`git stash\`, from earlier in this course.
+
+\`\`\`svg
+<svg viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="40" width="90" height="40" rx="6" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <text x="55" y="58" font-size="12" text-anchor="middle" fill="#1f2a44">clean</text>
+  <text x="55" y="72" font-size="12" text-anchor="middle" fill="#1f2a44">status</text>
+  <rect x="140" y="40" width="90" height="40" rx="6" fill="#f2b880" stroke="#1f2a44" stroke-width="2"/>
+  <text x="185" y="58" font-size="12" text-anchor="middle" fill="#1f2a44">merge hits</text>
+  <text x="185" y="72" font-size="12" text-anchor="middle" fill="#1f2a44">a conflict</text>
+  <line x1="100" y1="60" x2="134" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="134,55 140,60 134,65" fill="#1f2a44"/>
+  <path d="M185 80 C185 110, 55 110, 55 86" fill="none" stroke="#b4232c" stroke-width="2"/>
+  <polygon points="50,88 55,80 60,88" fill="#b4232c"/>
+  <text x="120" y="116" font-size="12" text-anchor="middle" font-weight="bold" fill="#b4232c">git merge --abort</text>
+  <rect x="270" y="40" width="80" height="40" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="310" y="58" font-size="12" text-anchor="middle" fill="#1f2a44">merge</text>
+  <text x="310" y="72" font-size="12" text-anchor="middle" fill="#1f2a44">commit</text>
+  <line x1="230" y1="60" x2="264" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="264,55 270,60 264,65" fill="#1f2a44"/>
+  <text x="250" y="30" font-size="11" text-anchor="middle" fill="#6c7a93">resolve, add, commit</text>
+</svg>
+\`\`\`
+:::
+
+::: context abort-family The same escape hatch, elsewhere
+Any git command that can stop in the middle to ask for your help has its own \`--abort\`. The advanced course meets three of them: \`git cherry-pick --abort\`, \`git rebase --abort\` and \`git revert --abort\`. Each one puts things back to how they were before that command started. So whenever git stops and you feel lost, \`git status\` names the command in progress, and adding \`--abort\` to that command is almost always the safe way out.
+:::
+--- task
+You are on \`main\`. Merge \`survey\` into \`main\`. It stops with a conflict in \`orbit.txt\`, and you are not sure which altitude is right. Call the merge off with \`git merge --abort\`. Afterwards \`git status\` should be clean, no merge commit should have been made, and \`orbit.txt\` should read \`altitude = 380 km\` again.
+--- starter
+git init
+echo "altitude = 400 km" > orbit.txt
+git add .
+git commit -m "Set the orbit"
+git switch -c survey
+echo "altitude = 420 km" > orbit.txt
+git commit -am "Raise the orbit to 420 km"
+git switch main
+echo "altitude = 380 km" > orbit.txt
+git commit -am "Lower the orbit to 380 km"
+--- solution
+git merge survey
+cat orbit.txt
+git merge --abort
+git status
+--- hint
+Start the merge with \`git merge survey\`. You can look at the markers with \`cat orbit.txt\`.
+--- hint
+\`git status\` shows the way out in its third line.
+--- hint
+\`git merge --abort\`, then \`git status\` and \`cat orbit.txt\` to see that everything is back.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in orbit.txt
+--- check shell | The merge was called off
+ran git merge --abort
+git . idle
+git . conflicts == 0
+git . merges == 0
+--- check shell | orbit.txt is back to main's version
+file orbit.txt == altitude = 380 km
+git . commits == 2
+
++++ practice | Ask the designer first
+--- task
+You are on \`main\`. Merge \`redesign\` into \`main\`. It stops with a conflict in \`layout.txt\`, and you want to ask the designer before you choose a side. Call the merge off. Then check with \`git log --oneline\` that no merge commit was made.
+--- starter
+git init
+echo "columns = 1" > layout.txt
+git add .
+git commit -m "Add the layout"
+git switch -c redesign
+echo "columns = 3" > layout.txt
+git commit -am "Try three columns"
+git switch main
+echo "columns = 2" > layout.txt
+git commit -am "Use two columns"
+--- solution
+git merge redesign
+git merge --abort
+git log --oneline
+--- hint
+\`git status\` during the conflict names the way out.
+--- hint
+\`git merge --abort\` prints nothing when it works. Then look at \`git log --oneline\`.
+--- check shell | You met the conflict
+printed CONFLICT (content): Merge conflict in layout.txt
+--- check shell | The merge was called off
+git . idle
+git . merges == 0
+git . commits == 2
+--- check shell | layout.txt is main's version again, and you checked the log
+file layout.txt == columns = 2
+ran git log
+
++++ practice | The wrong branch
+--- task
+You meant to merge \`release\` into \`main\`, but typed \`git merge beta\` instead, and it stopped with a conflict. That merge is still in progress. Call it off, then merge the branch you meant. At the end, \`main\` must have the work from \`release\` and nothing from \`beta\`.
+--- starter
+git init
+echo "menu = classic" > menu.txt
+git add .
+git commit -m "Start"
+git switch -c beta
+echo "menu = experimental" > menu.txt
+git commit -am "Try the beta menu"
+git switch main
+git switch -c release
+echo "1.0 is ready" > notes.txt
+git add .
+git commit -m "Prepare the release"
+git switch main
+echo "menu = classic, bigger" > menu.txt
+git commit -am "Enlarge the menu"
+git merge beta
+--- solution
+git status
+git merge --abort
+git merge release
+git log --oneline
+--- hint
+\`git status\` shows the half-finished merge of \`beta\`, and how to cancel it.
+--- hint
+After \`git merge --abort\`, \`main\` is back as it was. Then \`git merge release\`.
+--- check shell | The beta merge was called off
+ran git merge --abort
+git . log excludes Try the beta menu
+--- check shell | release is merged into main
+git . idle
+git . branch main
+git . log contains Prepare the release
+git . at HEAD file notes.txt
+--- check shell | No trace of beta in the files
+git . at HEAD file menu.txt == menu = classic, bigger
+
++++ practice | Stash, try, back out, restore
+--- task
+You have an uncommitted edit in \`notes.txt\`. Before you merge \`survey\`, put it aside with \`git stash\`, so the merge starts from a clean status. Then merge \`survey\`. It stops with a conflict in \`orbit.txt\`, and you are not sure which side is right, so call the merge off. Finally bring your \`notes.txt\` edit back. It must stay uncommitted.
+--- starter
+git init
+echo "orbit = low" > orbit.txt
+echo "notes: none" > notes.txt
+git add .
+git commit -m "Start"
+git switch -c survey
+echo "orbit = high" > orbit.txt
+git commit -am "Raise the orbit"
+git switch main
+echo "orbit = medium" > orbit.txt
+git commit -am "Settle on a medium orbit"
+echo "notes: check the survey" > notes.txt
+--- solution
+git stash
+git merge survey
+git merge --abort
+git stash pop
+cat notes.txt
+--- hint
+Stash first: the abort then has one clear "before" to go back to.
+--- hint
+\`git stash\`, \`git merge survey\`, \`git merge --abort\`.
+--- hint
+Finish with \`git stash pop\`.
+--- check shell | The merge was called off
+git . idle
+git . merges == 0
+file orbit.txt == orbit = medium
+--- check shell | Your notes edit is back, uncommitted
+file notes.txt == notes: check the survey
+git . modified notes.txt
+git . stashes == 0
+--- check shell | You stashed and tried the merge
+ran git stash
+printed CONFLICT (content): Merge conflict in orbit.txt
+
++++ practice | Nothing to abort
+--- task
+A moment ago you merged \`cleanup\` into \`main\`. It went through with no conflict and made a merge commit. Now you want to undo that merge, and nobody else has it. First try \`git merge --abort\`, and read what git says. Then undo the merge commit with a hard reset, so that \`main\` is back where it was before the merge. The \`cleanup\` branch must keep its work.
+--- starter
+git init
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+git switch -c cleanup
+echo "tidy" > tidy.txt
+git add .
+git commit -m "Tidy the project"
+git switch main
+echo "v2" > app.txt
+git commit -am "Update the app"
+git merge cleanup
+--- solution
+git merge --abort
+git log --oneline
+git reset --hard HEAD~1
+git log --oneline
+--- hint
+\`--abort\` only cancels a merge that stopped half-way. A finished merge is an ordinary commit.
+--- hint
+An ordinary commit only you have is undone with \`git reset\`. For a merge commit, \`HEAD~1\` follows the first parent: the commit \`main\` was on before the merge.
+--- hint
+\`git reset --hard HEAD~1\`.
+--- check shell | You saw there was nothing to abort
+printed There is no merge to abort
+--- check shell | The merge commit is gone
+git . merges == 0
+git . commits == 2
+git . at HEAD message == Update the app
+--- check shell | cleanup still has its work
+git . has-branch cleanup
+git . at cleanup file tidy.txt
+
++++ practice | Still merging
+--- task
+A teammate hit a conflict while merging \`hotfix\` into \`main\`, and wanted to call the merge off. They typed \`git merge abort\`, and git answered with an error. \`git status\` still says the merge is in progress, and \`speed.txt\` is full of markers. Find the mistake, and call the merge off properly, so that \`main\` and \`speed.txt\` are back as they were before the merge.
+--- starter
+git init
+echo "speed = 50" > speed.txt
+git add .
+git commit -m "Start"
+git switch -c hotfix
+echo "speed = 55" > speed.txt
+git commit -am "Nudge the speed"
+git switch main
+echo "speed = 60" > speed.txt
+git commit -am "Raise the speed"
+git merge hotfix
+git merge abort
+--- solution
+git status
+git merge --abort
+cat speed.txt
+--- hint
+Without the two dashes, \`git merge\` reads \`abort\` as the name of a branch to merge.
+--- hint
+The flag is \`--abort\`, with two dashes.
+--- check shell | The merge is called off
+git . idle
+git . conflicts == 0
+git . merges == 0
+--- check shell | speed.txt is main's version again
+file speed.txt == speed = 60
+--- check shell | You used the flag
+ran git merge --abort
+
++++ practice | Back out now, finish later
+--- task
+Two branches are waiting to go into \`main\`: \`survey\` and \`docs\`. Merge \`survey\` first. It stops with a conflict in \`orbit.txt\`, and you need to ask the flight team, so call it off. While you wait, merge \`docs\`, which goes in cleanly. Then the answer comes back: use the altitude from \`survey\`, \`altitude = 420 km\`. Merge \`survey\` again, resolve the conflict with that value, and finish the merge.
+--- starter
+git init
+echo "altitude = 400 km" > orbit.txt
+git add .
+git commit -m "Set the orbit"
+git switch -c survey
+echo "altitude = 420 km" > orbit.txt
+git commit -am "Raise the orbit"
+git switch main
+git switch -c docs
+echo "how to fly" > GUIDE.md
+git add .
+git commit -m "Write the guide"
+git switch main
+echo "altitude = 380 km" > orbit.txt
+git commit -am "Lower the orbit"
+--- solution
+git merge survey
+git merge --abort
+git merge docs
+git merge survey
+echo "altitude = 420 km" > orbit.txt
+git add orbit.txt
+git commit
+git log --oneline --graph
+--- hint
+After the abort, \`main\` is exactly as it was, so the \`docs\` merge starts from a clean state.
+--- hint
+The second \`git merge survey\` stops with the same conflict. This time resolve it with \`echo\`, \`git add\` and \`git commit\`.
+--- check shell | You called off the first attempt
+ran git merge --abort
+--- check shell | Both branches are merged
+git . idle
+git . ancestor survey HEAD
+git . ancestor docs HEAD
+git . merges == 2
+--- check shell | The files are right
+git . at HEAD file GUIDE.md
+git . at HEAD file orbit.txt == altitude = 420 km
+
+=== git2-11 | Debugging: ignored, but still tracked
+--- teach
+The last two lessons were about merges. This one is a debugging lesson, like the ones at the end of the Terminal courses: a bug report, and a step-by-step hunt for the cause. It picks up a warning from the very first lesson of this course, about what \`.gitignore\` can and cannot do.
+
+The bug report:
+
+> I added \`secret-keys.txt\` to \`.gitignore\`, but \`git status\` still shows it as modified. Isn't it supposed to be ignored?
+
+Picture a guard at the door of a club, holding a list of people not to let in. The list works on people arriving at the door. It does nothing about someone who was already inside before the list was written. \`.gitignore\` is that list, and \`secret-keys.txt\` got inside first.
+
+**Step 1: reproduce the problem**
+
+See it for yourself before you change anything:
+
+\`\`\`
+~/project $ git status
+On branch main
+
+Changes not staged for commit:
+        modified:   secret-keys.txt
+\`\`\`
+
+*modified* means git is comparing \`secret-keys.txt\` with a copy in a commit. Git only does that for a file it is **[[tracking|tracked-files]]**: a file that is in the last commit, so git watches it for changes.
+
+**Step 2: check the assumption**
+
+The person who wrote the report assumed \`.gitignore\` works on every file. It does not. It only stops git from picking up **untracked** files — files git has never committed. So the question is: is \`secret-keys.txt\` tracked?
+
+\`git ls-files\` (list files) prints every file git tracks:
+
+\`\`\`
+~/project $ git ls-files
+.gitignore
+app.js
+secret-keys.txt
+\`\`\`
+
+There it is. \`secret-keys.txt\` was committed in the very first commit, before anyone ignored it. And \`git check-ignore -v secret-keys.txt\`, from the first lesson of this course, prints nothing at all. Git never treats a tracked file as ignored.
+
+**Step 3: fix the cause**
+
+Tell git to stop tracking the file, but keep your copy on disk:
+
+\`\`\`
+~/project $ git rm --cached secret-keys.txt
+rm 'secret-keys.txt'
+\`\`\`
+
+\`rm\` means "remove". \`--cached\` means "only from git's list of tracked files, not from the disk". The [[name is old|cached-word]], but the meaning is simple. \`git status\` now shows the change, waiting to be committed:
+
+\`\`\`
+~/project $ git status
+On branch main
+
+Changes to be committed:
+        deleted:    secret-keys.txt
+\`\`\`
+
+*deleted* sounds scary. It means "deleted from what git tracks". Check with \`ls\`: \`secret-keys.txt\` is still in your folder. Commit the change:
+
+\`\`\`
+~/project $ git commit -m "Stop tracking secret-keys.txt"
+[main 7c1f1ed] Stop tracking secret-keys.txt
+ 1 file changed
+\`\`\`
+
+**Step 4: verify**
+
+From now on, \`.gitignore\` applies to \`secret-keys.txt\`. Two checks prove it:
+
+\`\`\`
+~/project $ git status
+On branch main
+
+nothing to commit, working tree clean
+~/project $ git check-ignore -v secret-keys.txt
+.gitignore:1:secret-keys.txt	secret-keys.txt
+\`\`\`
+
+That second line [[names the rule|check-ignore-output]] that matched: line 1 of \`.gitignore\`.
+
+**One more real-world step.** The old secret is still in the **old** commits. \`git show\`, from earlier in this course, can print the file from any commit:
+
+\`\`\`
+~/project $ git show HEAD~1:secret-keys.txt
+API_KEY=abc123
+\`\`\`
+
+Anyone with a copy of the repository can do that too. So a secret that was ever committed must be treated as [[leaked|leaked-secret]]: revoke that key and make a new one.
+
+**Watch out:** do not leave out \`--cached\`. Plain \`git rm secret-keys.txt\` stops tracking the file **and** deletes it from your folder, so your real key is gone from your disk too.
+
+That was [[four steps|debug-loop]]: reproduce, check the assumption, fix the cause, verify.
+
+::: context tracked-files Tracked, untracked, ignored
+Every file in your project folder is in one of three states. **Tracked**: git has it in a commit and compares it with that copy, so \`git status\` reports its changes. **Untracked**: git sees it but has never committed it. **Ignored**: untracked, and matched by a rule in \`.gitignore\`, so git stays quiet about it. The ignore list is only asked about untracked files. A tracked file never gets that far.
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="20" width="110" height="36" rx="6" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <text x="65" y="43" font-size="12" text-anchor="middle" fill="#1f2a44">tracked file</text>
+  <line x1="120" y1="38" x2="214" y2="38" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="214,33 220,38 214,43" fill="#1f2a44"/>
+  <text x="290" y="35" font-size="12" text-anchor="middle" fill="#1f2a44">compared with</text>
+  <text x="290" y="50" font-size="12" text-anchor="middle" fill="#1f2a44">its commit</text>
+  <rect x="10" y="94" width="110" height="36" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="65" y="117" font-size="12" text-anchor="middle" fill="#1f2a44">untracked file</text>
+  <line x1="120" y1="112" x2="144" y2="112" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="144,107 150,112 144,117" fill="#1f2a44"/>
+  <rect x="150" y="94" width="90" height="36" rx="6" fill="#f2b880" stroke="#1f2a44" stroke-width="2"/>
+  <text x="195" y="117" font-size="12" text-anchor="middle" fill="#1f2a44">.gitignore?</text>
+  <line x1="240" y1="112" x2="264" y2="112" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="264,107 270,112 264,117" fill="#1f2a44"/>
+  <text x="312" y="108" font-size="12" text-anchor="middle" fill="#1f2a44">match:</text>
+  <text x="312" y="123" font-size="12" text-anchor="middle" font-weight="bold" fill="#b4232c">ignored</text>
+  <text x="180" y="76" font-size="11" text-anchor="middle" fill="#6c7a93">the ignore list is never asked about tracked files</text>
+</svg>
+\`\`\`
+:::
+
+::: context cached-word Why the flag says "cached"
+In git's early days, the staging area was called the **cache**, and later also the **index**. Both old names survive in commands. \`--cached\` on \`git rm\` means "work on the staging area only". So \`git rm --cached secret-keys.txt\` removes \`secret-keys.txt\` from what will go into the next commit, and never touches the file in your folder. You will also see \`git diff --cached\`, which is the same as \`git diff --staged\`: it shows what is staged.
+:::
+
+::: context check-ignore-output Reading check-ignore's answer
+\`git check-ignore -v\` answers in one line with four parts. \`.gitignore\` is the file the rule lives in. \`1\` is its line number. \`secret-keys.txt\` after the second colon is the pattern on that line. Then, after a tab, comes the file you asked about. Here the pattern and the file happen to be the same text. For a pattern like \`*.log\`, you would see something like \`.gitignore:3:*.log\` followed by \`debug.log\`, which tells you exactly which line to edit if the rule is wrong.
+:::
+
+::: context leaked-secret What teams do after a leak
+A key that was ever committed has to be treated as public, even if you delete it in the next commit. Old commits are copied to every clone, fork and backup. So the first job is to **revoke** the key with whoever issued it and make a new one. Tools such as \`git filter-repo\` can rewrite history to remove the file, but they cannot reach copies already made. GitHub scans public repositories for many known key formats and alerts the providers, because leaked keys are found and misused quickly.
+:::
+
+::: context debug-loop The debugging loop, again
+These are the same four steps as the debugging lessons in the Terminal courses: reproduce the problem, check the assumption, fix the cause, verify. The step people skip is checking the assumption. Here the assumption was "\`.gitignore\` works on every file", and it was wrong. Once you find the false belief, the fix is usually short. The next lesson uses the same loop on a scarier problem, and the advanced course adds \`git bisect\`, a tool for finding which commit broke something.
+:::
+--- task
+\`git status\` keeps reporting \`.env\` as modified, even though \`.gitignore\` lists it. Make git stop tracking \`.env\` — **without** deleting your local file — using \`git rm --cached\`. Commit that with the message \`Stop tracking .env\`. Afterwards \`git status\` must say the working tree is clean, and \`.env\` must count as ignored.
+--- starter
+git init
+echo "console.log('app')" > app.js
+echo "API_KEY=abc123" > .env
+git add .
+git commit -m "Add the app"
+echo ".env" > .gitignore
+git add .gitignore
+git commit -m "Ignore .env"
+echo "API_KEY=new456" > .env
+--- solution
+git status
+git ls-files
+git rm --cached .env
+git commit -m "Stop tracking .env"
+git status
+--- hint
+Reproduce and check first: \`git status\`, then \`git ls-files\`. Is \`.env\` among the tracked files?
+--- hint
+\`git rm --cached .env\` stops tracking it and keeps your file. Then commit with \`git commit -m "Stop tracking .env"\`.
+--- hint
+Finish with \`git status\`. It should say *nothing to commit, working tree clean*.
+--- check shell | .env is ignored now, and still on your disk
+git . ignored .env
+file .env == API_KEY=new456
+--- check shell | The change is committed
+git . at HEAD message == Stop tracking .env
+git . at HEAD missing .env
+git . at HEAD file app.js
+--- check shell | git status is clean
+printed nothing to commit, working tree clean
+
++++ practice | The log that will not go away
+--- task
+\`.gitignore\` has a rule for every \`.log\` file, but \`git status\` keeps listing \`debug.log\` as modified. Check whether git is tracking it with \`git ls-files\`. Then make git stop tracking \`debug.log\`, keeping the file on your disk, and commit that with the message \`Stop tracking debug.log\`.
+--- starter
+git init
+echo "print('app')" > app.py
+echo "boot 1" > debug.log
+git add .
+git commit -m "Start"
+echo "*.log" > .gitignore
+git add .gitignore
+git commit -m "Ignore logs"
+echo "boot 2" > debug.log
+--- solution
+git ls-files
+git rm --cached debug.log
+git commit -m "Stop tracking debug.log"
+git status
+--- hint
+\`git ls-files\` lists \`debug.log\`: it was committed before the rule existed, so the rule does not apply to it.
+--- hint
+\`--cached\` takes the file out of what git tracks and leaves it on your disk.
+--- hint
+\`git rm --cached debug.log\`, then commit with the message.
+--- check shell | debug.log is ignored now, and still on your disk
+git . ignored debug.log
+file debug.log == boot 2
+--- check shell | The change is committed
+git . at HEAD message == Stop tracking debug.log
+git . at HEAD missing debug.log
+git . commits == 3
+--- check shell | The rest of the project is still tracked
+git . tracked app.py
+ran git ls-files
+
++++ practice | A whole build folder
+--- task
+The \`build\` folder was committed before anyone ignored it. It holds two files, \`build/app.bin\` and \`build/app.map\`, and \`.gitignore\` already has the rule \`build/\`. Make git stop tracking both files, keeping them on your disk, and commit that with the message \`Stop tracking the build folder\`. Afterwards \`git ls-files\` must list only \`.gitignore\` and \`main.c\`.
+--- starter
+git init
+echo "int main() {}" > main.c
+mkdir build
+echo "binary" > build/app.bin
+echo "symbols" > build/app.map
+git add .
+git commit -m "Start"
+echo "build/" > .gitignore
+git add .gitignore
+git commit -m "Ignore the build folder"
+echo "binary 2" > build/app.bin
+--- solution
+git ls-files
+git rm --cached build/app.bin build/app.map
+git commit -m "Stop tracking the build folder"
+git ls-files
+--- hint
+\`git rm --cached\` takes one or more file names, with their folder in front.
+--- hint
+\`git rm --cached build/app.bin build/app.map\`, then commit.
+--- check shell | Both build files are ignored and still on disk
+git . ignored build/app.bin
+git . ignored build/app.map
+file build/app.bin == binary 2
+--- check shell | Only the source and the rules are tracked
+git . tracked main.c
+git . tracked .gitignore
+git . at HEAD missing build/app.map
+git . at HEAD missing build/app.bin
+--- check shell | Committed with the right message
+git . at HEAD message == Stop tracking the build folder
+
++++ practice | Write the rule and let go, in one commit
+--- task
+\`.env\` holds a password, and it was committed long ago. There is no \`.gitignore\` yet. In **one** commit, add a \`.gitignore\` holding the single rule \`.env\`, and make git stop tracking \`.env\`, keeping your file. Use the message \`Ignore .env\`. Then prove that it worked with \`git check-ignore -v .env\`.
+--- starter
+git init
+echo "connect()" > app.js
+echo "DB_PASS=orbit" > .env
+git add .
+git commit -m "Start"
+--- solution
+echo ".env" > .gitignore
+git rm --cached .env
+git add .gitignore
+git commit -m "Ignore .env"
+git check-ignore -v .env
+--- hint
+Two changes go into the commit: a new \`.gitignore\`, and \`.env\` taken out of what git tracks. Stage both before you commit.
+--- hint
+\`echo ".env" > .gitignore\`, \`git rm --cached .env\`, \`git add .gitignore\`, then commit.
+--- hint
+\`git check-ignore -v .env\` should name line 1 of \`.gitignore\`.
+--- check shell | One commit does both jobs
+git . commits == 2
+git . at HEAD message == Ignore .env
+git . at HEAD file .gitignore == .env
+git . at HEAD missing .env
+--- check shell | .env is ignored and still on disk
+git . ignored .env
+file .env == DB_PASS=orbit
+--- check shell | You proved it
+printed .gitignore:1:.env
+
++++ practice | Only the ones that are tracked
+--- task
+\`.gitignore\` says to ignore every \`.log\` file except \`keep.log\`. But some \`.log\` files were committed before the rules were written. Use \`git ls-files\` to find which. Stop tracking every tracked \`.log\` file that the rules say should be ignored, and nothing else: \`keep.log\` must stay tracked. Commit with the message \`Stop tracking ignored logs\`.
+--- starter
+git init
+echo "run()" > app.js
+echo "keep me" > keep.log
+echo "boot" > boot.log
+echo "crash" > crash.log
+git add .
+git commit -m "Start"
+echo "*.log" > .gitignore
+echo "!keep.log" >> .gitignore
+git add .gitignore
+git commit -m "Ignore logs"
+echo "trace" > trace.log
+--- solution
+git ls-files
+git rm --cached boot.log crash.log
+git commit -m "Stop tracking ignored logs"
+git status
+--- hint
+\`git ls-files\` lists the tracked files. \`trace.log\` is not among them: it is new, so the rules already ignore it.
+--- hint
+\`keep.log\` is the exception, so leave it. Untrack the other two tracked logs.
+--- hint
+\`git rm --cached boot.log crash.log\`, then commit.
+--- check shell | The two old logs are ignored now
+git . ignored boot.log
+git . ignored crash.log
+file crash.log == crash
+--- check shell | keep.log is still tracked
+git . tracked keep.log
+git . at HEAD file keep.log
+--- check shell | Committed, without the two logs
+git . at HEAD message == Stop tracking ignored logs
+git . at HEAD missing boot.log
+git . at HEAD missing crash.log
+
++++ practice | The key that vanished from the disk
+--- task
+A teammate wanted git to stop tracking \`secrets.txt\`, which \`.gitignore\` already lists. They ran \`git rm secrets.txt\`, without \`--cached\`. The deletion is staged but not committed, and the file is gone from the folder, and it held the only copy of the key on this computer.
+
+Get the file back into the folder with the same text as in the last commit, make sure git no longer tracks it, and commit with the message \`Stop tracking secrets.txt\`.
+--- starter
+git init
+echo "launch()" > app.js
+echo "KEY=moon-42" > secrets.txt
+git add .
+git commit -m "Start"
+echo "secrets.txt" > .gitignore
+git add .gitignore
+git commit -m "Ignore secrets.txt"
+git rm secrets.txt
+--- solution
+git status
+git show HEAD:secrets.txt > secrets.txt
+cat secrets.txt
+git commit -m "Stop tracking secrets.txt"
+git status
+--- hint
+The last commit still holds the file. \`git show\` can print a file from any commit, and a redirect saves what it prints.
+--- hint
+The deletion is already staged, which is exactly what "stop tracking" needs. You only need the file back on disk.
+--- hint
+\`git show HEAD:secrets.txt > secrets.txt\`, then commit with the message.
+--- check shell | The key is back on disk
+file secrets.txt == KEY=moon-42
+--- check shell | git no longer tracks it
+git . ignored secrets.txt
+git . at HEAD missing secrets.txt
+--- check shell | Committed with the right message
+git . at HEAD message == Stop tracking secrets.txt
+git . commits == 3
+
++++ practice | Clean up, and report the leak
+--- task
+This project committed its \`.env\` and its \`node_modules\` folder in the very first commit, and it has no \`.gitignore\`. The key in \`.env\` was changed once since then. Do this:
+
+1. In **one** commit called \`Stop tracking secrets and dependencies\`, add a \`.gitignore\` with a rule for \`.env\` and a rule for the \`node_modules\` folder, and stop tracking both (keep them on disk). \`node_modules\` holds one file, \`node_modules/lodash/index.js\`.
+2. Every key that was ever committed has leaked. Write them into a new file \`revoke.txt\`, oldest first, one per line, exactly as they appear in \`.env\`, taking each one from the history with \`git show\`.
+
+At the end, \`git status\` must list only \`revoke.txt\` as untracked.
+--- starter
+git init
+echo "start()" > app.js
+echo "API_KEY=sk-4471" > .env
+mkdir -p node_modules/lodash
+echo "module.exports = {}" > node_modules/lodash/index.js
+git add .
+git commit -m "Start"
+echo "API_KEY=sk-9902" > .env
+git commit -am "Rotate the API key"
+echo "chart()" > dashboard.js
+git add .
+git commit -m "Add the dashboard"
+--- solution
+echo ".env" > .gitignore
+echo "node_modules/" >> .gitignore
+git rm --cached .env node_modules/lodash/index.js
+git add .gitignore
+git commit -m "Stop tracking secrets and dependencies"
+git log --oneline
+git show HEAD~3:.env > revoke.txt
+git show HEAD~2:.env >> revoke.txt
+git status
+--- hint
+Write the two rules, untrack both paths with \`git rm --cached\`, stage \`.gitignore\`, and commit once.
+--- hint
+\`git log --oneline\` shows where the keys changed: \`Start\` and \`Rotate the API key\`. Print \`.env\` from each with \`git show\`.
+--- hint
+Use \`>\` for the older key and \`>>\` for the newer one, for example \`git show HEAD~3:.env > revoke.txt\` once your cleanup commit is on top.
+--- check shell | One commit with the rules and without the secrets
+git . commits == 4
+git . at HEAD message == Stop tracking secrets and dependencies
+git . at HEAD file .gitignore
+git . at HEAD missing .env
+git . at HEAD missing node_modules/lodash/index.js
+--- check shell | Both are ignored and still on disk
+git . ignored .env
+git . ignored node_modules/lodash/index.js
+file .env == API_KEY=sk-9902
+--- check shell | revoke.txt lists both leaked keys, oldest first
+file revoke.txt ~= API_KEY=sk-4471\\nAPI_KEY=sk-9902
+--- check shell | Only revoke.txt is untracked
+git . untracked revoke.txt
+git . tracked dashboard.js
+
+=== git2-12 | Debugging: recovering from a bad reset
+--- teach
+Last lesson you debugged a file that \`.gitignore\` could not catch. This last lesson of the course is a scarier bug, and the one that makes people panic most: commits that seem to have vanished. You will get them back.
+
+The bug report, from you, late at night:
+
+> I ran \`git reset --hard HEAD~2\` and two commits of work vanished. Also, one of them was called \`wip asdf\`.
+
+**Step 1: stop**
+
+First: **stop, and do not run anything else destructive**. No more resets, no deleting folders. The commits are almost certainly still there.
+
+**Step 2: understand what reset did**
+
+Picture a bookmark in a book. \`git reset\` moves the bookmark back two chapters. It does not tear the chapters out. They are still in the book; nothing points at them any more. In git terms, a reset [[moves the branch label|reset-moves-label]] back. It does not delete commits.
+
+So the work is somewhere. You only need to find where the branch used to point.
+
+**Step 3: read git's diary**
+
+Git keeps a diary of everywhere \`HEAD\` has been, newest entry first. It is called the **[[reflog|reflog-word]]** — the log of every move HEAD made on your machine:
+
+\`\`\`
+~/project $ git reflog
+872612c (HEAD -> main) HEAD@{0}: reset: moving to HEAD~2
+176baa3 HEAD@{1}: commit: wip asdf
+b29cef0 HEAD@{2}: commit: Add the parser
+872612c HEAD@{3}: commit (initial): Start
+\`\`\`
+
+Read it from the top. The reset is the newest entry. The line just below it is where you were **before** the reset, with all your work: the commit \`wip asdf\`.
+
+**Step 4: name that spot**
+
+Each entry has a name like \`HEAD@{1}\`. Read it aloud as "HEAD at one". It means [[where HEAD was one move ago|head-at-vs-tilde]]. \`HEAD@{0}\` is now, \`HEAD@{2}\` is two moves ago, and so on. You can also use the id at the start of the line, \`176baa3\`.
+
+**Step 5: put the branch back**
+
+Reset again, this time forward, to that spot. Here it is named by its id from the reflog:
+
+\`\`\`
+~/project $ git reset --hard 176baa3
+HEAD is now at 176baa3 wip asdf
+~/project $ git log --oneline
+176baa3 (HEAD -> main) wip asdf
+b29cef0 Add the parser
+872612c Start
+\`\`\`
+
+Both commits are back on \`main\`, and \`ls\` shows \`parser.js\` and \`parser.test.js\` again. The reflog name from Step 4 works here too, in place of the id.
+
+If you would rather not move the branch, there is a gentler way: \`git branch rescue HEAD@{1}\` puts the lost commits on a [[new branch|rescue-branch]] called \`rescue\`, and \`main\` stays where it is.
+
+**Step 6: fix the other problem**
+
+\`wip asdf\` is not a real message. It is the last commit, and you have not shared it, so \`--amend\` (from earlier in this course) can rename it. With \`-m\`, it gives the last commit a new message. On another project it might look like this:
+
+\`\`\`
+~/project $ git commit --amend -m "Fix the header text"
+[main fc0a4aa] Fix the header text
+ 1 file changed
+\`\`\`
+
+For \`wip asdf\`, pick a message that says what that commit really added.
+
+**Watch out:** \`HEAD@{1}\` changes meaning every time HEAD moves. After the reset in Step 5, \`HEAD@{1}\` points somewhere new. So run \`git reflog\` again right before you use one of these names, or copy the id instead, which never changes.
+
+The reflog [[lives only on your machine|reflog-limits]], and git slowly forgets old entries. But for "I just did something terrible", it is almost always the way back.
+
+**What comes next**
+
+That finishes *Git, intermediate*. You can now keep files out of a repository, read and compare history, fix and undo commits the right way for each situation, put work aside, tag releases, resolve a conflict or back out of one, and debug the two scary problems you just met.
+
+The next course, *Git, advanced*, goes further. You will copy one commit to another branch (\`cherry-pick\`), replay a branch on top of another (\`rebase\`), squash messy commits into one, find the commit that broke something (\`bisect\`), see who last changed each line (\`blame\`), and share work with a team through a remote with \`push\`. It ends with how teams work together, and with a state you glimpsed here: a [[detached HEAD|detached-head]].
+
+::: context reset-moves-label Reset moves a label, not the commits
+A branch is only a label that points at one commit. Before the reset, \`main\` pointed at \`wip asdf\`. \`git reset --hard HEAD~2\` moved the label two commits back, to \`Start\`, and changed your files to match. The two later commits did not go anywhere. They are still stored in the \`.git\` folder, with no label pointing at them, so \`git log\` no longer shows them.
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="60" y1="80" x2="180" y2="80" stroke="#6c7a93" stroke-width="3"/>
+  <line x1="180" y1="80" x2="300" y2="80" stroke="#6c7a93" stroke-width="3" stroke-dasharray="6 4"/>
+  <circle cx="60" cy="80" r="11" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="180" cy="80" r="11" fill="#ffffff" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="300" cy="80" r="11" fill="#ffffff" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="60" y="110" font-size="11" text-anchor="middle" fill="#1f2a44">Start</text>
+  <text x="180" y="110" font-size="11" text-anchor="middle" fill="#1f2a44">Add the parser</text>
+  <text x="300" y="110" font-size="11" text-anchor="middle" fill="#1f2a44">wip asdf</text>
+  <text x="60" y="30" font-size="12" text-anchor="middle" font-weight="bold" fill="#1d6fd1">main now</text>
+  <line x1="60" y1="36" x2="60" y2="62" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="55,60 60,67 65,60" fill="#1d6fd1"/>
+  <text x="300" y="30" font-size="12" text-anchor="middle" fill="#6c7a93">main before reset</text>
+  <line x1="300" y1="36" x2="300" y2="62" stroke="#6c7a93" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="295,60 300,67 305,60" fill="#6c7a93"/>
+  <text x="240" y="138" font-size="11" text-anchor="middle" fill="#b4232c">still stored, no label points here</text>
+</svg>
+\`\`\`
+:::
+
+::: context reflog-word What "reflog" means
+The name is short for **reference log**. In git, a **reference** is a name that points at a commit: \`HEAD\`, \`main\`, a tag. Every time HEAD moves, by a commit, a switch, a reset, a merge or an amend, git writes one line in a diary file inside \`.git/logs/\`. \`git reflog\` prints that diary, newest first. Each branch has a diary of its own too: \`git reflog main\` shows every place \`main\` has pointed.
+:::
+
+::: context head-at-vs-tilde HEAD@{1} is not HEAD~1
+The two look alike but ask different questions. \`HEAD~1\` means "the commit before this one in the history": follow the parent link one step. \`HEAD@{1}\` means "where HEAD was one move ago, according to your diary". Right after the bad reset, \`HEAD~1\` does not exist at all, because \`Start\` has no parent. \`HEAD@{1}\` is \`wip asdf\`, the spot you just left. One walks the history. The other walks your own moves.
+:::
+
+::: context rescue-branch The gentler rescue
+\`git branch rescue HEAD@{1}\` makes a new branch at the lost commit without touching \`main\` or your files. That is useful when you are not sure yet: you can switch to \`rescue\`, look around with \`git log\` and \`git show\`, and decide calmly. If it is the right work, merge \`rescue\` into \`main\`, or reset \`main\` to it. If it is not, delete the branch with \`git branch -d rescue\` (a capital \`-D\` if git warns it is not merged). Nothing on \`main\` changed in the meantime.
+:::
+
+::: context reflog-limits What the reflog cannot do
+The reflog is written on your machine only. It is never pushed, and a fresh clone starts with an empty one, so it cannot recover work that was never committed on this computer. It also forgets. When git tidies up, it drops entries older than 90 days by default, and entries for commits no branch reaches, like the ones a bad reset leaves behind, after 30 days. Those commits are then deleted for good. So rescue lost work soon, not next season.
+:::
+
+::: context detached-head A glimpse of detached HEAD
+Usually HEAD points at a branch, and the branch points at a commit. You can also point HEAD straight at a commit, for example with \`git switch --detach 176baa3\`. Then HEAD is **detached**: you are on no branch at all. It is a normal state for looking at old code, but new commits made there have no branch label, so they are easy to lose. The advanced course explains it properly, and the reflog is the tool that finds such lost commits.
+:::
+--- task
+Get both lost commits back onto \`main\` using the reflog: find the entry just below the reset, and reset \`main\` back to it. Then rename the last commit from \`wip asdf\` to \`Add parser tests\`.
+--- starter
+git init
+echo "v0" > app.txt
+git add .
+git commit -m "Start"
+echo "export function parse() {}" > parser.js
+git add .
+git commit -m "Add the parser"
+echo "test(parse)" > parser.test.js
+git add .
+git commit -m "wip asdf"
+git reset --hard HEAD~2
+--- solution
+git reflog
+git reset --hard HEAD@{1}
+git commit --amend -m "Add parser tests"
+--- hint
+Start with \`git reflog\`. The entry just below the reset is where your work was.
+--- hint
+That entry is \`HEAD@{1}\`, so \`git reset --hard HEAD@{1}\` brings it back. Check with \`git log --oneline\`.
+--- hint
+Then \`git commit --amend -m "Add parser tests"\` renames the last commit.
+--- check shell | You found your work in the reflog
+ran git reflog
+--- check shell | The lost work is back on main
+git . branch main
+git . commits == 3
+file parser.js
+file parser.test.js
+git . log contains Add the parser
+--- check shell | The last commit has a real message
+git . at HEAD message == Add parser tests
+git . log excludes asdf
+
++++ practice | One commit back
+--- task
+You ran \`git reset --hard HEAD~1\` by mistake, and the commit \`Add the scanner tests\` vanished from \`main\`. Find in the reflog where \`main\` was before the reset, and put it back there with another hard reset.
+--- starter
+git init
+echo "v0" > app.txt
+git add .
+git commit -m "Start"
+echo "scan()" > scanner.js
+git add .
+git commit -m "Add the scanner"
+echo "test(scan)" > scanner.test.js
+git add .
+git commit -m "Add the scanner tests"
+git reset --hard HEAD~1
+--- solution
+git reflog
+git reset --hard HEAD@{1}
+git log --oneline
+--- hint
+\`git reflog\` lists every move HEAD made, newest first. The reset is on top.
+--- hint
+The entry just below the reset is where you were before it: \`HEAD@{1}\`, or its id.
+--- check shell | You read the reflog
+ran git reflog
+--- check shell | The lost commit is back on main
+git . branch main
+git . commits == 3
+git . at HEAD message == Add the scanner tests
+--- check shell | Its file is back too
+file scanner.test.js == test(scan)
+
++++ practice | Rescue on a side branch
+--- task
+After a bad \`git reset --hard HEAD~2\`, the commits \`Add the radio\` and \`Tune the radio\` are gone from \`main\`. You are not sure yet whether you want them back on \`main\`, so do **not** move \`main\`. Instead, use the reflog to put them on a new branch called \`rescue\`. Then look at that branch with \`git log --oneline rescue\`.
+--- starter
+git init
+echo "v0" > craft.txt
+git add .
+git commit -m "Start"
+echo "radio" > radio.txt
+git add .
+git commit -m "Add the radio"
+echo "radio, tuned" > radio.txt
+git commit -am "Tune the radio"
+git reset --hard HEAD~2
+--- solution
+git reflog
+git branch rescue HEAD@{1}
+git log --oneline rescue
+--- hint
+\`git branch\` with a name and then a commit makes a new branch at that commit, without moving \`main\` or your files.
+--- hint
+The spot before the reset is \`HEAD@{1}\` in the reflog.
+--- hint
+\`git branch rescue HEAD@{1}\`, then \`git log --oneline rescue\`.
+--- check shell | rescue holds the lost commits
+git . has-branch rescue
+git . at rescue message == Tune the radio
+git . commits-on rescue == 3
+--- check shell | main did not move
+git . branch main
+git . commits == 1
+file craft.txt == v0
+--- check shell | You looked at the rescue branch
+ran git log
+printed Tune the radio
+
++++ practice | A branch deleted with -D
+--- task
+A teammate deleted the branch \`engine-v2\` with \`git branch -D\`, and its two commits are on no other branch. They were your work. Use the reflog to find the newer of those two commits, and make the branch again, with the same name, pointing at it. \`main\` must not change.
+--- starter
+git init
+echo "engine v1" > engine.txt
+git add .
+git commit -m "Start"
+git switch -c engine-v2
+echo "engine v2" > engine.txt
+git commit -am "Build the new engine"
+echo "engine v2, tuned" > engine.txt
+git commit -am "Tune the new engine"
+git switch main
+git branch -D engine-v2
+--- solution
+git reflog
+git branch engine-v2 HEAD@{1}
+git log --oneline engine-v2
+--- hint
+Deleting a branch deletes only its label. The reflog still remembers the commits you made on it.
+--- hint
+The top entry is the switch back to \`main\`. The one below it is your last commit on \`engine-v2\`.
+--- hint
+\`git branch engine-v2 HEAD@{1}\`, or use that entry's id.
+--- check shell | engine-v2 is back, with both commits
+git . has-branch engine-v2
+git . at engine-v2 message == Tune the new engine
+git . log-of engine-v2 contains Build the new engine
+--- check shell | main did not change
+git . branch main
+git . commits == 1
+file engine.txt == engine v1
+--- check shell | You found it in the reflog
+ran git reflog
+
++++ practice | Undo an amend
+--- task
+You amended the last commit, \`Set the limits\`, and the amend changed \`limits.txt\` from \`limit = 10\` to \`limit = 99\`, which was a mistake. The commit from before the amend still exists: find it in the reflog. Get \`limits.txt\` back to \`limit = 10\` in the last commit, keeping its message. The history must still have two commits.
+--- starter
+git init
+echo "v0" > app.txt
+git add .
+git commit -m "Start"
+echo "limit = 10" > limits.txt
+git add .
+git commit -m "Set the limits"
+echo "limit = 99" > limits.txt
+git add limits.txt
+git commit --amend --no-edit
+--- solution
+git reflog
+git restore --source=HEAD@{1} limits.txt
+git add limits.txt
+git commit --amend --no-edit
+cat limits.txt
+--- hint
+\`HEAD~1\` is \`Start\`, the parent, which has no \`limits.txt\` at all. You want where HEAD was one move ago, before the amend.
+--- hint
+The reflog entry below \`commit (amend)\` is the old commit. \`HEAD@{1}\` works anywhere git wants a commit, including \`--source=\`.
+--- hint
+Restore the file from \`HEAD@{1}\`, stage it, and amend with \`--no-edit\`. A hard reset to \`HEAD@{1}\` would also work.
+--- check shell | limits.txt is back to 10, in the last commit
+git . at HEAD file limits.txt == limit = 10
+file limits.txt == limit = 10
+--- check shell | Same message, still two commits
+git . at HEAD message == Set the limits
+git . commits == 2
+--- check shell | You used the reflog
+ran git reflog
+
++++ practice | The wrong way back
+--- task
+After a bad \`git reset --hard HEAD~2\`, a teammate tried to undo it with \`git reset --hard HEAD~1\`, thinking that \`HEAD~1\` meant "where I was one step ago". Now even more is missing: \`main\` is back at \`Start\`. Use the reflog to put \`main\` back where it was before **both** resets, with all four commits and their files.
+--- starter
+git init
+echo "v0" > plane.txt
+git add .
+git commit -m "Start"
+echo "wheels" > wheels.txt
+git add .
+git commit -m "Add the wheels"
+echo "brakes" > brakes.txt
+git add .
+git commit -m "Add the brakes"
+echo "lights" > lights.txt
+git add .
+git commit -m "Add the landing lights"
+git reset --hard HEAD~2
+git reset --hard HEAD~1
+--- solution
+git reflog
+git reset --hard HEAD@{2}
+git log --oneline
+--- hint
+\`HEAD~1\` walks the history: the parent of the commit you are on. The reflog walks your own moves instead.
+--- hint
+Read the reflog from the top: two resets, then the last commit you made before them. What is that entry's name?
+--- hint
+It is \`HEAD@{2}\`: \`git reset --hard HEAD@{2}\`.
+--- check shell | All four commits are back
+git . commits == 4
+git . at HEAD message == Add the landing lights
+--- check shell | The files are back too
+file wheels.txt
+file brakes.txt
+file lights.txt
+--- check shell | You found the spot in the reflog
+ran git reflog
+
++++ practice | A late night on the telemetry branch
+--- task
+Last night, on the branch \`telemetry\`, you ran \`git reset --hard HEAD~2\`, and its two commits, \`Add the decoder\` and \`stuff\`, vanished. Then you switched to \`main\`. Get them back and finish the job:
+
+1. Put \`telemetry\` back where it was before the reset.
+2. Rename its last commit from \`stuff\` to \`Add decoder tests\`.
+3. Merge \`telemetry\` into \`main\`.
+4. Tag the result as \`v0.5\`. A lightweight tag is fine.
+--- starter
+git init
+echo "v0" > station.txt
+git add .
+git commit -m "Start"
+git switch -c telemetry
+echo "decode()" > decoder.py
+git add .
+git commit -m "Add the decoder"
+echo "test(decode)" > decoder_test.py
+git add .
+git commit -m "stuff"
+git reset --hard HEAD~2
+git switch main
+--- solution
+git reflog
+git switch telemetry
+git reflog
+git reset --hard HEAD@{3}
+git commit --amend -m "Add decoder tests"
+git switch main
+git merge telemetry
+git tag v0.5
+--- hint
+Switch to \`telemetry\` first. Switching is a move too, so every \`HEAD@{n}\` name shifts by one: run \`git reflog\` again, or copy the commit's id.
+--- hint
+The entry you want is the commit \`stuff\`, just below the reset. Reset \`telemetry\` there with \`--hard\`, then amend with \`-m\`.
+--- hint
+Then \`git switch main\`, \`git merge telemetry\` and \`git tag v0.5\`.
+--- check shell | telemetry has both commits back, with a real message
+git . log-of telemetry contains Add the decoder
+git . at telemetry message == Add decoder tests
+git . log-of telemetry excludes stuff
+--- check shell | main has the work, tagged
+git . branch main
+git . same v0.5 HEAD
+git . at main file decoder.py
+git . at main file decoder_test.py
+--- check shell | You used the reflog
+ran git reflog
+
+=== git2-gate | Git, intermediate: mastery gate
+--- teach
+This gate covers the whole course: ignore rules and files that are tracked anyway, reading and comparing history, \`git show\` and restoring old versions, amend, stash, the three kinds of reset, revert, tags, resolving and backing out of merge conflicts, and rescuing lost commits with the reflog. Most problems mix several of these. There are 10 problems and 12 questions in 112 minutes. You pass with 7 problems and 10 questions right, and there are no hints. To get ready, redo the practice problems of the lessons that felt hard, without opening their hints.
+--- gate
+pass 7
+questions 10
+minutes 112
+
++++ problem | Ignore rules for the whole project
+--- task
+This project has a web app and a server. Write a \`.gitignore\`, one pattern per line, so that:
+
+- every \`node_modules\` folder is ignored, wherever it is;
+- every \`.log\` file is ignored, except \`audit.log\`;
+- the \`dist\` folder at the top of the project is ignored, but \`docs/dist\` is not.
+
+\`web/node_modules/react/index.js\` was committed before there were any rules. Make git stop tracking it, keeping it on your disk. Then commit everything that should be tracked, in **one** commit, with the message \`Add the ignore rules\`.
+--- starter
+git init
+mkdir -p web/node_modules/react api/node_modules/express dist docs/dist
+echo "render()" > web/app.js
+echo "module.exports = {}" > web/node_modules/react/index.js
+git add .
+git commit -m "Start the web app"
+echo "serve()" > api/server.js
+echo "module.exports = {}" > api/node_modules/express/index.js
+echo "bundle" > dist/app.min.js
+echo "# Build guide" > docs/dist/README.md
+echo "boot" > api/boot.log
+echo "audit" > audit.log
+--- solution
+echo "node_modules/" > .gitignore
+echo "*.log" >> .gitignore
+echo "!audit.log" >> .gitignore
+echo "/dist" >> .gitignore
+git rm --cached web/node_modules/react/index.js
+git add .
+git commit -m "Add the ignore rules"
+--- check shell | Both node_modules folders are ignored, and still on disk
+git . ignored web/node_modules/react/index.js
+git . ignored api/node_modules/express/index.js
+file web/node_modules/react/index.js
+--- check shell | The log and the top dist folder are ignored
+git . ignored api/boot.log
+git . ignored dist/app.min.js
+--- check shell | One commit with everything that belongs
+git . commits == 2
+git . at HEAD message == Add the ignore rules
+git . at HEAD file .gitignore
+git . at HEAD file api/server.js
+git . at HEAD file audit.log
+git . at HEAD file docs/dist/README.md
+--- check shell | Nothing ignored is in the commit
+git . at HEAD missing web/node_modules/react/index.js
+git . at HEAD missing api/boot.log
+git . at HEAD missing dist/app.min.js
+
++++ problem | Review, repair and ship
+--- task
+Review the branch \`payments\` before it goes into \`main\`. It should change only \`pay.js\`. Use a range and \`git diff --stat\` to find what else it did. On \`payments\`, in **one** commit with the message \`Undo the stray changes\`, put back every file the branch deleted, exactly as it is on \`main\`, and remove every file the branch added. Then merge \`payments\` into \`main\`. Finally delete every branch that is merged into \`main\`, and keep the ones that are not.
+--- starter
+git init
+echo "pay()" > pay.js
+echo "test(pay)" > pay.test.js
+git add .
+git commit -m "Start the shop"
+git switch -c old-promo
+echo "promo" > promo.txt
+git add .
+git commit -m "Add a promo banner"
+git switch main
+git merge old-promo
+echo "Shop v2" > README.md
+git add .
+git commit -m "Add a README"
+git switch -c payments
+echo "pay(card)" > pay.js
+git commit -am "Pay by card"
+git rm pay.test.js
+echo "remember: card fees" > notes.txt
+git add .
+git commit -m "Tidy up"
+git switch main
+git switch -c experiment
+echo "crypto" > crypto.txt
+git add .
+git commit -m "Try crypto payments"
+git switch main
+--- solution
+git log --oneline main..payments
+git diff --stat main payments
+git switch payments
+git restore --source=main pay.test.js
+git add pay.test.js
+git rm notes.txt
+git commit -m "Undo the stray changes"
+git switch main
+git merge payments
+git branch --merged
+git branch -d payments
+git branch -d old-promo
+--- check shell | You reviewed the branch
+used main..payments
+used --stat
+--- check shell | main has the card payments, the test, and no stray file
+git . branch main
+git . at main file pay.js == pay(card)
+git . at main file pay.test.js == test(pay)
+git . at main missing notes.txt
+git . log contains Undo the stray changes
+--- check shell | The merged branches are gone
+git . no-branch payments
+git . no-branch old-promo
+--- check shell | The unmerged experiment is kept
+git . has-branch experiment
+
++++ problem | Hotfix an old release in the middle of your work
+--- task
+You are on \`main\`, in the middle of some work: \`chart.js\` is changed and \`pan.css\` is a new file, and neither is committed. A customer who runs release \`v2.3.0\` needs a fix: in that release, \`rate.txt\` must say \`rate = 12\`. Do this:
+
+1. Put all of your work aside, the new file included.
+2. Make a branch called \`hotfix\` that starts at the commit tagged \`v2.3.0\`, and switch to it.
+3. Fix \`rate.txt\` there, commit it with the message \`Fix the rate\`, and mark that commit with an annotated tag \`v2.3.1\` whose message is \`Release 2.3.1\`.
+4. Go back to \`main\` and bring your work back, still uncommitted. \`main\` itself must not change.
+--- starter
+git init
+echo "rate = 10" > rate.txt
+echo "draw()" > chart.js
+git add .
+git commit -m "Ship the charts"
+git tag -a v2.3.0 -m "Release 2.3.0"
+echo "draw(); zoom()" > chart.js
+git commit -am "Add zoom"
+echo "draw(); zoom(); pan()" > chart.js
+echo "pan styles" > pan.css
+--- solution
+git stash -u
+git branch hotfix v2.3.0
+git switch hotfix
+echo "rate = 12" > rate.txt
+git commit -am "Fix the rate"
+git tag -a v2.3.1 -m "Release 2.3.1"
+git switch main
+git stash pop
+--- check shell | v2.3.1 is the fix, built on v2.3.0
+git . at v2.3.1 message == Fix the rate
+git . at v2.3.1 file rate.txt == rate = 12
+git . same v2.3.1~1 v2.3.0
+git . at v2.3.1 file chart.js == draw()
+--- check shell | The hotfix has none of your work
+git . at v2.3.1 missing pan.css
+git . commits-on hotfix == 2
+--- check shell | You are back on main, with your work uncommitted
+git . branch main
+file chart.js == draw(); zoom(); pan()
+git . modified chart.js
+git . untracked pan.css
+git . stashes == 0
+--- check shell | main itself did not change
+git . commits == 2
+git . at main file rate.txt == rate = 10
+
++++ problem | Fold a fix into the right commit
+--- task
+The last three commits exist only on your computer: \`Add the fuel gauge\`, then \`Add the low-fuel alarm\`, then \`oops\`, which fixes a typo that the first one put in \`gauge.txt\`. Rewrite them as two clean commits on top of \`Start\`, in this order: \`Add the fuel gauge\`, holding the gauge **with** the typo fixed, then \`Add the low-fuel alarm\`, holding only \`alarm.txt\`. The \`oops\` commit must be gone.
+--- starter
+git init
+echo "# Cockpit" > README.md
+git add .
+git commit -m "Start"
+echo "fuel: 8O%" > gauge.txt
+git add .
+git commit -m "Add the fuel gauge"
+echo "alarm at 10%" > alarm.txt
+git add .
+git commit -m "Add the low-fuel alarm"
+echo "fuel: 80%" > gauge.txt
+git commit -am "oops"
+--- solution
+git reset HEAD~2
+git add gauge.txt
+git commit --amend --no-edit
+git add alarm.txt
+git commit -m "Add the low-fuel alarm"
+--- check shell | Two clean commits on top of Start
+git . commits == 3
+git . log excludes oops
+git . at HEAD~2 message == Start
+--- check shell | The gauge commit holds the fixed gauge, and no alarm
+git . at HEAD~1 message == Add the fuel gauge
+git . at HEAD~1 file gauge.txt == fuel: 80%
+git . at HEAD~1 missing alarm.txt
+--- check shell | The alarm commit comes last
+git . at HEAD message == Add the low-fuel alarm
+git . at HEAD file alarm.txt == alarm at 10%
+git . at HEAD file gauge.txt == fuel: 80%
+
++++ problem | Revert what broke the release
+--- task
+Release \`v3.1\` has a bad thrust value that release \`v3.0\` did not have. Everyone already has all of these commits. Find the commit between the two releases that changed \`thrust.txt\`, using \`git log --oneline\` with a range of the two tags and \`git show\`. Cancel that commit with \`git revert\`. Then mark the result as release \`v3.1.1\`, with an annotated tag whose message is \`Release 3.1.1\`. Every other change must stay.
+--- starter
+git init
+echo "thrust = 100" > thrust.txt
+echo "home" > ui.txt
+git add .
+git commit -m "Start"
+git tag v3.0
+echo "home | stats" > ui.txt
+git commit -am "Add a stats tab"
+echo "thrust = 1000" > thrust.txt
+git commit -am "Refactor the settings"
+echo "help" > help.txt
+git add .
+git commit -m "Add help"
+git tag v3.1
+echo "home | stats | map" > ui.txt
+git commit -am "Add a map tab"
+--- solution
+git log --oneline v3.0..v3.1
+git show HEAD~1
+git show HEAD~2
+git revert HEAD~2
+git tag -a v3.1.1 -m "Release 3.1.1"
+--- check shell | You searched between the releases
+used v3.0..v3.1
+ran git show
+--- check shell | The thrust is fixed by a revert
+file thrust.txt == thrust = 100
+git . at HEAD message == Revert "Refactor the settings"
+git . commits == 6
+--- check shell | v3.1.1 marks the fix
+git . tag v3.1.1
+git . same v3.1.1 HEAD
+--- check shell | Every other change stayed
+file ui.txt == home | stats | map
+file help.txt == help
+git . log contains Refactor the settings
+
++++ problem | Two branches, one line
+--- task
+Merge \`left\` into \`main\`, and then merge \`right\` into \`main\`. The second merge stops with a conflict in \`flight.txt\`. The team's decision: keep the crew number from \`left\`, take the fuel from \`right\`, and leave the mode line as it is. \`flight.txt\` must end up with exactly those three lines, in the order crew, fuel, mode. Finish the merge, then delete both branches with \`git branch -d\`.
+--- starter
+git init
+printf "crew = 2\\nfuel = 50\\nmode = test\\n" > flight.txt
+git add .
+git commit -m "Plan the flight"
+git switch -c left
+printf "crew = 3\\nfuel = 50\\nmode = test\\n" > flight.txt
+git commit -am "Add a third crew member"
+git switch main
+git switch -c right
+printf "crew = 4\\nfuel = 90\\nmode = test\\n" > flight.txt
+git commit -am "Fill the tank"
+git switch main
+--- solution
+git merge left
+git merge right
+cat flight.txt
+printf "crew = 3\\nfuel = 90\\nmode = test\\n" > flight.txt
+git add flight.txt
+git commit
+git branch -d left
+git branch -d right
+--- check shell | flight.txt has the agreed lines
+file flight.txt ~= crew = 3\\nfuel = 90\\nmode = test
+git . at HEAD file flight.txt excludes <<<<<<<
+--- check shell | The merge is finished, with both branches in it
+git . idle
+git . merges == 1
+git . log contains Add a third crew member
+git . log contains Fill the tank
+--- check shell | Both branches are deleted
+git . no-branch left
+git . no-branch right
+git . branch main
+
++++ problem | Redo a merge that went wrong
+--- task
+A minute ago a teammate merged \`survey\` into \`main\`, and resolved the conflict in \`orbit.txt\` by keeping the side from \`main\`. That was wrong: the flight team wants both lines from \`survey\`, \`altitude = 420\` and \`period = 93\`. Nobody else has the merge commit. Undo the merge commit, then merge \`survey\` again and resolve the conflict the right way. The history must end with exactly one merge commit, and no extra commits.
+--- starter
+git init
+printf "altitude = 400\\nperiod = 92\\n" > orbit.txt
+git add .
+git commit -m "Set the orbit"
+git switch -c survey
+printf "altitude = 420\\nperiod = 93\\n" > orbit.txt
+echo "survey data" > survey.txt
+git add .
+git commit -m "Survey the orbit"
+git switch main
+printf "altitude = 380\\nperiod = 92\\n" > orbit.txt
+git commit -am "Lower the orbit"
+git merge survey
+printf "altitude = 380\\nperiod = 92\\n" > orbit.txt
+git add orbit.txt
+git commit
+--- solution
+git reset --hard HEAD~1
+git merge survey
+printf "altitude = 420\\nperiod = 93\\n" > orbit.txt
+git add orbit.txt
+git commit
+--- check shell | orbit.txt has survey's two lines
+file orbit.txt ~= altitude = 420\\nperiod = 93
+git . at HEAD file orbit.txt contains altitude = 420
+git . at HEAD file orbit.txt contains period = 93
+--- check shell | Exactly one merge commit, and no extra commits
+git . merges == 1
+git . commits == 4
+git . at HEAD parents == 2
+git . idle
+--- check shell | survey's other work came in too
+git . at HEAD file survey.txt
+git . ancestor survey HEAD
+
++++ problem | Two accidents, one reflog
+--- task
+Two accidents happened in a row. First, the branch \`sampler\` was deleted with \`git branch -D\`, and its two commits are on no other branch. Then \`git reset --hard HEAD~2\` on \`main\` threw away \`Add the camera\` and \`Add the lamp\`. Use the reflog to fix both: \`main\` must end at \`Add the lamp\` again, with all its files, and a branch called \`sampler\` must point at \`Sharpen the drill\` again. Finish on \`main\`.
+--- starter
+git init
+echo "v0" > probe.txt
+git add .
+git commit -m "Start"
+echo "camera" > camera.txt
+git add .
+git commit -m "Add the camera"
+git switch -c sampler
+echo "drill" > drill.txt
+git add .
+git commit -m "Add the drill"
+echo "drill, sharp" > drill.txt
+git commit -am "Sharpen the drill"
+git switch main
+git branch -D sampler
+echo "lamp" > lamp.txt
+git add .
+git commit -m "Add the lamp"
+git reset --hard HEAD~2
+--- solution
+git reflog
+git branch sampler HEAD@{3}
+git reset --hard HEAD@{1}
+git log --oneline --graph --all
+--- check shell | main is back at Add the lamp
+git . branch main
+git . commits == 3
+git . at HEAD message == Add the lamp
+file lamp.txt
+file camera.txt
+--- check shell | sampler is back, with both commits
+git . has-branch sampler
+git . at sampler message == Sharpen the drill
+git . log-of sampler contains Add the drill
+--- check shell | You used the reflog
+ran git reflog
+
++++ problem | A secret in the last commit
+--- task
+Your last commit, \`Add the database\`, has not been shared, and it holds \`.env\`, which contains the database password, by accident. Fix that commit instead of adding a new one. It must hold \`db.js\` and a new \`.gitignore\` with the single rule \`.env\`, and it must not hold \`.env\`. Keep \`.env\` on your disk, ignored. The message stays \`Add the database\`, and the history must still have two commits.
+--- starter
+git init
+echo "fly()" > app.js
+git add .
+git commit -m "Start"
+echo "connect(env)" > db.js
+echo "DB_PASSWORD=saturn5" > .env
+git add .
+git commit -m "Add the database"
+--- solution
+git rm --cached .env
+echo ".env" > .gitignore
+git add .gitignore
+git commit --amend --no-edit
+git show
+--- check shell | Still two commits, with the same message
+git . commits == 2
+git . at HEAD message == Add the database
+--- check shell | The commit holds the code and the rule, not the secret
+git . at HEAD file db.js
+git . at HEAD file .gitignore == .env
+git . at HEAD missing .env
+--- check shell | The secret is nowhere in the history
+git . at HEAD~1 missing .env
+--- check shell | .env is ignored, and still on your disk
+git . ignored .env
+file .env == DB_PASSWORD=saturn5
+
++++ problem | Pick the safe plan
+--- task
+Three branches, \`plan-a\`, \`plan-b\` and \`plan-c\`, each propose a different \`mode.txt\`. Stay on \`main\`, and read each branch's \`mode.txt\` with \`git show\`, without switching branches. Merge into \`main\` the one branch whose \`mode.txt\` says exactly \`mode = safe, checked\`. Then delete that branch with \`git branch -d\`, and delete the other two on purpose, because the team rejected them. Only \`main\` should be left.
+--- starter
+git init
+echo "mode = safe" > mode.txt
+echo "v1" > app.txt
+git add .
+git commit -m "Start"
+git switch -c plan-a
+echo "mode = fast" > mode.txt
+git commit -am "Plan A"
+git switch main
+git switch -c plan-b
+echo "mode = safe, checked" > mode.txt
+git commit -am "Plan B"
+git switch main
+git switch -c plan-c
+echo "mode = safe, unchecked" > mode.txt
+git commit -am "Plan C"
+git switch main
+--- solution
+git show plan-a:mode.txt
+git show plan-b:mode.txt
+git show plan-c:mode.txt
+git merge plan-b
+git branch -d plan-b
+git branch -D plan-a
+git branch -D plan-c
+--- check shell | You read the plans with git show
+used plan-a:mode.txt
+used plan-c:mode.txt
+--- check shell | main has the safe plan, and only that one
+git . branch main
+git . at main file mode.txt == mode = safe, checked
+git . log contains Plan B
+git . log excludes Plan A
+git . log excludes Plan C
+--- check shell | Every plan branch is gone
+git . no-branch plan-a
+git . no-branch plan-b
+git . no-branch plan-c
+
++++ question | Which rule wins
+--- ask
+A \`.gitignore\` holds these three lines, in this order:
+
+\`\`\`
+*.log
+!keep.log
+keep.log
+\`\`\`
+
+The folder holds \`app.log\`, \`keep.log\` and \`notes.txt\`, none of them tracked. Which files does git ignore?
+--- choice
+Only \`app.log\`: the \`!\` line protects \`keep.log\`.
+--- choice correct
+\`app.log\` and \`keep.log\`.
+--- choice
+Only \`keep.log\`: the last line cancels the first.
+--- choice
+None of them, because the rules contradict each other.
+--- why
+Git checks a file against every line, from top to bottom, and the **last** line that matches decides. For \`keep.log\`, lines 1, 2 and 3 all match, and line 3 says "ignore". An exception only works when nothing after it matches the same file again. \`notes.txt\` matches no line.
+
++++ question | Still showing up
+--- ask
+You add the line \`.env\` to \`.gitignore\` and commit it, but \`git status\` still lists \`.env\` as modified. Why?
+--- choice
+The rule needs a leading slash, \`/.env\`, to match a file at the top.
+--- choice correct
+\`.env\` was committed earlier, so git tracks it, and \`.gitignore\` only filters files git is not tracking.
+--- choice
+Git reads \`.gitignore\` only when a repository is first created.
+--- choice
+A file whose name starts with a dot cannot be ignored.
+--- why
+\`.gitignore\` is only asked about untracked files. A tracked file stays tracked whatever the rules say, so git keeps comparing it with its committed copy. \`git rm --cached .env\` stops tracking it, keeps it on disk, and from the next commit on the rule applies.
+
++++ question | Counting back
+--- ask
+\`\`\`
+~/project $ git log --oneline
+9f1c2ab (HEAD -> main) Add the brakes
+4d7e0c1 Add the wheels
+b83a9e2 Add the frame
+1c0ffee Start
+\`\`\`
+
+Which commit does \`git show HEAD~2\` print? Type its message.
+--- answer
+Add the frame
+b83a9e2
+--- why
+HEAD is the top line, *Add the brakes*. \`HEAD~1\` is one step back along the parents, *Add the wheels*, and \`HEAD~2\` is two steps back, *Add the frame*.
+
++++ question | A range that prints nothing
+--- ask
+On a branch called \`feature\`, \`git log --oneline feature..main\` prints nothing at all. What does that tell you?
+--- choice
+\`feature\` has no commits that \`main\` does not have.
+--- choice correct
+\`main\` has no commits that \`feature\` does not have. \`feature\` may still have new work of its own.
+--- choice
+\`feature\` and \`main\` point at exactly the same commit.
+--- choice
+The range is written the wrong way round, so git refused to run it.
+--- why
+\`A..B\` lists the commits you can reach from \`B\` but not from \`A\`. So \`feature..main\` asks what \`main\` has that \`feature\` lacks, and the answer is "nothing". The opposite question, whether \`feature\` has new work, is \`main..feature\`.
+
++++ question | Why not amend a shared commit
+--- ask
+Why should you never \`--amend\` a commit that your teammates already have?
+--- choice
+Amend deletes the commit from the shared copy on the server.
+--- choice correct
+Amend makes a new commit with a new id and moves your branch to it, while your teammates still have the old one, so the two histories no longer match.
+--- choice
+Amend changes the id of every commit in the repository.
+--- choice
+Amend only works on commits that have never been merged.
+--- why
+Commits never change. Amend builds a replacement commit, with a new id, and moves the branch label onto it. Anyone who already has the old commit, and maybe built on it, now has a history that disagrees with yours. For a shared commit, fix the mistake with a new commit, or a revert.
+
++++ question | What pop brings back
+--- ask
+\`notes.txt\` is committed holding \`start\`. You type these lines. What does the last one print?
+
+\`\`\`
+echo "a" > notes.txt
+git stash
+echo "b" > notes.txt
+git stash
+git stash pop
+cat notes.txt
+\`\`\`
+--- answer
+b
+--- why
+Each \`git stash\` saves the change and puts \`notes.txt\` back to \`start\`. The stashes pile up like a stack: \`b\` is on top, as \`stash@{0}\`, and \`a\` below it. \`pop\` takes the top one, so the file says \`b\`, and the \`a\` stash is still in the list.
+
++++ question | What a hard reset takes with it
+--- ask
+Your last commit changed \`engine.txt\`. You have also edited \`notes.txt\` and not committed it. You run \`git reset --hard HEAD~1\`. What happens to your edit in \`notes.txt\`?
+--- choice
+It is kept, because \`notes.txt\` was not part of the commit you undid.
+--- choice
+Git stashes it for you first, so \`git stash pop\` brings it back.
+--- choice correct
+It is wiped, and even the reflog cannot bring it back, because it was never in any commit.
+--- choice
+It is wiped, but \`git reset --hard HEAD@{1}\` brings it back.
+--- why
+\`--hard\` makes every tracked file match the commit you reset to, including files you edited and never committed. The reflog only remembers commits, so it can bring back the undone commit, but not an edit that git never saved. Commit or stash before a hard reset.
+
++++ question | Spot the bug in the undo
+--- ask
+The newest commit is shared with the team and must be cancelled. Which line is wrong?
+
+\`\`\`
+1  git log --oneline
+2  git show HEAD
+3  git revert HEAD~1
+\`\`\`
+--- choice
+Line 1: \`git log\` needs \`--all\` to show a shared commit.
+--- choice
+Line 2: \`git show HEAD\` changes the commit, so it must come after the revert.
+--- choice correct
+Line 3: it cancels the commit before the newest one. To cancel the newest commit, name it: \`git revert HEAD\`.
+--- choice
+Line 3: a shared commit must be undone with \`git reset\`, not \`git revert\`.
+--- why
+\`git revert\` takes the commit to cancel, not the point to go back to. \`HEAD~1\` is the commit before the newest one, so that change would be undone and the bad one kept. A revert, not a reset, is right for a shared commit, because it adds a commit instead of rewriting history.
+
++++ question | Why a branch costs nothing
+--- ask
+Making a new branch or a tag is instant, even in a repository with a million files and ten years of history. Why?
+--- choice
+Git copies the files in the background, so you do not have to wait: O(n) work, done later.
+--- choice
+Git copies only the files that changed since the last commit.
+--- choice correct
+A branch or a tag is a tiny record that holds one commit id, so making one is the same small job whatever the size of the project: O(1).
+--- choice
+Git compresses the whole history, so copying it is fast.
+--- why
+A branch is a label pointing at one commit, and a lightweight tag is the same kind of label that never moves. Nothing is copied: the commits are shared. That is why teams make a branch for every small fix without a second thought.
+
++++ question | git add on a marker
+--- ask
+During a merge, you run \`git add orbit.txt\` while the file still has a line \`=======\` in it, then \`git commit\`. What happens?
+--- choice
+\`git add\` refuses, because the file still has a conflict marker.
+--- choice
+Git removes the marker line for you when it makes the commit.
+--- choice correct
+Git accepts it, and the merge commit saves the broken file, marker line and all.
+--- choice
+The merge stays open until the marker is gone.
+--- why
+\`git add\` does not look inside the file. It only marks the conflict as settled. Git trusts you, so checking for leftover markers, for example with \`grep -n "=======" orbit.txt\`, is your job before you add.
+
++++ question | Where HEAD@{1} goes
+--- ask
+\`\`\`
+~/project $ git reflog
+a41c9d2 (HEAD -> main) HEAD@{0}: reset: moving to HEAD~1
+e7b3f10 HEAD@{1}: commit: Add the sensor
+a41c9d2 HEAD@{2}: commit: Add the base
+5d02e8b HEAD@{3}: commit (initial): Start
+\`\`\`
+
+You now run \`git reset --hard HEAD@{1}\`. Which commit is \`main\` on afterwards? Type its message.
+--- answer
+Add the sensor
+e7b3f10
+--- why
+\`HEAD@{1}\` means "where HEAD was one move ago", and one move ago, before the reset, it was on *Add the sensor*. \`HEAD~1\` would ask something else: the parent of the commit you are on now, which is *Start*.
+
++++ question | What an abort throws away
+--- ask
+A merge stops with conflicts in three files. You resolve two of them and \`git add\` both. Then you decide to stop, and run \`git merge --abort\`. What happens?
+--- choice
+Only the file you had not resolved goes back. Your two resolved files stay as you wrote them.
+--- choice
+Git commits your two resolved files, and cancels the rest.
+--- choice correct
+The whole merge is cancelled. All three files go back to your last commit, and your two resolutions are gone too.
+--- choice
+Git refuses, because you have already marked files as resolved.
+--- why
+\`git merge --abort\` puts everything back to how it was before \`git merge\` started, and no merge commit is made. That includes any resolving you already did, which is why you abort early, not after an hour of fixes.
+`;export{e as default};

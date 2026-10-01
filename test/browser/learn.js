@@ -5,6 +5,18 @@ var LP = require('./_launchpad');
 // the reference solution MUST pass every check (the lesson can be passed).
 // The runtimes (Pyodide, sql.js, the TypeScript compiler and clang) are the
 // same pinned packages the app downloads, served here from node_modules.
+// The browser's own log (Playwright's pw:browser channel), kept rather than printed, so a
+// page crash can say what Chromium said about it.
+const browserLog = [];
+process.env.DEBUG = [process.env.DEBUG, 'pw:browser'].filter(Boolean).join(',');
+const stderrWrite = process.stderr.write.bind(process.stderr);
+process.stderr.write = (chunk, ...rest) => {
+  const text = String(chunk);
+  if (!/ pw:browser /.test(text)) return stderrWrite(chunk, ...rest);
+  for (const line of text.split('\n')) if (line.trim() && !/dbus|<launch/.test(line)) browserLog.push(line.replace(/^\S+ pw:browser /, '').slice(0, 300));
+  if (browserLog.length > 400) browserLog.splice(0, browserLog.length - 400);
+  return true;
+};
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -71,10 +83,31 @@ async function typeCommands(p, text) {
   }
 }
 
+/** Marks these course exams passed, as if she had passed them, so every course opens. */
+async function passGates(p, ids) {
+  await p.evaluate((ids) => new Promise((done, fail) => {
+    const q = indexedDB.open('launchpad');
+    q.onerror = () => fail(q.error);
+    q.onsuccess = () => {
+      const tx = q.result.transaction('state', 'readwrite');
+      const os = tx.objectStore('state');
+      const g = os.get('learner');
+      g.onsuccess = () => {
+        const st = g.result;
+        const at = new Date().toISOString();
+        for (const id of ids) st.learn[id] = at;
+        os.put(st, 'learner');
+      };
+      tx.oncomplete = () => { q.result.close(); done(); };
+      tx.onerror = () => fail(tx.error);
+    };
+  }), ids);
+}
+
 (async () => {
   const src = path.join(ENV.REPO, 'launchpad-app', 'src', 'learn');
   const { parseTrack } = await import(pathToFileURL(path.join(src, 'parse.ts')).href);
-  const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
+  const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp', 'cs'];
   const LEVELS = ['basics', 'intermediate', 'advanced', 'expert', 'projects'];
   const files = fs.readdirSync(path.join(src, 'tracks')).filter((f) => f.endsWith('.txt'));
   const key = (f) => { const [l, v = 'basics'] = f.replace(/\.txt$/, '').split('.'); return [langs.indexOf(l), LEVELS.indexOf(v)]; };
@@ -83,26 +116,66 @@ async function typeCommands(p, text) {
     .sort((a, b) => key(a)[0] - key(b)[0] || key(a)[1] - key(b)[1])
     .map((f) => parseTrack(fs.readFileSync(path.join(src, 'tracks', f), 'utf8'), f));
 
-  const b = await chromium.launch(ENV.launchOpts);
+  const b = await chromium.launch(Object.assign({}, ENV.launchOpts, { args: ['--enable-logging=stderr', '--v=0'] }));
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' });
   await serveCdn(ctx);
-  const p = await ctx.newPage();
+  let p = await ctx.newPage();
   // Playwright's service-worker block reaches into the sandboxed preview
   // frames, where reading navigator.serviceWorker throws: its noise, not ours.
   // A lesson's own page (a sandboxed srcdoc frame) throwing is the learner's
   // code at work — an unfinished starter, say — and the lesson shows it in its
   // console. Only the app's own errors count here.
-  const errs = []; p.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+  const errs = [];
+  // What the page was doing, for a crash report: the step, and its workers coming and going
+  // (cpp.worker compiles, wasi.worker runs the program).
+  let step = '', trail = [];
+  const watch = (pg) => {
+    pg.on('pageerror', (e) => { if (!/serviceWorker/.test(String(e)) && !/about:srcdoc/.test(String(e.stack))) errs.push(String(e)); });
+    pg.on('worker', (w) => {
+      const name = w.url().split('/').pop().replace(/-[\w-]{8}\.js$/, '');
+      trail.push('+' + name);
+      w.on('close', () => trail.push('-' + name));
+    });
+  };
+  watch(p);
+  // Each course gets a fresh page: hundreds of runs in one page (Pyodide, clang,
+  // the TypeScript compiler) grow it until the browser kills it on a small runner.
+  // Lessons passed on this page that the app has not yet been seen to save.
+  let unsaved = [];
+  const learned = (pg) => pg.evaluate(() => new Promise((done) => {
+    const q = indexedDB.open('launchpad');
+    q.onerror = () => done([]);
+    q.onsuccess = () => {
+      const g = q.result.transaction('state').objectStore('state').get('learner');
+      g.onsuccess = () => { done(Object.keys((g.result || {}).learn || {})); q.result.close(); };
+      g.onerror = () => { done([]); q.result.close(); };
+    };
+  })).catch(() => []);
+  const freshPage = async () => {
+    // The app saves a moment after a pass; on a slow runner, leaving straight away
+    // lost it. Wait (up to 10 s) until every pass made on this page is on disk.
+    for (let t = 0; t < 40 && unsaved.length; t++) {
+      const have = await learned(p);
+      unsaved = unsaved.filter((id) => !have.includes(id));
+      if (unsaved.length) await p.waitForTimeout(250);
+    }
+    unsaved = [];
+    await p.goto('about:blank').catch(() => {});
+    await p.close().catch(() => {});
+    p = await ctx.newPage();
+    watch(p);
+    await LP.open(p, '/learn');
+  };
   await LP.reset(p);
   await LP.open(p, '/learn');
 
   const goals = await p.$$eval('.rm-goals [role=tab]', (e) => e.map((c) => c.textContent.trim()));
-  ok('Learn to code opens on roadmaps: a pill per goal', goals.length >= 5 && goals[0] === 'AI Product Engineer' && goals.includes('Software Engineer'), goals.join(', '));
+  ok('Learn to code opens on roadmaps: a pill per goal, the internship phase first', goals.length >= 5 && goals[0] === 'Phase 1 · Internship-ready' && goals.includes('Backend & AI Infrastructure'), goals.join(', '));
   const steps = await p.$$eval('.rm-step', (e) => e.map((t) => (t.querySelector('.rm-step__label') || {}).textContent || (t.querySelector('.rm-tile--end') ? 'CERTIFICATE' : '')));
   ok('the goal shows its courses in order, ending at a certificate',
-    steps.join(' / ') === 'Linux and the command line / Git and version control / JavaScript, the language of the web / TypeScript: types that catch bugs / HTML and CSS: building pages / SQL fundamentals / Python, a first language / CERTIFICATE', steps.join(' / '));
+    steps.length === 10 && steps[0] === 'Python, a first language' && steps[2] === 'Linux and the command line' && steps[8].startsWith('Data Structures and Algorithms I:') && steps[9] === 'CERTIFICATE', steps.join(' / '));
   const badges = await p.$$eval('.rm-tile__n', (e) => e.map((t) => t.textContent.trim()));
-  ok('each course tile carries its step number', badges.join(',') === '1,2,3,4,5,6,7', badges.join(','));
+  ok('each course tile carries its step number', badges.join(',') === '1,2,3,4,5,6,7,8,9', badges.join(','));
   const links = await p.$$eval('.rm-link', (e) => e.map((t) => t.dataset.dir));
   ok('the dotted path snakes: along a row, around the end, and back', links.includes('right') && links.includes('turn-right') && links.includes('left'), links.join(','));
   await p.click('.rm-goals [role=tab]:has-text("Data & ML")');
@@ -136,27 +209,52 @@ async function typeCommands(p, text) {
   // and last lesson of each course do (the Node checker, src/learn/verify.test.ts,
   // runs every lesson of every course through the same runtimes).
   const only = process.env.LEARN_ONLY ? process.env.LEARN_ONLY.split(',') : null;
+  // Written from outside the app: it saves its own record as it closes, over anything written under it.
+  await p.goto(ENV.BASE + '/index.html');
+  await passGates(p, tracks.flatMap((t) => t.lessons.filter((l) => l.gate).map((l) => l.id)));
+  await LP.open(p, '/learn');
   for (const track of tracks) {
     if (only && !only.includes(track.id) && !only.includes(track.lang)) continue;
+    await freshPage();
     const bad = [];
     const t0 = Date.now();
-    const sample = track.level === 'basics' || process.env.LEARN_ALL ? track.lessons : [track.lessons[0], track.lessons[track.lessons.length - 1]];
-    for (const lesson of sample) {
-      await LP.go(p, '/learn/' + lesson.id);
-      if (track.lang === 'bash' || track.lang === 'git') {
-        await p.waitForSelector('#termInput');
-        const s = await check(p);
-        if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
-        await typeCommands(p, lesson.solution);
-      } else {
-        await p.waitForSelector(WORK + ' .cm-content');
-        await setCode(p, lesson.starter);
-        const s = await check(p);
-        if (s.passed) bad.push(lesson.id + ': the starter already passes');
-        await setCode(p, lesson.solution);
+    // A course exam is unseen problems, not a lesson: the Node checker solves those.
+    const lessons = track.lessons.filter((l) => !l.gate);
+    const sample = track.level === 'basics' || process.env.LEARN_ALL ? lessons : [lessons[0], lessons[lessons.length - 1]];
+    for (const [i, lesson] of sample.entries()) {
+      if (i && i % 6 === 0) await freshPage();
+      // A page that crashes (clang's compiler is large) gets one more go on a fresh page.
+      for (let attempt = 0; attempt < 2; attempt++) try {
+        step = 'opening'; trail = [];
+        await LP.go(p, '/learn/' + lesson.id);
+        const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
+        if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); break; }
+        if (track.lang === 'bash' || track.lang === 'git') {
+          await p.waitForSelector('#termInput');
+          const s = await check(p);
+          if (s.passed) bad.push(lesson.id + ': passes with nothing typed');
+          await typeCommands(p, lesson.solution);
+        } else {
+          await p.waitForSelector(WORK + ' .cm-content');
+          await setCode(p, lesson.starter);
+          step = 'starter';
+          const s = await check(p);
+          if (s.passed) bad.push(lesson.id + ': the starter already passes');
+          await setCode(p, lesson.solution);
+        }
+        step = 'solution';
+        const r = await check(p);
+        if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
+        else unsaved.push(lesson.id);
+        break;
+      } catch (e) {
+        const why = String(e && e.message).split('\n')[0] + ' (during the ' + step + ' run; workers: ' + trail.slice(-8).join(' ') + ')';
+        await freshPage();
+        const said = /Target crashed/.test(why) ? '\n          the browser said: ' + browserLog.slice(-25).join('\n          | ') : '';
+        if (attempt === 0 && /Target crashed/.test(why)) { console.log('  note  ' + lesson.id + ': the page crashed; once more on a fresh page'); continue; }
+        // Say where, and carry on with the next lesson.
+        bad.push(lesson.id + ': ' + why + said);
       }
-      const r = await check(p);
-      if (!r.passed) bad.push(lesson.id + ': the solution fails → ' + r.results.filter((x) => !x.startsWith('pass')).join(' | ') + ' || ' + r.output.slice(0, 240).replace(/\n/g, '⏎'));
     }
     ok(track.title + ': every starter needs work and every solution passes (' + sample.length + ' of ' + track.lessons.length + ' lessons, ' + Math.round((Date.now() - t0) / 1000) + 's)', bad.length === 0, bad.join('\n        '));
   }
@@ -165,12 +263,15 @@ async function typeCommands(p, text) {
   await LP.go(p, '/learn');
   const metas = await p.$$eval('.lm-course', (e) => e.filter((c) => /Basics/.test((c.querySelector('.lm-course__level') || {}).textContent || '')).map((c) => c.querySelector('.lm-course__meta').textContent.trim()));
   ok('every basics course shows as complete', only ? true : metas.every((c) => c === 'Complete'), metas.join(' | '));
+  // Past the basics only a course's first and last lessons are run here, so
+  // only the basics steps (and, with LEARN_ALL, the certificate) can light.
+  const basics = tracks.filter((t) => t.level === 'basics').map((t) => t.name);
   const end = await p.$eval('.rm-tile--end', (e) => e.dataset.lit).catch(() => '');
-  const lit = await p.$$eval('.rm-tile:not(.rm-tile--end)', (e) => e.every((t) => t.dataset.lit === 'true'));
-  ok('and every step lights up, through to the certificate', only ? true : end === 'true' && lit, end);
+  const lit = await p.$$eval('.rm-step', (e, names) => e.filter((s) => names.includes((s.querySelector('.rm-step__label') || {}).textContent)).map((s) => (s.querySelector('.rm-tile') || {}).dataset?.lit), basics);
+  ok('and its basics steps light up' + (process.env.LEARN_ALL ? ', through to the certificate' : ''), only ? true : lit.length >= 4 && lit.every((x) => x === 'true') && (!process.env.LEARN_ALL || end === 'true'), lit.join(',') + ' · ' + end);
   await LP.go(p, '/learn/javascript');
   const outline = await p.$$eval('.lm-outline li', (e) => e.map((li) => li.dataset.done));
-  ok('a course page lists its lessons with what was passed', outline.length === 12 && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
+  ok('a course page lists its lessons with what was passed', outline.length === tracks.find((t) => t.id === 'javascript').lessons.length && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
   await LP.go(p, '/playground?lang=cpp');
   const callout = await p.$eval('.pgx-learn', (e) => e.textContent).catch(() => '');
   ok('the playground offers Learn to code for its language', /C\+\+/.test(callout), callout.slice(0, 120));
@@ -181,9 +282,9 @@ async function typeCommands(p, text) {
   await LP.go(p, '/learn/js-03');
   await p.waitForSelector('.lm-teach .embed');
   await p.click('.lm-teach .ide__run .ide-run');
-  await p.waitForFunction(() => /0\.30000000000000004/.test((document.querySelector('.lm-teach .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
+  await p.waitForFunction(() => /16\n4/.test((document.querySelector('.lm-teach .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
   const example = await p.$eval('.lm-teach .ide-console', (e) => e.innerText).catch(() => '');
-  ok('an example in the lesson text runs in place and shows each value', /^3\n2\n9\n0\.30000000000000004\n0\.3/.test(example.trim()), example.replace(/\n/g, ' | '));
+  ok('an example in the lesson text runs in place and shows each value', /^10\n6\n16\n4$/.test(example.trim()), example.replace(/\n/g, ' | '));
 
   // Every module lesson carries the playground in its module's languages.
   await LP.go(p, '/module/M3?lesson=m3-the-module');

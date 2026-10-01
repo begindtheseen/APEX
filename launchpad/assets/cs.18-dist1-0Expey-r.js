@@ -1,0 +1,15910 @@
+var e=`@track python
+@course cs-dist1
+@subject Computer Science
+@requires cs-par
+@level advanced
+@title Distributed Systems I
+@name Distributed Systems I: failure, time and consistency
+@blurb Build a seeded network simulator, then use it to learn what real distributed systems are made of: failure detectors and deadlines, retries and idempotency, clocks, leases and fencing, consistency models with a linearizability checker, replication and quorums, partitioning, anti-entropy and gossip, and how to test it all by hunting bugs.
+@plainvoice true
+
+=== dist1-01 | The simulator: a seeded network you can replay
+--- teach
+Parallel Computing ended its distributed lessons with a first Raft and MapReduce on a simulated cluster. Each of those lessons built its own small model of a network. This course builds **one** network simulator, in this first lesson, and runs every later lab on it: failure detectors, retries, leases, replication, quorums and a bug hunt at the end. The second course, on consensus and transactions, runs on it too. So it is worth building carefully, and understanding exactly why it behaves the way it does.
+
+### A two-page refresher
+
+Here is what you already know from Parallel Computing, lessons 8 to 12. Everything in this course stands on it.
+
+- **The network** between nodes can lose, delay, reorder and duplicate messages, and can **partition**: cut the nodes into groups that cannot reach each other.
+- **Partial failure.** After a timeout, a caller does not know whether its request was lost, the server crashed before or after acting, or the reply is still coming. A timeout means "unknown", never "did not happen".
+- **Exactly-once effects** come from at-least-once delivery plus deduplication: every request carries a client id and a sequence number, and the server stores the reply under that pair.
+- **Clocks.** Physical clocks drift and are corrected by NTP, whose offset estimate is wrong by at most half the round trip. Durations are measured with a monotonic clock. Order between machines comes from **happens-before**: Lamport clocks respect it, vector clocks detect it.
+- **Replication.** Primary-backup with synchronous or asynchronous forwarding; split brain fenced by epoch numbers; quorums with R + W > N, whose read and write sets must overlap; read repair; the CAP theorem's choice during a partition.
+- **Consensus.** Raft elects a leader per term with majority votes and randomized timeouts, and replicates a log that is committed once a majority stores it.
+
+Those lessons stated the ideas and checked them on small, hand-made scenarios. This course runs them on a network that misbehaves at random, and watches them fail.
+
+### Why simulate
+
+Bugs in distributed systems hide in rare orderings: a reply that arrives just after a timeout fired, a partition that starts while a write is half done. On real machines with real threads and sockets, such a run happens once and is gone. You cannot replay it, so you cannot debug it.
+
+A simulator fixes that by taking every source of chance into its own hands. Message delays, losses, duplicates, crashes and timer firings are all decided by **one** seeded random number generator. Then a whole run is a function of its seed: the same seed gives the same run, event for event. A bug found at seed 4,817 can be replayed as often as you like, printed, and fixed. Testing this way is called **[[deterministic simulation testing|dst]]**, and some of the most trusted databases are built on it.
+
+The kind of simulator that does this is a **[[discrete-event simulator|des]]**: one that jumps from one event to the next instead of letting time flow. Think of a diary of appointments. You do not watch every minute go by. You turn to the next appointment, deal with it, perhaps write new appointments further on, and turn the page again. The simulated clock is simply the time of the appointment you are on.
+
+### The event queue
+
+The diary is a **priority queue** ordered by time: a heap, from DSA I. Each entry is one future event: a message arriving, a timer firing, or a scripted action ("crash node b at time 50"). Python's \`heapq\` keeps a list as a heap and always pops the smallest entry:
+
+\`\`\`python
+import heapq
+
+diary = []
+heapq.heappush(diary, (30, 1, "dentist"))
+heapq.heappush(diary, (10, 2, "standup"))
+heapq.heappush(diary, (30, 3, "lunch"))
+while diary:
+    when, order, what = heapq.heappop(diary)
+    print(when, what)            # 10 standup, 30 dentist, 30 lunch
+\`\`\`
+
+The middle number is a **sequence number**: a counter that goes up by one for every entry pushed. It does two jobs.
+
+1. **Ties are broken fairly.** Two events at the same time come out in the order they were scheduled, first in first out. Without it, the heap would compare the third items to break the tie, and the order would depend on the contents of a message.
+2. **Nothing else is ever compared.** Tuples compare item by item, and the sequence number is unique, so the comparison never reaches the event's data. That matters, because data such as a dictionary or a function cannot be compared with \`<\` at all: two events at the same time without a sequence number raise \`TypeError\`.
+
+Each push and pop costs O(log E) for E events waiting, so a run of a million events costs a few million basic steps: a few seconds in CPython, longer in the browser. The labs keep runs to tens of thousands of events.
+
+### Nodes react; they never wait
+
+A node in the simulator is an object with **handlers**: methods the simulator calls when something happens to it. \`on_message(src, msg)\` runs when a message arrives, and \`on_timer(name)\` when one of its timers fires. A handler does some work, perhaps sends messages and sets timers, and returns. It never sleeps or waits for a reply, because nothing would happen while it waited: the simulator is a single loop, and the handler is holding it.
+
+So a request and its reply live in two handlers. Here is a node that answers "time?" with the simulated time:
+
+\`\`\`python fragment
+class TimeServer(Node):
+    def on_message(self, src, msg):
+        if msg == "time?":
+            self.send(src, ("time", self.sim.now))
+\`\`\`
+
+This style is called **[[event-driven|event-loop]]**. Real servers built on event loops look the same, and so does every protocol in this course: state, plus "when this message comes, do that".
+
+### What happens to a message
+
+When a node sends a message, the simulator decides its fate at once, with draws from its random generator in a fixed order:
+
+1. Draw a number in [0, 1). If it is below \`drop\`, the message is **lost**.
+2. Otherwise draw a **delay**, a whole number of time units between the two bounds, and schedule the arrival.
+3. Then draw again. If it is below \`dup\`, the network **duplicates** the message: draw a second delay and schedule a second arrival.
+
+Different delays already give reordering: a message sent later can draw a shorter delay and overtake. The fixed order of the draws is part of the simulator's contract. Change it, and every seed gives a different run, so every recorded bug is lost.
+
+A generator made with \`random.Random(seed)\` gives the same numbers in the same order every time:
+
+\`\`\`python
+import random
+
+rng = random.Random(7)
+print(rng.random())             # 0.3238... always, for seed 7
+print(rng.randint(1, 10))       # 3: both ends included
+\`\`\`
+
+### Partitions, decided on arrival
+
+A partition is a set of **blocked links**. A link is directed, from a sender to a receiver, so a one-way failure, where a can reach b but b cannot reach a, is one blocked pair. Blocking both directions between two groups of nodes gives the usual partition.
+
+The simulator checks the link when a message **arrives**, not when it is sent. A message already on the wire when the cable is cut is lost; one sent just before the partition heals arrives if it lands after the heal. That is what real networks do, and it creates exactly the in-between states that protocols get wrong.
+
+### Crashes, and timers that must not come back
+
+A crashed node receives nothing: messages that arrive for it are dropped, and its timers do not fire. The subtle part is recovery. A node that crashes and restarts must not be woken by timers it set in its previous life, because the restarted program never set them. Picture an alarm set before a power cut ringing after the reboot, in a program that has no idea why.
+
+The simulator gives each node a **[[life number|incarnation]]**, which goes up by one at every crash. A timer remembers the life it was set in, and fires only if the node is still in that life. On recovery, the simulator calls the node's \`on_recover()\` handler, and the node decides what survives: in later lessons, its "disk" fields survive and its "memory" fields are reset.
+
+### The loop
+
+\`run(until)\` pops events in time order until the queue is empty or the next event is later than \`until\`. For each, it sets the clock to the event's time and handles it: delivers the message (or drops it, if the receiver is crashed or the link blocked), fires the timer (unless it was cancelled, or belongs to an old life), or calls the scripted action. When it stops at \`until\`, it moves the clock to \`until\`, so a later \`run\` carries on from there.
+
+### Why the run is reproducible
+
+The claim: **a run is fully decided by the seed, the nodes, and the scripted actions.** Each event's handling depends only on the state so far and on draws from the one generator; the next event is fixed by the heap order, which is fixed by times and sequence numbers; and the draws come in an order fixed by the order of the events. By induction on the number of events handled, two runs with the same seed handle the same events in the same order with the same results.
+
+The argument has two holes, and both are classic bugs:
+
+- **Hidden randomness.** A node that calls \`random.random()\` or reads the real time draws from something outside the seed. Nodes that need chance draw from \`self.sim.rng\`.
+- **[[Hash order|hash-order]].** Iterating over a \`set\` of strings visits them in an order that changes from one Python process to the next. A node that broadcasts to \`for peer in set_of_names:\` sends, and so draws delays, in a different order on each run. Broadcast over a list, or over \`sorted(...)\`.
+
+### The API every later lab uses
+
+| call | what it does |
+|---|---|
+| \`Sim(seed, delay=(1, 10), drop=0.0, dup=0.0)\` | a network; delays are whole numbers from \`delay[0]\` to \`delay[1]\` |
+| \`sim.add(node)\` | registers a node under \`node.id\`, returns it |
+| \`sim.at(time, fn)\` | calls \`fn()\` at that time: scripted actions and faults |
+| \`sim.send(src, dst, msg)\` | sends any value; nodes call \`self.send(dst, msg)\` |
+| \`sim.set_timer(node_id, after, name)\` | returns a timer id; nodes call \`self.set_timer(after, name)\` |
+| \`sim.cancel(timer_id)\` | the timer will not fire |
+| \`sim.block(src, dst)\`, \`sim.partition(g1, g2, …)\`, \`sim.heal()\` | link failures |
+| \`sim.crash(node_id)\`, \`sim.recover(node_id)\` | node failures |
+| \`sim.run(until=None)\` | runs events; returns how many it handled |
+| \`sim.now\`, \`sim.trace\`, \`sim.stats\`, \`sim.rng\` | the clock, the record of the run, the counters, the generator |
+
+Later labs extend it without changing it: a subclass can override \`pick_delay(src, dst)\` to model slow links or distant regions, and a node subclass adds its own state and handlers.
+
+**Watch out:**
+
+- **Comparing event data.** A heap entry without a unique sequence number crashes with \`TypeError\` as soon as two events share a time and their data cannot be compared, and orders ties by content when it can.
+- **Zombie timers.** A timer that fires after its node crashed and recovered starts a second copy of the node's loop. Tag timers with the node's life.
+- **Changing the draw order.** Drawing the delay before the drop decision, or skipping a draw when \`drop\` is 0, changes every seeded run.
+- **Hidden chance.** Real time, a separate generator, or set order in a node breaks replay silently: the run still works, it is just a different run each time.
+
+::: context dst Testing by replaying the world
+FoundationDB, a distributed key-value store, was written so that the whole cluster, with its network, disks and clocks, could run inside one single-threaded simulator driven by a seed. Its engineers ran huge numbers of simulated hours every night, with faults injected at random, and replayed any failing seed until the bug was understood. TigerBeetle and several newer databases copied the approach. Lesson 9 of this course does the same on a small scale.
+:::
+
+::: context des Simulating by events
+Discrete-event simulation is older than distributed computing: it was invented for factories and telephone exchanges, where calls and parts arrive at random times and queues form. Languages such as SIMULA, in the 1960s, were built for it, and gave the world classes and objects along the way. The key property is that time costs nothing: a simulated hour with ten events takes ten steps, and an idle network takes no time at all. That is why a laptop can simulate thousands of nodes for simulated days.
+The picture shows the idea: the simulated clock jumps from event to event, and the empty stretches in between cost nothing.
+
+\`\`\`svg
+<svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="60" x2="340" y2="60" stroke="#1f2a44"/>
+  <text x="340" y="80" font-size="11" text-anchor="end" fill="#1f2a44">simulated time</text>
+  <circle cx="40" cy="60" r="6" fill="#1d6fd1"/>
+  <circle cx="70" cy="60" r="6" fill="#1d6fd1"/>
+  <circle cx="230" cy="60" r="6" fill="#1d6fd1"/>
+  <circle cx="310" cy="60" r="6" fill="#b4232c"/>
+  <text x="40" y="45" font-size="11" text-anchor="middle" fill="#1f2a44">send</text>
+  <text x="70" y="30" font-size="11" text-anchor="middle" fill="#1f2a44">arrive</text>
+  <text x="230" y="45" font-size="11" text-anchor="middle" fill="#1f2a44">timer</text>
+  <text x="310" y="45" font-size="11" text-anchor="middle" fill="#b4232c">crash</text>
+  <path d="M70 70 Q150 100 230 70" fill="none" stroke="#6c7a93" stroke-dasharray="4 3"/>
+  <text x="150" y="104" font-size="11" text-anchor="middle" fill="#6c7a93">one jump, no work</text>
+</svg>
+\`\`\`
+:::
+
+::: context event-loop The same shape as a real server
+Servers such as nginx, Node.js programs and Python's asyncio run one loop that waits for the next ready socket or timer and calls its handler; a handler must return quickly and never block, or every other connection stalls. Protocol code written for this simulator has the same shape, which is why it carries over: replace the simulator's queue with a real event loop and the handlers stay as they are.
+:::
+
+::: context incarnation Telling lives apart
+Real systems need the same trick for the same reason. A process that restarts often gets a new incarnation number or boot id, stored on disk and increased at every start, and attaches it to its messages and timers, so that replies and callbacks meant for the previous run can be recognised and thrown away. Lesson 4's fencing tokens and Raft's terms are the same idea applied to leaders.
+:::
+
+::: context hash-order Why a set's order changes
+Python adds a random salt to the hash of every string, chosen when the interpreter starts, so that attackers cannot craft inputs that all land in one hash bucket and slow a server to a crawl. A set stores strings by hash, so its iteration order depends on the salt and changes between runs of the same program. Setting the environment variable PYTHONHASHSEED fixes the salt, but the robust habit is never to let set or dictionary-key order of strings decide anything that matters; dictionaries keep insertion order, and \`sorted()\` gives one order everywhere.
+:::
+--- task
+Build the simulator. The starter has the \`Node\` class, two demo nodes (\`Echo\` and \`Pinger\`) and a \`demo\` function, all finished, and a \`Sim\` whose \`__init__\`, \`add\`, \`at\`, \`pick_delay\`, \`block\`, \`partition\` and \`heal\` are finished. Do not change those. Write the seven missing methods of \`Sim\`, exactly as the lesson describes:
+
+1. \`schedule(time, kind, data)\`: add 1 to \`self.count\`, push \`(time, self.count, kind, data)\` onto the heap \`self.queue\`, and return the new \`self.count\`. \`kind\` is \`"msg"\`, \`"timer"\` or \`"call"\`.
+2. \`send(src, dst, msg)\`: add 1 to \`stats["sent"]\` and append \`(now, "send", src, dst, msg)\` to \`self.trace\`. Then draw \`self.rng.random()\`: if it is below \`self.drop\`, add 1 to \`stats["dropped"]\`, append \`(now, "drop", src, dst, msg)\`, and stop. Otherwise schedule a \`"msg"\` event with data \`(src, dst, msg)\` at \`now + self.pick_delay(src, dst)\`. Then draw \`self.rng.random()\` again: if it is below \`self.dup\`, add 1 to \`stats["duplicated"]\` and schedule a second \`"msg"\` event the same way, with its own \`pick_delay\`.
+3. \`set_timer(node_id, after, name)\`: schedule a \`"timer"\` event at \`now + after\` with data \`(node_id, self.life[node_id], name)\`, and return its id (what \`schedule\` returned).
+4. \`cancel(timer_id)\`: add the id to \`self.cancelled\`.
+5. \`crash(node_id)\`: add it to \`self.crashed\`, add 1 to \`self.life[node_id]\`, append \`(now, "crash", node_id)\` to the trace.
+6. \`recover(node_id)\`: remove it from \`self.crashed\`, append \`(now, "recover", node_id)\`, then call that node's \`on_recover()\`.
+7. \`run(until=None, max_events=1000000)\`: repeatedly pop the earliest event, stopping when the queue is empty, when \`max_events\` events have been handled, or (if \`until\` is not \`None\`) when the earliest event's time is after \`until\`, which stays in the queue. For each event, set \`self.now\` to its time, then:
+   - \`"msg"\`: if \`dst\` is in \`self.crashed\` or \`(src, dst)\` is in \`self.blocked\`, add 1 to \`stats["dropped"]\` and append \`(now, "drop", src, dst, msg)\`; otherwise add 1 to \`stats["delivered"]\`, append \`(now, "deliver", src, dst, msg)\` and call \`self.nodes[dst].on_message(src, msg)\`.
+   - \`"timer"\`: if its id is in \`self.cancelled\`, remove it from that set and do nothing; otherwise call \`self.nodes[node_id].on_timer(name)\` only if the node is not crashed and the timer's life equals \`self.life[node_id]\`.
+   - \`"call"\`: call \`data()\`.
+
+   At the end, if \`until\` is not \`None\` and \`self.now\` is less than \`until\`, set \`self.now = until\`. Return the number of events handled.
+
+For example, \`demo(1, count=1).trace\` is \`[(0, "send", "p", "e", ("ping", 0)), (2, "deliver", "p", "e", ("ping", 0)), (2, "send", "e", "p", ("echo", ("ping", 0))), (10, "deliver", "e", "p", ("echo", ("ping", 0)))]\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        return 0
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        pass
+
+    def set_timer(self, node_id, after, name):
+        return 0
+
+    def cancel(self, timer_id):
+        pass
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        pass
+
+    def recover(self, node_id):
+        pass
+
+    def run(self, until=None, max_events=1000000):
+        return 0
+
+
+class Echo(Node):
+    def on_message(self, src, msg):
+        self.send(src, ("echo", msg))
+
+
+class Pinger(Node):
+    def __init__(self, node_id, target, count, period):
+        super().__init__(node_id)
+        self.target = target
+        self.count = count
+        self.period = period
+        self.sent = 0
+        self.replies = []
+
+    def start(self):
+        self.set_timer(0, "ping")
+
+    def on_timer(self, name):
+        if self.sent < self.count:
+            self.send(self.target, ("ping", self.sent))
+            self.sent += 1
+            self.set_timer(self.period, "ping")
+
+    def on_message(self, src, msg):
+        self.replies.append((self.sim.now, msg[1][1]))
+
+    def on_recover(self):
+        self.start()
+
+
+def demo(seed, drop=0.0, dup=0.0, count=5, period=20, until=1000):
+    sim = Sim(seed, delay=(1, 10), drop=drop, dup=dup)
+    pinger = sim.add(Pinger("p", "e", count, period))
+    sim.add(Echo("e"))
+    sim.at(0, pinger.start)
+    sim.run(until)
+    return sim
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Echo(Node):
+    def on_message(self, src, msg):
+        self.send(src, ("echo", msg))
+
+
+class Pinger(Node):
+    def __init__(self, node_id, target, count, period):
+        super().__init__(node_id)
+        self.target = target
+        self.count = count
+        self.period = period
+        self.sent = 0
+        self.replies = []
+
+    def start(self):
+        self.set_timer(0, "ping")
+
+    def on_timer(self, name):
+        if self.sent < self.count:
+            self.send(self.target, ("ping", self.sent))
+            self.sent += 1
+            self.set_timer(self.period, "ping")
+
+    def on_message(self, src, msg):
+        self.replies.append((self.sim.now, msg[1][1]))
+
+    def on_recover(self):
+        self.start()
+
+
+def demo(seed, drop=0.0, dup=0.0, count=5, period=20, until=1000):
+    sim = Sim(seed, delay=(1, 10), drop=drop, dup=dup)
+    pinger = sim.add(Pinger("p", "e", count, period))
+    sim.add(Echo("e"))
+    sim.at(0, pinger.start)
+    sim.run(until)
+    return sim
+--- hint
+\`schedule\` is three lines: bump the counter, push the tuple with the counter second, return the counter. Every other method that puts something in the future goes through it, so the tie-breaking is in one place.
+--- hint
+In \`send\`, the order of the draws is the contract: \`random()\` for the drop, then (only if kept) \`pick_delay\` for the arrival, then \`random()\` for the duplicate, then \`pick_delay\` again only if duplicated. In \`set_timer\`, put the node's current life in the data, so \`run\` can recognise a timer from an earlier life.
+--- hint
+In \`run\`, peek at \`self.queue[0][0]\` before popping, so an event after \`until\` stays queued. Pop with \`heapq.heappop\`, unpack \`(time, n, kind, data)\`, set \`self.now = time\`, then branch on \`kind\`. A cancelled timer is recognised by its id \`n\`.
+--- check case | schedule: times first, ties in the order scheduled
+(lambda s, out: (s.at(5, lambda: out.append("b")), s.at(2, lambda: out.append("a")), s.at(5, lambda: out.append("c")), s.run(), out, s.now)[3:])(Sim(), [])
+=> (3, ['a', 'b', 'c'], 5)
+?? Ties are broken by the sequence number, which is the second item of every heap entry.
+--- check case | Ties never compare the data, even when it cannot be compared
+(lambda s, out: (s.at(4, lambda: out.append(1)), s.at(4, lambda: out.append(2)), s.run(), out)[-1])(Sim(), [])
+=> [1, 2]
+--- check case | run(until) stops before later events and moves the clock to until
+(lambda s, out: (s.at(3, lambda: out.append(3)), s.at(9, lambda: out.append(9)), s.run(until=6), list(out), s.now, s.run(), out, s.now)[2:])(Sim(), [])
+=> (1, [3], 6, 1, [3, 9], 9)
+--- check case | The example from the task
+demo(1, count=1).trace
+=> [(0, 'send', 'p', 'e', ('ping', 0)), (2, 'deliver', 'p', 'e', ('ping', 0)), (2, 'send', 'e', 'p', ('echo', ('ping', 0))), (10, 'deliver', 'e', 'p', ('echo', ('ping', 0)))]
+--- check case | A seeded run with loss: the first eight trace entries
+demo(3, 0.2, 0.1).trace[:8]
+=> [(0, 'send', 'p', 'e', ('ping', 0)), (9, 'deliver', 'p', 'e', ('ping', 0)), (9, 'send', 'e', 'p', ('echo', ('ping', 0))), (17, 'deliver', 'e', 'p', ('echo', ('ping', 0))), (20, 'send', 'p', 'e', ('ping', 1)), (20, 'drop', 'p', 'e', ('ping', 1)), (40, 'send', 'p', 'e', ('ping', 2)), (40, 'drop', 'p', 'e', ('ping', 2))]
+--- check case | The same seeded run: stats and replies
+(lambda s: (s.stats, s.nodes["p"].replies))(demo(3, 0.2, 0.1))
+=> ({'sent': 8, 'delivered': 5, 'dropped': 3, 'duplicated': 0}, [(17, 0), (92, 4)])
+--- check case | Everything lost: no delivery, and the delay is never drawn
+(lambda s: (s.stats, len(s.queue), s.rng.random()))(demo(5, drop=1.0, count=3))
+=> ({'sent': 3, 'delivered': 0, 'dropped': 3, 'duplicated': 0}, 0, 0.9424502837770503)
+?? With drop = 1.0, each send draws exactly one number. The generator's next number shows whether extra draws happened.
+--- check case | Every message duplicated
+(lambda s: (s.stats, s.nodes["p"].replies))(demo(2, dup=1.0, count=2))
+=> ({'sent': 6, 'delivered': 12, 'dropped': 0, 'duplicated': 6}, [(5, 0), (6, 0), (13, 0), (16, 0), (30, 1), (35, 1), (35, 1), (38, 1)])
+--- check test | Same seed, same run; another seed, another run
+demo(11, 0.3, 0.2, count=20).trace == demo(11, 0.3, 0.2, count=20).trace and demo(11, 0.3, 0.2, count=20).trace != demo(12, 0.3, 0.2, count=20).trace
+--- check case | A message in flight when the partition starts is lost; after heal, delivery resumes
+(lambda s: (s.at(0, lambda: s.send("p", "e", "early")), s.at(1, lambda: s.partition(["p"], ["e"])), s.at(15, lambda: s.send("p", "e", "late")), s.at(16, s.heal), s.run(), [t for t in s.trace if t[1] != "send"])[-1])((lambda s: (s.add(Node("p")), s.add(Node("e")), s)[-1])(Sim(4, delay=(5, 5))))
+=> [(5, 'drop', 'p', 'e', 'early'), (20, 'deliver', 'p', 'e', 'late')]
+--- check case | A blocked link is one-way
+(lambda s: (s.block("p", "e"), s.send("p", "e", 1), s.send("e", "p", 2), s.run(), s.stats)[-1])((lambda s: (s.add(Node("p")), s.add(Node("e")), s)[-1])(Sim(0)))
+=> {'sent': 2, 'delivered': 1, 'dropped': 1, 'duplicated': 0}
+--- check case | A crashed node gets no messages and its old timers never fire after recovery
+(lambda s: (s.at(30, lambda: s.crash("p")), s.at(75, lambda: s.recover("p")), s.run(400), s.nodes["p"].sent, [t[0] for t in s.trace if t[1] == "send" and t[2] == "p"], [t[:2] for t in s.trace if t[1] in ("crash", "recover")])[3:])((lambda s: (s.add(Pinger("p", "e", 8, 20)), s.add(Echo("e")), s.at(0, s.nodes["p"].start), s)[-1])(Sim(9)))
+=> (8, [0, 20, 75, 95, 115, 135, 155, 175], [(30, 'crash'), (75, 'recover')])
+?? If the ping timer set at time 20 (for time 40) fired after the recovery at 75, there would be two ping loops. Compare the timer's life with the node's.
+--- check case | Messages to a crashed node are dropped
+(lambda s: (s.at(0, lambda: s.crash("e")), s.at(1, lambda: s.send("p", "e", "x")), s.run(), s.stats, s.trace[-1])[-2:])((lambda s: (s.add(Node("p")), s.add(Node("e")), s)[-1])(Sim(0)))
+=> ({'sent': 1, 'delivered': 0, 'dropped': 1, 'duplicated': 0}, (8, 'drop', 'p', 'e', 'x'))
+--- check case | A cancelled timer does not fire, and set_timer returns distinct ids
+(lambda s, out: (setattr(s.nodes["n"], "on_timer", lambda name: out.append((s.now, name))), s.at(0, lambda: s.cancel(s.set_timer("n", 5, "a"))), s.at(0, lambda: s.set_timer("n", 7, "b")), s.run(), out)[-1])((lambda s: (s.add(Node("n")), s)[-1])(Sim()), [])
+=> [(7, 'b')]
+--- check test | Over 50 seeds, every copy of every message is accounted for
+all((lambda st: st["sent"] + st["duplicated"] == st["delivered"] + st["dropped"])(demo(k, 0.25, 0.25, count=30).stats) for k in range(50))
+--- check case | 25 nodes, each pinging its neighbour 400 times: the event count
+(lambda s: (s.run(), s.stats["delivered"], s.now))((lambda s: ([(s.add(Pinger("p%d" % i, "e%d" % i, 400, 7)), s.add(Echo("e%d" % i)), s.at(i, s.nodes["p%d" % i].start)) for i in range(25)], s)[-1])(Sim(21, drop=0.05)))
+=> (28639, 18589, 2833)
+
++++ question | Why the sequence number
+--- ask
+Heap entries are \`(time, seq, kind, data)\`, where \`seq\` is a counter that goes up for every entry. What would go wrong with entries \`(time, kind, data)\` instead?
+--- choice
+Nothing: the heap only looks at the time.
+--- choice correct
+Two events at the same time and of the same kind would be ordered by comparing their data, which can raise TypeError (dictionaries and functions do not support \`<\`) and otherwise orders ties by content instead of by scheduling order.
+--- choice
+Events would come out in reverse order of time.
+--- choice
+The heap would lose events that share a time.
+--- why
+Tuples compare item by item until one differs. A unique counter in second place guarantees the comparison stops there, so ties come out first in first out and the data is never compared.
+
++++ question | Lost on arrival
+--- ask
+A message is sent at time 10 with a delay of 8. A partition between sender and receiver starts at time 12 and heals at time 20. What happens to the message in this simulator?
+--- choice
+It is delivered at time 18, because the link was open when it was sent.
+--- choice correct
+It is dropped at time 18, because the link is checked when the message arrives, and it is blocked then.
+--- choice
+It waits and is delivered at time 20, when the partition heals.
+--- choice
+It is dropped at time 12, when the partition starts.
+--- why
+A message on the wire when a cable is cut is lost, so the simulator checks the link on arrival. Networks do not hold messages for later; any retry is the sender's job.
+
++++ question | What breaks replay
+--- ask
+A node broadcasts with \`for peer in self.peers: self.send(peer, msg)\`, where \`self.peers\` is a \`set\` of node names. The program works, but a bug found at seed 42 cannot be reproduced the next day. Why?
+--- choice
+The simulator's generator is reseeded every day.
+--- choice
+Sets drop duplicate messages.
+--- choice correct
+A set of strings iterates in an order that depends on a hash salt chosen when Python starts, so the sends, and the delay draws that go with them, happen in a different order in each process.
+--- choice
+Sending inside a loop is not allowed in an event handler.
+--- why
+The seed fixes the sequence of random numbers, not which message receives which number. If the order of sends changes, every delay lands on a different message. Iterate over a list or \`sorted(self.peers)\`.
+
++++ practice | Spreading a rumour
+--- task
+The starter has the finished simulator from the lesson. Write a node class \`Flooder(Node)\` and a function \`flood(edges, origin, seed, drop=0.0)\`.
+
+- \`Flooder(node_id, neighbours)\` keeps the list \`neighbours\` and \`heard = None\`.
+- Its method \`start()\` sets \`heard\` to the current time and sends \`("rumour", self.id)\` to each neighbour, in list order.
+- When a \`Flooder\` receives a \`"rumour"\` message for the first time, it sets \`heard\` to the current time and sends \`("rumour", self.id)\` to every neighbour **except** the node it got the message from, in list order. Later copies are ignored.
+
+\`flood\` builds \`Sim(seed, delay=(1, 10), drop=drop)\`, adds one \`Flooder\` per node, schedules \`origin\`'s \`start\` at time 0, runs until the queue is empty, and returns \`(heard, sent)\`: a dictionary from every node to its \`heard\` time (or \`None\`), with keys in sorted order, and \`sim.stats["sent"]\`.
+
+\`edges\` is a list of pairs \`(a, b)\` of undirected links. A node's neighbours are listed in the order its links appear in \`edges\`. Every node appears in at least one edge.
+
+For example, \`flood([("a", "b"), ("b", "c")], "a", 1)\` is \`({"a": 0, "b": 2, "c": 10}, 2)\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Flooder(Node):
+    def __init__(self, node_id, neighbours):
+        super().__init__(node_id)
+        self.neighbours = neighbours
+        self.heard = None
+
+
+def flood(edges, origin, seed, drop=0.0):
+    return {}, 0
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Flooder(Node):
+    def __init__(self, node_id, neighbours):
+        super().__init__(node_id)
+        self.neighbours = neighbours
+        self.heard = None
+
+    def start(self):
+        self.heard = self.sim.now
+        for peer in self.neighbours:
+            self.send(peer, ("rumour", self.id))
+
+    def on_message(self, src, msg):
+        if msg[0] != "rumour" or self.heard is not None:
+            return
+        self.heard = self.sim.now
+        for peer in self.neighbours:
+            if peer != src:
+                self.send(peer, ("rumour", self.id))
+
+
+def flood(edges, origin, seed, drop=0.0):
+    neighbours = {}
+    for a, b in edges:
+        neighbours.setdefault(a, []).append(b)
+        neighbours.setdefault(b, []).append(a)
+    sim = Sim(seed, delay=(1, 10), drop=drop)
+    for name in neighbours:
+        sim.add(Flooder(name, neighbours[name]))
+    sim.at(0, sim.nodes[origin].start)
+    sim.run()
+    heard = {name: sim.nodes[name].heard for name in sorted(neighbours)}
+    return heard, sim.stats["sent"]
+--- hint
+Build the neighbour lists first: for each edge \`(a, b)\`, append \`b\` to \`a\`'s list and \`a\` to \`b\`'s, creating lists with \`setdefault\`. Each node's list is then in the order its edges appear.
+--- hint
+\`heard is None\` tells a node whether this is its first copy. On the first copy, record \`self.sim.now\` and forward to every neighbour except \`src\`. \`start\` is the same without the exception.
+--- hint
+Schedule the start with \`sim.at(0, sim.nodes[origin].start)\` (pass the method, do not call it), then \`sim.run()\` with no limit: flooding stops by itself once every node has heard.
+--- check case | The example from the task
+flood([("a", "b"), ("b", "c")], "a", 1)
+=> ({'a': 0, 'b': 2, 'c': 10}, 2)
+--- check case | A ring: news travels both ways round, and the far side hears from the faster direction
+flood([("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "f"), ("f", "a")], "a", 7)
+=> ({'a': 0, 'b': 3, 'c': 12, 'd': 19, 'e': 16, 'f': 9}, 7)
+--- check case | A star: one hop for everyone
+flood([("hub", "x"), ("hub", "y"), ("hub", "z")], "hub", 3)
+=> ({'hub': 0, 'x': 9, 'y': 8, 'z': 1}, 3)
+--- check case | Two separate groups: the far group never hears
+flood([("a", "b"), ("c", "d")], "a", 2)
+=> ({'a': 0, 'b': 1, 'c': None, 'd': None}, 1)
+--- check case | With loss, some nodes may never hear
+flood([("a", "b"), ("b", "c"), ("c", "d"), ("a", "d")], "a", 5, drop=0.5)
+=> ({'a': 0, 'b': 6, 'c': 10, 'd': 9}, 5)
+--- check case | A 30-node grid: the last node to hear, and the messages it took
+(lambda res: (max(res[0].values()), res[1]))(flood([("n%d" % (r * 6 + c), "n%d" % (r * 6 + c + 1)) for r in range(5) for c in range(5)] + [("n%d" % (r * 6 + c), "n%d" % (r * 6 + c + 6)) for r in range(4) for c in range(6)], "n0", 11))
+=> (30, 69)
+
++++ practice | Stop-and-wait over a lossy link
+--- task
+Send \`n\` numbered messages reliably over a network that loses and duplicates them, one at a time. The starter has the simulator and a finished \`Receiver\` node, which answers every \`("data", k)\` it gets with \`("ack", k)\` and appends \`k\` to its list \`got\` the first time it sees that \`k\`.
+
+Write the node \`Sender(node_id, dst, n, timeout)\`:
+
+- \`start()\` sends \`("data", 0)\` to \`dst\` and sets a timer named \`"retry"\` for \`timeout\` time units.
+- When the \`"retry"\` timer fires, it sends the current message again and sets a new \`"retry"\` timer.
+- When \`("ack", k)\` arrives for the **current** message k, it cancels the pending timer, records the time in its list \`acked\`, and moves on: if there is a next message, it sends it and sets a new timer; if not, it sets \`done\` to the current time and stops. An ack for any other k (a late duplicate of an old ack) is ignored.
+
+Then write \`transfer(n, seed, drop, dup, timeout)\`, which builds \`Sim(seed, delay=(1, 10), drop=drop, dup=dup)\` with a \`Sender("s", "r", n, timeout)\` and a \`Receiver("r")\`, schedules the sender's \`start\` at time 0, runs until the queue is empty, and returns \`(done, sim.stats["sent"], receiver.got)\`.
+
+For example, \`transfer(3, 1, 0.0, 0.0, 25)\` is \`(26, 6, [0, 1, 2])\`: nothing is lost, so three data messages and three acks do the job.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Receiver(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.got = []
+
+    def on_message(self, src, msg):
+        if msg[0] == "data":
+            if msg[1] not in self.got:
+                self.got.append(msg[1])
+            self.send(src, ("ack", msg[1]))
+
+
+class Sender(Node):
+    def __init__(self, node_id, dst, n, timeout):
+        super().__init__(node_id)
+        self.dst = dst
+        self.n = n
+        self.timeout = timeout
+        self.acked = []
+        self.done = None
+
+    def start(self):
+        self.send(self.dst, ("data", 0))
+
+
+def transfer(n, seed, drop, dup, timeout):
+    return None, 0, []
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Receiver(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.got = []
+
+    def on_message(self, src, msg):
+        if msg[0] == "data":
+            if msg[1] not in self.got:
+                self.got.append(msg[1])
+            self.send(src, ("ack", msg[1]))
+
+
+class Sender(Node):
+    def __init__(self, node_id, dst, n, timeout):
+        super().__init__(node_id)
+        self.dst = dst
+        self.n = n
+        self.timeout = timeout
+        self.acked = []
+        self.done = None
+        self.current = 0
+        self.timer = None
+
+    def transmit(self):
+        self.send(self.dst, ("data", self.current))
+        self.timer = self.set_timer(self.timeout, "retry")
+
+    def start(self):
+        self.transmit()
+
+    def on_timer(self, name):
+        if name == "retry" and self.done is None:
+            self.transmit()
+
+    def on_message(self, src, msg):
+        if msg[0] != "ack" or msg[1] != self.current or self.done is not None:
+            return
+        self.sim.cancel(self.timer)
+        self.acked.append(self.sim.now)
+        self.current += 1
+        if self.current < self.n:
+            self.transmit()
+        else:
+            self.done = self.sim.now
+
+
+def transfer(n, seed, drop, dup, timeout):
+    sim = Sim(seed, delay=(1, 10), drop=drop, dup=dup)
+    sender = sim.add(Sender("s", "r", n, timeout))
+    receiver = sim.add(Receiver("r"))
+    sim.at(0, sender.start)
+    sim.run()
+    return sender.done, sim.stats["sent"], receiver.got
+--- hint
+Keep two more fields: \`current\`, the number of the message waiting for its ack, and \`timer\`, the id that \`set_timer\` returned for its retry timer. A helper that sends message \`current\` and sets the timer serves \`start\`, the retry and the move to the next message.
+--- hint
+On an ack, check \`msg[1] == self.current\` first. Then \`self.sim.cancel(self.timer)\` before anything else; a timer that is not cancelled fires later and resends a message that was already acknowledged.
+--- hint
+After the last ack there is nothing to send and no timer pending, so the queue empties and \`sim.run()\` returns. If it never returns, some timer keeps re-arming itself.
+--- check case | The example from the task
+transfer(3, 1, 0.0, 0.0, 25)
+=> (26, 6, [0, 1, 2])
+--- check case | Loss forces retries, but every message gets through once
+transfer(5, 4, 0.3, 0.0, 25)
+=> (226, 19, [0, 1, 2, 3, 4])
+--- check case | Duplicates and loss together: no number is delivered twice or skipped
+transfer(8, 9, 0.25, 0.3, 25)
+=> (258, 31, [0, 1, 2, 3, 4, 5, 6, 7])
+--- check case | A timeout shorter than the round trip resends needlessly
+[transfer(10, 2, 0.0, 0.0, t)[1] for t in (5, 12, 25)]
+=> [46, 30, 20]
+?? With delays from 1 to 10, a round trip can take up to 20. A shorter timeout fires before many acks can arrive.
+--- check case | Old acks are ignored: the times in acked go up, one per message
+(lambda s: (s.run(), s.nodes["s"].acked, s.nodes["s"].current))((lambda s: (s.add(Sender("s", "r", 4, 6)), s.add(Receiver("r")), s.at(0, s.nodes["s"].start), s)[-1])(Sim(3, dup=0.5)))
+=> (33, [11, 15, 23, 32], 4)
+--- check test | 40 seeds at 40% loss: always delivered in order, exactly once
+all(transfer(12, k, 0.4, 0.2, 22)[2] == list(range(12)) for k in range(40))
+
++++ practice | A beacon that crashes and comes back
+--- task
+A node that crashes loses its memory but keeps its disk. The starter has the simulator and a finished \`Monitor\` node that appends \`(time, src, msg)\` to its list \`seen\` for every message it gets.
+
+Write the node \`Beacon(node_id, monitor, period)\`:
+
+- It keeps \`boots\`, a number on its **disk**, starting at 0, and \`seq\`, a counter in its **memory**, starting at 0.
+- \`start()\` sets a timer named \`"beat"\` for \`period\`.
+- When \`"beat"\` fires, it sends \`("beat", boots, seq)\` to the monitor, adds 1 to \`seq\`, and sets the next \`"beat"\` timer.
+- \`on_recover()\` models a restart: \`boots\` goes up by 1, \`seq\` goes back to 0 (memory was lost), and it calls \`start()\`.
+
+Then write \`beacon_run(seed, crashes, until)\`: build \`Sim(seed, delay=(1, 10))\` with a \`Beacon("b", "m", 10)\` and a \`Monitor("m")\`, schedule the beacon's \`start\` at time 0, and for each pair \`(down, up)\` in \`crashes\` schedule \`sim.crash("b")\` at time \`down\` and \`sim.recover("b")\` at time \`up\`. Run until \`until\` and return the monitor's \`seen\` list with only the message part of each entry: a list of \`(boots, seq)\` pairs, in the order they arrived.
+
+The simulator already makes sure that timers set before a crash never fire, and messages already on the wire when the beacon crashes still arrive. For example, \`beacon_run(1, [(25, 41)], 70)\` is \`[(0, 0), (0, 1), (1, 0), (1, 1)]\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Monitor(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.seen = []
+
+    def on_message(self, src, msg):
+        self.seen.append((self.sim.now, src, msg))
+
+
+class Beacon(Node):
+    def __init__(self, node_id, monitor, period):
+        super().__init__(node_id)
+        self.monitor = monitor
+        self.period = period
+
+
+def beacon_run(seed, crashes, until):
+    return []
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Monitor(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.seen = []
+
+    def on_message(self, src, msg):
+        self.seen.append((self.sim.now, src, msg))
+
+
+class Beacon(Node):
+    def __init__(self, node_id, monitor, period):
+        super().__init__(node_id)
+        self.monitor = monitor
+        self.period = period
+        self.boots = 0
+        self.seq = 0
+
+    def start(self):
+        self.set_timer(self.period, "beat")
+
+    def on_timer(self, name):
+        if name == "beat":
+            self.send(self.monitor, ("beat", self.boots, self.seq))
+            self.seq += 1
+            self.set_timer(self.period, "beat")
+
+    def on_recover(self):
+        self.boots += 1
+        self.seq = 0
+        self.start()
+
+
+def beacon_run(seed, crashes, until):
+    sim = Sim(seed, delay=(1, 10))
+    beacon = sim.add(Beacon("b", "m", 10))
+    monitor = sim.add(Monitor("m"))
+    sim.at(0, beacon.start)
+    for down, up in crashes:
+        sim.at(down, lambda: sim.crash("b"))
+        sim.at(up, lambda: sim.recover("b"))
+    sim.run(until)
+    return [(msg[1], msg[2]) for _, _, msg in monitor.seen]
+--- hint
+\`boots\` and \`seq\` both start at 0 in \`__init__\`. Only \`on_recover\` tells disk from memory: it keeps \`boots\` (adding 1) and resets \`seq\`.
+--- hint
+Each beat sends, counts, and re-arms. After a crash the simulator throws away the pending beat, so \`on_recover\` must call \`start()\` to begin a new loop.
+--- hint
+In \`beacon_run\`, the lambdas do not need the loop variables: every crash and recovery is of node \`"b"\`. Pass \`sim.crash\` a fixed name inside the lambda, schedule both, then run until \`until\` and keep \`msg[1:]\` of each seen message.
+--- check case | The example from the task
+beacon_run(1, [(25, 41)], 70)
+=> [(0, 0), (0, 1), (1, 0), (1, 1)]
+--- check case | No crashes: one beat every 10 time units
+beacon_run(2, [], 65)
+=> [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
+--- check case | A crash before the first beat
+beacon_run(3, [(5, 30)], 70)
+=> [(1, 0), (1, 1), (1, 2)]
+--- check case | A beat already on the wire when the beacon crashes still arrives
+(lambda s: (s.at(0, s.nodes["b"].start), s.at(11, lambda: s.crash("b")), s.run(40), s.nodes["m"].seen)[-1])((lambda s: (s.add(Beacon("b", "m", 10)), s.add(Monitor("m")), s)[-1])(Sim(1, delay=(9, 9))))
+=> [(19, 'b', ('beat', 0, 0))]
+--- check case | Two crashes: boots counts the restarts, seq restarts each time
+beacon_run(4, [(22, 30), (61, 75)], 120)
+=> [(0, 0), (0, 1), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
+--- check case | Down until the end
+beacon_run(5, [(33, 500)], 100)
+=> [(0, 0), (0, 1), (0, 2)]
+
++++ practice | Debug: the event queue that crashes on a tie
+--- task
+The starter's \`MiniSim\` is a tiny event loop. \`post(time, event)\` schedules an event, a dictionary such as \`{"to": "a", "say": "hi"}\`, and \`run()\` handles events in time order, appending \`(time, event["to"], event["say"])\` to \`log\`, and returns the log. Events at the same time must be handled in the order they were posted.
+
+It works in simple tests, but as soon as two events are posted for the same time it fails with \`TypeError: '<' not supported between instances of 'dict' and 'dict'\`, and when the events can be compared, ties come out in the wrong order. Fix it, keeping the class's interface.
+--- starter
+import heapq
+
+
+class MiniSim:
+    def __init__(self):
+        self.queue = []
+        self.log = []
+
+    def post(self, time, event):
+        heapq.heappush(self.queue, (time, event))
+
+    def run(self):
+        while self.queue:
+            time, event = heapq.heappop(self.queue)
+            self.log.append((time, event["to"], event["say"]))
+        return self.log
+--- solution
+import heapq
+
+
+class MiniSim:
+    def __init__(self):
+        self.queue = []
+        self.log = []
+        self.count = 0
+
+    def post(self, time, event):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, event))
+
+    def run(self):
+        while self.queue:
+            time, _, event = heapq.heappop(self.queue)
+            self.log.append((time, event["to"], event["say"]))
+        return self.log
+--- hint
+When two tuples have equal first items, Python compares their second items. Here that is the event dictionary.
+--- hint
+Put a counter between the time and the event: it increases with every post, so it is unique, breaks ties in posting order, and stops the comparison before it reaches the dictionary. Unpack three items when popping.
+--- check case | Events at different times
+(lambda m: (m.post(5, {"to": "a", "say": "late"}), m.post(1, {"to": "b", "say": "early"}), m.run())[-1])(MiniSim())
+=> [(1, 'b', 'early'), (5, 'a', 'late')]
+--- check case | A tie: posting order wins
+(lambda m: (m.post(3, {"to": "z", "say": "first"}), m.post(3, {"to": "a", "say": "second"}), m.run())[-1])(MiniSim())
+=> [(3, 'z', 'first'), (3, 'a', 'second')]
+--- check case | Many ties among other times
+(lambda m: ([m.post(t, {"to": "n%d" % k, "say": k}) for k, t in enumerate([4, 2, 4, 2, 4, 1])], m.run())[-1])(MiniSim())
+=> [(1, 'n5', 5), (2, 'n1', 1), (2, 'n3', 3), (4, 'n0', 0), (4, 'n2', 2), (4, 'n4', 4)]
+--- check case | Nothing posted
+MiniSim().run()
+=> []
+
++++ practice | Where to put the leader
+--- task
+A cluster of five replicas spreads over regions. A message between two replicas in the same region takes 1 to 3 time units; between regions it takes 30 to 50. Model it by subclassing the simulator: write \`GeoSim(Sim)\` whose constructor is \`GeoSim(seed, region)\`, where \`region\` is a dictionary from node id to region name, and whose \`pick_delay(src, dst)\` returns \`self.rng.randint(1, 3)\` when both are in the same region and \`self.rng.randint(30, 50)\` otherwise. It calls \`Sim.__init__(self, seed)\` and draws exactly one number per delay.
+
+Then measure how long a write takes to commit. The leader handles \`writes\` writes, starting one every 100 time units from time 0: for write k it sends \`("append", k)\` to every other replica, in sorted order of their ids. A replica answers each \`("append", k)\` with \`("ack", k)\`. Write k **commits** when the leader holds acks from 2 other replicas (with itself, a majority of 5); its latency is the commit time minus its start time. Later acks for a committed write are ignored.
+
+Write \`commit_latencies(region, leader, seed, writes)\`, which returns the list of latencies in write order, and \`best_leader(region, seed, writes)\`, which returns the replica id with the smallest **total** latency (ties go to the smaller id). Write your own node classes for the leader and the replicas.
+
+For example, with \`region = {"a": "us", "b": "us", "c": "eu", "d": "eu", "e": "ap"}\`, \`commit_latencies(region, "a", 1, 3)\` is \`[73, 76, 78]\`: leader a has one replica nearby, so the second ack it needs has to cross an ocean and back.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class GeoSim(Sim):
+    def __init__(self, seed, region):
+        Sim.__init__(self, seed)
+        self.region = region
+
+
+def commit_latencies(region, leader, seed, writes):
+    return []
+
+
+def best_leader(region, seed, writes):
+    return sorted(region)[0]
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class GeoSim(Sim):
+    def __init__(self, seed, region):
+        Sim.__init__(self, seed)
+        self.region = region
+
+    def pick_delay(self, src, dst):
+        if self.region[src] == self.region[dst]:
+            return self.rng.randint(1, 3)
+        return self.rng.randint(30, 50)
+
+
+class Replica(Node):
+    def on_message(self, src, msg):
+        if msg[0] == "append":
+            self.send(src, ("ack", msg[1]))
+
+
+class Leader(Node):
+    def __init__(self, node_id, peers):
+        super().__init__(node_id)
+        self.peers = peers
+        self.started = {}
+        self.acks = {}
+        self.latency = {}
+
+    def write(self, k):
+        self.started[k] = self.sim.now
+        self.acks[k] = 0
+        for peer in self.peers:
+            self.send(peer, ("append", k))
+
+    def on_message(self, src, msg):
+        if msg[0] != "ack" or msg[1] in self.latency:
+            return
+        k = msg[1]
+        self.acks[k] += 1
+        if self.acks[k] == 2:
+            self.latency[k] = self.sim.now - self.started[k]
+
+
+def commit_latencies(region, leader, seed, writes):
+    sim = GeoSim(seed, region)
+    peers = sorted(n for n in region if n != leader)
+    boss = sim.add(Leader(leader, peers))
+    for n in peers:
+        sim.add(Replica(n))
+    for k in range(writes):
+        sim.at(100 * k, lambda k=k: boss.write(k))
+    sim.run()
+    return [boss.latency[k] for k in range(writes)]
+
+
+def best_leader(region, seed, writes):
+    totals = [(sum(commit_latencies(region, n, seed, writes)), n) for n in sorted(region)]
+    return min(totals)[1]
+--- hint
+\`GeoSim.pick_delay\` compares \`self.region[src]\` with \`self.region[dst]\` and returns one \`randint\` either way. Everything else in the simulator stays as it is, because \`send\` already calls \`pick_delay\`.
+--- hint
+The leader keeps, per write, its start time and an ack count, plus a dictionary of latencies. When the count for write k reaches 2 and k has no latency yet, the latency is \`self.sim.now\` minus the start. Schedule the writes with \`sim.at(100 * k, lambda k=k: leader.write(k))\`; the default argument freezes each k.
+--- hint
+\`best_leader\` runs \`commit_latencies\` once per candidate, with the same seed, and keeps the smallest \`(total, id)\` pair: comparing pairs breaks ties by the id.
+--- check case | The example from the task
+commit_latencies({"a": "us", "b": "us", "c": "eu", "d": "eu", "e": "ap"}, "a", 1, 3)
+=> [73, 76, 78]
+--- check case | GeoSim draws one delay per message, near or far
+(lambda s: (s.pick_delay("a", "b"), s.pick_delay("a", "c"), s.pick_delay("c", "c")))(GeoSim(2, {"a": "us", "b": "us", "c": "eu"}))
+=> (1, 32, 1)
+--- check case | All in one region: every commit is fast
+commit_latencies({"a": "us", "b": "us", "c": "us", "d": "us", "e": "us"}, "c", 3, 5)
+=> [4, 3, 4, 3, 3]
+--- check case | Three regions, two replicas each in two of them: who should lead?
+best_leader({"a": "us", "b": "us", "c": "eu", "d": "eu", "e": "ap"}, 4, 30)
+=> 'a'
+--- check case | Average latency for each possible leader
+(lambda r: [sum(commit_latencies(r, n, 5, 40)) // 40 for n in sorted(r)])({"a": "us", "b": "us", "c": "eu", "d": "eu", "e": "ap"})
+=> [73, 73, 72, 72, 77]
+?? Every leader here needs at least one ack from another region. Leader e has no neighbour at all, so it waits for the second-fastest of four distant replies.
+--- check case | Three in one region: a majority without leaving it
+best_leader({"a": "eu", "b": "us", "c": "us", "d": "us", "e": "ap"}, 6, 30)
+=> 'b'
+
+=== dist1-02 | Failures and timeouts: detectors that adapt, and deadlines that travel
+--- teach
+Lesson 1 built a network that loses, delays and partitions. In Parallel Computing you met the simplest defence: send heartbeats, and suspect a node when none has arrived for a fixed timeout. This lesson asks the questions that fixed timeout hides. How long should the timeout be? What happens when the network gets slower for an hour? And when a request crosses five services, whose timeout counts? You will build an **adaptive failure detector**, the kind that large clusters actually run, and see the trade it cannot escape.
+
+### Failure models, briefly
+
+You know the four classic models, from mildest to worst: **crash-stop** (halts for good), **crash-recover** (halts, restarts with its disk), **omission** (loses some messages) and **Byzantine** (does anything). Real fleets add one that the four miss:
+
+- **[[Gray failure|gray-failure]]**: a node that is partly broken. It answers heartbeats, because the small thread that sends them is fine, but its requests take ten seconds, because its disk is dying or its memory is full. A detector that only listens to heartbeats calls it healthy while users time out.
+
+The lesson for detectors: what you measure is what you detect. A heartbeat proves that the heartbeat path works, nothing more.
+
+### What a detector can promise
+
+A **failure detector** is a component that answers, for each node, "trusted" or "suspected". Two properties describe it:
+
+- **completeness**: every crashed node is eventually suspected;
+- **accuracy**: no live node is suspected.
+
+In a fully asynchronous network no detector has both, because a crashed node and a very slow one send the same thing: nothing. Real networks are **partially synchronous**: delays are usually bounded, but nobody knows the bound in advance. There, the best possible detector is **eventually perfect**: it may make mistakes, but once the network settles, it stops making them. The engineering question is how many mistakes, and how slow the detection, you trade for each other.
+
+### The trade, in numbers
+
+Heartbeats are sent every T time units, and each takes a delay between d_min and d_max. With a fixed timeout τ (read "tau") measured from the last arrival:
+
+- **Detection time.** After a crash, the last heartbeat arrives at most d_max after it was sent, and suspicion starts τ later. So a crash is noticed within about T + d_max + τ.
+- **False suspicion.** Two heartbeats sent T apart can arrive up to T + (d_max − d_min) apart. Any τ smaller than that gap can suspect a live node.
+
+So τ must be at least T + d_max − d_min to never be wrong, and every unit beyond that is pure detection delay. With T = 10, delays from 1 to 10, τ = 19 is safe and a crash is noticed within about 39. Now the network gets busier and delays range from 1 to 40. The same τ = 19 suspects live nodes many times an hour, and the safe value has become 49. A fixed timeout is right for one network on one day.
+
+### An adaptive detector: phi accrual
+
+The fix is to let the detector learn the network. The **[[phi accrual failure detector|phi-accrual]]** keeps the last W gaps between heartbeat arrivals, a **[[sliding window|sliding-window]]**, and models the next gap as a normal distribution with their **mean** μ (read "mu") and **standard deviation** σ (read "sigma"). Then, when Δ (read "delta") time units have passed since the last heartbeat, it asks: how likely is it that a live node's next heartbeat would be this late?
+
+P_later(Δ) = probability that a gap is longer than Δ = ½ · erfc((Δ − μ) / (σ · √2))
+
+where **erfc** is the complementary error function, which gives the tail of a normal distribution; Python has it as \`math.erfc\`. That probability shrinks very fast, so the detector reports its size on a log scale:
+
+**φ(Δ) = −log₁₀ P_later(Δ)**
+
+φ (read "phi") is the number of zeros after the decimal point in the probability of being wrong. φ = 1 means a 1 in 10 chance that the node is fine; φ = 8 means 1 in 100 million. The application picks a threshold and suspects when φ passes it.
+
+With μ = 100 and σ = 10:
+
+\`\`\`python
+import math
+
+mean, std, waited = 100, 10, 130
+p_later = 0.5 * math.erfc((waited - mean) / (std * math.sqrt(2)))
+print(round(p_later, 5), round(-math.log10(p_later), 2))     # 0.00135 2.87
+\`\`\`
+
+| waited Δ | P_later | φ |
+|---|---|---|
+| 110 | 0.159 | 0.80 |
+| 120 | 0.0228 | 1.64 |
+| 130 | 0.00135 | 2.87 |
+| 140 | 0.0000317 | 4.50 |
+| 160 | 0.00000000099 | 9.01 |
+
+**Why it adapts.** The threshold is a fixed level of confidence, not a fixed time. When the network becomes noisy, the gaps spread out, σ grows, and the time at which φ reaches 8 moves later by itself. When the network calms down, it moves back. The timeout is never written down; it **accrues** from what the detector has seen.
+
+**What it costs.** Each heartbeat adds a gap and drops the oldest, and each φ computes a mean and a deviation over W gaps: O(W) per check, or O(1) with running sums. Memory is W numbers per monitored node.
+
+### Two details that matter in practice
+
+- **A floor on σ.** If every gap so far was exactly 10, σ is 0 and the formula divides by zero; if σ is tiny, a gap of 10.5 already looks impossible. Real detectors use **σ = max(measured σ, min_std)**.
+- **The normal model is a guess.** Real delays have a long tail: rare gaps of ten times the mean, from garbage-collection pauses or a congested switch. A normal distribution thinks those are almost impossible, so phi accrual still makes occasional mistakes on spiky networks. The lab shows both sides: it adapts where a fixed timeout cannot, and it is not magic.
+
+### Deadlines that travel
+
+Timeouts also live inside requests. A user's request enters service A, which calls B, which calls C. If each hop has its own timeout of 1 second, then:
+
+- the user, who gives up after 1 second, may be kept waiting by a chain whose total wait is 3 seconds;
+- worse, after the user has left, B and C keep working on an answer nobody will read. Under load that **wasted work** is what turns a slowdown into an outage.
+
+The fix is a **deadline**: an absolute time by which the whole request must finish, set once at the edge and passed along with every call. Each service computes what is left, keeps a small margin for its own reply, passes the rest to the services it calls, and refuses to start work whose deadline has already passed:
+
+\`\`\`python fragment
+left = deadline - now()
+if left <= 0:
+    return error("deadline exceeded")       # nobody is waiting: do no work
+reply = call(child, request, budget=left - margin)
+\`\`\`
+
+This is **[[deadline propagation|deadline-picture]]**. The invariant it keeps: no work is ever started for a request whose caller has stopped waiting.
+
+### Where it is used
+
+- **Cluster membership.** Cassandra and Akka use phi accrual detectors with thresholds around 8 to 12. Consul and memberlist use SWIM, which adds indirect probing through other nodes before suspecting one.
+- **Load balancers** eject backends after failed health checks, and many also watch the error rate and latency of real traffic, which catches gray failures.
+- **RPC frameworks** carry deadlines in every call: gRPC sends the remaining time as a header, so a server can tell how long its client will still wait.
+
+**Watch out:**
+
+- **Timeouts shorter than the worst gap** mark live nodes dead; every false suspicion triggers failover work and can cause the very overload it guards against.
+- **σ = 0.** Floor the standard deviation, or a perfectly regular sender breaks the detector.
+- **Measuring with the sender's clock.** Gaps must be measured between arrival times on the monitor's own clock; timestamps written by the sender carry its skew.
+- **Per-hop timeouts that add up.** Pass a deadline instead, and check it before starting work.
+
+::: context gray-failure Partly broken is the common case
+Engineers studying incidents in large cloud fleets found that many serious outages began not with a clean crash but with a component that was degraded and still reported itself healthy: a disk that answered slowly, a network card that dropped some packets, a process stuck in garbage collection. They called these gray failures. The response is to judge health from the point of view of the clients, by watching the latency and errors of real requests, not only from the component's own heartbeat.
+:::
+
+::: context phi-accrual Suspicion as a number
+Naohiro Hayashibara and colleagues proposed the phi accrual detector in 2004. Its idea is to separate monitoring from deciding: the detector outputs a level of suspicion that grows continuously while no heartbeat arrives, and each application chooses its own threshold. A load balancer may act at φ = 3 and accept some mistakes; a database deciding to move data may wait for φ = 10. Cassandra's default threshold is 8.
+:::
+
+::: context sliding-window Forgetting on purpose
+A window of the last W gaps forgets old behaviour, which is what lets the detector follow a network that changes. A small W adapts quickly but gives noisy estimates; a large one is steady but slow to notice that the network has changed. Values of 100 to 1,000 heartbeats are common. Running sums of the gaps and of their squares make the mean and variance O(1) to update.
+:::
+
+::: context deadline-picture Budgets shrink down the chain
+Each service subtracts its own time and a small margin before passing the deadline on, so the callees deep in the chain get the least time, and a callee that receives a budget of zero or less refuses to start.
+
+\`\`\`svg
+<svg viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="20" width="320" height="20" fill="#8fb8f0"/>
+  <text x="14" y="34" font-size="11" fill="#1f2a44">A: 300 left</text>
+  <rect x="50" y="50" width="250" height="20" fill="#8fb8f0"/>
+  <text x="54" y="64" font-size="11" fill="#1f2a44">B: 250 left</text>
+  <rect x="90" y="80" width="180" height="20" fill="#8fb8f0"/>
+  <text x="94" y="94" font-size="11" fill="#1f2a44">C: 180 left</text>
+  <line x1="330" y1="12" x2="330" y2="108" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <text x="326" y="114" font-size="11" text-anchor="end" fill="#b4232c">deadline</text>
+</svg>
+\`\`\`
+:::
+--- task
+Build a phi accrual detector and run it on the simulator. The starter has the simulator, a \`Heartbeater\` node that sends \`("hb", seq)\` to its monitor every \`period\`, a finished \`FixedDetector\` (the baseline, with the same interface you will write), and \`watch(detector, seed, hi, crash_at=None, until=3000)\`, which runs a heartbeater \`"h"\` (period 10) and your monitor \`"m"\` (checking every 1 time unit) on \`Sim(seed, delay=(1, hi))\`, crashes \`"h"\` at \`crash_at\` if given, and returns the monitor's \`events\`. Do not change those.
+
+1. \`PhiDetector(window, min_std, threshold)\`:
+   - \`heartbeat(t)\` records an arrival at time t. From the second arrival on, it appends the gap since the previous arrival to a list, keeping only the last \`window\` gaps.
+   - \`phi(t)\` returns 0.0 if there is no gap yet. Otherwise, with μ the mean of the gaps, σ the larger of their **population** standard deviation (divide by the number of gaps) and \`min_std\`, and Δ = t − (time of the last arrival), it returns −log₁₀ of ½ · erfc((Δ − μ) / (σ · √2)). If that probability is exactly 0.0, return \`float("inf")\`.
+   - \`suspect(t)\` returns whether \`phi(t)\` is greater than \`threshold\`.
+2. \`Monitor(node_id, detector, check_every)\`, a node with a list \`events\` and a flag \`suspecting\` (both start empty and \`False\`):
+   - \`start()\` sets a timer named \`"check"\` for \`check_every\`.
+   - On an \`("hb", seq)\` message it calls \`detector.heartbeat(now)\`; then, if it was suspecting, it sets \`suspecting\` to \`False\` and appends \`(now, "trust")\` to \`events\`.
+   - When \`"check"\` fires: if it is not suspecting and \`detector.suspect(now)\` is true, it sets \`suspecting\` and appends \`(now, "suspect")\`. Either way it sets the next \`"check"\` timer.
+
+For example, after heartbeats at 0, 10, 20 and 30, a \`PhiDetector(10, 1.0, 8)\` has gaps \`[10, 10, 10]\`, and \`round(d.phi(42), 4)\` is \`1.643\`: two standard deviations (with σ floored to 1.0) late.
+--- starter
+import math
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Heartbeater(Node):
+    def __init__(self, node_id, monitor, period):
+        super().__init__(node_id)
+        self.monitor = monitor
+        self.period = period
+        self.seq = 0
+
+    def start(self):
+        self.set_timer(self.period, "beat")
+
+    def on_timer(self, name):
+        self.send(self.monitor, ("hb", self.seq))
+        self.seq += 1
+        self.set_timer(self.period, "beat")
+
+
+class FixedDetector:
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.last = None
+
+    def heartbeat(self, t):
+        self.last = t
+
+    def suspect(self, t):
+        return self.last is not None and t - self.last > self.timeout
+
+
+class PhiDetector:
+    def __init__(self, window, min_std, threshold):
+        self.window = window
+        self.min_std = min_std
+        self.threshold = threshold
+
+    def heartbeat(self, t):
+        pass
+
+    def phi(self, t):
+        return 0.0
+
+    def suspect(self, t):
+        return False
+
+
+class Monitor(Node):
+    def __init__(self, node_id, detector, check_every):
+        super().__init__(node_id)
+        self.detector = detector
+        self.check_every = check_every
+        self.events = []
+        self.suspecting = False
+
+    def start(self):
+        pass
+
+
+def watch(detector, seed, hi, crash_at=None, until=3000):
+    sim = Sim(seed, delay=(1, hi))
+    beater = sim.add(Heartbeater("h", "m", 10))
+    monitor = sim.add(Monitor("m", detector, 1))
+    sim.at(0, beater.start)
+    sim.at(0, monitor.start)
+    if crash_at is not None:
+        sim.at(crash_at, lambda: sim.crash("h"))
+    sim.run(until)
+    return monitor.events
+--- solution
+import math
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Heartbeater(Node):
+    def __init__(self, node_id, monitor, period):
+        super().__init__(node_id)
+        self.monitor = monitor
+        self.period = period
+        self.seq = 0
+
+    def start(self):
+        self.set_timer(self.period, "beat")
+
+    def on_timer(self, name):
+        self.send(self.monitor, ("hb", self.seq))
+        self.seq += 1
+        self.set_timer(self.period, "beat")
+
+
+class FixedDetector:
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.last = None
+
+    def heartbeat(self, t):
+        self.last = t
+
+    def suspect(self, t):
+        return self.last is not None and t - self.last > self.timeout
+
+
+class PhiDetector:
+    def __init__(self, window, min_std, threshold):
+        self.window = window
+        self.min_std = min_std
+        self.threshold = threshold
+        self.last = None
+        self.gaps = []
+
+    def heartbeat(self, t):
+        if self.last is not None:
+            self.gaps.append(t - self.last)
+            if len(self.gaps) > self.window:
+                self.gaps.pop(0)
+        self.last = t
+
+    def phi(self, t):
+        if not self.gaps:
+            return 0.0
+        n = len(self.gaps)
+        mean = sum(self.gaps) / n
+        var = sum((g - mean) ** 2 for g in self.gaps) / n
+        std = max(math.sqrt(var), self.min_std)
+        p = 0.5 * math.erfc((t - self.last - mean) / (std * math.sqrt(2)))
+        if p == 0.0:
+            return float("inf")
+        return -math.log10(p)
+
+    def suspect(self, t):
+        return self.phi(t) > self.threshold
+
+
+class Monitor(Node):
+    def __init__(self, node_id, detector, check_every):
+        super().__init__(node_id)
+        self.detector = detector
+        self.check_every = check_every
+        self.events = []
+        self.suspecting = False
+
+    def start(self):
+        self.set_timer(self.check_every, "check")
+
+    def on_message(self, src, msg):
+        if msg[0] != "hb":
+            return
+        self.detector.heartbeat(self.sim.now)
+        if self.suspecting:
+            self.suspecting = False
+            self.events.append((self.sim.now, "trust"))
+
+    def on_timer(self, name):
+        if not self.suspecting and self.detector.suspect(self.sim.now):
+            self.suspecting = True
+            self.events.append((self.sim.now, "suspect"))
+        self.set_timer(self.check_every, "check")
+
+
+def watch(detector, seed, hi, crash_at=None, until=3000):
+    sim = Sim(seed, delay=(1, hi))
+    beater = sim.add(Heartbeater("h", "m", 10))
+    monitor = sim.add(Monitor("m", detector, 1))
+    sim.at(0, beater.start)
+    sim.at(0, monitor.start)
+    if crash_at is not None:
+        sim.at(crash_at, lambda: sim.crash("h"))
+    sim.run(until)
+    return monitor.events
+--- hint
+The detector needs two fields: the time of the last arrival (\`None\` before the first) and the list of gaps. In \`heartbeat\`, append a gap only when there was a previous arrival, then drop the oldest with \`pop(0)\` if the list is longer than \`window\`.
+--- hint
+In \`phi\`, compute the mean, then the population variance as the mean of the squared differences from it, take its square root and floor it with \`max(..., self.min_std)\`. Δ is \`t - self.last\`. Guard the probability: \`math.log10(0.0)\` is an error.
+--- hint
+The monitor's check timer re-arms itself every time it fires, whatever it decided. A heartbeat always goes to the detector first, and only then clears a suspicion.
+--- check case | The example from the task
+(lambda d: ([d.heartbeat(t) for t in (0, 10, 20, 30)], d.gaps, round(d.phi(42), 4))[1:])(PhiDetector(10, 1.0, 8))
+=> ([10, 10, 10], 1.643)
+--- check case | No gap yet: phi is 0
+(lambda d: (d.phi(5), d.heartbeat(3), d.phi(500), d.suspect(500))[::2] + (d.suspect(500),))(PhiDetector(10, 1.0, 8))
+=> (0.0, 0.0, False)
+--- check case | The table from the lesson: mean 100, standard deviation 10
+(lambda d: ([d.heartbeat(t) for t in (0, 90, 200, 290, 400)], [round(d.phi(400 + w), 2) for w in (110, 120, 130, 140, 160)])[1])(PhiDetector(10, 1.0, 8))
+=> [0.8, 1.64, 2.87, 4.5, 9.01]
+?? The gaps 90, 110, 90 and 110 have mean 100 and population standard deviation exactly 10.
+--- check case | The window keeps only the last gaps
+(lambda d: ([d.heartbeat(t) for t in (0, 50, 60, 70, 80)], d.gaps)[1])(PhiDetector(3, 1.0, 8))
+=> [10, 10, 10]
+--- check case | min_std floors a perfectly regular sender
+(lambda d: ([d.heartbeat(t) for t in range(0, 100, 10)], round(d.phi(100), 4), round(d.phi(105), 4), d.suspect(115))[1:])(PhiDetector(20, 2.0, 8))
+=> (0.301, 2.2069, True)
+--- check test | Very late is infinitely suspicious, not an error
+(lambda d: ([d.heartbeat(t) for t in (0, 10, 20)], d.phi(10 ** 6) == float("inf") and d.suspect(10 ** 6))[1])(PhiDetector(5, 1.0, 8))
+--- check case | Calm network, a crash at 2,500: when is it suspected?
+watch(PhiDetector(50, 2.0, 8), 1, 10, crash_at=2500)
+=> [(2528, 'suspect')]
+--- check case | The fixed baseline on the same run
+watch(FixedDetector(25), 1, 10, crash_at=2500)
+=> [(2520, 'suspect')]
+--- check case | A noisy network: the fixed timeout suspects a live node again and again
+(lambda ev: (len(ev), ev[:4]))(watch(FixedDetector(25), 2, 40))
+=> (25, [(76, 'suspect'), (78, 'trust'), (141, 'suspect'), (153, 'trust')])
+--- check case | Phi on the same noisy network
+watch(PhiDetector(50, 2.0, 8), 2, 40)
+=> []
+--- check case | Across 20 seeds: false suspicions and average detection time, calm and noisy
+(lambda runs: [(sum(sum(1 for t, e in ev if e == "suspect" and t < 2500) for ev in r), sum(next(t for t, e in ev if e == "suspect" and t >= 2500) - 2500 for ev in r) // 20) for r in runs])([[watch(mk(), s, hi, crash_at=2500) for s in range(20)] for mk, hi in ((lambda: FixedDetector(25), 10), (lambda: FixedDetector(25), 40), (lambda: PhiDetector(50, 2.0, 8), 10), (lambda: PhiDetector(50, 2.0, 8), 40))])
+=> [(0, 21), (226, 35), (2, 29), (6, 66)]
+?? Phi's detection time grows by itself on the noisy network, while the fixed timeout keeps its speed and pays in mistakes.
+
++++ question | What phi = 8 means
+--- ask
+A phi accrual detector reports φ = 8 for a node. What does that say?
+--- choice
+The node has missed 8 heartbeats.
+--- choice correct
+Under the detector's model of recent gaps, a live node would be this late with probability about 10⁻⁸.
+--- choice
+The node has been silent for 8 times the mean gap.
+--- choice
+There is an 8% chance that the node is alive.
+--- why
+φ = −log₁₀ P_later(Δ), where P_later is the probability, under a normal model fitted to recent gaps, of a gap at least this long. φ = 8 means P_later = 10⁻⁸. The model can be wrong about rare long pauses, which is why phi detectors still make occasional mistakes.
+
++++ question | The threshold that moves
+--- ask
+Delays on a network grow from 1–10 to 1–40 time units. A fixed-timeout detector starts suspecting live nodes, but a phi detector with the same threshold mostly does not. Why?
+--- choice
+The phi detector sends more heartbeats when the network is slow.
+--- choice correct
+The gaps between arrivals spread out, so the measured standard deviation grows, and the waiting time at which φ crosses the threshold grows with it.
+--- choice
+The phi detector ignores heartbeats that arrive late.
+--- choice
+The phi threshold is a number of seconds that is scaled by the delay.
+--- why
+The threshold is a confidence level, not a time. A wider spread of gaps makes the same Δ less surprising, so φ rises more slowly and suspicion comes later. The price is slower detection of real crashes on the noisy network.
+
++++ question | Whose timeout counts
+--- ask
+A request passes from A to B to C. Each hop uses its own 2-second timeout, and the user gives up after 2 seconds. C is slow today. What goes wrong that a propagated deadline would prevent?
+--- choice
+Nothing: each hop times out after 2 seconds, so the user waits at most 2 seconds.
+--- choice correct
+B and C keep working, and may retry, long after the user has left, because none of them knows the user's deadline; the wasted work adds load to a system that is already slow.
+--- choice
+C answers faster because it has its own timeout.
+--- choice
+A propagated deadline makes C faster.
+--- why
+Per-hop timeouts measure each hop on its own. A deadline set once at the edge and passed down lets every service see how much time its caller has left, and refuse to start work for a caller that has already gone.
+
++++ practice | Budgets down a call tree
+--- task
+A request enters a tree of services with a time budget. \`services\` is a dictionary from a service name to \`(work, children)\`: \`work\` is the time the service needs for itself, and \`children\` is the list of services it calls, one after another, after its own work.
+
+Write \`propagate(services, root, budget, margin)\` that visits services the way deadline propagation does. A service called with budget b:
+
+- if b ≤ 0, does nothing: its outcome is \`"skipped"\` and it uses 0;
+- otherwise, if \`work\` > b, it runs until its budget is gone and gives up without calling anyone: outcome \`"timeout"\`, uses b;
+- otherwise, it uses \`work\`, then calls each child in order with budget (b − time used so far − \`margin\`), adding what each child uses to its own time; its outcome is \`"ok"\`, whatever its children's outcomes were.
+
+Return a list of \`(name, outcome, used)\` in the order the services were **called** (a service comes before its children). Services never called do not appear.
+
+For example, with \`services = {"api": (5, ["auth", "search"]), "auth": (10, []), "search": (20, ["index"]), "index": (40, [])}\`, \`propagate(services, "api", 60, 2)\` is \`[("api", "ok", 56), ("auth", "ok", 10), ("search", "ok", 41), ("index", "timeout", 21)]\`.
+--- starter
+def propagate(services, root, budget, margin):
+    out = []
+    for name in services:
+        out.append((name, "ok", services[name][0]))
+    return out
+--- solution
+def propagate(services, root, budget, margin):
+    out = []
+
+    def visit(name, b):
+        slot = len(out)
+        out.append(None)
+        work, children = services[name]
+        if b <= 0:
+            out[slot] = (name, "skipped", 0)
+            return 0
+        if work > b:
+            out[slot] = (name, "timeout", b)
+            return b
+        used = work
+        for child in children:
+            used += visit(child, b - used - margin)
+        out[slot] = (name, "ok", used)
+        return used
+
+    visit(root, budget)
+    return out
+--- hint
+Write a recursive helper \`visit(name, b)\` that returns the time the service used. Reserve the service's place in the result list before visiting its children, so it comes first, and fill the place in once you know its outcome.
+--- hint
+Each child's budget is computed just before calling it: \`b - used - margin\`, where \`used\` already includes the service's own work and the earlier children. A negative budget is fine: the child is skipped.
+--- check case | The example from the task
+propagate({"api": (5, ["auth", "search"]), "auth": (10, []), "search": (20, ["index"]), "index": (40, [])}, "api", 60, 2)
+=> [('api', 'ok', 56), ('auth', 'ok', 10), ('search', 'ok', 41), ('index', 'timeout', 21)]
+--- check case | Enough time for everything
+propagate({"api": (5, ["auth", "search"]), "auth": (10, []), "search": (20, ["index"]), "index": (40, [])}, "api", 200, 2)
+=> [('api', 'ok', 75), ('auth', 'ok', 10), ('search', 'ok', 60), ('index', 'ok', 40)]
+--- check case | Late children are skipped, not started
+propagate({"edge": (30, ["a", "b", "c"]), "a": (25, []), "b": (5, []), "c": (5, [])}, "edge", 60, 3)
+=> [('edge', 'ok', 57), ('a', 'ok', 25), ('b', 'timeout', 2), ('c', 'skipped', 0)]
+?? After edge (30) and a (25), 5 units are left; minus the margin of 3, b gets 2 and times out, and c gets 2 − 2 − 3 < 0.
+--- check case | No budget at all
+propagate({"x": (1, ["y"]), "y": (1, [])}, "x", 0, 1)
+=> [('x', 'skipped', 0)]
+--- check case | Work exactly equal to the budget fits
+propagate({"x": (10, ["y"]), "y": (7, [])}, "x", 20, 3)
+=> [('x', 'ok', 17), ('y', 'ok', 7)]
+--- check case | A deep chain: the budget shrinks at every hop
+[o for _, o, _ in propagate({"s%d" % i: (4, ["s%d" % (i + 1)] if i < 9 else []) for i in range(10)}, "s0", 50, 2)]
+=> ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'timeout']
+
++++ practice | The retransmission timer TCP uses
+--- task
+TCP sets its retransmission timeout (RTO) adaptively from measured round-trip times, with the same idea as phi accrual: a running mean plus a multiple of a running deviation. Write \`rto_series(events)\` following RFC 6298, with exact \`Fraction\` arithmetic and α = 1/8, β = 1/4:
+
+- Start with no estimate and RTO = 1.
+- \`("rtt", r)\`: a round-trip measurement r (a whole number). For the **first** measurement, set SRTT = r and RTTVAR = r/2. For later ones, first set RTTVAR = (1 − β)·RTTVAR + β·|SRTT − r|, using the old SRTT, then SRTT = (1 − α)·SRTT + α·r. Then RTO = SRTT + 4·RTTVAR.
+- \`("retx-rtt", r)\`: a measurement of a segment that was sent more than once. It is ambiguous (which copy did the ack answer?), so it is **ignored** (Karn's rule); RTO stays as it is.
+- \`("timeout",)\`: the timer fired, so RTO doubles (exponential backoff), and the estimates stay as they are.
+
+After every event, clamp RTO to the range 1 to 60 (raise it to 1 if below, lower it to 60 if above), and append it to the result. The next \`"rtt"\` recomputes RTO from SRTT and RTTVAR, which discards any doubling. Return the list of RTOs, one per event, as \`Fraction\`s.
+
+For example, \`rto_series([("rtt", 4), ("rtt", 8)])\` is \`[Fraction(12), Fraction(29, 2)]\`. The first measurement gives SRTT = 4, RTTVAR = 2 and RTO = 4 + 4·2 = 12. The second gives RTTVAR = 3/4·2 + 1/4·|4 − 8| = 5/2, then SRTT = 7/8·4 + 1/8·8 = 9/2, and RTO = 9/2 + 4·5/2 = 29/2.
+--- starter
+from fractions import Fraction
+
+
+def rto_series(events):
+    return [Fraction(1) for _ in events]
+--- solution
+from fractions import Fraction
+
+ALPHA = Fraction(1, 8)
+BETA = Fraction(1, 4)
+
+
+def rto_series(events):
+    srtt = None
+    rttvar = None
+    rto = Fraction(1)
+    out = []
+    for event in events:
+        if event[0] == "rtt":
+            r = Fraction(event[1])
+            if srtt is None:
+                srtt = r
+                rttvar = r / 2
+            else:
+                rttvar = (1 - BETA) * rttvar + BETA * abs(srtt - r)
+                srtt = (1 - ALPHA) * srtt + ALPHA * r
+            rto = srtt + 4 * rttvar
+        elif event[0] == "timeout":
+            rto = rto * 2
+        rto = min(max(rto, Fraction(1)), Fraction(60))
+        out.append(rto)
+    return out
+--- hint
+Keep three values across events: SRTT and RTTVAR (both \`None\` until the first measurement) and the current RTO, starting at \`Fraction(1)\`.
+--- hint
+Update RTTVAR before SRTT: its formula needs the old SRTT. A \`"retx-rtt"\` event changes nothing but still appends the current RTO. Clamp with \`min(max(rto, 1), 60)\` after every event.
+--- check case | Two measurements
+rto_series([("rtt", 4), ("rtt", 8)])
+=> [Fraction(12, 1), Fraction(29, 2)]
+--- check case | A steady path: the deviation decays and RTO falls towards SRTT
+[float(x) for x in rto_series([("rtt", 10)] * 6)]
+=> [30.0, 25.0, 21.25, 18.4375, 16.328125, 14.74609375]
+--- check case | Timeouts double the RTO, up to 60
+rto_series([("rtt", 6), ("timeout",), ("timeout",), ("timeout",), ("timeout",)])
+=> [Fraction(18, 1), Fraction(36, 1), Fraction(60, 1), Fraction(60, 1), Fraction(60, 1)]
+--- check case | Karn's rule: ambiguous samples are ignored
+rto_series([("rtt", 6), ("retx-rtt", 50), ("rtt", 6)])
+=> [Fraction(18, 1), Fraction(18, 1), Fraction(15, 1)]
+--- check case | Before any measurement, a timeout doubles the starting RTO; a new sample resets the doubling
+rto_series([("timeout",), ("timeout",), ("rtt", 2), ("timeout",), ("rtt", 2)])
+=> [Fraction(2, 1), Fraction(4, 1), Fraction(6, 1), Fraction(12, 1), Fraction(5, 1)]
+--- check case | Tiny round trips are clamped up to 1
+rto_series([("rtt", 0), ("rtt", 0)])
+=> [Fraction(1, 1), Fraction(1, 1)]
+
++++ practice | Two leaders from one wrong guess
+--- task
+Each node picks a leader from what its failure detector says: the smallest node id among itself and the peers it does not suspect. When detectors disagree, two nodes can both believe they lead. Measure it on the simulator, which the starter has, with a finished \`Peer\` node: every 10 time units it sends \`("hb",)\` to every other node (in sorted order), records each heartbeat's arrival time in \`last[src]\`, and suspects a peer when \`now - last.get(peer, 0) > timeout\`.
+
+Write \`Peer.leader()\`, returning the smallest id among the node itself and its unsuspected peers, and \`split_brain(n, seed, cut_at, heal_at, until, timeout=30)\`:
+
+- build \`Sim(seed, delay=(1, 10))\` with nodes \`"n0"\` to \`"n{n-1}"\`, each a \`Peer(id, all_ids, timeout)\`, and schedule each node's \`start\` at time 0;
+- at \`cut_at\`, partition \`["n0"]\` from all the others; at \`heal_at\`, heal;
+- at every whole time t from 1 to \`until\`, after scheduling the above, look at the set of distinct \`leader()\` values over all nodes; t is a **split instant** when that set has more than one member.
+
+Return \`(count, first, last)\`: the number of split instants and the first and last of them (both \`None\` if there were none). Schedule the per-instant observations with \`sim.at(t, ...)\` **after** the starts and the partition events, so they are scheduled in the same order as in the solution.
+
+For example, \`split_brain(4, 1, 200, 400, 600)\` is \`(191, 213, 403)\`. n0 is cut off at 200. About 30 time units after the last heartbeats got through, the others suspect n0 and choose n1, while n0 suspects them all and keeps choosing itself: two leaders. After the heal at 400, the first heartbeats to arrive clear the suspicions.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Peer(Node):
+    def __init__(self, node_id, ids, timeout):
+        super().__init__(node_id)
+        self.peers = [p for p in ids if p != node_id]
+        self.timeout = timeout
+        self.last = {}
+
+    def start(self):
+        self.set_timer(10, "beat")
+
+    def on_timer(self, name):
+        for peer in self.peers:
+            self.send(peer, ("hb",))
+        self.set_timer(10, "beat")
+
+    def on_message(self, src, msg):
+        self.last[src] = self.sim.now
+
+    def suspects(self, peer):
+        return self.sim.now - self.last.get(peer, 0) > self.timeout
+
+    def leader(self):
+        return self.id
+
+
+def split_brain(n, seed, cut_at, heal_at, until, timeout=30):
+    return 0, None, None
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Peer(Node):
+    def __init__(self, node_id, ids, timeout):
+        super().__init__(node_id)
+        self.peers = [p for p in ids if p != node_id]
+        self.timeout = timeout
+        self.last = {}
+
+    def start(self):
+        self.set_timer(10, "beat")
+
+    def on_timer(self, name):
+        for peer in self.peers:
+            self.send(peer, ("hb",))
+        self.set_timer(10, "beat")
+
+    def on_message(self, src, msg):
+        self.last[src] = self.sim.now
+
+    def suspects(self, peer):
+        return self.sim.now - self.last.get(peer, 0) > self.timeout
+
+    def leader(self):
+        alive = [p for p in self.peers if not self.suspects(p)]
+        return min([self.id] + alive)
+
+
+def split_brain(n, seed, cut_at, heal_at, until, timeout=30):
+    sim = Sim(seed, delay=(1, 10))
+    ids = ["n%d" % i for i in range(n)]
+    for i in ids:
+        sim.add(Peer(i, ids, timeout))
+    for i in ids:
+        sim.at(0, sim.nodes[i].start)
+    sim.at(cut_at, lambda: sim.partition(["n0"], ids[1:]))
+    sim.at(heal_at, sim.heal)
+    splits = []
+
+    def observe():
+        leaders = {sim.nodes[i].leader() for i in ids}
+        if len(leaders) > 1:
+            splits.append(sim.now)
+
+    for t in range(1, until + 1):
+        sim.at(t, observe)
+    sim.run(until)
+    if not splits:
+        return 0, None, None
+    return len(splits), splits[0], splits[-1]
+--- hint
+\`leader()\` is one line once you have the list of unsuspected peers: take \`min\` over that list plus the node's own id. Ids like \`"n0"\` compare as strings, which is fine for fewer than ten nodes.
+--- hint
+In \`split_brain\`, add all the nodes, schedule their starts, then the partition (\`sim.partition(["n0"], ids[1:])\`) and the heal, and only then the observations, one \`sim.at(t, observe)\` for each t. \`observe\` puts every node's \`leader()\` in a set and records \`sim.now\` if the set has two or more members.
+--- check case | The example from the task
+split_brain(4, 1, 200, 400, 600)
+=> (191, 213, 403)
+--- check case | No partition in the window: one leader throughout
+split_brain(4, 2, 700, 800, 600)
+=> (0, None, None)
+--- check case | At the start nobody has heard anyone yet, but nobody is suspected until the timeout passes
+split_brain(3, 3, 1000, 1001, 40)
+=> (0, None, None)
+--- check case | A longer timeout notices later and heals later
+[split_brain(5, 4, 300, 500, 800, timeout=t) for t in (15, 30, 60)]
+=> [(223, 28, 790), (182, 326, 507), (152, 356, 507)]
+?? A timeout of 15 is shorter than some gaps between heartbeats, so false suspicions add split instants even without the partition.
+--- check case | Five nodes, 2,000 time units, two partitions
+(lambda a, b: (a[0] + b[0]))(split_brain(5, 5, 300, 600, 1000), split_brain(5, 5, 1300, 1500, 2000))
+=> 493
+
++++ practice | Asking others before suspecting
+--- task
+A direct ping can fail because of the link between two nodes, not because the target is down. SWIM-style membership protocols therefore probe **indirectly** before suspecting. Write \`probe(src, target, members, blocked, k)\`:
+
+- \`members\` is a list of node names; \`blocked\` is a set of directed pairs \`(a, b)\` meaning messages from a to b are lost. Every other message arrives.
+- **Direct:** src sends a ping to target (1 message). If it arrives, target sends an ack back (1 message). If the ack arrives, the result is \`"alive"\` and indirect probing does not happen.
+- **Indirect,** only if the direct probe failed: the helpers are the first \`k\` members in sorted order, leaving out src and target. For each helper h, in sorted order: src sends a ping-req to h (1 message); if it arrives, h pings target (1 message); if that arrives, target acks to h (1 message); if that arrives, h forwards the ack to src (1 message). Every helper is asked, even after one has succeeded.
+- The result is \`"alive"\` if any ack, direct or forwarded, reached src; otherwise \`"suspect"\`.
+
+Return \`(result, messages)\`, where \`messages\` counts every message **sent**, arrived or not.
+
+For example, \`probe("a", "b", ["a", "b", "c", "d"], {("a", "b")}, 2)\` is \`("alive", 9)\`: the direct ping is lost (1 message), then c and d each relay a ping and an ack (4 messages each).
+--- starter
+def probe(src, target, members, blocked, k):
+    if (src, target) in blocked:
+        return "suspect", 1
+    return "alive", 2
+--- solution
+def probe(src, target, members, blocked, k):
+    def ok(a, b):
+        return (a, b) not in blocked
+
+    messages = 1
+    if ok(src, target):
+        messages += 1
+        if ok(target, src):
+            return "alive", messages
+    alive = False
+    helpers = [m for m in sorted(members) if m != src and m != target][:k]
+    for h in helpers:
+        messages += 1
+        if not ok(src, h):
+            continue
+        messages += 1
+        if not ok(h, target):
+            continue
+        messages += 1
+        if not ok(target, h):
+            continue
+        messages += 1
+        if ok(h, src):
+            alive = True
+    return ("alive" if alive else "suspect"), messages
+--- hint
+Count a message the moment it is sent, then check whether it arrives before sending the next one in the chain. A small helper \`ok(a, b)\` that tests \`(a, b) not in blocked\` keeps the chain readable.
+--- hint
+Build the helper list with a comprehension over \`sorted(members)\` that skips src and target, then slice \`[:k]\`. Run every helper's chain to the end, or until a message in it is lost, and remember whether any forwarded ack arrived.
+--- check case | The example from the task
+probe("a", "b", ["a", "b", "c", "d"], {("a", "b")}, 2)
+=> ('alive', 9)
+--- check case | Direct success: two messages, nobody else asked
+probe("a", "b", ["a", "b", "c", "d"], set(), 2)
+=> ('alive', 2)
+--- check case | The ack is lost: the ping arrived, so it counts, and helpers are asked
+probe("a", "b", ["a", "b", "c"], {("b", "a")}, 3)
+=> ('alive', 6)
+--- check case | The target really is unreachable from everyone: suspect
+probe("a", "b", ["d", "c", "b", "a"], {("a", "b"), ("c", "b"), ("d", "b")}, 2)
+=> ('suspect', 5)
+--- check case | No helpers available
+probe("a", "b", ["a", "b"], {("a", "b")}, 3)
+=> ('suspect', 1)
+--- check case | k smaller than the helpers, and a helper that cannot hear src
+probe("a", "e", ["a", "b", "c", "d", "e"], {("a", "e"), ("a", "b")}, 2)
+=> ('alive', 6)
+--- check case | A forwarded ack lost on the way back
+probe("a", "e", ["a", "c", "e"], {("a", "e"), ("c", "a")}, 1)
+=> ('suspect', 5)
+
++++ practice | Debug: the monitor that trusts the sender's clock
+--- task
+\`Watch(timeout)\` is a heartbeat monitor. \`beat(arrival, stamp)\` is called for every heartbeat, with \`arrival\` the time it arrived on the monitor's own clock and \`stamp\` the time the **sender** wrote in it from its own clock. \`suspect(now)\` should return \`True\` when more than \`timeout\` time units of the monitor's clock have passed since the last heartbeat **arrived** (and \`False\` before any heartbeat).
+
+In testing, a sender whose clock runs 50 units behind is suspected all the time although its heartbeats arrive every 10 units, and a sender whose clock runs ahead is never suspected even after it crashes. Find the bug and fix it.
+--- starter
+class Watch:
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.last = None
+
+    def beat(self, arrival, stamp):
+        self.last = stamp
+
+    def suspect(self, now):
+        if self.last is None:
+            return False
+        return now - self.last > self.timeout
+--- solution
+class Watch:
+    def __init__(self, timeout):
+        self.timeout = timeout
+        self.last = None
+
+    def beat(self, arrival, stamp):
+        self.last = arrival
+
+    def suspect(self, now):
+        if self.last is None:
+            return False
+        return now - self.last > self.timeout
+--- hint
+\`now\` is read from the monitor's clock. Which of the two times in \`beat\` comes from the same clock?
+--- hint
+Subtracting a time read on one machine's clock from a time read on another's mixes in their skew. Remember the arrival time, and ignore the stamp for this purpose.
+--- check case | A sender 50 units behind, beating every 10: never suspected
+(lambda w: ([w.beat(t, t - 50) for t in range(0, 100, 10)], [w.suspect(t) for t in (95, 100, 105)])[1])(Watch(20))
+=> [False, False, False]
+--- check case | A sender 1,000 units ahead that stops at 90: suspected after the timeout
+(lambda w: ([w.beat(t, t + 1000) for t in range(0, 100, 10)], [w.suspect(t) for t in (100, 110, 111, 500)])[1])(Watch(20))
+=> [False, False, True, True]
+--- check case | Before any heartbeat
+Watch(5).suspect(1000)
+=> False
+--- check case | Exactly at the timeout is still trusted
+(lambda w: (w.beat(40, 3), w.suspect(70), w.suspect(71))[1:])(Watch(30))
+=> (False, True)
+
+=== dist1-03 | Retries and idempotency: backoff, jitter, budgets and keys
+--- teach
+Lesson 2 decided when to give up waiting. This lesson decides what to do next. Retrying is the most common reaction to failure in real systems, and the most common cause of outages that should have been small: a short overload turns into an hour-long one because every client retries at once. In Parallel Computing you made a retried request safe with a client id, a sequence number and a stored reply. Here you go further: when a retry is safe at all, how long to wait before it, how many retries a system can afford, and what an **idempotency key** must handle beyond a lookup table. Then you will watch a retry storm on the simulator.
+
+### Which failures to retry
+
+A retry repeats a request in the hope that the failure was **[[transient|transient]]**: gone by the next attempt. Before retrying, ask two questions.
+
+1. **Can it have happened already?** After a timeout, yes. A retry is then safe only if the operation is idempotent or carries a key the server deduplicates.
+2. **Can it succeed next time?** An overloaded or restarting server, yes, later. A malformed request or a missing permission, never: retrying it only adds load.
+
+HTTP puts this in its status codes. 408 (request timeout), 429 (too many requests), 502, 503 and 504 are worth retrying, often with a \`Retry-After\` header that says how long to wait. Other 4xx codes mean "your request is wrong" and are not.
+
+### Backoff: give the server room
+
+Retrying at once is the worst choice when the failure is overload, because the retry adds to the load that caused the failure. **Exponential backoff** waits longer after each failure: base · 2ᵏ before retry k (counting from 0), up to a **cap**:
+
+\`\`\`python
+base, cap = 10, 300
+waits = [min(cap, base * 2 ** k) for k in range(7)]
+print(waits)       # [10, 20, 40, 80, 160, 300, 300]
+\`\`\`
+
+The total wait grows fast, so a handful of retries covers a long outage, while the first retry still comes quickly for a short glitch.
+
+### Jitter: do not retry together
+
+Exponential backoff has a flaw that only shows at scale. A thousand clients that failed at the same moment, because the server restarted, compute the same waits, and come back at the same moments: 10 units later, 20 later, 40 later. Each wave is as big as the first. The fix is **[[jitter|jitter]]**: randomness in the wait. With **full jitter**, retry k waits a random whole number between 0 and min(cap, base · 2ᵏ). The waves dissolve into a spread of arrivals, and the server sees a steady trickle it can serve.
+
+**Why it works, in one line:** without jitter, all n clients land in the same time slot, so the peak load is n; with full jitter over a window of w slots, each slot gets about n / w. Doubling the window each round halves the expected peak each round.
+
+### Budgets: bound the amplification
+
+Retries multiply. A request crosses three layers of services, and each layer makes up to 3 attempts at the next one. When the bottom layer is down, one user request becomes 3 × 3 × 3 = 27 requests at the bottom, all hitting the service that is already failing. This is **[[retry amplification|amplification]]**.
+
+A **retry budget** caps it. Each client keeps a bucket of **tokens**. Every successful request adds a fraction r of a token (say 0.1), up to a maximum; every retry costs one whole token, and a retry is only allowed when a token is there. So over time, retries can be at most about r times the successful requests: about 10% extra load, at every layer, however bad things get. When the backend is healthy the bucket stays full and retries are free; when it is failing, successes stop, the bucket empties, and the clients stop piling on.
+
+The design choice is explicit: during a real outage, a budgeted client gives up sooner. That is the point. It turns "everyone retries until the backend dies" into "a few requests fail fast".
+
+### Hedging: retry before failure
+
+A different use of a second attempt fights **[[tail latency|tail-latency]]**: the slowest 1% of requests. If a request has not answered by the 95th-percentile latency, send a **hedged request**, a copy to another replica, and use whichever reply comes first. The cost model: about 5% of requests get a second copy, so load rises about 5%, and the 99th-percentile latency drops to roughly that of the faster of two tries. Hedging is only for idempotent requests, usually reads, because both copies may run.
+
+### Idempotency keys, properly
+
+An **idempotency key** is a unique id the client creates **once per logical operation**, sends with every attempt of it, and the server uses to run the operation at most once. You built the core in Parallel Computing: a table from key to stored reply. A real server must also handle four situations that table misses.
+
+1. **In flight.** The second attempt can arrive while the first is still running. It must not start a second execution. The server tracks keys in progress and answers "in progress, try later" (HTTP uses 409 Conflict).
+2. **Same key, different request.** A client bug reuses a key for a different payment. Replaying the old reply would silently lie. The server stores the request too (or a hash of it, a **[[fingerprint|fingerprint]]**) and rejects a mismatch.
+3. **Expiry.** The table cannot grow forever, so keys are kept for a **retention window**, often 24 hours. A retry after that runs again, so clients must stop retrying before the window ends.
+4. **Atomicity.** The effect and the stored reply must be written together, in one transaction. If the server crashes between the two, a retry runs the operation again.
+
+Here is a reply table keyed by operation, on different data from the lab, showing the fingerprint idea alone:
+
+\`\`\`python
+stored = {}
+
+def remember(key, request, reply):
+    stored[key] = (request, reply)
+
+remember("pay-7f3a", ("card-12", 40), "approved")
+request, reply = stored["pay-7f3a"]
+print(request == ("card-12", 41))     # False: same key, different request
+\`\`\`
+
+### A retry storm, simulated
+
+The lab puts it together. A server processes one request every 2 time units from a queue of at most 20, and answers "busy" when the queue is full. Four clients send a request every 4 time units, which the server handles easily, until a burst of one request per time unit for 200 units: twice its capacity. Each policy, with seed 1:
+
+| policy | succeeded | gave up | attempts sent |
+|---|---|---|---|
+| no retries | 318 | 82 | 400 |
+| up to 8 attempts, immediately | 334 | 66 | 1,186 |
+| up to 8, exponential backoff with full jitter | 387 | 13 | 1,050 |
+| same, with a 10% retry budget | 318 | 82 | 445 |
+
+Immediate retries triple the load for 16 more successes. Backoff with jitter spreads the retries past the burst and saves almost everything, at the price of long waits. The budget keeps the load near what the users asked for and gives up quickly. Which is right depends on whether a late answer is worth anything: a payment, yes; a search result, probably not.
+
+### Where it is used
+
+- **Cloud SDKs** retry with exponential backoff and jitter by default, and several use token-bucket retry budgets. gRPC's retry policy has a similar throttle.
+- **Payment APIs** take an \`Idempotency-Key\` header, store the reply with the request's fingerprint, reject reuse with different parameters, and keep keys for about a day.
+- **Search and storage backends** hedge reads after a percentile delay; the technique was popularised by work on tail latency at large web companies.
+- **Message consumers** retry failed messages with growing delays and move the hopeless ones to a dead-letter queue.
+
+**Watch out:**
+
+- **A new key for every attempt.** The key must be made once per operation and reused by every retry, or deduplication never fires.
+- **Retrying non-retryable errors** such as 400 or 403: pure extra load.
+- **Backoff without jitter** keeps synchronised clients synchronised.
+- **Retries at every layer** multiply. Retry at one layer, or budget every layer.
+- **Ignoring the deadline.** A retry that cannot finish before the caller's deadline is wasted; lesson 2's deadlines bound retries too.
+
+::: context transient Transient, intermittent, permanent
+Engineers sort failures by how long they last. A transient failure, such as one lost packet or a server restarting, is gone in milliseconds to seconds, and a retry fixes it. An intermittent one comes and goes, like a flaky network card, and retries help only sometimes. A permanent one, such as a deleted record or a bug, never goes away by waiting. Retry policies are tuned for the first kind, and must stop quickly on the third.
+:::
+
+::: context jitter Why the waves come back
+The effect is a form of synchronisation, the same thing that makes fireflies flash together. If clients' timers are set by the same event, they stay in step: every retry round they all fail together again, because together they overload the server again. Measurements on cloud services showed that full jitter both finishes the work sooner and sends fewer total calls than backoff without jitter. Variants exist, such as "equal jitter" (half fixed, half random) and "decorrelated jitter" (each wait random between base and three times the last).
+:::
+
+::: context amplification The storm that keeps itself going
+Retry amplification can create a metastable failure: a state where the system stays overloaded even after the trigger is gone. The original burst passes, but the retries it caused keep the servers busy, so more requests time out, which causes more retries. The system only recovers when load is cut from outside. Retry budgets, load shedding and backoff exist to make that state impossible to enter.
+:::
+
+::: context tail-latency Why the slowest 1% matters
+A page that calls 100 services waits for the slowest of them. If each is slow 1% of the time, the page is slow 1 − 0.99¹⁰⁰ ≈ 63% of the time. So at scale the tail of every component becomes the median of the whole. Hedged requests, sent after the 95th-percentile delay, were shown in a well-known 2013 paper on tail latency to cut the 99.9th percentile of a storage system from about 1,800 ms to 74 ms for 2% more requests.
+:::
+
+::: context fingerprint Remembering the request, cheaply
+Storing a whole request body for every key costs space, so servers often store a hash of the important fields instead: the amount, the currency, the account. If a retry's hash differs from the stored one, the key was reused for something else, and the server rejects it with an error rather than replaying a reply that belongs to a different request.
+:::
+--- task
+Write the three pieces a retrying system needs, then run the storm. The starter has the simulator, a finished \`Client\` node, the rest of the \`Server\` node, and \`storm(policy, seed, dup=0.0)\`, which runs four clients and one server through the burst described in the lesson and returns \`(succeeded, gave_up, attempts, executions, distinct_executions)\`. Do not change those.
+
+1. \`full_jitter(attempt, base, cap, rng)\` returns \`rng.randint(0, min(cap, base * 2 ** attempt))\`: retry number \`attempt\`, counting from 0, waits a random whole number from 0 to the capped exponential.
+2. \`RetryBudget(ratio, max_tokens)\`: \`tokens\` starts at \`Fraction(max_tokens)\`, and \`ratio\` is kept as a \`Fraction\`. \`on_success()\` adds \`ratio\` to \`tokens\`, but never above \`max_tokens\`. \`try_retry()\` returns \`True\` and takes 1 from \`tokens\` if \`tokens\` is at least 1, and returns \`False\` otherwise.
+3. \`Server.admit(src, key, payload, tries)\`, called for every request, returns a reply to send at once, or \`None\` if the request was queued. Replies are tuples \`(kind, key, tries, result)\`.
+   - If \`key\` is in \`self.done\`, which maps a key to \`(payload, result, time)\`: if more than \`self.ttl\` time units have passed since \`time\`, delete the entry and go on as if the key were new. Otherwise, if the payload differs from the stored one, return \`("error", key, tries, "key reused")\`; if it is the same, return \`("ok", key, tries, result)\` with the stored result.
+   - If \`key\` is in \`self.in_flight\`, which maps a key to its payload: return the same error if the payload differs, and \`("in-progress", key, tries, None)\` if it is the same.
+   - If the queue already holds \`self.queue_limit\` requests, return \`("busy", key, tries, None)\`.
+   - Otherwise append \`(src, key, payload, tries)\` to \`self.queue\`, set \`self.in_flight[key] = payload\`, call \`self.start_next()\` if \`self.working\` is \`False\`, and return \`None\`.
+
+The finished part of the server pops a request every \`service_time\`, adds its payload to \`balance\`, appends the key to \`executed\`, moves the key from \`in_flight\` to \`done\`, and replies \`("ok", key, tries, balance)\`.
+
+For example, \`storm("none", 1)\` is \`(318, 82, 400, 318, 318)\`.
+--- starter
+from fractions import Fraction
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def full_jitter(attempt, base, cap, rng):
+    return 0
+
+
+class RetryBudget:
+    def __init__(self, ratio, max_tokens):
+        self.ratio = Fraction(ratio)
+        self.max_tokens = max_tokens
+        self.tokens = Fraction(max_tokens)
+
+    def on_success(self):
+        pass
+
+    def try_retry(self):
+        return True
+
+
+class Server(Node):
+    def __init__(self, node_id, service_time, queue_limit, ttl):
+        super().__init__(node_id)
+        self.service_time = service_time
+        self.queue_limit = queue_limit
+        self.ttl = ttl
+        self.queue = []
+        self.working = False
+        self.in_flight = {}
+        self.done = {}
+        self.balance = 0
+        self.executed = []
+
+    def admit(self, src, key, payload, tries):
+        self.queue.append((src, key, payload, tries))
+        if not self.working:
+            self.start_next()
+        return None
+
+    def start_next(self):
+        self.working = True
+        self.set_timer(self.service_time, "work")
+
+    def on_message(self, src, msg):
+        if msg[0] == "req":
+            reply = self.admit(src, msg[1], msg[2], msg[3])
+            if reply is not None:
+                self.send(src, reply)
+
+    def on_timer(self, name):
+        src, key, payload, tries = self.queue.pop(0)
+        self.balance += payload
+        self.executed.append(key)
+        self.in_flight.pop(key, None)
+        self.done[key] = (payload, self.balance, self.sim.now)
+        self.send(src, ("ok", key, tries, self.balance))
+        if self.queue:
+            self.start_next()
+        else:
+            self.working = False
+
+
+class Client(Node):
+    def __init__(self, node_id, server, timeout, max_attempts, base, cap, budget=None):
+        super().__init__(node_id)
+        self.server = server
+        self.timeout = timeout
+        self.max_attempts = max_attempts
+        self.base = base
+        self.cap = cap
+        self.budget = budget
+        self.jobs = {}
+        self.results = {}
+        self.attempts = 0
+
+    def submit(self, key, payload):
+        self.jobs[key] = {"payload": payload, "tries": 0, "timer": None, "start": self.sim.now, "waiting": False}
+        self.attempt(key)
+
+    def attempt(self, key):
+        job = self.jobs[key]
+        job["tries"] += 1
+        job["waiting"] = False
+        self.attempts += 1
+        self.send(self.server, ("req", key, job["payload"], job["tries"]))
+        job["timer"] = self.set_timer(self.timeout, ("timeout", key))
+
+    def finish(self, key, outcome):
+        job = self.jobs[key]
+        self.sim.cancel(job["timer"])
+        self.results[key] = (outcome, self.sim.now - job["start"], job["tries"])
+
+    def on_message(self, src, msg):
+        kind, key, tries = msg[0], msg[1], msg[2]
+        job = self.jobs.get(key)
+        if job is None or key in self.results:
+            return
+        if kind == "ok":
+            self.finish(key, "ok")
+            if self.budget is not None:
+                self.budget.on_success()
+        elif kind == "error":
+            self.finish(key, "error")
+        elif tries == job["tries"] and not job["waiting"]:
+            self.sim.cancel(job["timer"])
+            self.retry(key)
+
+    def on_timer(self, name):
+        kind, key = name
+        if key in self.results:
+            return
+        if kind == "timeout":
+            self.retry(key)
+        else:
+            self.attempt(key)
+
+    def retry(self, key):
+        job = self.jobs[key]
+        if job["tries"] >= self.max_attempts or (self.budget is not None and not self.budget.try_retry()):
+            self.finish(key, "gave-up")
+            return
+        job["waiting"] = True
+        wait = full_jitter(job["tries"] - 1, self.base, self.cap, self.sim.rng)
+        job["timer"] = self.set_timer(wait, ("again", key))
+
+
+POLICIES = {
+    "none": (1, 0, 0, None),
+    "immediate": (8, 0, 0, None),
+    "backoff": (8, 4, 400, None),
+    "budget": (8, 4, 400, (Fraction(1, 10), 10)),
+}
+
+
+def storm(policy, seed, dup=0.0):
+    max_attempts, base, cap, budget = POLICIES[policy]
+    sim = Sim(seed, delay=(1, 5), dup=dup)
+    server = sim.add(Server("s", 2, 20, 10000))
+    clients = []
+    for i in range(4):
+        bucket = RetryBudget(*budget) if budget else None
+        clients.append(sim.add(Client("c%d" % i, "s", 60, max_attempts, base, cap, bucket)))
+    k = 0
+    t = 0
+    while t < 1000:
+        c = clients[k % 4]
+        sim.at(t, lambda c=c, k=k: c.submit("job%d" % k, 1))
+        k += 1
+        t += 1 if 200 <= t < 400 else 4
+    sim.run(3000)
+    outcomes = [r[0] for c in clients for r in c.results.values()]
+    return (outcomes.count("ok"), outcomes.count("gave-up"), sum(c.attempts for c in clients), len(server.executed), len(set(server.executed)))
+--- solution
+from fractions import Fraction
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def full_jitter(attempt, base, cap, rng):
+    return rng.randint(0, min(cap, base * 2 ** attempt))
+
+
+class RetryBudget:
+    def __init__(self, ratio, max_tokens):
+        self.ratio = Fraction(ratio)
+        self.max_tokens = max_tokens
+        self.tokens = Fraction(max_tokens)
+
+    def on_success(self):
+        self.tokens = min(Fraction(self.max_tokens), self.tokens + self.ratio)
+
+    def try_retry(self):
+        if self.tokens >= 1:
+            self.tokens -= 1
+            return True
+        return False
+
+
+class Server(Node):
+    def __init__(self, node_id, service_time, queue_limit, ttl):
+        super().__init__(node_id)
+        self.service_time = service_time
+        self.queue_limit = queue_limit
+        self.ttl = ttl
+        self.queue = []
+        self.working = False
+        self.in_flight = {}
+        self.done = {}
+        self.balance = 0
+        self.executed = []
+
+    def admit(self, src, key, payload, tries):
+        if key in self.done:
+            old_payload, result, when = self.done[key]
+            if self.sim.now - when > self.ttl:
+                del self.done[key]
+            elif payload != old_payload:
+                return ("error", key, tries, "key reused")
+            else:
+                return ("ok", key, tries, result)
+        if key in self.in_flight:
+            if payload != self.in_flight[key]:
+                return ("error", key, tries, "key reused")
+            return ("in-progress", key, tries, None)
+        if len(self.queue) >= self.queue_limit:
+            return ("busy", key, tries, None)
+        self.queue.append((src, key, payload, tries))
+        self.in_flight[key] = payload
+        if not self.working:
+            self.start_next()
+        return None
+
+    def start_next(self):
+        self.working = True
+        self.set_timer(self.service_time, "work")
+
+    def on_message(self, src, msg):
+        if msg[0] == "req":
+            reply = self.admit(src, msg[1], msg[2], msg[3])
+            if reply is not None:
+                self.send(src, reply)
+
+    def on_timer(self, name):
+        src, key, payload, tries = self.queue.pop(0)
+        self.balance += payload
+        self.executed.append(key)
+        self.in_flight.pop(key, None)
+        self.done[key] = (payload, self.balance, self.sim.now)
+        self.send(src, ("ok", key, tries, self.balance))
+        if self.queue:
+            self.start_next()
+        else:
+            self.working = False
+
+
+class Client(Node):
+    def __init__(self, node_id, server, timeout, max_attempts, base, cap, budget=None):
+        super().__init__(node_id)
+        self.server = server
+        self.timeout = timeout
+        self.max_attempts = max_attempts
+        self.base = base
+        self.cap = cap
+        self.budget = budget
+        self.jobs = {}
+        self.results = {}
+        self.attempts = 0
+
+    def submit(self, key, payload):
+        self.jobs[key] = {"payload": payload, "tries": 0, "timer": None, "start": self.sim.now, "waiting": False}
+        self.attempt(key)
+
+    def attempt(self, key):
+        job = self.jobs[key]
+        job["tries"] += 1
+        job["waiting"] = False
+        self.attempts += 1
+        self.send(self.server, ("req", key, job["payload"], job["tries"]))
+        job["timer"] = self.set_timer(self.timeout, ("timeout", key))
+
+    def finish(self, key, outcome):
+        job = self.jobs[key]
+        self.sim.cancel(job["timer"])
+        self.results[key] = (outcome, self.sim.now - job["start"], job["tries"])
+
+    def on_message(self, src, msg):
+        kind, key, tries = msg[0], msg[1], msg[2]
+        job = self.jobs.get(key)
+        if job is None or key in self.results:
+            return
+        if kind == "ok":
+            self.finish(key, "ok")
+            if self.budget is not None:
+                self.budget.on_success()
+        elif kind == "error":
+            self.finish(key, "error")
+        elif tries == job["tries"] and not job["waiting"]:
+            self.sim.cancel(job["timer"])
+            self.retry(key)
+
+    def on_timer(self, name):
+        kind, key = name
+        if key in self.results:
+            return
+        if kind == "timeout":
+            self.retry(key)
+        else:
+            self.attempt(key)
+
+    def retry(self, key):
+        job = self.jobs[key]
+        if job["tries"] >= self.max_attempts or (self.budget is not None and not self.budget.try_retry()):
+            self.finish(key, "gave-up")
+            return
+        job["waiting"] = True
+        wait = full_jitter(job["tries"] - 1, self.base, self.cap, self.sim.rng)
+        job["timer"] = self.set_timer(wait, ("again", key))
+
+
+POLICIES = {
+    "none": (1, 0, 0, None),
+    "immediate": (8, 0, 0, None),
+    "backoff": (8, 4, 400, None),
+    "budget": (8, 4, 400, (Fraction(1, 10), 10)),
+}
+
+
+def storm(policy, seed, dup=0.0):
+    max_attempts, base, cap, budget = POLICIES[policy]
+    sim = Sim(seed, delay=(1, 5), dup=dup)
+    server = sim.add(Server("s", 2, 20, 10000))
+    clients = []
+    for i in range(4):
+        bucket = RetryBudget(*budget) if budget else None
+        clients.append(sim.add(Client("c%d" % i, "s", 60, max_attempts, base, cap, bucket)))
+    k = 0
+    t = 0
+    while t < 1000:
+        c = clients[k % 4]
+        sim.at(t, lambda c=c, k=k: c.submit("job%d" % k, 1))
+        k += 1
+        t += 1 if 200 <= t < 400 else 4
+    sim.run(3000)
+    outcomes = [r[0] for c in clients for r in c.results.values()]
+    return (outcomes.count("ok"), outcomes.count("gave-up"), sum(c.attempts for c in clients), len(server.executed), len(set(server.executed)))
+--- hint
+\`full_jitter\` is one line with \`rng.randint\`. In \`RetryBudget\`, \`on_success\` adds the ratio and clamps with \`min(...)\`; \`try_retry\` checks \`self.tokens >= 1\` before spending.
+--- hint
+In \`admit\`, deal with \`self.done\` first. An expired entry is deleted and then falls through to the rest of the checks, as if the key were new, so do not return in that branch.
+--- hint
+The in-flight check stops a second copy from being queued while the first is waiting or running. Only a request that passes every check is queued and marked in flight.
+--- check case | full_jitter stays within the capped exponential
+(lambda r: [full_jitter(k, 10, 300, r) for k in range(8)])(__import__("random").Random(3))
+=> [3, 18, 34, 16, 94, 242, 297, 33]
+--- check test | full_jitter covers the whole range, 0 included
+(lambda r: set(full_jitter(1, 2, 100, r) for _ in range(400)) == {0, 1, 2, 3, 4})(__import__("random").Random(5))
+--- check case | A budget allows max_tokens retries, then needs successes
+(lambda b: ([b.try_retry() for _ in range(4)], b.tokens, [b.on_success() for _ in range(15)] and b.tokens, b.try_retry(), b.try_retry()))(RetryBudget(__import__("fractions").Fraction(1, 10), 3))
+=> ([True, True, True, False], Fraction(0, 1), Fraction(3, 2), True, False)
+--- check case | Tokens never exceed the maximum
+(lambda b: ([b.on_success() for _ in range(50)], b.tokens)[1])(RetryBudget(__import__("fractions").Fraction(1, 4), 2))
+=> Fraction(2, 1)
+--- check case | admit: a new key is queued, a second copy is in progress, a third after it ran gets the stored reply
+(lambda s, out: (s.at(0, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 1))), s.at(1, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 2))), s.at(9, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 3))), s.run(), out, s.nodes["srv"].executed)[-2:])((lambda s: (s.add(Server("srv", 4, 10, 100)), s.add(Node("c")), s)[-1])(Sim(1)), [])
+=> ([None, ('in-progress', 'k1', 2, None), ('ok', 'k1', 3, 5)], ['k1'])
+--- check case | admit: the same key with a different payload is an error, queued or done
+(lambda s, out: (s.at(0, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 1))), s.at(1, lambda: out.append(s.nodes["srv"].admit("c", "k1", 6, 1))), s.at(9, lambda: out.append(s.nodes["srv"].admit("c", "k1", 7, 1))), s.run(), out, s.nodes["srv"].executed)[-2:])((lambda s: (s.add(Server("srv", 4, 10, 100)), s.add(Node("c")), s)[-1])(Sim(1)), [])
+=> ([None, ('error', 'k1', 1, 'key reused'), ('error', 'k1', 1, 'key reused')], ['k1'])
+--- check case | admit: after the retention window, the key runs again
+(lambda s, out: (s.at(0, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 1))), s.at(50, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 2))), s.at(54, lambda: out.append(s.nodes["srv"].admit("c", "k1", 5, 3))), s.run(), out, s.nodes["srv"].executed, s.nodes["srv"].balance)[-3:])((lambda s: (s.add(Server("srv", 4, 10, 46)), s.add(Node("c")), s)[-1])(Sim(1)), [])
+=> ([None, ('ok', 'k1', 2, 5), None], ['k1', 'k1'], 10)
+?? The first run finished at time 4, so at time 50 its entry is 46 units old: exactly the window, still kept. At 54 it is 50 old and has expired.
+--- check case | admit: a full queue answers busy
+(lambda s: ([s.nodes["srv"].admit("c", "k%d" % i, 1, 1) for i in range(4)])[-2:])((lambda s: (s.add(Server("srv", 4, 2, 100)), s.add(Node("c")), s)[-1])(Sim(1)))
+=> [('busy', 'k2', 1, None), ('busy', 'k3', 1, None)]
+?? With a queue limit of 2, the first two keys are queued (None), and the queue is full for the next two.
+--- check case | The example from the task: no retries
+storm("none", 1)
+=> (318, 82, 400, 318, 318)
+--- check case | Immediate retries: three times the load for a few more successes
+storm("immediate", 1)
+=> (334, 66, 1186, 334, 334)
+--- check case | Backoff with full jitter rides out the burst
+storm("backoff", 1)
+=> (387, 13, 1050, 387, 387)
+--- check case | A retry budget keeps the load close to the demand
+storm("budget", 1)
+=> (318, 82, 445, 318, 318)
+--- check case | With duplicated messages, no request ever runs twice
+[storm(p, 2, dup=0.2) for p in ("none", "immediate", "backoff")]
+=> [(251, 149, 400, 317, 317), (307, 93, 1379, 334, 334), (377, 23, 1201, 387, 387)]
+?? Executions and distinct executions must be equal. With duplication, a client can give up on a request that did run: "gave up" never means "did not happen".
+
++++ question | Why add randomness
+--- ask
+A thousand clients lose their connection when a server restarts, and all retry with exponential backoff (10, 20, 40, … time units) but no jitter. What happens?
+--- choice
+The waits double, so the load halves each round.
+--- choice correct
+They all come back at the same moments, so each retry round hits the restarted server with all thousand requests at once, and it may fail again.
+--- choice
+Backoff spreads them out by itself, because the clients started at different times.
+--- choice
+The server rejects all retries, because they arrive too late.
+--- why
+Clients whose timers were started by the same event stay in step. Jitter draws each wait at random from a window, so the arrivals spread across it and the peak shrinks to about n divided by the window size.
+
++++ question | The key belongs to the operation
+--- ask
+A client creates a new idempotency key for every attempt it sends. What does the server's deduplication achieve?
+--- choice
+Exactly-once execution, since every key is unique.
+--- choice correct
+Nothing for retries: each retry carries a key the server has never seen, so an operation whose reply was lost runs again.
+--- choice
+It makes the operation idempotent, so running it twice is harmless.
+--- choice
+It rejects the retries as key reuse.
+--- why
+Deduplication matches attempts of the same operation by their shared key. The key must be created once per logical operation, stored by the client, and sent with every retry.
+
++++ question | Retries that multiply
+--- ask
+A request passes through 4 layers of services, and each layer tries the next layer up to 3 times. In the worst case, how many requests reach the bottom layer for one user request? Type a number.
+--- answer
+81
+--- why
+Each layer turns one incoming request into up to 3 outgoing ones, so 4 layers give 3 × 3 × 3 × 3 = 81. A retry budget of 10% per layer bounds it at about 1.1⁴ ≈ 1.46 instead.
+
++++ practice | How retries multiply down a stack
+--- task
+A request passes down a stack of services. \`attempts\` is a list: \`attempts[i]\` is the most attempts layer i makes at layer i + 1 when that layer keeps failing. The user sends one request to layer 0.
+
+Write \`worst_case(attempts)\` that returns the list of the most requests that can reach each layer, from layer 0 down to the bottom layer (one more entry than \`attempts\`).
+
+Then write \`budgeted(attempts, ratio)\`: the same list when every layer also has a retry budget that allows retries of at most \`ratio\` times the requests it sends first. A layer that receives x requests sends x first attempts, plus at most \`ratio\` · x retries, and never more than the attempts limit allows: it sends min(x · attempts[i], x · (1 + ratio)). \`ratio\` is a \`Fraction\`; return \`Fraction\`s.
+
+For example, \`worst_case([3, 3])\` is \`[1, 3, 9]\` and \`budgeted([3, 3], Fraction(1, 10))\` is \`[Fraction(1), Fraction(11, 10), Fraction(121, 100)]\`.
+--- starter
+from fractions import Fraction
+
+
+def worst_case(attempts):
+    return [1] + list(attempts)
+
+
+def budgeted(attempts, ratio):
+    return [Fraction(1)] + [Fraction(a) for a in attempts]
+--- solution
+from fractions import Fraction
+
+
+def worst_case(attempts):
+    load = [1]
+    for a in attempts:
+        load.append(load[-1] * a)
+    return load
+
+
+def budgeted(attempts, ratio):
+    load = [Fraction(1)]
+    for a in attempts:
+        x = load[-1]
+        load.append(min(x * a, x * (1 + ratio)))
+    return load
+--- hint
+Each layer's load is the previous layer's load times its factor. Build the list from the top, starting with \`[1]\`.
+--- hint
+With a budget, the factor is the smaller of the attempts limit and 1 + ratio. Start from \`Fraction(1)\` so every entry stays exact.
+--- check case | The example from the task
+(worst_case([3, 3]), budgeted([3, 3], __import__("fractions").Fraction(1, 10)))
+=> ([1, 3, 9], [Fraction(1, 1), Fraction(11, 10), Fraction(121, 100)])
+--- check case | Five layers of three attempts
+worst_case([3, 3, 3, 3, 3])
+=> [1, 3, 9, 27, 81, 243]
+--- check case | No retries anywhere: one request per layer
+(worst_case([1, 1, 1]), budgeted([1, 1, 1], __import__("fractions").Fraction(1, 5)))
+=> ([1, 1, 1, 1], [Fraction(1, 1), Fraction(1, 1), Fraction(1, 1), Fraction(1, 1)])
+--- check case | The attempts limit can be tighter than the budget
+budgeted([1, 5, 1], __import__("fractions").Fraction(1, 2))
+=> [Fraction(1, 1), Fraction(1, 1), Fraction(3, 2), Fraction(3, 2)]
+--- check case | An empty stack: only the user's request
+(worst_case([]), budgeted([], __import__("fractions").Fraction(1, 10)))
+=> ([1], [Fraction(1, 1)])
+
++++ practice | Peaks with and without jitter
+--- task
+\`n\` clients all fail at time 0 and each retries \`rounds\` times. Retry k (counting from 0) of a client waits after its previous attempt, which for the first retry was at time 0. Compare three ways of choosing the wait, for base \`base\` and cap \`cap\`:
+
+- \`"none"\`: exactly min(cap, base · 2ᵏ);
+- \`"full"\`: \`rng.randint(0, min(cap, base * 2 ** k))\`;
+- \`"equal"\`: half fixed, half random: with c = min(cap, base · 2ᵏ), wait c // 2 + \`rng.randint(0, c - c // 2)\`.
+
+Write \`retry_times(n, rounds, base, cap, strategy, seed)\` that returns, for every client in turn (client 0 first), the list of the times of its \`rounds\` retries, drawing from one \`random.Random(seed)\` in that order (all of client 0's waits, then client 1's, and so on). Then write \`peak(n, rounds, base, cap, strategy, seed)\`: the largest number of retries that land on the same time.
+
+For example, \`retry_times(2, 3, 10, 1000, "none", 0)\` is \`[[10, 30, 70], [10, 30, 70]]\`, so \`peak(2, 3, 10, 1000, "none", 0)\` is 2.
+--- starter
+import random
+
+
+def retry_times(n, rounds, base, cap, strategy, seed):
+    return [[base] * rounds for _ in range(n)]
+
+
+def peak(n, rounds, base, cap, strategy, seed):
+    return 1
+--- solution
+import random
+from collections import Counter
+
+
+def retry_times(n, rounds, base, cap, strategy, seed):
+    rng = random.Random(seed)
+    out = []
+    for _ in range(n):
+        t = 0
+        times = []
+        for k in range(rounds):
+            c = min(cap, base * 2 ** k)
+            if strategy == "none":
+                wait = c
+            elif strategy == "full":
+                wait = rng.randint(0, c)
+            else:
+                wait = c // 2 + rng.randint(0, c - c // 2)
+            t += wait
+            times.append(t)
+        out.append(times)
+    return out
+
+
+def peak(n, rounds, base, cap, strategy, seed):
+    counts = Counter(t for times in retry_times(n, rounds, base, cap, strategy, seed) for t in times)
+    return max(counts.values()) if counts else 0
+--- hint
+For each client, keep a running time t starting at 0; each retry adds its wait to t and records t. Make one generator before the loop over clients, so the draws come in the order the task says.
+--- hint
+\`collections.Counter\` over every retry time of every client gives how many land on each time; the peak is the largest count. With no retries at all there is no peak: return 0.
+--- check case | The example from the task
+(retry_times(2, 3, 10, 1000, "none", 0), peak(2, 3, 10, 1000, "none", 0))
+=> ([[10, 30, 70], [10, 30, 70]], 2)
+--- check case | Without jitter, every client lands together
+peak(500, 5, 10, 1000, "none", 1)
+=> 500
+--- check case | Full jitter and equal jitter spread the same clients out
+(peak(500, 5, 10, 1000, "full", 1), peak(500, 5, 10, 1000, "equal", 1))
+=> (89, 97)
+--- check case | Full jitter can retry at once: a wait of 0 is allowed
+retry_times(3, 2, 2, 100, "full", 4)
+=> [[0, 2], [0, 3], [1, 2]]
+--- check case | The cap stops the growth
+retry_times(1, 6, 10, 50, "none", 0)
+=> [[10, 30, 70, 120, 170, 220]]
+--- check case | No clients or no retries
+(peak(0, 3, 10, 100, "full", 1), peak(5, 0, 10, 100, "full", 1))
+=> (0, 0)
+
++++ practice | Hedged reads against a slow replica
+--- task
+Measure what hedging buys. The starter has the simulator. Write \`SlowSim(Sim)\`, constructed as \`SlowSim(seed, slow)\`, whose \`pick_delay(src, dst)\` first draws \`self.rng.random()\`: if it is below \`slow\`, the message is slow and the delay is \`self.rng.randint(50, 100)\`; otherwise it is \`self.rng.randint(1, 5)\`.
+
+Two replicas, \`"r1"\` and \`"r2"\`, answer every \`("get", k)\` with \`("val", k)\`. A client \`"c"\` makes \`n\` reads, starting read k at time 100 · k. Each read goes to \`"r1"\`. If \`hedge_after\` is not \`None\` and no reply has come \`hedge_after\` time units after the read started, the client sends the same \`("get", k)\` to \`"r2"\`. A read finishes at its first reply; later replies are ignored.
+
+Write \`hedged(n, seed, slow, hedge_after)\` returning \`(p50, p99, extra)\`: with the read latencies sorted in a list \`lat\`, p50 is \`lat[(n - 1) // 2]\` and p99 is \`lat[(99 * n) // 100 - 1]\`, and \`extra\` is the number of hedge requests sent. Write your own node classes; the client's hedge timer for read k should be named \`("hedge", k)\`.
+
+For example, \`hedged(500, 2, 0.05, None)\` is \`(6, 97, 0)\`: only about 5% of messages are slow, but that is enough to ruin the 99th percentile.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class SlowSim(Sim):
+    def __init__(self, seed, slow):
+        Sim.__init__(self, seed)
+        self.slow = slow
+
+
+def hedged(n, seed, slow, hedge_after):
+    return 0, 0, 0
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class SlowSim(Sim):
+    def __init__(self, seed, slow):
+        Sim.__init__(self, seed)
+        self.slow = slow
+
+    def pick_delay(self, src, dst):
+        if self.rng.random() < self.slow:
+            return self.rng.randint(50, 100)
+        return self.rng.randint(1, 5)
+
+
+class Replica(Node):
+    def on_message(self, src, msg):
+        if msg[0] == "get":
+            self.send(src, ("val", msg[1]))
+
+
+class Reader(Node):
+    def __init__(self, node_id, hedge_after):
+        super().__init__(node_id)
+        self.hedge_after = hedge_after
+        self.started = {}
+        self.latency = {}
+        self.extra = 0
+
+    def read(self, k):
+        self.started[k] = self.sim.now
+        self.send("r1", ("get", k))
+        if self.hedge_after is not None:
+            self.set_timer(self.hedge_after, ("hedge", k))
+
+    def on_timer(self, name):
+        k = name[1]
+        if k not in self.latency:
+            self.extra += 1
+            self.send("r2", ("get", k))
+
+    def on_message(self, src, msg):
+        k = msg[1]
+        if msg[0] == "val" and k not in self.latency:
+            self.latency[k] = self.sim.now - self.started[k]
+
+
+def hedged(n, seed, slow, hedge_after):
+    sim = SlowSim(seed, slow)
+    reader = sim.add(Reader("c", hedge_after))
+    sim.add(Replica("r1"))
+    sim.add(Replica("r2"))
+    for k in range(n):
+        sim.at(100 * k, lambda k=k: reader.read(k))
+    sim.run()
+    lat = sorted(reader.latency[k] for k in range(n))
+    return lat[(n - 1) // 2], lat[(99 * n) // 100 - 1], reader.extra
+--- hint
+\`SlowSim.pick_delay\` makes two draws per message: the coin, then the delay from the matching range.
+--- hint
+The client remembers each read's start time and, once it has one, its latency. The hedge timer fires for every read; it sends the copy only if that read has no latency yet.
+--- hint
+Replies from both replicas look alike: the first \`("val", k)\` for a read sets its latency, and any later one is ignored because the latency is already there.
+--- check case | The example from the task
+hedged(500, 2, 0.05, None)
+=> (6, 97, 0)
+--- check case | Hedging after 15 cuts the tail for a few percent more requests
+hedged(500, 2, 0.05, 15)
+=> (6, 24, 43)
+--- check case | Hedging too early doubles the load for little extra gain
+hedged(500, 2, 0.05, 2)
+=> (6, 10, 500)
+--- check case | Nothing slow: hedging after 15 never fires
+hedged(100, 2, 0.0, 15)
+=> (6, 10, 0)
+--- check case | A very slow network: hedging helps less when both copies can be slow
+[hedged(300, 3, s, 15) for s in (0.02, 0.2, 0.5)]
+=> [(6, 23, 14), (8, 99, 109), (68, 166, 224)]
+
++++ practice | When to retry, and how long to wait
+--- task
+Write the decision a careful client makes after a failed attempt: \`decide(method, status, attempt, max_attempts, has_key, retry_after, backoff_wait, time_left)\`.
+
+- \`method\` is an HTTP method such as \`"GET"\` or \`"POST"\`; \`status\` is the response's status code, or \`None\` if the attempt timed out; \`attempt\` is the number of attempts made so far (1 or more).
+- Return \`("stop", reason)\` or \`("retry", wait)\`, checking in this order:
+  1. If \`attempt >= max_attempts\`: \`("stop", "attempts")\`.
+  2. If the status is not \`None\` and is not one of 408, 429, 500, 502, 503, 504: \`("stop", "not retryable")\`.
+  3. If the attempt may have run on the server (the status is \`None\` or 500, 502 or 504) and the request is not safe to repeat: \`("stop", "unsafe")\`. \`GET\`, \`HEAD\`, \`PUT\` and \`DELETE\` are safe to repeat; any other method is safe only when \`has_key\` is \`True\`.
+  4. The wait is \`retry_after\` if the status is 429 or 503 and \`retry_after\` is not \`None\`; otherwise \`backoff_wait\`. If the wait is more than \`time_left\`: \`("stop", "deadline")\`.
+  5. Otherwise \`("retry", wait)\`.
+
+For example, \`decide("POST", None, 1, 3, False, None, 40, 1000)\` is \`("stop", "unsafe")\`: the payment may already have gone through, and without a key a retry could pay twice.
+--- starter
+def decide(method, status, attempt, max_attempts, has_key, retry_after, backoff_wait, time_left):
+    if attempt >= max_attempts:
+        return ("stop", "attempts")
+    return ("retry", backoff_wait)
+--- solution
+RETRYABLE = {408, 429, 500, 502, 503, 504}
+MAYBE_RAN = {None, 500, 502, 504}
+SAFE = {"GET", "HEAD", "PUT", "DELETE"}
+
+
+def decide(method, status, attempt, max_attempts, has_key, retry_after, backoff_wait, time_left):
+    if attempt >= max_attempts:
+        return ("stop", "attempts")
+    if status is not None and status not in RETRYABLE:
+        return ("stop", "not retryable")
+    if status in MAYBE_RAN and method not in SAFE and not has_key:
+        return ("stop", "unsafe")
+    if status in (429, 503) and retry_after is not None:
+        wait = retry_after
+    else:
+        wait = backoff_wait
+    if wait > time_left:
+        return ("stop", "deadline")
+    return ("retry", wait)
+--- hint
+Put the three lists of codes and methods in sets, so each rule is one membership test. \`None\` can be a member of a set, which handles the timeout case.
+--- hint
+Follow the order exactly: a request that is both out of attempts and unsafe stops with \`"attempts"\`, because that rule comes first.
+--- check case | The example from the task
+decide("POST", None, 1, 3, False, None, 40, 1000)
+=> ('stop', 'unsafe')
+--- check case | The same POST with an idempotency key may retry
+decide("POST", None, 1, 3, True, None, 40, 1000)
+=> ('retry', 40)
+--- check case | 503 with Retry-After uses the server's wait
+decide("GET", 503, 2, 5, False, 120, 40, 1000)
+=> ('retry', 120)
+--- check case | A wait longer than the time left stops
+decide("GET", 429, 1, 5, False, 300, 40, 250)
+=> ('stop', 'deadline')
+--- check case | Errors that will never succeed are not retried
+[decide("GET", s, 1, 5, False, None, 10, 100)[1] for s in (400, 401, 403, 404, 409)]
+=> ['not retryable', 'not retryable', 'not retryable', 'not retryable', 'not retryable']
+--- check case | 503 means "not processed": safe to retry even for a POST without a key
+decide("POST", 503, 1, 3, False, None, 25, 100)
+=> ('retry', 25)
+--- check case | Out of attempts comes first
+(decide("POST", None, 3, 3, False, None, 1, 100), decide("GET", 400, 3, 3, False, None, 1, 100))
+=> (('stop', 'attempts'), ('stop', 'attempts'))
+--- check case | A wait exactly equal to the time left is allowed
+decide("PUT", 504, 1, 4, False, None, 80, 80)
+=> ('retry', 80)
+
++++ practice | Debug: the key that changes on every retry
+--- task
+The starter's \`PaymentClient\` sends payments to a \`PaymentServer\` that deduplicates by idempotency key. \`pay(amount, lost_replies)\` should perform **one** payment: it sends attempts until one gets a reply, where \`lost_replies\` is how many replies are lost first (the server runs the request, but the client never hears back). It returns the reply. Every call to \`pay\` is a new payment.
+
+Customers are being charged several times for one purchase: after \`pay(30, 2)\`, the server's \`total\` is 90 instead of 30. Find the bug and fix it, so that each call to \`pay\` charges exactly once however many replies are lost, and two calls to \`pay\` are two separate payments.
+--- starter
+class PaymentServer:
+    def __init__(self):
+        self.total = 0
+        self.replies = {}
+
+    def charge(self, key, amount):
+        if key in self.replies:
+            return self.replies[key]
+        self.total += amount
+        self.replies[key] = ("charged", self.total)
+        return self.replies[key]
+
+
+class PaymentClient:
+    def __init__(self, name, server):
+        self.name = name
+        self.server = server
+        self.counter = 0
+
+    def pay(self, amount, lost_replies):
+        while True:
+            self.counter += 1
+            key = "%s-%d" % (self.name, self.counter)
+            reply = self.server.charge(key, amount)
+            if lost_replies == 0:
+                return reply
+            lost_replies -= 1
+--- solution
+class PaymentServer:
+    def __init__(self):
+        self.total = 0
+        self.replies = {}
+
+    def charge(self, key, amount):
+        if key in self.replies:
+            return self.replies[key]
+        self.total += amount
+        self.replies[key] = ("charged", self.total)
+        return self.replies[key]
+
+
+class PaymentClient:
+    def __init__(self, name, server):
+        self.name = name
+        self.server = server
+        self.counter = 0
+
+    def pay(self, amount, lost_replies):
+        self.counter += 1
+        key = "%s-%d" % (self.name, self.counter)
+        while True:
+            reply = self.server.charge(key, amount)
+            if lost_replies == 0:
+                return reply
+            lost_replies -= 1
+--- hint
+How many keys does one call to \`pay\` create? How many should it?
+--- hint
+Create the key once, before the retry loop, so every attempt of this payment carries it; the counter still moves on between calls, so the next payment gets a new key.
+--- check case | Two lost replies, one charge
+(lambda s: (PaymentClient("shop", s).pay(30, 2), s.total))(PaymentServer())
+=> (('charged', 30), 30)
+--- check case | Two payments are two charges
+(lambda s, c: (c.pay(10, 0), c.pay(10, 3), s.total))(*(lambda s: (s, PaymentClient("shop", s)))(PaymentServer()))
+=> (('charged', 10), ('charged', 20), 20)
+--- check case | Two clients never share keys
+(lambda s: (PaymentClient("a", s).pay(5, 1), PaymentClient("b", s).pay(7, 1), s.total))(PaymentServer())
+=> (('charged', 5), ('charged', 12), 12)
+--- check case | The retry gets the original reply
+(lambda s, c: (c.pay(4, 0), c.pay(6, 5)))(*(lambda s: (s, PaymentClient("x", s)))(PaymentServer()))
+=> (('charged', 4), ('charged', 10))
+
+=== dist1-04 | Time, leases and fencing tokens
+--- teach
+Lessons 2 and 3 measured time on one machine: how long since the last heartbeat, how long to back off. This lesson is about the moment two machines must agree about time, which is exactly when a **[[lease|lease]]** is involved: "you may act as leader until 12:00:10". You will see why clocks make that promise fragile, why a paused process breaks it whatever the clocks do, and how a **fencing token** makes the danger harmless. The lab runs all three failures on the simulator.
+
+### Clocks, compressed
+
+From Parallel Computing you know the pieces. Each machine's quartz clock **drifts**: it runs fast or slow by a rate ρ (read "rho"), typically tens of parts per million. NTP corrects it, and the error of each correction is at most half the round trip. Two consequences shape everything below.
+
+- **Every reading is uncertain.** A clock reading is really "true time, give or take ε", where ε (read "epsilon") is the current **skew bound**: milliseconds over the internet when things go well, and unbounded when NTP has lost its servers.
+- **Wall clocks jump; monotonic clocks do not.** When NTP finds a large error, it may **[[step|drift-rate]]** the wall clock, forwards or backwards. A **monotonic clock** only moves forwards, at roughly the right rate, but its value means nothing on another machine. So: durations on one machine use the monotonic clock, and comparisons between machines use neither.
+
+The simulator's true time is \`sim.now\`. A node's own clock can be modelled as a reading that starts at some **offset** and advances at a **rate**: local = offset + rate · true time. A rate of 0.99 is a clock that runs 1% slow.
+
+### Hybrid logical clocks, in one paragraph
+
+When events on different machines must be ordered and also read as times of day, systems use **[[hybrid logical clocks|hlc]]**, whose update rules you implemented in Parallel Computing: a pair (l, c) where l is the largest physical reading seen, in the node's own clock or in any message, and c breaks ties. Two properties make them worth the trouble. Like Lamport clocks, if a happens before b then HLC(a) < HLC(b). And l never runs ahead of the node's physical clock by more than the skew bound ε, because l only ever copies a reading that some node's clock really showed. So a database can serve "everything as of 10:15:00" from HLC timestamps, and the snapshot respects causality. One practice problem checks both properties on skewed clocks.
+
+### Leases: locks that expire
+
+A **lease** is permission that runs out by itself: "you hold this for D seconds". Think of a library book: the library lends it until a date, and if the borrower vanishes, the book becomes lendable again on that date without anyone having to find the borrower. A lock that never expires has the opposite problem: if its holder crashes, nobody else can ever take it.
+
+Leases are everywhere a system needs exactly one of something: one leader of a replica group, one worker on a job, one writer to a file. The **lock server** grants a lease with a duration D, and grants it to someone else only after D has passed **on its own clock**. The holder may act only while it is sure the lease is still valid **on the server's clock**. Those are two different clocks, and that is the whole difficulty.
+
+### How long the holder may trust its lease
+
+The holder cannot read the server's clock. It can only measure, on its own monotonic clock, how much time has passed. Two adjustments make that safe.
+
+1. **Measure from the request, not the reply.** The server started the lease somewhere between the moment the holder sent its request and the moment the reply arrived. The holder does not know where, so it assumes the worst: the lease started when the request was sent.
+2. **Shrink by the drift bound.** If the holder's clock may run slow by a factor of up to ρ, then while its clock shows e units, up to e / (1 − ρ) true units may have passed. To be sure that less than D true units have passed, it needs e < D · (1 − ρ).
+
+Add a small **margin** for the time the next action takes, and the holder's rule is:
+
+**valid while  local_now − local_sent  <  D · (1 − ρ) − margin**
+
+With D = 50, ρ = 1/10 and a margin of 2, the holder trusts its lease for 43 units of its own clock after sending the request. The rule assumes the server's clock is accurate; if it may run fast, shrink further.
+
+### The pause that no check can catch
+
+Now the hard part. The holder checks its lease, finds it valid, and then **[[pauses|pause]]**: a garbage-collection stop, a virtual machine being moved, the operating system swapping its memory out. Pauses of several seconds are well documented in production. When it wakes, it carries on with the write it had decided to do. Meanwhile its lease expired, the server granted it to someone else, and the new holder has written. The old holder's write lands on top.
+
+\`\`\`python fragment
+if lease_valid():        # true at time 12
+    # ... a 100-unit pause happens here ...
+    storage.write(x)     # arrives at time 113, long after the lease ended
+\`\`\`
+
+No amount of checking fixes this, because the danger lies between the check and the action. Checking again just before the write only moves the gap. The holder cannot protect the storage. The storage must protect itself.
+
+### Fencing tokens
+
+With every grant, the lock server hands out a **fencing token**: a number that goes up by one with each grant. The holder sends its token with every write. The storage remembers the highest token it has seen, and **rejects any write with a lower token**.
+
+**Why it works.** The storage's highest token only ever grows, and it accepts a write only if its token is at least that high. So once any write with token t has been accepted, no write with a token below t is ever accepted again. A new holder has a higher token than every older holder, because tokens increase with each grant. After the new holder's first write, every older holder is harmless, however slow its clock and however long its pause. The safety argument uses no clock at all.
+
+Two things to notice.
+
+- **The resource must cooperate.** Fencing works only if the storage checks tokens. A plain file or an old database that does not cannot be fenced this way; systems then fall back to cutting the old holder off, as the note on [[forcible fencing|stonith]] explains.
+- **The window before the first write.** A stale write that arrives before the new holder has touched the storage is accepted, because the storage has not heard of the new token yet. That is safe in token order: the stale write is simply ordered before the new holder's writes, as if it had happened while the old lease was valid. A new holder that must read a clean state first sends its token to the storage before reading.
+
+Tokens must come from a source that never hands out the same number twice, even across its own crashes: a lock server built on consensus, which is the second course's subject. Raft's terms are fencing tokens by another name.
+
+### Where it is used
+
+- **Lock services.** Google's Chubby hands out "sequencers" with locks; ZooKeeper's node versions and etcd's revision numbers serve as fencing tokens for leader election.
+- **Leader leases.** Replicated databases let a leader serve reads locally while it holds a lease, so it need not ask a majority for every read; the lease must expire before any new leader is elected.
+- **Storage systems** such as distributed file systems and message logs reject requests from a controller or leader with an old epoch number.
+- **Clocks.** Cloud providers smear leap seconds over a day instead of stepping the clock, so no wall clock on their machines ever jumps.
+
+**Watch out:**
+
+- **Comparing timestamps from two machines** to decide who holds a lease. Each side may only measure durations on its own clock.
+- **Measuring from the reply.** The lease may have started long before the reply arrived.
+- **Ignoring drift.** A holder whose clock runs slow believes in its lease after the server has given it away.
+- **Trusting a check across a pause.** A check followed by an action is a race; only the resource can close it, with fencing.
+- **A token that can repeat.** If the lock server forgets its counter on restart, two holders can share a token and fencing fails.
+
+::: context lease Where leases came from
+Cary Gray and David Cheriton introduced leases in 1989, for caches in a distributed file system: a client could cache a file and trust it until its lease ran out, after which the server could change the file without having to reach the client. Their paper already warned that safety depends on bounded clock drift, and suggested short leases, of seconds, as the balance between the cost of renewing and the time a failed holder blocks everyone.
+:::
+
+::: context drift-rate Steps and slews
+When NTP finds a small error, it slews: it runs the clock slightly fast or slow, by at most 500 parts per million, until the error is gone, so the clock never jumps. For an error above 128 milliseconds it steps the clock instead, at once. A step backwards makes the wall clock repeat a stretch of time; anything that measured a duration across it with the wall clock gets a wrong, even negative, answer. Monotonic clocks are slewed but never stepped.
+:::
+
+::: context hlc Where HLCs came from
+Sandeep Kulkarni, Murat Demirbas and colleagues proposed hybrid logical clocks in 2014, to get the causal ordering of Lamport clocks with timestamps that stay close to real time. Their counter c is provably small in practice, so an HLC fits in the same 64 bits as an ordinary timestamp. CockroachDB, YugabyteDB and MongoDB use them to order transactions and to serve consistent snapshots without special clock hardware.
+:::
+
+::: context pause How long a process can stop
+Stop-the-world garbage collection in a large Java or Go heap has been measured at seconds in bad cases. A virtual machine can be frozen for live migration to another host. A laptop lid can close. The operating system can stop a process to swap its memory to disk, or an administrator can send it SIGSTOP. In every case the process wakes up with no sense that time has passed, and its next instruction runs as if nothing happened.
+:::
+
+::: context stonith When the resource cannot check tokens
+Older high-availability clusters used STONITH, "shoot the other node in the head": before taking over, the new leader cuts the old one off by force, for example by switching off its power supply through a network-controlled power strip, or by telling the storage network to ignore it. It is crude, but it works with resources that know nothing about tokens.
+:::
+--- task
+Build a lease service with fencing, and break it three ways. The starter has the simulator, a \`LocalClock(offset, rate)\` whose \`read(true_now)\` returns \`offset + rate * true_now\` (rate is a \`Fraction\`), most of the \`Holder\` node, and \`scenario(fencing, seed, pause_a=0, rate_a=1, rho=0, work_a=10)\`, which runs a lock server \`"lock"\` (D = 50), a storage \`"store"\`, holder \`"a"\` (starting at time 0) and holder \`"b"\` (starting at 5) on \`Sim(seed, delay=(1, 3))\`, and returns \`(writes, a.result, b.result)\`, where \`writes\` lists the accepted writes as \`(holder, token, value)\`. Do not change those. Write:
+
+1. \`LockServer.on_message(src, msg)\`:
+   - \`("acquire",)\`: if nobody holds the lease, or the current time is at or past \`self.expiry\`, grant it: add 1 to \`self.token\`, set \`self.holder = src\` and \`self.expiry = now + self.duration\`, append \`(now, src, self.token)\` to \`self.grants\`, and reply \`("granted", self.token, self.duration)\`. Otherwise reply \`("denied", self.expiry - now)\`.
+   - \`("release", token)\`: if \`src\` is the holder and \`token\` is the current token, set \`self.holder = None\`.
+2. \`Storage.on_message(src, msg)\` for \`("write", token, value)\`: if \`self.fencing\` is true and \`token\` is lower than \`self.highest\`, reply \`("rejected", token)\` and change nothing. Otherwise set \`self.highest\` to the larger of it and \`token\`, append \`(now, src, token, value)\` to \`self.log\`, and reply \`("ok", token)\`.
+3. \`Holder.lease_valid()\`: \`True\` while \`self.local() - self.sent_local < self.duration * (1 - self.rho) - self.margin\`. \`self.sent_local\` is the holder's own clock reading when it sent its last \`"acquire"\`.
+
+For example, \`scenario(False, 1)\` is \`([("a", 1, "a1"), ("b", 2, "b1")], "ok", "ok")\`: a writes within its lease, releases, and then b gets the lease with token 2.
+--- starter
+from fractions import Fraction
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class LocalClock:
+    def __init__(self, offset=0, rate=1):
+        self.offset = offset
+        self.rate = Fraction(rate)
+
+    def read(self, true_now):
+        return self.offset + self.rate * true_now
+
+
+class LockServer(Node):
+    def __init__(self, node_id, duration):
+        super().__init__(node_id)
+        self.duration = duration
+        self.token = 0
+        self.holder = None
+        self.expiry = 0
+        self.grants = []
+
+    def on_message(self, src, msg):
+        if msg[0] == "acquire":
+            self.token += 1
+            self.send(src, ("granted", self.token, self.duration))
+
+
+class Storage(Node):
+    def __init__(self, node_id, fencing):
+        super().__init__(node_id)
+        self.fencing = fencing
+        self.highest = 0
+        self.log = []
+
+    def on_message(self, src, msg):
+        if msg[0] == "write":
+            self.log.append((self.sim.now, src, msg[1], msg[2]))
+            self.send(src, ("ok", msg[1]))
+
+
+class Holder(Node):
+    def __init__(self, node_id, clock, rho, margin, work, pause, value):
+        super().__init__(node_id)
+        self.clock = clock
+        self.rho = Fraction(rho)
+        self.margin = margin
+        self.work = work
+        self.pause = pause
+        self.value = value
+        self.sent_local = None
+        self.token = None
+        self.duration = None
+        self.result = None
+
+    def local(self):
+        return self.clock.read(self.sim.now)
+
+    def lease_valid(self):
+        return True
+
+    def start(self):
+        self.sent_local = self.local()
+        self.send("lock", ("acquire",))
+
+    def on_message(self, src, msg):
+        if msg[0] == "granted":
+            self.token, self.duration = msg[1], msg[2]
+            self.set_timer(self.work, "work")
+        elif msg[0] == "denied":
+            self.set_timer(msg[1] + 1, "retry")
+        elif msg[0] in ("ok", "rejected"):
+            self.result = msg[0]
+            self.send("lock", ("release", self.token))
+
+    def on_timer(self, name):
+        if name == "retry":
+            self.start()
+        elif name == "work":
+            if self.lease_valid():
+                self.set_timer(self.pause, "write")
+            else:
+                self.start()
+        elif name == "write":
+            self.send("store", ("write", self.token, self.value))
+
+
+def scenario(fencing, seed, pause_a=0, rate_a=1, rho=0, work_a=10):
+    sim = Sim(seed, delay=(1, 3))
+    sim.add(LockServer("lock", 50))
+    store = sim.add(Storage("store", fencing))
+    a = sim.add(Holder("a", LocalClock(0, rate_a), rho, 2, work_a, pause_a, "a1"))
+    b = sim.add(Holder("b", LocalClock(1000, 1), rho, 2, 10, 0, "b1"))
+    sim.at(0, a.start)
+    sim.at(5, b.start)
+    sim.run(1000)
+    return [(src, token, value) for _, src, token, value in store.log], a.result, b.result
+--- solution
+from fractions import Fraction
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class LocalClock:
+    def __init__(self, offset=0, rate=1):
+        self.offset = offset
+        self.rate = Fraction(rate)
+
+    def read(self, true_now):
+        return self.offset + self.rate * true_now
+
+
+class LockServer(Node):
+    def __init__(self, node_id, duration):
+        super().__init__(node_id)
+        self.duration = duration
+        self.token = 0
+        self.holder = None
+        self.expiry = 0
+        self.grants = []
+
+    def on_message(self, src, msg):
+        now = self.sim.now
+        if msg[0] == "acquire":
+            if self.holder is None or now >= self.expiry:
+                self.token += 1
+                self.holder = src
+                self.expiry = now + self.duration
+                self.grants.append((now, src, self.token))
+                self.send(src, ("granted", self.token, self.duration))
+            else:
+                self.send(src, ("denied", self.expiry - now))
+        elif msg[0] == "release":
+            if self.holder == src and msg[1] == self.token:
+                self.holder = None
+
+
+class Storage(Node):
+    def __init__(self, node_id, fencing):
+        super().__init__(node_id)
+        self.fencing = fencing
+        self.highest = 0
+        self.log = []
+
+    def on_message(self, src, msg):
+        if msg[0] != "write":
+            return
+        _, token, value = msg
+        if self.fencing and token < self.highest:
+            self.send(src, ("rejected", token))
+            return
+        self.highest = max(self.highest, token)
+        self.log.append((self.sim.now, src, token, value))
+        self.send(src, ("ok", token))
+
+
+class Holder(Node):
+    def __init__(self, node_id, clock, rho, margin, work, pause, value):
+        super().__init__(node_id)
+        self.clock = clock
+        self.rho = Fraction(rho)
+        self.margin = margin
+        self.work = work
+        self.pause = pause
+        self.value = value
+        self.sent_local = None
+        self.token = None
+        self.duration = None
+        self.result = None
+
+    def local(self):
+        return self.clock.read(self.sim.now)
+
+    def lease_valid(self):
+        return self.local() - self.sent_local < self.duration * (1 - self.rho) - self.margin
+
+    def start(self):
+        self.sent_local = self.local()
+        self.send("lock", ("acquire",))
+
+    def on_message(self, src, msg):
+        if msg[0] == "granted":
+            self.token, self.duration = msg[1], msg[2]
+            self.set_timer(self.work, "work")
+        elif msg[0] == "denied":
+            self.set_timer(msg[1] + 1, "retry")
+        elif msg[0] in ("ok", "rejected"):
+            self.result = msg[0]
+            self.send("lock", ("release", self.token))
+
+    def on_timer(self, name):
+        if name == "retry":
+            self.start()
+        elif name == "work":
+            if self.lease_valid():
+                self.set_timer(self.pause, "write")
+            else:
+                self.start()
+        elif name == "write":
+            self.send("store", ("write", self.token, self.value))
+
+
+def scenario(fencing, seed, pause_a=0, rate_a=1, rho=0, work_a=10):
+    sim = Sim(seed, delay=(1, 3))
+    sim.add(LockServer("lock", 50))
+    store = sim.add(Storage("store", fencing))
+    a = sim.add(Holder("a", LocalClock(0, rate_a), rho, 2, work_a, pause_a, "a1"))
+    b = sim.add(Holder("b", LocalClock(1000, 1), rho, 2, 10, 0, "b1"))
+    sim.at(0, a.start)
+    sim.at(5, b.start)
+    sim.run(1000)
+    return [(src, token, value) for _, src, token, value in store.log], a.result, b.result
+--- hint
+The lock server decides with its own clock only: \`self.sim.now\` against \`self.expiry\`. A grant changes four fields and records one line; a denial tells the caller how long until the lease runs out.
+--- hint
+The storage keeps one number, the highest token it has accepted. With fencing on, a write below it is rejected before anything changes; an equal token is the same holder writing again and is accepted.
+--- hint
+\`lease_valid\` is one comparison: the time the holder's own clock says has passed since it sent the request, against the lease shrunk by \`(1 - self.rho)\` and reduced by the margin.
+--- check case | The example from the task
+scenario(False, 1)
+=> ([('a', 1, 'a1'), ('b', 2, 'b1')], 'ok', 'ok')
+--- check case | The lock server grants, denies, expires and releases
+(lambda s, out: (setattr(s.nodes["c1"], "on_message", lambda src, m: out.append((s.now, "c1", m))), setattr(s.nodes["c2"], "on_message", lambda src, m: out.append((s.now, "c2", m))), s.at(0, lambda: s.send("c1", "L", ("acquire",))), s.at(10, lambda: s.send("c2", "L", ("acquire",))), s.at(60, lambda: s.send("c2", "L", ("acquire",))), s.at(70, lambda: s.send("c1", "L", ("release", 1))), s.at(71, lambda: s.send("c2", "L", ("release", 2))), s.at(80, lambda: s.send("c1", "L", ("acquire",))), s.run(), out, s.nodes["L"].grants)[-2:])((lambda s: (s.add(LockServer("L", 50)), s.add(Node("c1")), s.add(Node("c2")), s)[-1])(Sim(0, delay=(1, 1))), [])
+=> ([(2, 'c1', ('granted', 1, 50)), (12, 'c2', ('denied', 40)), (62, 'c2', ('granted', 2, 50)), (82, 'c1', ('granted', 3, 50))], [(1, 'c1', 1), (61, 'c2', 2), (81, 'c1', 3)])
+?? c1's release at 70 carries token 1, but the lease was regranted to c2 with token 2, so it must not release c2's lease.
+--- check case | Storage with fencing rejects lower tokens, accepts equal and higher ones
+(lambda s: ([s.at(t, lambda tok=tok, t=t: s.send("w", "st", ("write", tok, "v%d" % t))) for t, tok in ((0, 1), (5, 3), (10, 2), (15, 3), (20, 4))], s.run(), [(tok, v) for _, _, tok, v in s.nodes["st"].log], s.nodes["st"].highest)[2:])((lambda s: (s.add(Storage("st", True)), s.add(Node("w")), s)[-1])(Sim(0, delay=(1, 1))))
+=> ([(1, 'v0'), (3, 'v5'), (3, 'v15'), (4, 'v20')], 4)
+--- check case | Storage without fencing accepts everything
+(lambda s: ([s.at(t, lambda tok=tok, t=t: s.send("w", "st", ("write", tok, "v%d" % t))) for t, tok in ((0, 3), (5, 1))], s.run(), [(tok, v) for _, _, tok, v in s.nodes["st"].log])[2])((lambda s: (s.add(Storage("st", False)), s.add(Node("w")), s)[-1])(Sim(0, delay=(1, 1))))
+=> [(3, 'v0'), (1, 'v5')]
+--- check case | lease_valid uses the holder's own clock, measured from the request, shrunk by rho
+(lambda s, h: (s.at(0, h.start), s.run(1), setattr(h, "duration", 50), [(t, (s.at(t, lambda: None), s.run(t), h.lease_valid())[2]) for t in (40, 42, 43, 44)])[3])(*(lambda s: (s, (s.add(Holder("h", LocalClock(500, 1), __import__("fractions").Fraction(1, 10), 2, 0, 0, "x")), s.add(Node("lock")))[0]))(Sim(0)))
+=> [(40, True), (42, True), (43, False), (44, False)]
+?? 50 · (1 − 1/10) − 2 = 43, so the lease is trusted while less than 43 units have passed on the holder's clock.
+--- check case | A long pause: without fencing, the stale write lands on top
+scenario(False, 1, pause_a=100)
+=> ([('b', 2, 'b1'), ('a', 1, 'a1')], 'ok', 'ok')
+--- check case | The same pause with fencing: the stale write is rejected
+scenario(True, 1, pause_a=100)
+=> ([('b', 2, 'b1')], 'rejected', 'ok')
+--- check case | A slow clock without a drift bound: a believes in an expired lease
+scenario(False, 1, rate_a=__import__("fractions").Fraction(1, 2), work_a=70)
+=> ([('b', 2, 'b1'), ('a', 1, 'a1')], 'ok', 'ok')
+--- check case | The same slow clock with rho = 1/2: a notices it cannot finish in time and never writes stale data
+scenario(False, 1, rate_a=__import__("fractions").Fraction(1, 2), work_a=70, rho=__import__("fractions").Fraction(1, 2))
+=> ([('b', 2, 'b1')], None, 'ok')
+--- check test | Over 30 seeds and several pauses, fencing never accepts a lower token after a higher one
+all((lambda w: all(a[1] <= b[1] for a, b in zip(w, w[1:])))(scenario(True, s, pause_a=p)[0]) for s in range(30) for p in (0, 20, 45, 100))
+
++++ question | Measuring the lease
+--- ask
+A holder sends "acquire" at time 100 on its own clock and receives the grant, for 10 seconds, at time 104. Why should it count the lease from 100 rather than 104?
+--- choice
+Because the server's clock reads 100.
+--- choice correct
+Because the server may have started the lease at any moment between 100 and 104, and counting from the earliest possible start is the only choice that is never too generous.
+--- choice
+Because the reply's travel time is added to the lease by the server.
+--- choice
+It should count from 104, because the lease cannot start before the holder knows about it.
+--- why
+The server starts its countdown when it grants, which happened at some unknown point during the round trip. If the grant happened near 100, counting from 104 would make the holder trust the lease 4 seconds too long.
+
++++ question | Why checking is not enough
+--- ask
+A holder checks that its lease is valid immediately before every write. Why can a stale write still reach the storage?
+--- choice
+Because the check uses the wrong clock.
+--- choice correct
+Because the process can pause, or the write can be delayed in the network, after the check and before the write arrives; no check by the holder can cover that gap.
+--- choice
+Because the lock server forgets the lease after it expires.
+--- choice
+It cannot: checking before every write makes leases safe.
+--- why
+Between the check and the write's arrival lie a garbage-collection pause, a scheduler, and a network. Any of them can stretch past the lease's end. Only the storage sees the write at the moment it takes effect, so only the storage can reject it: that is what fencing tokens are for.
+
++++ question | What the token needs
+--- ask
+Which property of fencing tokens does the safety argument depend on?
+--- choice
+Tokens are timestamps from a synchronised clock.
+--- choice
+Each holder picks a random token, so tokens rarely collide.
+--- choice correct
+Each grant gets a token larger than every earlier grant's, so a newer holder always has a larger token than any older one.
+--- choice
+Tokens expire at the same time as the lease.
+--- why
+The storage rejects tokens below the highest it has seen. That protects the newest holder only if every older holder's token is smaller, which requires tokens that strictly increase with each grant and never repeat, even across a restart of the lock server.
+
++++ practice | How long a lease can be trusted
+--- task
+A lock server grants leases of \`duration\` time units on an accurate clock. A holder's clock runs at \`rate\` times true speed, and the holder assumes it is off by at most \`rho\` (so it trusts its lease while its own clock shows less than \`duration · (1 − rho) − margin\` since it sent the request).
+
+The holder sends its request at true time 0, and the server grants at true time \`grant_delay\`, so the lease ends at true time \`grant_delay + duration\`.
+
+Write \`trust_window(duration, rho, margin, rate)\`, the true time at which the holder **stops** trusting its lease: the true time at which its clock has advanced by \`duration · (1 − rho) − margin\`. Then write \`overlap(duration, rho, margin, rate, grant_delay)\`: how many true time units the holder keeps trusting the lease after the server considers it over, or 0 if none. All inputs are whole numbers or \`Fraction\`s; return \`Fraction\`s.
+
+For example, a holder with a clock running at half speed (\`rate = Fraction(1, 2)\`) that assumes \`rho = 0\` trusts a 50-unit lease, with margin 2, until true time 96: \`trust_window(50, 0, 2, Fraction(1, 2))\` is \`Fraction(96)\`, and \`overlap(50, 0, 2, Fraction(1, 2), 3)\` is \`Fraction(43)\`.
+--- starter
+from fractions import Fraction
+
+
+def trust_window(duration, rho, margin, rate):
+    return Fraction(duration)
+
+
+def overlap(duration, rho, margin, rate, grant_delay):
+    return Fraction(0)
+--- solution
+from fractions import Fraction
+
+
+def trust_window(duration, rho, margin, rate):
+    local = Fraction(duration) * (1 - Fraction(rho)) - margin
+    return local / Fraction(rate)
+
+
+def overlap(duration, rho, margin, rate, grant_delay):
+    late = trust_window(duration, rho, margin, rate) - (grant_delay + duration)
+    return max(Fraction(0), late)
+--- hint
+The holder's clock advances \`rate\` local units per true unit, so a local stretch of L takes L / rate true units.
+--- hint
+The overlap is the trust window's end minus the server's end of the lease, \`grant_delay + duration\`, floored at 0.
+--- check case | The example from the task
+(trust_window(50, 0, 2, __import__("fractions").Fraction(1, 2)), overlap(50, 0, 2, __import__("fractions").Fraction(1, 2), 3))
+=> (Fraction(96, 1), Fraction(43, 1))
+--- check case | An accurate clock with margin: safe
+(trust_window(50, 0, 2, 1), overlap(50, 0, 2, 1, 0))
+=> (Fraction(48, 1), Fraction(0, 1))
+--- check case | A clock 10% slow, with rho = 1/10: exactly safe
+(trust_window(100, __import__("fractions").Fraction(1, 10), 0, __import__("fractions").Fraction(9, 10)), overlap(100, __import__("fractions").Fraction(1, 10), 0, __import__("fractions").Fraction(9, 10), 0))
+=> (Fraction(100, 1), Fraction(0, 1))
+--- check case | A clock 20% slow, with rho = 1/10: unsafe by a few units
+overlap(100, __import__("fractions").Fraction(1, 10), 0, __import__("fractions").Fraction(4, 5), 0)
+=> Fraction(25, 2)
+--- check case | A fast clock gives up early
+(trust_window(60, __import__("fractions").Fraction(1, 20), 3, __import__("fractions").Fraction(6, 5)), overlap(60, __import__("fractions").Fraction(1, 20), 3, __import__("fractions").Fraction(6, 5), 2))
+=> (Fraction(45, 1), Fraction(0, 1))
+--- check case | A slow grant makes the server's lease end later, which helps
+[overlap(50, 0, 0, __import__("fractions").Fraction(4, 5), d) for d in (0, 5, 12, 20)]
+=> [Fraction(25, 2), Fraction(15, 2), Fraction(1, 2), Fraction(0, 1)]
+
++++ practice | Hybrid logical clocks on skewed clocks
+--- task
+Check the two promises of hybrid logical clocks on the simulator, which the starter has. Each node has a physical clock that reads \`sim.now + offset\`, where \`offsets\` maps a node id to its whole-number offset.
+
+Write the node \`HlcNode(node_id, offset, peers)\` with the HLC rules from Parallel Computing. It keeps \`l\` and \`c\`, both 0 at the start, and a list \`stamps\` of the \`(l, c)\` given to each of its events. Its physical reading is \`pt = self.sim.now + offset\`.
+
+- **Send** (on its \`"tick"\` timer, every 7 time units from \`start()\`): set \`l = max(old l, pt)\`; if l did not change, add 1 to c, otherwise set c = 0. Record the stamp, and send \`("m", l, c)\` to the next peer in turn (peers in list order, cycling).
+- **Receive** \`("m", ml, mc)\`: set \`l = max(old l, ml, pt)\`; then c = max(c, mc) + 1 if l equals both old l and ml; otherwise c + 1 if l equals old l; otherwise mc + 1 if l equals ml; otherwise 0. Record the stamp.
+
+Then write \`hlc_run(offsets, seed, until)\`: build \`Sim(seed, delay=(1, 10))\`, one \`HlcNode\` per id in sorted order (each node's peers are the other ids, sorted), schedule each node's \`start\` at time 0, run until \`until\`, and return \`(causal, max_ahead)\`: \`causal\` is \`True\` if every receive's stamp is greater than the stamp the message carried, and \`max_ahead\` is the largest value of \`l − pt\` seen at any event (how far an HLC ran ahead of its own node's physical clock).
+
+The theory says \`causal\` is always \`True\` and \`max_ahead\` is at most the largest offset minus the smallest. For example, \`hlc_run({"a": 0, "b": 30}, 1, 200)\` is \`(True, 29)\`: node a's HLC runs up to 29 ahead of its own clock, pulled forward by b's clock, which is 30 ahead.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class HlcNode(Node):
+    def __init__(self, node_id, offset, peers):
+        super().__init__(node_id)
+        self.offset = offset
+        self.peers = peers
+        self.l = 0
+        self.c = 0
+        self.stamps = []
+
+
+def hlc_run(offsets, seed, until):
+    return True, 0
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class HlcNode(Node):
+    def __init__(self, node_id, offset, peers):
+        super().__init__(node_id)
+        self.offset = offset
+        self.peers = peers
+        self.l = 0
+        self.c = 0
+        self.stamps = []
+        self.next = 0
+        self.causal = True
+        self.ahead = 0
+
+    def pt(self):
+        return self.sim.now + self.offset
+
+    def record(self, pt):
+        self.stamps.append((self.l, self.c))
+        self.ahead = max(self.ahead, self.l - pt)
+
+    def start(self):
+        self.set_timer(7, "tick")
+
+    def on_timer(self, name):
+        pt = self.pt()
+        old = self.l
+        self.l = max(old, pt)
+        self.c = self.c + 1 if self.l == old else 0
+        self.record(pt)
+        peer = self.peers[self.next % len(self.peers)]
+        self.next += 1
+        self.send(peer, ("m", self.l, self.c))
+        self.set_timer(7, "tick")
+
+    def on_message(self, src, msg):
+        _, ml, mc = msg
+        pt = self.pt()
+        old = self.l
+        self.l = max(old, ml, pt)
+        if self.l == old and self.l == ml:
+            self.c = max(self.c, mc) + 1
+        elif self.l == old:
+            self.c = self.c + 1
+        elif self.l == ml:
+            self.c = mc + 1
+        else:
+            self.c = 0
+        self.record(pt)
+        if (self.l, self.c) <= (ml, mc):
+            self.causal = False
+
+
+def hlc_run(offsets, seed, until):
+    sim = Sim(seed, delay=(1, 10))
+    ids = sorted(offsets)
+    for i in ids:
+        sim.add(HlcNode(i, offsets[i], [p for p in ids if p != i]))
+    for i in ids:
+        sim.at(0, sim.nodes[i].start)
+    sim.run(until)
+    nodes = [sim.nodes[i] for i in ids]
+    return all(n.causal for n in nodes), max(n.ahead for n in nodes)
+--- hint
+Read the physical clock once per event, at the top of the handler, and use that same \`pt\` for the update and for measuring \`l - pt\`.
+--- hint
+On a receive, compare the new stamp with the message's as pairs: \`(l, c) > (ml, mc)\` is exactly HLC order. Keep a flag per node that turns \`False\` if it ever fails.
+--- hint
+In \`hlc_run\`, \`max_ahead\` is the largest \`l - pt\` over all events of all nodes. A node whose clock is ahead of everyone never runs ahead of its own clock, so the maximum shows up on the slow nodes.
+--- check case | The example from the task
+hlc_run({"a": 0, "b": 30}, 1, 200)
+=> (True, 29)
+--- check case | Synchronised clocks: an HLC barely runs ahead
+hlc_run({"a": 0, "b": 0, "c": 0}, 2, 500)
+=> (True, 0)
+--- check case | Large skew: the bound is the spread of the offsets
+hlc_run({"a": -40, "b": 0, "c": 25, "d": 60}, 3, 800)
+=> (True, 99)
+--- check case | One slow node among fast ones is pulled forward
+(lambda s: (s.run(300), s.nodes["slow"].stamps[-3:])[1])((lambda s: ([s.add(HlcNode(i, o, [p for p in ("f1", "f2", "slow") if p != i])) for i, o in (("f1", 100), ("f2", 100), ("slow", 0))], [s.at(0, s.nodes[i].start) for i in ("f1", "f2", "slow")], s)[-1])(Sim(4, delay=(1, 10))))
+=> [(380, 4), (394, 1), (394, 2)]
+--- check test | Over 20 seeds with random offsets, both promises hold
+all((lambda offs: (lambda r: r[0] and r[1] <= max(offs.values()) - min(offs.values()))(hlc_run(offs, s, 400)))({"n%d" % i: (s * 37 + i * 53) % 90 for i in range(4)}) for s in range(20))
+
++++ practice | Renewing a lease through a partition
+--- task
+A leader renews its lease before it runs out, and must stop acting on its own when renewals stop getting through. The starter has the simulator and a finished \`LeaseServer\` node: on \`("renew",)\` from the current holder, or from anyone when the lease is free or expired (\`now >= expiry\`), it sets \`holder\` to the sender and \`expiry = now + duration\`, appends \`(now, src)\` to \`grants\`, and replies \`("ok", duration)\`; otherwise it ignores the request.
+
+Write the node \`Leader(node_id, server, duration, every)\`:
+
+- \`start()\` records \`sent = now\` and sends \`("renew",)\` to the server, then sets a timer \`"renew"\` for \`every\`.
+- When \`"renew"\` fires, it records \`sent = now\`, sends \`("renew",)\` again, and sets the next \`"renew"\` timer for \`every\`.
+- On \`("ok", d)\` it sets \`valid_until\` to the **send time of the most recent renew request** plus d. (Its clock is accurate here, so no drift bound is needed.)
+- \`acting()\` returns \`True\` when \`now < valid_until\` (\`valid_until\` starts at 0).
+
+Then write \`failover(seed, cut_at, until)\`: build \`Sim(seed, delay=(1, 5))\` with \`LeaseServer("srv", 30)\`, \`Leader("a", "srv", 30, 10)\` and \`Leader("b", "srv", 30, 10)\`, schedule a's \`start\` at 0 and b's at 20 (so a gets the lease first), partition \`["a"]\` from \`["srv", "b"]\` at \`cut_at\`, and at every whole time t from 1 to \`until\` (scheduled after everything else) record which leaders are acting. Return \`(both, a_stops, b_starts)\`: the number of instants at which **both** were acting, the first instant after \`cut_at\` at which a was not acting, and the first instant at which b was acting (\`None\` if never).
+
+For example, \`failover(1, 100, 200)\` is \`(0, 120, 130)\`: a renewed just before the cut and stops acting at 120, and b, whose renewals the server ignored while a held the lease, takes over at 130.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class LeaseServer(Node):
+    def __init__(self, node_id, duration):
+        super().__init__(node_id)
+        self.duration = duration
+        self.holder = None
+        self.expiry = 0
+        self.grants = []
+
+    def on_message(self, src, msg):
+        now = self.sim.now
+        if msg[0] == "renew" and (src == self.holder or self.holder is None or now >= self.expiry):
+            self.holder = src
+            self.expiry = now + self.duration
+            self.grants.append((now, src))
+            self.send(src, ("ok", self.duration))
+
+
+class Leader(Node):
+    def __init__(self, node_id, server, duration, every):
+        super().__init__(node_id)
+        self.server = server
+        self.duration = duration
+        self.every = every
+        self.valid_until = 0
+
+    def acting(self):
+        return True
+
+
+def failover(seed, cut_at, until):
+    return 0, None, None
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class LeaseServer(Node):
+    def __init__(self, node_id, duration):
+        super().__init__(node_id)
+        self.duration = duration
+        self.holder = None
+        self.expiry = 0
+        self.grants = []
+
+    def on_message(self, src, msg):
+        now = self.sim.now
+        if msg[0] == "renew" and (src == self.holder or self.holder is None or now >= self.expiry):
+            self.holder = src
+            self.expiry = now + self.duration
+            self.grants.append((now, src))
+            self.send(src, ("ok", self.duration))
+
+
+class Leader(Node):
+    def __init__(self, node_id, server, duration, every):
+        super().__init__(node_id)
+        self.server = server
+        self.duration = duration
+        self.every = every
+        self.valid_until = 0
+        self.sent = None
+
+    def renew(self):
+        self.sent = self.sim.now
+        self.send(self.server, ("renew",))
+        self.set_timer(self.every, "renew")
+
+    def start(self):
+        self.renew()
+
+    def on_timer(self, name):
+        if name == "renew":
+            self.renew()
+
+    def on_message(self, src, msg):
+        if msg[0] == "ok":
+            self.valid_until = self.sent + msg[1]
+
+    def acting(self):
+        return self.sim.now < self.valid_until
+
+
+def failover(seed, cut_at, until):
+    sim = Sim(seed, delay=(1, 5))
+    sim.add(LeaseServer("srv", 30))
+    a = sim.add(Leader("a", "srv", 30, 10))
+    b = sim.add(Leader("b", "srv", 30, 10))
+    sim.at(0, a.start)
+    sim.at(20, b.start)
+    sim.at(cut_at, lambda: sim.partition(["a"], ["srv", "b"]))
+    seen = []
+
+    def observe():
+        seen.append((sim.now, a.acting(), b.acting()))
+
+    for t in range(1, until + 1):
+        sim.at(t, observe)
+    sim.run(until)
+    both = sum(1 for _, x, y in seen if x and y)
+    a_stops = next((t for t, x, _ in seen if t > cut_at and not x), None)
+    b_starts = next((t for t, _, y in seen if y), None)
+    return both, a_stops, b_starts
+--- hint
+Everything the leader needs is the time it sent its latest renew. Measuring from the send, not from the reply, is what keeps it inside the server's lease: the server's lease started after the send.
+--- hint
+A renew reply from an earlier request may arrive after a newer request was sent; using the newest send time is then a little pessimistic, which is the safe direction.
+--- hint
+The observer records \`(now, a.acting(), b.acting())\` at every whole time. Count the instants with both, then find the first instant after the cut where a is not acting and the first where b is.
+--- check case | The example from the task
+failover(1, 100, 200)
+=> (0, 120, 130)
+--- check case | No partition before the end: a keeps the lease, b never gets it
+failover(2, 500, 300)
+=> (0, None, None)
+--- check test | Never both, over 25 seeds and several cut times
+all(failover(s, c, 300)[0] == 0 for s in range(25) for c in (50, 77, 120))
+--- check test | b takes over only after a has stopped
+all((lambda r: r[2] is None or r[2] > r[1])(failover(s, 90, 250)) for s in range(25))
+--- check case | The gap between a stopping and b starting, for a few seeds
+[(lambda r: r[2] - r[1])(failover(s, 100, 250)) for s in range(5)]
+=> [9, 10, 7, 6, 17]
+
++++ practice | Checking that leases never overlapped
+--- task
+After a test run, every holder reports the stretches of **true** time during which it believed it held the lease, as \`(holder, start, end)\`: it believed so from \`start\` up to but not including \`end\`. Write \`overlaps(beliefs)\` that returns every pair of stretches from **different** holders that share some time, as \`(h1, h2, from, to)\`, where \`[from, to)\` is the shared stretch, \`h1\` is the holder whose stretch comes first in the list, and the pairs are listed in order of the first stretch's position and then the second's.
+
+Stretches that only touch (one ends exactly where the other starts) do not overlap. Empty stretches (\`start == end\`) never overlap anything. Two stretches of the **same** holder never count, even if they overlap (a holder renewing its own lease).
+
+For example, \`overlaps([("a", 0, 50), ("b", 40, 90), ("a", 90, 120)])\` is \`[("a", "b", 40, 50)]\`.
+--- starter
+def overlaps(beliefs):
+    out = []
+    for i in range(len(beliefs) - 1):
+        h1, s1, e1 = beliefs[i]
+        h2, s2, e2 = beliefs[i + 1]
+        if s2 < e1:
+            out.append((h1, h2, s2, e1))
+    return out
+--- solution
+def overlaps(beliefs):
+    out = []
+    for i in range(len(beliefs)):
+        h1, s1, e1 = beliefs[i]
+        for j in range(i + 1, len(beliefs)):
+            h2, s2, e2 = beliefs[j]
+            if h1 == h2:
+                continue
+            lo = max(s1, s2)
+            hi = min(e1, e2)
+            if lo < hi:
+                out.append((h1, h2, lo, hi))
+    return out
+--- hint
+Compare every pair, not only neighbours in the list: the list need not be sorted, and a long stretch can overlap many later ones.
+--- hint
+Two half-open stretches share \`[max(starts), min(ends))\`, and they overlap exactly when that is non-empty: \`max(starts) < min(ends)\`. That rule handles touching and empty stretches by itself.
+--- check case | The example from the task
+overlaps([("a", 0, 50), ("b", 40, 90), ("a", 90, 120)])
+=> [('a', 'b', 40, 50)]
+--- check case | Touching is not overlapping
+overlaps([("a", 0, 50), ("b", 50, 90), ("c", 90, 91)])
+=> []
+--- check case | A holder renewing its own lease is fine
+overlaps([("a", 0, 50), ("a", 30, 80), ("b", 80, 100)])
+=> []
+--- check case | One long stretch overlapping two later ones, out of order
+overlaps([("b", 60, 70), ("a", 0, 100), ("c", 20, 30)])
+=> [('b', 'a', 60, 70), ('a', 'c', 20, 30)]
+--- check case | Empty stretches and an empty list
+(overlaps([("a", 10, 10), ("b", 0, 20)]), overlaps([]))
+=> ([], [])
+
++++ practice | Debug: the holder that counts from the reply
+--- task
+\`LeaseClock(duration, rho, margin)\` tracks a lease on the holder's side. \`requested(local)\` is called with the holder's clock reading when it sends the request, and \`granted(local)\` when the grant arrives. \`valid(local)\` must return whether the lease can still be trusted at that local reading: \`True\` while less than \`duration · (1 − rho) − margin\` has passed **since the request was sent**, and \`False\` before any grant.
+
+In tests with a slow network, holders keep writing after the server has given the lease to someone else. Find the bug and fix it.
+--- starter
+from fractions import Fraction
+
+
+class LeaseClock:
+    def __init__(self, duration, rho, margin):
+        self.limit = Fraction(duration) * (1 - Fraction(rho)) - margin
+        self.sent = None
+        self.start = None
+
+    def requested(self, local):
+        self.sent = local
+
+    def granted(self, local):
+        self.start = local
+
+    def valid(self, local):
+        if self.start is None:
+            return False
+        return local - self.start < self.limit
+--- solution
+from fractions import Fraction
+
+
+class LeaseClock:
+    def __init__(self, duration, rho, margin):
+        self.limit = Fraction(duration) * (1 - Fraction(rho)) - margin
+        self.sent = None
+        self.start = None
+
+    def requested(self, local):
+        self.sent = local
+
+    def granted(self, local):
+        self.start = self.sent
+
+    def valid(self, local):
+        if self.start is None:
+            return False
+        return local - self.start < self.limit
+--- hint
+The server's countdown began before the grant arrived. Which recorded time is certain to be no later than the server's start?
+--- hint
+When the grant arrives, the lease's start should be the time the request was sent, not the arrival time.
+--- check case | A slow reply: the lease is counted from the request
+(lambda c: (c.requested(100), c.granted(130), [c.valid(t) for t in (140, 147, 148, 160)])[2])(LeaseClock(50, 0, 2))
+=> [True, True, False, False]
+--- check case | Before any grant
+(lambda c: (c.requested(5), c.valid(6))[1])(LeaseClock(50, 0, 2))
+=> False
+--- check case | With rho, the window shrinks further
+(lambda c: (c.requested(0), c.granted(1), [c.valid(t) for t in (34, 35)])[2])(LeaseClock(40, __import__("fractions").Fraction(1, 8), 0))
+=> [True, False]
+--- check case | A renewal counts from the new request
+(lambda c: (c.requested(0), c.granted(10), c.requested(40), c.granted(70), [c.valid(t) for t in (80, 87, 88)])[4])(LeaseClock(50, 0, 2))
+=> [True, True, False]
+
+=== dist1-05 | Consistency models: a linearizability checker, the weaker models, and CAP
+--- teach
+Lessons 1 to 4 were about getting operations through a hostile network. This lesson asks what results those operations may return. In Parallel Computing you met **linearizability** and checked one small register history by backtracking. Here you build the tool that testing teams use for real: a checker that takes any history recorded from a running system, including operations whose outcome nobody knows, against any data type, and says whether some single-copy order explains it. Then you place the weaker models around it, each with the anomaly it allows, and state CAP and PACELC precisely.
+
+### Histories and models
+
+A **history** is a record of what clients saw. Each operation has an **invocation** (when the client sent it), a **response** (when the answer came back) and a result. On a timeline, each operation is an interval from start to end.
+
+Two operations are ordered in **real time** when one ended before the other started: a precedes b when a.end < b.start. Operations whose intervals overlap are **concurrent**, and the history says nothing about their order.
+
+A **model**, or sequential specification, says what the object would do if operations happened one at a time. Write it as a function: \`step(state, op, arg)\` returns the new state and the result. Here is a model of a counter, on different data from the lab:
+
+\`\`\`python
+def counter_model(state, op, arg):
+    if op == "add":
+        return state + arg, "ok"
+    return state, state                  # "get"
+
+state = 0
+for op, arg in [("add", 5), ("get", None), ("add", 2), ("get", None)]:
+    state, result = counter_model(state, op, arg)
+    print(op, result)                    # add ok, get 5, add ok, get 7
+\`\`\`
+
+### Linearizability, precisely
+
+A history is **linearizable** for a model when its operations can be put in one order that:
+
+1. is **legal**: running the model through the order from its initial state gives every operation exactly the result the history recorded;
+2. **respects real time**: if a precedes b in the history, a comes before b in the order.
+
+In words: every operation appears to take effect at one instant inside its interval, and the instants line up into a run of a single copy.
+
+### Operations nobody saw finish
+
+Real histories contain operations that never got an answer: the client timed out. You know from lesson 2 that such an operation may have happened, or may never happen, or may still happen later. A **pending** operation (end unknown, result unknown) is therefore optional. A checker may place it at any point after its start, accepting whatever result the model gives, or leave it out altogether.
+
+Take a client whose write of 7 starts at time 0 and times out, and a read at time 50 that returns 7. Treating the timeout as "did not happen" would call this history impossible: where did the 7 come from? Treating it as pending makes it fine: the write took effect, the reply was lost. Getting this wrong turns every network glitch into a false alarm, or, the other way round, hides real bugs.
+
+### The Wing–Gong search
+
+The checker builds the order one operation at a time, by **[[backtracking|wing-gong]]**.
+
+- **Which operation can go next.** An operation is a candidate when no other **unplaced, completed** operation ended before it started. If some unplaced operation b ended before candidate a started, then b must precede a in every valid order, so a cannot be next. Pending operations never block anyone, because their end is unknown.
+- **Trying it.** Run the model on it. A completed operation must produce its recorded result; a pending one accepts anything. If it fits, place it and recurse; if the recursion fails, take it back and try the next candidate.
+- **When to stop.** Success when every **completed** operation is placed: any pending ones left over simply never took effect.
+
+The idea that makes it practical is **memoisation**. What can still happen next depends only on which operations are placed and on the model's state, not on the order in which they were placed. So the search remembers every (placed set, state) pair that failed and never explores it twice. The placed set fits in one integer used as a bit mask.
+
+**What it costs.** Checking linearizability is **[[NP-complete|np-complete]]** in general, so no checker is fast on every history. With memoisation, the work is bounded by the number of reachable (placed set, state) pairs: at most 2ⁿ times the number of states for n operations, and in practice far less, because only operations that overlap in time can be reordered. Eleven fully concurrent writes have 11! ≈ 40 million orders, but only about 2¹¹ · 11 ≈ 22,500 distinct (set, state) pairs. Real tools keep the concurrency of each checked history low for this reason.
+
+### Check each key on its own
+
+Linearizability is **[[local|locality]]**: a history over many objects is linearizable if and only if the sub-history of each object is. So a key-value store's history splits by key, and each key is checked separately: many small searches instead of one impossible one. That is the single biggest trick in practical checking.
+
+### The weaker models, by what they allow
+
+Each weaker model gives up a guarantee to buy speed or availability. The quickest way to know them is by the **anomaly**, the surprising result, that each one still allows.
+
+| model | the promise | an anomaly it still allows |
+|---|---|---|
+| **linearizable** | one copy, real-time order | none of those below |
+| **sequential** | one order of all operations that keeps each client's own order, but not real time across clients | B reads x = 0 after A's write of x = 1 has finished |
+| **causal** | operations that could have influenced each other are seen in that order by everyone | two clients see two concurrent writes in opposite orders |
+| **read-your-writes** | a client always sees its own earlier writes | other clients do not see A's write for a while |
+| **monotonic reads** | a client never sees an older value after a newer one | two clients see different values at the same moment |
+| **eventual** | if writes stop, all replicas end up equal | one client reads x = 1 and then x = 0 |
+
+Each row allows everything the rows above it allow, and more, except that the session guarantees (read-your-writes and monotonic reads) are separate promises about one client's view, often added on top of eventual consistency.
+
+Sequential consistency in particular is easy to mistake for linearizability: it only forbids what no single interleaving of the clients' programs could produce, so a client may be shown an old value long after another client's write has finished, as long as that client's own view stays consistent. One practice problem builds its checker by dropping exactly one rule from yours.
+
+### CAP, stated properly
+
+CAP says: in a system where the network may **partition**, no design can guarantee both **linearizability** and **availability**, where available means that every request to a node that has not crashed eventually gets a non-error response. Parallel Computing gave the two-replica proof. What the theorem does **not** say matters as much:
+
+- It says nothing when there is no partition: then a system can have both.
+- "Pick two of three" is misleading: partitions are not optional, so the real choice is what to give up **during** one, for which operations.
+- Its "consistency" is linearizability only, and its "availability" is total. A system that keeps the majority side working and refuses the minority, as quorum and consensus systems do, is "not available" in CAP's sense, yet serves almost every user.
+
+### PACELC: the everyday trade
+
+Partitions are rare; latency is constant. **PACELC** completes the picture: if there is a Partition, choose Availability or Consistency; Else, choose Latency or Consistency. A linearizable write must reach a majority before it is acknowledged. With replicas in three regions, that is a cross-region round trip, about 70 to 150 ms, on every write, every day. A system that acknowledges after one local replica answers in a millisecond, and accepts stale reads. Most of the real design work in this course's remaining lessons is choosing where on that line each operation sits.
+
+### Where it is used
+
+- **[[Jepsen|jepsen]]** tests databases by running clients against a cluster while injecting partitions, recording histories, and checking them with Knossos, a Wing–Gong checker with pending operations; it has found consistency bugs in dozens of production databases.
+- **Porcupine** is a fast checker written in Go and used to grade students' replicated key-value stores; it splits histories by key, exactly as above.
+- **Cloud storage** documents its model precisely: object stores that promise strong read-after-write consistency, databases that offer per-request choices between strong and eventual reads.
+
+**Watch out:**
+
+- **Dropping timed-out operations** from a history: their effects may be visible later, so the checker must treat them as optional, not absent.
+- **Requiring pending operations** to take effect: they may never have happened at all.
+- **Forgetting the real-time rule** checks sequential consistency, a much weaker property.
+- **Checking a whole store as one object**: split by key, or the search explodes.
+- **Reading CAP as "pick two"**: the choice is what to do during a partition, and PACELC adds the price paid when there is none.
+
+::: context wing-gong A checker from 1993
+Jeannette Wing and Chun Gong published this search in 1993 to test concurrent data structures against their sequential specifications. Gavin Lowe later added the memoisation of (placed set, state) pairs, which is what makes it usable on long histories. In the picture, the read can be placed first, because no operation ended before it started; the write and the second read overlap, so either order is tried.
+
+\`\`\`svg
+<svg viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="105" x2="340" y2="105" stroke="#6c7a93"/>
+  <text x="340" y="118" font-size="11" text-anchor="end" fill="#6c7a93">time</text>
+  <rect x="30" y="15" width="260" height="18" fill="#8fb8f0"/>
+  <text x="36" y="28" font-size="11" fill="#1f2a44">A: write 1</text>
+  <rect x="50" y="45" width="60" height="18" fill="#f2b880"/>
+  <text x="56" y="58" font-size="11" fill="#1f2a44">B: read 0</text>
+  <rect x="150" y="75" width="70" height="18" fill="#f2b880"/>
+  <text x="156" y="88" font-size="11" fill="#1f2a44">C: read 1</text>
+</svg>
+\`\`\`
+:::
+
+::: context np-complete Why no checker is always fast
+Phillip Gibbons and Ephraim Korach showed in 1997 that deciding whether a history of a simple read-write register is linearizable is NP-complete when the history does not say which write each read saw. So every exact checker is exponential on some inputs. Practical tools win by keeping histories short, splitting them by key, memoising, and avoiding long stretches where many operations overlap; when the values written are unique, faster special-purpose algorithms exist.
+:::
+
+::: context locality Why per-key checking is allowed
+Maurice Herlihy and Jeannette Wing proved locality in their 1990 paper that defined linearizability. The reason: each object's own linearization gives every operation on it an instant inside its interval, and instants inside intervals automatically respect the real-time order across objects, so the per-object orders merge into one valid order for the whole history. Sequential consistency has no such property: two objects can each be sequentially consistent while the combination is not, which is one reason it is hard to build modular systems on it.
+:::
+
+::: context jepsen Testing databases in public
+Kyle Kingsbury started Jepsen in 2013 as a series of blog posts that ran popular databases under partitions and showed acknowledged writes being lost. The method is the one in this lesson: concurrent clients, injected faults, a recorded history with timeouts treated as unknown, and a checker. A newer checker, Elle, infers transactional anomalies from histories of lists that clients append to, which scales to far longer histories than a Wing–Gong search.
+:::
+--- task
+Build a linearizability checker and use it on histories recorded from the simulator. An operation in a history is a tuple \`(client, op, arg, result, start, end)\`. A **pending** operation has \`end\` and \`result\` both \`None\`.
+
+1. \`register_step(state, op, arg)\`, the model of a register: \`"read"\` returns \`(state, state)\`; \`"write"\` returns \`(arg, "ok")\`; \`"cas"\` takes \`arg = (old, new)\` and returns \`(new, True)\` if \`state == old\`, and \`(state, False)\` otherwise.
+2. \`linearize(history, step, init)\` returns a valid order as a list of indexes into \`history\`, or \`None\` if there is none. Search exactly as the lesson describes, so that your order matches the one the checks expect:
+   - try candidates in increasing index order; an unplaced operation is a candidate unless some unplaced **completed** operation has an \`end\` strictly smaller than its \`start\`;
+   - a completed candidate must produce exactly its recorded result; a pending one accepts any result;
+   - stop with success as soon as every completed operation is placed (pending operations that were never placed are left out of the order);
+   - remember failed \`(placed set, state)\` pairs and never search them again. States are hashable.
+
+The starter's \`record(seed, mode)\` runs three clients against a primary \`"r0"\` that copies writes to two backups on \`Sim(seed, delay=(1, 10), drop=0.05)\`, and returns the history. With \`mode = "primary"\` every operation goes to the primary; with \`mode = "any"\` reads go to a random replica. Do not change the simulation code.
+
+For example, \`linearize([("a", "write", 1, "ok", 0, 10), ("b", "read", None, None, 1, 2), ("c", "read", None, 1, 3, 4)], register_step, None)\` is \`[1, 0, 2]\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    return state, None
+
+
+def linearize(history, step, init):
+    return list(range(len(history)))
+
+
+class Replica(Node):
+    def __init__(self, node_id, backups):
+        super().__init__(node_id)
+        self.backups = backups
+        self.value = None
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            self.value = msg[2]
+            for b in self.backups:
+                self.send(b, ("copy", msg[2]))
+            self.send(src, ("done", msg[1], "ok"))
+        elif kind == "cas":
+            old, new = msg[2]
+            ok = self.value == old
+            if ok:
+                self.value = new
+                for b in self.backups:
+                    self.send(b, ("copy", new))
+            self.send(src, ("done", msg[1], ok))
+        elif kind == "read":
+            self.send(src, ("done", msg[1], self.value))
+        elif kind == "copy":
+            self.value = msg[1]
+
+
+class Client(Node):
+    def __init__(self, node_id, ops, mode, timeout):
+        super().__init__(node_id)
+        self.ops = ops
+        self.mode = mode
+        self.timeout = timeout
+        self.history = []
+        self.current = None
+        self.timer = None
+        self.n = 0
+
+    def start(self):
+        self.next_op()
+
+    def next_op(self):
+        if self.n >= len(self.ops):
+            return
+        op, arg = self.ops[self.n]
+        self.n += 1
+        target = "r0"
+        if op == "read" and self.mode == "any":
+            target = "r%d" % self.sim.rng.randint(0, 2)
+        self.current = [self.id, op, arg, None, self.sim.now, None]
+        self.send(target, (op, self.n, arg))
+        self.timer = self.set_timer(self.timeout, ("timeout", self.n))
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.sim.cancel(self.timer)
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "think")
+
+    def on_timer(self, name):
+        if name == "think":
+            self.next_op()
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.next_op()
+
+
+def record(seed, mode, ops_per_client=12, drop=0.05):
+    sim = Sim(seed, delay=(1, 10), drop=drop)
+    sim.add(Replica("r0", ["r1", "r2"]))
+    sim.add(Replica("r1", []))
+    sim.add(Replica("r2", []))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 10 + c)
+        ops = []
+        for k in range(ops_per_client):
+            x = rng.random()
+            if x < 0.4:
+                ops.append(("read", None))
+            elif x < 0.8:
+                ops.append(("write", c * 100 + k))
+            else:
+                old = rng.choice([None] + [cc * 100 + kk for cc in range(3) for kk in range(ops_per_client)])
+                ops.append(("cas", (old, c * 100 + k)))
+        clients.append(sim.add(Client("c%d" % c, ops, mode, 30)))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    if op == "write":
+        return arg, "ok"
+    old, new = arg
+    if state == old:
+        return new, True
+    return state, False
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class Replica(Node):
+    def __init__(self, node_id, backups):
+        super().__init__(node_id)
+        self.backups = backups
+        self.value = None
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            self.value = msg[2]
+            for b in self.backups:
+                self.send(b, ("copy", msg[2]))
+            self.send(src, ("done", msg[1], "ok"))
+        elif kind == "cas":
+            old, new = msg[2]
+            ok = self.value == old
+            if ok:
+                self.value = new
+                for b in self.backups:
+                    self.send(b, ("copy", new))
+            self.send(src, ("done", msg[1], ok))
+        elif kind == "read":
+            self.send(src, ("done", msg[1], self.value))
+        elif kind == "copy":
+            self.value = msg[1]
+
+
+class Client(Node):
+    def __init__(self, node_id, ops, mode, timeout):
+        super().__init__(node_id)
+        self.ops = ops
+        self.mode = mode
+        self.timeout = timeout
+        self.history = []
+        self.current = None
+        self.timer = None
+        self.n = 0
+
+    def start(self):
+        self.next_op()
+
+    def next_op(self):
+        if self.n >= len(self.ops):
+            return
+        op, arg = self.ops[self.n]
+        self.n += 1
+        target = "r0"
+        if op == "read" and self.mode == "any":
+            target = "r%d" % self.sim.rng.randint(0, 2)
+        self.current = [self.id, op, arg, None, self.sim.now, None]
+        self.send(target, (op, self.n, arg))
+        self.timer = self.set_timer(self.timeout, ("timeout", self.n))
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.sim.cancel(self.timer)
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "think")
+
+    def on_timer(self, name):
+        if name == "think":
+            self.next_op()
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.next_op()
+
+
+def record(seed, mode, ops_per_client=12, drop=0.05):
+    sim = Sim(seed, delay=(1, 10), drop=drop)
+    sim.add(Replica("r0", ["r1", "r2"]))
+    sim.add(Replica("r1", []))
+    sim.add(Replica("r2", []))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 10 + c)
+        ops = []
+        for k in range(ops_per_client):
+            x = rng.random()
+            if x < 0.4:
+                ops.append(("read", None))
+            elif x < 0.8:
+                ops.append(("write", c * 100 + k))
+            else:
+                old = rng.choice([None] + [cc * 100 + kk for cc in range(3) for kk in range(ops_per_client)])
+                ops.append(("cas", (old, c * 100 + k)))
+        clients.append(sim.add(Client("c%d" % c, ops, mode, 30)))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+--- hint
+Mark the completed operations in one bit mask before searching: then "every completed operation is placed" is \`placed & completed == completed\`. A recursive \`search(placed, state)\` that appends to and pops from a shared \`order\` list keeps the current path.
+--- hint
+At each step, compute the smallest \`end\` among unplaced completed operations. A candidate must not start after that end. There is always at least one unplaced completed operation when you compute it, because otherwise the search has already succeeded.
+--- hint
+Look up \`(placed, state)\` in the failed set at the top of \`search\`, and add it just before returning \`False\`. A pending candidate skips the result comparison: whatever the model returns is fine.
+--- check case | The example from the task
+linearize([("a", "write", 1, "ok", 0, 10), ("b", "read", None, None, 1, 2), ("c", "read", None, 1, 3, 4)], register_step, None)
+=> [1, 0, 2]
+--- check case | Once a read has seen the new value, a later read cannot see the old one
+linearize([("a", "write", 1, "ok", 0, 10), ("b", "read", None, 1, 1, 2), ("c", "read", None, None, 3, 4)], register_step, None)
+=> None
+--- check case | register_step: reads, writes and compare-and-set
+(register_step(4, "read", None), register_step(4, "write", 9), register_step(4, "cas", (4, 5)), register_step(4, "cas", (3, 5)))
+=> ((4, 4), (9, 'ok'), (5, True), (4, False))
+--- check case | A write that timed out can explain a later read
+linearize([("a", "write", 7, None, 0, None), ("b", "read", None, 7, 50, 51)], register_step, None)
+=> [0, 1]
+--- check case | A pending write may also never happen
+linearize([("a", "write", 7, None, 0, None), ("b", "read", None, None, 50, 51)], register_step, None)
+=> [1]
+--- check case | But it cannot happen and then un-happen
+linearize([("a", "write", 7, None, 0, None), ("b", "read", None, None, 50, 51), ("b", "read", None, 7, 60, 61), ("c", "read", None, None, 70, 71)], register_step, None)
+=> None
+--- check case | Two compare-and-sets racing: only one can win
+(linearize([("a", "cas", (None, 1), True, 0, 10), ("b", "cas", (None, 2), True, 2, 8)], register_step, None), linearize([("a", "cas", (None, 1), True, 0, 10), ("b", "cas", (None, 2), False, 2, 8), ("c", "read", None, 1, 11, 12)], register_step, None))
+=> (None, [0, 1, 2])
+--- check case | A counter model works with the same checker
+linearize([("a", "add", 5, "ok", 0, 4), ("b", "add", 2, "ok", 1, 6), ("c", "get", None, 2, 2, 3), ("c", "get", None, 7, 7, 8)], lambda s, op, arg: (s + arg, "ok") if op == "add" else (s, s), 0)
+=> [1, 2, 0, 3]
+--- check case | Recorded from the primary: every history is linearizable
+[s for s in range(30) if linearize(record(s, "primary"), register_step, None) is None]
+=> []
+?? Histories from the primary contain timed-out operations. If they fail, check how your search treats operations whose end is None.
+--- check case | Reads from any replica: which seeds break linearizability
+[s for s in range(15) if linearize(record(s, "any"), register_step, None) is None]
+=> [0, 3, 4, 7, 8, 11, 13]
+--- check case | Eleven concurrent writes, then two reads that cannot both be right
+linearize([("w%d" % i, "write", i, "ok", 0, 100) for i in range(11)] + [("r", "read", None, 5, 101, 102), ("r", "read", None, 3, 103, 104)], register_step, None)
+=> None
+?? 11! orders is about 40 million. With memoisation on (placed set, state), the search sees only a few thousand distinct situations.
+
++++ question | Why only minimal operations
+--- ask
+The search only tries an operation next if no unplaced completed operation ended before it started. Why is it safe to ignore the others?
+--- choice
+Because operations that start later always have to wait for a timeout.
+--- choice correct
+Because if some unplaced operation b ended before a started, every valid order must put b before a, so no valid order can have a next.
+--- choice
+Because the model's state does not change for those operations.
+--- choice
+It is a heuristic: it is fast but can miss valid orders.
+--- why
+Real-time precedence is a hard constraint of linearizability. An order that put a before an unplaced b with b.end < a.start would violate it, so pruning those branches loses nothing.
+
++++ question | What memoisation relies on
+--- ask
+The checker remembers failed (placed set, model state) pairs. Why may it skip a pair it has already seen fail, even if it got there by placing the same operations in a different order?
+--- choice
+Because the history is sorted by start time.
+--- choice correct
+Because which operations can come next, and what results they produce, depend only on which operations are placed and on the model's state, not on how that state was reached.
+--- choice
+Because two different orders always give the same state.
+--- choice
+Because failures are rare, so repeating them costs little.
+--- why
+The candidates depend on the unplaced set and the real-time constraints; their results depend on the model's state. Both are captured by the pair, so the future from that pair is the same whichever path led there.
+
++++ question | A history that is sequential but not linearizable
+--- ask
+Client A writes x = 1 from time 0 to 5. Client B reads x from time 7 to 8 and gets the initial value 0. Which statement is right?
+--- choice
+The history is neither linearizable nor sequentially consistent.
+--- choice correct
+It is sequentially consistent (order B's read first, then A's write) but not linearizable, because the write finished before the read started.
+--- choice
+It is linearizable, because the read and the write are by different clients.
+--- choice
+It is linearizable if the write is pending.
+--- why
+Sequential consistency only keeps each client's own order, so B's read can be moved before A's write. Linearizability also keeps real-time order across clients, and 5 < 7 forces the write first, after which the read must return 1.
+
++++ practice | Models for a queue and a set
+--- task
+The checker only needs a model. The starter has a finished \`linearize(history, step, init)\` from the lab. Write two models, each returning \`(new_state, result)\`, with **immutable** states (so the checker can remember them):
+
+- \`queue_step(state, op, arg)\` for a FIFO queue whose state is a tuple: \`"enq"\` adds \`arg\` at the back and returns \`"ok"\`; \`"deq"\` removes and returns the front item, or returns \`None\` and leaves the state alone if the queue is empty.
+- \`set_step(state, op, arg)\` for a set whose state is a \`frozenset\`: \`"add"\` returns \`True\` if \`arg\` was not already in the set (and adds it), \`False\` otherwise; \`"remove"\` returns \`True\` if it was there (and removes it), \`False\` otherwise; \`"has"\` returns whether \`arg\` is in the set.
+
+Then write \`queue_ok(history)\` and \`set_ok(history)\`, which return whether the history is linearizable for the queue (starting empty, \`()\`) or the set (starting as \`frozenset()\`).
+
+For example, \`queue_ok([("a", "enq", 1, "ok", 0, 2), ("b", "enq", 2, "ok", 3, 5), ("c", "deq", None, 2, 6, 8)])\` is \`False\`: 1 was enqueued first and nothing removed it.
+--- starter
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def queue_step(state, op, arg):
+    return state, None
+
+
+def set_step(state, op, arg):
+    return state, None
+
+
+def queue_ok(history):
+    return True
+
+
+def set_ok(history):
+    return True
+--- solution
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def queue_step(state, op, arg):
+    if op == "enq":
+        return state + (arg,), "ok"
+    if not state:
+        return state, None
+    return state[1:], state[0]
+
+
+def set_step(state, op, arg):
+    if op == "add":
+        return state | {arg}, arg not in state
+    if op == "remove":
+        return state - {arg}, arg in state
+    return state, arg in state
+
+
+def queue_ok(history):
+    return linearize(history, queue_step, ()) is not None
+
+
+def set_ok(history):
+    return linearize(history, set_step, frozenset()) is not None
+--- hint
+Tuples are immutable, so a new queue is \`state + (arg,)\` and dequeuing returns \`state[1:]\` and \`state[0]\`. Never change a state in place: the checker may come back to it.
+--- hint
+For a frozenset, \`state | {arg}\` and \`state - {arg}\` build new frozensets. The result of \`add\` is whether \`arg\` was absent before the change.
+--- check case | The example from the task
+queue_ok([("a", "enq", 1, "ok", 0, 2), ("b", "enq", 2, "ok", 3, 5), ("c", "deq", None, 2, 6, 8)])
+=> False
+--- check case | Concurrent enqueues may be ordered either way
+queue_ok([("a", "enq", 1, "ok", 0, 5), ("b", "enq", 2, "ok", 1, 4), ("c", "deq", None, 2, 6, 8), ("c", "deq", None, 1, 9, 10)])
+=> True
+--- check case | Dequeue from an empty queue
+(queue_step((), "deq", None), queue_ok([("a", "deq", None, None, 0, 1), ("b", "enq", 3, "ok", 2, 3)]), queue_ok([("b", "enq", 3, "ok", 0, 1), ("a", "deq", None, None, 2, 3)]))
+=> (((), None), True, False)
+--- check case | The queue model step by step
+(queue_step((4, 5), "enq", 6), queue_step((4, 5), "deq", None))
+=> (((4, 5, 6), 'ok'), ((5,), 4))
+--- check case | Set: two clients add the same element concurrently; only one can be first
+(set_ok([("a", "add", "x", True, 0, 5), ("b", "add", "x", True, 1, 4)]), set_ok([("a", "add", "x", True, 0, 5), ("b", "add", "x", False, 1, 4)]))
+=> (False, True)
+--- check case | Set: a remove that timed out may explain a later miss
+(set_ok([("a", "add", "k", True, 0, 1), ("b", "remove", "k", None, 2, None), ("c", "has", "k", False, 10, 11)]), set_ok([("a", "add", "k", True, 0, 1), ("c", "has", "k", False, 10, 11)]))
+=> (True, False)
+--- check test | States are immutable and hashable
+isinstance(hash(queue_step((), "enq", 1)[0]), int) and isinstance(hash(set_step(frozenset(), "add", 1)[0]), int)
+
++++ practice | A sequential consistency checker
+--- task
+Sequential consistency drops linearizability's real-time rule and keeps only each client's own order. Write \`sequential(history, step, init)\`, which returns a valid order (a list of indexes) or \`None\`, where a valid order:
+
+- is legal for the model, exactly as in the lab (pending operations, with \`end\` \`None\`, are optional and accept any result);
+- keeps each client's operations in the order they appear in \`history\`; operations of different clients may be ordered freely.
+
+Search like the lab's checker: try candidates in increasing index order, where an unplaced operation is a candidate if it is its client's **earliest unplaced** operation; succeed as soon as every completed operation is placed; and remember failed \`(placed set, state)\` pairs. A pending operation still holds back its client's later operations until it is placed, so to skip it a search must place it (pending operations can be placed at any time, accepting any result) or stop because all completed ones are placed.
+
+Then write \`classify(history, step, init, linearize)\`, which returns \`"linearizable"\`, \`"sequential"\` (sequentially consistent but not linearizable) or \`"neither"\`, using the lab's checker, which the starter has.
+
+For example, \`classify([("A", "write", 1, "ok", 0, 5), ("B", "read", None, None, 7, 8)], register_step, None, linearize)\` is \`"sequential"\`.
+--- starter
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    if op == "write":
+        return arg, "ok"
+    old, new = arg
+    if state == old:
+        return new, True
+    return state, False
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def sequential(history, step, init):
+    return None
+
+
+def classify(history, step, init, linearize):
+    return "neither"
+--- solution
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    if op == "write":
+        return arg, "ok"
+    old, new = arg
+    if state == old:
+        return new, True
+    return state, False
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def sequential(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        seen = set()
+        for i in range(n):
+            client, op, arg, result, start, end = history[i]
+            if placed >> i & 1:
+                continue
+            if client in seen:
+                continue
+            seen.add(client)
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def classify(history, step, init, linearize):
+    if linearize(history, step, init) is not None:
+        return "linearizable"
+    if sequential(history, step, init) is not None:
+        return "sequential"
+    return "neither"
+--- hint
+Copy the lab's search and change only the candidate rule. Walking the history in index order, the first unplaced operation of each client is its candidate; mark each client as seen when you meet its first unplaced operation, and skip the rest of that client's operations.
+--- hint
+\`classify\` asks the stronger question first: linearizable histories are also sequentially consistent, so only call \`sequential\` when \`linearize\` says no.
+--- check case | The example from the task
+classify([("A", "write", 1, "ok", 0, 5), ("B", "read", None, None, 7, 8)], register_step, None, linearize)
+=> 'sequential'
+--- check case | A linearizable history
+classify([("A", "write", 1, "ok", 0, 5), ("B", "read", None, 1, 7, 8)], register_step, None, linearize)
+=> 'linearizable'
+--- check case | A client that sees its own write disappear is neither
+classify([("A", "write", 1, "ok", 0, 1), ("A", "read", None, None, 2, 3)], register_step, None, linearize)
+=> 'neither'
+--- check case | Two readers who disagree about the order of two writes: neither
+classify([("A", "write", 1, "ok", 0, 1), ("B", "write", 2, "ok", 0, 1), ("C", "read", None, 1, 5, 6), ("C", "read", None, 2, 7, 8), ("D", "read", None, 2, 5, 6), ("D", "read", None, 1, 7, 8)], register_step, None, linearize)
+=> 'neither'
+?? C saw 1 then 2, so 1 was written first; D saw 2 then 1, so 2 was first. No single order satisfies both.
+--- check case | sequential returns an order that keeps each client's order
+sequential([("A", "write", 1, "ok", 0, 5), ("B", "read", None, None, 7, 8), ("B", "read", None, 1, 9, 10)], register_step, None)
+=> [1, 0, 2]
+--- check case | A pending write and client order
+(sequential([("A", "write", 3, None, 0, None), ("A", "write", 4, "ok", 1, 2), ("B", "read", None, 4, 5, 6)], register_step, None), sequential([("A", "write", 3, None, 0, None), ("B", "read", None, 3, 5, 6), ("B", "read", None, None, 7, 8)], register_step, None))
+=> ([0, 1, 2], None)
+
++++ practice | CAP on the simulator
+--- task
+See CAP's choice happen. The starter has the simulator, the lab's \`linearize\` and \`register_step\`, and a finished experiment \`cap_run(mode, seed)\`: two replicas \`"x"\` and \`"y"\` hold a register; client \`"c1"\` talks only to \`"x"\` and client \`"c2"\` only to \`"y"\`, each alternating writes and reads; between time 100 and 300 the replicas are partitioned. It returns \`(history, refused)\`, where \`refused\` counts requests answered with an error.
+
+Write the replica node \`Rep(node_id, peer, mode)\`. It keeps \`value\` (starting \`None\`). Requests are \`("write", n, v)\` and \`("read", n)\` from a client, where n is the request number; replies are \`("done", n, result)\`.
+
+- **Mode \`"AP"\`:** a write sets \`value\`, sends \`("copy", v)\` to the peer, and replies \`"ok"\` at once. A read replies with \`value\`. A \`("copy", v)\` from the peer sets \`value\`.
+- **Mode \`"CP"\`:** a write sets \`value\`, sends \`("copy", n, v, client)\` to the peer, and replies only when the peer's \`("ack", n, client)\` comes back; then it replies \`("done", n, "ok")\` to the client. A read sends \`("check", n, client)\` to the peer, and replies with its own \`value\` only when the peer answers \`("checked", n, client, peer_value)\`, and only if \`peer_value == value\`; if they differ it replies \`("done", n, "error")\`. A replica receiving \`("copy", n, v, client)\` sets \`value\` and answers \`("ack", n, client)\`; receiving \`("check", n, client)\` it answers \`("checked", n, client, value)\`. While partitioned, those requests simply never complete, and the client times out.
+
+The client counts a request as refused when the reply is \`"error"\`, and records a timed-out request as pending. Return nothing from \`Rep\`; the checks run \`cap_run\` and the checker.
+
+For example, \`linearize(cap_run("CP", 1)[0], register_step, None)\` is not \`None\`, while \`linearize(cap_run("AP", 1)[0], register_step, None)\` is \`None\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    if op == "write":
+        return arg, "ok"
+    old, new = arg
+    if state == old:
+        return new, True
+    return state, False
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class Rep(Node):
+    def __init__(self, node_id, peer, mode):
+        super().__init__(node_id)
+        self.peer = peer
+        self.mode = mode
+        self.value = None
+
+
+class Asker(Node):
+    def __init__(self, node_id, replica, base):
+        super().__init__(node_id)
+        self.replica = replica
+        self.base = base
+        self.n = 0
+        self.history = []
+        self.current = None
+        self.refused = 0
+
+    def start(self):
+        self.set_timer(1, "go")
+
+    def on_timer(self, name):
+        if name == "go":
+            if self.current is not None:
+                self.history.append(tuple(self.current))
+                self.current = None
+            if self.n >= 40:
+                return
+            self.n += 1
+            if self.n % 2:
+                self.current = [self.id, "write", self.base + self.n, None, self.sim.now, None]
+                self.send(self.replica, ("write", self.n, self.base + self.n))
+            else:
+                self.current = [self.id, "read", None, None, self.sim.now, None]
+                self.send(self.replica, ("read", self.n))
+            self.set_timer(15, "go")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            if msg[2] == "error":
+                self.refused += 1
+                self.current = None
+                return
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+
+
+def cap_run(mode, seed):
+    sim = Sim(seed, delay=(1, 4))
+    sim.add(Rep("x", "y", mode))
+    sim.add(Rep("y", "x", mode))
+    c1 = sim.add(Asker("c1", "x", 1000))
+    c2 = sim.add(Asker("c2", "y", 2000))
+    sim.at(0, c1.start)
+    sim.at(7, c2.start)
+    sim.at(100, lambda: sim.partition(["x", "c1"], ["y", "c2"]))
+    sim.at(300, sim.heal)
+    sim.run()
+    history = sorted(c1.history + c2.history, key=lambda h: h[4])
+    return history, c1.refused + c2.refused
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    if op == "write":
+        return arg, "ok"
+    old, new = arg
+    if state == old:
+        return new, True
+    return state, False
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class Rep(Node):
+    def __init__(self, node_id, peer, mode):
+        super().__init__(node_id)
+        self.peer = peer
+        self.mode = mode
+        self.value = None
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if self.mode == "AP":
+            if kind == "write":
+                self.value = msg[2]
+                self.send(self.peer, ("copy", msg[2]))
+                self.send(src, ("done", msg[1], "ok"))
+            elif kind == "read":
+                self.send(src, ("done", msg[1], self.value))
+            elif kind == "copy":
+                self.value = msg[1]
+            return
+        if kind == "write":
+            self.value = msg[2]
+            self.send(self.peer, ("copy", msg[1], msg[2], src))
+        elif kind == "read":
+            self.send(self.peer, ("check", msg[1], src))
+        elif kind == "copy":
+            self.value = msg[2]
+            self.send(src, ("ack", msg[1], msg[3]))
+        elif kind == "ack":
+            self.send(msg[2], ("done", msg[1], "ok"))
+        elif kind == "check":
+            self.send(src, ("checked", msg[1], msg[2], self.value))
+        elif kind == "checked":
+            if msg[3] == self.value:
+                self.send(msg[2], ("done", msg[1], self.value))
+            else:
+                self.send(msg[2], ("done", msg[1], "error"))
+
+
+class Asker(Node):
+    def __init__(self, node_id, replica, base):
+        super().__init__(node_id)
+        self.replica = replica
+        self.base = base
+        self.n = 0
+        self.history = []
+        self.current = None
+        self.refused = 0
+
+    def start(self):
+        self.set_timer(1, "go")
+
+    def on_timer(self, name):
+        if name == "go":
+            if self.current is not None:
+                self.history.append(tuple(self.current))
+                self.current = None
+            if self.n >= 40:
+                return
+            self.n += 1
+            if self.n % 2:
+                self.current = [self.id, "write", self.base + self.n, None, self.sim.now, None]
+                self.send(self.replica, ("write", self.n, self.base + self.n))
+            else:
+                self.current = [self.id, "read", None, None, self.sim.now, None]
+                self.send(self.replica, ("read", self.n))
+            self.set_timer(15, "go")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            if msg[2] == "error":
+                self.refused += 1
+                self.current = None
+                return
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+
+
+def cap_run(mode, seed):
+    sim = Sim(seed, delay=(1, 4))
+    sim.add(Rep("x", "y", mode))
+    sim.add(Rep("y", "x", mode))
+    c1 = sim.add(Asker("c1", "x", 1000))
+    c2 = sim.add(Asker("c2", "y", 2000))
+    sim.at(0, c1.start)
+    sim.at(7, c2.start)
+    sim.at(100, lambda: sim.partition(["x", "c1"], ["y", "c2"]))
+    sim.at(300, sim.heal)
+    sim.run()
+    history = sorted(c1.history + c2.history, key=lambda h: h[4])
+    return history, c1.refused + c2.refused
+--- hint
+Branch on the mode first. AP is three short cases. In CP, the replica that the client asked is the coordinator: it remembers nothing between messages, because every message carries what it needs (the request number and the client).
+--- hint
+In CP, the peer's answers carry the client's id, so the coordinator knows whom to reply to: an \`"ack"\` becomes \`("done", n, "ok")\` for that client, and a \`"checked"\` becomes the value or an error.
+--- check case | The example from the task: CP is linearizable, AP is not
+(linearize(cap_run("CP", 1)[0], register_step, None) is not None, linearize(cap_run("AP", 1)[0], register_step, None) is None)
+=> (True, True)
+--- check case | AP answers everything; CP leaves requests unanswered during the partition
+(lambda ap, cp: (sum(1 for h in ap[0] if h[5] is None), ap[1], sum(1 for h in cp[0] if h[5] is None), cp[1]))(cap_run("AP", 2), cap_run("CP", 2))
+=> (0, 0, 28, 0)
+--- check case | Over 10 seeds: CP histories are always linearizable
+all(linearize(cap_run("CP", s)[0], register_step, None) is not None for s in range(10))
+=> True
+--- check case | Over 10 seeds: AP histories during a partition are not
+[linearize(cap_run("AP", s)[0], register_step, None) is None for s in range(10)]
+=> [True, True, True, True, True, True, True, True, True, True]
+--- check case | AP replicas talk again after the heal: the last reads agree
+(lambda h: [r[3] for r in h if r[1] == "read"][-2:])(cap_run("AP", 3)[0])
+=> [2039, 2039]
+
++++ practice | Debug: the checker that forgets timed-out writes
+--- task
+The starter's \`linearize(history, step, init)\` is a Wing–Gong checker, but its author removed pending operations (those with \`end\` \`None\`) before searching, reasoning that "an operation that never returned did not happen". It now rejects histories recorded from correct systems, whenever a write whose reply was lost is later read.
+
+Fix it so that pending operations are optional, as the lab describes: each may be placed at any point after its start, accepting any result, or left out. The returned order lists indexes into the **original** history and leaves out pending operations that were not placed. Keep the rest of the search, including the order in which candidates are tried.
+--- starter
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    keep = [i for i, h in enumerate(history) if h[5] is not None]
+    ops = [history[i] for i in keep]
+    n = len(ops)
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed == (1 << n) - 1:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(ops[i][5] for i in range(n) if not placed >> i & 1)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = ops[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if got != result:
+                continue
+            order.append(keep[i])
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+--- solution
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+--- hint
+Keep every operation in the search. Three things change: success means every **completed** operation is placed, the time limit only looks at completed operations, and a pending operation's result is not compared.
+--- hint
+Build a bit mask of the completed operations once, and test \`placed & completed == completed\` for success. Since the search now runs over the original history, the order can hold the indexes directly.
+--- check case | A lost reply, then a read that sees the write
+linearize([("a", "write", 5, None, 0, None), ("b", "read", None, 5, 20, 21)], register_step, None)
+=> [0, 1]
+--- check case | A pending write that never took effect
+linearize([("a", "write", 5, None, 0, None), ("b", "read", None, None, 20, 21)], register_step, None)
+=> [1]
+--- check case | A pending write cannot take effect before it started
+linearize([("b", "read", None, 5, 0, 1), ("a", "write", 5, None, 2, None)], register_step, None)
+=> None
+--- check case | Completed operations are still checked as before
+(linearize([("a", "write", 1, "ok", 0, 1), ("b", "read", None, None, 2, 3)], register_step, None), linearize([("a", "write", 1, "ok", 0, 3), ("b", "read", None, None, 1, 2)], register_step, None))
+=> (None, [1, 0])
+--- check case | Two pending writes and reads that need both, in order
+linearize([("a", "write", 1, None, 0, None), ("b", "write", 2, None, 1, None), ("c", "read", None, 1, 10, 11), ("c", "read", None, 2, 12, 13)], register_step, None)
+=> [0, 2, 1, 3]
+
++++ practice | Checking a store one key at a time
+--- task
+A key-value store's history mixes keys: operations are \`(client, op, (key, value), result, start, end)\` with \`op\` either \`"put"\` (result \`"ok"\`) or \`"get"\` (\`value\` is \`None\` and the result is the value read, \`None\` if the key was never written). Pending operations have \`end\` and \`result\` \`None\`.
+
+Linearizability is local, so check each key on its own. Write \`check_by_key(history)\` that returns a dictionary from each key that appears to \`True\` or \`False\` (whether that key's sub-history is linearizable as a register starting at \`None\`), with keys in sorted order. Use the starter's \`linearize\`, which is the lab's checker; write the register model for this operation format yourself. Then write \`failing_keys(history)\`: the sorted list of keys that are not linearizable.
+
+One check builds a history over 8 keys with 12 concurrent operations on each, 96 in all. Checked as one object, that would be hopeless; key by key it is quick.
+
+For example, \`check_by_key([("a", "put", ("x", 1), "ok", 0, 2), ("b", "get", ("x", None), None, 3, 4), ("a", "put", ("y", 2), "ok", 0, 2), ("b", "get", ("y", None), 2, 3, 4)])\` is \`{"x": False, "y": True}\`.
+--- starter
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def check_by_key(history):
+    return {}
+
+
+def failing_keys(history):
+    return []
+--- solution
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def kv_register(state, op, arg):
+    key, value = arg
+    if op == "put":
+        return value, "ok"
+    return state, state
+
+
+def check_by_key(history):
+    by_key = {}
+    for h in history:
+        by_key.setdefault(h[2][0], []).append(h)
+    return {key: linearize(by_key[key], kv_register, None) is not None for key in sorted(by_key)}
+
+
+def failing_keys(history):
+    return [key for key, ok in check_by_key(history).items() if not ok]
+--- hint
+Group the operations by key with a dictionary of lists, keeping their order. Each group is an ordinary register history.
+--- hint
+The model ignores the key part of \`arg\`: a put returns \`(value, "ok")\` and a get returns \`(state, state)\`. Build the result with a dictionary comprehension over \`sorted(...)\` keys.
+--- check case | The example from the task
+check_by_key([("a", "put", ("x", 1), "ok", 0, 2), ("b", "get", ("x", None), None, 3, 4), ("a", "put", ("y", 2), "ok", 0, 2), ("b", "get", ("y", None), 2, 3, 4)])
+=> {'x': False, 'y': True}
+--- check case | Different keys do not constrain each other
+check_by_key([("a", "put", ("x", 1), "ok", 0, 1), ("a", "put", ("y", 1), "ok", 2, 3), ("b", "get", ("y", None), 1, 4, 5), ("b", "get", ("x", None), 1, 6, 7)])
+=> {'x': True, 'y': True}
+--- check case | A pending put on one key, an impossible read on another
+failing_keys([("a", "put", ("p", 9), None, 0, None), ("b", "get", ("p", None), 9, 5, 6), ("c", "get", ("q", None), 4, 1, 2)])
+=> ['q']
+--- check case | An empty history
+(check_by_key([]), failing_keys([]))
+=> ({}, [])
+--- check case | 8 keys, 12 concurrent operations each: the one bad key is found quickly
+failing_keys([("w%d" % i, "put", ("k%d" % k, i), "ok", 0, 50) for k in range(8) for i in range(10)] + [("r", "get", ("k%d" % k, None), 3 if k != 5 else 99, 60, 61) for k in range(8)] + [("r2", "get", ("k%d" % k, None), 3, 62, 63) for k in range(8)])
+=> ['k5']
+
+=== dist1-06 | Replication and quorums: leaders, lag, and where R + W > N stops helping
+--- teach
+Lesson 5 gave you the yardstick: which results each consistency model allows, and a checker to measure a history against it. This lesson builds the replicated stores that produce those histories. You know primary-backup and the quorum overlap argument from Parallel Computing. Here you compare the three ways real systems replicate, meet the anomalies that **replication lag** causes and the cheap fixes for them, and build a leaderless quorum store on the simulator, so you can watch R + W > N work, and watch the three situations where it is not enough.
+
+### Three ways to replicate
+
+- **Single-leader.** One replica takes every write and ships its log to **followers**. Simple, and every write has one order. The leader is a bottleneck and a single point of failure until failover, which needs lesson 4's fencing.
+- **Multi-leader.** Several replicas take writes, typically one per data centre, and exchange them in the background. Writes stay local and fast, and a data centre can work while cut off. The price: two leaders can accept conflicting writes to the same key, and something must resolve the **conflict**.
+- **Leaderless.** Any replica takes reads and writes. The client, or a coordinator node acting for it, sends each operation to all N replicas of the key and waits for R or W answers. There is no failover at all, because there is no leader to lose. Conflicts are possible here too.
+
+### Replication lag and its anomalies
+
+Most single-leader systems replicate **asynchronously** and let followers serve reads, because reads far outnumber writes. A follower is then behind the leader by its **replication lag**: usually milliseconds, but seconds or minutes when a follower is overloaded or catching up. Lag produces three anomalies that users notice:
+
+1. **Not seeing your own write.** You update your profile, the page reloads from a follower that has not applied the update, and your change seems lost. This breaks **read-your-writes**.
+2. **Going back in time.** Two refreshes hit two followers; the second is further behind, so a comment you just saw disappears. This breaks **monotonic reads**.
+3. **Answers before questions.** An observer reads a reply from one follower and the question it answers from another that is further behind. This breaks **consistent prefix**: seeing writes in an order that respects causality.
+
+The fixes are cheap, because they only need to hold for one client's session:
+
+- **Read from the leader** for a while after your own write, or for data only you edit.
+- **Sticky reads**: always read from the same replica, which fixes going back in time (unless that replica fails).
+- A **version token**, which fixes both of the first two: the client remembers the highest log position it has written or seen, sends it with each read, and a follower answers only once it has applied at least that position; otherwise the read waits or goes elsewhere. One practice problem builds it.
+
+### Leaderless quorums, again
+
+You proved in Parallel Computing that if **R + W > N**, every read quorum overlaps every write quorum, so a read meets at least one replica that has the latest successful write. In a leaderless store the **coordinator** does the work:
+
+- **put:** give the value a **version**, send it to all N replicas, and report success once W distinct replicas have acknowledged it.
+- **get:** ask all N, wait for R distinct answers, return the value with the **highest version**, and **read repair**: write that version back to the answering replicas that had an older one.
+
+The numbers trade against each other. N = 3 with R = W = 2 tolerates one slow or dead replica for both reads and writes. R = 1, W = 3 makes reads fast and writes fragile. And every operation waits only for the R-th or W-th fastest reply, which is why quorums tame tail latency: one slow replica out of three does not slow anyone down.
+
+### Where R + W > N is not enough
+
+The overlap argument is about one write and one later read. Three things it does not cover make quorum stores non-linearizable in practice.
+
+1. **A write in flight.** While a write has reached some replicas but not W, one reader may see the new value and a later reader the old one. Read repair before returning, as in the ABD algorithm, closes this gap.
+2. **Versions that do not follow real time.** If each client stamps its own writes, with its own counter or its own clock, then a write that happens later can carry a **lower** version than an earlier one, and the later write silently loses. With wall-clock timestamps, a writer whose clock is 50 ms slow loses every race inside 50 ms: lesson 4's skew becomes lost data. The fix is to read the current version first and write a higher one, which costs a round trip.
+3. **[[Sloppy quorums|sloppy]].** When home replicas are unreachable, some stores accept the write on other nodes, which hold it with a **hint** naming the intended home and pass it on when the home comes back: **hinted handoff**. Writes stay available, but a read quorum among the home replicas need not overlap the stand-ins, so R + W > N promises nothing until the hints are delivered.
+
+### Detecting conflicts instead of losing them
+
+When two writes are truly concurrent, as with two leaders or two clients without a read in between, **last writer wins** (keep the higher version, drop the other) is simple and loses data. The alternative is to detect concurrency with the **version vectors** you met in Parallel Computing: one counter per replica, compared entrywise. Concurrent versions are kept side by side as **siblings**, and the application, or a data type designed for it, merges them. Data types whose merge always converges, whatever order updates arrive in, are called **[[CRDTs|crdt]]**.
+
+### Where it is used
+
+- **Single-leader:** PostgreSQL and MySQL replicas, most managed relational databases, and message logs. Follower reads with replication lag are behind many "I saved it but it is gone" bug reports.
+- **Multi-leader:** databases replicated across regions, collaborative editors and offline-first mobile apps, which are multi-leader systems with one leader per device.
+- **Leaderless:** [[Dynamo-style stores|dynamo]] such as Cassandra and Riak, with per-request consistency levels (ONE, QUORUM, ALL), read repair, hinted handoff and last-writer-wins by timestamp by default.
+
+**Watch out:**
+
+- **Counting the same replica twice.** A duplicated acknowledgement must not complete a quorum: count distinct replicas.
+- **Highest version, not the first answer** or the largest value.
+- **Client-chosen versions** make a later write lose to an earlier one; read before writing, or detect conflicts.
+- **Sloppy quorums** keep writes available and give up the overlap; reads can be stale until hints are handed off.
+- **Follower reads without a session fix** show users their own changes disappearing.
+
+::: context sloppy Availability first
+Amazon's Dynamo paper of 2007 introduced sloppy quorums and hinted handoff because its shopping cart had to accept writes during failures: a lost "add to cart" lost money, while a stale cart could be merged later. Cassandra offers hinted handoff, but its consistency levels count only the home replicas, so the stand-in copies help durability and convergence rather than satisfying a quorum.
+:::
+
+::: context crdt Data types that cannot conflict
+A conflict-free replicated data type is designed so that replicas can apply updates in any order, any number of times, and still end in the same state. The trick is to make merging a join in a semilattice: an operation that is commutative, associative and idempotent, such as taking a maximum or a set union. A grow-only counter keeps one count per replica and merges by taking the maximum of each entry, and its value is the sum of the entries. Sets, maps, registers and text sequences all have CRDT versions; collaborative editors and some databases use them.
+:::
+
+::: context dynamo One design, many stores
+Dynamo combined several ideas from this course into one system: consistent hashing to place keys (lesson 7), N, R and W quorums, sloppy quorums with hinted handoff, version vectors with siblings, read repair, and Merkle-tree anti-entropy with gossip-based membership (lesson 8). Its paper became the blueprint for Cassandra, Riak and Voldemort, each of which kept some of the ideas and replaced others, for example swapping version vectors for timestamps.
+:::
+--- task
+Build the coordinator of a leaderless quorum store. The starter has the simulator, a finished \`Replica\` node and \`run_store(seed, r, w, script, n=3, dup=0.0)\`. A replica keeps \`data\`, a dictionary from key to \`(version, value)\`. On \`("put", rid, key, version, value)\` it stores the pair if the key is new or \`version\` is higher than the stored one, and always replies \`("put-ok", rid)\`. On \`("get", rid, key)\` it replies \`("got", rid, pair)\`, where \`pair\` is the stored pair or \`None\`. \`run_store\` creates the replicas \`"s0"\` to \`"s{n-1}"\` and one \`QClient\` per client name in \`script\`, runs the script on \`Sim(seed, delay=(1, 10), dup=dup)\`, and returns \`(results, data)\`: the sorted results of every client, and each replica's final \`data\`.
+
+Write the node \`QClient(node_id, replicas, r, w, timeout)\`. It keeps \`counter\` (0), \`rid\` (0), a dictionary \`ops\` from request id to the operation's state, and the list \`results\`.
+
+- \`put(key, value)\`: add 1 to \`counter\` and to \`rid\`; the version is \`(counter, self.id)\`. Send \`("put", rid, key, version, value)\` to every replica, in list order, and set a timer named \`rid\` for \`timeout\`. The put succeeds when \`w\` **distinct** replicas have answered \`("put-ok", rid)\`.
+- \`get(key)\`: add 1 to \`rid\`, send \`("get", rid, key)\` to every replica, set a timer named \`rid\`. When answers from \`r\` distinct replicas have arrived, take the highest pair among the non-\`None\` answers (pairs compare by version first). If there is one, set \`counter\` to the larger of \`counter\` and that version's first item, and **read repair**: for each replica that answered with \`None\` or a lower version, in the order the answers arrived, send it \`("put", 0, key, version, value)\`. The result is the value, or \`None\` if every answer was \`None\`.
+- When an operation completes, append \`(self.id, kind, key, value_or_None, result, start, now)\` to \`results\`, where kind is \`"put"\` or \`"get"\`, \`value_or_None\` is the value written (\`None\` for a get), and result is \`"ok"\` for a put. If the timer named \`rid\` fires first, the result is \`"fail"\`. Anything that arrives for a finished operation is ignored.
+
+For example, with R = W = 2 and no faults, a put of 1 to \`"x"\` at time 0 followed by a get at 50 gives \`[("a", "put", "x", 1, "ok", 0, 9), ("b", "get", "x", None, 1, 50, 63)]\` for seed 1.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Replica(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+
+    def on_message(self, src, msg):
+        if msg[0] == "put":
+            _, rid, key, version, value = msg
+            old = self.data.get(key)
+            if old is None or version > old[0]:
+                self.data[key] = (version, value)
+            self.send(src, ("put-ok", rid))
+        elif msg[0] == "get":
+            _, rid, key = msg
+            self.send(src, ("got", rid, self.data.get(key)))
+
+
+class QClient(Node):
+    def __init__(self, node_id, replicas, r, w, timeout):
+        super().__init__(node_id)
+        self.replicas = replicas
+        self.r = r
+        self.w = w
+        self.timeout = timeout
+        self.counter = 0
+        self.rid = 0
+        self.ops = {}
+        self.results = []
+
+    def put(self, key, value):
+        pass
+
+    def get(self, key):
+        pass
+
+
+def run_store(seed, r, w, script, n=3, dup=0.0):
+    sim = Sim(seed, delay=(1, 10), dup=dup)
+    reps = ["s%d" % i for i in range(n)]
+    for name in reps:
+        sim.add(Replica(name))
+    clients = {}
+    for t, who, *rest in script:
+        if who not in ("partition", "heal", "crash", "recover") and who not in clients:
+            clients[who] = sim.add(QClient(who, reps, r, w, 40))
+    for t, who, *rest in script:
+        if who == "partition":
+            sim.at(t, lambda g=rest: sim.partition(*g))
+        elif who == "heal":
+            sim.at(t, sim.heal)
+        elif who == "crash":
+            sim.at(t, lambda x=rest[0]: sim.crash(x))
+        elif who == "recover":
+            sim.at(t, lambda x=rest[0]: sim.recover(x))
+        elif rest[0] == "put":
+            sim.at(t, lambda c=clients[who], k=rest[1], v=rest[2]: c.put(k, v))
+        else:
+            sim.at(t, lambda c=clients[who], k=rest[1]: c.get(k))
+    sim.run()
+    results = []
+    for c in clients.values():
+        results.extend(c.results)
+    return sorted(results, key=lambda x: (x[5], x[0])), {name: dict(sim.nodes[name].data) for name in reps}
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Replica(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+
+    def on_message(self, src, msg):
+        if msg[0] == "put":
+            _, rid, key, version, value = msg
+            old = self.data.get(key)
+            if old is None or version > old[0]:
+                self.data[key] = (version, value)
+            self.send(src, ("put-ok", rid))
+        elif msg[0] == "get":
+            _, rid, key = msg
+            self.send(src, ("got", rid, self.data.get(key)))
+
+
+class QClient(Node):
+    def __init__(self, node_id, replicas, r, w, timeout):
+        super().__init__(node_id)
+        self.replicas = replicas
+        self.r = r
+        self.w = w
+        self.timeout = timeout
+        self.counter = 0
+        self.rid = 0
+        self.ops = {}
+        self.results = []
+
+    def put(self, key, value):
+        self.counter += 1
+        self.rid += 1
+        version = (self.counter, self.id)
+        self.ops[self.rid] = {"kind": "put", "key": key, "value": value, "start": self.sim.now, "acks": set(), "done": False}
+        for rep in self.replicas:
+            self.send(rep, ("put", self.rid, key, version, value))
+        self.set_timer(self.timeout, self.rid)
+
+    def get(self, key):
+        self.rid += 1
+        self.ops[self.rid] = {"kind": "get", "key": key, "value": None, "start": self.sim.now, "replies": {}, "done": False}
+        for rep in self.replicas:
+            self.send(rep, ("get", self.rid, key))
+        self.set_timer(self.timeout, self.rid)
+
+    def finish(self, rid, result):
+        op = self.ops[rid]
+        op["done"] = True
+        self.results.append((self.id, op["kind"], op["key"], op["value"], result, op["start"], self.sim.now))
+
+    def on_message(self, src, msg):
+        op = self.ops.get(msg[1])
+        if op is None or op["done"]:
+            return
+        if msg[0] == "put-ok":
+            op["acks"].add(src)
+            if len(op["acks"]) >= self.w:
+                self.finish(msg[1], "ok")
+        elif msg[0] == "got":
+            op["replies"][src] = msg[2]
+            if len(op["replies"]) < self.r:
+                return
+            pairs = [p for p in op["replies"].values() if p is not None]
+            if not pairs:
+                self.finish(msg[1], None)
+                return
+            version, value = max(pairs)
+            self.counter = max(self.counter, version[0])
+            for rep, pair in op["replies"].items():
+                if pair is None or pair[0] < version:
+                    self.send(rep, ("put", 0, op["key"], version, value))
+            self.finish(msg[1], value)
+
+    def on_timer(self, rid):
+        if not self.ops[rid]["done"]:
+            self.finish(rid, "fail")
+
+
+def run_store(seed, r, w, script, n=3, dup=0.0):
+    sim = Sim(seed, delay=(1, 10), dup=dup)
+    reps = ["s%d" % i for i in range(n)]
+    for name in reps:
+        sim.add(Replica(name))
+    clients = {}
+    for t, who, *rest in script:
+        if who not in ("partition", "heal", "crash", "recover") and who not in clients:
+            clients[who] = sim.add(QClient(who, reps, r, w, 40))
+    for t, who, *rest in script:
+        if who == "partition":
+            sim.at(t, lambda g=rest: sim.partition(*g))
+        elif who == "heal":
+            sim.at(t, sim.heal)
+        elif who == "crash":
+            sim.at(t, lambda x=rest[0]: sim.crash(x))
+        elif who == "recover":
+            sim.at(t, lambda x=rest[0]: sim.recover(x))
+        elif rest[0] == "put":
+            sim.at(t, lambda c=clients[who], k=rest[1], v=rest[2]: c.put(k, v))
+        else:
+            sim.at(t, lambda c=clients[who], k=rest[1]: c.get(k))
+    sim.run()
+    results = []
+    for c in clients.values():
+        results.extend(c.results)
+    return sorted(results, key=lambda x: (x[5], x[0])), {name: dict(sim.nodes[name].data) for name in reps}
+--- hint
+Keep one dictionary per request in \`ops\`: its kind, key, value, start time, a \`done\` flag, and either a set of acknowledging replicas (put) or a dictionary from replica to answer (get). Both a set and a dictionary count distinct replicas, so a duplicated message cannot be counted twice.
+--- hint
+A shared \`finish(rid, result)\` helper marks the operation done and appends the result tuple; the reply handlers and the timer all call it. The timer's name is the request id, so \`on_timer(rid)\` knows which operation timed out.
+--- hint
+For a get, wait until the dictionary of answers has \`r\` entries, then \`max\` over the non-\`None\` pairs. Dictionaries keep insertion order, so iterating over the answers gives the replicas in the order they answered, which is the order for read repair.
+--- check case | The example from the task
+run_store(1, 2, 2, [(0, "a", "put", "x", 1), (50, "b", "get", "x")])[0]
+=> [('a', 'put', 'x', 1, 'ok', 0, 9), ('b', 'get', 'x', None, 1, 50, 63)]
+--- check case | A get of a key nobody wrote, and a second write that supersedes the first
+run_store(2, 2, 2, [(0, "b", "get", "y"), (10, "a", "put", "y", "v1"), (60, "a", "put", "y", "v2"), (120, "b", "get", "y")])
+=> ([('b', 'get', 'y', None, None, 0, 10), ('a', 'put', 'y', 'v1', 'ok', 10, 18), ('a', 'put', 'y', 'v2', 'ok', 60, 74), ('b', 'get', 'y', None, 'v2', 120, 131)], {'s0': {'y': ((2, 'a'), 'v2')}, 's1': {'y': ((2, 'a'), 'v2')}, 's2': {'y': ((2, 'a'), 'v2')}})
+--- check case | R + W ≤ N: a read after a finished write can miss it
+[run_store(s, 1, 1, [(0, "partition", ["a"], ["s1", "s2"]), (1, "a", "put", "x", 1), (50, "b", "get", "x"), (60, "heal")])[0][1][4] for s in range(6)]
+=> [1, None, 1, None, None, None]
+?? With W = 1 the write finished as soon as s0 had it; with R = 1 the read returns whichever replica answers first, often s1 or s2.
+--- check case | R + W > N with one replica cut off from the writer: every read sees the write, and read repair fixes the lagging replica when it answers
+[(lambda res: (res[0][1][4], res[1]["s2"]))(run_store(s, 2, 2, [(0, "partition", ["a"], ["s2"]), (1, "a", "put", "x", 1), (50, "b", "get", "x"), (60, "heal")])) for s in range(5)]
+=> [(1, {'x': ((1, 'a'), 1)}), (1, {}), (1, {'x': ((1, 'a'), 1)}), (1, {'x': ((1, 'a'), 1)}), (1, {})]
+--- check case | One replica down: W = 2 still succeeds, W = 3 fails
+([r[4] for r in run_store(1, 2, 2, [(0, "crash", "s0"), (5, "a", "put", "x", 1), (50, "b", "get", "x")])[0]], [r[4] for r in run_store(1, 3, 3, [(0, "crash", "s0"), (5, "a", "put", "x", 1), (50, "b", "get", "x")])[0]])
+=> (['ok', 1], ['fail', 'fail'])
+--- check case | Every message duplicated, two replicas down: a duplicated ack must not complete a quorum
+[r[4] for r in run_store(3, 2, 2, [(0, "crash", "s1"), (0, "crash", "s2"), (5, "a", "put", "x", 1), (60, "b", "get", "x")], dup=1.0)[0]]
+=> ['fail', 'fail']
+?? Count acknowledging replicas in a set: s0's two copies of "put-ok" are one replica.
+--- check case | Versions chosen by clients: a later write can lose
+run_store(1, 2, 2, [(0, "b", "put", "x", "b1"), (50, "a", "put", "x", "a1"), (100, "c", "get", "x"), (150, "a", "get", "x"), (200, "a", "put", "x", "a2"), (250, "c", "get", "x")])[0]
+=> [('b', 'put', 'x', 'b1', 'ok', 0, 9), ('a', 'put', 'x', 'a1', 'ok', 50, 63), ('c', 'get', 'x', None, 'b1', 100, 110), ('a', 'get', 'x', None, 'b1', 150, 163), ('a', 'put', 'x', 'a2', 'ok', 200, 217), ('c', 'get', 'x', None, 'a2', 250, 266)]
+?? a's first write has version (1, "a"), lower than b's (1, "b"), so it loses although it came later. After a's get, its counter has caught up, and a2 gets version (2, "a").
+--- check case | Read repair after a crashed replica comes back
+(lambda res: (res[0][-1][4], res[1]))(run_store(4, 3, 2, [(0, "crash", "s0"), (5, "a", "put", "k", 7), (60, "recover", "s0"), (70, "b", "get", "k")]))
+=> (7, {'s0': {'k': ((1, 'a'), 7)}, 's1': {'k': ((1, 'a'), 7)}, 's2': {'k': ((1, 'a'), 7)}})
+
++++ question | Why sticky sessions are not enough
+--- ask
+A user's writes go to the leader, and all their reads go to one follower, always the same one ("sticky"). Which anomaly can they still see?
+--- choice
+Going back in time: an older value after a newer one.
+--- choice correct
+Not seeing their own write: the follower may not have applied it yet when the next read arrives.
+--- choice
+Two followers disagreeing about the order of writes.
+--- choice
+None: sticky reads give linearizability.
+--- why
+One follower applies the log in order and only moves forwards, so its answers never go back in time. But it lags the leader, so a write the user just made may not be there yet. A version token, or reading from the leader after a write, fixes that.
+
++++ question | The later write that loses
+--- ask
+Two clients write the same key in a quorum store with R = W = 2, N = 3. Client A writes at 10:00:00.000 with its wall-clock timestamp, client B at 10:00:00.030 with its own, and the store keeps the highest timestamp. B's clock is 50 ms slow. What happens?
+--- choice
+B's write wins because it came later.
+--- choice
+The store keeps both as siblings.
+--- choice correct
+A's write wins: B's timestamp reads 09:59:59.980, lower than A's, so B's later write is silently dropped, even though both quorums overlapped.
+--- choice
+The write quorum overlap forces the replicas to order the writes correctly.
+--- why
+R + W > N guarantees a read meets the highest version; it says nothing about whether the versions follow real time. Last-writer-wins with skewed clocks drops writes inside the skew window. Reading the version first, or detecting concurrency with version vectors, avoids it.
+
++++ question | What hinted handoff gives up
+--- ask
+With a sloppy quorum, a write whose home replicas are unreachable is stored on other nodes with a hint. What guarantee is lost until the hints are delivered?
+--- choice
+Durability: the write can be lost if any node crashes.
+--- choice correct
+The overlap of read and write quorums: a read that asks the home replicas may miss the write, even with R + W > N.
+--- choice
+Availability: the write fails if the home replicas are down.
+--- choice
+Ordering: hints are applied in random order.
+--- why
+The overlap argument counts members of one fixed set of N home replicas. Stand-ins are outside that set, so a read quorum of home replicas can contain no replica that saw the write. The write stays available and durable; reads may be stale until handoff.
+
++++ practice | Reading from lagging followers
+--- task
+A leader applies writes at the times given in \`writes\`, a sorted list of \`(time, version)\` with versions 1, 2, 3, …. Follower f applies each write exactly \`lag[f]\` time units after the leader. A follower serving a read at time t returns the highest version it has applied by then, that is, the largest version whose leader time plus its lag is at most t, or 0 if none.
+
+A single client's session is a list \`session\` of operations in time order: \`("write", time, version)\` means the client made that write (it is also in \`writes\`), and \`("read", time, follower)\` means it read from that follower.
+
+Write \`follower_reads(writes, lag, session)\` that returns a tuple \`(versions, broken)\`: \`versions\` is the list of versions the client's reads returned, in order, and \`broken\` is the list of \`(read_index, name)\` pairs for each guarantee each read breaks, where \`read_index\` counts reads only (from 0) and \`name\` is \`"read-your-writes"\` (the read returned less than the client's latest write before it) or \`"monotonic-reads"\` (less than the highest version an earlier read returned), in that order.
+
+For example, \`follower_reads([(0, 1), (10, 2)], {"f1": 3, "f2": 30}, [("write", 10, 2), ("read", 20, "f1"), ("read", 25, "f2")])\` is \`([2, 0], [(1, "read-your-writes"), (1, "monotonic-reads")])\`: f2 applies the first write only at time 30.
+--- starter
+def follower_reads(writes, lag, session):
+    versions = []
+    for op in session:
+        if op[0] == "read":
+            versions.append(writes[-1][1])
+    return versions, []
+--- solution
+def follower_reads(writes, lag, session):
+    versions = []
+    broken = []
+    my_write = 0
+    best_read = 0
+    for op in session:
+        if op[0] == "write":
+            my_write = max(my_write, op[2])
+            continue
+        _, t, f = op
+        v = 0
+        for wt, version in writes:
+            if wt + lag[f] <= t:
+                v = max(v, version)
+        index = len(versions)
+        if v < my_write:
+            broken.append((index, "read-your-writes"))
+        if v < best_read:
+            broken.append((index, "monotonic-reads"))
+        versions.append(v)
+        best_read = max(best_read, v)
+    return versions, broken
+--- hint
+For each read, scan the writes and keep the highest version whose leader time plus that follower's lag is at most the read time.
+--- hint
+Track two numbers across the session: the client's latest write and the highest version it has read. Compare the read's version with both before updating the second.
+--- check case | The example from the task
+follower_reads([(0, 1), (10, 2)], {"f1": 3, "f2": 30}, [("write", 10, 2), ("read", 20, "f1"), ("read", 25, "f2")])
+=> ([2, 0], [(1, 'read-your-writes'), (1, 'monotonic-reads')])
+--- check case | Reading before anything is applied returns 0
+follower_reads([(5, 1)], {"f": 10}, [("read", 3, "f"), ("read", 14, "f"), ("read", 15, "f")])
+=> ([0, 0, 1], [])
+--- check case | Applied exactly at the read time counts
+follower_reads([(0, 1), (4, 2)], {"f": 6}, [("write", 4, 2), ("read", 10, "f")])
+=> ([2], [])
+--- check case | Sticky reads from one follower never go back in time, but can miss your write
+follower_reads([(0, 1), (20, 2), (40, 3)], {"f": 15}, [("read", 30, "f"), ("write", 40, 3), ("read", 45, "f"), ("read", 60, "f")])
+=> ([1, 2, 3], [(1, 'read-your-writes')])
+--- check case | Alternating between a fast and a slow follower
+follower_reads([(t, t // 10 + 1) for t in range(0, 100, 10)], {"fast": 2, "slow": 35}, [("read", t, "fast" if (t // 7) % 2 == 0 else "slow") for t in range(40, 100, 7)])
+=> ([1, 5, 2, 6, 4, 8, 5, 9, 7], [(2, 'monotonic-reads'), (4, 'monotonic-reads'), (6, 'monotonic-reads'), (8, 'monotonic-reads')])
+
++++ practice | Version tokens for session guarantees
+--- task
+Fix replication-lag anomalies with a version token, on the simulator, which the starter has, together with finished \`Leader\` and \`Follower\` nodes. The leader numbers writes 1, 2, 3, …: on \`("write", rid, value)\` it stores the value, replies \`("written", rid, version)\` and sends \`("apply", version, value)\` to each follower. A follower applies \`("apply", ...)\` messages, keeping its highest applied \`version\` and its \`value\`, and answers \`("read", rid, min_version)\` with \`("value", rid, version, value)\` if its version is at least \`min_version\`, and with \`("behind", rid)\` otherwise.
+
+Write the node \`Session(node_id, followers, use_token)\`:
+
+- It keeps \`token\` (the highest version it has written or read, starting at 0), \`rid\` (0), the list \`reads\` of \`(time, version)\` for completed reads, and \`pending\`, the follower list position to try next.
+- \`write(value)\` adds 1 to \`rid\` and sends \`("write", rid, value)\` to \`"leader"\`. On \`("written", rid, version)\` it sets \`token = max(token, version)\`.
+- \`read()\` adds 1 to \`rid\` and sends \`("read", rid, m)\` to the follower at position \`pending % len(followers)\`, then adds 1 to \`pending\`, where m is \`token\` if \`use_token\` is true, and 0 otherwise.
+- On \`("value", rid, version, value)\` it appends \`(now, version)\` to \`reads\` and sets \`token = max(token, version)\`. On \`("behind", rid)\` it immediately tries again: it sends the same read (same rid and m) to the follower at position \`pending % len(followers)\`, and adds 1 to \`pending\`.
+
+Then write \`session_run(seed, use_token)\`: on \`Sim(seed, delay=(1, 4))\`, a \`Leader("leader", ["f1", "f2"])\`, followers \`"f1"\` (whose applies are slowed by 2 extra time units) and \`"f2"\` (slowed by 40), built as \`Follower("f1", 2)\` and \`Follower("f2", 40)\`, and a \`Session("u", ["f1", "f2"], use_token)\`. The user writes at times 0, 100, 200, … and reads at 10, 20, 30, … (90 between writes, so 9 reads per write), for writes \`"w0"\` to \`"w4"\` and reads up to time 490. Schedule them in time order (at equal times, the write first). Return \`(stale, backwards)\`: the number of reads whose version is lower than the user's latest write **acknowledged** before the read began, and the number of reads whose version is lower than an earlier read's.
+
+For example, \`session_run(1, False)\` is \`(10, 8)\` and \`session_run(1, True)\` is \`(0, 0)\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Leader(Node):
+    def __init__(self, node_id, followers):
+        super().__init__(node_id)
+        self.followers = followers
+        self.version = 0
+        self.value = None
+
+    def on_message(self, src, msg):
+        if msg[0] == "write":
+            self.version += 1
+            self.value = msg[2]
+            self.send(src, ("written", msg[1], self.version))
+            for f in self.followers:
+                self.send(f, ("apply", self.version, msg[2]))
+
+
+class Follower(Node):
+    def __init__(self, node_id, slowness):
+        super().__init__(node_id)
+        self.slowness = slowness
+        self.version = 0
+        self.value = None
+
+    def on_message(self, src, msg):
+        if msg[0] == "apply":
+            self.set_timer(self.slowness, ("apply", msg[1], msg[2]))
+        elif msg[0] == "read":
+            if self.version >= msg[2]:
+                self.send(src, ("value", msg[1], self.version, self.value))
+            else:
+                self.send(src, ("behind", msg[1]))
+
+    def on_timer(self, name):
+        if name[1] > self.version:
+            self.version, self.value = name[1], name[2]
+
+
+class Session(Node):
+    def __init__(self, node_id, followers, use_token):
+        super().__init__(node_id)
+        self.followers = followers
+        self.use_token = use_token
+        self.token = 0
+        self.rid = 0
+        self.reads = []
+        self.pending = 0
+
+
+def session_run(seed, use_token):
+    return 0, 0
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Leader(Node):
+    def __init__(self, node_id, followers):
+        super().__init__(node_id)
+        self.followers = followers
+        self.version = 0
+        self.value = None
+
+    def on_message(self, src, msg):
+        if msg[0] == "write":
+            self.version += 1
+            self.value = msg[2]
+            self.send(src, ("written", msg[1], self.version))
+            for f in self.followers:
+                self.send(f, ("apply", self.version, msg[2]))
+
+
+class Follower(Node):
+    def __init__(self, node_id, slowness):
+        super().__init__(node_id)
+        self.slowness = slowness
+        self.version = 0
+        self.value = None
+
+    def on_message(self, src, msg):
+        if msg[0] == "apply":
+            self.set_timer(self.slowness, ("apply", msg[1], msg[2]))
+        elif msg[0] == "read":
+            if self.version >= msg[2]:
+                self.send(src, ("value", msg[1], self.version, self.value))
+            else:
+                self.send(src, ("behind", msg[1]))
+
+    def on_timer(self, name):
+        if name[1] > self.version:
+            self.version, self.value = name[1], name[2]
+
+
+class Session(Node):
+    def __init__(self, node_id, followers, use_token):
+        super().__init__(node_id)
+        self.followers = followers
+        self.use_token = use_token
+        self.token = 0
+        self.rid = 0
+        self.reads = []
+        self.pending = 0
+        self.asked = {}
+        self.acked = []
+
+    def write(self, value):
+        self.rid += 1
+        self.send("leader", ("write", self.rid, value))
+
+    def ask(self, rid, m):
+        follower = self.followers[self.pending % len(self.followers)]
+        self.pending += 1
+        self.send(follower, ("read", rid, m))
+
+    def read(self):
+        self.rid += 1
+        m = self.token if self.use_token else 0
+        self.asked[self.rid] = (self.sim.now, m, max([v for _, v in self.acked] + [0]))
+        self.ask(self.rid, m)
+
+    def on_message(self, src, msg):
+        if msg[0] == "written":
+            self.token = max(self.token, msg[2])
+            self.acked.append((self.sim.now, msg[2]))
+        elif msg[0] == "value":
+            self.reads.append((self.sim.now, msg[2], self.asked[msg[1]][2]))
+            self.token = max(self.token, msg[2])
+        elif msg[0] == "behind":
+            self.ask(msg[1], self.asked[msg[1]][1])
+
+
+def session_run(seed, use_token):
+    sim = Sim(seed, delay=(1, 4))
+    sim.add(Leader("leader", ["f1", "f2"]))
+    sim.add(Follower("f1", 2))
+    sim.add(Follower("f2", 40))
+    user = sim.add(Session("u", ["f1", "f2"], use_token))
+    for t in range(0, 500, 10):
+        if t % 100 == 0:
+            sim.at(t, lambda t=t: user.write("w%d" % (t // 100)))
+        else:
+            sim.at(t, user.read)
+    sim.run()
+    stale = sum(1 for _, v, mine in user.reads if v < mine)
+    backwards = 0
+    best = 0
+    for _, v, _ in user.reads:
+        if v < best:
+            backwards += 1
+        best = max(best, v)
+    return stale, backwards
+--- hint
+Remember, for each read request, what it needs to retry (its m) and the latest acknowledged write when it began; a dictionary from rid to that information does both. A \`"behind"\` answer re-sends the same rid with the same m to the next follower in turn.
+--- hint
+To count stale reads you need the latest version acknowledged **before** the read began: record acknowledgements with their times, or keep the latest acknowledged version in a field and copy it into the read's record when the read starts.
+--- hint
+Without a token, m is always 0, so no follower ever says \`"behind"\`; with it, a lagging follower refuses and the read moves on until a follower has caught up.
+--- check case | The example from the task
+(session_run(1, False), session_run(1, True))
+=> ((10, 8), (0, 0))
+--- check case | Other seeds
+[(session_run(s, False), session_run(s, True)) for s in (2, 3, 4)]
+=> [((9, 7), (0, 0)), ((10, 8), (0, 0)), ((9, 7), (0, 0))]
+--- check case | Read results with tokens only ever grow
+(lambda s: (s.run(), [v for _, v, *_ in s.nodes["u"].reads]))((lambda s: (s.add(Leader("leader", ["f1", "f2"])), s.add(Follower("f1", 2)), s.add(Follower("f2", 40)), s.add(Session("u", ["f1", "f2"], True)), [s.at(t, (lambda t=t: s.nodes["u"].write(t)) if t % 100 == 0 else s.nodes["u"].read) for t in range(0, 300, 10)], s)[-1])(Sim(5, delay=(1, 4))))[1]
+=> [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+
++++ practice | Hinted handoff
+--- task
+Add a sloppy quorum to a tiny store. The starter has the simulator. There are home replicas \`"h0"\`, \`"h1"\`, \`"h2"\` and a stand-in \`"spare"\`. Write the node \`Store(node_id)\` with a dictionary \`data\` from key to \`(version, value)\` and a list \`hints\`:
+
+- \`("put", rid, key, version, value)\`: store the pair if the key is new or the version is higher; reply \`("put-ok", rid)\`.
+- \`("hinted-put", rid, key, version, value, home)\`: store the pair as above **and** append \`(home, key, version, value)\` to \`hints\`, unless that exact entry is already there; reply \`("put-ok", rid)\`.
+- \`start_handoff(every)\`: set a timer \`"handoff"\` for \`every\`; when it fires, send \`("put", 0, key, version, value)\` to the home of each hint, in list order, and set the next timer. On \`("put-ok", 0)\` from a home, remove every hint for that home.
+- \`("get", rid, key)\`: reply \`("got", rid, pair or None)\`.
+
+Then write \`sloppy_run(sloppy, seed)\`, which runs on \`Sim(seed, delay=(1, 4))\` the four \`Store\`s (with the spare's handoff started at time 0, every 25) and a client \`"c"\` that you write: at time 5 it puts \`("x", (1, "c"), "v1")\` to all three homes and waits 15 time units; if fewer than 2 have answered \`"put-ok"\` and \`sloppy\` is true, it sends \`("hinted-put", 10 + i, "x", (1, "c"), "v1", h)\` to the spare for each home \`h = "h{i}"\` that has not answered (in order), and counts each of the spare's acknowledgements (one per hint, told apart by their request ids) as well. Homes \`"h1"\` and \`"h2"\` are crashed from time 0 until time 100. At time 60 and again at time 200, the client gets \`"x"\` from \`"h1"\` and \`"h2"\` and records the highest value of their two answers (or \`None\`).
+
+Return \`(write_ok, read_at_60, read_at_200)\`, where \`write_ok\` is whether the put reached 2 acknowledgements (from homes and, if sloppy, the spare) within 30 time units of its start, and each read is the value read (\`None\` if neither answered within 20 time units, or both answered \`None\`).
+
+For example, \`sloppy_run(False, 1)\` is \`(False, None, None)\` and \`sloppy_run(True, 1)\` is \`(True, None, "v1")\`: the sloppy write succeeds, a read during the outage misses it, and after the homes recover the hints bring them up to date.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Store(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+        self.hints = []
+
+
+def sloppy_run(sloppy, seed):
+    return False, None, None
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Store(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+        self.hints = []
+        self.every = None
+
+    def keep(self, key, version, value):
+        old = self.data.get(key)
+        if old is None or version > old[0]:
+            self.data[key] = (version, value)
+
+    def start_handoff(self, every):
+        self.every = every
+        self.set_timer(every, "handoff")
+
+    def on_timer(self, name):
+        if name == "handoff":
+            for home, key, version, value in self.hints:
+                self.send(home, ("put", 0, key, version, value))
+            self.set_timer(self.every, "handoff")
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "put":
+            _, rid, key, version, value = msg
+            self.keep(key, version, value)
+            self.send(src, ("put-ok", rid))
+        elif kind == "hinted-put":
+            _, rid, key, version, value, home = msg
+            self.keep(key, version, value)
+            if (home, key, version, value) not in self.hints:
+                self.hints.append((home, key, version, value))
+            self.send(src, ("put-ok", rid))
+        elif kind == "put-ok" and msg[1] == 0:
+            self.hints = [h for h in self.hints if h[0] != src]
+        elif kind == "get":
+            self.send(src, ("got", msg[1], self.data.get(msg[2])))
+
+
+class Client(Node):
+    def __init__(self, node_id, sloppy):
+        super().__init__(node_id)
+        self.sloppy = sloppy
+        self.acked = set()
+        self.write_ok = False
+        self.reads = {}
+        self.start = None
+
+    def put(self):
+        self.start = self.sim.now
+        for h in ("h0", "h1", "h2"):
+            self.send(h, ("put", 1, "x", (1, "c"), "v1"))
+        self.set_timer(15, "sloppy")
+
+    def get(self, rid):
+        self.reads[rid] = {"start": self.sim.now, "answers": []}
+        for h in ("h1", "h2"):
+            self.send(h, ("get", rid, "x"))
+
+    def on_timer(self, name):
+        if name == "sloppy" and self.sloppy and len(self.acked) < 2:
+            for h in ("h0", "h1", "h2"):
+                if h not in self.acked:
+                    self.send("spare", ("hinted-put", 10 + int(h[1]), "x", (1, "c"), "v1", h))
+
+    def on_message(self, src, msg):
+        if msg[0] == "put-ok":
+            if self.sim.now - self.start <= 30:
+                self.acked.add(src if msg[1] == 1 else ("hint", msg[1]))
+                if len(self.acked) >= 2:
+                    self.write_ok = True
+        elif msg[0] == "got":
+            read = self.reads[msg[1]]
+            if self.sim.now - read["start"] <= 20:
+                read["answers"].append(msg[2])
+
+    def result(self, rid):
+        pairs = [p for p in self.reads[rid]["answers"] if p is not None]
+        return max(pairs)[1] if pairs else None
+
+
+def sloppy_run(sloppy, seed):
+    sim = Sim(seed, delay=(1, 4))
+    for name in ("h0", "h1", "h2", "spare"):
+        sim.add(Store(name))
+    client = sim.add(Client("c", sloppy))
+    sim.at(0, lambda: sim.nodes["spare"].start_handoff(25))
+    sim.at(0, lambda: sim.crash("h1"))
+    sim.at(0, lambda: sim.crash("h2"))
+    sim.at(5, client.put)
+    sim.at(60, lambda: client.get(60))
+    sim.at(100, lambda: sim.recover("h1"))
+    sim.at(100, lambda: sim.recover("h2"))
+    sim.at(200, lambda: client.get(200))
+    sim.run(400)
+    return client.write_ok, client.result(60), client.result(200)
+--- hint
+A shared helper that stores a pair only if it is newer serves both kinds of put. The hint list holds \`(home, key, version, value)\` tuples; handoff re-sends each one as an ordinary put to its home.
+--- hint
+A home answers a handed-off put with \`("put-ok", 0)\`, so the spare can tell handoff acknowledgements (rid 0) from client puts and drop that home's hints.
+--- hint
+On the client side, count each home once, and each acknowledgement from the spare once per hint. The spare's hinted copies count towards the write's 2, but the reads ask only the homes, which is exactly why a read can miss the write.
+--- check case | The example from the task
+(sloppy_run(False, 1), sloppy_run(True, 1))
+=> ((False, None, None), (True, None, 'v1'))
+--- check case | Other seeds
+[sloppy_run(True, s) for s in (2, 3, 4)]
+=> [(True, None, 'v1'), (True, None, 'v1'), (True, None, 'v1')]
+--- check case | The spare keeps a hint until its home acknowledges, and handoff empties the list
+(lambda t: (t[5], t[8], t[9]))((lambda s: (s.at(0, lambda: s.nodes["sp"].start_handoff(10)), s.at(0, lambda: s.crash("hm")), s.at(1, lambda: s.send("cl", "sp", ("hinted-put", 9, "k", (3, "a"), "z", "hm"))), s.at(2, lambda: s.send("cl", "sp", ("hinted-put", 9, "k", (3, "a"), "z", "hm"))), s.run(30), list(s.nodes["sp"].hints), s.at(31, lambda: s.recover("hm")), s.run(80), list(s.nodes["sp"].hints), s.nodes["hm"].data))((lambda s: (s.add(Store("sp")), s.add(Store("hm")), s.add(Node("cl")), s)[-1])(Sim(2, delay=(1, 2)))))
+=> ([('hm', 'k', (3, 'a'), 'z')], [], {'k': ((3, 'a'), 'z')})
+--- check case | Stores keep the higher version
+(lambda s: (s.at(0, lambda: s.send("cl", "st", ("put", 1, "k", (2, "a"), "new"))), s.at(5, lambda: s.send("cl", "st", ("put", 2, "k", (1, "b"), "old"))), s.run(), s.nodes["st"].data)[-1])((lambda s: (s.add(Store("st")), s.add(Node("cl")), s)[-1])(Sim(0)))
+=> {'k': ((2, 'a'), 'new')}
+
++++ practice | Last writer wins, with skewed clocks
+--- task
+A store resolves conflicting writes by **last writer wins**: each write carries a timestamp from its writer's clock, \`true_time + offset[writer]\`, and the store keeps the write with the highest timestamp, breaking ties by the larger writer name. \`writes\` is a list of \`(true_time, writer, value)\`, in any order, all to one key.
+
+Write \`lww(writes, offset)\` that returns a tuple \`(kept, lost)\`:
+
+- \`kept\` is the value the store ends with (\`None\` if there are no writes);
+- \`lost\` is the list of values of writes that were silently overwritten by a write that happened **earlier in true time**, in the order of \`writes\`. A write is lost this way if the kept write's true time is strictly earlier than its own. (Writes earlier than the kept one were overwritten fairly and are not listed.)
+
+For example, \`lww([(100, "a", "first"), (130, "b", "second")], {"a": 0, "b": -50})\` is \`("first", ["second"])\`: b's clock reads 80 at true time 130, so b's later write loses.
+--- starter
+def lww(writes, offset):
+    if not writes:
+        return None, []
+    last = max(writes)
+    return last[2], []
+--- solution
+def lww(writes, offset):
+    if not writes:
+        return None, []
+    kept = max(writes, key=lambda w: (w[0] + offset[w[1]], w[1]))
+    lost = [w[2] for w in writes if w[0] > kept[0]]
+    return kept[2], lost
+--- hint
+The winner is the write with the largest \`(timestamp, writer)\` pair, where the timestamp is the true time plus the writer's offset. \`max\` with a \`key\` function picks it.
+--- hint
+A write is unfairly lost exactly when its true time is later than the winner's true time.
+--- check case | The example from the task
+lww([(100, "a", "first"), (130, "b", "second")], {"a": 0, "b": -50})
+=> ('first', ['second'])
+--- check case | Synchronised clocks: the last write in true time wins, nothing unfair
+lww([(30, "b", "y"), (10, "a", "x"), (50, "a", "z")], {"a": 0, "b": 0})
+=> ('z', [])
+--- check case | Equal timestamps: the larger writer name wins
+lww([(100, "a", "p"), (90, "b", "q")], {"a": 0, "b": 10})
+=> ('q', ['p'])
+--- check case | A fast clock wins everything inside its lead
+lww([(1000, "fast", "f"), (1010, "x", "x1"), (1040, "y", "y1")], {"fast": 50, "x": 0, "y": 0})
+=> ('f', ['x1', 'y1'])
+--- check case | No writes, and one write
+(lww([], {}), lww([(5, "a", "only")], {"a": -999}))
+=> ((None, []), ('only', []))
+
++++ practice | Debug: the replica that lets old writes win
+--- task
+The starter's \`Replica\` node stores \`(version, value)\` pairs for a quorum store. It answers \`("put", rid, key, version, value)\` with \`("put-ok", rid)\` and \`("get", rid, key)\` with \`("got", rid, pair)\`. The starter's \`replay(seed)\` sends it a new write and then, because of a read repair that arrived late over the network, an old one, and returns the replica's data.
+
+The replica ends up with the old value: the late read repair rolls the key back in time. Fix the replica so that a put changes the stored pair only if the key is new or the version is higher than the stored version. Equal versions leave the pair alone.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Replica(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+
+    def on_message(self, src, msg):
+        if msg[0] == "put":
+            _, rid, key, version, value = msg
+            self.data[key] = (version, value)
+            self.send(src, ("put-ok", rid))
+        elif msg[0] == "get":
+            _, rid, key = msg
+            self.send(src, ("got", rid, self.data.get(key)))
+
+
+def replay(seed):
+    sim = Sim(seed, delay=(1, 3))
+    sim.add(Replica("r"))
+    sim.add(Node("c"))
+    sim.at(0, lambda: sim.send("c", "r", ("put", 1, "x", (2, "c"), "new")))
+    sim.at(10, lambda: sim.send("c", "r", ("put", 0, "x", (1, "c"), "old")))
+    sim.run()
+    return sim.nodes["r"].data
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Replica(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.data = {}
+
+    def on_message(self, src, msg):
+        if msg[0] == "put":
+            _, rid, key, version, value = msg
+            old = self.data.get(key)
+            if old is None or version > old[0]:
+                self.data[key] = (version, value)
+            self.send(src, ("put-ok", rid))
+        elif msg[0] == "get":
+            _, rid, key = msg
+            self.send(src, ("got", rid, self.data.get(key)))
+
+
+def replay(seed):
+    sim = Sim(seed, delay=(1, 3))
+    sim.add(Replica("r"))
+    sim.add(Node("c"))
+    sim.at(0, lambda: sim.send("c", "r", ("put", 1, "x", (2, "c"), "new")))
+    sim.at(10, lambda: sim.send("c", "r", ("put", 0, "x", (1, "c"), "old")))
+    sim.run()
+    return sim.nodes["r"].data
+--- hint
+The network may deliver an old version after a newer one. What decides which pair a replica should keep: the order of arrival, or the version?
+--- hint
+Look up the stored pair first, and overwrite only if there is none or the new version compares higher. Always acknowledge: the write is "done" either way, because a newer value is already there.
+--- check case | The late old write is ignored
+replay(1)
+=> {'x': ((2, 'c'), 'new')}
+--- check case | Equal versions keep the first pair
+(lambda s: (s.at(0, lambda: s.send("c", "r", ("put", 1, "k", (1, "a"), "one"))), s.at(5, lambda: s.send("c", "r", ("put", 2, "k", (1, "a"), "two"))), s.run(), s.nodes["r"].data)[-1])((lambda s: (s.add(Replica("r")), s.add(Node("c")), s)[-1])(Sim(0)))
+=> {'k': ((1, 'a'), 'one')}
+--- check case | Every put is acknowledged, even ignored ones
+(lambda s, out: (setattr(s.nodes["c"], "on_message", lambda src, m: out.append(m)), s.at(0, lambda: s.send("c", "r", ("put", 1, "k", (5, "a"), "v"))), s.at(5, lambda: s.send("c", "r", ("put", 2, "k", (4, "a"), "w"))), s.run(), sorted(out))[-1])((lambda s: (s.add(Replica("r")), s.add(Node("c")), s)[-1])(Sim(0)), [])
+=> [('put-ok', 1), ('put-ok', 2)]
+--- check case | Newer versions still replace older ones, per key
+(lambda s: (s.at(0, lambda: s.send("c", "r", ("put", 1, "a", (1, "c"), 1))), s.at(5, lambda: s.send("c", "r", ("put", 2, "a", (2, "c"), 2))), s.at(10, lambda: s.send("c", "r", ("put", 3, "b", (1, "c"), 3))), s.run(), s.nodes["r"].data)[-1])((lambda s: (s.add(Replica("r")), s.add(Node("c")), s)[-1])(Sim(0)))
+=> {'a': ((2, 'c'), 2), 'b': ((1, 'c'), 3)}
+
+=== dist1-07 | Partitioning: consistent hashing, hot keys and rebalancing
+--- teach
+Lesson 6 kept N copies of each key. That handles failures, but every copy still holds **all** the data, and one day the data, or the traffic, outgrows a machine. The answer is to split the keys into **partitions** (also called **shards**) and give each machine a few of them; each partition is then replicated as in lesson 6. This lesson is about the one function every partitioned system needs, key → machine, and what it costs when machines come and go. You will build **consistent hashing** with virtual nodes, measure exactly how many keys move, and see why spreading keys evenly does not spread **load** evenly.
+
+### Two ways to split keys
+
+- **By range.** Sort the keys and cut the sorted order into ranges: a to f on one machine, g to m on the next. A range query ("all orders from March") touches one or two partitions. The danger is a **[[hot spot|hot-spot]]**: keys that arrive in order, such as timestamps, all land in the last range, so one machine takes every write while the others idle.
+- **By hash.** Feed each key through a hash function and place it by the hash. Neighbouring keys scatter, so writes spread evenly, but a range query must ask every partition.
+
+### The obvious hash placement, and its cost
+
+The first idea is \`hash(key) % N\` for N machines. It spreads keys evenly. Now add a machine. A key stays put only if \`hash % N\` equals \`hash % (N + 1)\`, which happens for about 1 in N + 1 keys. So going from 10 machines to 11 moves about **10/11 ≈ 91%** of all keys. Every resize copies almost the whole data set across the network, exactly when the cluster is busy enough to need resizing.
+
+### Consistent hashing
+
+Picture the hash values as positions on **[[a circle|ring-picture]]**, from 0 up to the largest hash, wrapping round. Each machine is placed at one point on the circle, its **token**. A key belongs to the first token at or after the key's own position, going clockwise; past the last token it wraps to the first.
+
+Now add a machine: it takes a token somewhere on the circle, and the only keys that move are those between the previous token and its own, all of which move **to it**. Every other key stays where it was. With N machines, the new one takes about 1/(N + 1) of the keys, which is the least any placement could move and still balance load. Removing a machine is the mirror image: only its keys move, to the next token.
+
+Finding a key's owner is a binary search over the sorted tokens. Here is the search on its own, on a toy circle of size 100, with three tokens:
+
+\`\`\`python
+import bisect
+
+tokens = [20, 55, 90]
+for position in (10, 55, 70, 95):
+    i = bisect.bisect_left(tokens, position)
+    print(position, "->", tokens[i % len(tokens)])     # 20, 55, 90, then 20 again
+\`\`\`
+
+\`bisect_left\` returns the index of the first token that is at least the position; at the end of the list, the \`% len\` wraps round to the first token.
+
+### Virtual nodes
+
+One token per machine leaves the circle unevenly cut: with random tokens, the biggest arc is several times the average, so one machine holds several times its share. The fix is **virtual nodes**: each machine places V tokens, at V different positions, and owns all the arcs that end at them. Each machine's share is then a sum of V random arcs, and sums of many random pieces are close to their average: the imbalance shrinks roughly like 1/√V. Measured on 20,000 keys over 10 machines, the most loaded machine holds:
+
+| tokens per machine | most loaded machine, as a multiple of the average |
+|---|---|
+| 1 | 2.25 |
+| 10 | 1.41 |
+| 100 | 1.18 |
+
+Virtual nodes buy two more things: a machine with twice the capacity simply gets twice the tokens, and when a machine leaves, its keys spread over many others instead of all landing on its one neighbour.
+
+**Replicas** come from the same circle: a key's N replicas are the first N **distinct** machines clockwise from its position, its **preference list**. Skip tokens of machines already in the list, or two copies end up on one machine.
+
+### The hash must be the same everywhere
+
+Every client and server must compute the same owner for the same key, on every machine, in every process, forever. Python's built-in \`hash()\` of a string is salted per process, as lesson 1 warned, so it is useless here. Use a fixed function such as MD5 or a 64-bit hash with a fixed seed. Speed matters more than cryptographic strength: nobody needs MD5 to be secure here, only stable and well spread.
+
+### Hot keys
+
+Hashing spreads **keys** evenly. It cannot spread the **load** of one key: if one product, one user or one video gets half of all requests, its partition gets half of all requests, however many machines there are. Common fixes:
+
+- **Split the key.** Write to one of k sub-keys, \`video:42#0\` to \`video:42#9\`, chosen at random; reads ask all k and combine. Writes spread over up to k partitions; reads cost k times more. Worth it only for the few keys that need it.
+- **Cache it.** A read-mostly hot key belongs in a cache in front of the store, or in every client.
+- **Replicas for reads.** Serve reads of hot keys from all replicas, accepting lesson 6's lag.
+
+### Rebalancing with fixed partitions
+
+Many production systems use a simpler scheme on top of hashing: create many more partitions than machines, say 1,024, fixed for the life of the system, and assign whole partitions to machines. A key's partition never changes; only the partition → machine map does. Adding a machine means moving a few partitions to it from the most loaded machines, chosen so that as few move as possible. The map is small, so a configuration service can keep it and every router can cache it. One practice problem writes that assignment.
+
+### Where it is used
+
+- **Consistent hashing with virtual nodes:** Dynamo-style stores such as Cassandra and Riak, many distributed caches, and load balancers that must keep each client on the same backend.
+- **Fixed partitions:** Elasticsearch shards, Kafka topic partitions, and Redis Cluster's 16,384 hash slots.
+- **Ranges:** Bigtable, HBase, Spanner and CockroachDB split and merge ranges automatically as they grow and as load moves.
+- **Hot-key splitting** is standard practice for counters and leaderboards; [[jump hash|jump-hash]] and [[rendezvous hashing|rendezvous]] are compact alternatives to a ring.
+
+**Watch out:**
+
+- **\`hash(key) % N\`** moves almost every key on every resize.
+- **Python's \`hash()\`** differs between processes; use a fixed hash.
+- **Forgetting to wrap round** the circle: keys past the last token belong to the first.
+- **One token per machine** leaves some machines with several times their share.
+- **Two replicas on one machine** when a preference list does not skip repeated machines.
+- **Balanced keys are not balanced load**: watch for hot keys.
+
+::: context hot-spot Sequential keys pile up
+A table keyed by creation time, an auto-increment id or a log sequence number receives every new row at the top of its key range, so with range partitioning the newest partition takes all the writes. Systems avoid it by prefixing keys with a hash of something else (a user id), by reversing the bits of sequential ids, or by hashing the key outright and giving up efficient range scans for that table.
+:::
+
+::: context ring-picture The circle
+Three machines, A, B and C, each with one token. A key belongs to the first token clockwise from it, so the arc ending at each token is that machine's share. Adding a machine D between C and A would take only part of A's arc.
+
+\`\`\`svg
+<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <circle cx="180" cy="100" r="70" fill="none" stroke="#1f2a44" stroke-width="2"/>
+  <circle cx="180" cy="30" r="7" fill="#1d6fd1"/>
+  <text x="180" y="18" font-size="12" text-anchor="middle" fill="#1f2a44">A</text>
+  <circle cx="241" cy="135" r="7" fill="#1d6fd1"/>
+  <text x="258" y="146" font-size="12" fill="#1f2a44">B</text>
+  <circle cx="119" cy="135" r="7" fill="#1d6fd1"/>
+  <text x="96" y="146" font-size="12" fill="#1f2a44">C</text>
+  <circle cx="230" cy="51" r="4" fill="#b4232c"/>
+  <text x="240" y="47" font-size="11" fill="#b4232c">key: owned by B</text>
+  <circle cx="117" cy="65" r="5" fill="none" stroke="#6c7a93" stroke-dasharray="2 2"/>
+  <text x="104" y="60" font-size="11" text-anchor="end" fill="#6c7a93">new D</text>
+  <text x="180" y="195" font-size="11" text-anchor="middle" fill="#1f2a44">clockwise</text>
+</svg>
+\`\`\`
+:::
+
+::: context jump-hash A ring in five lines
+John Lamping and Eric Veach published jump consistent hash in 2014. It maps a 64-bit key to one of n buckets with no stored ring at all: a loop that uses the key as the seed of a tiny random number generator and jumps forward through bucket numbers. It moves the theoretical minimum of keys when n grows, and balances almost perfectly. Its limits: buckets can only be added or removed at the end, so it suits numbered shards rather than named machines.
+:::
+
+::: context rendezvous Highest score wins
+Rendezvous hashing, or highest random weight hashing, from 1996, gives each (key, machine) pair a score, the hash of both together, and sends the key to the machine with the highest score. Adding a machine moves only the keys for which it now scores highest, about 1/(N + 1) of them, and the second-, third- and fourth-highest scores give a natural preference list. Its cost is computing N hashes per lookup, which is fine for tens of machines.
+:::
+--- task
+Build a consistent-hashing ring with virtual nodes. The starter gives \`h(text)\`, a stable hash: the first 8 hexadecimal digits of the MD5 digest of the text, as a number from 0 to 2³² − 1. Positions on the ring are values of \`h\`.
+
+Write the class \`Ring(vnodes)\`:
+
+- \`add(node)\`: append \`node\` to the list \`self.nodes\`, and give it \`vnodes\` tokens: for i from 0 to \`vnodes − 1\`, the token \`(h(node + "#" + str(i)), node)\`. Keep all tokens in one list \`self.tokens\`, sorted (by position, then node name).
+- \`remove(node)\`: take it out of \`self.nodes\` and remove all its tokens.
+- \`owner(key)\`: the node of the first token whose position is at least \`h(key)\`, wrapping round to the first token if there is none. (For tokens at the same position, the one with the smaller node name counts as first.)
+- \`preference(key, n)\`: the first \`n\` **distinct** nodes met going clockwise from the owner's token (the owner first), or all the nodes if there are fewer than \`n\`.
+
+Then write \`mod_owner(key, nodes)\`, the naive placement \`nodes[h(key) % len(nodes)]\`, and \`moved(keys, before, after)\`, which returns how many of \`keys\` have a different owner under the two functions \`before\` and \`after\` (each takes a key and returns its owner).
+
+For example, with \`r = Ring(3)\` holding \`"a"\`, \`"b"\` and \`"c"\`, \`r.owner("apple")\` is \`"b"\`.
+--- starter
+import bisect
+import hashlib
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+
+    def remove(self, node):
+        self.nodes.remove(node)
+
+    def owner(self, key):
+        return self.nodes[0]
+
+    def preference(self, key, n):
+        return self.nodes[:n]
+
+
+def mod_owner(key, nodes):
+    return nodes[0]
+
+
+def moved(keys, before, after):
+    return 0
+--- solution
+import bisect
+import hashlib
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+        for i in range(self.vnodes):
+            bisect.insort(self.tokens, (h(node + "#" + str(i)), node))
+
+    def remove(self, node):
+        self.nodes.remove(node)
+        self.tokens = [t for t in self.tokens if t[1] != node]
+
+    def start(self, key):
+        i = bisect.bisect_left(self.tokens, (h(key), ""))
+        return i % len(self.tokens)
+
+    def owner(self, key):
+        return self.tokens[self.start(key)][1]
+
+    def preference(self, key, n):
+        i = self.start(key)
+        out = []
+        for k in range(len(self.tokens)):
+            node = self.tokens[(i + k) % len(self.tokens)][1]
+            if node not in out:
+                out.append(node)
+                if len(out) == n:
+                    break
+        return out
+
+
+def mod_owner(key, nodes):
+    return nodes[h(key) % len(nodes)]
+
+
+def moved(keys, before, after):
+    return sum(1 for k in keys if before(k) != after(k))
+--- hint
+\`bisect.insort\` keeps the token list sorted as you add. Tuples sort by position first and node name second, which is exactly the tie rule.
+--- hint
+To find the first token at or after a position p, search for \`(p, "")\`: the empty string sorts before every node name, so \`bisect_left\` stops at the first token with position p or more. An index equal to the list's length wraps round with \`% len(self.tokens)\`.
+--- hint
+For \`preference\`, walk the token list from the owner's index, wrapping round, and collect node names you have not seen yet, stopping at n or after one full turn.
+--- check case | The example from the task
+(lambda r: ([r.add(n) for n in "abc"], r.owner("apple"))[1])(Ring(3))
+=> 'b'
+--- check case | Tokens are sorted and come from the stable hash
+(lambda r: ([r.add(n) for n in ("x", "y")], r.tokens)[1])(Ring(2))
+=> [(1673832484, 'y'), (2133330900, 'x'), (2204520975, 'x'), (3785957288, 'y')]
+--- check case | A key past the last token wraps round to the first
+(lambda r: ([r.add(n) for n in ("x", "y")], [k for k in ("k%d" % i for i in range(200)) if h(k) > r.tokens[-1][0]][:3], r.tokens[0][1])[1:])(Ring(2))
+=> (['k3', 'k10', 'k11'], 'y')
+--- check test | Every key past the last token is owned by the first token's node
+(lambda r: ([r.add(n) for n in ("x", "y")], all(r.owner(k) == r.tokens[0][1] for k in ("k%d" % i for i in range(3000)) if h(k) > r.tokens[-1][0]))[1])(Ring(2))
+--- check case | Preference lists hold distinct nodes, owner first
+(lambda r: ([r.add(n) for n in ("n1", "n2", "n3", "n4")], [r.preference(k, 3) for k in ("alpha", "beta", "gamma")], r.preference("alpha", 9))[1:])(Ring(8))
+=> ([['n1', 'n2', 'n4'], ['n3', 'n4', 'n1'], ['n4', 'n2', 'n3']], ['n1', 'n2', 'n4', 'n3'])
+--- check test | The preference list starts with the owner
+(lambda r: ([r.add("n%d" % i) for i in range(6)], all(r.preference(k, 3)[0] == r.owner(k) and len(set(r.preference(k, 3))) == 3 for k in ("key%d" % i for i in range(500))))[1])(Ring(16))
+--- check case | Adding an eleventh node: the ring moves about 1/11 of the keys, all to the new node; mod N moves most of them
+(lambda keys, r: ([r.add("n%d" % i) for i in range(10)], (lambda before: (r.add("n10"), moved(keys, lambda k: before[k], r.owner), all(r.owner(k) == "n10" for k in keys if r.owner(k) != before[k])))({k: r.owner(k) for k in keys})[1:], moved(keys, lambda k: mod_owner(k, ["n%d" % i for i in range(10)]), lambda k: mod_owner(k, ["n%d" % i for i in range(11)])))[1:])(["user%d" % i for i in range(20000)], Ring(100))
+=> ((1659, True), 18223)
+--- check case | Removing a node moves only its keys
+(lambda keys, r: ([r.add("n%d" % i) for i in range(5)], (lambda before: (r.remove("n2"), moved(keys, lambda k: before[k], r.owner), sum(1 for k in keys if before[k] == "n2"), "n2" in r.nodes, any(t[1] == "n2" for t in r.tokens)))({k: r.owner(k) for k in keys})[1:])[1])(["item%d" % i for i in range(5000)], Ring(50))
+=> (848, 848, False, False)
+--- check case | More virtual nodes, better balance: the busiest node's share of 20,000 keys over 10 nodes
+[(lambda r: ([r.add("n%d" % i) for i in range(10)], (lambda load: max(load.values()))(__import__("collections").Counter(r.owner("user%d" % i) for i in range(20000))))[1])(Ring(v)) for v in (1, 10, 100)]
+=> [4504, 2824, 2360]
+--- check case | mod_owner and moved on small inputs
+(mod_owner("apple", ["a", "b", "c"]), moved(["p", "q", "r"], lambda k: 1, lambda k: 1 if k != "q" else 2), moved([], len, len))
+=> ('c', 1, 0)
+
++++ question | Why mod N is expensive
+--- ask
+A cache cluster places keys with \`hash(key) % N\`. It grows from 20 to 21 machines. About what fraction of keys now live on a different machine?
+--- choice
+About 1/21, because one machine was added.
+--- choice
+About half.
+--- choice correct
+About 20/21: a key stays only if its hash gives the same remainder for 20 and for 21, which happens for about 1 in 21 keys.
+--- choice
+None: the existing machines keep their keys and the new one starts empty.
+--- why
+Changing the divisor reshuffles almost every remainder. Consistent hashing moves only the keys in the arcs the new machine takes over, about 1/21 of them.
+
++++ question | What virtual nodes fix
+--- ask
+Why do consistent-hashing rings give each machine many tokens instead of one?
+--- choice
+To make lookups faster.
+--- choice correct
+With one random token each, arc lengths vary a lot, so some machines own several times their share; many tokens per machine average the arcs out, and a leaving machine's keys spread over many others.
+--- choice
+To store several replicas of each key on the same machine.
+--- choice
+Because hash functions only produce small numbers.
+--- why
+A machine's share is the total length of the arcs ending at its tokens. The sum of V random arcs varies far less, relative to its mean, than one arc does, roughly like 1/√V.
+
++++ question | The hot key
+--- ask
+A store hashes keys evenly over 50 machines, yet one machine runs at 100% CPU while the others idle. The cause is most likely:
+--- choice
+The hash function is not uniform.
+--- choice
+Too few virtual nodes.
+--- choice correct
+One key, or a few, gets a large share of all requests, and all of a key's requests go to the same partition, whatever the hash.
+--- choice
+The machine's clock is skewed.
+--- why
+Hashing balances the number of keys per machine, not the requests per key. A celebrity key concentrates its load on its own partition; splitting it into sub-keys, caching it, or reading it from all replicas spreads that load.
+
++++ practice | Range partitions
+--- task
+A store partitions keys by range. \`splits\` is a sorted list of boundary keys: partition 0 holds keys below \`splits[0]\`, partition i holds keys from \`splits[i - 1]\` (included) up to \`splits[i]\` (excluded), and the last partition, number \`len(splits)\`, holds keys from the last boundary up. \`owners[p]\` is the node holding partition p.
+
+Write \`range_owner(key, splits, owners)\`, and \`split_partition(splits, owners, p, at, new_node)\`, which splits partition p at the key \`at\` (which lies strictly inside the partition's range) into two: the lower part stays with its node, and the upper part, from \`at\` up, goes to \`new_node\`. It returns the new \`(splits, owners)\` as new lists, without changing the arguments.
+
+For example, with \`splits = ["g", "n"]\` and \`owners = ["A", "B", "C"]\`, \`range_owner("hello", splits, owners)\` is \`"B"\`, and \`split_partition(splits, owners, 1, "k", "D")\` is \`(["g", "k", "n"], ["A", "B", "D", "C"])\`.
+--- starter
+def range_owner(key, splits, owners):
+    for i, s in enumerate(splits):
+        if key < s:
+            return owners[i]
+    return owners[0]
+
+
+def split_partition(splits, owners, p, at, new_node):
+    return splits, owners
+--- solution
+import bisect
+
+
+def range_owner(key, splits, owners):
+    return owners[bisect.bisect_right(splits, key)]
+
+
+def split_partition(splits, owners, p, at, new_node):
+    return splits[:p] + [at] + splits[p:], owners[:p + 1] + [new_node] + owners[p + 1:]
+--- hint
+The partition number is how many boundaries are less than or equal to the key: \`bisect.bisect_right(splits, key)\`. A key equal to a boundary belongs to the partition above it.
+--- hint
+Splitting partition p inserts the new boundary at index p of \`splits\` and the new node at index p + 1 of \`owners\`. Build new lists with slices and \`+\`.
+--- check case | The example from the task
+(range_owner("hello", ["g", "n"], ["A", "B", "C"]), split_partition(["g", "n"], ["A", "B", "C"], 1, "k", "D"))
+=> ('B', (['g', 'k', 'n'], ['A', 'B', 'D', 'C']))
+--- check case | Boundaries belong to the partition above
+[range_owner(k, ["g", "n"], ["A", "B", "C"]) for k in ("a", "g", "m", "n", "zebra")]
+=> ['A', 'B', 'B', 'C', 'C']
+--- check case | One partition only
+(range_owner("anything", [], ["solo"]), split_partition([], ["solo"], 0, "m", "two"))
+=> ('solo', (['m'], ['solo', 'two']))
+--- check case | Splitting the first and the last partition
+(split_partition(["g", "n"], ["A", "B", "C"], 0, "c", "X"), split_partition(["g", "n"], ["A", "B", "C"], 2, "t", "Y"))
+=> ((['c', 'g', 'n'], ['A', 'X', 'B', 'C']), (['g', 'n', 't'], ['A', 'B', 'C', 'Y']))
+--- check test | The arguments are not changed
+(lambda s, o: (split_partition(s, o, 1, "k", "D"), s == ["g", "n"] and o == ["A", "B", "C"])[1])(["g", "n"], ["A", "B", "C"])
+--- check case | Timestamps as keys: every new write lands in the last partition
+dict(__import__("collections").Counter(range_owner("2026-10-%02d" % d, ["2026-03", "2026-07"], ["A", "B", "C"]) for d in range(1, 31)))
+=> {'C': 30}
+
++++ practice | Moving as few partitions as possible
+--- task
+A store has a fixed number of partitions, numbered from 0, and a map \`assign\` from partition number to node (a list: \`assign[p]\` is p's node). When a node joins, it must take partitions until the load is as even as possible, moving as few partitions as possible.
+
+Write \`join(assign, new_node)\` that returns a new list. With P partitions and m nodes after the join, each node should end up with either ⌊P/m⌋ or ⌈P/m⌉ partitions (that is, \`P // m\` or \`P // m\` + 1). Repeat this step until the new node has \`P // m\` partitions: take one partition from the node that currently has the **most** partitions (ties: the node whose name is smallest), choosing that node's **highest-numbered** partition, and give it to the new node. Do not change \`assign\`.
+
+Then write \`leave(assign, node)\`: when a node leaves, give each of its partitions, in increasing order, to the remaining node with the **fewest** partitions at that moment (ties: smallest name). Return a new list.
+
+For example, \`join(["a", "a", "a", "b", "b", "b"], "c")\` is \`["a", "a", "c", "b", "b", "c"]\`: each node ends with 2, and only 2 partitions moved.
+--- starter
+def join(assign, new_node):
+    return assign + []
+
+
+def leave(assign, node):
+    return [a for a in assign if a != node]
+--- solution
+from collections import Counter
+
+
+def join(assign, new_node):
+    out = list(assign)
+    nodes = set(out) | {new_node}
+    target = len(out) // len(nodes)
+    while out.count(new_node) < target:
+        counts = Counter(x for x in out if x != new_node)
+        donor = min(counts, key=lambda n: (-counts[n], n))
+        p = max(i for i, x in enumerate(out) if x == donor)
+        out[p] = new_node
+    return out
+
+
+def leave(assign, node):
+    out = list(assign)
+    others = sorted(set(out) - {node})
+    for p, x in enumerate(assign):
+        if x == node:
+            counts = Counter(y for y in out if y != node)
+            target = min(others, key=lambda n: (counts[n], n))
+            out[p] = target
+    return out
+--- hint
+In \`join\`, the target for the new node is the number of partitions divided by the number of nodes, rounded down. Each step recounts, picks the donor with the largest count (\`min\` with key \`(-count, name)\` handles the ties), and moves the donor's last partition.
+--- hint
+In \`leave\`, the remaining nodes include those with zero partitions only if they appear in the list, so build them from the assignment without the leaving node. Recount before each move, because each move changes the counts.
+--- check case | The example from the task
+join(["a", "a", "a", "b", "b", "b"], "c")
+=> ['a', 'a', 'c', 'b', 'b', 'c']
+--- check case | Uneven start: the busiest donates first
+join(["a"] * 7 + ["b"] * 3, "c")
+=> ['a', 'a', 'a', 'a', 'c', 'c', 'c', 'b', 'b', 'b']
+--- check case | Joining a single-node cluster
+join(["solo"] * 5, "new")
+=> ['solo', 'solo', 'solo', 'new', 'new']
+--- check case | A node leaves: its partitions go to the least loaded
+leave(["a", "b", "c", "a", "b", "c", "a"], "a")
+=> ['b', 'b', 'c', 'c', 'b', 'c', 'b']
+--- check test | Joins keep every node within one of the average, and move the minimum
+all((lambda before, after: max(__import__("collections").Counter(after).values()) - min(__import__("collections").Counter(after).values()) <= 1 and sum(1 for x, y in zip(before, after) if x != y) == len(after) // len(set(after)))(a, join(a, "zz")) for a in (["n%d" % (i % k) for i in range(64)] for k in range(1, 9)))
+--- check test | The arguments are not changed
+(lambda a: (join(a, "c"), leave(a, "a"), a == ["a", "a", "b", "b"])[2])(["a", "a", "b", "b"])
+
++++ practice | Splitting a hot key
+--- task
+See a hot key overload one node, and spread it. The starter has the simulator and the ring from the lab (with \`h\`). A router sends each request to the owner of its key on a \`Ring(50)\` of nodes \`"n0"\` to \`"n4"\`; each \`Shard\` node counts the requests it receives in \`served\`.
+
+Write \`hot_run(seed, salt)\`. Make \`Sim(seed, delay=(1, 5))\`, the ring and five \`Shard\` nodes (write the \`Shard\` class), and a router node \`"router"\`. Using \`random.Random(seed)\` (a separate generator, used only to choose keys), make 2,000 requests, one per time unit from time 0: each request is for key \`"hot"\` with probability 0.5, and otherwise for \`"key%d"\` with a number from 0 to 999 chosen by \`randint\`. Draw the probability with \`random()\` first and then, only for a cold key, the number.
+
+A request for \`"hot"\` is a write. With \`salt\` equal to 1 it goes to the owner of \`"hot"\`. With \`salt\` k greater than 1, it goes to the owner of \`"hot#j"\`, where j cycles through 0, 1, …, k − 1 over successive hot requests. Each request is one message \`("req", key)\` from the router to the chosen shard.
+
+Return the list of \`served\` counts for \`"n0"\` to \`"n4"\` after the run.
+
+For example, \`hot_run(1, 1)\` puts every hot request on one node: its count is over 1,000, while the others serve about 200 each.
+--- starter
+import bisect
+import hashlib
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+        for i in range(self.vnodes):
+            bisect.insort(self.tokens, (h(node + "#" + str(i)), node))
+
+    def owner(self, key):
+        i = bisect.bisect_left(self.tokens, (h(key), ""))
+        return self.tokens[i % len(self.tokens)][1]
+
+
+def hot_run(seed, salt):
+    return [0, 0, 0, 0, 0]
+--- solution
+import bisect
+import hashlib
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+        for i in range(self.vnodes):
+            bisect.insort(self.tokens, (h(node + "#" + str(i)), node))
+
+    def owner(self, key):
+        i = bisect.bisect_left(self.tokens, (h(key), ""))
+        return self.tokens[i % len(self.tokens)][1]
+
+
+class Shard(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.served = 0
+
+    def on_message(self, src, msg):
+        if msg[0] == "req":
+            self.served += 1
+
+
+def hot_run(seed, salt):
+    sim = Sim(seed, delay=(1, 5))
+    ring = Ring(50)
+    names = ["n%d" % i for i in range(5)]
+    for name in names:
+        ring.add(name)
+        sim.add(Shard(name))
+    router = sim.add(Node("router"))
+    pick = random.Random(seed)
+    hot_count = 0
+    for t in range(2000):
+        if pick.random() < 0.5:
+            if salt == 1:
+                key = "hot"
+            else:
+                key = "hot#%d" % (hot_count % salt)
+            hot_count += 1
+        else:
+            key = "key%d" % pick.randint(0, 999)
+        sim.at(t, lambda key=key: router.send(ring.owner(key), ("req", key)))
+    sim.run()
+    return [sim.nodes[name].served for name in names]
+--- hint
+Decide every request's key up front, with the separate generator, and schedule its send with \`sim.at(t, lambda key=key: ...)\`; the default argument freezes the key for that request.
+--- hint
+Keep a counter of hot requests so far; with salt k, the sub-key is \`"hot#" + str(counter % k)\`. The ring then places the sub-keys independently, usually on different nodes.
+--- check case | The example from the task: one node takes every hot request
+hot_run(1, 1)
+=> [1188, 161, 174, 251, 226]
+--- check case | Ten sub-keys spread the hot load
+hot_run(1, 10)
+=> [400, 455, 273, 646, 226]
+--- check case | The busiest node's count, as the salt grows
+[max(hot_run(2, k)) for k in (1, 2, 5, 20)]
+=> [1193, 742, 843, 593]
+--- check test | Every request is served exactly once
+sum(hot_run(3, 7)) == 2000
+
++++ practice | Replicas in different zones
+--- task
+Data centres are divided into **zones** (separate buildings or power supplies), and a key's replicas should sit in different zones, so that one zone's failure loses at most one copy. Write \`zone_preference(tokens, key_pos, n, zone)\`:
+
+- \`tokens\` is a sorted list of \`(position, node)\` tokens on a ring, \`key_pos\` is the key's position, and \`zone\` maps each node to its zone name.
+- Walk clockwise from the first token at or after \`key_pos\` (wrapping round), for one full turn. **First pass:** take each node whose node is new **and** whose zone is not yet used, until you have \`n\`.
+- If after the full turn you have fewer than \`n\`, make a **second pass** from the same start, taking nodes not yet chosen (whatever their zone), until you have \`n\` or run out of nodes.
+- Return the list of chosen nodes, in the order chosen.
+
+For example, \`zone_preference([(10, "a"), (20, "b"), (30, "c"), (40, "d")], 15, 2, {"a": "z1", "b": "z1", "c": "z2", "d": "z2"})\` is \`["b", "c"]\`.
+--- starter
+def zone_preference(tokens, key_pos, n, zone):
+    out = []
+    for pos, node in tokens:
+        if pos >= key_pos and node not in out:
+            out.append(node)
+    return out[:n]
+--- solution
+import bisect
+
+
+def zone_preference(tokens, key_pos, n, zone):
+    if not tokens:
+        return []
+    start = bisect.bisect_left(tokens, (key_pos, ""))
+    walk = [tokens[(start + k) % len(tokens)][1] for k in range(len(tokens))]
+    chosen = []
+    zones = set()
+    for node in walk:
+        if len(chosen) == n:
+            break
+        if node not in chosen and zone[node] not in zones:
+            chosen.append(node)
+            zones.add(zone[node])
+    for node in walk:
+        if len(chosen) == n:
+            break
+        if node not in chosen:
+            chosen.append(node)
+    return chosen
+--- hint
+Build the clockwise walk once: the node of each token, starting at \`bisect_left(tokens, (key_pos, ""))\` and wrapping with \`%\`. Both passes go over this same list.
+--- hint
+The first pass checks two things per node: not chosen yet, and its zone not used yet. The second pass only checks the first. Stop each pass as soon as you have n.
+--- check case | The example from the task
+zone_preference([(10, "a"), (20, "b"), (30, "c"), (40, "d")], 15, 2, {"a": "z1", "b": "z1", "c": "z2", "d": "z2"})
+=> ['b', 'c']
+--- check case | Wrapping round, skipping a repeated zone
+zone_preference([(10, "a"), (20, "b"), (30, "c"), (40, "d")], 35, 3, {"a": "z1", "b": "z2", "c": "z3", "d": "z1"})
+=> ['d', 'b', 'c']
+--- check case | Fewer zones than replicas: the second pass fills in
+zone_preference([(10, "a"), (20, "b"), (30, "c"), (40, "d")], 5, 3, {"a": "z1", "b": "z1", "c": "z2", "d": "z2"})
+=> ['a', 'c', 'b']
+--- check case | Repeated tokens of one node, and asking for more nodes than exist
+zone_preference([(5, "a"), (8, "a"), (12, "b"), (19, "a")], 6, 5, {"a": "z1", "b": "z2"})
+=> ['a', 'b']
+--- check case | An empty ring, and n = 0
+(zone_preference([], 3, 2, {}), zone_preference([(1, "a")], 0, 0, {"a": "z"}))
+=> ([], [])
+
++++ practice | Debug: the ring that falls off the end
+--- task
+The starter's \`owner(tokens, key_pos)\` should return the node of the first token whose position is at least \`key_pos\`, in a sorted list of \`(position, node)\` tokens, wrapping round to the first token when \`key_pos\` is beyond the last one. Keys with large hashes crash it with \`IndexError\`, and a key whose hash equals a token's position goes to the next token instead of that one. Fix both bugs.
+--- starter
+import bisect
+
+
+def owner(tokens, key_pos):
+    positions = [p for p, _ in tokens]
+    i = bisect.bisect_right(positions, key_pos)
+    return tokens[i][1]
+--- solution
+import bisect
+
+
+def owner(tokens, key_pos):
+    positions = [p for p, _ in tokens]
+    i = bisect.bisect_left(positions, key_pos)
+    return tokens[i % len(tokens)][1]
+--- hint
+\`bisect_right\` skips past positions equal to \`key_pos\`; \`bisect_left\` stops at them. Which one finds "the first token at least key_pos"?
+--- hint
+When every position is smaller than \`key_pos\`, the index equals the length of the list. The ring wraps: index 0 is next.
+--- check case | Inside the ring
+owner([(10, "a"), (20, "b"), (30, "c")], 15)
+=> 'b'
+--- check case | Exactly on a token
+owner([(10, "a"), (20, "b"), (30, "c")], 20)
+=> 'b'
+--- check case | Beyond the last token: wrap round
+owner([(10, "a"), (20, "b"), (30, "c")], 31)
+=> 'a'
+--- check case | Before the first token, and a one-token ring
+(owner([(10, "a"), (20, "b")], 0), owner([(7, "solo")], 99))
+=> ('a', 'solo')
+
++++ practice | Jump consistent hash
+--- task
+Jump consistent hash maps a 64-bit integer key to one of \`buckets\` buckets, numbered from 0, with no ring at all. Write \`jump(key, buckets)\` exactly as published:
+
+1. Start with b = −1 and j = 0.
+2. While j < buckets: set b = j; set key = (key · 2862933555777941757 + 1) mod 2⁶⁴; set j = int((b + 1) · (2³¹ / ((key >> 33) + 1))), where the division is floating-point (\`float(1 << 31) / float((key >> 33) + 1)\`).
+3. Return b.
+
+Then write \`jump_moves(keys, n)\`: how many of the integer \`keys\` change bucket when the number of buckets grows from n to n + 1, and check the promise that every key that moves goes to the new bucket n by returning a pair \`(moves, all_to_new)\`.
+
+For example, \`jump(0, 10)\` is \`0\` and \`jump(123456789, 10)\` is \`7\`.
+--- starter
+def jump(key, buckets):
+    return key % buckets
+
+
+def jump_moves(keys, n):
+    return 0, True
+--- solution
+def jump(key, buckets):
+    b, j = -1, 0
+    while j < buckets:
+        b = j
+        key = (key * 2862933555777941757 + 1) % (1 << 64)
+        j = int((b + 1) * (float(1 << 31) / float((key >> 33) + 1)))
+    return b
+
+
+def jump_moves(keys, n):
+    moves = 0
+    all_to_new = True
+    for k in keys:
+        before = jump(k, n)
+        after = jump(k, n + 1)
+        if before != after:
+            moves += 1
+            if after != n:
+                all_to_new = False
+    return moves, all_to_new
+--- hint
+Python integers never overflow, so "mod 2⁶⁴" must be written out: \`% (1 << 64)\`. \`key >> 33\` keeps the top 31 bits of the 64-bit state.
+--- hint
+For \`jump_moves\`, compute both buckets per key, count the differences, and note whether any moved key landed somewhere other than bucket n.
+--- check case | The examples from the task
+(jump(0, 10), jump(123456789, 10))
+=> (0, 7)
+--- check case | One bucket: everything in bucket 0
+[jump(k, 1) for k in (0, 1, 2 ** 63, 987654321)]
+=> [0, 0, 0, 0]
+--- check case | A spread of keys over 8 buckets
+[jump(k * 2654435761, 8) for k in range(12)]
+=> [0, 5, 4, 1, 7, 6, 1, 0, 2, 6, 0, 3]
+--- check case | Growing from 10 to 11 buckets moves about 1/11 of 22,000 keys, all to the new one
+jump_moves(range(22000), 10)
+=> (1978, True)
+--- check test | Balanced: 10,000 keys over 7 buckets, every bucket within 10% of the average
+(lambda c: max(c.values()) < 1.1 * 10000 / 7 and min(c.values()) > 0.9 * 10000 / 7)(__import__("collections").Counter(jump(k * 7919, 7) for k in range(10000)))
+
+=== dist1-08 | Anti-entropy and gossip: Merkle trees and epidemic spreading
+--- teach
+Lesson 6 repaired replicas in two ways: read repair, which fixes a key only when someone reads it, and hinted handoff, which covers outages someone noticed. Replicas still drift apart: a message lost here, a replica restored from last night's backup there, a disk that silently flipped a bit. Keys nobody reads stay wrong forever. **[[Anti-entropy|entropy]]** is the background process that compares replicas and repairs every difference, and **gossip** is how a cluster spreads information, such as data or who is alive, without any coordinator. Both are short ideas with a precise cost, and both appear in nearly every large storage system.
+
+### Comparing replicas cheaply
+
+Two replicas each hold a billion keys and differ in a handful. Sending one replica's data to the other costs the whole data set. Sending a hash of each key still costs a billion hashes. The trick is to hash **groups** of keys, and groups of groups.
+
+A **[[Merkle tree|merkle-picture]]** splits the keys into 2ᵈ **buckets** (for example by the hash of the key) and hashes each bucket's contents: those are the leaves. Each inner node is the hash of its two children, up to one **root**. Two replicas compare like this:
+
+1. Compare the roots. Equal roots mean, with overwhelming probability, equal data: done, for the cost of one hash.
+2. Otherwise compare the two children of the root, and descend only into the children whose hashes differ.
+3. At the leaves, exchange the contents of the differing buckets only.
+
+**What it costs.** With one differing key and depth d, the comparison walks one path from root to leaf, comparing two children at each level: 1 + 2d hashes. For depth 20 (a million buckets) that is 41 hashes, plus one bucket of about a thousand keys, instead of a billion. With k differences, at most about 1 + 2dk hashes. The trade-off is the depth: deeper trees mean smaller buckets to ship but more hashes to keep up to date.
+
+**Keeping it current.** A write changes one bucket, so only the hashes on the path from that leaf to the root change: d + 1 hashes per write, which is why systems can maintain the tree as data changes, or rebuild it periodically in the background.
+
+A hash of a bucket must not depend on the order in which keys were inserted, so hash the **sorted** contents:
+
+\`\`\`python
+import hashlib
+
+bucket = {"fuel": (3, 812), "attitude": (7, "nominal")}
+digest = hashlib.sha256(repr(sorted(bucket.items())).encode()).hexdigest()[:16]
+print(digest)          # the same on every replica that holds the same pairs
+\`\`\`
+
+### Gossip: spreading by rumour
+
+Now the second problem: telling every node something, such as a new configuration or "node 17 is back". A coordinator that sends to all N nodes is a single point of failure and a hot spot. **Gossip**, also called **[[epidemic|epidemic]]** dissemination, works like a rumour: in each round, every node that knows the news tells one node chosen at random.
+
+**Why it is fast.** While few nodes know, the number that know roughly doubles each round, because each informed node finds an uninformed one almost every time: about log₂ N rounds to reach half the cluster. The end is slower, because informed nodes mostly pick nodes that already know; the last stragglers take about ln N more rounds. In total, **O(log N) rounds**: about 15 to 20 rounds for a thousand nodes, and only a few more for a million. Each node sends one message per round, so the load per node is constant however big the cluster.
+
+Two variants:
+
+- **Push:** informed nodes send to a random peer.
+- **Push-pull:** every node contacts a random peer and both exchange what they know. The end game is much faster, because an uninformed node now finds the news by **asking**, and almost every peer it asks already knows.
+
+Gossip tolerates crashed nodes and lost messages by its nature: no single message matters, because the rumour arrives by many paths.
+
+### Gossip for membership
+
+Clusters use gossip to agree on **who is alive**. Each node keeps a table with one **heartbeat counter** per node. Every round, a node increases its own counter and gossips its whole table to a random peer; the receiver keeps, for each node, the larger counter, and notes the time it last saw that counter go up. A node whose counter has not gone up for T_fail is suspected; after a longer T_cleanup it is removed. Merging by maximum is safe in any order and any number of times, which is what lets gossip mix tables without coordination: the same property that makes CRDTs converge.
+
+The cost model ties back to lesson 2: news of a heartbeat takes O(log N) rounds to reach everyone, so T_fail must grow with log N or large clusters suspect live nodes.
+
+### Where it is used
+
+- **Merkle anti-entropy:** Dynamo-style stores such as Cassandra and Riak repair replicas this way; git, ZFS and blockchains use Merkle trees to identify and verify data.
+- **Gossip membership:** Cassandra's cluster state, Consul and Serf (built on SWIM-style gossip), and many service meshes.
+- **Epidemic broadcast:** blockchain transaction propagation, and configuration rollout in very large fleets.
+
+**Watch out:**
+
+- **Hashing unsorted contents:** two replicas with the same data get different hashes.
+- **Descending into only one child** when both differ.
+- **Deletes that come back:** a key deleted on one replica looks "missing" there, and anti-entropy copies it back from the others, unless the delete is kept as a **tombstone** for longer than any repair cycle.
+- **A failure timeout that ignores cluster size:** gossip takes O(log N) rounds to spread a heartbeat.
+
+::: context entropy Why the name
+In physics, entropy measures disorder, and left alone it grows. Replicas left alone also drift towards disorder: each lost message or bad disk adds a difference. Anti-entropy is the work that pushes them back to agreement. The term comes from a 1987 Xerox paper by Alan Demers and colleagues on keeping replicated databases consistent, which also introduced rumour mongering and analysed epidemic spreading.
+:::
+
+::: context merkle-picture A path of differences
+Four buckets, and one key differs in bucket 2. The roots differ, so the comparison looks at both children of the root; only the right one differs, so it looks at that child's two leaves, and finds bucket 2. Five hashes compared in all: 1 + 2 · 2 for depth 2.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="155" y="10" width="50" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="26" font-size="11" text-anchor="middle" fill="#1f2a44">root</text>
+  <rect x="75" y="65" width="50" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="235" y="65" width="50" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <line x1="180" y1="34" x2="100" y2="65" stroke="#1f2a44"/>
+  <line x1="180" y1="34" x2="260" y2="65" stroke="#1f2a44"/>
+  <rect x="35" y="125" width="50" height="24" fill="#ffffff" stroke="#6c7a93"/>
+  <rect x="115" y="125" width="50" height="24" fill="#ffffff" stroke="#6c7a93"/>
+  <rect x="195" y="125" width="50" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="275" y="125" width="50" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <line x1="100" y1="89" x2="60" y2="125" stroke="#6c7a93"/>
+  <line x1="100" y1="89" x2="140" y2="125" stroke="#6c7a93"/>
+  <line x1="260" y1="89" x2="220" y2="125" stroke="#1f2a44"/>
+  <line x1="260" y1="89" x2="300" y2="125" stroke="#1f2a44"/>
+  <text x="60" y="141" font-size="11" text-anchor="middle" fill="#6c7a93">0</text>
+  <text x="140" y="141" font-size="11" text-anchor="middle" fill="#6c7a93">1</text>
+  <text x="220" y="141" font-size="11" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="300" y="141" font-size="11" text-anchor="middle" fill="#1f2a44">3</text>
+  <text x="180" y="165" font-size="11" text-anchor="middle" fill="#1f2a44">orange: differs; blue: compared, equal; white: never looked at</text>
+</svg>
+\`\`\`
+:::
+
+::: context epidemic The mathematics of rumours
+The analysis of push gossip is the same as for an epidemic in a population where everyone meets one random person a day. Boris Pittel showed in 1987 that the number of rounds until everyone is informed is log₂ N + ln N plus a small constant, with high probability. Push-pull finishes in about log₃ N + O(log log N) rounds. Those logarithms are why gossip scales: going from a thousand nodes to a million only adds about 20 rounds.
+:::
+--- task
+Build a Merkle tree and use it to repair two replicas. The starter gives \`h(text)\`, a stable hash of a string as 16 hexadecimal digits, and \`bucket(key, depth)\`, the bucket number of a key: \`int(h(key), 16) % 2 ** depth\`. A replica's data is a dictionary from key to \`(version, value)\`.
+
+1. \`build(data, depth)\` returns the tree as a list \`t\` of length \`2 ** (depth + 1)\`, using heap numbering: the root is \`t[1]\`, the children of node i are \`2 * i\` and \`2 * i + 1\`, and leaf number b (bucket b) is node \`2 ** depth + b\`. \`t[0]\` is unused (set it to \`None\`). A leaf's hash is \`h(repr(sorted(items)))\`, where \`items\` is the list of \`(key, pair)\` items in that bucket (an empty bucket hashes \`h(repr([]))\`). An inner node's hash is \`h(left + right)\`, the hash of its children's hashes joined as strings.
+2. \`diff(t1, t2, depth)\` returns \`(buckets, compared)\`: the sorted list of bucket numbers whose leaves differ, found by descending from the root only into nodes whose hashes differ, and the number of node pairs compared. Comparing the roots counts 1; each time a node differs and is not a leaf, its two children are compared (2 more).
+3. \`repair(a, b, depth)\` makes the two dictionaries agree: for every key in a differing bucket, each side ends with the higher pair (by version, then value) of the two sides (a key missing on one side is copied). It changes \`a\` and \`b\` in place and returns the number of keys copied from one side to the other (a key copied counts once).
+
+For example, two replicas that differ only in the key \`"k7"\` at depth 3 give \`diff\` the result \`([bucket("k7", 3)], 7)\`.
+--- starter
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    return [None] * 2 ** (depth + 1)
+
+
+def diff(t1, t2, depth):
+    return [], 1
+
+
+def repair(a, b, depth):
+    return 0
+--- solution
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    leaves = 2 ** depth
+    groups = [[] for _ in range(leaves)]
+    for key, pair in data.items():
+        groups[bucket(key, depth)].append((key, pair))
+    t = [None] * (2 * leaves)
+    for b in range(leaves):
+        t[leaves + b] = h(repr(sorted(groups[b])))
+    for i in range(leaves - 1, 0, -1):
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+    return t
+
+
+def diff(t1, t2, depth):
+    leaves = 2 ** depth
+    found = []
+    compared = 1
+    stack = [1] if t1[1] != t2[1] else []
+    while stack:
+        i = stack.pop()
+        if i >= leaves:
+            found.append(i - leaves)
+            continue
+        for child in (2 * i, 2 * i + 1):
+            compared += 1
+            if t1[child] != t2[child]:
+                stack.append(child)
+    return sorted(found), compared
+
+
+def repair(a, b, depth):
+    buckets, _ = diff(build(a, depth), build(b, depth), depth)
+    wanted = set(buckets)
+    copied = 0
+    keys = sorted(k for k in set(a) | set(b) if bucket(k, depth) in wanted)
+    for key in keys:
+        pa = a.get(key)
+        pb = b.get(key)
+        if pa == pb:
+            continue
+        best = max(p for p in (pa, pb) if p is not None)
+        a[key] = best
+        b[key] = best
+        copied += 1
+    return copied
+--- hint
+Fill the leaves first: group the items by bucket, sort each group, and hash its \`repr\`. Then fill inner nodes from index \`2 ** depth - 1\` down to 1, so both children of a node are always ready before it.
+--- hint
+\`diff\` is a search from the root that only enters differing nodes: a stack (or a recursion) of node indexes. A node index at least \`2 ** depth\` is a leaf, and its bucket number is the index minus \`2 ** depth\`. Count one comparison for the roots and two each time you look at a differing inner node's children.
+--- hint
+\`repair\` builds both trees, takes the differing buckets from \`diff\`, and walks every key of either replica that falls in those buckets. When the two sides hold different pairs (or one has none), both get the higher pair, and that key counts as one copy.
+--- check case | The example from the task
+(lambda a, b: diff(build(a, 3), build(b, 3), 3) == ([bucket("k7", 3)], 7))({"k%d" % i: (1, i) for i in range(20)}, dict({"k%d" % i: (1, i) for i in range(20)}, k7=(2, "new")))
+=> True
+--- check case | The tree's shape and its leaves
+(lambda t: (len(t), t[0], t[4] == h(repr([])), t[1] == h(t[2] + t[3])))(build({}, 2))
+=> (8, None, True, True)
+--- check case | Insertion order does not matter
+(lambda a, b: build(a, 4) == build(b, 4))({"x": (1, 1), "y": (2, 2), "z": (3, 3)}, {"z": (3, 3), "x": (1, 1), "y": (2, 2)})
+=> True
+--- check case | Equal replicas cost one comparison
+(lambda d: diff(build(d, 10), build(dict(d), 10), 10))({"key%d" % i: (1, i) for i in range(500)})
+=> ([], 1)
+--- check case | One difference at depth 16 costs 1 + 2 · 16 comparisons
+(lambda d: diff(build(d, 16), build(dict(d, key123=(9, "x")), 16), 16)[1])({"key%d" % i: (1, i) for i in range(5000)})
+=> 33
+--- check case | Several differences
+(lambda a, b: diff(build(a, 5), build(b, 5), 5))({"k%d" % i: (1, 0) for i in range(100)}, dict({"k%d" % i: (1, 0) for i in range(100)}, k3=(2, 0), k50=(2, 0), k99=(1, 1), extra=(1, 1)))
+=> ([12, 14, 26], 21)
+--- check case | repair copies only what differs, in both directions, and the trees then agree
+(lambda a, b: (repair(a, b, 6), a == b, build(a, 6) == build(b, 6), a["shared"], a["only_b"], b["only_a"]))(dict({"k%d" % i: (1, i) for i in range(300)}, shared=(5, "new"), only_a=(1, "a")), dict({"k%d" % i: (1, i) for i in range(300)}, shared=(4, "old"), only_b=(1, "b")))
+=> (3, True, True, (5, 'new'), (1, 'b'), (1, 'a'))
+--- check case | Repairing identical replicas copies nothing
+(lambda a: repair(a, dict(a), 4))({"p": (1, 1), "q": (2, 2)})
+=> 0
+
++++ question | Why hash the sorted contents
+--- ask
+Two replicas hold exactly the same keys and versions, but their leaf hashes differ. Their code hashes \`repr(list(bucket.items()))\`. What is wrong?
+--- choice
+The hash function is not deterministic.
+--- choice correct
+A dictionary lists items in insertion order, which differs between replicas that received writes in different orders; hashing the sorted items makes equal contents hash equally.
+--- choice
+The buckets are too large.
+--- choice
+Replicas must use different hash functions.
+--- why
+A Merkle tree must hash the contents, not the history of how they arrived. Sorting gives one canonical order everywhere, the same reason a stable hash is needed for partitioning.
+
++++ question | The cost of finding one difference
+--- ask
+Two replicas compare Merkle trees of depth 20 and differ in exactly one key. How many pairs of hashes do they compare? Type a number.
+--- answer
+41
+--- why
+One for the roots, then at each of the 20 levels the two children of the differing node: 1 + 2 · 20 = 41. Only one bucket's contents then cross the network.
+
++++ question | Why gossip finishes in O(log N) rounds
+--- ask
+Why does push gossip reach all N nodes in about log₂ N + ln N rounds?
+--- choice
+Because each round, every node tells all of its neighbours.
+--- choice correct
+While few nodes know, almost every message reaches someone new, so the informed set about doubles each round; near the end most messages hit nodes that already know, and the last few take about ln N more rounds.
+--- choice
+Because the nodes are arranged in a binary tree.
+--- choice
+Because messages are never lost.
+--- why
+Doubling gives the log₂ N part. The tail is like collecting the last coupons: each uninformed node is picked with probability about 1 − e⁻¹ per round once most nodes push, so the last ones take about ln N rounds. Push-pull shortens that tail.
+
++++ practice | Updating a Merkle tree after a write
+--- task
+A replica keeps its Merkle tree up to date as writes arrive, instead of rebuilding it. The starter has \`h\`, \`bucket\` and the lab's \`build\`. Write \`update(t, data, key, pair, depth)\` that sets \`data[key] = pair\`, then recomputes only the hashes on the path from that key's leaf up to the root, changing \`t\` in place, and returns the number of hashes recomputed. The result must equal \`build(data, depth)\`.
+
+For example, at depth 5 every update recomputes 6 hashes: the leaf and its 5 ancestors.
+--- starter
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    leaves = 2 ** depth
+    groups = [[] for _ in range(leaves)]
+    for key, pair in data.items():
+        groups[bucket(key, depth)].append((key, pair))
+    t = [None] * (2 * leaves)
+    for b in range(leaves):
+        t[leaves + b] = h(repr(sorted(groups[b])))
+    for i in range(leaves - 1, 0, -1):
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+    return t
+
+
+def update(t, data, key, pair, depth):
+    data[key] = pair
+    t[:] = build(data, depth)
+    return len(t) - 1
+--- solution
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    leaves = 2 ** depth
+    groups = [[] for _ in range(leaves)]
+    for key, pair in data.items():
+        groups[bucket(key, depth)].append((key, pair))
+    t = [None] * (2 * leaves)
+    for b in range(leaves):
+        t[leaves + b] = h(repr(sorted(groups[b])))
+    for i in range(leaves - 1, 0, -1):
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+    return t
+
+
+def update(t, data, key, pair, depth):
+    data[key] = pair
+    b = bucket(key, depth)
+    items = sorted((k, p) for k, p in data.items() if bucket(k, depth) == b)
+    i = 2 ** depth + b
+    t[i] = h(repr(items))
+    count = 1
+    while i > 1:
+        i //= 2
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+        count += 1
+    return count
+--- hint
+The leaf's new hash needs the sorted items of that bucket only. Collect them from \`data\` by filtering on \`bucket(k, depth) == b\`.
+--- hint
+Walk up with \`i //= 2\` until the root, recomputing each node from its two children, and count each recomputed hash, including the leaf's.
+--- check case | Each update recomputes depth + 1 hashes, and matches a rebuild
+(lambda d, t: ([update(t, d, k, (2, k), 5) for k in ("a", "b", "zz")], t == build(d, 5)))(*(lambda d: (d, build(d, 5)))({"a": (1, 1), "q": (1, 2)}))
+=> ([6, 6, 6], True)
+--- check case | Updating to the same pair changes nothing
+(lambda d, t: (update(t, d, "q", (1, 2), 3), t == build({"a": (1, 1), "q": (1, 2)}, 3)))(*(lambda d: (d, build(d, 3)))({"a": (1, 1), "q": (1, 2)}))
+=> (4, True)
+--- check case | Depth 0: one leaf, which is the root
+(lambda d, t: (update(t, d, "x", (1, 1), 0), t == build(d, 0)))(*(lambda d: (d, build(d, 0)))({}))
+=> (1, True)
+--- check test | 200 random updates keep the tree equal to a rebuild
+(lambda r, d: (lambda t: all((update(t, d, "k%d" % r.randint(0, 60), (r.randint(1, 5), r.randint(0, 9)), 6), t == build(d, 6))[1] for _ in range(200)))(build(d, 6)))(__import__("random").Random(4), {})
+
++++ practice | Push and push-pull gossip
+--- task
+Measure how fast a rumour spreads, on the simulator, which the starter has. Every round takes 10 time units, and messages take 1 to 5, so a message sent at the start of a round arrives within it.
+
+Write the node \`Gossiper(node_id, peers, mode)\` (peers is the list of all other ids). It keeps \`informed\` (\`False\`) and \`heard_at\` (\`None\`).
+
+- \`start(informed)\` marks the node informed if asked (setting \`heard_at\` to now) and sets a timer \`"round"\` for 0.
+- When \`"round"\` fires: pick one peer with \`self.sim.rng.choice(self.peers)\`. In mode \`"push"\`, if informed, send \`("rumour",)\` to it. In mode \`"pushpull"\`, send \`("rumour",)\` if informed and \`("ask",)\` if not. Then set the next \`"round"\` timer for 10.
+- On \`("rumour",)\`: if not informed, become informed and set \`heard_at\` to now. On \`("ask",)\`: if informed, answer \`("rumour",)\`.
+
+Then write \`spread(n, mode, seed)\`: build \`Sim(seed, delay=(1, 5))\` with nodes \`"g0"\` to \`"g{n-1}"\` (ids in that order; each node's peers are the other ids in that order), call each node's \`start\` at time 0 in id order, with only \`"g0"\` informed, and run until every node is informed or time \`2000\` passes, checking after every 10 time units. Return the number of rounds until all were informed, computed as \`ceil(latest heard_at / 10)\`, or \`None\` if some node never heard.
+
+For example, \`spread(64, "push", 1)\` is 10.
+--- starter
+import math
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Gossiper(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.informed = False
+        self.heard_at = None
+
+
+def spread(n, mode, seed):
+    return None
+--- solution
+import math
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Gossiper(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.informed = False
+        self.heard_at = None
+
+    def start(self, informed):
+        if informed:
+            self.informed = True
+            self.heard_at = self.sim.now
+        self.set_timer(0, "round")
+
+    def on_timer(self, name):
+        peer = self.sim.rng.choice(self.peers)
+        if self.informed:
+            self.send(peer, ("rumour",))
+        elif self.mode == "pushpull":
+            self.send(peer, ("ask",))
+        self.set_timer(10, "round")
+
+    def on_message(self, src, msg):
+        if msg[0] == "rumour":
+            if not self.informed:
+                self.informed = True
+                self.heard_at = self.sim.now
+        elif msg[0] == "ask" and self.informed:
+            self.send(src, ("rumour",))
+
+
+def spread(n, mode, seed):
+    sim = Sim(seed, delay=(1, 5))
+    ids = ["g%d" % i for i in range(n)]
+    for i in ids:
+        sim.add(Gossiper(i, [p for p in ids if p != i], mode))
+    for i in ids:
+        sim.at(0, lambda i=i: sim.nodes[i].start(i == "g0"))
+    t = 0
+    while t < 2000:
+        t += 10
+        sim.run(t)
+        if all(sim.nodes[i].informed for i in ids):
+            return math.ceil(max(sim.nodes[i].heard_at for i in ids) / 10)
+    return None
+--- hint
+Every round, every node draws one peer from the simulator's generator, informed or not, so that the run is the same for everyone who follows the task exactly. What it sends depends on the mode and on whether it knows.
+--- hint
+\`spread\` runs the simulation 10 time units at a time with \`sim.run(t)\` and stops as soon as every node is informed; the round count comes from the latest \`heard_at\`.
+--- check case | The example from the task
+spread(64, "push", 1)
+=> 10
+--- check case | Push-pull on the same cluster
+spread(64, "pushpull", 1)
+=> 5
+--- check case | Rounds grow like log N: 16, 128 and 1,024 nodes
+[spread(n, "push", 2) for n in (16, 128, 1024)]
+=> [11, 14, 17]
+--- check case | Push-pull finishes the tail faster
+[spread(n, "pushpull", 2) for n in (16, 128, 1024)]
+=> [4, 5, 8]
+--- check case | Two nodes
+(spread(2, "push", 3), spread(2, "pushpull", 3))
+=> (1, 1)
+
++++ practice | Gossip membership
+--- task
+Detect a crashed node by gossiping heartbeat tables, on the simulator, which the starter has. Write the node \`Member(node_id, peers, t_fail)\`:
+
+- It keeps \`table\`, a dictionary from node id to \`[counter, last_change]\`, starting as \`{node_id: [0, 0]}\`, and \`suspects\`, a set.
+- \`start()\` sets a timer \`"round"\` for 10.
+- When \`"round"\` fires: add 1 to its own counter and set its own \`last_change\` to now. Send \`("table", {k: c for k, (c, _) in table.items()})\` to one peer chosen with \`self.sim.rng.choice(self.peers)\`. Then, for every other node in the table, in sorted order of id, add it to \`suspects\` if \`now - last_change > t_fail\`. Set the next \`"round"\` timer for 10.
+- On \`("table", counters)\`: for each node id and counter in it, if the id is not in the table, or the counter is higher than the stored one, store \`[counter, now]\`.
+
+Then write \`detect(n, seed, crash_at, t_fail, until)\`: nodes \`"m0"\` to \`"m{n-1}"\` on \`Sim(seed, delay=(1, 5))\`, each with all the others as peers (in id order) and started at time 0 in id order; crash \`"m0"\` at \`crash_at\`. Run until \`until\` and return \`(false_suspicions, detected)\`: the number of (live node, suspected node) pairs where the suspected node is not \`"m0"\`, and the number of live nodes that suspect \`"m0"\`.
+
+For example, \`detect(8, 1, 200, 80, 400)\` is \`(0, 7)\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Member(Node):
+    def __init__(self, node_id, peers, t_fail):
+        super().__init__(node_id)
+        self.peers = peers
+        self.t_fail = t_fail
+        self.table = {node_id: [0, 0]}
+        self.suspects = set()
+
+
+def detect(n, seed, crash_at, t_fail, until):
+    return 0, 0
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Member(Node):
+    def __init__(self, node_id, peers, t_fail):
+        super().__init__(node_id)
+        self.peers = peers
+        self.t_fail = t_fail
+        self.table = {node_id: [0, 0]}
+        self.suspects = set()
+
+    def start(self):
+        self.set_timer(10, "round")
+
+    def on_timer(self, name):
+        now = self.sim.now
+        mine = self.table[self.id]
+        mine[0] += 1
+        mine[1] = now
+        counters = {k: c for k, (c, _) in self.table.items()}
+        self.send(self.sim.rng.choice(self.peers), ("table", counters))
+        for k in sorted(self.table):
+            if k != self.id and now - self.table[k][1] > self.t_fail:
+                self.suspects.add(k)
+        self.set_timer(10, "round")
+
+    def on_message(self, src, msg):
+        if msg[0] != "table":
+            return
+        for k, c in msg[1].items():
+            if k not in self.table or c > self.table[k][0]:
+                self.table[k] = [c, self.sim.now]
+
+
+def detect(n, seed, crash_at, t_fail, until):
+    sim = Sim(seed, delay=(1, 5))
+    ids = ["m%d" % i for i in range(n)]
+    for i in ids:
+        sim.add(Member(i, [p for p in ids if p != i], t_fail))
+    for i in ids:
+        sim.at(0, sim.nodes[i].start)
+    sim.at(crash_at, lambda: sim.crash("m0"))
+    sim.run(until)
+    live = [sim.nodes[i] for i in ids[1:]]
+    false = sum(1 for m in live for s in m.suspects if s != "m0")
+    detected = sum(1 for m in live if "m0" in m.suspects)
+    return false, detected
+--- hint
+A node's own entry changes every round; others' entries change only when a gossiped counter is higher than the stored one, and then \`last_change\` becomes the receiver's current time.
+--- hint
+Send a copy of the counters (a new dictionary), never the table itself: the receiver must not share lists with the sender.
+--- hint
+\`detect\` counts suspicions held by live nodes only (m1 to m{n-1}): those about m0 are correct detections, and any others are false.
+--- check case | The example from the task
+detect(8, 1, 200, 80, 400)
+=> (0, 7)
+--- check case | A timeout too short for the cluster size: live nodes are suspected
+detect(32, 2, 300, 40, 600)
+=> (926, 31)
+--- check case | A longer timeout for the same cluster
+detect(32, 2, 300, 120, 600)
+=> (4, 31)
+--- check case | Detected before the end only if enough time passed after the crash
+[detect(16, 3, 200, 100, u)[1] for u in (250, 300, 400)]
+=> [0, 1, 15]
+
++++ practice | Deletes that come back
+--- task
+Anti-entropy can resurrect deleted data: replica A deletes a key, replica B still has it, and repair copies it back to A. The fix is a **tombstone**: a delete is stored as the pair \`(version, None)\`, which wins over older versions like any other write, and it is only purged after a grace period longer than any repair cycle.
+
+Write \`merge(a, b)\`, which merges two replicas' dictionaries (key → \`(version, value)\`, where value \`None\` is a tombstone) and returns a new dictionary with, for each key in either, the higher pair. Compare pairs by version first; for equal versions, a tombstone beats a value, and otherwise the larger value wins. Then write \`visible(data)\`, the dictionary of keys whose pair is not a tombstone, mapped to their values. Then write \`purge(data, deleted_at, now, grace)\`, returning a new dictionary without the tombstones whose deletion time \`deleted_at[key]\` is more than \`grace\` before \`now\` (\`now - deleted_at[key] > grace\`).
+
+For example, \`visible(merge({"x": (2, None)}, {"x": (1, "old")}))\` is \`{}\`: the tombstone wins, and the key stays deleted.
+--- starter
+def merge(a, b):
+    out = dict(b)
+    out.update(a)
+    return out
+
+
+def visible(data):
+    return dict(data)
+
+
+def purge(data, deleted_at, now, grace):
+    return dict(data)
+--- solution
+def rank(pair):
+    version, value = pair
+    return (version, 1 if value is None else 0, "" if value is None else value)
+
+
+def merge(a, b):
+    out = {}
+    for key in set(a) | set(b):
+        pairs = [p for p in (a.get(key), b.get(key)) if p is not None]
+        out[key] = max(pairs, key=rank)
+    return out
+
+
+def visible(data):
+    return {k: v for k, (_, v) in data.items() if v is not None}
+
+
+def purge(data, deleted_at, now, grace):
+    return {k: p for k, p in data.items() if not (p[1] is None and now - deleted_at[k] > grace)}
+--- hint
+Comparing pairs directly fails when one value is \`None\`. Give \`max\` a key function that turns a pair into something comparable: the version, then 1 for a tombstone and 0 for a value, then the value itself (or an empty string for a tombstone).
+--- hint
+\`purge\` keeps every live pair and every tombstone still inside its grace period; only tombstones deleted more than \`grace\` ago go.
+--- check case | The example from the task
+visible(merge({"x": (2, None)}, {"x": (1, "old")}))
+=> {}
+--- check case | Without a tombstone, a missing key is simply copied back
+visible(merge({}, {"x": (1, "old")}))
+=> {'x': 'old'}
+--- check case | A newer write beats an older tombstone
+visible(merge({"x": (2, None)}, {"x": (3, "again")}))
+=> {'x': 'again'}
+--- check case | Equal versions: the tombstone wins; between values, the larger
+(merge({"x": (4, "a")}, {"x": (4, None)}), merge({"y": (4, "a")}, {"y": (4, "b")}))
+=> ({'x': (4, None)}, {'y': (4, 'b')})
+--- check case | Purging after the grace period, and keeping recent tombstones
+purge({"a": (1, None), "b": (2, None), "c": (3, "live")}, {"a": 10, "b": 95}, 100, 50)
+=> {'b': (2, None), 'c': (3, 'live')}
+--- check case | Purging too early resurrects the key at the next merge
+visible(merge(purge({"x": (2, None)}, {"x": 0}, 100, 10), {"x": (1, "old")}))
+=> {'x': 'old'}
+
++++ practice | Debug: the comparison that stops too soon
+--- task
+The starter's \`diff(t1, t2, depth)\` compares two Merkle trees in the lab's heap layout (root at 1, children of i at 2i and 2i + 1, leaf b at 2^depth + b) and should return the sorted list of differing buckets. It finds a difference in either half of the tree, but when both halves of a node differ it reports only the left one, so replicas with several differences never fully converge. Fix it. Keep the function's result: only the list of buckets.
+--- starter
+def diff(t1, t2, depth):
+    leaves = 2 ** depth
+    found = []
+
+    def walk(i):
+        if t1[i] == t2[i]:
+            return
+        if i >= leaves:
+            found.append(i - leaves)
+            return
+        if t1[2 * i] != t2[2 * i]:
+            walk(2 * i)
+        elif t1[2 * i + 1] != t2[2 * i + 1]:
+            walk(2 * i + 1)
+
+    walk(1)
+    return sorted(found)
+--- solution
+def diff(t1, t2, depth):
+    leaves = 2 ** depth
+    found = []
+
+    def walk(i):
+        if t1[i] == t2[i]:
+            return
+        if i >= leaves:
+            found.append(i - leaves)
+            return
+        walk(2 * i)
+        walk(2 * i + 1)
+
+    walk(1)
+    return sorted(found)
+--- hint
+When a node differs, which of its children can differ? Either, or both.
+--- hint
+\`walk\` already returns at once for equal nodes, so it is enough to walk into both children every time; the \`elif\` makes the right child unreachable whenever the left one differs.
+--- check case | Both halves differ
+diff([None, "r1", "a", "b", "w", "x", "y", "z"], [None, "r2", "A", "B", "w", "X", "Y", "z"], 2)
+=> [1, 2]
+--- check case | Only the right half differs
+diff([None, "r1", "a", "b", "w", "x", "y", "z"], [None, "r2", "a", "B", "w", "x", "y", "Z"], 2)
+=> [3]
+--- check case | Equal trees
+diff([None, "r", "a", "b"], [None, "r", "a", "b"], 1)
+=> []
+--- check case | Depth 0: the root is the only leaf
+(diff([None, "x"], [None, "y"], 0), diff([None, "x"], [None, "x"], 0))
+=> ([0], [])
+
+=== dist1-09 | Testing distributed systems: fault injection, seed sweeps and shrinking
+--- teach
+Every lab in this course tested its system on scenarios someone chose: a partition here, a slow clock there. Real bugs live in the scenarios nobody chose: a failover at the exact moment a copy is stuck in a slow queue. This last lesson turns the pieces you have built into the method that finds those bugs systematically, the one behind **Jepsen** and **deterministic simulation testing**: generate a random workload, inject random faults, record what clients saw, check it against a consistency model, sweep thousands of seeds, and **shrink** each failure to the smallest case that still fails. Then you fix the bug and keep the failing seeds as regression tests.
+
+### The five parts of a test
+
+1. **A workload.** Clients issue random operations. Writing **unique values** (every write a different number) makes histories far easier to check, because every read names the write it saw.
+2. **A [[nemesis|nemesis]].** A component that injects faults on a schedule: partitions, crashes, failovers, slow links, clock jumps. Its schedule comes from the seed too.
+3. **A recorder.** Every operation becomes an entry with its start, its end and its result. An operation that timed out is recorded as **unknown**: the lesson 5 pending operation. An operation that failed for certain (the server refused it before doing anything) is dropped.
+4. **A checker.** Linearizability from lesson 5, or an **invariant** that must hold whatever happens: money is never created or destroyed, an acknowledged write is never lost, a counter never goes down.
+5. **A seed sweep.** Because the simulator is deterministic, each seed is one reproducible run. Run thousands; every failure comes with the seed that replays it exactly.
+
+### Why random search finds rare bugs
+
+Say a bug needs a particular coincidence that happens in 1 run in 200. One run finds it with probability 1/200. N independent runs miss it with probability (1 − 1/200)ᴺ, so they find it with probability 1 − (199/200)ᴺ:
+
+| runs N | chance of finding the bug |
+|---|---|
+| 100 | 39% |
+| 1,000 | 99.3% |
+
+A thousand runs of a simulated cluster take seconds, because simulated time is free. The same thousand runs on real machines, waiting for real timeouts, take days, and none of them can be replayed. That asymmetry is the whole case for simulation. Real tools also **bias** the faults towards interesting moments, such as right after a leader change, which raises the per-run chance of the coincidences that matter.
+
+### Shrinking
+
+A failing run has dozens of operations and several faults, and most of them have nothing to do with the bug. **Shrinking** removes pieces while the run still fails:
+
+- try removing the first fault; if the test still fails, keep it removed, otherwise put it back;
+- move on to the next, and so on through the list.
+
+The result is **1-minimal**: removing any single remaining fault makes the failure disappear, so every fault left is part of the story. The same idea applied to chunks of the input, halving the chunk size each time, is **[[delta debugging|ddmin]]**. Shrinking costs one test run per attempt: cheap in simulation, impossible on real hardware.
+
+Note one subtlety. Removing a fault changes what the nodes do, so the run after removal draws different random numbers from the same seed. That is fine: each candidate run is still deterministic, and the shrinker only needs "does this candidate fail?" to have a fixed answer.
+
+### Locating the first bad operation
+
+A failing history says "somewhere in these 45 operations, no single-copy order exists". To find where, check growing prefixes: the history's first k operations, in order of start time, for k = 1, 2, 3, …. A history whose every operation started before time T is linearizable whenever the whole history is, so the first prefix that fails ends with an operation that the system got wrong, or with the read that exposed it. Read the trace of the simulator around that operation's time, and the bug is usually plain.
+
+### A store with three settings
+
+The lab's store keeps a register on three replicas. One replica is the primary; the nemesis performs failovers that make another replica primary with a higher epoch. It has three modes:
+
+- **async**: the primary acknowledges writes before the backups have them. A failover loses acknowledged writes.
+- **unfenced**: the primary waits for every backup before acknowledging, and checks with them before answering a read, but replicas accept every copy they receive. A copy from a deposed primary, delayed in the network, can overwrite newer data, and a deposed primary can still answer reads.
+- **fenced**: copies and read checks carry epochs (lesson 4's fencing tokens), replicas reject old epochs and keep only copies with a higher (epoch, sequence) stamp.
+
+Over 100 seeds, with four failovers each, the checker finds non-linearizable histories in 24 seeds for async, 5 for unfenced, and none for fenced. The unfenced bug is five times rarer, because it needs a failover to coincide with a copy stuck in the slow part of the network. Hand-written tests almost never hit it.
+
+### What testing does not give you
+
+A thousand passing seeds are evidence, not proof: the next bug may need a coincidence of one in a million. Teams that need more write a precise model of the protocol and **[[check it exhaustively|tla]]** over every interleaving of a small configuration, and run fault injection in production too, in the practice known as **[[chaos engineering|chaos]]**. The three approaches find different bugs, and large systems use all three.
+
+### Where it is used
+
+- **Jepsen** has tested dozens of databases, queues and coordination services this way, and found lost writes, stale reads and broken transactions in many of them.
+- **Deterministic simulation** is the core of the test strategy of FoundationDB, TigerBeetle and several newer databases, which run whole clusters in one process under a seeded simulator, as this course has.
+- **Property-based testing** libraries such as Hypothesis and QuickCheck generate random inputs and shrink failures automatically, the same loop at the level of a single function.
+
+**Watch out:**
+
+- **Treating timeouts as failures** in the recorder makes correct systems look broken; record them as unknown.
+- **Hidden randomness or real time** in the system under test makes a failing seed impossible to replay (lesson 1).
+- **Checking only the happy path:** a test without a nemesis tests the network's good days only.
+- **Too few seeds:** a bug that appears once in 200 runs survives a test of 50 runs most of the time.
+- **Fixing without a regression test:** keep every failing seed and run it after every change.
+
+::: context nemesis The adversary in the test
+Jepsen's name for the fault injector is the nemesis, after the Greek goddess of retribution. It runs as just another process in the test, with its own schedule: partition the network into halves for ten seconds, heal, kill a random node, restart it, skew a clock. Keeping it separate from the workload means the same workload can be run against many kinds of failure, and the fault schedule is recorded alongside the history so a failure can be explained.
+:::
+
+::: context ddmin Shrinking by halves
+Andreas Zeller and Ralf Hildebrandt's delta debugging algorithm, from 2002, finds a small failing input by trying to remove large chunks first, then smaller ones: halves, quarters, eighths. When every remaining single element is needed, the result is 1-minimal. It was first used to reduce a web page that crashed a browser from thousands of lines to the single tag responsible, and the same idea now shrinks failing test cases in property-based testing libraries.
+:::
+
+::: context tla Checking every interleaving
+TLA+, designed by Leslie Lamport, is a language for writing a protocol's states and steps precisely. Its model checker explores every reachable state of a small configuration, say three nodes and two values, and reports the shortest sequence of steps that breaks an invariant. Engineers at AWS described in 2014 how TLA+ found serious bugs in the designs of DynamoDB and S3 before they were built, bugs whose shortest triggering trace was over 30 steps long.
+:::
+
+::: context chaos Breaking production on purpose
+Chaos engineering injects real faults into real production systems, during working hours and with engineers watching: terminating servers, adding network latency, failing a whole availability zone. Netflix's Chaos Monkey, which randomly terminated production instances, made the practice famous. It finds what simulation cannot model, such as a misconfigured timeout or a dependency nobody knew about, at the cost of real, if controlled, risk.
+:::
+--- task
+Write the test harness that finds the store's bugs. The starter has the simulator and, finished, the lab's checker (\`linearize\` and \`register_step\`) and the store: \`run_case(mode, seed, faults=None)\` runs three clients against the store in \`mode\` (\`"async"\`, \`"unfenced"\` or \`"fenced"\`) on a seeded network, with the fault list \`faults\`, or the seed's own fault list \`faults_for(seed)\` when \`faults\` is \`None\`, and returns the recorded history. A fault list is a list of \`(time, "failover", replica)\`. Do not change the starter's code. Write:
+
+1. \`fails(mode, seed, faults=None)\`: \`True\` if the history of \`run_case(mode, seed, faults)\` is not linearizable for a register starting at \`None\`.
+2. \`explore(mode, seeds)\`: the list of the seeds in \`seeds\`, in order, for which \`fails(mode, seed)\` is true.
+3. \`shrink(mode, seed)\`: start from \`faults_for(seed)\` and go through the list from the front: try the list without the fault at the current position; if that run still fails, keep the shorter list and stay at the same position; otherwise keep the fault and move to the next position. Return the final list.
+4. \`first_violation(history)\`: the smallest k such that the first k operations of \`history\` (which is sorted by start time) are not linearizable, or \`None\` if the whole history is.
+
+For example, \`explore("async", range(12))\` is \`[2, 6, 7, 11]\`.
+--- starter
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class LaggySim(Sim):
+    def pick_delay(self, src, dst):
+        if self.rng.random() < 0.1:
+            return self.rng.randint(30, 60)
+        return self.rng.randint(1, 8)
+
+
+class Replica(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.value = None
+        self.stamp = (0, 0)
+        self.epoch = 0
+        self.waiting = {}
+
+    def promote(self, epoch):
+        self.epoch = max(self.epoch, epoch)
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            _, rid, v = msg
+            self.stamp = (self.epoch, self.stamp[1] + 1)
+            self.value = v
+            for p in self.peers:
+                self.send(p, ("copy", self.stamp, v, rid, src))
+            if self.mode == "async":
+                self.send(src, ("done", rid, "ok"))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), "ok"]
+        elif kind == "read":
+            rid = msg[1]
+            if self.mode == "async":
+                self.send(src, ("done", rid, self.value))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), self.value]
+                for p in self.peers:
+                    self.send(p, ("confirm", self.epoch, rid, src))
+        elif kind == "copy":
+            _, stamp, v, rid, client = msg
+            if self.mode == "fenced":
+                if stamp[0] < self.epoch:
+                    return
+                self.epoch = stamp[0]
+                if stamp > self.stamp:
+                    self.stamp, self.value = stamp, v
+            else:
+                self.stamp, self.value = stamp, v
+            self.send(src, ("ack", rid, client))
+        elif kind == "confirm":
+            _, epoch, rid, client = msg
+            if self.mode == "fenced":
+                if epoch < self.epoch:
+                    return
+                self.epoch = epoch
+            self.send(src, ("ack", rid, client))
+        elif kind == "ack":
+            key = (msg[2], msg[1])
+            if key in self.waiting:
+                self.waiting[key][0] -= 1
+                if self.waiting[key][0] == 0:
+                    result = self.waiting.pop(key)[1]
+                    self.send(msg[2], ("done", msg[1], result))
+
+
+class Client(Node):
+    def __init__(self, node_id, config, ops):
+        super().__init__(node_id)
+        self.config = config
+        self.ops = ops
+        self.n = 0
+        self.current = None
+        self.history = []
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if name == "next":
+            if self.n >= len(self.ops):
+                return
+            op, arg = self.ops[self.n]
+            self.n += 1
+            self.current = [self.id, op, arg, None, self.sim.now, None]
+            self.send(self.config["primary"], (op, self.n, arg))
+            self.set_timer(40, ("timeout", self.n))
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 1000)
+    out = []
+    t = 0
+    for _ in range(4):
+        t += rng.randint(40, 120)
+        out.append((t, "failover", "r%d" % rng.randint(0, 2)))
+    return out
+
+
+def run_case(mode, seed, faults=None):
+    if faults is None:
+        faults = faults_for(seed)
+    sim = LaggySim(seed)
+    config = {"primary": "r0", "epoch": 0}
+    names = ["r0", "r1", "r2"]
+    for name in names:
+        sim.add(Replica(name, [p for p in names if p != name], mode))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 7 + c)
+        ops = [("write", c * 100 + k) if rng.random() < 0.5 else ("read", None) for k in range(15)]
+        clients.append(sim.add(Client("c%d" % c, config, ops)))
+
+    def failover(target):
+        config["epoch"] += 1
+        config["primary"] = target
+        sim.nodes[target].promote(config["epoch"])
+
+    for t, kind, target in faults:
+        sim.at(t, lambda target=target: failover(target))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+
+
+def fails(mode, seed, faults=None):
+    return False
+
+
+def explore(mode, seeds):
+    return []
+
+
+def shrink(mode, seed):
+    return faults_for(seed)
+
+
+def first_violation(history):
+    return None
+--- solution
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class LaggySim(Sim):
+    def pick_delay(self, src, dst):
+        if self.rng.random() < 0.1:
+            return self.rng.randint(30, 60)
+        return self.rng.randint(1, 8)
+
+
+class Replica(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.value = None
+        self.stamp = (0, 0)
+        self.epoch = 0
+        self.waiting = {}
+
+    def promote(self, epoch):
+        self.epoch = max(self.epoch, epoch)
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            _, rid, v = msg
+            self.stamp = (self.epoch, self.stamp[1] + 1)
+            self.value = v
+            for p in self.peers:
+                self.send(p, ("copy", self.stamp, v, rid, src))
+            if self.mode == "async":
+                self.send(src, ("done", rid, "ok"))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), "ok"]
+        elif kind == "read":
+            rid = msg[1]
+            if self.mode == "async":
+                self.send(src, ("done", rid, self.value))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), self.value]
+                for p in self.peers:
+                    self.send(p, ("confirm", self.epoch, rid, src))
+        elif kind == "copy":
+            _, stamp, v, rid, client = msg
+            if self.mode == "fenced":
+                if stamp[0] < self.epoch:
+                    return
+                self.epoch = stamp[0]
+                if stamp > self.stamp:
+                    self.stamp, self.value = stamp, v
+            else:
+                self.stamp, self.value = stamp, v
+            self.send(src, ("ack", rid, client))
+        elif kind == "confirm":
+            _, epoch, rid, client = msg
+            if self.mode == "fenced":
+                if epoch < self.epoch:
+                    return
+                self.epoch = epoch
+            self.send(src, ("ack", rid, client))
+        elif kind == "ack":
+            key = (msg[2], msg[1])
+            if key in self.waiting:
+                self.waiting[key][0] -= 1
+                if self.waiting[key][0] == 0:
+                    result = self.waiting.pop(key)[1]
+                    self.send(msg[2], ("done", msg[1], result))
+
+
+class Client(Node):
+    def __init__(self, node_id, config, ops):
+        super().__init__(node_id)
+        self.config = config
+        self.ops = ops
+        self.n = 0
+        self.current = None
+        self.history = []
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if name == "next":
+            if self.n >= len(self.ops):
+                return
+            op, arg = self.ops[self.n]
+            self.n += 1
+            self.current = [self.id, op, arg, None, self.sim.now, None]
+            self.send(self.config["primary"], (op, self.n, arg))
+            self.set_timer(40, ("timeout", self.n))
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 1000)
+    out = []
+    t = 0
+    for _ in range(4):
+        t += rng.randint(40, 120)
+        out.append((t, "failover", "r%d" % rng.randint(0, 2)))
+    return out
+
+
+def run_case(mode, seed, faults=None):
+    if faults is None:
+        faults = faults_for(seed)
+    sim = LaggySim(seed)
+    config = {"primary": "r0", "epoch": 0}
+    names = ["r0", "r1", "r2"]
+    for name in names:
+        sim.add(Replica(name, [p for p in names if p != name], mode))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 7 + c)
+        ops = [("write", c * 100 + k) if rng.random() < 0.5 else ("read", None) for k in range(15)]
+        clients.append(sim.add(Client("c%d" % c, config, ops)))
+
+    def failover(target):
+        config["epoch"] += 1
+        config["primary"] = target
+        sim.nodes[target].promote(config["epoch"])
+
+    for t, kind, target in faults:
+        sim.at(t, lambda target=target: failover(target))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+
+
+def fails(mode, seed, faults=None):
+    return linearize(run_case(mode, seed, faults), register_step, None) is None
+
+
+def explore(mode, seeds):
+    return [s for s in seeds if fails(mode, s)]
+
+
+def shrink(mode, seed):
+    faults = faults_for(seed)
+    i = 0
+    while i < len(faults):
+        candidate = faults[:i] + faults[i + 1:]
+        if fails(mode, seed, candidate):
+            faults = candidate
+        else:
+            i += 1
+    return faults
+
+
+def first_violation(history):
+    for k in range(1, len(history) + 1):
+        if linearize(history[:k], register_step, None) is None:
+            return k
+    return None
+--- hint
+\`fails\` is one line: run the case, check its history, and compare the checker's answer with \`None\`. \`explore\` filters the seeds with it.
+--- hint
+In \`shrink\`, keep an index into the current list. A removal that still fails shortens the list, and the next fault slides into the same position, so do not move the index then. Only a removal that makes the failure vanish moves it on.
+--- hint
+\`first_violation\` checks prefixes \`history[:k]\` for k from 1 upwards and returns the first k whose prefix has no valid order.
+--- check case | The example from the task
+explore("async", range(12))
+=> [2, 6, 7, 11]
+--- check case | The unfenced store fails far less often
+explore("unfenced", range(40))
+=> [19, 32]
+--- check case | The fenced store passes every seed
+explore("fenced", range(40))
+=> []
+--- check case | fails with an explicit fault list: no failovers, no failure
+(fails("async", 2), fails("async", 2, []), fails("unfenced", 19, []))
+=> (True, False, False)
+--- check case | Shrinking a failure of the async store
+(faults_for(2), shrink("async", 2))
+=> ([(106, 'failover', 'r2'), (199, 'failover', 'r0'), (257, 'failover', 'r0'), (332, 'failover', 'r1')], [(106, 'failover', 'r2'), (199, 'failover', 'r0')])
+--- check case | Shrinking the rarer unfenced failure to a single failover
+shrink("unfenced", 19)
+=> [(44, 'failover', 'r1')]
+?? Removing the second, third and fourth failovers leaves a run that still fails; removing the first makes it pass.
+--- check test | A shrunk list still fails, and is 1-minimal
+(lambda f: fails("unfenced", 32, f) and all(not fails("unfenced", 32, f[:i] + f[i + 1:]) for i in range(len(f))))(shrink("unfenced", 32))
+--- check case | Where the async history first goes wrong
+(lambda h: (len(h), first_violation(h), h[first_violation(h) - 1]))(run_case("async", 2))
+=> (45, 24, ('c1', 'read', None, 10, 138, 150))
+--- check case | A linearizable history has no first violation
+(first_violation(run_case("fenced", 2)), first_violation([]))
+=> (None, None)
+
++++ question | Why simulation finds what real clusters miss
+--- ask
+A bug shows up in about 1 run in 500. Why is a deterministic simulator so much better at catching it than repeated tests on a real cluster?
+--- choice
+Simulators use more realistic network models than real networks.
+--- choice correct
+Simulated time costs nothing, so thousands of runs take seconds, and every failing run comes with a seed that replays it exactly; real runs are slow and unrepeatable.
+--- choice
+Real clusters never hit rare interleavings.
+--- choice
+The simulator makes the bug happen in every run.
+--- why
+Finding a 1-in-500 bug with 99% confidence takes about 2,300 runs. In simulation that is seconds of work, and the failure can then be replayed, shrunk and debugged. On real hardware it is days of runs, and the one failure seen may never happen again.
+
++++ question | What 1-minimal means
+--- ask
+A shrinker reduces a failing run's fault list to three faults and stops. What does it guarantee about them?
+--- choice
+No smaller set of faults can make the run fail.
+--- choice correct
+Removing any one of the three makes the failure disappear, so each of them is needed in this run; a different, smaller combination might still exist.
+--- choice
+The three faults happen at the same time.
+--- choice
+The bug is in the code that handles the first of them.
+--- why
+Greedy one-at-a-time removal gives a local minimum: no single removal keeps the failure. It does not search every subset, which would take exponentially many runs.
+
++++ question | Recording a timeout
+--- ask
+In a Jepsen-style test, a client's write times out. How should the recorder treat it?
+--- choice
+As a failure: drop it from the history.
+--- choice
+As a success that happened at the moment of the timeout.
+--- choice correct
+As unknown: keep it as a pending operation that may or may not have taken effect, at any time after it started.
+--- choice
+Retry it until it succeeds, and record only the success.
+--- why
+After a timeout the write may have been applied, may never be, or may still be applied later. Dropping it makes correct systems fail the check when the write shows up; counting it as done makes buggy systems pass when it was lost.
+
++++ practice | A nemesis schedule
+--- task
+Write the fault schedule of a nemesis. \`nemesis(seed, until, every, nodes)\` uses \`random.Random(seed)\`. At each time t = \`every\`, 2 · \`every\`, 3 · \`every\`, … while t < \`until\`, it draws one choice with \`rng.choice(["partition", "crash", "none"])\`:
+
+- \`"partition"\`: draw a node with \`rng.choice(nodes)\`; add \`(t, "isolate", node)\` and \`(t + every // 2, "heal", node)\`;
+- \`"crash"\`: draw a node the same way; add \`(t, "crash", node)\` and \`(t + every // 2, "recover", node)\`;
+- \`"none"\`: add nothing.
+
+Return the list of events, in time order. Then write \`active(events, time)\`: the list of \`(kind, node)\` faults in effect at that time, where a fault is in effect from its start event's time (included) to its end event's time (excluded), in the order they started.
+
+For example, \`nemesis(1, 40, 10, ["a", "b"])\` is \`[(10, "isolate", "a"), (15, "heal", "a"), (20, "crash", "a"), (25, "recover", "a"), (30, "crash", "b"), (35, "recover", "b")]\`.
+--- starter
+import random
+
+
+def nemesis(seed, until, every, nodes):
+    return []
+
+
+def active(events, time):
+    return []
+--- solution
+import random
+
+
+def nemesis(seed, until, every, nodes):
+    rng = random.Random(seed)
+    events = []
+    t = every
+    while t < until:
+        kind = rng.choice(["partition", "crash", "none"])
+        if kind == "partition":
+            node = rng.choice(nodes)
+            events.append((t, "isolate", node))
+            events.append((t + every // 2, "heal", node))
+        elif kind == "crash":
+            node = rng.choice(nodes)
+            events.append((t, "crash", node))
+            events.append((t + every // 2, "recover", node))
+        t += every
+    return events
+
+
+def active(events, time):
+    ends = {"heal": "isolate", "recover": "crash"}
+    on = []
+    for t, kind, node in events:
+        if t > time:
+            break
+        if kind in ends:
+            if (ends[kind], node) in on:
+                on.remove((ends[kind], node))
+        else:
+            on.append((kind, node))
+    return on
+--- hint
+Draw the choice first, and the node only for the two choices that need one, so the draws happen exactly as the task says.
+--- hint
+For \`active\`, replay the events up to and including the given time: a start event adds \`(kind, node)\`, and an end event removes the matching start. An end event at exactly the given time has already happened, so the fault is over.
+--- check case | The example from the task
+nemesis(1, 40, 10, ["a", "b"])
+=> [(10, 'isolate', 'a'), (15, 'heal', 'a'), (20, 'crash', 'a'), (25, 'recover', 'a'), (30, 'crash', 'b'), (35, 'recover', 'b')]
+--- check case | Nothing before the first slot
+(nemesis(3, 10, 10, ["a"]), nemesis(3, 5, 10, ["a"]))
+=> ([], [])
+--- check case | A longer schedule over three nodes
+nemesis(7, 100, 12, ["n1", "n2", "n3"])
+=> [(12, 'crash', 'n1'), (18, 'recover', 'n1'), (24, 'crash', 'n3'), (30, 'recover', 'n3'), (36, 'isolate', 'n1'), (42, 'heal', 'n1'), (60, 'isolate', 'n2'), (66, 'heal', 'n2'), (84, 'isolate', 'n3'), (90, 'heal', 'n3'), (96, 'isolate', 'n1'), (102, 'heal', 'n1')]
+--- check case | What is active, and when
+(lambda ev: [active(ev, t) for t in (9, 10, 14, 15, 30, 34, 35)])(nemesis(1, 40, 10, ["a", "b"]))
+=> [[], [('isolate', 'a')], [('isolate', 'a')], [], [('crash', 'b')], [('crash', 'b')], []]
+--- check test | Faults never overlap: at most one is active at any time
+(lambda ev: all(len(active(ev, t)) <= 1 for t in range(0, 400)))(nemesis(11, 400, 20, ["x", "y", "z"]))
+
++++ practice | Shrinking a failing input
+--- task
+Shrink a failing list of operations with delta debugging. \`fails\` is a function that takes a list and returns \`True\` if the test fails on it. Write \`shrink_ops(ops, fails)\`:
+
+- Start with \`chunk = len(ops) // 2\` (at least 1 if the list is not empty).
+- While \`chunk >= 1\`: go through the list from position i = 0. At each position, try the list without the \`chunk\` elements starting at i (\`ops[:i] + ops[i + chunk:]\`). If \`fails\` is true for it, keep it and stay at i; otherwise move i forward by \`chunk\`. When i reaches the end of the list, halve the chunk (\`chunk //= 2\`).
+- Return \`(ops, calls)\`: the shrunk list and the number of times \`fails\` was called.
+
+Never call \`fails\` on a list that is identical to the current one. If the input list is empty, return \`([], 0)\`.
+
+For example, if the test fails whenever the list contains both 3 and 7, \`shrink_ops(list(range(10)), lambda xs: 3 in xs and 7 in xs)\` returns \`([3, 7], 11)\`.
+--- starter
+def shrink_ops(ops, fails):
+    return list(ops), 0
+--- solution
+def shrink_ops(ops, fails):
+    ops = list(ops)
+    if not ops:
+        return [], 0
+    calls = 0
+    chunk = max(1, len(ops) // 2)
+    while chunk >= 1:
+        i = 0
+        while i < len(ops):
+            candidate = ops[:i] + ops[i + chunk:]
+            calls += 1
+            if fails(candidate):
+                ops = candidate
+            else:
+                i += chunk
+        chunk //= 2
+    return ops, calls
+--- hint
+Two nested loops: the outer one over chunk sizes (halving), the inner one over positions in the current list. A successful removal shortens the list, so the next chunk slides into position i.
+--- hint
+Count every call to \`fails\`. With \`chunk >= 1\`, a candidate always has fewer elements than the current list, so no call repeats the current list.
+--- check case | The example from the task
+shrink_ops(list(range(10)), lambda xs: 3 in xs and 7 in xs)
+=> ([3, 7], 11)
+--- check case | One culprit among many
+shrink_ops(list(range(64)), lambda xs: 42 in xs)
+=> ([42], 12)
+--- check case | A failure that needs an order: a write after a read of the same key
+shrink_ops([("w", "a"), ("r", "b"), ("r", "a"), ("w", "b"), ("w", "a"), ("r", "c")], lambda xs: any(xs[i] == ("r", "a") and ("w", "a") in xs[i + 1:] for i in range(len(xs))))
+=> ([('r', 'a'), ('w', 'a')], 8)
+--- check case | Empty input, and a test that fails on anything
+(shrink_ops([], lambda xs: True), shrink_ops([1, 2, 3], lambda xs: True))
+=> (([], 0), ([], 3))
+--- check case | A test that needs everything
+shrink_ops([1, 2, 3, 4], lambda xs: len(xs) == 4)
+=> ([1, 2, 3, 4], 6)
+
++++ practice | A bank that loses money
+--- task
+Not every check needs a linearizability search: an **invariant** can be enough. The starter has the simulator and a finished \`Bank\` node holding \`balances\`, starting as \`{"a": 100, "b": 100, "c": 100}\`. It answers \`("add", rid, account, delta)\` by adding \`delta\` and replying \`("ok", rid)\`, and \`("transfer", rid, src, dst, amount)\` by moving the amount in one step and replying \`("ok", rid)\`.
+
+Write the node \`Teller(node_id, plan, atomic)\`, where \`plan\` is a list of \`(src, dst, amount)\` transfers done one after another:
+
+- \`start()\` begins the first transfer.
+- If \`atomic\`, a transfer is one \`("transfer", rid, src, dst, amount)\` message to \`"bank"\`; on its \`("ok", rid)\` the next transfer begins.
+- If not, a transfer is two steps: \`("add", rid, src, -amount)\`, and on its ok, \`("add", rid, dst, amount)\`; on that ok the next transfer begins.
+- Use a new \`rid\` (1, 2, 3, …) for every message the teller sends, and ignore any reply whose rid is not the last one sent.
+
+Then write \`audit(seed, atomic)\`: on \`Sim(seed, delay=(1, 6))\`, a \`Bank("bank")\` and tellers \`"t1"\` and \`"t2"\`, each with 15 transfers made with \`random.Random(seed * 3 + i)\` for teller i (1 or 2): for each transfer, \`src, dst = rng.sample(["a", "b", "c"], 2)\` and \`amount = rng.randint(1, 20)\`. Start both at time 0. The nemesis crashes \`"t1"\` at time \`20 + (seed * 13) % 60\` and never restarts it. Run until the queue is empty and return \`(total, balances)\`, the sum of the balances and the bank's \`balances\`.
+
+The invariant is that the total stays 300. For example, \`audit(1, True)[0]\` is 300, and some seeds lose money without atomic transfers.
+--- starter
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Bank(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.balances = {"a": 100, "b": 100, "c": 100}
+
+    def on_message(self, src, msg):
+        if msg[0] == "add":
+            _, rid, account, delta = msg
+            self.balances[account] += delta
+            self.send(src, ("ok", rid))
+        elif msg[0] == "transfer":
+            _, rid, a, b, amount = msg
+            self.balances[a] -= amount
+            self.balances[b] += amount
+            self.send(src, ("ok", rid))
+
+
+class Teller(Node):
+    def __init__(self, node_id, plan, atomic):
+        super().__init__(node_id)
+        self.plan = plan
+        self.atomic = atomic
+
+
+def audit(seed, atomic):
+    return 300, {"a": 100, "b": 100, "c": 100}
+--- solution
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Bank(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.balances = {"a": 100, "b": 100, "c": 100}
+
+    def on_message(self, src, msg):
+        if msg[0] == "add":
+            _, rid, account, delta = msg
+            self.balances[account] += delta
+            self.send(src, ("ok", rid))
+        elif msg[0] == "transfer":
+            _, rid, a, b, amount = msg
+            self.balances[a] -= amount
+            self.balances[b] += amount
+            self.send(src, ("ok", rid))
+
+
+class Teller(Node):
+    def __init__(self, node_id, plan, atomic):
+        super().__init__(node_id)
+        self.plan = plan
+        self.atomic = atomic
+        self.rid = 0
+        self.index = 0
+        self.step = 0
+
+    def message(self, msg):
+        self.rid += 1
+        self.send("bank", (msg[0], self.rid) + msg[1:])
+
+    def begin(self):
+        if self.index >= len(self.plan):
+            return
+        src, dst, amount = self.plan[self.index]
+        self.step = 0
+        if self.atomic:
+            self.message(("transfer", src, dst, amount))
+        else:
+            self.message(("add", src, -amount))
+
+    def start(self):
+        self.begin()
+
+    def on_message(self, src, msg):
+        if msg[0] != "ok" or msg[1] != self.rid:
+            return
+        a, b, amount = self.plan[self.index]
+        if not self.atomic and self.step == 0:
+            self.step = 1
+            self.message(("add", b, amount))
+            return
+        self.index += 1
+        self.begin()
+
+
+def audit(seed, atomic):
+    sim = Sim(seed, delay=(1, 6))
+    bank = sim.add(Bank("bank"))
+    tellers = []
+    for i in (1, 2):
+        rng = random.Random(seed * 3 + i)
+        plan = []
+        for _ in range(15):
+            a, b = rng.sample(["a", "b", "c"], 2)
+            plan.append((a, b, rng.randint(1, 20)))
+        tellers.append(sim.add(Teller("t%d" % i, plan, atomic)))
+    for t in tellers:
+        sim.at(0, t.start)
+    sim.at(20 + (seed * 13) % 60, lambda: sim.crash("t1"))
+    sim.run()
+    return sum(bank.balances.values()), bank.balances
+--- hint
+The teller needs three counters: the last rid sent, the index of the current transfer, and, for non-atomic transfers, which of the two steps it is on. A small helper that adds 1 to rid and sends keeps the rid rule in one place.
+--- hint
+On an ok with the current rid: in non-atomic mode after step 0, send the deposit and stay on this transfer; otherwise move to the next transfer and begin it.
+--- hint
+A teller that crashes between the withdrawal and the deposit leaves money withdrawn and never deposited: that is the invariant violation the audit should catch.
+--- check case | The example from the task
+audit(1, True)[0]
+=> 300
+--- check case | Atomic transfers keep the total, over 20 seeds
+all(audit(s, True)[0] == 300 for s in range(20))
+=> True
+--- check case | Which seeds lose money without atomic transfers
+[s for s in range(20) if audit(s, False)[0] != 300]
+=> [0, 2, 3, 5, 7, 8, 9, 10, 14, 16, 17, 18]
+--- check case | One losing run in full
+(lambda s: audit(s, False))([s for s in range(20) if audit(s, False)[0] != 300][0])
+=> (285, {'a': 96, 'b': 34, 'c': 155})
+--- check case | Without the crash both kinds agree on the final balances
+(lambda s: (lambda a, b: a == b)(s(True), s(False)))(lambda atomic: (lambda sim: ([sim.add(n) for n in (Bank("bank"), Teller("t1", [("a", "b", 5), ("b", "c", 7)], atomic))], sim.at(0, sim.nodes["t1"].start), sim.run(), sim.nodes["bank"].balances)[-1])(Sim(4, delay=(1, 6))))
+=> True
+
++++ practice | Turning client events into a history
+--- task
+A test's clients log raw events, and the checker needs a history. Write \`to_history(events)\`. Each event is one of:
+
+- \`("invoke", client, op, arg, time)\`: the client starts an operation;
+- \`("ok", client, result, time)\`: its current operation completed with that result;
+- \`("fail", client, time)\`: its current operation definitely did **not** happen (the server refused it before doing anything);
+- \`("info", client, time)\`: its outcome is unknown (a timeout).
+
+A client has at most one operation in progress. Build the history as a list of \`(client, op, arg, result, start, end)\`: an ok gives a completed operation; a fail drops the operation; an info, or an invoke never followed by any completion, gives a pending operation (\`result\` and \`end\` both \`None\`). Ignore a completion event for a client with no operation in progress. Return the history sorted by start time, then by client.
+
+For example, \`to_history([("invoke", "a", "write", 1, 0), ("invoke", "b", "read", None, 1), ("info", "a", 9), ("ok", "b", 1, 4)])\` is \`[("a", "write", 1, None, 0, None), ("b", "read", None, 1, 1, 4)]\`.
+--- starter
+def to_history(events):
+    out = []
+    for e in events:
+        if e[0] == "invoke":
+            out.append((e[1], e[2], e[3], None, e[4], None))
+    return out
+--- solution
+def to_history(events):
+    open_ops = {}
+    out = []
+    for e in events:
+        kind, client = e[0], e[1]
+        if kind == "invoke":
+            open_ops[client] = (e[2], e[3], e[4])
+            continue
+        if client not in open_ops:
+            continue
+        op, arg, start = open_ops.pop(client)
+        if kind == "ok":
+            out.append((client, op, arg, e[2], start, e[3]))
+        elif kind == "info":
+            out.append((client, op, arg, None, start, None))
+    for client, (op, arg, start) in open_ops.items():
+        out.append((client, op, arg, None, start, None))
+    return sorted(out, key=lambda h: (h[4], h[0]))
+--- hint
+Keep a dictionary from client to its operation in progress: \`(op, arg, start)\`. An invoke fills it; any completion pops it, or is ignored if there is nothing to pop.
+--- hint
+After the last event, every operation still in the dictionary never completed: it is pending, exactly like an info. A fail adds nothing.
+--- check case | The example from the task
+to_history([("invoke", "a", "write", 1, 0), ("invoke", "b", "read", None, 1), ("info", "a", 9), ("ok", "b", 1, 4)])
+=> [('a', 'write', 1, None, 0, None), ('b', 'read', None, 1, 1, 4)]
+--- check case | A failed operation disappears
+to_history([("invoke", "a", "write", 5, 0), ("fail", "a", 3), ("invoke", "a", "write", 6, 4), ("ok", "a", "ok", 7)])
+=> [('a', 'write', 6, 'ok', 4, 7)]
+--- check case | Never completed: pending
+to_history([("invoke", "x", "write", 2, 10), ("invoke", "y", "read", None, 10)])
+=> [('x', 'write', 2, None, 10, None), ('y', 'read', None, None, 10, None)]
+--- check case | Stray completions are ignored
+to_history([("ok", "z", 1, 5), ("invoke", "z", "read", None, 6), ("ok", "z", None, 8), ("info", "z", 9)])
+=> [('z', 'read', None, None, 6, 8)]
+--- check case | No events
+to_history([])
+=> []
+
++++ practice | Debug: the replica that accepts stale copies
+--- task
+The starter has the lab's store and checker, and a harness \`explore(mode, seeds)\`. The \`"fenced"\` mode is meant to be linearizable: copies and read checks carry epochs, replicas reject copies from an older epoch, and a replica keeps a copy only if its \`(epoch, sequence)\` stamp is higher than the one it holds. But \`explore("fenced", range(40))\` reports failures: in seed 21, a backup ends up holding an older value than one it already acknowledged, and later serves it as primary.
+
+Find the bug in \`Replica.on_message\` and fix it, so that \`explore("fenced", range(40))\` is empty. Change only the fenced handling of copies.
+--- starter
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class LaggySim(Sim):
+    def pick_delay(self, src, dst):
+        if self.rng.random() < 0.1:
+            return self.rng.randint(30, 60)
+        return self.rng.randint(1, 8)
+
+
+class Replica(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.value = None
+        self.stamp = (0, 0)
+        self.epoch = 0
+        self.waiting = {}
+
+    def promote(self, epoch):
+        self.epoch = max(self.epoch, epoch)
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            _, rid, v = msg
+            self.stamp = (self.epoch, self.stamp[1] + 1)
+            self.value = v
+            for p in self.peers:
+                self.send(p, ("copy", self.stamp, v, rid, src))
+            if self.mode == "async":
+                self.send(src, ("done", rid, "ok"))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), "ok"]
+        elif kind == "read":
+            rid = msg[1]
+            if self.mode == "async":
+                self.send(src, ("done", rid, self.value))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), self.value]
+                for p in self.peers:
+                    self.send(p, ("confirm", self.epoch, rid, src))
+        elif kind == "copy":
+            _, stamp, v, rid, client = msg
+            if self.mode == "fenced":
+                if stamp[0] < self.epoch:
+                    return
+                self.epoch = stamp[0]
+                self.stamp, self.value = stamp, v
+            else:
+                self.stamp, self.value = stamp, v
+            self.send(src, ("ack", rid, client))
+        elif kind == "confirm":
+            _, epoch, rid, client = msg
+            if self.mode == "fenced":
+                if epoch < self.epoch:
+                    return
+                self.epoch = epoch
+            self.send(src, ("ack", rid, client))
+        elif kind == "ack":
+            key = (msg[2], msg[1])
+            if key in self.waiting:
+                self.waiting[key][0] -= 1
+                if self.waiting[key][0] == 0:
+                    result = self.waiting.pop(key)[1]
+                    self.send(msg[2], ("done", msg[1], result))
+
+
+class Client(Node):
+    def __init__(self, node_id, config, ops):
+        super().__init__(node_id)
+        self.config = config
+        self.ops = ops
+        self.n = 0
+        self.current = None
+        self.history = []
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if name == "next":
+            if self.n >= len(self.ops):
+                return
+            op, arg = self.ops[self.n]
+            self.n += 1
+            self.current = [self.id, op, arg, None, self.sim.now, None]
+            self.send(self.config["primary"], (op, self.n, arg))
+            self.set_timer(40, ("timeout", self.n))
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 1000)
+    out = []
+    t = 0
+    for _ in range(4):
+        t += rng.randint(40, 120)
+        out.append((t, "failover", "r%d" % rng.randint(0, 2)))
+    return out
+
+
+def run_case(mode, seed, faults=None):
+    if faults is None:
+        faults = faults_for(seed)
+    sim = LaggySim(seed)
+    config = {"primary": "r0", "epoch": 0}
+    names = ["r0", "r1", "r2"]
+    for name in names:
+        sim.add(Replica(name, [p for p in names if p != name], mode))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 7 + c)
+        ops = [("write", c * 100 + k) if rng.random() < 0.5 else ("read", None) for k in range(15)]
+        clients.append(sim.add(Client("c%d" % c, config, ops)))
+
+    def failover(target):
+        config["epoch"] += 1
+        config["primary"] = target
+        sim.nodes[target].promote(config["epoch"])
+
+    for t, kind, target in faults:
+        sim.at(t, lambda target=target: failover(target))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+
+
+def explore(mode, seeds):
+    return [s for s in seeds if linearize(run_case(mode, s), register_step, None) is None]
+--- solution
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+def register_step(state, op, arg):
+    if op == "read":
+        return state, state
+    return arg, "ok"
+
+
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+class LaggySim(Sim):
+    def pick_delay(self, src, dst):
+        if self.rng.random() < 0.1:
+            return self.rng.randint(30, 60)
+        return self.rng.randint(1, 8)
+
+
+class Replica(Node):
+    def __init__(self, node_id, peers, mode):
+        super().__init__(node_id)
+        self.peers = peers
+        self.mode = mode
+        self.value = None
+        self.stamp = (0, 0)
+        self.epoch = 0
+        self.waiting = {}
+
+    def promote(self, epoch):
+        self.epoch = max(self.epoch, epoch)
+
+    def on_message(self, src, msg):
+        kind = msg[0]
+        if kind == "write":
+            _, rid, v = msg
+            self.stamp = (self.epoch, self.stamp[1] + 1)
+            self.value = v
+            for p in self.peers:
+                self.send(p, ("copy", self.stamp, v, rid, src))
+            if self.mode == "async":
+                self.send(src, ("done", rid, "ok"))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), "ok"]
+        elif kind == "read":
+            rid = msg[1]
+            if self.mode == "async":
+                self.send(src, ("done", rid, self.value))
+            else:
+                self.waiting[(src, rid)] = [len(self.peers), self.value]
+                for p in self.peers:
+                    self.send(p, ("confirm", self.epoch, rid, src))
+        elif kind == "copy":
+            _, stamp, v, rid, client = msg
+            if self.mode == "fenced":
+                if stamp[0] < self.epoch:
+                    return
+                self.epoch = stamp[0]
+                if stamp > self.stamp:
+                    self.stamp, self.value = stamp, v
+            else:
+                self.stamp, self.value = stamp, v
+            self.send(src, ("ack", rid, client))
+        elif kind == "confirm":
+            _, epoch, rid, client = msg
+            if self.mode == "fenced":
+                if epoch < self.epoch:
+                    return
+                self.epoch = epoch
+            self.send(src, ("ack", rid, client))
+        elif kind == "ack":
+            key = (msg[2], msg[1])
+            if key in self.waiting:
+                self.waiting[key][0] -= 1
+                if self.waiting[key][0] == 0:
+                    result = self.waiting.pop(key)[1]
+                    self.send(msg[2], ("done", msg[1], result))
+
+
+class Client(Node):
+    def __init__(self, node_id, config, ops):
+        super().__init__(node_id)
+        self.config = config
+        self.ops = ops
+        self.n = 0
+        self.current = None
+        self.history = []
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if name == "next":
+            if self.n >= len(self.ops):
+                return
+            op, arg = self.ops[self.n]
+            self.n += 1
+            self.current = [self.id, op, arg, None, self.sim.now, None]
+            self.send(self.config["primary"], (op, self.n, arg))
+            self.set_timer(40, ("timeout", self.n))
+        elif self.current is not None and name[1] == self.n:
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "done" and msg[1] == self.n and self.current is not None:
+            self.current[3] = msg[2]
+            self.current[5] = self.sim.now
+            self.history.append(tuple(self.current))
+            self.current = None
+            self.set_timer(1, "next")
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 1000)
+    out = []
+    t = 0
+    for _ in range(4):
+        t += rng.randint(40, 120)
+        out.append((t, "failover", "r%d" % rng.randint(0, 2)))
+    return out
+
+
+def run_case(mode, seed, faults=None):
+    if faults is None:
+        faults = faults_for(seed)
+    sim = LaggySim(seed)
+    config = {"primary": "r0", "epoch": 0}
+    names = ["r0", "r1", "r2"]
+    for name in names:
+        sim.add(Replica(name, [p for p in names if p != name], mode))
+    clients = []
+    for c in range(3):
+        rng = random.Random(seed * 7 + c)
+        ops = [("write", c * 100 + k) if rng.random() < 0.5 else ("read", None) for k in range(15)]
+        clients.append(sim.add(Client("c%d" % c, config, ops)))
+
+    def failover(target):
+        config["epoch"] += 1
+        config["primary"] = target
+        sim.nodes[target].promote(config["epoch"])
+
+    for t, kind, target in faults:
+        sim.at(t, lambda target=target: failover(target))
+    for client in clients:
+        sim.at(0, client.start)
+    sim.run()
+    history = []
+    for client in clients:
+        history.extend(client.history)
+    return sorted(history, key=lambda h: h[4])
+
+
+def explore(mode, seeds):
+    return [s for s in seeds if linearize(run_case(mode, s), register_step, None) is None]
+--- hint
+Within one epoch, copies from the same primary can arrive out of order on the laggy network. What should a backup do with a copy whose stamp is lower than the one it already holds?
+--- hint
+In the fenced branch, after the epoch check, replace the value only when \`stamp > self.stamp\`. Still acknowledge the copy: a newer value from the same primary already supersedes it.
+--- check case | Seed 21 is linearizable after the fix
+linearize(run_case("fenced", 21), register_step, None) is not None
+=> True
+--- check case | No fenced failures over 40 seeds
+explore("fenced", range(40))
+=> []
+--- check case | The other modes still fail as before
+(explore("async", range(8)), explore("unfenced", range(25)))
+=> ([2, 6, 7], [19])
+
+=== dist1-gate | Distributed Systems I: mastery gate
+--- teach
+The gate covers the whole course: the seeded simulator, failure detectors and deadlines, retries and idempotency, clocks, leases and fencing, consistency models and the linearizability checker, replication and quorums, partitioning, anti-entropy and gossip, and testing by fault injection. Most problems combine two or three of those ideas, and each is an exact simulation or calculation, so read every rule in the task twice before writing code. To get ready, redo the practice problems of the lessons that felt hardest, and make sure you can say why each mechanism is safe, not only run it.
+--- gate
+pass 7
+questions 8
+minutes 115
+
++++ problem | Exactly once across a crash
+--- task
+A counter service must apply each increment exactly once, even when it crashes and restarts. The starter has the simulator and a finished \`Caller\` node, which sends \`("inc", key, amount)\` to \`"srv"\` and resends it every 15 time units until it gets \`("ok", key, total)\`, up to 12 tries, recording the reply in \`replies[key]\`.
+
+Write the node \`CounterServer(node_id)\`. Its **disk** fields, which survive a crash, are \`total\` (starting at 0) and \`done\`, a dictionary from key to the total it replied. Its **memory** field, lost in a crash, is \`working\`, the set of keys being processed.
+
+- On \`("inc", key, amount)\`: if the key is in \`done\`, reply \`("ok", key, done[key])\` at once. If it is in \`working\`, do nothing (the caller will retry). Otherwise add it to \`working\` and set a timer named \`("apply", key, amount, src)\` for 5 time units: processing takes time.
+- When that timer fires: add \`amount\` to \`total\`, store \`done[key] = total\`, remove the key from \`working\`, and reply \`("ok", key, total)\` to \`src\`.
+- \`on_recover()\`: the restarted process has lost its memory, so \`working\` becomes empty. The simulator has already discarded the timers set before the crash.
+
+The starter's \`run(seed, crashes)\` runs three callers with their requests on \`Sim(seed, delay=(1, 6), dup=0.2)\`, crashing and recovering the server at the given \`(down, up)\` times, and returns \`(total, done, replies)\`.
+--- starter
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class CounterServer(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.total = 0
+        self.done = {}
+        self.working = set()
+
+    def on_message(self, src, msg):
+        if msg[0] == "inc":
+            _, key, amount = msg
+            self.total += amount
+            self.send(src, ("ok", key, self.total))
+
+
+class Caller(Node):
+    def __init__(self, node_id, jobs):
+        super().__init__(node_id)
+        self.jobs = jobs
+        self.replies = {}
+        self.tries = {}
+
+    def start(self):
+        for key, amount in self.jobs:
+            self.tries[key] = 0
+            self.attempt(key, amount)
+
+    def attempt(self, key, amount):
+        if key in self.replies or self.tries[key] >= 12:
+            return
+        self.tries[key] += 1
+        self.send("srv", ("inc", key, amount))
+        self.set_timer(15, ("again", key, amount))
+
+    def on_timer(self, name):
+        self.attempt(name[1], name[2])
+
+    def on_message(self, src, msg):
+        if msg[0] == "ok" and msg[1] not in self.replies:
+            self.replies[msg[1]] = msg[2]
+
+
+def run(seed, crashes):
+    sim = Sim(seed, delay=(1, 6), dup=0.2)
+    sim.add(CounterServer("srv"))
+    callers = []
+    for c in range(3):
+        jobs = [("c%d-%d" % (c, k), c + k + 1) for k in range(4)]
+        callers.append(sim.add(Caller("c%d" % c, jobs)))
+    for i, caller in enumerate(callers):
+        sim.at(i, caller.start)
+    for down, up in crashes:
+        sim.at(down, lambda: sim.crash("srv"))
+        sim.at(up, lambda: sim.recover("srv"))
+    sim.run()
+    replies = {}
+    for caller in callers:
+        replies.update(caller.replies)
+    srv = sim.nodes["srv"]
+    return srv.total, srv.done, replies
+--- solution
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class CounterServer(Node):
+    def __init__(self, node_id):
+        super().__init__(node_id)
+        self.total = 0
+        self.done = {}
+        self.working = set()
+
+    def on_message(self, src, msg):
+        if msg[0] != "inc":
+            return
+        _, key, amount = msg
+        if key in self.done:
+            self.send(src, ("ok", key, self.done[key]))
+        elif key not in self.working:
+            self.working.add(key)
+            self.set_timer(5, ("apply", key, amount, src))
+
+    def on_timer(self, name):
+        _, key, amount, src = name
+        self.total += amount
+        self.done[key] = self.total
+        self.working.discard(key)
+        self.send(src, ("ok", key, self.total))
+
+    def on_recover(self):
+        self.working = set()
+
+
+class Caller(Node):
+    def __init__(self, node_id, jobs):
+        super().__init__(node_id)
+        self.jobs = jobs
+        self.replies = {}
+        self.tries = {}
+
+    def start(self):
+        for key, amount in self.jobs:
+            self.tries[key] = 0
+            self.attempt(key, amount)
+
+    def attempt(self, key, amount):
+        if key in self.replies or self.tries[key] >= 12:
+            return
+        self.tries[key] += 1
+        self.send("srv", ("inc", key, amount))
+        self.set_timer(15, ("again", key, amount))
+
+    def on_timer(self, name):
+        self.attempt(name[1], name[2])
+
+    def on_message(self, src, msg):
+        if msg[0] == "ok" and msg[1] not in self.replies:
+            self.replies[msg[1]] = msg[2]
+
+
+def run(seed, crashes):
+    sim = Sim(seed, delay=(1, 6), dup=0.2)
+    sim.add(CounterServer("srv"))
+    callers = []
+    for c in range(3):
+        jobs = [("c%d-%d" % (c, k), c + k + 1) for k in range(4)]
+        callers.append(sim.add(Caller("c%d" % c, jobs)))
+    for i, caller in enumerate(callers):
+        sim.at(i, caller.start)
+    for down, up in crashes:
+        sim.at(down, lambda: sim.crash("srv"))
+        sim.at(up, lambda: sim.recover("srv"))
+    sim.run()
+    replies = {}
+    for caller in callers:
+        replies.update(caller.replies)
+    srv = sim.nodes["srv"]
+    return srv.total, srv.done, replies
+--- check case | No crash: every increment applied once, with duplicated messages
+(lambda r: (r[0], r[1] == r[2]))(run(1, []))
+=> (42, True)
+--- check case | A crash while requests are being processed
+(lambda r: (r[0], len(r[1]), r[1] == r[2]))(run(2, [(6, 30)]))
+=> (42, 12, True)
+--- check case | Two crashes
+(lambda r: (r[0], r[1] == r[2]))(run(3, [(4, 20), (25, 60)]))
+=> (42, True)
+--- check test | Over 25 seeds and crash times, the total is always the sum of all increments
+all(run(s, [(d, d + 20)])[0] == sum(c + k + 1 for c in range(3) for k in range(4)) for s in range(25) for d in (3, 8, 15))
+--- check test | Replies are consistent with the stored results
+all((lambda r: all(r[1][k] == v for k, v in r[2].items()))(run(s, [(5, 25)])) for s in range(10))
+
++++ problem | When will phi cross the threshold?
+--- task
+A phi accrual detector has seen heartbeats arrive at the times in \`arrivals\` (sorted whole numbers). It keeps the gaps between consecutive arrivals, only the last \`window\` of them, and computes, Δ time units after the last arrival, φ = −log₁₀ P, where P = ½ · erfc((Δ − μ) / (σ · √2)), μ is the mean gap and σ the larger of the population standard deviation of the gaps and \`min_std\`. If P is exactly 0.0, φ is infinite.
+
+Write \`suspect_time(arrivals, window, min_std, threshold)\` that returns the smallest **whole** time t (at or after the last arrival) at which φ is greater than \`threshold\`, or \`None\` if there are fewer than two arrivals. It must be fast even when the answer is far away: find an upper bound by doubling the distance from the last arrival, then binary search.
+
+For example, with arrivals every 10 units (\`list(range(0, 100, 10))\`), \`window=20\`, \`min_std=2\` and threshold 3, the answer is 107: σ is floored to 2, and φ first passes 3 when Δ is 17.
+--- starter
+import math
+
+
+def suspect_time(arrivals, window, min_std, threshold):
+    if len(arrivals) < 2:
+        return None
+    return arrivals[-1] + 10
+--- solution
+import math
+
+
+def suspect_time(arrivals, window, min_std, threshold):
+    if len(arrivals) < 2:
+        return None
+    gaps = [b - a for a, b in zip(arrivals, arrivals[1:])][-window:]
+    mean = sum(gaps) / len(gaps)
+    std = max(math.sqrt(sum((g - mean) ** 2 for g in gaps) / len(gaps)), min_std)
+    last = arrivals[-1]
+
+    def over(t):
+        p = 0.5 * math.erfc((t - last - mean) / (std * math.sqrt(2)))
+        return p == 0.0 or -math.log10(p) > threshold
+
+    step = 1
+    while not over(last + step):
+        step *= 2
+    lo, hi = last, last + step
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if over(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+--- check case | The example from the task
+suspect_time(list(range(0, 100, 10)), 20, 2, 3)
+=> 107
+--- check case | A higher threshold waits longer
+[suspect_time(list(range(0, 100, 10)), 20, 2, th) for th in (1, 3, 8, 12)]
+=> [103, 107, 112, 115]
+--- check case | Irregular gaps widen the wait
+suspect_time([0, 5, 30, 33, 70, 72, 110], 10, 1, 8)
+=> 216
+--- check case | Only the last window gaps count
+(suspect_time([0, 100, 110, 120, 130], 3, 1, 5), suspect_time([0, 100, 110, 120, 130], 4, 1, 5))
+=> (145, 329)
+--- check case | Fewer than two arrivals
+(suspect_time([], 5, 1, 8), suspect_time([42], 5, 1, 8))
+=> (None, None)
+--- check case | A huge threshold, far away, found quickly
+suspect_time([0, 1000000, 2000000, 3000000], 10, 1000000, 300)
+=> 41047097
+
++++ problem | Retries inside a deadline
+--- task
+A client calls a backend that is down until time \`down_until\`. An attempt that **starts** before \`down_until\` fails; one that starts at or after it succeeds. Every attempt takes \`latency\` time units to return its result.
+
+The client makes its first attempt at time 0. After failed attempt number k (counting from 0), it waits \`rng.randint(0, min(cap, base * 2 ** k))\` (full jitter, with \`rng = random.Random(seed)\`), then tries again. Before starting any attempt, it checks the deadline: if the attempt could not return by \`deadline\` (start + latency > deadline), it gives up instead.
+
+Write \`call(deadline, latency, down_until, base, cap, seed)\` that returns \`(outcome, attempts, end)\`: outcome \`"ok"\` with the time the successful attempt returned, or \`"deadline"\` with the time the client gave up (the moment it decided not to start another attempt), and the number of attempts started.
+
+For example, \`call(1000, 20, 0, 10, 500, 1)\` is \`("ok", 1, 20)\`.
+--- starter
+import random
+
+
+def call(deadline, latency, down_until, base, cap, seed):
+    return "ok", 1, latency
+--- solution
+import random
+
+
+def call(deadline, latency, down_until, base, cap, seed):
+    rng = random.Random(seed)
+    t = 0
+    attempts = 0
+    k = 0
+    while True:
+        if t + latency > deadline:
+            return "deadline", attempts, t
+        attempts += 1
+        if t >= down_until:
+            return "ok", attempts, t + latency
+        t += latency
+        t += rng.randint(0, min(cap, base * 2 ** k))
+        k += 1
+--- check case | The example from the task
+call(1000, 20, 0, 10, 500, 1)
+=> ('ok', 1, 20)
+--- check case | A short outage
+call(1000, 20, 100, 10, 500, 2)
+=> ('ok', 5, 153)
+--- check case | An outage longer than the deadline
+call(500, 20, 10000, 10, 300, 3)
+=> ('deadline', 6, 527)
+--- check case | Not even one attempt fits
+call(10, 20, 0, 10, 100, 4)
+=> ('deadline', 0, 0)
+--- check case | An attempt that ends exactly at the deadline is allowed
+call(20, 20, 0, 10, 100, 5)
+=> ('ok', 1, 20)
+--- check case | A different seed, a different schedule
+[call(2000, 15, 600, 20, 400, s) for s in (6, 7, 8)]
+=> [('ok', 9, 717), ('ok', 9, 762), ('ok', 7, 673)]
+
++++ problem | What fencing does and does not promise
+--- task
+A lock server grants leases of \`duration\` time units; every grant gets the next fencing token (1, 2, 3, …), and the lease of token t runs from its grant time up to, but not including, grant time + \`duration\`. A storage accepts a write if its token is at least 1 and at least the highest token it has accepted; otherwise it rejects it.
+
+\`events\` is a list, in time order, of \`("grant", time, holder)\` and \`("write", time, holder, value)\`, where a write's time is when it **arrives** at the storage and it carries the token of its holder's most recent grant before it (0 if the holder was never granted). A holder granted twice uses its newer token.
+
+Write \`fence_log(events, duration)\` that returns \`(accepted, late)\`: the values of the accepted writes in arrival order, and the values of the accepted writes that arrived **after their token's lease had ended** (arrival time ≥ grant time + duration). Fencing orders holders; it does not stop a holder whose lease ran out while nobody newer has written.
+
+For example, \`fence_log([("grant", 0, "a"), ("write", 5, "a", "a1"), ("write", 60, "a", "a2")], 50)\` is \`(["a1", "a2"], ["a2"])\`.
+--- starter
+def fence_log(events, duration):
+    accepted = [e[3] for e in events if e[0] == "write"]
+    return accepted, []
+--- solution
+def fence_log(events, duration):
+    token = 0
+    held = {}
+    granted_at = {}
+    highest = 0
+    accepted = []
+    late = []
+    for e in events:
+        if e[0] == "grant":
+            token += 1
+            held[e[2]] = token
+            granted_at[token] = e[1]
+            continue
+        _, time, holder, value = e
+        t = held.get(holder, 0)
+        if t < 1 or t < highest:
+            continue
+        highest = t
+        accepted.append(value)
+        if time >= granted_at[t] + duration:
+            late.append(value)
+    return accepted, late
+--- check case | The example from the task
+fence_log([("grant", 0, "a"), ("write", 5, "a", "a1"), ("write", 60, "a", "a2")], 50)
+=> (['a1', 'a2'], ['a2'])
+--- check case | A newer holder's write fences the old one
+fence_log([("grant", 0, "a"), ("grant", 55, "b"), ("write", 58, "b", "b1"), ("write", 60, "a", "a1")], 50)
+=> (['b1'], [])
+--- check case | Before the new holder writes, the old holder's late write still lands
+fence_log([("grant", 0, "a"), ("grant", 55, "b"), ("write", 56, "a", "a1"), ("write", 58, "b", "b1"), ("write", 59, "a", "a2")], 50)
+=> (['a1', 'b1'], ['a1'])
+--- check case | A holder that was never granted, and a renewal
+fence_log([("write", 1, "x", "x1"), ("grant", 2, "a"), ("write", 3, "a", "a1"), ("grant", 40, "a"), ("write", 80, "a", "a2"), ("write", 95, "a", "a3")], 50)
+=> (['a1', 'a2', 'a3'], ['a3'])
+--- check case | No events
+fence_log([], 10)
+=> ([], [])
+
++++ problem | A lock, checked for linearizability
+--- task
+A lock service's history must be linearizable, lock by lock. The starter has the course's Wing–Gong checker \`linearize(history, step, init)\`. Operations are \`(client, op, (lock, owner), result, start, end)\`, with \`op\` either \`"acquire"\` or \`"release"\`; pending operations have \`result\` and \`end\` \`None\`.
+
+Write the model \`lock_step(state, op, arg)\`, where the state is the current owner or \`None\`: \`"acquire"\` by \`owner\` succeeds (result \`True\`, new owner) if the lock is free, and fails (result \`False\`, unchanged) otherwise; \`"release"\` by \`owner\` succeeds (\`True\`, lock becomes free) only if \`owner\` holds it, and fails (\`False\`, unchanged) otherwise.
+
+Then write \`bad_locks(history)\`: split the history by lock name, check each lock's sub-history (starting free), and return the sorted list of lock names whose sub-history is not linearizable.
+
+For example, two clients that both acquire lock \`"L"\` successfully with no release in between make \`"L"\` bad.
+--- starter
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def lock_step(state, op, arg):
+    return state, True
+
+
+def bad_locks(history):
+    return []
+--- solution
+def linearize(history, step, init):
+    n = len(history)
+    completed = 0
+    for i, h in enumerate(history):
+        if h[5] is not None:
+            completed |= 1 << i
+    failed = set()
+    order = []
+
+    def search(placed, state):
+        if placed & completed == completed:
+            return True
+        if (placed, state) in failed:
+            return False
+        limit = min(history[i][5] for i in range(n) if not placed >> i & 1 and history[i][5] is not None)
+        for i in range(n):
+            if placed >> i & 1:
+                continue
+            client, op, arg, result, start, end = history[i]
+            if start > limit:
+                continue
+            new_state, got = step(state, op, arg)
+            if end is not None and got != result:
+                continue
+            order.append(i)
+            if search(placed | 1 << i, new_state):
+                return True
+            order.pop()
+        failed.add((placed, state))
+        return False
+
+    if search(0, init):
+        return list(order)
+    return None
+
+
+def lock_step(state, op, arg):
+    lock, owner = arg
+    if op == "acquire":
+        if state is None:
+            return owner, True
+        return state, False
+    if state == owner:
+        return None, True
+    return state, False
+
+
+def bad_locks(history):
+    by_lock = {}
+    for h in history:
+        by_lock.setdefault(h[2][0], []).append(h)
+    return sorted(name for name, ops in by_lock.items() if linearize(ops, lock_step, None) is None)
+--- check case | Two successful acquires with no release
+bad_locks([("a", "acquire", ("L", "a"), True, 0, 2), ("b", "acquire", ("L", "b"), True, 3, 4)])
+=> ['L']
+--- check case | Concurrent acquires: one wins, one loses, in either order
+bad_locks([("a", "acquire", ("L", "a"), True, 0, 5), ("b", "acquire", ("L", "b"), False, 1, 4), ("c", "acquire", ("M", "c"), False, 0, 5), ("d", "acquire", ("M", "d"), True, 1, 4)])
+=> []
+--- check case | A release that timed out may explain a later acquire
+bad_locks([("a", "acquire", ("L", "a"), True, 0, 1), ("a", "release", ("L", "a"), None, 2, None), ("b", "acquire", ("L", "b"), True, 10, 11)])
+=> []
+--- check case | Releasing someone else's lock fails
+(lock_step("a", "release", ("L", "b")), lock_step("a", "release", ("L", "a")), lock_step(None, "acquire", ("L", "z")))
+=> (('a', False), (None, True), ('z', True))
+--- check case | Several locks, one broken
+bad_locks([("a", "acquire", ("x", "a"), True, 0, 1), ("a", "release", ("x", "a"), True, 2, 3), ("b", "acquire", ("x", "b"), True, 4, 5), ("c", "acquire", ("y", "c"), True, 0, 1), ("d", "release", ("y", "d"), True, 2, 3), ("e", "acquire", ("z", "e"), True, 0, 9)])
+=> ['y']
+--- check case | An empty history
+bad_locks([])
+=> []
+
++++ problem | Siblings from a quorum read
+--- task
+A leaderless store detects concurrent writes with version vectors. Each replica may hold several **siblings**: versions that are concurrent with each other. A version is \`(vector, value)\`, where the vector is a dictionary from replica name to counter (a missing name counts as 0). Vector u **dominates** vector v when u[k] ≥ v[k] for every name k and they are not equal.
+
+Write \`quorum_read(replies)\`, where \`replies\` is a list of \`(replica, versions)\` answers, and return \`(siblings, repair)\`:
+
+- \`siblings\`: every distinct version (same vector and value counted once) that is not dominated by any version in any answer, as a list of \`(sorted list of (name, counter) pairs with counters above 0, value)\`, sorted;
+- \`repair\`: the sorted list of replicas whose own set of versions is not exactly that set of siblings (they miss a sibling, or hold a dominated version), and so need read repair.
+
+For example, \`quorum_read([("r1", [({"a": 2}, "x")]), ("r2", [({"a": 1}, "w")])])\` is \`([([("a", 2)], "x")], ["r2"])\`.
+--- starter
+def quorum_read(replies):
+    out = []
+    for replica, versions in replies:
+        for vector, value in versions:
+            out.append((sorted(vector.items()), value))
+    return sorted(out), []
+--- solution
+def canon(vector):
+    return tuple(sorted((k, c) for k, c in vector.items() if c > 0))
+
+
+def dominates(u, v):
+    du, dv = dict(u), dict(v)
+    names = set(du) | set(dv)
+    return u != v and all(du.get(k, 0) >= dv.get(k, 0) for k in names)
+
+
+def quorum_read(replies):
+    every = set()
+    for replica, versions in replies:
+        for vector, value in versions:
+            every.add((canon(vector), value))
+    keep = {x for x in every if not any(dominates(y[0], x[0]) for y in every)}
+    siblings = sorted((list(vec), value) for vec, value in keep)
+    repair = sorted(replica for replica, versions in replies if {(canon(v), val) for v, val in versions} != keep)
+    return siblings, repair
+--- check case | The example from the task
+quorum_read([("r1", [({"a": 2}, "x")]), ("r2", [({"a": 1}, "w")])])
+=> ([([('a', 2)], 'x')], ['r2'])
+--- check case | Concurrent writes become siblings, and both replicas need repair
+quorum_read([("r1", [({"a": 1}, "x")]), ("r2", [({"b": 1}, "y")])])
+=> ([([('a', 1)], 'x'), ([('b', 1)], 'y')], ['r1', 'r2'])
+--- check case | A merged version dominates both siblings
+quorum_read([("r1", [({"a": 1}, "x"), ({"b": 1}, "y")]), ("r2", [({"a": 1, "b": 1}, "m")]), ("r3", [({"a": 1, "b": 1}, "m")])])
+=> ([([('a', 1), ('b', 1)], 'm')], ['r1'])
+--- check case | Zero counters and missing names are the same
+quorum_read([("r1", [({"a": 1, "b": 0}, "x")]), ("r2", [({"a": 1}, "x")])])
+=> ([([('a', 1)], 'x')], [])
+--- check case | Empty answers
+(quorum_read([]), quorum_read([("r1", []), ("r2", [({"a": 3}, "z")])]))
+=> (([], []), ([([('a', 3)], 'z')], ['r1']))
+
++++ problem | Who receives copies when a node joins
+--- task
+A ring with replication factor \`n\` stores each key on its preference list: the first \`n\` distinct nodes clockwise. The starter has the lab's \`h\` and \`Ring\`. When a node joins, some keys' preference lists change: the new node enters, and one old node drops out of each changed list.
+
+Write \`join_plan(keys, nodes, new_node, vnodes, n)\`: build a ring of \`nodes\` and one of \`nodes\` plus \`new_node\`, both with \`vnodes\` tokens per node (add nodes in list order, the new node last). Return \`(gained, dropped)\`: \`gained\` is the number of keys whose new preference list includes \`new_node\` (the keys it must receive a copy of), and \`dropped\` is a dictionary, with keys in sorted order, from each old node to the number of keys it dropped out of (it may delete its copy). Nodes that dropped nothing do not appear.
+
+For example, with 2,000 keys \`"key0"\` to \`"key1999"\`, nodes \`"n0"\` to \`"n4"\`, 40 virtual nodes and n = 3, the new node gains 840 keys, near the 3/6 of them that a perfectly even ring would give it.
+--- starter
+import bisect
+import hashlib
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+        for i in range(self.vnodes):
+            bisect.insort(self.tokens, (h(node + "#" + str(i)), node))
+
+    def preference(self, key, n):
+        i = bisect.bisect_left(self.tokens, (h(key), ""))
+        out = []
+        for k in range(len(self.tokens)):
+            node = self.tokens[(i + k) % len(self.tokens)][1]
+            if node not in out:
+                out.append(node)
+                if len(out) == n:
+                    break
+        return out
+
+
+def join_plan(keys, nodes, new_node, vnodes, n):
+    return 0, {}
+--- solution
+import bisect
+import hashlib
+
+
+def h(text):
+    return int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
+
+
+class Ring:
+    def __init__(self, vnodes):
+        self.vnodes = vnodes
+        self.tokens = []
+        self.nodes = []
+
+    def add(self, node):
+        self.nodes.append(node)
+        for i in range(self.vnodes):
+            bisect.insort(self.tokens, (h(node + "#" + str(i)), node))
+
+    def preference(self, key, n):
+        i = bisect.bisect_left(self.tokens, (h(key), ""))
+        out = []
+        for k in range(len(self.tokens)):
+            node = self.tokens[(i + k) % len(self.tokens)][1]
+            if node not in out:
+                out.append(node)
+                if len(out) == n:
+                    break
+        return out
+
+
+def join_plan(keys, nodes, new_node, vnodes, n):
+    before = Ring(vnodes)
+    after = Ring(vnodes)
+    for node in nodes:
+        before.add(node)
+        after.add(node)
+    after.add(new_node)
+    gained = 0
+    dropped = {}
+    for key in keys:
+        old = before.preference(key, n)
+        new = after.preference(key, n)
+        if new_node in new:
+            gained += 1
+        for node in old:
+            if node not in new:
+                dropped[node] = dropped.get(node, 0) + 1
+    return gained, dict(sorted(dropped.items()))
+--- check case | The example from the task
+join_plan(["key%d" % i for i in range(2000)], ["n%d" % i for i in range(5)], "n5", 40, 3)
+=> (840, {'n0': 167, 'n1': 165, 'n2': 181, 'n3': 268, 'n4': 59})
+--- check case | Without replication, the new node takes about 1/(N + 1)
+join_plan(["key%d" % i for i in range(2000)], ["n%d" % i for i in range(5)], "n5", 40, 1)
+=> (396, {'n0': 67, 'n1': 81, 'n2': 52, 'n3': 140, 'n4': 56})
+--- check test | Every gained copy matches exactly one dropped copy
+(lambda r: r[0] == sum(r[1].values()))(join_plan(["k%d" % i for i in range(3000)], ["a", "b", "c", "d"], "e", 25, 2))
+--- check case | With fewer nodes than n, everyone holds everything, and nobody drops
+join_plan(["x%d" % i for i in range(50)], ["a", "b"], "c", 10, 3)
+=> (50, {})
+
++++ problem | Choosing a Merkle tree depth
+--- task
+Two replicas compare Merkle trees, then send each other the contents of every differing bucket. The starter has the lab's \`h\`, \`bucket\`, \`build\` and \`diff\` (which returns the differing buckets and the number of hash pairs compared).
+
+Write \`sync_cost(a, b, depth, hash_cost, key_cost)\`: the cost of one comparison at that depth, \`compared · hash_cost + moved · key_cost\`, where \`moved\` is the number of keys both replicas send: for each differing bucket, the number of keys of \`a\` in it plus the number of keys of \`b\` in it. Then write \`best_depth(a, b, depths, hash_cost, key_cost)\` returning \`(depth, cost)\` for the cheapest depth in the list \`depths\` (ties: the smaller depth).
+
+Deeper trees compare more hashes but ship smaller buckets; the best depth depends on how many keys differ and on the two prices.
+--- starter
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    leaves = 2 ** depth
+    groups = [[] for _ in range(leaves)]
+    for key, pair in data.items():
+        groups[bucket(key, depth)].append((key, pair))
+    t = [None] * (2 * leaves)
+    for b in range(leaves):
+        t[leaves + b] = h(repr(sorted(groups[b])))
+    for i in range(leaves - 1, 0, -1):
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+    return t
+
+
+def diff(t1, t2, depth):
+    leaves = 2 ** depth
+    found = []
+    compared = 1
+    stack = [1] if t1[1] != t2[1] else []
+    while stack:
+        i = stack.pop()
+        if i >= leaves:
+            found.append(i - leaves)
+            continue
+        for child in (2 * i, 2 * i + 1):
+            compared += 1
+            if t1[child] != t2[child]:
+                stack.append(child)
+    return sorted(found), compared
+
+
+def sync_cost(a, b, depth, hash_cost, key_cost):
+    return 0
+
+
+def best_depth(a, b, depths, hash_cost, key_cost):
+    return depths[0], 0
+--- solution
+import hashlib
+
+
+def h(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def bucket(key, depth):
+    return int(h(key), 16) % 2 ** depth
+
+
+def build(data, depth):
+    leaves = 2 ** depth
+    groups = [[] for _ in range(leaves)]
+    for key, pair in data.items():
+        groups[bucket(key, depth)].append((key, pair))
+    t = [None] * (2 * leaves)
+    for b in range(leaves):
+        t[leaves + b] = h(repr(sorted(groups[b])))
+    for i in range(leaves - 1, 0, -1):
+        t[i] = h(t[2 * i] + t[2 * i + 1])
+    return t
+
+
+def diff(t1, t2, depth):
+    leaves = 2 ** depth
+    found = []
+    compared = 1
+    stack = [1] if t1[1] != t2[1] else []
+    while stack:
+        i = stack.pop()
+        if i >= leaves:
+            found.append(i - leaves)
+            continue
+        for child in (2 * i, 2 * i + 1):
+            compared += 1
+            if t1[child] != t2[child]:
+                stack.append(child)
+    return sorted(found), compared
+
+
+def sync_cost(a, b, depth, hash_cost, key_cost):
+    buckets, compared = diff(build(a, depth), build(b, depth), depth)
+    wanted = set(buckets)
+    moved = sum(1 for k in a if bucket(k, depth) in wanted) + sum(1 for k in b if bucket(k, depth) in wanted)
+    return compared * hash_cost + moved * key_cost
+
+
+def best_depth(a, b, depths, hash_cost, key_cost):
+    return min(((sync_cost(a, b, d, hash_cost, key_cost), d) for d in depths), key=lambda x: (x[0], x[1]))[::-1]
+--- check case | Equal replicas cost one hash comparison at any depth
+(lambda d: [sync_cost(d, dict(d), k, 3, 1) for k in (0, 4, 8)])({"k%d" % i: (1, i) for i in range(200)})
+=> [3, 3, 3]
+--- check case | One difference: costs at several depths
+(lambda a: [sync_cost(a, dict(a, k5=(2, 0)), k, 1, 1) for k in (0, 2, 4, 6, 8, 10)])({"k%d" % i: (1, i) for i in range(1000)})
+=> [2001, 515, 123, 53, 33, 29]
+--- check case | The best depth for one difference, with cheap hashes
+(lambda a: best_depth(a, dict(a, k5=(2, 0)), list(range(0, 13)), 1, 1))({"k%d" % i: (1, i) for i in range(1000)})
+=> (9, 29)
+--- check case | Many differences, expensive hashes: a shallower tree wins
+(lambda a: best_depth(a, dict(a, **{"k%d" % i: (2, 0) for i in range(0, 1000, 7)}), list(range(0, 13)), 20, 1))({"k%d" % i: (1, i) for i in range(1000)})
+=> (0, 2020)
+--- check case | Ties go to the smaller depth
+best_depth({}, {}, [3, 1, 2], 5, 1)
+=> (1, 5)
+
++++ problem | Hunting a lost-write bug
+--- task
+A replicated counter acknowledges increments before its backup has them, so a failover can lose acknowledged increments. The starter has the simulator and \`run_counter(seed, faults)\`, which runs a client sending 20 increments of 1 to a primary-backup pair, applies the failovers in \`faults\` (a list of times), and returns \`(acked, final)\`: how many increments the client saw acknowledged, and the counter's final value at the current primary. The invariant is **final ≥ acked**: an acknowledged increment is never lost. The starter also has \`faults_for(seed)\`, the seed's own failover times.
+
+Write:
+
+- \`violates(seed, faults)\`: whether that run breaks the invariant;
+- \`hunt(seeds)\`: the first seed in \`seeds\` whose own faults break it, or \`None\`;
+- \`shrink(seed)\`: shrink \`faults_for(seed)\` with chunks: start with \`chunk = max(1, len(faults) // 2)\`; while \`chunk >= 1\`, walk position i from 0: if the list without \`faults[i:i + chunk]\` still violates the invariant, keep it (stay at i), otherwise move i forward by \`chunk\`; when i reaches the end, halve the chunk. Return the final list.
+--- starter
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Primary(Node):
+    def __init__(self, node_id, peer):
+        super().__init__(node_id)
+        self.peer = peer
+        self.value = 0
+
+    def on_message(self, src, msg):
+        if msg[0] == "inc":
+            self.value += 1
+            self.send(self.peer, ("copy", self.value))
+            self.send(src, ("ok", msg[1]))
+        elif msg[0] == "copy":
+            self.value = max(self.value, msg[1])
+
+
+class Incrementer(Node):
+    def __init__(self, node_id, config):
+        super().__init__(node_id)
+        self.config = config
+        self.acked = set()
+        self.n = 0
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if self.n < 20:
+            self.n += 1
+            self.send(self.config["primary"], ("inc", self.n))
+            self.set_timer(12, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "ok":
+            self.acked.add(msg[1])
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 500)
+    return sorted(rng.randint(10, 250) for _ in range(5))
+
+
+def run_counter(seed, faults):
+    sim = Sim(seed, delay=(1, 9))
+    config = {"primary": "p"}
+    sim.add(Primary("p", "q"))
+    sim.add(Primary("q", "p"))
+    client = sim.add(Incrementer("c", config))
+    sim.at(0, client.start)
+
+    def failover():
+        config["primary"] = "q" if config["primary"] == "p" else "p"
+
+    for t in faults:
+        sim.at(t, failover)
+    sim.run()
+    return len(client.acked), sim.nodes[config["primary"]].value
+
+
+def violates(seed, faults):
+    return False
+
+
+def hunt(seeds):
+    return None
+
+
+def shrink(seed):
+    return faults_for(seed)
+--- solution
+import random
+import heapq
+import random
+
+
+class Node:
+    def __init__(self, node_id):
+        self.id = node_id
+        self.sim = None
+
+    def send(self, dst, msg):
+        self.sim.send(self.id, dst, msg)
+
+    def set_timer(self, after, name):
+        return self.sim.set_timer(self.id, after, name)
+
+    def on_message(self, src, msg):
+        pass
+
+    def on_timer(self, name):
+        pass
+
+    def on_recover(self):
+        pass
+
+
+class Sim:
+    def __init__(self, seed=0, delay=(1, 10), drop=0.0, dup=0.0):
+        self.rng = random.Random(seed)
+        self.delay = delay
+        self.drop = drop
+        self.dup = dup
+        self.now = 0
+        self.nodes = {}
+        self.queue = []
+        self.count = 0
+        self.blocked = set()
+        self.crashed = set()
+        self.life = {}
+        self.cancelled = set()
+        self.trace = []
+        self.stats = {"sent": 0, "delivered": 0, "dropped": 0, "duplicated": 0}
+
+    def add(self, node):
+        node.sim = self
+        self.nodes[node.id] = node
+        self.life[node.id] = 0
+        return node
+
+    def schedule(self, time, kind, data):
+        self.count += 1
+        heapq.heappush(self.queue, (time, self.count, kind, data))
+        return self.count
+
+    def at(self, time, fn):
+        return self.schedule(time, "call", fn)
+
+    def pick_delay(self, src, dst):
+        lo, hi = self.delay
+        return self.rng.randint(lo, hi)
+
+    def send(self, src, dst, msg):
+        self.stats["sent"] += 1
+        self.trace.append((self.now, "send", src, dst, msg))
+        if self.rng.random() < self.drop:
+            self.stats["dropped"] += 1
+            self.trace.append((self.now, "drop", src, dst, msg))
+            return
+        self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+        if self.rng.random() < self.dup:
+            self.stats["duplicated"] += 1
+            self.schedule(self.now + self.pick_delay(src, dst), "msg", (src, dst, msg))
+
+    def set_timer(self, node_id, after, name):
+        return self.schedule(self.now + after, "timer", (node_id, self.life[node_id], name))
+
+    def cancel(self, timer_id):
+        self.cancelled.add(timer_id)
+
+    def block(self, src, dst):
+        self.blocked.add((src, dst))
+
+    def partition(self, *groups):
+        for g in groups:
+            for h in groups:
+                if g is not h:
+                    for a in g:
+                        for b in h:
+                            self.block(a, b)
+
+    def heal(self):
+        self.blocked.clear()
+
+    def crash(self, node_id):
+        self.crashed.add(node_id)
+        self.life[node_id] += 1
+        self.trace.append((self.now, "crash", node_id))
+
+    def recover(self, node_id):
+        self.crashed.discard(node_id)
+        self.trace.append((self.now, "recover", node_id))
+        self.nodes[node_id].on_recover()
+
+    def run(self, until=None, max_events=1000000):
+        done = 0
+        while self.queue and done < max_events:
+            if until is not None and self.queue[0][0] > until:
+                break
+            time, n, kind, data = heapq.heappop(self.queue)
+            self.now = time
+            done += 1
+            if kind == "msg":
+                src, dst, msg = data
+                if dst in self.crashed or (src, dst) in self.blocked:
+                    self.stats["dropped"] += 1
+                    self.trace.append((time, "drop", src, dst, msg))
+                else:
+                    self.stats["delivered"] += 1
+                    self.trace.append((time, "deliver", src, dst, msg))
+                    self.nodes[dst].on_message(src, msg)
+            elif kind == "timer":
+                node_id, life, name = data
+                if n in self.cancelled:
+                    self.cancelled.discard(n)
+                elif node_id not in self.crashed and life == self.life[node_id]:
+                    self.nodes[node_id].on_timer(name)
+            else:
+                data()
+        if until is not None and self.now < until:
+            self.now = until
+        return done
+
+
+class Primary(Node):
+    def __init__(self, node_id, peer):
+        super().__init__(node_id)
+        self.peer = peer
+        self.value = 0
+
+    def on_message(self, src, msg):
+        if msg[0] == "inc":
+            self.value += 1
+            self.send(self.peer, ("copy", self.value))
+            self.send(src, ("ok", msg[1]))
+        elif msg[0] == "copy":
+            self.value = max(self.value, msg[1])
+
+
+class Incrementer(Node):
+    def __init__(self, node_id, config):
+        super().__init__(node_id)
+        self.config = config
+        self.acked = set()
+        self.n = 0
+
+    def start(self):
+        self.set_timer(1, "next")
+
+    def on_timer(self, name):
+        if self.n < 20:
+            self.n += 1
+            self.send(self.config["primary"], ("inc", self.n))
+            self.set_timer(12, "next")
+
+    def on_message(self, src, msg):
+        if msg[0] == "ok":
+            self.acked.add(msg[1])
+
+
+def faults_for(seed):
+    rng = random.Random(seed + 500)
+    return sorted(rng.randint(10, 250) for _ in range(5))
+
+
+def run_counter(seed, faults):
+    sim = Sim(seed, delay=(1, 9))
+    config = {"primary": "p"}
+    sim.add(Primary("p", "q"))
+    sim.add(Primary("q", "p"))
+    client = sim.add(Incrementer("c", config))
+    sim.at(0, client.start)
+
+    def failover():
+        config["primary"] = "q" if config["primary"] == "p" else "p"
+
+    for t in faults:
+        sim.at(t, failover)
+    sim.run()
+    return len(client.acked), sim.nodes[config["primary"]].value
+
+
+def violates(seed, faults):
+    acked, final = run_counter(seed, faults)
+    return final < acked
+
+
+def hunt(seeds):
+    for s in seeds:
+        if violates(s, faults_for(s)):
+            return s
+    return None
+
+
+def shrink(seed):
+    faults = faults_for(seed)
+    chunk = max(1, len(faults) // 2)
+    while chunk >= 1:
+        i = 0
+        while i < len(faults):
+            candidate = faults[:i] + faults[i + chunk:]
+            if violates(seed, candidate):
+                faults = candidate
+            else:
+                i += chunk
+        chunk //= 2
+    return faults
+--- check case | The first failing seed
+hunt(range(50))
+=> 12
+--- check case | No failovers, no violation
+[violates(s, []) for s in range(5)]
+=> [False, False, False, False, False]
+--- check case | Shrinking the first failing seed's faults
+(lambda s: (faults_for(s), shrink(s)))(hunt(range(50)))
+=> ([14, 46, 94, 122, 218], [94])
+--- check test | The shrunk list still violates and is 1-minimal
+(lambda s: (lambda f: violates(s, f) and all(not violates(s, f[:i] + f[i + 1:]) for i in range(len(f))))(shrink(s)))(hunt(range(50)))
+--- check case | hunt over seeds that never fail
+hunt([s for s in range(30) if not violates(s, faults_for(s))][:5])
+=> None
+
++++ problem | Choosing R and W from measured latencies
+--- task
+A leaderless store with \`n\` replicas waits for the r-th fastest of the n replies on a read and the w-th fastest on a write. \`read_samples\` and \`write_samples\` are lists of measured requests; each request is a list of \`n\` reply latencies, one per replica.
+
+Write \`p99(samples, k)\`: for each request take its k-th smallest latency; sort those values into a list \`lat\` of length m and return \`lat[ceil(0.99 * m) - 1]\`. Then write \`best_config(read_samples, write_samples, n)\`: among all pairs (r, w) with 1 ≤ r, w ≤ n and **r + w > n** (so reads see the latest successful write), return the pair whose worse tail, \`max(p99(read_samples, r), p99(write_samples, w))\`, is smallest, as \`(r, w, worse_tail)\`. Ties go to the smaller r, then the smaller w.
+
+For example, with \`n = 3\`, if every read and write takes \`[1, 2, 50]\`, the answer is \`(2, 2, 2)\`: waiting for the slowest replica costs 50, and R = W = 2 avoids it.
+--- starter
+import math
+
+
+def p99(samples, k):
+    return 0
+
+
+def best_config(read_samples, write_samples, n):
+    return n, n, 0
+--- solution
+import math
+
+
+def p99(samples, k):
+    lat = sorted(sorted(s)[k - 1] for s in samples)
+    return lat[math.ceil(0.99 * len(lat)) - 1]
+
+
+def best_config(read_samples, write_samples, n):
+    best = None
+    for r in range(1, n + 1):
+        for w in range(1, n + 1):
+            if r + w <= n:
+                continue
+            tail = max(p99(read_samples, r), p99(write_samples, w))
+            if best is None or (tail, r, w) < (best[2], best[0], best[1]):
+                best = (r, w, tail)
+    return best
+--- check case | The example from the task
+best_config([[1, 2, 50]] * 10, [[1, 2, 50]] * 10, 3)
+=> (2, 2, 2)
+--- check case | p99 of the k-th fastest reply
+(lambda s: [p99(s, k) for k in (1, 2, 3)])([[i % 7 + 1, 10 + i % 5, 100 + i] for i in range(200)])
+=> [7, 14, 297]
+--- check case | Slow writes and fast reads: read from all, write to one
+best_config([[2, 3, 4]] * 50, [[5, 80, 90]] * 50, 3)
+=> (3, 1, 5)
+--- check case | Five replicas with random latencies
+(lambda r: best_config([[r.randint(1, 40) for _ in range(5)] for _ in range(300)], [[r.randint(1, 60) for _ in range(5)] for _ in range(300)], 5))(__import__("random").Random(9))
+=> (5, 1, 40)
+--- check case | One replica: no choice
+best_config([[7]], [[9]], 1)
+=> (1, 1, 9)
+
++++ question | The draw order
+--- ask
+In the course's simulator, \`send\` draws a number for the drop decision, then a delay, then a number for duplication. A colleague "optimises" it to skip the drop draw when \`drop\` is 0. What breaks?
+--- choice
+Nothing: with drop = 0 the draw never mattered.
+--- choice correct
+Every seeded run with drop = 0 now uses different random numbers for its delays, so every recorded failing seed replays a different run.
+--- choice
+Messages start being lost.
+--- choice
+Duplicated messages arrive before the originals.
+--- why
+A seed fixes the sequence of random numbers, not which decision gets which number. Removing a draw shifts every later number onto a different decision, so all saved seeds now describe different runs.
+
++++ question | A detector's guarantee
+--- ask
+Why can no failure detector on an asynchronous network be both complete and accurate?
+--- choice
+Because heartbeats can be duplicated.
+--- choice correct
+Because a crashed node and a very slow one send exactly the same thing, nothing, so any rule that eventually suspects the crashed one must also sometimes suspect a slow live one.
+--- choice
+Because clocks drift.
+--- choice
+Because the detector itself can crash.
+--- why
+With no bound on delays, silence carries no information about the cause. Real systems live with eventual accuracy and design so that a false suspicion costs time, not correctness.
+
++++ question | Jitter's effect on the peak
+--- ask
+A thousand clients fail together and retry once, each waiting a random whole number of time units from 0 to 99 (full jitter). About how many retries arrive in the busiest time unit, compared with no jitter? Choose the best answer.
+--- choice
+About 1,000 in both cases.
+--- choice correct
+About ten or a little more with jitter, against all 1,000 at once without it.
+--- choice
+About 500 with jitter.
+--- choice
+Exactly one with jitter.
+--- why
+Spreading 1,000 retries uniformly over 100 slots gives about 10 per slot; random fluctuation makes the busiest slot somewhat higher, perhaps 15 to 20. Without jitter, every client retries in the same slot.
+
++++ question | The lease rule
+--- ask
+A holder's clock may run slow by up to 2%. The lock server grants a 30-second lease. The holder sent its request at 10:00:00 on its own clock and received the grant at 10:00:01. With no extra margin, until when on its own clock may it act?
+--- answer
+10:00:29.4
+10:00:29.40
+29.4
+--- why
+Count from the request, not the grant, and shrink by the drift bound: 30 · (1 − 0.02) = 29.4 seconds after 10:00:00. Counting from the reply would add a second the server may not have given.
+
++++ question | Spot the checker bug
+--- ask
+A linearizability checker computes, at each step, the earliest \`end\` over **all** unplaced operations, including pending ones whose \`end\` is \`None\` (treated as infinity). Is that a bug?
+--- choice
+Yes: pending operations must be ignored entirely.
+--- choice
+Yes: infinity makes every operation a candidate.
+--- choice correct
+No: treating a pending operation's end as infinity means it never blocks anyone, which is exactly the rule; skipping pending operations in the minimum gives the same result.
+--- choice
+No, but it makes the search exponential.
+--- why
+The candidate rule is "no unplaced completed operation ended before this one started". An operation that never ended cannot have ended before anything, so infinity is the right value for it, and the minimum is unchanged.
+
++++ question | Quorums and versions
+--- ask
+N = 3, R = 2, W = 2. Client A writes x with version 5 and the write is acknowledged. Client B then writes x with version 3 (its own counter) and is acknowledged. A later read with R = 2 returns:
+--- choice
+B's value, because B's write came later.
+--- choice correct
+A's value, because the read returns the highest version, and B's write has a lower one.
+--- choice
+Either, depending on which replicas answer.
+--- choice
+An error, because the versions conflict.
+--- why
+The quorum overlap guarantees the read sees the highest version written, not the latest in real time. Versions chosen by clients without reading first can make a later write lose: one of the cases where R + W > N is not linearizable.
+
++++ question | How many keys move
+--- ask
+A consistent-hashing ring with many virtual nodes holds 9 nodes and 900,000 keys. A tenth node joins. About how many keys move? Type a number.
+--- answer
+90000
+90,000
+about 90000
+--- why
+The new node takes about 1/(N + 1) = 1/10 of the keys, all of them from other nodes: 90,000. With \`hash % N\` it would be about 9/10, 810,000.
+
++++ question | The cost of one difference
+--- ask
+Two replicas differ in one key. Their Merkle trees have depth 12. How many pairs of hashes are compared before the differing bucket is found?
+--- choice
+12
+--- choice correct
+25
+--- choice
+4,096
+--- choice
+2
+--- why
+One comparison of the roots, then two children at each of the 12 levels on the path down to the bucket: 1 + 2 · 12 = 25.
+
++++ question | Gossip at scale
+--- ask
+Push gossip informs all nodes of a 1,000-node cluster in about 17 rounds. About how many rounds would a 1,000,000-node cluster take?
+--- choice
+About 17,000 rounds.
+--- choice
+About 170 rounds.
+--- choice correct
+About 34 rounds: the count grows like log₂ N + ln N, which roughly doubles when N is squared.
+--- choice
+About 17 rounds: the cluster size does not matter.
+--- why
+log₂ 1,000 + ln 1,000 ≈ 10 + 7 = 17, and log₂ 1,000,000 + ln 1,000,000 ≈ 20 + 14 = 34. A thousand times more nodes costs only twice the rounds.
+
++++ question | Recording a refusal
+--- ask
+In a fault-injection test, a server answers a write with "refused: not the leader" before touching any data. How should the history recorder treat that write?
+--- choice
+As pending, because the write might have happened.
+--- choice correct
+As failed, dropping it from the history: the server guarantees it had no effect.
+--- choice
+As completed with result "refused".
+--- choice
+Retry it and record the retry instead.
+--- why
+Only an operation whose outcome is unknown, such as a timeout, is pending. A definite refusal means the write did not happen, so it must not be allowed to explain later reads; keeping it as pending would hide real bugs.
+`;export{e as default};

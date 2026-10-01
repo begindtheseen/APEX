@@ -4,15 +4,34 @@
 
 ---
 
+## Alongside a degree
+
+This program runs beside a **Bachelor of Science in Software Engineering at DeVry University**, starting
+soon. The two do different jobs, and the plan depends on keeping them apart:
+
+- **The degree** is the credential, the structured academics, the professors and the career services. It
+  is what gets a résumé past a filter that asks for a degree, and "degree in progress" is what internship
+  postings ask for.
+- **This program** is the engineering laboratory around it: deliberate practice, the flagship and the
+  evidence a stranger can judge, and the depth in backend systems, cloud and AI infrastructure that a
+  degree does not reach.
+- **Where they overlap, use one to reinforce the other.** When a term's course covers discrete math, data
+  structures or operating systems, the matching Learn-to-code course here is its practice and labs, not a
+  second syllabus to finish first. Nothing here is a reason to delay school, and school is never a reason
+  to stop applying.
+- **School hours count.** The weekly ceiling below is total focused hours. Subtract coursework first, and let
+  M0's runway arithmetic, re-run every term, set the pace for the rest.
+
+
 ## The honest numbers
 
 | | hours |
 |---|---|
-| **Module hours** (the 41 modules, M0–M40) | **1,364** |
+| **Module hours** (the 41 modules, M0–M40) | **1,386** |
 | **Parallel track hours** (11 tracks, all mandatory) | **496** |
-| **Real total** | **1,860 focused hours** |
+| **Real total** | **1,882 focused hours** |
 
-**The parallel tracks are mandatory, so they are in the total.** Plan against 1,860 hours, not
+**The parallel tracks are mandatory, so they are in the total.** Plan against 1,882 hours, not
 against the module hours alone.
 
 That total matters more than anything else on this page, because M0’s whole claim to authority is
@@ -20,7 +39,7 @@ That total matters more than anything else on this page, because M0’s whole cl
 miscalculation you experience as a felt sense of perpetual lateness somewhere in month nine, and that
 feeling is what turns a bad stretch into quitting.
 
-### What 1,860 hours actually means
+### What 1,882 hours actually means
 
 - At **18 h/week** — the most the program assumes anyone can sustain for a long stretch — the full
   program is **~24 months** of focused hours.
@@ -48,7 +67,7 @@ your runway, the **scope** is cut to the Spine — the ceiling is never raised.
 
 ### The Compressed Spine — when the full program does not fit your runway
 
-Divide 1,860 by the weeks in your runway. If the answer is more than 18 hours a week, do not attempt
+Divide 1,882 by the weeks in your runway. If the answer is more than 18 hours a week, do not attempt
 the full program. The honest short path is fourteen modules — **M0, M1, M2, M3, M4, M5, M6, M7, M9,
 M10, M12, M27, M28, M30** — which is **552 module hours**, plus the **370 track hours** the Spine keeps,
 for **922 hours in all**. At 18 h/week that is **~12 months** — priced with the tracks it carries, not
@@ -185,7 +204,7 @@ to record an embedding model’s dimensionality because of a ceiling you meet in
 colleagues to ask.
 
 **3. Every module of 30 hours or more has named checkpoints, and five shorter ones carry them too** —
-**196 in total across 34 modules, averaging about 7 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
+**207 in total across 34 modules, averaging about 7 hours apart.** Each is a sub-goal with its own done-state and each is an explicit
 legitimate stopping point in a bad week. Forty hours into a module with no intermediate target is where
 people conclude they are lost rather than mid-module.
 
@@ -217,15 +236,15 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 | **M2** | Flagship v1 | 30 | M1 |
 | **M3** | The Runtime, Unframed | 67 | M1, M2 |
 | **M4** | The Machine Model: Ten Seams | 45 | M3 |
-| **M5** | The Postgres Underneath Supabase | 61 | M4 |
+| **M5** | The Postgres Underneath Supabase | 65 | M4 |
 | **M6** | The Model as a Function | 30 | M3, M2 |
 | **M7** | HTTP, Streaming, and the Wire | 45 | M3, M4, M5, M6 |
 | **M8** | The Durable Queue | 18 | M7, M5 |
-| **M9** | Tests That Fail for the Right Reason | 32 | M3, M7, M5, M6 |
-| **M10** | Debugging and Production Observability | 45 | M7, M5 |
+| **M9** | Tests That Fail for the Right Reason | 33 | M3, M7, M5, M6 |
+| **M10** | Debugging and Production Observability | 48 | M7, M5 |
 | **M11** | Ingestion: Real Documents Into a Corpus | 36 | M5, M8, M10 |
 | **M12** | Evals: The One Harness and the Stats Lab | 70 | M10, M6, M9 |
-| **M13** | System Design and the Design Doc | 15 | M8, M10 |
+| **M13** | System Design and the Design Doc | 16 | M8, M10 |
 | | **▲ HARD GATE — flagship live, two real users, ~100 failure traces, M12 green** | | |
 | **M14** | Reading and Changing Code You Did Not Write | 52 | M8, M9, M10 |
 | **M15** | Git, Review, and Code Other People Maintain | 46 | M14 |
@@ -234,9 +253,9 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 | **M18** | Retrieval You Actually Measured | 44 | M11, M12 |
 | **M19** | Agents and Tool Use | 49 | M7, M8, M6, M12 |
 | **M20** | Cost, Metering, and Unit Economics | 30 | M7, M8, M6, M12 |
-| **M21** | Security and the Trust Boundary | 34 | M3, M5, M10, M18, M19 |
+| **M21** | Security and the Trust Boundary | 37 | M3, M5, M10, M18, M19 |
 | **M22** | Frontend for AI Interfaces | 32 | M7, M18, M19, M20 |
-| **M23** | Deployment, CI/CD, and Operating It | 48 | M5, M9, M12 |
+| **M23** | Deployment, CI/CD, and Operating It | 58 | M5, M9, M12 |
 | **M24** | Python On-Ramp · *trigger* | 15 | M9 |
 | **M25** | Python as a Second Production Language · *trigger* | 35 | M24, M12 |
 | **M26** | Third-Party Integration as a Consumer | 23 | M7, M21, M22 |
@@ -257,7 +276,7 @@ event on your plan rather than by finishing the row above it; its `dependsOn` st
 | **M40** | The Frontier Capstone: Build Something New | 30 | M34, M35, M36, M37, M38, M39 |
 
 
-**The critical path is 603 hours**: `M0 → M1 → M2 → M3 → M4 → M5 → M7 → M10 → M12 → M24 → M33 → M34 → M35 → M37 → M40`.
+**The critical path is 610 hours**: `M0 → M1 → M2 → M3 → M4 → M5 → M7 → M10 → M12 → M24 → M33 → M34 → M35 → M37 → M40`.
 
 Since Layer 9 arrived, the longest chain runs through the Frontier, and through Python on the way: M33 builds a
 model in Python, so it waits on M24 whatever M24's trigger says. The old chain through M14, M15 and M16 (559 hours)
@@ -352,7 +371,7 @@ the hours of the program by the weeks of your runway. If the answer is over 18 f
 Compressed Spine and say so in writing; if it is over 18 for the Spine too, the plan is Spine plus a
 contract role.
 
-**2. The hour budget** — **1,364** module hours + **496** track hours = **1,860**, with the line-item
+**2. The hour budget** — **1,386** module hours + **496** track hours = **1,882**, with the line-item
 track table below and your date arithmetic shown. **Add the hours up yourself rather than copying the
 total across** — a budget you have not computed is one you cannot defend, and a wrong total here is the
 exact class of error this module exists to prevent.
@@ -490,7 +509,7 @@ neither on day one. That is a real prerequisite; put the month it takes into the
 
 **Why this exists.** The promise on the cover is first principles, and the event loop is not a first
 principle for a reader who has never opened a terminal. Going from "write a plan" straight to "predict the
-output order of six mixed sync/setTimeout/promise lines" walls that reader at hour 12 of a 1,860-hour
+output order of six mixed sync/setTimeout/promise lines" walls that reader at hour 12 of a 1,882-hour
 program, at the module this document itself calls "the steepest part of the curve." That is not a steep
 curve; it is a missing first step, and every gate after it would inherit the gap — the blind queue asks for
 twenty commits, M3’s and M4’s gates turn on an unseen bug your reviewer plants in a single file, M25’s gate
@@ -624,7 +643,7 @@ and says nothing about a missing tier or a missing role. So:
   exploitation and OAuth are all self-contained. M11, M18 and M22 will not, for the reason above.
 - **What it costs is Track 3.** Every module that runs on the second app is a module whose artifact does
   not build on the one before it, which is the dependency spiral the program runs on. Those hours are not
-  in the 1,860 — they are the price of a month-two decision you are paying in month ten, and the honest
+  in the 1,882 — they are the price of a month-two decision you are paying in month ten, and the honest
   place to record that is `INCIDENTS.md`: what you believed, what happened, what you changed.
 
 **The artifact** `EVIDENCE` — the smallest honest version of it. A plain HTML page with one text box. A
@@ -661,7 +680,7 @@ own devices is the gate for a reason.
 
 ---
 
-# LAYER 1 — The Machine (248h)
+# LAYER 1 — The Machine (252h)
 
 *How code actually runs. The language, the computer under it, the database (where the app keeps its data), the AI model (the program you send text to and get text back from), and the connection between them. The literal answer to: I need to understand code.*
 
@@ -753,7 +772,7 @@ discards the carried partial-character state that is the entire point. · "I’m
 serverless instances each hold a pool of M. · Believing a transaction prevents the race. Atomicity is not
 isolation.
 
-## M5 — The Postgres Underneath Supabase (61h) · `dependsOn: M4`
+## M5 — The Postgres Underneath Supabase (65h) · `dependsOn: M4`
 
 Supabase fluency is not Postgres fluency.
 
@@ -774,7 +793,7 @@ twelve, plus the wall-clock table that shows the slow-to-fast loop closing · �
 correct-but-slow against correct-and-fast, with the plan diff that explains it · ⑦ asymptotic complexity
 written against your own measurements, not against a textbook curve · ⑧ the legacy-key rotation performed
 and documented as a procedure someone else could follow · ⑨ the flagship on hosted Supabase: sign-in, one
-user-scoped table, one policy, a pooled connection.
+user-scoped table, one policy, a pooled connection · ⑩ a backup restored to a point in time and timed against the recovery-point goal you wrote down first · ⑪ a read replica’s lag measured under the load generator, one stale read reproduced, and the route that avoids it · ⑫ a lost update reproduced under concurrent load, then fixed with the right lock or isolation level, and the reason stated.
 
 **Core concepts:** Relational modeling — constraints as the thing that actually enforces invariants.
 SQL without an ORM: joins, aggregates, CTEs, window functions. Indexes and
@@ -791,7 +810,7 @@ REPEATABLE READ. Caught, not silently fixed — the transaction aborts with a se
 without it you have converted a silent wrong answer into a user-visible 500 and will conclude that
 REPEATABLE READ does not work. **MVCC and dead-tuple bloat:** bulk update, watch the query slow
 with no code change, `VACUUM`, watch it recover. The local Supabase stack runs in the containers you
-checked could install in M1.
+checked could install in M1. **Operating Postgres: backups and point-in-time restore, replicas and their lag, isolation anomalies under concurrent load.**
 
 **Asymptotic complexity, taught here because here it is measurable.** State the complexity of the loop
 or query you just wrote, predict where it breaks, measure against the 5,000,000-row dataset, compare prediction
@@ -991,7 +1010,7 @@ library, monitor and health check. · A client-generated idempotency key per *re
 *logical operation*. · Doing webhook work before responding, so the provider times out and retries,
 multiplying the work.
 
-# LAYER 2 — The Craft I (95h)
+# LAYER 2 — The Craft I (99h)
 
 *The habits that keep a running app running: work that survives a crash, tests that catch real mistakes, and seeing inside your app when it misbehaves.*
 
@@ -1029,17 +1048,17 @@ exactly once even where a job ran twice — which is what at-least-once delivery
 operational question unanswerable. · Designing the queue and forgetting the read path. Enqueueing is the
 easy half. · Assuming a cached step result makes a retry safe. `book_flight()` twice is two bookings.
 
-## M9 — Tests That Fail for the Right Reason (32h) · `dependsOn: M3, M7, M5, M6`
+## M9 — Tests That Fail for the Right Reason (33h) · `dependsOn: M3, M7, M5, M6`
 
 **Core concepts:** The pyramid and what each level is genuinely for. A unit test that fails for the right
 reason. Test doubles and when mocking makes a test worthless. Integration tests against real Postgres
 including RLS. CI as a gate, not a place tests run. The flakiness budget. **Mutation testing as the
-instrument coverage is not.** **The seam between deterministic shell and probabilistic core.**
+instrument coverage is not.** **The seam between deterministic shell and probabilistic core.** **Property-based tests and fuzzing for the code that parses and validates input.**
 
 **Checkpoints** ① one unit test that fails for the right reason, then passes · ② the four test doubles,
 each used once where it belongs · ③ integration tests against real Postgres, including two RLS policies ·
 ④ the record-replay model client, with a split-frame stream recorded · ⑤ green required check in CI, plus
-a mutation score at or above 70% on the module you scored.
+a mutation score at or above 70% on the module you scored · ⑥ one property-based test and one fuzz run against a parser or validator, with the bug each found or the invariant it now guards.
 
 **Artifact** `LAB` — one shipped repo from zero tests to a green required check: about fifteen unit, five
 integration against real local Postgres including two RLS policies, CI as a merge gate, a written
@@ -1077,7 +1096,7 @@ your mental model of Supabase. · Seeding *and* asserting with the service key, 
 the test proves nothing about what a real user sees. · `retries: 2` or `sleep(500)` (pause half a second), which hides
 the bug and triples the suite time.
 
-## M10 — Debugging and Production Observability (45h) · `dependsOn: M7, M5` · **owns: observability**
+## M10 — Debugging and Production Observability (48h) · `dependsOn: M7, M5` · **owns: observability**
 
 The highest-leverage module here. Finding a bug you did not write, in a system you cannot reproduce.
 
@@ -1091,13 +1110,13 @@ game day your systems reviewer (Track 5) is already in the room for: acknowledge
 severity call plus *what I know / what I am doing / when I will update next*; update on that interval
 whether or not there is news; escalate at a trip-wire written down *before* the window opens, **not during it**. 24h
 detection is a *solo* baseline (the starting number) — a real rotation measures acknowledgment in minutes. Runbooks and the
-blameless postmortem.
+blameless postmortem. **Profiling: CPU and heap profiles, benchmarks that report variance — find the bottleneck before fixing it.**
 
 **Checkpoints** ① read one real stack trace to its actual cause · ② a bug found with a conditional
 breakpoint you could not have printed your way to · ③ structured logs with correlation IDs surviving one
 async hop · ④ OTel spans around the model call, queryable · ⑤ the silent-failure detector catching a
 wrong-but-200 output · ⑥ the runbook executed by another person during the game day · ⑦ the written
-sampling and retention decision, and the postmortem of the outage you caused.
+sampling and retention decision, and the postmortem of the outage you caused · ⑧ a CPU profile of the slowest endpoint read as a flame graph, the bottleneck named before the fix and measured after, with p50 and p99 over repeated runs · ⑨ a memory leak found with a heap profile and fixed, with the growth curve before and after.
 
 **Artifact** `EVIDENCE` — the flagship instrumented end to end, upgrading the day-one call log from M2:
 structured logs with correlation IDs and redaction, OTel spans including the model call (**GenAI
@@ -1125,7 +1144,7 @@ uncertainty, so it fills a required field whether or not the input supports it. 
 producing noise that gets muted — after which the system is unmonitored while looking monitored.
 · Postmortems that stop at the code fix without asking why it took 40 minutes to notice.
 
-# LAYER 3 — The AI Production Core (121h)
+# LAYER 3 — The AI Production Core (122h)
 
 *What makes you an AI engineer rather than a web developer: real documents in, a way to measure whether the AI is right, and a design you defended in writing. Opens once you can see inside your app.*
 
@@ -1311,7 +1330,7 @@ content.
 
 ---
 
-## M13 — System Design and the Design Doc (15h) · `dependsOn: M8, M10`
+## M13 — System Design and the Design Doc (16h) · `dependsOn: M8, M10`
 
 The queue half lives in M8. This is the interview-shaped half, correctly late.
 
@@ -1320,11 +1339,11 @@ else. Statelessness and why a shared counter is the hard part. The serverless ex
 the invalidation for each. Graceful degradation, backpressure, what happens when the model is down.
 **The forward-looking design doc** — problem, constraints, options, risks, rollout — the mid-level
 artifact at most companies, and the highest-leverage move available to an engineer with no credential,
-because it is public, durable, and evaluated purely on the quality of thinking.
+because it is public, durable, and evaluated purely on the quality of thinking. **APIs that evolve: versioned schemas, deprecation paths, contract tests.**
 
 **Checkpoints** ① the one-page design doc written, with the two options you rejected and why · ② a real
 reader’s pushback on it, and the version that changed because of it · ③ the first timed design rep done
-and debriefed, on a system outside your stack.
+and debriefed, on a system outside your stack · ④ an API change designed to evolve: a versioned, schema-validated contract, a deprecation path, and a contract test that fails if a field is removed.
 
 **Artifact** `EVIDENCE` — a one-page design doc with two rejected options for a bounded AI system,
 **reviewed and pushed back on by a real reader before any code exists.** Keep both the proposed and the
@@ -1591,7 +1610,7 @@ evidence.
 
 ---
 
-# LAYER 5 — The AI Layer, Completed (157h)
+# LAYER 5 — The AI Layer, Completed (160h)
 
 *Search you measured, AI that takes actions on its own, what each request (one message a user sends your app) costs, and keeping the whole thing safe.*
 
@@ -1790,14 +1809,14 @@ needs three retries is not cheap. · The alert without the breaker; an alert at 
 already spent. · Running the budget check *after* the API call. · Cost per feature but not per user, which
 hides the distribution entirely when AI cost per user is extremely skewed.
 
-## M21 — Security and the Trust Boundary (34h) · `dependsOn: M3, M5, M10, M18, M19`
+## M21 — Security and the Trust Boundary (37h) · `dependsOn: M3, M5, M10, M18, M19`
 
 **Core concepts:** Trust boundaries and secrets — what runs where. Authentication vs authorization;
 **broken access control as the bug that actually ships.** RLS as a design skill. Injection, XSS, CSRF,
 SSRF **at working depth, by exploiting them yourself.** Dependency and supply-chain risk. **Prompt
 injection — direct and indirect — contained rather than fixed.** The lethal trifecta (**Simon Willison’s
 framing, and say so when you use it**): private data + untrusted content + exfiltration. Tool permission design and excessive agency. **Treating model
-output as untrusted input.** PII, log leakage, deletion, and the constraints you do not control.
+output as untrusted input.** PII, log leakage, deletion, and the constraints you do not control. **Threat modeling; supply-chain and container security; least-privilege IAM.**
 
 **The constraints you do not control.** The constraints above are ones you author. On the job you are
 handed the others: **approved-subprocessor lists** (adding a vendor is a legal action, not a technical
@@ -1813,7 +1832,7 @@ file access through a guessed or replayed URL, landed and fixed **on the vulnera
 tenants — never against production, where the rows belong to real people** · ⑤ one exploit run through the
 M19 fetch tool · ⑥ indirect prompt injection landed through
 retrieved content · ⑦ tool permissions with a written blast-radius analysis · ⑧ the bidirectional
-data-flow doc, with the delete path implemented and tested.
+data-flow doc, with the delete path implemented and tested · ⑨ a threat model of the flagship: assets, trust boundaries, the top five threats ranked, and what changed because of it · ⑩ supply chain and containers: dependencies pinned and scanned, the image scanned and run as non-root on a read-only filesystem, one finding fixed.
 
 **Artifact** `EVIDENCE` — **every exploit in this module runs against your own deliberately vulnerable
 copy of the flagship, on your own machine or your own account, and against nothing else. Running any of it
@@ -1858,7 +1877,7 @@ confirmation step whose summary the model itself generates — an injected model
 
 ---
 
-# LAYER 6 — Product and Platform (153h)
+# LAYER 6 — Product and Platform (163h)
 
 *The screens people use, keeping the app live, connecting other services, and Python, a second programming language.*
 
@@ -1911,21 +1930,23 @@ server keeps generating and charging. · `aria-live="polite"` on the streaming c
 readers re-read the entire growing message. · **An approval button that appears after the tool already
 ran.** That is theater, not a gate.
 
-## M23 — Deployment, CI/CD, and Operating It (48h) · `dependsOn: M5, M9, M12`
+## M23 — Deployment, CI/CD, and Operating It (58h) · `dependsOn: M5, M9, M12`
 
 **Core concepts:** Environments and configuration as a first-class thing. Secrets across environments;
 short-lived credentials over stored keys. A CI pipeline you own — what gates a merge and what it costs.
 **Deploy is not release** — preview deploys, promote, instant rollback, feature flags. **Expand/contract
 migrations in the pipeline** (here rather than in M5, because here there is a pipeline to run them through).
-Health checks, SLOs, alerting that pages a human only when it should. **Exactly enough Docker and Linux,
-and not one hour more** (Appendix A says what enough is). **Consumer contracts** — compatibility for
+Health checks, SLOs, alerting that pages a human only when it should. **Exactly enough Docker and Linux** (Appendix A says what enough is), **and enough Kubernetes to run,
+scale and debug one workload — not certification depth.** A real public-cloud slice, built from code and torn
+down the same day: private networking, managed services, secrets, DNS and TLS, monitoring and a budget alert,
+each behind least-privilege IAM. **Consumer contracts** — compatibility for
 callers you cannot redeploy.
 
 **Checkpoints** ① environments and config: a missing var fails the deploy, not a 2am route · ② CI green
 as a required check, with the eval tier wired in · ③ a feature-flagged release you can turn off without a
 deploy · ④ a rollback rehearsed under a timer, measured from the dashboard · ⑤ expand/contract run through
 the pipeline under live load, zero failed requests · ⑥ one dockerized cloud deploy with an IAM role you
-wrote, torn down same day.
+wrote, torn down same day · ⑦ the flagship’s worker on a local Kubernetes cluster: Deployment, Service, ConfigMap and Secret, separate readiness and liveness probes, requests and limits, an autoscaler scaling under the load generator, and one broken rollout debugged from events and logs · ⑧ a public-cloud slice built from code and torn down the same day: a private network with subnets and firewall rules, managed Postgres, object storage, a queue, a secrets manager, DNS with TLS, a dashboard and a budget alert, each with least-privilege IAM you can explain.
 
 **Artifact** `EVIDENCE` — the flagship’s full pipeline: OIDC secrets with no stored keys (**the model
 API key is the one documented exception, scoped and spend-capped; a second exception is added if M26 is
@@ -1933,7 +1954,10 @@ already built**); required checks **including M12’s eval gate**; a feature-fla
 under a timer **measured from the dashboard, not a stopwatch**; an expand/contract migration run through
 the pipeline **while M5’s load generator is firing**, with zero failed requests; one burn-rate alert that
 fired for a real reason. Plus one dockerized cloud deploy **with an IAM role you wrote and can explain**,
-torn down the same day.
+torn down the same day; the flagship's worker running on a local Kubernetes cluster with probes, limits and an
+autoscaler, one broken rollout debugged from its events; and a public-cloud slice built from code — private
+network, managed Postgres, object storage, a queue, secrets, DNS with TLS, a dashboard and a budget alert — torn
+down the same day.
 
 > **Roll back when you suspect your change caused the problem.** Waiting for proof is how a five-minute
 > rollback becomes an hour of debugging in production.
@@ -1949,8 +1973,8 @@ migration dropped requests — expand/contract was not actually expand/contract.
 does nothing about the schema change or the rows the bad version already wrote. · Migrations at application
 boot, so every instance races. · Assuming the public-bundle env prefix means "for the frontend" rather than
 "baked into the public bundle, forever, at build time." · Production secrets in preview environments, where
-any PR can exfiltrate them. · One `/health` for both liveness and readiness. · The Kubernetes rabbit hole
-after Docker clicks. · Leaving the practice cloud stack running.
+any PR can exfiltrate them. · One `/health` for both liveness and readiness. · Kubernetes to certification
+depth: one workload run, scaled and debugged is the bar. · Leaving the practice cloud stack running.
 
 ## M24 — Python On-Ramp (15h) · `dependsOn: M9` · *trigger: moves earlier, right after M12 and the hard gate, if eight or more of the twenty postings you read in M0 ask for Python; M25 follows it*
 
@@ -2107,7 +2131,7 @@ logged in the funnel table when it happens. **Tick this module on Gate A;** Gate
 replying and never holds up the ladder. **PASS:** state your floor out loud without hedging, recorded.
 **And** deliver a 30-second background answer with no apology and no hedge, plus a one-line non-defensive
 answer to each of the six predictable follow-ups: not currently employed? what title? how big was the
-team? who was the client? why no degree? what have you been doing since? **Two of those six have no
+team? who was the client? where are you in your degree? what have you been doing since? **Two of those six have no
 answer inside a framing that hides how you spent the year, so do not use one.** Say what is true:
 full-time self-directed work on an app you built and operate, with a working engineer reviewing your code
 and an eval harness gating its CI, no client and no team. **If they ask how you learned, name the program
@@ -3711,9 +3735,9 @@ the hours from the numbered cut order at the top.
 
 # Appendix A — What "enough" means
 
-"Exactly enough Docker and Linux, and not one hour more" (M23) is not a target you can act on. Given an
-undefined floor you will either over-invest — M23’s own Kubernetes rabbit hole is exactly that — or
-under-invest and pass yourself. So here is the floor, enumerated:
+"Exactly enough Docker and Linux, and enough Kubernetes for one workload" (M23) is not a target you can act
+on. Given an undefined floor you will either over-invest — Kubernetes to certification depth is exactly that —
+or under-invest and pass yourself. So here is the floor, enumerated:
 
 **Linux — the finishable list.** Processes and signals · exit codes · stdout/stderr and pipes · file
 permissions · `PATH` and environment inheritance · SSH keys · and a named short list of commands you
@@ -3722,6 +3746,11 @@ reach for without looking up. That is a checklist. You can finish it and stop.
 **Docker — only this.** Write a Dockerfile for your own app · build it · run it with env vars and a
 mounted volume · read the layer cache · `exec` into a running container. Nothing else until a job
 requires it.
+
+**Kubernetes — only this.** Run one workload from a Deployment and a Service · pass it config and a secret
+· give it separate readiness and liveness probes · set requests and limits · scale it with an autoscaler under
+load · debug a broken rollout from `describe`, events and logs. Operators, service meshes and the exam come
+when a job requires them.
 
 **"A contribution that counts" (Track 2).** Changes behavior, not docs or dependency bumps · 20–200
 lines · includes a test · survived a round of review by the maintainer.
@@ -4319,7 +4348,8 @@ publish audited outcomes, and a placement rate nobody audited is a marketing num
 
 **The second thing this cannot buy is a credential that survives an ATS filter**, and no hour count
 changes that. Which is why M0 filtering postings on degree requirements *before* you spend an hour is
-the correct move, not a consolation.
+the correct move, not a consolation. The degree under way at DeVry is what changes the answer: "degree in
+progress" clears the internship filter now, and the finished degree clears the rest.
 
 So the honest ceiling: **this can make you a candidate who wins almost any interview you actually get,
 and it can instrument your funnel well enough that you find out fast which part is failing. It cannot

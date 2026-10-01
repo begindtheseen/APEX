@@ -25,7 +25,7 @@
    ========================================================================== */
 import { PLACEMENT_SKILLS } from '@/curriculum/placement'
 import { testedOutKeys } from '@/engine/placement'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconAlert,
   IconArrowRight,
@@ -88,6 +88,10 @@ import { diagnoseModule } from '@/engine/diagnose'
 import { getItem, type LearnerState } from '@/engine/state'
 import { currentR } from '@/engine/fsrs'
 import { ReadAloud } from '@/components/ReadAloud'
+import { ExplainPanel } from '@/components/ExplainPanel'
+import { SelectionAsk } from '@/components/SelectionAsk'
+import type { ExplainSeed, LibraryLesson } from '@/lib/explain'
+import { onExplainRequested } from '@/lib/ctxBus'
 import { ReadingProgress } from '@/components/ReadingProgress'
 import { useReadingPlace } from '@/hooks/useReadingPlace'
 import { useLearner } from '@/hooks/useLearner'
@@ -1199,9 +1203,19 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
   const [body, setBody] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const renderCode = useLessonCode(`lesson:${module.id}:${lesson.id}`, body)
+  const readerRef = useRef<HTMLDivElement | null>(null)
+  const [asking, setAsking] = useState<ExplainSeed | null>(null)
+  const here = useMemo<LibraryLesson | null>(
+    () => (body === null ? null : { moduleId: module.id, moduleTitle: module.title, lessonId: lesson.id, title: lesson.title, body }),
+    [module.id, module.title, lesson.id, lesson.title, body],
+  )
+  const closeAsk = useCallback(() => setAsking(null), [])
+  // A note's "explain it another way" arrives here.
+  useEffect(() => (here ? onExplainRequested(setAsking) : undefined), [here])
 
   useEffect(() => {
     let alive = true
+    setAsking(null)
     setBody(null)
     setError(null)
     loadLessonBody(lesson)
@@ -1249,7 +1263,7 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
     <div className="page page--padtop reader">
       <ReadingProgress active={body !== null} />
       <div className="reader__aloud">
-        <ReadAloud markdown={body} />
+        <ReadAloud markdown={body} title={lesson.title} />
       </div>
       <div className="reader__top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
         <button
@@ -1282,7 +1296,7 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
       </div>
 
       <Card index={0}>
-        <div className="sect reader__body">
+        <div className="sect reader__body" ref={readerRef}>
           {error ? (
             <Empty
               icon={<IconWarn size={28} />}
@@ -1303,6 +1317,9 @@ function LessonReader({ module, lesson }: { module: Module; lesson: LessonMeta }
           )}
         </div>
       </Card>
+
+      {here ? <SelectionAsk container={readerRef} onAsk={setAsking} /> : null}
+      {asking && here ? <ExplainPanel seed={asking} here={here} onClose={closeAsk} /> : null}
 
       {body !== null && practiceLangs(module).length ? <TryItHere langs={practiceLangs(module)} saveKey={`try:${module.id}`} /> : null}
 

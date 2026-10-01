@@ -2,24 +2,6 @@
  "v": 1,
  "voice": "af_heart",
  "lessons": {
-  "1tuo419v421011r7": {
-   "mp3": "1tuo419v421011r7.mp3",
-   "json": "1tuo419v421011r7.json",
-   "duration": 147.07,
-   "lesson": "M27/01-the-module.md"
-  },
-  "jyrs4i1mfzpce1fx": {
-   "mp3": "jyrs4i1mfzpce1fx.mp3",
-   "json": "jyrs4i1mfzpce1fx.json",
-   "duration": 117.705,
-   "lesson": "M31/01-the-module.md"
-  },
-  "1rhco50bnnk001iv": {
-   "mp3": "1rhco50bnnk001iv.mp3",
-   "json": "1rhco50bnnk001iv.json",
-   "duration": 130.13,
-   "lesson": "M32/01-the-module.md"
-  },
   "ctc54g17c24g17t": {
    "mp3": "ctc54g17c24g17t.mp3",
    "json": "ctc54g17c24g17t.json",
@@ -32,71 +14,17 @@
    "duration": 71.705,
    "lesson": "M1/02-the-gate.md"
   },
-  "9me2901e71ljw1sa": {
-   "mp3": "9me2901e71ljw1sa.mp3",
-   "json": "9me2901e71ljw1sa.json",
-   "duration": 152.02,
-   "lesson": "M10/01-the-module.md"
-  },
-  "4ih0e317knvjp107": {
-   "mp3": "4ih0e317knvjp107.mp3",
-   "json": "4ih0e317knvjp107.json",
-   "duration": 81.09,
-   "lesson": "M10/02-the-gate.md"
-  },
-  "bw76y7e3e5c937k": {
-   "mp3": "bw76y7e3e5c937k.mp3",
-   "json": "bw76y7e3e5c937k.json",
-   "duration": 279.275,
-   "lesson": "M11/01-the-module.md"
-  },
   "ozs07rpg3fdtp": {
    "mp3": "ozs07rpg3fdtp.mp3",
    "json": "ozs07rpg3fdtp.json",
    "duration": 71.335,
    "lesson": "M11/02-the-gate.md"
   },
-  "15xlgw7b7wifx4ix": {
-   "mp3": "15xlgw7b7wifx4ix.mp3",
-   "json": "15xlgw7b7wifx4ix.json",
-   "duration": 392.175,
-   "lesson": "M12/01-the-module.md"
-  },
-  "om2aanuz6ybp1q0": {
-   "mp3": "om2aanuz6ybp1q0.mp3",
-   "json": "om2aanuz6ybp1q0.json",
-   "duration": 138.63,
-   "lesson": "M12/02-the-gate.md"
-  },
-  "1xee63b1u33u4317u": {
-   "mp3": "1xee63b1u33u4317u.mp3",
-   "json": "1xee63b1u33u4317u.json",
-   "duration": 99.245,
-   "lesson": "M13/01-the-module.md"
-  },
   "1gbdod3ai4jmpqe": {
    "mp3": "1gbdod3ai4jmpqe.mp3",
    "json": "1gbdod3ai4jmpqe.json",
    "duration": 61.745,
    "lesson": "M13/02-the-gate.md"
-  },
-  "jsjz2w1d7s7r41mt": {
-   "mp3": "jsjz2w1d7s7r41mt.mp3",
-   "json": "jsjz2w1d7s7r41mt.json",
-   "duration": 142.865,
-   "lesson": "M14/01-the-module.md"
-  },
-  "9uq7bdpcaz8l11t": {
-   "mp3": "9uq7bdpcaz8l11t.mp3",
-   "json": "9uq7bdpcaz8l11t.json",
-   "duration": 84,
-   "lesson": "M14/02-the-gate.md"
-  },
-  "zrb4077ojf5l2cj": {
-   "mp3": "zrb4077ojf5l2cj.mp3",
-   "json": "zrb4077ojf5l2cj.json",
-   "duration": 195.025,
-   "lesson": "M15/01-the-module.md"
   },
   "1xup4vvwqra6tz1": {
    "mp3": "1xup4vvwqra6tz1.mp3",
@@ -110,47 +38,11 @@
    "duration": 158.695,
    "lesson": "M16/01-the-module.md"
   },
-  "1tr4u6n1vh5iytpx": {
-   "mp3": "1tr4u6n1vh5iytpx.mp3",
-   "json": "1tr4u6n1vh5iytpx.json",
-   "duration": 59.98,
-   "lesson": "M16/02-the-gate.md"
-  },
-  "1fviozj14kx5q529l": {
-   "mp3": "1fviozj14kx5q529l.mp3",
-   "json": "1fviozj14kx5q529l.json",
-   "duration": 189.43,
-   "lesson": "M17/01-the-module.md"
-  },
   "1jyxpyz1ns2u3bvn": {
    "mp3": "1jyxpyz1ns2u3bvn.mp3",
    "json": "1jyxpyz1ns2u3bvn.json",
    "duration": 72.72,
    "lesson": "M17/02-the-gate.md"
-  },
-  "1hqe23h1tmhhat2sy": {
-   "mp3": "1hqe23h1tmhhat2sy.mp3",
-   "json": "1hqe23h1tmhhat2sy.json",
-   "duration": 249.825,
-   "lesson": "M18/01-the-module.md"
-  },
-  "1d8cd711iabsmt1ja": {
-   "mp3": "1d8cd711iabsmt1ja.mp3",
-   "json": "1d8cd711iabsmt1ja.json",
-   "duration": 128.65,
-   "lesson": "M18/02-the-gate.md"
-  },
-  "1506c3rvcrn0139g": {
-   "mp3": "1506c3rvcrn0139g.mp3",
-   "json": "1506c3rvcrn0139g.json",
-   "duration": 274.935,
-   "lesson": "M19/01-the-module.md"
-  },
-  "1sbig2m17ri8w219a": {
-   "mp3": "1sbig2m17ri8w219a.mp3",
-   "json": "1sbig2m17ri8w219a.json",
-   "duration": 106.545,
-   "lesson": "M19/02-the-gate.md"
   },
   "qoko3ojn5ymctv": {
    "mp3": "qoko3ojn5ymctv.mp3",
@@ -170,65 +62,11 @@
    "duration": 93.11,
    "lesson": "M20/02-the-gate.md"
   },
-  "7vst4cr9i6c22uu": {
-   "mp3": "7vst4cr9i6c22uu.mp3",
-   "json": "7vst4cr9i6c22uu.json",
-   "duration": 243.205,
-   "lesson": "M21/01-the-module.md"
-  },
   "10f54oz1l0qkah123": {
    "mp3": "10f54oz1l0qkah123.mp3",
    "json": "10f54oz1l0qkah123.json",
    "duration": 89.38,
    "lesson": "M21/02-the-gate.md"
-  },
-  "m1f203ib4zz31z6": {
-   "mp3": "m1f203ib4zz31z6.mp3",
-   "json": "m1f203ib4zz31z6.json",
-   "duration": 166.62,
-   "lesson": "M22/01-the-module.md"
-  },
-  "icvxdm1jjvr12ys": {
-   "mp3": "icvxdm1jjvr12ys.mp3",
-   "json": "icvxdm1jjvr12ys.json",
-   "duration": 80.155,
-   "lesson": "M22/02-the-gate.md"
-  },
-  "2lqgb13j09eh1fq": {
-   "mp3": "2lqgb13j09eh1fq.mp3",
-   "json": "2lqgb13j09eh1fq.json",
-   "duration": 121.825,
-   "lesson": "M23/01-the-module.md"
-  },
-  "ef4jo514oo2lzvo": {
-   "mp3": "ef4jo514oo2lzvo.mp3",
-   "json": "ef4jo514oo2lzvo.json",
-   "duration": 72.39,
-   "lesson": "M23/02-the-gate.md"
-  },
-  "5w15628gio9q11o": {
-   "mp3": "5w15628gio9q11o.mp3",
-   "json": "5w15628gio9q11o.json",
-   "duration": 87.655,
-   "lesson": "M24/01-the-module.md"
-  },
-  "o137gazsfdnws0": {
-   "mp3": "o137gazsfdnws0.mp3",
-   "json": "o137gazsfdnws0.json",
-   "duration": 62.94,
-   "lesson": "M24/02-the-gate.md"
-  },
-  "132j44raxyrr510b": {
-   "mp3": "132j44raxyrr510b.mp3",
-   "json": "132j44raxyrr510b.json",
-   "duration": 86.875,
-   "lesson": "M25/01-the-module.md"
-  },
-  "1c8rt2s16ed2fouc": {
-   "mp3": "1c8rt2s16ed2fouc.mp3",
-   "json": "1c8rt2s16ed2fouc.json",
-   "duration": 76.74,
-   "lesson": "M25/02-the-gate.md"
   },
   "1t2qtz4gi0ngg1g1": {
    "mp3": "1t2qtz4gi0ngg1g1.mp3",
@@ -241,54 +79,6 @@
    "json": "1ydjaq1v8ufmzts.json",
    "duration": 68.94,
    "lesson": "M26/02-the-gate.md"
-  },
-  "1f9zitd1qmd08d1l3": {
-   "mp3": "1f9zitd1qmd08d1l3.mp3",
-   "json": "1f9zitd1qmd08d1l3.json",
-   "duration": 126.785,
-   "lesson": "M27/02-the-gate.md"
-  },
-  "19e1j3e1skxpsc24f": {
-   "mp3": "19e1j3e1skxpsc24f.mp3",
-   "json": "19e1j3e1skxpsc24f.json",
-   "duration": 175.655,
-   "lesson": "M28/01-the-module.md"
-  },
-  "1ll5tmqobofs1bh": {
-   "mp3": "1ll5tmqobofs1bh.mp3",
-   "json": "1ll5tmqobofs1bh.json",
-   "duration": 106.3,
-   "lesson": "M28/02-the-gate.md"
-  },
-  "gd2rlh2kuhz3u0": {
-   "mp3": "gd2rlh2kuhz3u0.mp3",
-   "json": "gd2rlh2kuhz3u0.json",
-   "duration": 69.98,
-   "lesson": "M29/01-the-module.md"
-  },
-  "fhsp4xysvtftkq": {
-   "mp3": "fhsp4xysvtftkq.mp3",
-   "json": "fhsp4xysvtftkq.json",
-   "duration": 48.755,
-   "lesson": "M29/02-the-gate.md"
-  },
-  "1orzuaw13blveg1ta": {
-   "mp3": "1orzuaw13blveg1ta.mp3",
-   "json": "1orzuaw13blveg1ta.json",
-   "duration": 152.24,
-   "lesson": "M3/01-the-module.md"
-  },
-  "1kzd8ui1gj7nna10g": {
-   "mp3": "1kzd8ui1gj7nna10g.mp3",
-   "json": "1kzd8ui1gj7nna10g.json",
-   "duration": 85.83,
-   "lesson": "M3/02-the-gate.md"
-  },
-  "15uif4x1y73wpn27b": {
-   "mp3": "15uif4x1y73wpn27b.mp3",
-   "json": "15uif4x1y73wpn27b.json",
-   "duration": 176.88,
-   "lesson": "M30/01-the-module.md"
   },
   "xgj2gp1udli3z132": {
    "mp3": "xgj2gp1udli3z132.mp3",
@@ -308,155 +98,11 @@
    "duration": 57.285,
    "lesson": "M32/02-the-gate.md"
   },
-  "1jknt87hifv0519z": {
-   "mp3": "1jknt87hifv0519z.mp3",
-   "json": "1jknt87hifv0519z.json",
-   "duration": 112.64,
-   "lesson": "M4/01-the-module.md"
-  },
-  "1ldmksl1iqgyotti": {
-   "mp3": "1ldmksl1iqgyotti.mp3",
-   "json": "1ldmksl1iqgyotti.json",
-   "duration": 69.65,
-   "lesson": "M4/02-the-gate.md"
-  },
-  "tl4sko1iedto248x": {
-   "mp3": "tl4sko1iedto248x.mp3",
-   "json": "tl4sko1iedto248x.json",
-   "duration": 366.075,
-   "lesson": "M5/01-the-module.md"
-  },
-  "1tz6blhzuntwx11n": {
-   "mp3": "1tz6blhzuntwx11n.mp3",
-   "json": "1tz6blhzuntwx11n.json",
-   "duration": 88.57,
-   "lesson": "M5/02-the-gate.md"
-  },
-  "osfn5115crq651fm": {
-   "mp3": "osfn5115crq651fm.mp3",
-   "json": "osfn5115crq651fm.json",
-   "duration": 117.07,
-   "lesson": "M6/02-the-gate.md"
-  },
-  "p7p1w0thrx801pm": {
-   "mp3": "p7p1w0thrx801pm.mp3",
-   "json": "p7p1w0thrx801pm.json",
-   "duration": 150.135,
-   "lesson": "M7/01-the-module.md"
-  },
-  "1n4timir1gxr4t2": {
-   "mp3": "1n4timir1gxr4t2.mp3",
-   "json": "1n4timir1gxr4t2.json",
-   "duration": 69.505,
-   "lesson": "M7/02-the-gate.md"
-  },
-  "nzd6l2wfz5nm11x": {
-   "mp3": "nzd6l2wfz5nm11x.mp3",
-   "json": "nzd6l2wfz5nm11x.json",
-   "duration": 92.105,
-   "lesson": "M8/01-the-module.md"
-  },
-  "d145wh1asvnj3i3": {
-   "mp3": "d145wh1asvnj3i3.mp3",
-   "json": "d145wh1asvnj3i3.json",
-   "duration": 41.625,
-   "lesson": "M8/02-the-gate.md"
-  },
-  "it271810iiw181ez": {
-   "mp3": "it271810iiw181ez.mp3",
-   "json": "it271810iiw181ez.json",
-   "duration": 123.08,
-   "lesson": "M9/01-the-module.md"
-  },
-  "6qrig21xrxml61a7": {
-   "mp3": "6qrig21xrxml61a7.mp3",
-   "json": "6qrig21xrxml61a7.json",
-   "duration": 103.795,
-   "lesson": "M9/02-the-gate.md"
-  },
-  "1cjtlimvsgz8k8em": {
-   "mp3": "1cjtlimvsgz8k8em.mp3",
-   "json": "1cjtlimvsgz8k8em.json",
-   "duration": 689.96,
-   "lesson": "M0/01-the-module.md"
-  },
-  "1h9ui0pop13n142k": {
-   "mp3": "1h9ui0pop13n142k.mp3",
-   "json": "1h9ui0pop13n142k.json",
-   "duration": 329.62,
-   "lesson": "M1/01-the-module.md"
-  },
-  "wrbyjw1tz0nti4nn": {
-   "mp3": "wrbyjw1tz0nti4nn.mp3",
-   "json": "wrbyjw1tz0nti4nn.json",
-   "duration": 404.65,
-   "lesson": "M2/01-the-module.md"
-  },
-  "u7473simzym87ih": {
-   "mp3": "u7473simzym87ih.mp3",
-   "json": "u7473simzym87ih.json",
-   "duration": 644.51,
-   "lesson": "M33/01-the-module.md"
-  },
-  "s5a8t7qj15ep1ge": {
-   "mp3": "s5a8t7qj15ep1ge.mp3",
-   "json": "s5a8t7qj15ep1ge.json",
-   "duration": 121.48,
-   "lesson": "M33/02-the-gate.md"
-  },
-  "mgcazrujnxxx7yc": {
-   "mp3": "mgcazrujnxxx7yc.mp3",
-   "json": "mgcazrujnxxx7yc.json",
-   "duration": 673.385,
-   "lesson": "M34/01-the-module.md"
-  },
-  "1105blp1qcunrv1mg": {
-   "mp3": "1105blp1qcunrv1mg.mp3",
-   "json": "1105blp1qcunrv1mg.json",
-   "duration": 129.875,
-   "lesson": "M34/02-the-gate.md"
-  },
-  "7cqk1smblqqi7wo": {
-   "mp3": "7cqk1smblqqi7wo.mp3",
-   "json": "7cqk1smblqqi7wo.json",
-   "duration": 692.415,
-   "lesson": "M35/01-the-module.md"
-  },
-  "126a8b4bkord1jn": {
-   "mp3": "126a8b4bkord1jn.mp3",
-   "json": "126a8b4bkord1jn.json",
-   "duration": 132.35,
-   "lesson": "M35/02-the-gate.md"
-  },
-  "b083zb1qmt7xr7gd": {
-   "mp3": "b083zb1qmt7xr7gd.mp3",
-   "json": "b083zb1qmt7xr7gd.json",
-   "duration": 682.645,
-   "lesson": "M36/01-the-module.md"
-  },
-  "ghzz7x16e4idr1hc": {
-   "mp3": "ghzz7x16e4idr1hc.mp3",
-   "json": "ghzz7x16e4idr1hc.json",
-   "duration": 122.01,
-   "lesson": "M36/02-the-gate.md"
-  },
-  "3tyyknyzwlsd8m0": {
-   "mp3": "3tyyknyzwlsd8m0.mp3",
-   "json": "3tyyknyzwlsd8m0.json",
-   "duration": 737.43,
-   "lesson": "M37/01-the-module.md"
-  },
   "p1uk4trpca3t1ff": {
    "mp3": "p1uk4trpca3t1ff.mp3",
    "json": "p1uk4trpca3t1ff.json",
    "duration": 118.29,
    "lesson": "M37/02-the-gate.md"
-  },
-  "tzozdc1c2ya4o7wm": {
-   "mp3": "tzozdc1c2ya4o7wm.mp3",
-   "json": "tzozdc1c2ya4o7wm.json",
-   "duration": 688.55,
-   "lesson": "M38/01-the-module.md"
   },
   "m6khzlfbgatd1pm": {
    "mp3": "m6khzlfbgatd1pm.mp3",
@@ -464,35 +110,389 @@
    "duration": 137.82,
    "lesson": "M38/02-the-gate.md"
   },
-  "1g3iermqhkwty7ke": {
-   "mp3": "1g3iermqhkwty7ke.mp3",
-   "json": "1g3iermqhkwty7ke.json",
-   "duration": 656.98,
-   "lesson": "M39/01-the-module.md"
-  },
-  "1oxjwvu13ysj0i1ek": {
-   "mp3": "1oxjwvu13ysj0i1ek.mp3",
-   "json": "1oxjwvu13ysj0i1ek.json",
-   "duration": 116.05,
-   "lesson": "M39/02-the-gate.md"
-  },
-  "p6rkrhw80top7gl": {
-   "mp3": "p6rkrhw80top7gl.mp3",
-   "json": "p6rkrhw80top7gl.json",
-   "duration": 631.215,
-   "lesson": "M40/01-the-module.md"
-  },
   "x9eyn87v19i01fs": {
    "mp3": "x9eyn87v19i01fs.mp3",
    "json": "x9eyn87v19i01fs.json",
    "duration": 117.095,
    "lesson": "M40/02-the-gate.md"
   },
-  "cfxmfu16web5e4p4": {
-   "mp3": "cfxmfu16web5e4p4.mp3",
-   "json": "cfxmfu16web5e4p4.json",
-   "duration": 398.985,
+  "ogjdk0118hwim10h": {
+   "mp3": "ogjdk0118hwim10h.mp3",
+   "json": "ogjdk0118hwim10h.json",
+   "duration": 81.555,
+   "lesson": "M10/02-the-gate.md"
+  },
+  "7l31ax12fuqf1382": {
+   "mp3": "7l31ax12fuqf1382.mp3",
+   "json": "7l31ax12fuqf1382.json",
+   "duration": 278.545,
+   "lesson": "M11/01-the-module.md"
+  },
+  "1u42xztg6ajhj4jg": {
+   "mp3": "1u42xztg6ajhj4jg.mp3",
+   "json": "1u42xztg6ajhj4jg.json",
+   "duration": 392.305,
+   "lesson": "M12/01-the-module.md"
+  },
+  "1yuc7b212ehibe1qd": {
+   "mp3": "1yuc7b212ehibe1qd.mp3",
+   "json": "1yuc7b212ehibe1qd.json",
+   "duration": 139.29,
+   "lesson": "M12/02-the-gate.md"
+  },
+  "lnxf722rd6e01n4": {
+   "mp3": "lnxf722rd6e01n4.mp3",
+   "json": "lnxf722rd6e01n4.json",
+   "duration": 143.09,
+   "lesson": "M14/01-the-module.md"
+  },
+  "p54ccv1qe2ubt121": {
+   "mp3": "p54ccv1qe2ubt121.mp3",
+   "json": "p54ccv1qe2ubt121.json",
+   "duration": 84.75,
+   "lesson": "M14/02-the-gate.md"
+  },
+  "1s0xqinkttfkx2cq": {
+   "mp3": "1s0xqinkttfkx2cq.mp3",
+   "json": "1s0xqinkttfkx2cq.json",
+   "duration": 194.925,
+   "lesson": "M15/01-the-module.md"
+  },
+  "1ravedx1lcqhixq0": {
+   "mp3": "1ravedx1lcqhixq0.mp3",
+   "json": "1ravedx1lcqhixq0.json",
+   "duration": 60.025,
+   "lesson": "M16/02-the-gate.md"
+  },
+  "1eil7t1go4asl2a5": {
+   "mp3": "1eil7t1go4asl2a5.mp3",
+   "json": "1eil7t1go4asl2a5.json",
+   "duration": 189.515,
+   "lesson": "M17/01-the-module.md"
+  },
+  "1wvv6zf24cu7x2tk": {
+   "mp3": "1wvv6zf24cu7x2tk.mp3",
+   "json": "1wvv6zf24cu7x2tk.json",
+   "duration": 251.12,
+   "lesson": "M18/01-the-module.md"
+  },
+  "3tw99v1nma4w31je": {
+   "mp3": "3tw99v1nma4w31je.mp3",
+   "json": "3tw99v1nma4w31je.json",
+   "duration": 129.08,
+   "lesson": "M18/02-the-gate.md"
+  },
+  "h677kbg5xopv39k": {
+   "mp3": "h677kbg5xopv39k.mp3",
+   "json": "h677kbg5xopv39k.json",
+   "duration": 274.87,
+   "lesson": "M19/01-the-module.md"
+  },
+  "y3tg7f14od0jz19c": {
+   "mp3": "y3tg7f14od0jz19c.mp3",
+   "json": "y3tg7f14od0jz19c.json",
+   "duration": 106.72,
+   "lesson": "M19/02-the-gate.md"
+  },
+  "8x8pl4bokj0q1za": {
+   "mp3": "8x8pl4bokj0q1za.mp3",
+   "json": "8x8pl4bokj0q1za.json",
+   "duration": 166.965,
+   "lesson": "M22/01-the-module.md"
+  },
+  "143n72t1irhwyzyq": {
+   "mp3": "143n72t1irhwyzyq.mp3",
+   "json": "143n72t1irhwyzyq.json",
+   "duration": 80.155,
+   "lesson": "M22/02-the-gate.md"
+  },
+  "auqw6i1gbons2120": {
+   "mp3": "auqw6i1gbons2120.mp3",
+   "json": "auqw6i1gbons2120.json",
+   "duration": 88.065,
+   "lesson": "M24/01-the-module.md"
+  },
+  "gjrx1g229gs8s1": {
+   "mp3": "gjrx1g229gs8s1.mp3",
+   "json": "gjrx1g229gs8s1.json",
+   "duration": 63.065,
+   "lesson": "M24/02-the-gate.md"
+  },
+  "373c2ij26ui810t": {
+   "mp3": "373c2ij26ui810t.mp3",
+   "json": "373c2ij26ui810t.json",
+   "duration": 88.665,
+   "lesson": "M25/01-the-module.md"
+  },
+  "12ui68unkywjqur": {
+   "mp3": "12ui68unkywjqur.mp3",
+   "json": "12ui68unkywjqur.json",
+   "duration": 77.185,
+   "lesson": "M25/02-the-gate.md"
+  },
+  "1vtl5bdjaii3l1s2": {
+   "mp3": "1vtl5bdjaii3l1s2.mp3",
+   "json": "1vtl5bdjaii3l1s2.json",
+   "duration": 147.005,
+   "lesson": "M27/01-the-module.md"
+  },
+  "mhyd911nzkbxf24o": {
+   "mp3": "mhyd911nzkbxf24o.mp3",
+   "json": "mhyd911nzkbxf24o.json",
+   "duration": 176.02,
+   "lesson": "M28/01-the-module.md"
+  },
+  "5y9m2f1gshxtx1bm": {
+   "mp3": "5y9m2f1gshxtx1bm.mp3",
+   "json": "5y9m2f1gshxtx1bm.json",
+   "duration": 106.26,
+   "lesson": "M28/02-the-gate.md"
+  },
+  "1sjulhp1esl9wfu6": {
+   "mp3": "1sjulhp1esl9wfu6.mp3",
+   "json": "1sjulhp1esl9wfu6.json",
+   "duration": 70.255,
+   "lesson": "M29/01-the-module.md"
+  },
+  "10dy0zt188icvdkt": {
+   "mp3": "10dy0zt188icvdkt.mp3",
+   "json": "10dy0zt188icvdkt.json",
+   "duration": 48.63,
+   "lesson": "M29/02-the-gate.md"
+  },
+  "1ws8ycg1izhg0w1tq": {
+   "mp3": "1ws8ycg1izhg0w1tq.mp3",
+   "json": "1ws8ycg1izhg0w1tq.json",
+   "duration": 152.61,
+   "lesson": "M3/01-the-module.md"
+  },
+  "q17yj41125sqw11l": {
+   "mp3": "q17yj41125sqw11l.mp3",
+   "json": "q17yj41125sqw11l.json",
+   "duration": 89.27,
+   "lesson": "M3/02-the-gate.md"
+  },
+  "f1oi4h1g6mrfn27v": {
+   "mp3": "f1oi4h1g6mrfn27v.mp3",
+   "json": "f1oi4h1g6mrfn27v.json",
+   "duration": 177.33,
+   "lesson": "M30/01-the-module.md"
+  },
+  "74v4sxyxtgg51g8": {
+   "mp3": "74v4sxyxtgg51g8.mp3",
+   "json": "74v4sxyxtgg51g8.json",
+   "duration": 118.33,
+   "lesson": "M31/01-the-module.md"
+  },
+  "spphup1gsibet1ix": {
+   "mp3": "spphup1gsibet1ix.mp3",
+   "json": "spphup1gsibet1ix.json",
+   "duration": 130.355,
+   "lesson": "M32/01-the-module.md"
+  },
+  "1d8xfkcqclmf07j7": {
+   "mp3": "1d8xfkcqclmf07j7.mp3",
+   "json": "1d8xfkcqclmf07j7.json",
+   "duration": 644.745,
+   "lesson": "M33/01-the-module.md"
+  },
+  "vakrzmuxx7a21h0": {
+   "mp3": "vakrzmuxx7a21h0.mp3",
+   "json": "vakrzmuxx7a21h0.json",
+   "duration": 122.88,
+   "lesson": "M33/02-the-gate.md"
+  },
+  "1w9enw81quedpo7yw": {
+   "mp3": "1w9enw81quedpo7yw.mp3",
+   "json": "1w9enw81quedpo7yw.json",
+   "duration": 673.775,
+   "lesson": "M34/01-the-module.md"
+  },
+  "n1r3fw1qyxpe41mp": {
+   "mp3": "n1r3fw1qyxpe41mp.mp3",
+   "json": "n1r3fw1qyxpe41mp.json",
+   "duration": 130.125,
+   "lesson": "M34/02-the-gate.md"
+  },
+  "1c4mlgx1cfzbsf7x4": {
+   "mp3": "1c4mlgx1cfzbsf7x4.mp3",
+   "json": "1c4mlgx1cfzbsf7x4.json",
+   "duration": 692.72,
+   "lesson": "M35/01-the-module.md"
+  },
+  "1s91bx11chhup51ju": {
+   "mp3": "1s91bx11chhup51ju.mp3",
+   "json": "1s91bx11chhup51ju.json",
+   "duration": 132.87,
+   "lesson": "M35/02-the-gate.md"
+  },
+  "8kg37d1iy15fj7j5": {
+   "mp3": "8kg37d1iy15fj7j5.mp3",
+   "json": "8kg37d1iy15fj7j5.json",
+   "duration": 688.13,
+   "lesson": "M36/01-the-module.md"
+  },
+  "bs3kix89v0yt1ho": {
+   "mp3": "bs3kix89v0yt1ho.mp3",
+   "json": "bs3kix89v0yt1ho.json",
+   "duration": 122.2,
+   "lesson": "M36/02-the-gate.md"
+  },
+  "nre3lx1a7c3yx8m1": {
+   "mp3": "nre3lx1a7c3yx8m1.mp3",
+   "json": "nre3lx1a7c3yx8m1.json",
+   "duration": 737.365,
+   "lesson": "M37/01-the-module.md"
+  },
+  "15vskjo3i2d1u7ya": {
+   "mp3": "15vskjo3i2d1u7ya.mp3",
+   "json": "15vskjo3i2d1u7ya.json",
+   "duration": 690.12,
+   "lesson": "M38/01-the-module.md"
+  },
+  "1wuin8o1d389ow7kj": {
+   "mp3": "1wuin8o1d389ow7kj.mp3",
+   "json": "1wuin8o1d389ow7kj.json",
+   "duration": 656.47,
+   "lesson": "M39/01-the-module.md"
+  },
+  "1cw4zos1nto0ni1el": {
+   "mp3": "1cw4zos1nto0ni1el.mp3",
+   "json": "1cw4zos1nto0ni1el.json",
+   "duration": 115.955,
+   "lesson": "M39/02-the-gate.md"
+  },
+  "65cx6j1iahoij1aw": {
+   "mp3": "65cx6j1iahoij1aw.mp3",
+   "json": "65cx6j1iahoij1aw.json",
+   "duration": 112.95,
+   "lesson": "M4/01-the-module.md"
+  },
+  "1fodvckx9cm8wu2": {
+   "mp3": "1fodvckx9cm8wu2.mp3",
+   "json": "1fodvckx9cm8wu2.json",
+   "duration": 70.82,
+   "lesson": "M4/02-the-gate.md"
+  },
+  "11t7tto1i69b5g7gv": {
+   "mp3": "11t7tto1i69b5g7gv.mp3",
+   "json": "11t7tto1i69b5g7gv.json",
+   "duration": 631.98,
+   "lesson": "M40/01-the-module.md"
+  },
+  "1pqroc71picnwr4md": {
+   "mp3": "1pqroc71picnwr4md.mp3",
+   "json": "1pqroc71picnwr4md.json",
+   "duration": 395.555,
+   "lesson": "M5/01-the-module.md"
+  },
+  "10llcu10yyhfg11r": {
+   "mp3": "10llcu10yyhfg11r.mp3",
+   "json": "10llcu10yyhfg11r.json",
+   "duration": 89.23,
+   "lesson": "M5/02-the-gate.md"
+  },
+  "1h9u7d71btusrf8fb": {
+   "mp3": "1h9u7d71btusrf8fb.mp3",
+   "json": "1h9u7d71btusrf8fb.json",
+   "duration": 688.26,
+   "lesson": "M0/01-the-module.md"
+  },
+  "1uu3pgb1am1e5x43c": {
+   "mp3": "1uu3pgb1am1e5x43c.mp3",
+   "json": "1uu3pgb1am1e5x43c.json",
+   "duration": 329.98,
+   "lesson": "M1/01-the-module.md"
+  },
+  "1jvp01now3gch22d": {
+   "mp3": "1jvp01now3gch22d.mp3",
+   "json": "1jvp01now3gch22d.json",
+   "duration": 175.17,
+   "lesson": "M10/01-the-module.md"
+  },
+  "z69dvh1qp7alp1e0": {
+   "mp3": "z69dvh1qp7alp1e0.mp3",
+   "json": "z69dvh1qp7alp1e0.json",
+   "duration": 114.445,
+   "lesson": "M13/01-the-module.md"
+  },
+  "8czfrmlljlvi4nw": {
+   "mp3": "8czfrmlljlvi4nw.mp3",
+   "json": "8czfrmlljlvi4nw.json",
+   "duration": 404.52,
+   "lesson": "M2/01-the-module.md"
+  },
+  "13kctaw1m2num834i": {
+   "mp3": "13kctaw1m2num834i.mp3",
+   "json": "13kctaw1m2num834i.json",
+   "duration": 265.19,
+   "lesson": "M21/01-the-module.md"
+  },
+  "2j4y2ed3ys7o2b1": {
+   "mp3": "2j4y2ed3ys7o2b1.mp3",
+   "json": "2j4y2ed3ys7o2b1.json",
+   "duration": 198.345,
+   "lesson": "M23/01-the-module.md"
+  },
+  "y6u6zn1pwvbldwu": {
+   "mp3": "y6u6zn1pwvbldwu.mp3",
+   "json": "y6u6zn1pwvbldwu.json",
+   "duration": 74.84,
+   "lesson": "M23/02-the-gate.md"
+  },
+  "5bj5r7hx5umd1lr": {
+   "mp3": "5bj5r7hx5umd1lr.mp3",
+   "json": "5bj5r7hx5umd1lr.json",
+   "duration": 127.435,
+   "lesson": "M27/02-the-gate.md"
+  },
+  "17cy16r19tgz014ps": {
+   "mp3": "17cy16r19tgz014ps.mp3",
+   "json": "17cy16r19tgz014ps.json",
+   "duration": 396.895,
    "lesson": "M6/01-the-module.md"
+  },
+  "gp3ica1hcil5i1fs": {
+   "mp3": "gp3ica1hcil5i1fs.mp3",
+   "json": "gp3ica1hcil5i1fs.json",
+   "duration": 117.645,
+   "lesson": "M6/02-the-gate.md"
+  },
+  "r7rsbi17b3rro1q3": {
+   "mp3": "r7rsbi17b3rro1q3.mp3",
+   "json": "r7rsbi17b3rro1q3.json",
+   "duration": 149.695,
+   "lesson": "M7/01-the-module.md"
+  },
+  "yaw4nf1r55l97tb": {
+   "mp3": "yaw4nf1r55l97tb.mp3",
+   "json": "yaw4nf1r55l97tb.json",
+   "duration": 69.63,
+   "lesson": "M7/02-the-gate.md"
+  },
+  "6znc4r13kicl911z": {
+   "mp3": "6znc4r13kicl911z.mp3",
+   "json": "6znc4r13kicl911z.json",
+   "duration": 92.155,
+   "lesson": "M8/01-the-module.md"
+  },
+  "1dj4lavtzc5lli1": {
+   "mp3": "1dj4lavtzc5lli1.mp3",
+   "json": "1dj4lavtzc5lli1.json",
+   "duration": 41.625,
+   "lesson": "M8/02-the-gate.md"
+  },
+  "stt30m1mbipxm1lv": {
+   "mp3": "stt30m1mbipxm1lv.mp3",
+   "json": "stt30m1mbipxm1lv.json",
+   "duration": 137.075,
+   "lesson": "M9/01-the-module.md"
+  },
+  "1omnlsj16lifcf1am": {
+   "mp3": "1omnlsj16lifcf1am.mp3",
+   "json": "1omnlsj16lifcf1am.json",
+   "duration": 104.605,
+   "lesson": "M9/02-the-gate.md"
   }
  }
 }

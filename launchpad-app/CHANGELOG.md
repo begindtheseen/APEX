@@ -3,6 +3,61 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.4.0
+
+**LAUNCHPAD catches up with ORBIT.** The two apps share one platform, and LAUNCHPAD had fallen months
+behind it. It now runs on ORBIT's current platform, with LAUNCHPAD's own curriculum, layers, claims and
+gates exactly as they were.
+
+- **Learn to code, read aloud.** Every lesson has the guided reading: press play and the lesson is read
+  to you, the page scrolls with the voice and lights each word, and runnable examples run where they
+  stand. Practice and the task hold the reading until you have done them.
+- **The Computer Science degree.** All 17 degree courses: Data Structures and Algorithms I and II,
+  Discrete Math, Computer Organization, Systems, Operating Systems, Networks, Theory, Compilers,
+  Security, Parallel Computing and five capstones. Each one opens when the courses it builds on are
+  passed.
+- **Mastery, not just a pass.** The Python, C++, SQL, Terminal and Git courses are the new editions:
+  plain-voice lessons with notes you can tap, 5 to 8 practice problems under every lesson, a timed
+  mastery gate at the end of every course, and re-tests that come back days and weeks later.
+- **A tutor that watches your runs.** When a run fails, it says what went wrong the way a person beside
+  you would, and can say it out loud.
+- **Explain.** Highlight anything in a lesson and it is explained from what you have already read.
+- **Find on any page** with ⌘F or Ctrl+F, a docked player while you scroll, and the space bar to play
+  and pause.
+- Every recorded lesson was recorded again with the newer pronunciation: code, paths, symbols and
+  equations are said the way a person says them.
+
+**Past the degree: four infrastructure courses.** Short theory, then a lab you build on a deterministic
+simulator, then practice that pushes on the case where the naive design breaks, and a gate.
+
+- **Distributed Systems I:** a replayable network simulator, failure detection and deadlines, retries
+  and idempotency keys, leases and fencing tokens, a linearizability checker, replication and quorums,
+  consistent hashing, gossip, and fault-injection testing.
+- **Cloud Infrastructure:** reconcile loops, a scheduler, canary rollouts with automatic rollback, load
+  balancing, capacity planning with queueing math, an autoscaler that does not oscillate, overload
+  protection, caching, mergeable latency histograms and burn-rate alerts, infrastructure as code and a
+  failover drill.
+- **ML Systems I, training:** the roofline cost model, training numerics, the memory of a training
+  step, ring all-reduce, ZeRO sharding, tensor and pipeline parallelism, planning a run on a cluster, the
+  input pipeline, and checkpointing at scale.
+- **ML Systems II, inference and serving:** the KV cache, paged KV memory, continuous batching measured
+  on time to first token and goodput, speculative decoding, quantization, prefix caching and routing,
+  autoscaling model servers, vector search and cost per token.
+
+**Practice and gates for LAUNCHPAD's own courses:** JavaScript (72 problems), TypeScript (66) and
+AI from scratch (99), each with a mastery gate.
+
+**Roadmaps in phases.** *Phase 1 · Internship-ready* is the shortest road to applying: Python, the
+command line and git, SQL, JavaScript and TypeScript, and the first algorithms course, beside a live
+flagship. *Backend & AI Infrastructure* runs the whole path in three phases, with TypeScript early and
+the infrastructure courses at the end.
+
+**Production labs in the modules**, where the work already lives: point-in-time restore, replica lag and
+a lost update in Postgres (M5); property-based tests and fuzzing (M9); flame graphs, heap profiles and
+honest benchmarks (M10); an API designed to evolve (M13); a threat model and a hardened container (M21);
+one workload on Kubernetes and a public-cloud slice built from code (M23). The program is now 1,882
+hours, and The Plan works out your dates from that.
+
 ## 1.3.0
 
 **A new layer: The Frontier.** Eight modules, M33 to M40, for understanding AI the way working AI

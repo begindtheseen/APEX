@@ -6,11 +6,12 @@
    Runtime in WebAssembly, and turns one piece of text into speech: 24 kHz
    mono samples, handed back to the page to play.
 
-   Several of these run side by side (lib/voice/natural.ts keeps the pool):
-   one worker cannot make speech as fast as it is spoken on most machines,
-   because WebAssembly here runs on a single thread — the page is not
-   cross-origin isolated, so there are no shared-memory threads. Separate
-   workers each on their own core, each making a different sentence, can.
+   Several of these run side by side (lib/voice/natural.ts keeps the pool),
+   each making a different sentence. Where the page is cross-origin isolated
+   (the desktop app, desktop/protocol.js) each one also uses a few threads,
+   so one sentence is made on several cores at once and arrives sooner; on a
+   page that is not, WebAssembly has no shared-memory threads, and each
+   worker is one core.
 
    The runtime (about 14 MB) and the phonemiser (about 3 MB) are downloaded
    once from a CDN, pinned to exact versions, like the compilers; the model is
@@ -57,7 +58,7 @@ type Phonemize = (text: string, lang: string) => Promise<string[]>
 export type VoiceDevice = 'wasm' | 'webgpu'
 
 export type VoiceRequest =
-  | { cmd: 'init'; modelUrl: string; cacheName: string; voiceBase: string; device: VoiceDevice }
+  | { cmd: 'init'; modelUrl: string; cacheName: string; voiceBase: string; device: VoiceDevice; fullPrecision?: boolean; threads?: number; knownRtf?: number }
   | { cmd: 'speak'; id: number; text: string; voice: string; lang: 'en-us' | 'en'; speed: number }
 
 export type VoiceReply =
@@ -148,23 +149,31 @@ async function init(req: Extract<VoiceRequest, { cmd: 'init' }>): Promise<number
   } else {
     ort.env.wasm.wasmPaths = base
   }
-  ort.env.wasm.numThreads = 1
+  // Several threads on one sentence where the page is cross-origin isolated (the desktop app), else one.
+  ort.env.wasm.numThreads = !gpu && (req.threads ?? 1) > 1 && self.crossOriginIsolated ? req.threads! : 1
   ort.env.wasm.proxy = false
   // Its warnings (unused initialisers after the rewrite, nodes left on the
   // CPU) are expected here, and would read as errors in the console.
   ;(ort.env as { logLevel?: string }).logLevel = 'error'
   phonemize = phon.mod.phonemize
   let bytes = await modelBytes(req.modelUrl, req.cacheName)
-  if (gpu) bytes = convIntegerToConv(bytes).bytes
+  // The 8-bit model rounds the sound to 8 bits between every layer, which is where its buzz comes from.
+  // Rewritten, the same 8-bit weights feed full-precision layers: the sound of the full model, from the
+  // same small download, for a little more work (measured: 9% slower on the CPU, 35 MB more memory).
+  // The GPU needs it to run at all; elsewhere it is used wherever speed allows (not on a phone).
+  if (gpu || req.fullPrecision) bytes = convIntegerToConv(bytes).bytes
   // The per-phoneme durations, as a second output: where every word falls.
   bytes = exposeDurations(bytes).bytes
   if (gpu) {
-    session = await ort.InferenceSession.create(bytes, { executionProviders: ['webgpu'], graphOptimizationLevel: 'all' })
+    session = await ort.InferenceSession.create(bytes, { executionProviders: ['webgpu'], graphOptimizationLevel: 'all', logSeverityLevel: 3 })
     // One short sentence first: the GPU compiles its shaders on the first
     // run, and that wait belongs here, not before the first sentence read.
     // A GPU that takes most of a minute over one word will not keep up.
     const warm = speakNow({ text: 'Hello.', voice: 'af_heart', lang: 'en-us', speed: 1 }).then(() => true)
     if (!(await within(warm, 45_000, false))) return TOO_SLOW
+    // This GPU has been timed before and kept up: no need to time it again before the first sentence. The
+    // page still watches its speed while it reads, and moves to the CPU if it falls behind.
+    if (req.knownRtf !== undefined && req.knownRtf > 0) return req.knownRtf
     // Then a real sentence, timed: some GPUs (a phone's, or one emulated in
     // software) are slower than the CPU at this, and the page should know
     // now, before anyone is left waiting on them.
@@ -174,7 +183,7 @@ async function init(req: Extract<VoiceRequest, { cmd: 'init' }>): Promise<number
     )
     return within(probe, 4_000, TOO_SLOW)
   }
-  session = await ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' })
+  session = await ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all', logSeverityLevel: 3 })
   return undefined
 }
 

@@ -46,11 +46,14 @@ describe('finding a lesson by name', () => {
   })
 
   it('complements module search rather than replacing it', () => {
-    // Module search finds a module by its artifact and concepts; lesson search
-    // finds the lesson. The same query can reach both.
-    const m = MODULES.find((x) => x.id === 'M8')!
-    expect(searchModules(m.title).map((x) => x.id)).toContain('M8')
-    expect(searchLessonsIn(m.title).map((h) => h.moduleId)).toContain('M8')
-    expect(lessonCoverage('M8')?.complete).toBe(true)
+    // A module with no lessons written yet can only ever be found by module
+    // search, so the two have to coexist. Once every module has lessons there
+    // is no such module; module search must still find every module by name.
+    const untaught = MODULES.find((m) => (lessonCoverage(m.id)?.covered ?? 0) === 0)
+    if (untaught) {
+      expect(searchModules(untaught.title).map((m) => m.id)).toContain(untaught.id)
+      expect(searchLessonsIn(untaught.title).map((h) => h.moduleId)).not.toContain(untaught.id)
+    }
+    for (const m of MODULES) expect(searchModules(m.title).map((x) => x.id), m.id).toContain(m.id)
   })
 })

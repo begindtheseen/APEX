@@ -1,0 +1,5649 @@
+var e=`@track sql
+@title SQL
+@name SQL fundamentals
+@plainvoice true
+@blurb Asking a database questions: SELECT through joins, grouping, changing data and CTEs — on a users-and-requests schema like the one your product will have.
+@schema
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  plan TEXT NOT NULL,
+  created TEXT NOT NULL
+);
+INSERT INTO users (id, email, plan, created) VALUES
+  (1, 'ada@example.com', 'pro',  '2025-01-04'),
+  (2, 'lin@example.com', 'free', '2025-02-11'),
+  (3, 'sam@example.com', 'free', '2025-03-20'),
+  (4, 'kai@example.com', 'pro',  '2025-03-28');
+CREATE TABLE requests (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  model TEXT NOT NULL,
+  input_tokens INTEGER NOT NULL,
+  output_tokens INTEGER NOT NULL,
+  cost_usd REAL NOT NULL
+);
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd) VALUES
+  (1, 1, 'sonnet',  1200,  340, 0.0087),
+  (2, 1, 'sonnet',  5400,  910, 0.0298),
+  (3, 1, 'haiku',    800,  120, 0.0012),
+  (4, 2, 'sonnet', 15000, 2100, 0.0765),
+  (5, 2, 'haiku',    300,   80, 0.0006),
+  (6, 4, 'haiku',   2200,  400, 0.0034);
+@end
+
+=== sql-01 | Your first query
+--- teach
+This is the very first lesson on databases, and it starts from nothing. By the end of it you will have asked a real database a question and read its answer.
+
+## A spreadsheet you can ask questions
+
+Picture a class register, or a spreadsheet. Each line across is one pupil. Each line down is one kind of fact about them: a name, a birthday, a homeroom. Every pupil gets the same boxes filled in.
+
+A **[[database|databases-everywhere]]** is a program that keeps data like that for you — lots of it, safe and organized, so you can find what you want fast.
+
+Inside a database the data sits in **tables**. A **table** is one grid like that register, with a name of its own. The kind of database you are learning is called a **[[relational database|relational-name]]**: a database made of tables.
+
+Two words for the parts of a table:
+
+- A **[[row|table-parts]]** is one line across: one record, one thing. In a table of users, one row is one person.
+- A **column** is one line down: one kind of fact, with a name. Every row in a table has the same columns.
+
+## The two tables in this course
+
+The first table is called \`users\`. It has four rows, one per person, and four columns:
+
+| id | email | plan | created |
+| --- | --- | --- | --- |
+| 1 | ada@example.com | pro | 2025-01-04 |
+| 2 | lin@example.com | free | 2025-02-11 |
+| 3 | sam@example.com | free | 2025-03-20 |
+| 4 | kai@example.com | pro | 2025-03-28 |
+
+- \`id\` is each person's number.
+- \`email\` is their email address.
+- \`plan\` is what they pay for: \`'free'\` or \`'pro'\`.
+- \`created\` is the day they signed up, written year-month-day.
+
+The second table is called \`requests\`. Picture an app where people type a question and an [[AI model|model-requests]] writes an answer. Every time someone does that, the app saves one row here. Its columns are:
+
+- \`id\` — the request's own number.
+- \`user_id\` — which user sent it. This is an \`id\` from the \`users\` table.
+- \`model\` — which model answered: \`'sonnet'\` or \`'haiku'\`.
+- \`input_tokens\` — how much text went in.
+- \`output_tokens\` — how much text came back.
+- \`cost_usd\` — what it cost, in US dollars.
+
+## Asking a question: a query
+
+You do not scroll through a database looking for things. You ask it. A **query** is a question you send to a database; it answers with rows. You write queries in **[[SQL|sql-name]]**, the language that databases understand.
+
+The simplest question is "show me everything in the \`requests\` table":
+
+\`\`\`sql
+SELECT * FROM requests;
+\`\`\`
+
+Read it one piece at a time:
+
+- \`SELECT\` means "give me". It starts the question and says what you want back.
+- \`*\`, the star, means "[[every column|star-for-looking]]".
+- \`FROM requests\` means "out of the table called \`requests\`".
+- \`;\`, the semicolon, marks the end of the [[statement|statement-end]], like a full stop at the end of a sentence.
+
+The database answers with every row and every column of the table:
+
+| id | user_id | model | input_tokens | output_tokens | cost_usd |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1 | sonnet | 1200 | 340 | 0.0087 |
+| 2 | 1 | sonnet | 5400 | 910 | 0.0298 |
+| 3 | 1 | haiku | 800 | 120 | 0.0012 |
+| 4 | 2 | sonnet | 15000 | 2100 | 0.0765 |
+| 5 | 2 | haiku | 300 | 80 | 0.0006 |
+| 6 | 4 | haiku | 2200 | 400 | 0.0034 |
+
+Nothing in the query leaves any rows out, so you get all six. Picking only some rows comes in a couple of lessons.
+
+## Capital letters
+
+Words that belong to SQL itself, like \`SELECT\` and \`FROM\`, are called **keywords**. People write them in capitals so they stand out from the names of tables and columns. That is only a habit: the database does not care, and \`select * from requests;\` works the same. Type table and column names the way this course spells them, in lowercase.
+
+**Watch out:** the table name has to be spelled exactly. The table is \`users\`, with an s. \`SELECT * FROM user;\` fails with the message \`no such table: user\`. When you see "no such table", check your spelling first.
+
+::: context databases-everywhere Databases are behind almost every app
+Almost every app you use keeps its data in a database. A messaging app has a table of messages, a game has a table of players and scores, a shop has tables of products and orders. Spacecraft teams do the same: flight telemetry — the stream of readings a rocket sends home, like temperatures and pressures — is saved in databases so engineers can search it after a flight. The skill you start today, asking a table a precise question, is one engineers use every working day.
+:::
+
+::: context relational-name Why "relational"?
+In 1970 a researcher at IBM named Edgar F. Codd wrote a paper describing how to store data as tables and ask questions of them with a small set of exact rules. In the mathematics he borrowed from, a table like this is called a **relation**, so databases built his way are called relational databases. His idea still runs most of the world's data: SQLite, PostgreSQL, MySQL and many others are all relational databases.
+:::
+
+::: context table-parts Rows across, columns down
+A row is one thing — here, one user. A column is one kind of fact, and it has the same name in every row. Where a row and a column cross, there is exactly one value: Lin's plan is \`free\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="20" y="18" font-size="12" font-weight="bold" fill="#1f2a44">users</text>
+  <rect x="20" y="26" width="240" height="22" fill="#8fb8f0"/>
+  <rect x="200" y="48" width="60" height="88" fill="#f2b880"/>
+  <rect x="20" y="26" width="240" height="110" fill="none" stroke="#1f2a44" stroke-width="1.5"/>
+  <g stroke="#1f2a44" stroke-width="1">
+    <line x1="20" y1="48" x2="260" y2="48"/>
+    <line x1="20" y1="70" x2="260" y2="70"/>
+    <line x1="20" y1="92" x2="260" y2="92"/>
+    <line x1="20" y1="114" x2="260" y2="114"/>
+    <line x1="60" y1="26" x2="60" y2="136"/>
+    <line x1="200" y1="26" x2="200" y2="136"/>
+  </g>
+  <g font-size="11" fill="#1f2a44">
+    <text x="28" y="41" font-weight="bold">id</text><text x="68" y="41" font-weight="bold">email</text><text x="208" y="41" font-weight="bold">plan</text>
+    <text x="28" y="63">1</text><text x="68" y="63">ada@example.com</text><text x="208" y="63">pro</text>
+    <text x="28" y="85">2</text><text x="68" y="85">lin@example.com</text><text x="208" y="85">free</text>
+    <text x="28" y="107">3</text><text x="68" y="107">sam@example.com</text><text x="208" y="107">free</text>
+    <text x="28" y="129">4</text><text x="68" y="129">kai@example.com</text><text x="208" y="129">pro</text>
+  </g>
+  <rect x="20" y="70" width="240" height="22" fill="none" stroke="#1d6fd1" stroke-width="3"/>
+  <text x="270" y="41" font-size="11" fill="#6c7a93">column names</text>
+  <text x="270" y="80" font-size="11" fill="#1d6fd1">a row:</text>
+  <text x="270" y="94" font-size="11" fill="#1d6fd1">one user</text>
+  <text x="200" y="156" font-size="11" fill="#1f2a44">a column: plan</text>
+</svg>
+\`\`\`
+:::
+
+::: context model-requests What the requests table records
+An AI model is a program that reads text and writes text back. Sonnet and Haiku are the names of two such models. They read and write text in **tokens**: small chunks of text, often a piece of a word. The service charges by the token, which is why each row stores how many went in, how many came out, and what the request cost. A real product keeps a table very like this one to know who used what and to send the right bills.
+:::
+
+::: context sql-name Three letters, two ways to say them
+SQL stands for Structured Query Language. It grew out of Codd's ideas at IBM in the 1970s, where its first version was called SEQUEL. That is why many people say "sequel"; others spell it out, "S-Q-L". Both are fine. SQL is shared by nearly every relational database, so what you learn here carries over. The database inside this course is SQLite, a small one that runs right in your browser, and it is also built into phones, web browsers and many other programs.
+:::
+
+::: context star-for-looking The star is for looking around
+\`SELECT *\` is the quickest way to see what is in a table, and people use it all the time to take a first look. Inside a real program, though, engineers usually name the exact columns they want instead. The next lesson shows you how, and why that is a good habit.
+:::
+
+::: context statement-end One statement, one semicolon
+A **statement** is one complete instruction to the database, the way a sentence is one complete thought. The semicolon says "this statement ends here". With one statement it is often optional, but when you write several in a row the database needs the semicolons to tell where each one stops. Ending every statement with one is a habit that never hurts.
+:::
+--- task
+Write a query that returns every row and every column of the \`users\` table.
+--- starter
+-- Show every user.
+
+--- solution
+SELECT * FROM users;
+--- hint
+You want every column, so use the star, \`*\`. The table you want is \`users\`.
+--- hint
+It is the same shape as the example, with a different table name: \`SELECT * FROM\` the table, then a semicolon.
+--- hint
+Write \`SELECT\`, then \`*\`, then \`FROM\`, then \`users\`, then \`;\` — all on one line under the comment.
+--- check result | Returns all four users, every column
+[[1, "ada@example.com", "pro", "2025-01-04"], [2, "lin@example.com", "free", "2025-02-11"], [3, "sam@example.com", "free", "2025-03-20"], [4, "kai@example.com", "pro", "2025-03-28"]]
+
++++ practice | Every satellite
+--- task
+This database has one table, \`satellites\`. Each row is one satellite, with the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Write a query that returns every row and every column of the \`satellites\` table.
+--- starter
+-- Show every satellite.
+
+--- solution
+SELECT * FROM satellites;
+--- hint
+You want every column, so you need the star. The table's name is \`satellites\`.
+--- hint
+The query has four parts: \`SELECT\`, the star, \`FROM\`, and the table name, then a semicolon.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | All five satellites, every column
+[[1, "Kestrel", "LEO", "2021-06-14", 220], [2, "Heron", "GEO", "2019-11-02", 3400], [3, "Wren", "LEO", "2023-02-27", 95], [4, "Osprey", "MEO", "2020-08-09", 1500], [5, "Finch", "LEO", "2024-05-30", 60]]
+--- check source | Uses the star for every column
+\\*
+--- check source | Reads from the satellites table
+[Ff][Rr][Oo][Mm]\\s+satellites\\b
+
++++ practice | Keywords in small letters
+--- task
+This database has a table called \`crew\`, with the columns \`id\`, \`name\`, \`role\` and \`hours\`.
+
+Return every row and every column of \`crew\`. This time, write the whole query in small letters, keywords included: no capital letters anywhere.
+--- starter
+-- every crew member, written in small letters.
+
+--- solution
+select * from crew;
+--- hint
+The database does not care whether keywords are in capitals. Capitals are only a habit.
+--- hint
+It is the usual "every row, every column" query, with \`select\` and \`from\` written in small letters.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  hours INTEGER NOT NULL
+);
+INSERT INTO crew (id, name, role, hours) VALUES
+  (1, 'Imani', 'pilot', 900),
+  (2, 'Tomas', 'engineer', 750),
+  (3, 'Yuki', 'medic', 500);
+--- check result | All three crew members
+[[1, "Imani", "pilot", 900], [2, "Tomas", "engineer", 750], [3, "Yuki", "medic", 500]]
+--- check source | Uses select and from in small letters
+select\\s+\\*\\s+from\\s+crew
+--- check source absent | No capital letters
+[A-Z]
+
++++ practice | Two statements in a row
+--- task
+This database has two tables, \`missions\` and \`crew\`.
+
+Write **two** statements on a **single line**. The first returns every row and column of \`missions\`. The second returns every row and column of \`crew\`. End each statement with a semicolon, so the database can tell where the first one stops.
+
+The checker looks at the answer to the last statement, so the crew must come second.
+--- starter
+-- First every mission, then every crew member.
+
+--- solution
+SELECT * FROM missions; SELECT * FROM crew;
+--- hint
+Each statement is one complete query, ending with its own semicolon.
+--- hint
+Write the query for \`missions\`, its semicolon, a space, then the query for \`crew\` and its semicolon, all on one line.
+--- schema
+CREATE TABLE missions (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  target TEXT NOT NULL
+);
+INSERT INTO missions (id, name, target) VALUES
+  (1, 'Lantern', 'Moon'),
+  (2, 'Driftwood', 'Mars');
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  hours INTEGER NOT NULL
+);
+INSERT INTO crew (id, name, role, hours) VALUES
+  (1, 'Imani', 'pilot', 900),
+  (2, 'Tomas', 'engineer', 750),
+  (3, 'Yuki', 'medic', 500);
+--- check result | The last answer is every crew member
+[[1, "Imani", "pilot", 900], [2, "Tomas", "engineer", 750], [3, "Yuki", "medic", 500]]
+--- check source | Asks for the missions first, on the same line
+[Ff][Rr][Oo][Mm][ \\t]+missions[ \\t]*;[ \\t]*[Ss][Ee][Ll][Ee][Cc][Tt][ \\t]+\\*[ \\t]+[Ff][Rr][Oo][Mm][ \\t]+crew
+--- check source | Ends each statement with a semicolon
+crew\\s*;
+
++++ practice | No such table
+--- task
+This database has a table called \`launches\`, with the columns \`id\`, \`rocket\`, \`pad\` and \`launched\`.
+
+The query in the editor should return every row and every column of \`launches\`. Instead it stops with the error \`no such table: launch\`. Fix it.
+--- starter
+SELECT * FROM launch;
+--- solution
+SELECT * FROM launches;
+--- hint
+Read the error message: it names the table the database could not find.
+--- hint
+Compare the name in the query with the table's real name, letter by letter.
+--- schema
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  rocket TEXT NOT NULL,
+  pad TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, rocket, pad, launched) VALUES
+  (1, 'Lark I', 'Pad 2', '2024-03-02'),
+  (2, 'Lark II', 'Pad 1', '2024-09-17'),
+  (3, 'Lark II', 'Pad 2', '2025-01-08'),
+  (4, 'Magpie', 'Pad 3', '2025-06-21');
+--- check result | All four launches, every column
+[[1, "Lark I", "Pad 2", "2024-03-02"], [2, "Lark II", "Pad 1", "2024-09-17"], [3, "Lark II", "Pad 2", "2025-01-08"], [4, "Magpie", "Pad 3", "2025-06-21"]]
+--- check source | Reads from launches, with the s
+[Ff][Rr][Oo][Mm]\\s+launches\\b
+--- check source | Still uses the star
+\\*
+
++++ practice | The whole mission log
+--- task
+A spacecraft team keeps a log in a table called \`mission_log\`. Its columns are \`id\`, \`logged\` (the time of the entry), \`author\` and \`note\`. Some entries were saved without a note; in those rows the \`note\` column is empty, and the database shows it as \`NULL\`.
+
+Return every row and every column of \`mission_log\`. Do not leave out the entries without a note: the checker expects all five rows, empty notes included.
+--- starter
+-- Show the whole log.
+
+--- solution
+SELECT * FROM mission_log;
+--- hint
+Nothing in the task asks you to leave rows out, so this is the plainest query there is.
+--- hint
+Use the star for every column, and the table name exactly as written, underscore included.
+--- schema
+CREATE TABLE mission_log (
+  id INTEGER PRIMARY KEY,
+  logged TEXT NOT NULL,
+  author TEXT NOT NULL,
+  note TEXT
+);
+INSERT INTO mission_log (id, logged, author, note) VALUES
+  (1, '2025-05-01 06:00', 'Imani', 'Pre-flight checks complete'),
+  (2, '2025-05-01 06:42', 'Tomas', NULL),
+  (3, '2025-05-01 07:15', 'Imani', 'Engine start'),
+  (4, '2025-05-01 07:16', 'Yuki', NULL),
+  (5, '2025-05-01 09:30', 'Tomas', 'Orbit reached');
+--- check result | All five entries, the empty notes included
+[[1, "2025-05-01 06:00", "Imani", "Pre-flight checks complete"], [2, "2025-05-01 06:42", "Tomas", null], [3, "2025-05-01 07:15", "Imani", "Engine start"], [4, "2025-05-01 07:16", "Yuki", null], [5, "2025-05-01 09:30", "Tomas", "Orbit reached"]]
+--- check source | Uses the star for every column
+\\*
+--- check source | Spells mission_log with its underscore
+[Ff][Rr][Oo][Mm]\\s+mission_log\\b
+
+=== sql-02 | Choosing columns
+--- teach
+Last lesson you used \`SELECT *\` to get every column of a table. Often you only want two or three of them. This lesson shows you how to pick them, and how to make a new column out of the ones you have.
+
+## Pick the columns you want
+
+Picture copying a class register onto a fresh sheet, but only the names and the homerooms. You leave out the columns you do not need.
+
+In SQL you do that by writing column names where the star was. Put a comma between them:
+
+\`\`\`sql
+SELECT email, plan FROM users;
+\`\`\`
+
+| email | plan |
+| --- | --- |
+| ada@example.com | pro |
+| lin@example.com | free |
+| sam@example.com | free |
+| kai@example.com | pro |
+
+You still get every row. You only get the [[columns you asked for|choosing-columns]].
+
+The columns come back in the order you write them. \`SELECT plan, email FROM users;\` gives the same data with \`plan\` first.
+
+## Work something out for each row
+
+A column in your answer does not have to be stored in the table. You can write a small sum, and the database works it out for each row. Here \`+\` means "add":
+
+\`\`\`sql
+SELECT id, input_tokens + output_tokens FROM requests;
+\`\`\`
+
+For request 1 that is 1200 + 340 = 1540. A column made this way is called a **[[computed column|computed-not-stored]]**: it is worked out when you ask, not kept in the table.
+
+You can also use \`-\` to subtract, \`/\` to [[divide|integer-division]] and \`*\` to multiply. Yes, the star again: after \`SELECT\` on its own it means "every column", but between two numbers it means "times".
+
+## Give a column a name with AS
+
+The answer from that query has a clumsy heading: the column is called \`input_tokens + output_tokens\`. The keyword \`AS\` gives a column a new name in the answer. A name given this way is called an **[[alias|alias-word]]**.
+
+\`\`\`sql
+SELECT id, input_tokens + output_tokens AS total_tokens FROM requests;
+\`\`\`
+
+| id | total_tokens |
+| --- | --- |
+| 1 | 1540 |
+| 2 | 6310 |
+| 3 | 920 |
+| 4 | 17100 |
+| 5 | 380 |
+| 6 | 2600 |
+
+The alias only changes the heading of your answer. The table itself is not changed.
+
+## A good habit
+
+Ask for only the columns you need. On real tables with millions of rows that is faster, and anyone reading your query can see what it is for.
+
+**Watch out:** check your commas. Every column needs a comma before the next one, and there is no comma after the last one. \`SELECT id, model, FROM requests;\` fails with \`near "FROM": syntax error\`. Worse, \`SELECT id model FROM requests;\` (comma forgotten) does not fail at all: it returns only the ids, in a column named \`model\`, because SQL reads the second word as an alias.
+
+::: context choosing-columns Choosing columns, as a picture
+The table stays as it is. Your query picks which columns go into the answer, and in what order.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="16" font-size="11" fill="#6c7a93">the requests table</text>
+  <g font-size="11" fill="#1f2a44">
+    <rect x="10" y="24" width="56" height="26" fill="#8fb8f0" stroke="#1f2a44"/><text x="18" y="41">id</text>
+    <rect x="66" y="24" width="56" height="26" fill="#ffffff" stroke="#1f2a44"/><text x="72" y="41">user_id</text>
+    <rect x="122" y="24" width="56" height="26" fill="#ffffff" stroke="#1f2a44"/><text x="128" y="41">model</text>
+    <rect x="178" y="24" width="56" height="26" fill="#8fb8f0" stroke="#1f2a44"/><text x="184" y="41">input</text>
+    <rect x="234" y="24" width="56" height="26" fill="#8fb8f0" stroke="#1f2a44"/><text x="240" y="41">output</text>
+    <rect x="290" y="24" width="56" height="26" fill="#ffffff" stroke="#1f2a44"/><text x="296" y="41">cost</text>
+  </g>
+  <line x1="38" y1="50" x2="100" y2="104" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="206" y1="50" x2="206" y2="104" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="262" y1="50" x2="220" y2="104" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="250" y="82" font-size="11" fill="#1d6fd1">added</text>
+  <g font-size="11" fill="#1f2a44">
+    <rect x="70" y="104" width="60" height="26" fill="#8fb8f0" stroke="#1f2a44"/><text x="93" y="121">id</text>
+    <rect x="130" y="104" width="110" height="26" fill="#f2b880" stroke="#1f2a44"/><text x="140" y="121">total_tokens</text>
+  </g>
+  <text x="70" y="146" font-size="11" fill="#6c7a93">your answer</text>
+</svg>
+\`\`\`
+:::
+
+::: context computed-not-stored Why not store the total too?
+You could add a \`total_tokens\` column to the table itself, but then the same fact lives in two places. If someone fixes \`input_tokens\` and forgets the total, the two disagree, and nobody knows which one is right. Working the total out each time you ask means it can never be wrong. Engineers keep the raw readings — like the separate sensor values in a rocket's telemetry — and compute totals, averages and differences in the query.
+:::
+
+::: context integer-division Dividing whole numbers
+In SQLite, when both numbers in a division are whole numbers, the answer is a whole number too: the part after the point is thrown away. So \`7 / 2\` gives \`3\`, not \`3.5\`. Write one of them with a decimal point, \`7 / 2.0\`, and you get \`3.5\`. This surprises many people the first time they work out an average or a percentage by hand in a query.
+:::
+
+::: context alias-word "Alias" means another name
+An alias is a second name for something, like a nickname. In SQLite the word \`AS\` is actually optional: \`input_tokens + output_tokens total_tokens\` works too. That is exactly why a forgotten comma is so sneaky — the database thinks you meant an alias. Writing \`AS\` every time makes your intention plain. Aliases come back later in the course: you will use them to name totals, and to give whole tables short names when you combine two tables.
+:::
+--- task
+Return each request's \`id\`, its \`model\`, and its total tokens (input plus output) as a column named \`total_tokens\`.
+--- starter
+SELECT * FROM requests;
+--- solution
+SELECT id, model, input_tokens + output_tokens AS total_tokens FROM requests;
+--- hint
+Replace the star with three things separated by commas: \`id\`, \`model\`, and the sum of the two token columns.
+--- hint
+The sum is \`input_tokens + output_tokens\`. To name it, put \`AS\` and the new name after it.
+--- hint
+The part between \`SELECT\` and \`FROM\` is \`id, model, input_tokens + output_tokens AS total_tokens\`.
+--- check result | id, model and total tokens for every request
+[[1, "sonnet", 1540], [2, "sonnet", 6310], [3, "haiku", 920], [4, "sonnet", 17100], [5, "haiku", 380], [6, "haiku", 2600]]
+--- check source | Names the column total_tokens
+[Aa][Ss]\\s+total_tokens
+
++++ practice | Names and masses
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Return two columns for every satellite: its \`name\` first, then its \`mass_kg\`. Leave the other columns out.
+--- starter
+SELECT * FROM satellites;
+--- solution
+SELECT name, mass_kg FROM satellites;
+--- hint
+Replace the star with the names of the columns you want, in the order you want them.
+--- hint
+Put a comma between the two column names, and no comma after the last one.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Name then mass, for all five satellites
+[["Kestrel", 220], ["Heron", 3400], ["Wren", 95], ["Osprey", 1500], ["Finch", 60]]
+--- check source absent | Does not ask for every column
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+\\*
+--- check source | Names the name column
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+name\\s*,
+
++++ practice | Cost in cents
+--- task
+Using the \`requests\` table, return each request's \`id\` and its cost in **cents**, in a column named \`cost_cents\`. A dollar is 100 cents, so the cost in cents is \`cost_usd\` times 100. Request 1, which cost 0.0087 dollars, cost 0.87 cents.
+--- starter
+SELECT id, cost_usd FROM requests;
+--- solution
+SELECT id, cost_usd * 100 AS cost_cents FROM requests;
+--- hint
+A column can be a small sum worked out for each row. Between two numbers, the star means "times".
+--- hint
+Multiply \`cost_usd\` by 100, then give that column its name with \`AS\`.
+--- check result | Every request's cost in cents
+[[1, 0.87], [2, 2.98], [3, 0.12], [4, 7.65], [5, 0.06], [6, 0.34]]
+--- check source | Names the column cost_cents
+[Aa][Ss]\\s+cost_cents\\b
+--- check source absent | Works the cents out instead of typing them
+0\\.87|7\\.65
+
++++ practice | How full is each tank
+--- task
+A spacecraft has four fuel tanks, listed in a table called \`tanks\` with the columns \`id\`, \`name\`, \`capacity_l\` (how many litres the tank holds) and \`filled_l\` (how many litres are in it now).
+
+Return three columns for every tank:
+
+1. its \`name\`,
+2. how many more litres would fit, as \`room_l\` (capacity minus filled),
+3. how full it is as a whole-number percentage, as \`percent_full\`: filled times 100, divided by capacity. A tank with 450 of 600 litres is \`75\` percent full. Keep it a whole number: the part after the point is thrown away.
+--- starter
+SELECT name FROM tanks;
+--- solution
+SELECT name,
+       capacity_l - filled_l AS room_l,
+       filled_l * 100 / capacity_l AS percent_full
+FROM tanks;
+--- hint
+You need two computed columns, each with its own \`AS\` name. One subtracts, the other multiplies and then divides.
+--- hint
+Multiply \`filled_l\` by 100 first, then divide by \`capacity_l\`. Both are whole numbers, so SQLite gives a whole-number answer.
+--- hint
+The percentage column is \`filled_l * 100 / capacity_l AS percent_full\`.
+--- schema
+CREATE TABLE tanks (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  capacity_l INTEGER NOT NULL,
+  filled_l INTEGER NOT NULL
+);
+INSERT INTO tanks (id, name, capacity_l, filled_l) VALUES
+  (1, 'oxidizer A', 600, 450),
+  (2, 'oxidizer B', 600, 600),
+  (3, 'fuel A', 900, 300),
+  (4, 'fuel B', 900, 5);
+--- check result | Room left and whole-number percentages, a full tank at 100
+[["oxidizer A", 150, 75], ["oxidizer B", 0, 100], ["fuel A", 600, 33], ["fuel B", 895, 0]]
+--- check source | Names the column room_l
+[Aa][Ss]\\s+room_l\\b
+--- check source | Names the column percent_full
+[Aa][Ss]\\s+percent_full\\b
+
++++ practice | Kilograms to tonnes
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`. A tonne is 1000 kilograms.
+
+Return each satellite's \`name\` and its mass in tonnes, as a column named \`tonnes\`. Keep the decimals: Wren weighs 95 kg, which is \`0.095\` tonnes, not \`0\`.
+--- starter
+SELECT name FROM satellites;
+--- solution
+SELECT name, mass_kg / 1000.0 AS tonnes FROM satellites;
+--- hint
+Divide the mass by 1000. Then look at the small satellites: when both numbers in a division are whole numbers, SQLite throws away the part after the point.
+--- hint
+Write one of the two numbers with a decimal point, and the answer keeps its decimals.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Masses in tonnes, decimals kept for the light ones
+[["Kestrel", 0.22], ["Heron", 3.4], ["Wren", 0.095], ["Osprey", 1.5], ["Finch", 0.06]]
+--- check source | Names the column tonnes
+[Aa][Ss]\\s+tonnes\\b
+--- check source absent | Does not type the answers in
+0\\.095|3\\.4\\b
+
++++ practice | The missing comma
+--- task
+The query in the editor should return three columns for every request: its \`id\`, its \`model\` and its \`cost_usd\`. Instead it returns only two columns, and the one headed \`model\` is full of numbers. Fix it.
+--- starter
+SELECT id model, cost_usd FROM requests;
+--- solution
+SELECT id, model, cost_usd FROM requests;
+--- hint
+Count the columns in the answer, then count the commas in the query.
+--- hint
+Without a comma, SQL reads the second word as an alias for the first column.
+--- check result | id, model and cost for all six requests
+[[1, "sonnet", 0.0087], [2, "sonnet", 0.0298], [3, "haiku", 0.0012], [4, "sonnet", 0.0765], [5, "haiku", 0.0006], [6, "haiku", 0.0034]]
+--- check source | A comma between id and model
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+id\\s*,\\s*model\\s*,\\s*cost_usd
+--- check source absent | No alias hiding the model column
+\\bid\\s+model\\b
+
++++ practice | Engine test readings
+--- task
+An engine test stand saves one row every second in a table called \`readings\`. Its columns are \`t_s\` (seconds since the test began), \`chamber_kpa\` (pressure inside the engine, in kilopascals), \`ambient_kpa\` (air pressure outside) and \`temp_c\` (temperature in degrees Celsius, a whole number).
+
+Return three columns for every reading:
+
+1. \`t_s\`,
+2. how much higher the chamber pressure is than the air outside, as \`delta_kpa\`,
+3. the temperature in degrees Fahrenheit, as \`temp_f\`. The formula is Celsius times 9, divided by 5, plus 32. Keep the decimals: 21 °C is \`69.8\` °F.
+--- starter
+SELECT t_s, chamber_kpa, ambient_kpa, temp_c FROM readings;
+--- solution
+SELECT t_s,
+       chamber_kpa - ambient_kpa AS delta_kpa,
+       temp_c * 9.0 / 5 + 32 AS temp_f
+FROM readings;
+--- hint
+Both new columns are computed from other columns in the same row. Give each one its name with \`AS\`.
+--- hint
+\`temp_c\` holds whole numbers, and so do 9 and 5. Something in the Fahrenheit sum needs a decimal point, or 21 °C comes out as 69 instead of 69.8.
+--- hint
+The Fahrenheit column is \`temp_c * 9.0 / 5 + 32 AS temp_f\`.
+--- schema
+CREATE TABLE readings (
+  t_s INTEGER PRIMARY KEY,
+  chamber_kpa INTEGER NOT NULL,
+  ambient_kpa INTEGER NOT NULL,
+  temp_c INTEGER NOT NULL
+);
+INSERT INTO readings (t_s, chamber_kpa, ambient_kpa, temp_c) VALUES
+  (0, 101, 101, 21),
+  (1, 2400, 101, 180),
+  (2, 6900, 101, 612),
+  (3, 7050, 101, 655),
+  (4, 150, 101, -3);
+--- check result | Pressure difference and Fahrenheit, decimals and below zero included
+[[0, 0, 69.8], [1, 2299, 356.0], [2, 6799, 1133.6], [3, 6949, 1211.0], [4, 49, 26.6]]
+--- check source | Names the column delta_kpa
+[Aa][Ss]\\s+delta_kpa\\b
+--- check source | Names the column temp_f
+[Aa][Ss]\\s+temp_f\\b
+
+=== sql-03 | Filtering with WHERE
+--- teach
+Last lesson you chose which columns come back. This lesson you choose which **rows** come back, so you can ask for "only the pro users" or "only the big requests".
+
+## Keep only the rows that match
+
+Picture a teacher saying "stand up if you are in the pro plan". Everyone checks the same question about themselves. Only the people for whom the answer is yes stand up.
+
+In SQL, \`WHERE\` does that. It keeps only the rows where a **[[condition|condition-check]]** is true. A condition is a yes-or-no question asked about each row.
+
+\`\`\`sql
+SELECT * FROM users WHERE plan = 'pro';
+\`\`\`
+
+| id | email | plan | created |
+| --- | --- | --- | --- |
+| 1 | ada@example.com | pro | 2025-01-04 |
+| 4 | kai@example.com | pro | 2025-03-28 |
+
+Here \`=\` means "is equal to". It asks a question; it does not change anything. Lin's plan is \`free\`, so that row is left out.
+
+## Text goes in quotes
+
+The word \`pro\` is written \`'pro'\`, in [[single quotes|quote-kinds]]. Quotes tell SQL "this is a piece of text", not the name of a column. Numbers need no quotes. The match is [[exact|exact-match]], letter for letter.
+
+## Comparing numbers
+
+\`>\` means "greater than":
+
+\`\`\`sql
+SELECT id, input_tokens FROM requests WHERE input_tokens > 1000;
+\`\`\`
+
+| id | input_tokens |
+| --- | --- |
+| 1 | 1200 |
+| 2 | 5400 |
+| 4 | 15000 |
+| 6 | 2200 |
+
+Here is every way to compare, and how to read each one:
+
+| Symbol | Read it as |
+| --- | --- |
+| \`=\` | is equal to |
+| \`<>\` | is not equal to |
+| \`<\` | is less than |
+| \`<=\` | is less than or equal to |
+| \`>\` | is greater than |
+| \`>=\` | is greater than or equal to |
+
+\`<>\` is worth a second look. It means "not equal":
+
+\`\`\`sql
+SELECT email FROM users WHERE plan <> 'pro';
+\`\`\`
+
+That returns \`lin@example.com\` and \`sam@example.com\`, the two users whose plan is not \`pro\`.
+
+## Where WHERE goes
+
+Each part of a query that starts with a keyword is called a **[[clause|clause-order]]**. The \`WHERE\` clause comes after the \`FROM\` clause: first say which table, then which rows.
+
+## Two conditions: AND
+
+Sometimes one question is not enough. \`AND\` joins two conditions, and a row is kept only if **both** are true:
+
+\`\`\`sql
+SELECT id, model, input_tokens FROM requests WHERE model = 'haiku' AND input_tokens > 1000;
+\`\`\`
+
+| id | model | input_tokens |
+| --- | --- | --- |
+| 6 | haiku | 2200 |
+
+Requests 3 and 5 are haiku too, but they have fewer than 1000 input tokens, so they fail the second question. Requests 1, 2 and 4 have more than 1000, but they are sonnet, so they fail the first.
+
+**Watch out:** forgetting the quotes around text. \`WHERE model = sonnet\` fails with \`no such column: sonnet\`, because without quotes SQL thinks \`sonnet\` is the name of a column. When you see "no such column" for a word that is really a value, add the quotes.
+
+::: context condition-check The database asks every row
+A \`WHERE\` clause is checked once for every row in the table. For each row the condition comes out true or false, and only the true rows go into the answer.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="16" font-size="12" font-weight="bold" fill="#1f2a44">plan = 'pro' ?</text>
+  <g font-size="12" fill="#1f2a44">
+    <text x="10" y="44">ada · pro</text>
+    <text x="10" y="70">lin · free</text>
+    <text x="10" y="96">sam · free</text>
+    <text x="10" y="122">kai · pro</text>
+  </g>
+  <g font-size="12" font-weight="bold">
+    <text x="120" y="44" fill="#1d6fd1">true</text>
+    <text x="120" y="70" fill="#b4232c">false</text>
+    <text x="120" y="96" fill="#b4232c">false</text>
+    <text x="120" y="122" fill="#1d6fd1">true</text>
+  </g>
+  <line x1="165" y1="40" x2="225" y2="60" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="165" y1="118" x2="225" y2="84" stroke="#1d6fd1" stroke-width="2"/>
+  <rect x="230" y="46" width="118" height="50" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="240" y="66" font-size="12" fill="#1f2a44">ada · pro</text>
+  <text x="240" y="86" font-size="12" fill="#1f2a44">kai · pro</text>
+  <text x="230" y="114" font-size="11" fill="#6c7a93">the answer</text>
+</svg>
+\`\`\`
+:::
+
+::: context quote-kinds Single quotes for text
+In SQL, single quotes \`'…'\` mark a piece of text, called a **string**. Double quotes \`"…"\` are meant for names, such as a column name with a space in it. SQLite will sometimes accept \`"pro"\` as text when no column has that name, but other databases will not, and it can quietly go wrong if a column with that name exists. Use single quotes for text every time.
+:::
+
+::: context exact-match Capitals count
+\`=\` compares text exactly, letter for letter. The models in this table are stored as \`'sonnet'\` and \`'haiku'\`, in lowercase, so \`WHERE model = 'Sonnet'\` finds no rows at all — and gives no error either, only an empty answer. When a filter you expected to match returns nothing, check the capitals and look for extra spaces in your text.
+:::
+
+::: context clause-order Clauses have a fixed order
+A query is built from clauses, and they always go in the same order. So far you have \`SELECT\`, then \`FROM\`, then \`WHERE\`. The next lesson adds two more at the end, \`ORDER BY\` and \`LIMIT\`, and later lessons slot a few more in between. Putting a clause in the wrong place gives a syntax error, so when you get one, check the order first.
+:::
+--- task
+Return the \`id\`, \`user_id\` and \`input_tokens\` of every request whose \`model\` is \`'sonnet'\` **and** that has **more than 2000** input tokens.
+--- starter
+SELECT id, user_id, input_tokens FROM requests;
+--- solution
+SELECT id, user_id, input_tokens
+FROM requests
+WHERE model = 'sonnet' AND input_tokens > 2000;
+--- hint
+The starter already picks the right columns. Add a \`WHERE\` clause after \`FROM requests\`, before the semicolon.
+--- hint
+You need two conditions, and both must be true, so join them with \`AND\`. The model is text, so it needs quotes; 2000 is a number, so it does not.
+--- hint
+The clause is \`WHERE model = 'sonnet' AND input_tokens > 2000\`.
+--- check result | The two big sonnet requests
+[[2, 1, 5400], [4, 2, 15000]]
+
++++ practice | Satellites in low orbit
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`. The \`orbit\` column holds \`'LEO'\` for a low orbit, \`'MEO'\` for a middle one and \`'GEO'\` for a high one.
+
+Return the \`name\` and \`mass_kg\` of every satellite whose \`orbit\` is \`'LEO'\`.
+--- starter
+SELECT name, mass_kg FROM satellites;
+--- solution
+SELECT name, mass_kg FROM satellites WHERE orbit = 'LEO';
+--- hint
+Keep only some rows with a \`WHERE\` clause after \`FROM satellites\`.
+--- hint
+The orbit is text, so \`LEO\` goes in single quotes, in capitals, exactly as it is stored.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Kestrel, Wren and Finch
+[["Kestrel", 220], ["Wren", 95], ["Finch", 60]]
+--- check source | Filters with WHERE
+\\b[Ww][Hh][Ee][Rr][Ee]\\b
+--- check source absent | Does not pick the satellites by id
+\\bid\\s*(=|<|>|<>)
+
++++ practice | Everyone but user 1
+--- task
+Using the \`requests\` table, return the \`id\`, \`user_id\` and \`model\` of every request that was **not** sent by the user whose id is \`1\`. Use the "is not equal to" symbol.
+--- starter
+SELECT id, user_id, model FROM requests;
+--- solution
+SELECT id, user_id, model FROM requests WHERE user_id <> 1;
+--- hint
+"Not sent by user 1" means the \`user_id\` column is not equal to 1.
+--- hint
+SQL writes "is not equal to" as a less-than sign followed by a greater-than sign.
+--- check result | Requests 4, 5 and 6
+[[4, 2, "sonnet"], [5, 2, "haiku"], [6, 4, "haiku"]]
+--- check source | Uses the not-equal symbol
+<>
+--- check source absent | Does not pick the requests by their own id
+\\bid\\s*[=<>]
+
++++ practice | Big requests with their totals
+--- task
+Using the \`requests\` table, return each request's \`id\` and its total tokens (input plus output) as \`total_tokens\`, but only for requests whose total is **2600 or more**.
+
+Watch the edge: a request with exactly 2600 tokens in total must be in the answer.
+--- starter
+SELECT id FROM requests;
+--- solution
+SELECT id, input_tokens + output_tokens AS total_tokens
+FROM requests
+WHERE input_tokens + output_tokens >= 2600;
+--- hint
+The same sum appears twice: once in the \`SELECT\` to show it, and once in the \`WHERE\` to test it.
+--- hint
+"2600 or more" includes 2600 itself. Pick the comparison symbol that means "greater than or equal to".
+--- hint
+The test is \`WHERE input_tokens + output_tokens >= 2600\`.
+--- check result | Requests 2, 4 and 6, with 6 at exactly 2600
+[[2, 6310], [4, 17100], [6, 2600]]
+--- check source | Names the column total_tokens
+[Aa][Ss]\\s+total_tokens\\b
+--- check source absent | Does not pick the requests by id
+\\bid\\s*(=|<|>|<>)
+
++++ practice | Heavy enough, light enough
+--- task
+The \`satellites\` table here has the columns \`id\`, \`name\` and \`mass_kg\`.
+
+A launch can carry any satellite that weighs **at least 95 kg and at most 1500 kg**. Return the \`name\` of every satellite in that range. Both limits count: a satellite of exactly 95 kg or exactly 1500 kg can go.
+--- starter
+SELECT name FROM satellites;
+--- solution
+SELECT name
+FROM satellites
+WHERE mass_kg >= 95 AND mass_kg <= 1500;
+--- hint
+You need two conditions that must both be true, joined with \`AND\`.
+--- hint
+"At least" and "at most" include the number itself. Look for the two symbols that end in an equals sign.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, mass_kg) VALUES
+  (1, 'Kestrel', 220),
+  (2, 'Heron', 3400),
+  (3, 'Wren', 95),
+  (4, 'Osprey', 1500),
+  (5, 'Finch', 60),
+  (6, 'Plover', 94),
+  (7, 'Tern', 1501);
+--- check result | Kestrel, Wren and Osprey: both limits included, 94 and 1501 left out
+[["Kestrel"], ["Wren"], ["Osprey"]]
+--- check source | Joins two conditions with AND
+\\b[Aa][Nn][Dd]\\b
+--- check source absent | Does not pick the satellites by name
+name\\s*(=|<>)\\s*'
+
++++ practice | One pilot missing
+--- task
+The \`crew\` table has the columns \`id\`, \`name\`, \`role\` and \`hours\` (hours flown).
+
+The query in the editor should return the name of every pilot with **at least** 500 hours. It returns only one name, but there are two such pilots. Fix it.
+--- starter
+SELECT name FROM crew WHERE role = 'pilot' AND hours > 500;
+--- solution
+SELECT name FROM crew WHERE role = 'pilot' AND hours >= 500;
+--- hint
+Look for a pilot whose hours are exactly 500. Is that "more than 500"?
+--- hint
+"At least 500" means greater than or equal to 500.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  hours INTEGER NOT NULL
+);
+INSERT INTO crew (id, name, role, hours) VALUES
+  (1, 'Imani', 'pilot', 900),
+  (2, 'Tomas', 'engineer', 750),
+  (3, 'Yuki', 'pilot', 500),
+  (4, 'Ravi', 'pilot', 480),
+  (5, 'Noor', 'medic', 1200);
+--- check result | Imani and Yuki, Yuki at exactly 500
+[["Imani"], ["Yuki"]]
+--- check source | Still checks the role
+role\\s*=\\s*'pilot'
+--- check source absent | Does not pick the pilots by name
+name\\s*(=|<>)\\s*'
+
++++ practice | Over the limit
+--- task
+A fuel tank reports its pressure once a minute into a table called \`pressure_log\`, with the columns \`id\`, \`tank\`, \`minute\`, \`kpa\` (the pressure) and \`limit_kpa\` (the highest safe pressure for that tank at that moment).
+
+Return the \`minute\`, the \`kpa\`, and how far over the limit the pressure was as \`over_by\` (kpa minus limit_kpa), for every reading from tank \`'A'\` whose pressure was **above** its limit. A reading exactly at the limit is safe, so leave it out.
+--- starter
+SELECT minute, kpa FROM pressure_log;
+--- solution
+SELECT minute, kpa, kpa - limit_kpa AS over_by
+FROM pressure_log
+WHERE tank = 'A' AND kpa > limit_kpa;
+--- hint
+A condition can compare two columns of the same row, not only a column with a number.
+--- hint
+You need two conditions: the tank is \`'A'\`, and \`kpa\` is greater than \`limit_kpa\`. The \`over_by\` column is a subtraction.
+--- schema
+CREATE TABLE pressure_log (
+  id INTEGER PRIMARY KEY,
+  tank TEXT NOT NULL,
+  minute INTEGER NOT NULL,
+  kpa INTEGER NOT NULL,
+  limit_kpa INTEGER NOT NULL
+);
+INSERT INTO pressure_log (id, tank, minute, kpa, limit_kpa) VALUES
+  (1, 'A', 1, 310, 350),
+  (2, 'B', 1, 420, 400),
+  (3, 'A', 2, 362, 350),
+  (4, 'A', 3, 350, 350),
+  (5, 'B', 2, 390, 400),
+  (6, 'A', 4, 377, 360),
+  (7, 'A', 5, 340, 360);
+--- check result | Minutes 2 and 4 only: tank B and the reading at the limit left out
+[[2, 362, 12], [4, 377, 17]]
+--- check source | Compares the pressure with the limit column
+kpa\\s*>\\s*limit_kpa|limit_kpa\\s*<\\s*kpa
+--- check source | Names the column over_by
+[Aa][Ss]\\s+over_by\\b
+
+=== sql-03b | More ways to match: OR, NOT, IN and LIKE
+--- teach
+Last lesson you filtered rows with \`WHERE\`, and joined two conditions with \`AND\`. This lesson adds four more tools: "either one", "not this", "any of a list", and "looks like this pattern".
+
+## Either one: OR
+
+\`AND\` keeps a row only when both conditions are true. \`OR\` keeps a row when **at least one** of them is true:
+
+\`\`\`sql
+SELECT email, plan FROM users WHERE plan = 'free' OR email = 'ada@example.com';
+\`\`\`
+
+| email | plan |
+| --- | --- |
+| ada@example.com | pro |
+| lin@example.com | free |
+| sam@example.com | free |
+
+Lin and Sam pass the first question. Ada fails it, but passes the second. Kai fails both, so that row is left out.
+
+## Turn it around: NOT
+
+\`NOT\` flips a condition: true becomes false and false becomes true.
+
+\`\`\`sql
+SELECT id, model FROM requests WHERE NOT model = 'haiku';
+\`\`\`
+
+That returns requests 1, 2 and 4, the sonnet ones. It means the same as \`model <> 'haiku'\`. \`NOT\` also has [[a couple of useful partners|not-pairs]].
+
+## Mixing AND and OR: use brackets
+
+When a condition has both \`AND\` and \`OR\`, the \`AND\` part is worked out first — [[the way times comes before plus|and-before-or]] in arithmetic. That can give you a different answer from the one you meant. Brackets \`( )\` make SQL do the part inside them first.
+
+Say you want haiku or sonnet requests, with more than 2000 input tokens. Without brackets:
+
+\`\`\`sql
+SELECT id FROM requests WHERE model = 'haiku' OR model = 'sonnet' AND input_tokens > 2000;
+\`\`\`
+
+That returns 2, 3, 4, 5 and 6: every haiku request, big or small, because SQL read it as "haiku, or (sonnet and big)". With brackets:
+
+\`\`\`sql
+SELECT id FROM requests WHERE (model = 'haiku' OR model = 'sonnet') AND input_tokens > 2000;
+\`\`\`
+
+That returns 2, 4 and 6, which is what you meant.
+
+## Any of a list: IN
+
+\`IN\` checks whether a value is one of a list. Put the list in brackets, with commas between the items:
+
+\`\`\`sql
+SELECT id, email FROM users WHERE id IN (1, 3);
+\`\`\`
+
+That returns Ada (id 1) and Sam (id 3). It means the same as \`id = 1 OR id = 3\`, only shorter. Text works too: \`plan IN ('free', 'pro')\`. Later in the course, [[IN comes back|in-later]] with lists that fill themselves in.
+
+## Looks like a pattern: LIKE
+
+Sometimes you do not know the whole value, only part of it — "emails that start with ada". \`LIKE\` compares text with a **pattern**: a piece of text with gaps in it. The \`%\` sign in a pattern means "any run of characters, even none at all".
+
+\`\`\`sql
+SELECT email FROM users WHERE email LIKE 'ada%';
+\`\`\`
+
+That returns \`ada@example.com\`. The pattern \`'ada%'\` reads as "\`ada\`, then anything". Put the \`%\` first and it means "ends with": \`'%example.com'\` matches all four emails. The pattern goes in single quotes, like any text. There is [[one more gap sign|like-underscore]] you can use in a pattern.
+
+**Watch out:** with \`OR\`, repeat the column in each condition. \`email LIKE 'k%' OR 'l%'\` does not mean "starts with k or l". SQL reads \`'l%'\` on its own as a condition, finds it is not true, and quietly returns Kai alone. Write it out in full: \`email LIKE 'k%' OR email LIKE 'l%'\`.
+
+::: context not-pairs NOT goes with IN and LIKE
+\`NOT\` can sit in front of any condition, but it pairs especially well with \`IN\` and \`LIKE\`. \`model NOT IN ('haiku')\` keeps every row whose model is not in the list. \`email NOT LIKE 'ada%'\` keeps every email that does not start with \`ada\`. Reading them aloud works: "email not like ada-anything". Engineers use \`NOT IN\` all the time to leave out a short list of test accounts from a report.
+:::
+
+::: context and-before-or Which part goes first
+In arithmetic, 2 + 3 × 4 is 14, not 20, because times is done before plus. SQL treats \`AND\` like times and \`OR\` like plus: \`AND\` is done first. So \`A OR B AND C\` means \`A OR (B AND C)\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <text x="10" y="18" font-size="11" fill="#6c7a93">without brackets, SQL reads</text>
+  <rect x="10" y="26" width="340" height="30" fill="#ffffff" stroke="#b4232c" stroke-width="2"/>
+  <text x="20" y="46" font-size="12" fill="#1f2a44">haiku OR ( sonnet AND tokens &gt; 2000 )</text>
+  <text x="300" y="46" font-size="12" font-weight="bold" fill="#b4232c">5 rows</text>
+  <text x="10" y="80" font-size="11" fill="#6c7a93">with brackets, you choose</text>
+  <rect x="10" y="88" width="340" height="30" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="20" y="108" font-size="12" fill="#1f2a44">( haiku OR sonnet ) AND tokens &gt; 2000</text>
+  <text x="300" y="108" font-size="12" font-weight="bold" fill="#1d6fd1">3 rows</text>
+</svg>
+\`\`\`
+
+When you mix the two, write the brackets even if you think you know the rule. The next person to read your query will thank you.
+:::
+
+::: context in-later Lists that come from a query
+Here the list after \`IN\` is typed by hand. Later in the course you will meet **subqueries**: a query written inside another query. The list in \`IN\`'s brackets can be one of those, as in "users whose id is in the list of users who sent a sonnet request". That is where \`IN\` becomes really powerful.
+:::
+
+::: context like-underscore The other gap sign, and capitals
+Besides \`%\`, a pattern can use \`_\`, the underscore, which means "exactly one character". \`'_in%'\` matches \`lin@example.com\`: one character, then \`in\`, then anything. Also, unlike \`=\`, SQLite's \`LIKE\` ignores the difference between capital and small letters for plain English letters, so \`'ADA%'\` matches \`ada@example.com\` too. The search box on many websites started out as a \`LIKE '%word%'\` query.
+:::
+--- task
+Return the \`id\` and \`email\` of every user whose email starts with \`k\` **or** starts with \`l\`. Use \`LIKE\`.
+--- starter
+SELECT id, email FROM users;
+--- solution
+SELECT id, email
+FROM users
+WHERE email LIKE 'k%' OR email LIKE 'l%';
+--- hint
+"Starts with k" is a pattern: the letter \`k\`, then anything. In a \`LIKE\` pattern, \`%\` means "anything".
+--- hint
+You need two patterns, and a row should be kept if either one matches, so join them with \`OR\`. Remember to repeat \`email LIKE\` in both.
+--- hint
+Add \`WHERE email LIKE 'k%' OR email LIKE 'l%'\` before the semicolon.
+--- check result | Kai and Lin
+[[2, "lin@example.com"], [4, "kai@example.com"]]
+--- check source | Uses LIKE
+[Ll][Ii][Kk][Ee]
+
++++ practice | Middle and high orbits
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`. The \`orbit\` column holds \`'LEO'\`, \`'MEO'\` or \`'GEO'\`.
+
+Return the \`name\` and \`orbit\` of every satellite whose orbit is \`'MEO'\` or \`'GEO'\`. Use \`IN\` with a list.
+--- starter
+SELECT name, orbit FROM satellites;
+--- solution
+SELECT name, orbit FROM satellites WHERE orbit IN ('MEO', 'GEO');
+--- hint
+\`IN\` checks whether a value is one of a list. The list goes in round brackets, with commas between the items.
+--- hint
+The items are text, so each one needs its own single quotes.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Heron and Osprey
+[["Heron", "GEO"], ["Osprey", "MEO"]]
+--- check source | Uses IN
+\\b[Ii][Nn]\\s*\\(
+--- check source absent | Does not pick the satellites by name
+name\\s*(=|<>|[Ii][Nn])
+
++++ practice | Outside the team
+--- task
+The \`crew\` table has the columns \`id\`, \`name\` and \`email\`. People on the team have an email that ends in \`@orbit.dev\`; guests have some other address.
+
+Return the \`name\` and \`email\` of every guest: everyone whose email does **not** end in \`@orbit.dev\`. Use \`NOT LIKE\`.
+--- starter
+SELECT name, email FROM crew;
+--- solution
+SELECT name, email FROM crew WHERE email NOT LIKE '%@orbit.dev';
+--- hint
+"Ends in" is a pattern with the gap at the front: anything, then the ending.
+--- hint
+Put \`NOT\` in front of \`LIKE\` to keep the rows that do not match. The \`%\` sign goes before \`@orbit.dev\`.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL
+);
+INSERT INTO crew (id, name, email) VALUES
+  (1, 'Imani', 'imani@orbit.dev'),
+  (2, 'Tomas', 'tomas@orbit.dev'),
+  (3, 'Priya', 'priya@spaceport.org'),
+  (4, 'Yuki', 'yuki@orbit.dev'),
+  (5, 'Leo', 'leo.orbit.dev@mail.com');
+--- check result | Priya and Leo, whose address only contains orbit.dev
+[["Priya", "priya@spaceport.org"], ["Leo", "leo.orbit.dev@mail.com"]]
+--- check source | Uses NOT LIKE
+[Nn][Oo][Tt]\\s+[Ll][Ii][Kk][Ee]
+--- check source absent | Does not pick the guests by name
+name\\s*(=|<>|[Ii][Nn]|[Ll][Ii][Kk][Ee])
+
++++ practice | Two kinds of request
+--- task
+Using the \`requests\` table, return the \`id\` and \`model\` of every request that is **either**:
+
+- a \`'haiku'\` request with more than 1000 input tokens, **or**
+- a \`'sonnet'\` request that cost less than 0.01 dollars.
+--- starter
+SELECT id, model FROM requests;
+--- solution
+SELECT id, model
+FROM requests
+WHERE (model = 'haiku' AND input_tokens > 1000)
+   OR (model = 'sonnet' AND cost_usd < 0.01);
+--- hint
+Each kind is two conditions joined with \`AND\`. The two kinds are then joined with \`OR\`.
+--- hint
+Put each \`AND\` pair in round brackets so the reader can see which conditions belong together.
+--- hint
+The shape is \`WHERE (model = 'haiku' AND ...) OR (model = 'sonnet' AND ...)\`.
+--- check result | Requests 1 and 6
+[[1, "sonnet"], [6, "haiku"]]
+--- check source | Uses OR
+\\b[Oo][Rr]\\b
+--- check source absent | Does not pick the requests by their own id
+\\bid\\s*(=|[Ii][Nn]\\b)
+
++++ practice | Exactly one character
+--- task
+Test satellites get call signs like \`KS-1\` or \`KS-7\`: the letters \`KS\`, a dash, then **exactly one** more character. The \`callsigns\` table has the columns \`id\` and \`sign\`.
+
+Return the \`sign\` of every row that fits that shape exactly. Some rows are close but wrong: \`KS-12\` has two characters after the dash, \`KS-\` has none, and \`XKS-4\` has an extra letter in front. Those must be left out. Lowercase \`ks-9\` fits, because \`LIKE\` does not care about capitals.
+--- starter
+SELECT sign FROM callsigns;
+--- solution
+SELECT sign FROM callsigns WHERE sign LIKE 'KS-_';
+--- hint
+In a pattern, \`%\` means "any run of characters, even none". You need a sign that means "exactly one character".
+--- hint
+The underscore, \`_\`, stands for exactly one character.
+--- schema
+CREATE TABLE callsigns (
+  id INTEGER PRIMARY KEY,
+  sign TEXT NOT NULL
+);
+INSERT INTO callsigns (id, sign) VALUES
+  (1, 'KS-1'),
+  (2, 'KS-12'),
+  (3, 'KS-'),
+  (4, 'XKS-4'),
+  (5, 'KS-7'),
+  (6, 'ks-9'),
+  (7, 'KS-A');
+--- check result | KS-1, KS-7, ks-9 and KS-A; KS-12, KS- and XKS-4 left out
+[["KS-1"], ["KS-7"], ["ks-9"], ["KS-A"]]
+--- check source | Uses LIKE
+[Ll][Ii][Kk][Ee]
+--- check source absent | Does not list the signs by hand
+[Ii][Nn]\\s*\\(|sign\\s*=
+
++++ practice | Brackets in the right place
+--- task
+The query in the editor should return the \`id\` of every **haiku** request sent by user 1 or user 2. That is requests 3 and 5. Instead it also returns requests 1, 2 and 4, which are sonnet requests. Fix it.
+--- starter
+SELECT id FROM requests WHERE user_id = 1 OR user_id = 2 AND model = 'haiku';
+--- solution
+SELECT id FROM requests WHERE (user_id = 1 OR user_id = 2) AND model = 'haiku';
+--- hint
+\`AND\` is worked out before \`OR\`. Say out loud how SQL reads the condition as it stands.
+--- hint
+Put round brackets around the part that should be worked out first: the two users.
+--- check result | Requests 3 and 5
+[[3], [5]]
+--- check source | Still checks the model
+model\\s*=\\s*'haiku'
+--- check source absent | Does not pick the requests by their own id
+\\bid\\s*(=|[Ii][Nn]\\b)
+
++++ practice | Valves to reorder
+--- task
+A spacecraft's spare parts are listed in a table called \`parts\`, with the columns \`id\`, \`name\`, \`bin\`, \`qty\` and \`status\`.
+
+Return the \`id\` and \`name\` of every part that needs reordering. A part needs reordering when **all three** of these are true:
+
+1. it is kept in bin \`'A1'\`, \`'A2'\` or \`'B7'\`,
+2. its name contains the word \`valve\` anywhere, in any capitals (\`Valve\`, \`VALVE\` and \`valve\` all count),
+3. its \`qty\` is below 10, **or** its \`status\` is \`'damaged'\`.
+--- starter
+SELECT id, name FROM parts;
+--- solution
+SELECT id, name
+FROM parts
+WHERE bin IN ('A1', 'A2', 'B7')
+  AND name LIKE '%valve%'
+  AND (qty < 10 OR status = 'damaged');
+--- hint
+Write each of the three rules as its own condition, and join them with \`AND\`. The third rule has an \`OR\` inside it.
+--- hint
+"Contains" is a pattern with \`%\` on both sides. \`LIKE\` ignores capitals for plain letters, so one pattern covers them all.
+--- hint
+The \`OR\` needs round brackets around it, or \`AND\` will be worked out first and grab the wrong conditions.
+--- schema
+CREATE TABLE parts (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  bin TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  status TEXT NOT NULL
+);
+INSERT INTO parts (id, name, bin, qty, status) VALUES
+  (1, 'Fuel valve',        'A1', 4,  'ok'),
+  (2, 'Oxidizer VALVE',    'A2', 25, 'damaged'),
+  (3, 'Relief valve',      'B7', 30, 'ok'),
+  (4, 'Pressure sensor',   'A1', 2,  'ok'),
+  (5, 'Check valve',       'C3', 1,  'damaged'),
+  (6, 'Valve seal kit',    'B7', 9,  'ok'),
+  (7, 'Purge valve',       'A2', 10, 'ok');
+--- check result | Parts 1, 2 and 6
+[[1, "Fuel valve"], [2, "Oxidizer VALVE"], [6, "Valve seal kit"]]
+--- check source | Uses IN for the bins
+\\b[Ii][Nn]\\s*\\(
+--- check source | Uses LIKE for the name
+[Ll][Ii][Kk][Ee]
+--- check source absent | Does not pick the parts by id
+\\bid\\s*(=|[Ii][Nn]\\b)
+
+=== sql-04 | Sorting and limiting
+--- teach
+In the last two lessons you chose which rows come back. This lesson you choose the **order** they come back in, and **how many** you get. Together those answer questions like "what were the three most expensive requests?"
+
+## Rows have no order until you ask
+
+Picture a shoebox of receipts. They are in the box in no special order. To find the three biggest, you lay them out from biggest to smallest, then pick up the first three.
+
+A table is like that shoebox. Rows come back in [[no guaranteed order|no-promised-order]] unless you ask for one. Often it looks like the order they were saved in, but nothing promises that.
+
+## Sort with ORDER BY
+
+\`ORDER BY\` sorts the answer by a column:
+
+\`\`\`sql
+SELECT email, created FROM users ORDER BY created;
+\`\`\`
+
+| email | created |
+| --- | --- |
+| ada@example.com | 2025-01-04 |
+| lin@example.com | 2025-02-11 |
+| sam@example.com | 2025-03-20 |
+| kai@example.com | 2025-03-28 |
+
+The earliest date comes first. Smallest first is called **ascending** order, and it is what you get unless you say otherwise. Numbers go from small to big, text goes from A to Z, and these [[dates|iso-dates]] go from old to new.
+
+## Reverse it with DESC
+
+\`DESC\`, short for **descending**, flips the sort: biggest first. It goes right after the column name:
+
+\`\`\`sql
+SELECT email, created FROM users ORDER BY created DESC;
+\`\`\`
+
+Now Kai, who signed up last, comes first, and Ada comes last. (The word for ascending is \`ASC\`. You may see it written, but since it is the normal order you rarely need it.)
+
+## Keep the first few with LIMIT
+
+\`LIMIT\` keeps only the first so-many rows of the answer. It goes at the very end:
+
+\`\`\`sql
+SELECT email, created FROM users ORDER BY created DESC LIMIT 2;
+\`\`\`
+
+| email | created |
+| --- | --- |
+| kai@example.com | 2025-03-28 |
+| sam@example.com | 2025-03-20 |
+
+That answers "who are the two newest users?". Any "[[top n|top-n]]" question — the biggest, the newest, the most expensive — has this shape: \`ORDER BY\` the column \`DESC\`, then \`LIMIT\` how many.
+
+## Sort by two columns
+
+You can sort by more than one column, with commas between them. The second column only decides the order among rows that are [[tied|ties]] on the first:
+
+\`\`\`sql
+SELECT plan, email FROM users ORDER BY plan, email;
+\`\`\`
+
+| plan | email |
+| --- | --- |
+| free | lin@example.com |
+| free | sam@example.com |
+| pro | ada@example.com |
+| pro | kai@example.com |
+
+The rows are sorted by plan first. Inside each plan, they are sorted by email.
+
+## Where the clauses go
+
+The clauses always go in this order: \`SELECT\`, \`FROM\`, \`WHERE\`, \`ORDER BY\`, \`LIMIT\`. Here are all of them working together — the most expensive haiku request:
+
+\`\`\`sql
+SELECT id, cost_usd FROM requests WHERE model = 'haiku' ORDER BY cost_usd DESC LIMIT 1;
+\`\`\`
+
+That returns request 6, which cost 0.0034 dollars.
+
+**Watch out:** \`LIMIT\` without \`ORDER BY\` does not give you the top anything. It gives you whichever rows the database happened to hand back first. And \`DESC\` belongs only to the column right before it: \`ORDER BY plan, email DESC\` sorts plan A to Z and email Z to A.
+
+::: context no-promised-order Why the order is not promised
+A database is free to fetch rows whatever way is fastest, and the fastest way can change as the table grows. You can see it in this course's own data: the query \`SELECT id, email FROM users WHERE email LIKE 'k%' OR email LIKE 'l%'\` can give Kai before Lin, not in id order, because SQLite found those rows through its sorted list of emails. If the order matters to you, say so with \`ORDER BY\`.
+:::
+
+::: context iso-dates Dates that sort themselves
+The dates here are text written year-month-day, like \`2025-03-20\`. This style is an international standard called ISO 8601. Because the biggest unit comes first and every part has a fixed width, sorting the text A to Z also sorts the dates from old to new. A date written \`3/20/2025\` would not sort correctly as text. SQLite has no special date type, so apps store dates this way, and \`<\` and \`>\` on them work too: \`created > '2025-03-01'\` finds Sam and Kai.
+:::
+
+::: context top-n Top n, everywhere
+"Top n" means "the first n after sorting", where n is any number you choose. Here are the six request costs sorted biggest first; \`LIMIT 3\` keeps the blue ones.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <g font-size="11" fill="#1f2a44">
+    <text x="10" y="24">id 4</text><text x="10" y="48">id 2</text><text x="10" y="72">id 1</text>
+    <text x="10" y="96">id 6</text><text x="10" y="120">id 3</text><text x="10" y="144">id 5</text>
+  </g>
+  <rect x="50" y="13" width="200" height="14" fill="#1d6fd1"/>
+  <rect x="50" y="37" width="78" height="14" fill="#1d6fd1"/>
+  <rect x="50" y="61" width="23" height="14" fill="#1d6fd1"/>
+  <rect x="50" y="85" width="9" height="14" fill="#6c7a93"/>
+  <rect x="50" y="109" width="3" height="14" fill="#6c7a93"/>
+  <rect x="50" y="133" width="2" height="14" fill="#6c7a93"/>
+  <g font-size="11" fill="#1f2a44">
+    <text x="258" y="24">0.0765</text><text x="136" y="48">0.0298</text><text x="81" y="72">0.0087</text>
+    <text x="67" y="96">0.0034</text><text x="61" y="120">0.0012</text><text x="60" y="144">0.0006</text>
+  </g>
+  <line x1="10" y1="83" x2="350" y2="83" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="290" y="78" font-size="11" fill="#b4232c">LIMIT 3</text>
+  <text x="10" y="164" font-size="11" fill="#6c7a93">cost_usd, sorted DESC</text>
+</svg>
+\`\`\`
+
+Engineers write this shape all day: the five newest errors in a flight log, the ten biggest customers, the slowest pages on a website. For long lists, \`LIMIT\` has a partner, \`OFFSET\`, which skips rows first: \`LIMIT 2 OFFSET 2\` gives rows three and four, which is how an app shows results one page at a time.
+:::
+
+::: context ties Breaking ties
+When two rows have the same value in the column you sort by, they are tied, and the database may put either one first. It might even change its mind next time. Adding a second column settles it. Many engineers end every \`ORDER BY\` with a column that is never the same twice, like \`id\`, so the order is always the same and a page of results never skips or repeats a row.
+:::
+--- task
+Return the \`id\` and \`cost_usd\` of the **three most expensive** requests, most expensive first.
+--- starter
+SELECT id, cost_usd FROM requests;
+--- solution
+SELECT id, cost_usd
+FROM requests
+ORDER BY cost_usd DESC
+LIMIT 3;
+--- hint
+This is a "top n" question: sort by cost with the biggest first, then keep the first three rows.
+--- hint
+Sort with \`ORDER BY cost_usd\`, add \`DESC\` so the biggest comes first, then add \`LIMIT\` with the number of rows you want.
+--- hint
+After \`FROM requests\`, and before the semicolon, add \`ORDER BY cost_usd DESC LIMIT 3\`.
+--- check result | The top three, in order
+ordered
+[[4, 0.0765], [2, 0.0298], [1, 0.0087]]
+
++++ practice | Newest satellites first
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`. \`launched\` is a date written year-month-day.
+
+Return the \`name\` and \`launched\` date of every satellite, the most recently launched first.
+--- starter
+SELECT name, launched FROM satellites;
+--- solution
+SELECT name, launched FROM satellites ORDER BY launched DESC;
+--- hint
+Sort with \`ORDER BY\` and the date column.
+--- hint
+The normal order is oldest first. Add the word that flips it.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Finch first, Heron last
+ordered
+[["Finch", "2024-05-30"], ["Wren", "2023-02-27"], ["Kestrel", "2021-06-14"], ["Osprey", "2020-08-09"], ["Heron", "2019-11-02"]]
+--- check source | Sorts with ORDER BY
+[Oo][Rr][Dd][Ee][Rr]\\s+[Bb][Yy]
+--- check source | Sorts newest first
+[Dd][Ee][Ss][Cc]
+
++++ practice | The two cheapest requests
+--- task
+Using the \`requests\` table, return the \`id\` and \`cost_usd\` of the **two cheapest** requests, the cheapest first.
+--- starter
+SELECT id, cost_usd FROM requests;
+--- solution
+SELECT id, cost_usd FROM requests ORDER BY cost_usd LIMIT 2;
+--- hint
+Cheapest first is the normal, smallest-first order.
+--- hint
+Sort by \`cost_usd\`, then keep only the first two rows with \`LIMIT\`.
+--- check result | Request 5, then request 3
+ordered
+[[5, 0.0006], [3, 0.0012]]
+--- check source | Keeps only two rows with LIMIT
+[Ll][Ii][Mm][Ii][Tt]\\s+2\\b
+--- check source absent | Does not pick the requests by id
+\\bid\\s*(=|[Ii][Nn]\\b)
+
++++ practice | Most tokens in total
+--- task
+Using the \`requests\` table, look only at requests that cost **less than 0.05** dollars. Of those, return the \`id\` and the total tokens (input plus output) as \`total_tokens\` of the **three** with the most tokens in total, the biggest first.
+--- starter
+SELECT id FROM requests;
+--- solution
+SELECT id, input_tokens + output_tokens AS total_tokens
+FROM requests
+WHERE cost_usd < 0.05
+ORDER BY total_tokens DESC
+LIMIT 3;
+--- hint
+This uses every clause so far, in order: \`SELECT\`, \`FROM\`, \`WHERE\`, \`ORDER BY\`, \`LIMIT\`.
+--- hint
+You can sort by the alias you gave the sum in the \`SELECT\`.
+--- hint
+The filter is \`WHERE cost_usd < 0.05\`; it runs before the sorting, so the expensive request never reaches the top three.
+--- check result | Requests 2, 6 and 1, biggest first; request 4 costs too much
+ordered
+[[2, 6310], [6, 2600], [1, 1540]]
+--- check source | Sorts biggest first
+[Dd][Ee][Ss][Cc]
+--- check source | Keeps three rows
+[Ll][Ii][Mm][Ii][Tt]\\s+3\\b
+
++++ practice | Ties on the leaderboard
+--- task
+The \`crew\` table has the columns \`id\`, \`name\` and \`hours\` (hours flown). Several people have the same number of hours.
+
+Return the \`name\` and \`hours\` of the **top three** crew members by hours, most hours first. When two people have the same hours, the one whose name comes first from A to Z goes first. The checker compares the order exactly, so the ties must come out the same way every time.
+--- starter
+SELECT name, hours FROM crew;
+--- solution
+SELECT name, hours
+FROM crew
+ORDER BY hours DESC, name
+LIMIT 3;
+--- hint
+Sort by two columns. The second one only decides the order among rows that are tied on the first.
+--- hint
+\`DESC\` belongs only to the column right before it. Hours go biggest first, names go A to Z.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  hours INTEGER NOT NULL
+);
+INSERT INTO crew (id, name, hours) VALUES
+  (1, 'Yuki', 750),
+  (2, 'Imani', 900),
+  (3, 'Tomas', 750),
+  (4, 'Noor', 750),
+  (5, 'Ravi', 500);
+--- check result | Imani, then Noor and Tomas from the three-way tie at 750
+ordered
+[["Imani", 900], ["Noor", 750], ["Tomas", 750]]
+--- check source | Sorts by hours, biggest first
+hours\\s+[Dd][Ee][Ss][Cc]
+--- check source | Breaks ties by name
+,\\s*name\\b
+
++++ practice | Descending the wrong column
+--- task
+The \`launches\` table has the columns \`id\`, \`rocket\` and \`launched\` (a date, year-month-day).
+
+The query in the editor should list the launches newest first, and when two launches share a date, by \`rocket\` from A to Z. Instead the oldest launch comes first, and the rockets on a shared date come out Z to A. Fix it.
+--- starter
+SELECT rocket, launched FROM launches ORDER BY launched, rocket DESC;
+--- solution
+SELECT rocket, launched FROM launches ORDER BY launched DESC, rocket;
+--- hint
+\`DESC\` only flips the column written right before it.
+--- hint
+Move \`DESC\` so it follows \`launched\`, and let \`rocket\` use the normal A-to-Z order.
+--- schema
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  rocket TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, rocket, launched) VALUES
+  (1, 'Lark II', '2025-01-08'),
+  (2, 'Magpie', '2025-06-21'),
+  (3, 'Avocet', '2025-06-21'),
+  (4, 'Lark I', '2024-03-02'),
+  (5, 'Heron-B', '2025-06-21');
+--- check result | Newest first, ties from A to Z
+ordered
+[["Avocet", "2025-06-21"], ["Heron-B", "2025-06-21"], ["Magpie", "2025-06-21"], ["Lark II", "2025-01-08"], ["Lark I", "2024-03-02"]]
+--- check source | Sorts the date newest first
+launched\\s+[Dd][Ee][Ss][Cc]
+--- check source absent | Rockets are not sorted Z to A
+rocket\\s+[Dd][Ee][Ss][Cc]
+
++++ practice | Page two of the leaderboard
+--- task
+A training game stores scores in a table called \`scores\`, with the columns \`id\`, \`player\` and \`points\`. The leaderboard shows three players per page, sorted by \`points\` from most to fewest, and by \`player\` from A to Z when points are tied.
+
+Return the \`player\` and \`points\` for **page two**: the fourth, fifth and sixth rows of the leaderboard.
+--- starter
+SELECT player, points FROM scores;
+--- solution
+SELECT player, points
+FROM scores
+ORDER BY points DESC, player
+LIMIT 3 OFFSET 3;
+--- hint
+First sort the whole leaderboard the way the task says. Then you need to skip the first page before keeping three rows.
+--- hint
+\`LIMIT\` has a partner, \`OFFSET\`, that skips rows first.
+--- hint
+Skip three rows and keep three: \`LIMIT 3 OFFSET 3\`.
+--- schema
+CREATE TABLE scores (
+  id INTEGER PRIMARY KEY,
+  player TEXT NOT NULL,
+  points INTEGER NOT NULL
+);
+INSERT INTO scores (id, player, points) VALUES
+  (1, 'vega', 880),
+  (2, 'orion', 1200),
+  (3, 'lyra', 640),
+  (4, 'atlas', 880),
+  (5, 'nova', 990),
+  (6, 'rigel', 640),
+  (7, 'draco', 1500),
+  (8, 'mira', 300);
+--- check result | atlas, vega and lyra, in that order
+ordered
+[["atlas", 880], ["vega", 880], ["lyra", 640]]
+--- check source | Skips the first page with OFFSET
+[Oo][Ff][Ff][Ss][Ee][Tt]\\s+3\\b
+--- check source | Breaks ties by player
+,\\s*player\\b
+
+=== sql-05 | Aggregates
+--- teach
+Last lesson you sorted rows with \`ORDER BY\` and kept the top few with \`LIMIT\`. Every answer so far has been a list of rows. This lesson lets you ask for **one number about many rows**: how many there are, what they add up to, which is biggest.
+
+Think of a shop receipt. It lists every item you bought, one per line. At the bottom there is one line that sums them all up: the total. That bottom line is a single value made from many lines.
+
+SQL does the same with an **[[aggregate function|aggregate-word]]**: a function that reads a whole column, many rows at once, and hands back one value. A **[[function|function-word]]** is a named operation with brackets after it; you put what it should work on inside the brackets.
+
+The first one is \`COUNT(*)\`. It means "count the rows". The \`*\` inside the brackets means "whole rows, whatever is in them".
+
+\`\`\`sql
+SELECT COUNT(*) FROM users;
+\`\`\`
+
+The answer is one row with one value: \`4\`, because there are four users.
+
+Next, \`SUM(column)\` adds up every value in a column. It is the total on the receipt:
+
+\`\`\`sql
+SELECT SUM(cost_usd) FROM requests;
+\`\`\`
+
+This gives \`0.1202\`: the six request costs added together, in dollars.
+
+\`AVG(column)\` gives the **average** (the mean): add everything up, then divide by how many there are.
+
+\`\`\`sql
+SELECT AVG(input_tokens) FROM requests;
+\`\`\`
+
+This gives \`4150.0\`. The six requests used 24900 input tokens between them, and 24900 divided by 6 is 4150. That is higher than most single requests, because one [[big request pulls the average up|mean-median]].
+
+\`MIN(column)\` gives the smallest value and \`MAX(column)\` the largest. They work on text and dates too. You can put several aggregates in one \`SELECT\`, separated by commas, and each becomes its own column:
+
+\`\`\`sql
+SELECT MIN(created), MAX(created) FROM users;
+\`\`\`
+
+| MIN(created) | MAX(created) |
+| --- | --- |
+| 2025-01-04 | 2025-03-28 |
+
+That is the first and the most recent sign-up date. The column names are the expressions themselves. You can rename them with \`AS\`, the same way you did in the Choosing columns lesson: \`COUNT(*) AS calls\`.
+
+Aggregates work with \`WHERE\`. The \`WHERE\` runs first and throws away rows that fail the test. The aggregate only sees the rows that passed:
+
+\`\`\`sql
+SELECT COUNT(*) FROM requests WHERE model = 'haiku';
+\`\`\`
+
+This gives \`3\`: only the three haiku requests are counted.
+
+The last new function is \`ROUND(x, 4)\`, which rounds \`x\` to four decimal places. Money needs it. Try adding up the sonnet costs:
+
+\`\`\`sql
+SELECT SUM(cost_usd) FROM requests WHERE model = 'sonnet';
+\`\`\`
+
+You would expect \`0.115\`. SQLite gives \`0.11499999999999999\`, because computers store decimals like \`cost_usd\` as [[floating-point numbers|floating-point]], which cannot hold most decimals exactly. Wrapping the sum in \`ROUND\` tidies it:
+
+\`\`\`sql
+SELECT ROUND(SUM(cost_usd), 4) FROM requests WHERE model = 'sonnet';
+\`\`\`
+
+Now the answer is \`0.115\`.
+
+**Watch out:** an aggregate cannot go inside \`WHERE\`. \`SELECT id FROM requests WHERE cost_usd = MAX(cost_usd);\` fails with "misuse of aggregate function MAX()". The reason is the [[order the parts run in|where-first]]: \`WHERE\` looks at one row at a time, before any aggregate has been worked out.
+
+::: context aggregate-word Why "aggregate"
+To aggregate means to gather many things into one lump. The word comes from Latin for "adding to the flock". In SQL it names the functions that gather a column into one value: \`COUNT\`, \`SUM\`, \`AVG\`, \`MIN\` and \`MAX\` are the five you will use most.
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="20" y="18" font-size="12" fill="#6c7a93">cost_usd (6 rows)</text>
+  <g font-size="12" fill="#1f2a44">
+    <rect x="20" y="26" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="39">0.0087</text>
+    <rect x="20" y="44" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="57">0.0298</text>
+    <rect x="20" y="62" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="75">0.0012</text>
+    <rect x="20" y="80" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="93">0.0765</text>
+    <rect x="20" y="98" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="111">0.0006</text>
+    <rect x="20" y="116" width="90" height="18" fill="#ffffff" stroke="#8fb8f0"/><text x="30" y="129">0.0034</text>
+  </g>
+  <path d="M120 28 Q135 28 135 50 L135 70 Q135 80 148 80 Q135 80 135 90 L135 110 Q135 132 120 132" fill="none" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="152" y1="80" x2="206" y2="80" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="206,75 216,80 206,85" fill="#1d6fd1"/>
+  <text x="160" y="72" font-size="12" fill="#1d6fd1">SUM</text>
+  <rect x="222" y="66" width="110" height="28" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="245" y="85" font-size="13" fill="#1f2a44">0.1202</text>
+  <text x="222" y="112" font-size="11" fill="#6c7a93">one row, one value</text>
+</svg>
+\`\`\`
+:::
+
+::: context function-word What a function is
+A function is a small named job. You write its name, then brackets, and inside the brackets you put what it should work on: \`ROUND(0.11499, 4)\` takes a number and a count of decimal places and gives back \`0.115\`. The things in the brackets are called its **arguments**. Some functions look at one row at a time, like \`ROUND\`. Aggregate functions are special because they look at a whole column. You will meet more of both kinds, such as \`COALESCE\`, a few lessons from now.
+:::
+
+::: context mean-median One big value drags the average
+Four of the six requests used 2200 input tokens or fewer, yet the average is 4150. One request of 15000 tokens pulls it up. That is how an average (the mean) behaves: every value counts, so one giant pulls hard. The **median**, the middle value when you line them up, would ignore the giant more. SQLite has no \`MEDIAN\` function built in, which is why you will see \`AVG\` far more often. When an average looks odd, check \`MIN\` and \`MAX\` next to it.
+:::
+
+::: context floating-point Why money comes out ragged
+Computers store most decimal numbers in binary, in a format called floating point. Many simple decimals, like 0.1, have no exact binary form, the way one third has no exact decimal form (0.3333…). So tiny errors creep in: in SQLite, \`SELECT 0.1 + 0.2;\` gives \`0.30000000000000004\`. For a report, \`ROUND\` is enough. Systems that handle real money usually go further and store whole cents as an \`INTEGER\`. You will see a table do exactly that, with an \`amount_cents\` column, in the Creating tables lesson.
+:::
+
+::: context where-first The order a query runs in
+You write \`SELECT\` first, but the database does not run it first. It starts with \`FROM\` (which table), then \`WHERE\` (which rows to keep), and only then works out the \`SELECT\` part, aggregates included. So when \`WHERE\` is checking a row, \`MAX(cost_usd)\` does not exist yet. Next lesson adds \`HAVING\`, a filter that runs after the aggregates, which is exactly what fills this gap.
+:::
+--- task
+In one query, return three columns about **all** the rows in \`requests\`:
+
+1. how many requests there are (\`COUNT(*)\`),
+2. the total of the \`input_tokens\` column,
+3. the highest single value in the \`cost_usd\` column.
+--- starter
+SELECT * FROM requests;
+--- solution
+SELECT COUNT(*), SUM(input_tokens), MAX(cost_usd) FROM requests;
+--- hint
+You need three aggregate functions in one \`SELECT\`, separated by commas: one to count, one to add up, one to find the largest.
+--- hint
+Counting is \`COUNT(*)\`. Adding up a column is \`SUM(...)\`. The largest value is \`MAX(...)\`. No \`WHERE\` is needed, because the question is about all requests.
+--- hint
+The shape is \`SELECT COUNT(*), SUM(input_tokens), MAX(...) FROM requests;\` with the cost column in the last brackets.
+--- check result | 6 requests, 24900 input tokens, 0.0765 at most
+[[6, 24900, 0.0765]]
+
++++ practice | Counting satellites
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+In one query, return two columns about all the satellites: how many there are, and the mass of the heaviest one.
+--- starter
+SELECT * FROM satellites;
+--- solution
+SELECT COUNT(*), MAX(mass_kg) FROM satellites;
+--- hint
+Both answers are one value made from many rows: that is what aggregate functions do.
+--- hint
+Counting rows is \`COUNT(*)\`. The largest value in a column comes from \`MAX\`.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | 5 satellites, the heaviest 3400 kg
+[[5, 3400]]
+--- check source | Uses COUNT
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(
+--- check source | Uses MAX
+[Mm][Aa][Xx]\\s*\\(
+
++++ practice | Only the low orbits
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Return three columns about the satellites in orbit \`'LEO'\` only: how many there are, their average mass, and the date the first of them was launched (the earliest \`launched\` value).
+--- starter
+SELECT COUNT(*) FROM satellites;
+--- solution
+SELECT COUNT(*), AVG(mass_kg), MIN(launched)
+FROM satellites
+WHERE orbit = 'LEO';
+--- hint
+The \`WHERE\` runs first and throws away the other orbits. The aggregates only see what is left.
+--- hint
+\`AVG\` gives the average. \`MIN\` works on dates written year-month-day too: the smallest is the earliest.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | 3 satellites, 125 kg on average, the first launched 2021-06-14
+[[3, 125.0, "2021-06-14"]]
+--- check source | Filters to LEO before counting
+[Ww][Hh][Ee][Rr][Ee]\\s+orbit\\s*=\\s*'LEO'
+--- check source | Uses AVG
+[Aa][Vv][Gg]\\s*\\(
+
++++ practice | Sonnet totals
+--- task
+Using the \`requests\` table, return two columns about the requests answered by \`'sonnet'\`:
+
+1. their total tokens, input and output together, as \`total_tokens\`,
+2. their average cost, rounded to 4 decimal places, as \`avg_cost\`.
+--- starter
+SELECT * FROM requests WHERE model = 'sonnet';
+--- solution
+SELECT SUM(input_tokens + output_tokens) AS total_tokens,
+       ROUND(AVG(cost_usd), 4) AS avg_cost
+FROM requests
+WHERE model = 'sonnet';
+--- hint
+An aggregate can work on a sum worked out for each row: put the sum inside its brackets.
+--- hint
+Wrap the average in \`ROUND(..., 4)\` to round it to four decimal places.
+--- check result | 24950 tokens, 0.0383 on average
+[[24950, 0.0383]]
+--- check source | Rounds with ROUND
+[Rr][Oo][Uu][Nn][Dd]\\s*\\(
+--- check source | Names the column avg_cost
+[Aa][Ss]\\s+avg_cost\\b
+
++++ practice | Below freezing
+--- task
+A table called \`hull_temps\` holds temperature readings from the outside of a spacecraft, with the columns \`id\`, \`sensor\` and \`temp_c\` (whole degrees Celsius). Some readings are below zero, and one is exactly zero.
+
+Return four columns about the readings from sensor \`'H1'\` only: how many there are, the coldest, the warmest, and the average rounded to **1** decimal place. The average is not a whole number, so do not lose its decimals.
+--- starter
+SELECT temp_c FROM hull_temps WHERE sensor = 'H1';
+--- solution
+SELECT COUNT(*), MIN(temp_c), MAX(temp_c), ROUND(AVG(temp_c), 1)
+FROM hull_temps
+WHERE sensor = 'H1';
+--- hint
+The coldest reading is the smallest number, even when it is below zero.
+--- hint
+\`AVG\` keeps the decimals. Adding the readings up and dividing by the count yourself would divide whole numbers, and throw them away.
+--- hint
+Round with \`ROUND(AVG(temp_c), 1)\`.
+--- schema
+CREATE TABLE hull_temps (
+  id INTEGER PRIMARY KEY,
+  sensor TEXT NOT NULL,
+  temp_c INTEGER NOT NULL
+);
+INSERT INTO hull_temps (id, sensor, temp_c) VALUES
+  (1, 'H1', -12),
+  (2, 'H1', -3),
+  (3, 'H2', 40),
+  (4, 'H1', 0),
+  (5, 'H1', 4),
+  (6, 'H2', -60),
+  (7, 'H1', 7);
+--- check result | 5 readings, from -12 to 7, averaging -0.8
+[[5, -12, 7, -0.8]]
+--- check source | Uses AVG for the average
+[Aa][Vv][Gg]\\s*\\(
+--- check source | Keeps only sensor H1
+sensor\\s*=\\s*'H1'
+
++++ practice | The percentage that came out whole
+--- task
+The query in the editor should work out how many output tokens there were for every 100 input tokens, across all requests: the total of \`output_tokens\`, times 100, divided by the total of \`input_tokens\`, rounded to 2 decimal places. The right answer is \`15.86\`. Instead it gives \`15.0\`. Fix it.
+--- starter
+SELECT ROUND(SUM(output_tokens) * 100 / SUM(input_tokens), 2) FROM requests;
+--- solution
+SELECT ROUND(SUM(output_tokens) * 100.0 / SUM(input_tokens), 2) FROM requests;
+--- hint
+Both totals are whole numbers, and so is 100. What does SQLite do when it divides one whole number by another?
+--- hint
+Write one of the numbers with a decimal point, and the division keeps its decimals.
+--- check result | 15.86
+[[15.86]]
+--- check source | Still divides the two totals
+[Ss][Uu][Mm]\\s*\\(\\s*output_tokens\\s*\\)[\\s\\S]*/\\s*[Ss][Uu][Mm]\\s*\\(\\s*input_tokens\\s*\\)
+--- check source absent | Does not type the answer in
+15\\.86
+
++++ practice | A burn report
+--- task
+A spacecraft's engine firings, called burns, are logged in a table called \`burns\`, with the columns \`id\`, \`engine\` (\`'main'\` or \`'thruster'\`), \`burn_s\` (how many seconds it fired) and \`fuel_kg\` (fuel used).
+
+Return one row with four columns about the **main** engine burns only:
+
+1. how many there were, as \`burns\`,
+2. the total fuel used, as \`fuel_kg\`,
+3. the total firing time in **minutes**, rounded to 1 decimal place, as \`minutes\`,
+4. the fuel used per second of firing over all of them (total fuel divided by total seconds), rounded to 2 decimal places, as \`kg_per_s\`.
+--- starter
+SELECT * FROM burns;
+--- solution
+SELECT COUNT(*) AS burns,
+       SUM(fuel_kg) AS fuel_kg,
+       ROUND(SUM(burn_s) / 60.0, 1) AS minutes,
+       ROUND(SUM(fuel_kg) * 1.0 / SUM(burn_s), 2) AS kg_per_s
+FROM burns
+WHERE engine = 'main';
+--- hint
+Every column is an aggregate over the main-engine rows, so start with \`WHERE engine = 'main'\`.
+--- hint
+A minute is 60 seconds. Both totals are whole numbers, so make sure each division keeps its decimals.
+--- hint
+Minutes is \`ROUND(SUM(burn_s) / 60.0, 1)\`. Fuel per second divides \`SUM(fuel_kg)\` by \`SUM(burn_s)\`, with one of them turned into a decimal first, for example by multiplying by \`1.0\`.
+--- schema
+CREATE TABLE burns (
+  id INTEGER PRIMARY KEY,
+  engine TEXT NOT NULL,
+  burn_s INTEGER NOT NULL,
+  fuel_kg INTEGER NOT NULL
+);
+INSERT INTO burns (id, engine, burn_s, fuel_kg) VALUES
+  (1, 'main', 142, 3050),
+  (2, 'thruster', 8, 12),
+  (3, 'main', 37, 790),
+  (4, 'thruster', 5, 7),
+  (5, 'main', 71, 1375);
+--- check result | 3 burns, 5215 kg, 4.2 minutes, 20.86 kg per second
+[[3, 5215, 4.2, 20.86]]
+--- check source | Keeps only the main engine
+engine\\s*=\\s*'main'
+--- check source | Names the column kg_per_s
+[Aa][Ss]\\s+kg_per_s\\b
+
+=== sql-06 | Grouping
+--- teach
+Last lesson each aggregate squashed a whole table into one row: six requests, one total. Often you want one answer **per kind** instead: spend per model, requests per user. This lesson shows how.
+
+Picture a pile of receipts from two shops. You sort them into two piles, one per shop, then add up each pile on its own. You end with one total per shop.
+
+In SQL that sorting step is **\`GROUP BY\`**: it splits the rows into groups that share the same value in a column, then runs each aggregate once per group. You get one result row per group.
+
+\`\`\`sql
+SELECT model, COUNT(*) AS calls
+FROM requests
+GROUP BY model;
+\`\`\`
+
+| model | calls |
+| --- | --- |
+| haiku | 3 |
+| sonnet | 3 |
+
+Each part of a query that starts with a keyword, like \`FROM requests\` or \`GROUP BY model\`, is called a **[[clause|clause-word]]**. The \`GROUP BY\` clause goes after \`FROM\` (and after \`WHERE\`, if there is one).
+
+You can run several aggregates on the [[same groups|group-picture]]. Here is the spend per model too, rounded as in the last lesson:
+
+\`\`\`sql
+SELECT model, COUNT(*) AS calls, ROUND(SUM(cost_usd), 4) AS spend
+FROM requests
+GROUP BY model;
+\`\`\`
+
+| model | calls | spend |
+| --- | --- | --- |
+| haiku | 3 | 0.0052 |
+| sonnet | 3 | 0.115 |
+
+There is one rule. **Every column in the \`SELECT\` must either be in the \`GROUP BY\` or be inside an aggregate.** \`model\` is fine: it is what you grouped by, so each group has one model. \`COUNT(*)\` is fine: it is an aggregate. But the haiku group holds three different \`input_tokens\` values. If you asked for plain \`input_tokens\`, which one should the row show? There is no good answer.
+
+Now the second new idea. **\`HAVING\`** filters **groups**, the way \`WHERE\` filters rows. It runs after the grouping, so it can test an aggregate:
+
+\`\`\`sql
+SELECT model, COUNT(*) AS calls
+FROM requests
+GROUP BY model
+HAVING SUM(cost_usd) > 0.01;
+\`\`\`
+
+Only \`sonnet | 3\` comes back. The haiku group spent 0.0052 in total, which is not more than 0.01, so the whole group is dropped.
+
+The two filters sit at [[different moments|run-order]]. \`WHERE\` filters rows before they are grouped. \`HAVING\` filters the groups after. You can use both in one query:
+
+\`\`\`sql
+SELECT model, COUNT(*) AS calls
+FROM requests
+WHERE input_tokens > 1000
+GROUP BY model;
+\`\`\`
+
+| model | calls |
+| --- | --- |
+| haiku | 1 |
+| sonnet | 3 |
+
+The \`WHERE\` threw out the small requests first, so only one haiku request was left to count.
+
+**Watch out:** SQLite does not stop you breaking the one rule. \`SELECT model, input_tokens, COUNT(*) FROM requests GROUP BY model;\` runs and quietly shows one \`input_tokens\` value picked from inside each group. It looks like an answer, but it is a meaningless one. [[Other databases|other-databases]] refuse the query outright.
+
+::: context clause-word Clauses, the parts of a query
+A clause is one part of a SQL statement, led by its keyword: the \`SELECT\` clause, the \`FROM\` clause, the \`WHERE\` clause, and now \`GROUP BY\` and \`HAVING\`. It is like the parts of a sentence. The clauses must come in a fixed written order: \`SELECT\`, \`FROM\`, \`WHERE\`, \`GROUP BY\`, \`HAVING\`, \`ORDER BY\`, \`LIMIT\`. Put \`WHERE\` after \`GROUP BY\` and SQLite reports a syntax error. You can leave out the ones you do not need.
+:::
+
+::: context group-picture Six rows, two piles
+\`GROUP BY model\` sorts the six requests into piles by their model, then each aggregate runs once per pile. The ids in each pile below come from the \`requests\` table.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="16" y="16" font-size="12" fill="#6c7a93">requests</text>
+  <g font-size="12" fill="#1f2a44">
+    <rect x="16" y="24" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="38">1  sonnet</text>
+    <rect x="16" y="46" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="60">2  sonnet</text>
+    <rect x="16" y="68" width="96" height="20" fill="#ffffff" stroke="#f2b880"/><text x="24" y="82">3  haiku</text>
+    <rect x="16" y="90" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="104">4  sonnet</text>
+    <rect x="16" y="112" width="96" height="20" fill="#ffffff" stroke="#f2b880"/><text x="24" y="126">5  haiku</text>
+    <rect x="16" y="134" width="96" height="20" fill="#ffffff" stroke="#f2b880"/><text x="24" y="148">6  haiku</text>
+  </g>
+  <line x1="120" y1="89" x2="160" y2="89" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="160,84 170,89 160,94" fill="#1f2a44"/>
+  <text x="118" y="80" font-size="11" fill="#6c7a93">GROUP BY</text>
+  <rect x="180" y="26" width="164" height="54" fill="#ffffff" stroke="#f2b880" stroke-width="2"/>
+  <text x="190" y="46" font-size="12" fill="#1f2a44">haiku pile: 3, 5, 6</text>
+  <text x="190" y="68" font-size="12" fill="#1d6fd1">COUNT(*) = 3</text>
+  <rect x="180" y="100" width="164" height="54" fill="#ffffff" stroke="#8fb8f0" stroke-width="2"/>
+  <text x="190" y="120" font-size="12" fill="#1f2a44">sonnet pile: 1, 2, 4</text>
+  <text x="190" y="142" font-size="12" fill="#1d6fd1">COUNT(*) = 3</text>
+</svg>
+\`\`\`
+:::
+
+::: context run-order The order the clauses really run in
+You write \`SELECT\` first, but the database works in a different order. It fetches the table (\`FROM\`), drops rows (\`WHERE\`), makes the piles (\`GROUP BY\`), drops piles (\`HAVING\`), then builds each result row (\`SELECT\`), sorts (\`ORDER BY\`) and cuts (\`LIMIT\`). This order explains both filters: \`WHERE\` cannot test \`COUNT(*)\` because no piles exist yet, and \`HAVING\` can.
+
+\`\`\`svg
+<svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <rect x="6" y="14" width="72" height="28" fill="#ffffff" stroke="#6c7a93"/><text x="42" y="32">FROM</text>
+    <rect x="96" y="14" width="72" height="28" fill="#ffffff" stroke="#b4232c" stroke-width="1.5"/><text x="132" y="32">WHERE</text>
+    <rect x="186" y="14" width="80" height="28" fill="#ffffff" stroke="#6c7a93"/><text x="226" y="32">GROUP BY</text>
+    <rect x="284" y="14" width="70" height="28" fill="#ffffff" stroke="#b4232c" stroke-width="1.5"/><text x="319" y="32">HAVING</text>
+    <rect x="50" y="68" width="72" height="28" fill="#ffffff" stroke="#1d6fd1"/><text x="86" y="86">SELECT</text>
+    <rect x="140" y="68" width="80" height="28" fill="#ffffff" stroke="#6c7a93"/><text x="180" y="86">ORDER BY</text>
+    <rect x="238" y="68" width="66" height="28" fill="#ffffff" stroke="#6c7a93"/><text x="271" y="86">LIMIT</text>
+  </g>
+  <g stroke="#1f2a44" stroke-width="1.5" fill="none">
+    <line x1="78" y1="28" x2="94" y2="28"/><line x1="168" y1="28" x2="184" y2="28"/><line x1="266" y1="28" x2="282" y2="28"/>
+    <path d="M319 42 L319 55 L86 55 L86 66"/>
+    <line x1="122" y1="82" x2="138" y2="82"/><line x1="220" y1="82" x2="236" y2="82"/>
+  </g>
+  <text x="96" y="10" font-size="11" fill="#b4232c">rows</text>
+  <text x="284" y="10" font-size="11" fill="#b4232c">groups</text>
+</svg>
+\`\`\`
+:::
+
+::: context other-databases When SQLite lets it slide
+The rule about grouped columns comes from the SQL standard. PostgreSQL, a database used by many web apps, refuses a query that breaks it, with an error saying the column "must appear in the GROUP BY clause or be used in an aggregate function". SQLite is more forgiving and picks a value from one row of the group. Forgiving is not the same as right: write every grouped query as if the stricter database were checking it.
+:::
+--- task
+Using the \`requests\` table, return one row **per \`user_id\`** with three columns:
+
+1. the \`user_id\`,
+2. how many requests that user made,
+3. the total of their \`input_tokens\`.
+
+Only include users with **more than one** request. Filter the groups with \`HAVING\`.
+--- starter
+SELECT user_id FROM requests;
+--- solution
+SELECT user_id, COUNT(*) AS requests, SUM(input_tokens) AS input_total
+FROM requests
+GROUP BY user_id
+HAVING COUNT(*) > 1;
+--- hint
+Group the rows with \`GROUP BY user_id\`, then put \`COUNT(*)\` and \`SUM(input_tokens)\` next to \`user_id\` in the \`SELECT\`.
+--- hint
+"More than one request" is a test on a group, so it goes in \`HAVING\`, after the \`GROUP BY\`: \`HAVING COUNT(*) > 1\`.
+--- hint
+The shape is \`SELECT user_id, COUNT(*), SUM(input_tokens) FROM requests GROUP BY user_id HAVING ...;\` with the count test at the end.
+--- check result | Users 1 and 2, with their counts and totals
+[[1, 3, 7400], [2, 2, 15300]]
+--- check source | Filters groups with HAVING
+\\b[Hh][Aa][Vv][Ii][Nn][Gg]\\b
+
++++ practice | Satellites per orbit
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Return one row per orbit, with three columns: the \`orbit\`, how many satellites are in it as \`satellites\`, and their total mass as \`total_kg\`.
+--- starter
+SELECT orbit FROM satellites;
+--- solution
+SELECT orbit, COUNT(*) AS satellites, SUM(mass_kg) AS total_kg
+FROM satellites
+GROUP BY orbit;
+--- hint
+"One row per orbit" means splitting the rows into groups by the \`orbit\` column.
+--- hint
+Add \`GROUP BY orbit\` after \`FROM\`, and put \`COUNT(*)\` and \`SUM(mass_kg)\` next to \`orbit\` in the \`SELECT\`.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | GEO 1 of 3400 kg, LEO 3 of 375 kg, MEO 1 of 1500 kg
+[["GEO", 1, 3400], ["LEO", 3, 375], ["MEO", 1, 1500]]
+--- check source | Groups with GROUP BY
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+orbit
+--- check source absent | Does not pick the orbits one by one
+orbit\\s*=
+
++++ practice | Each user's cheapest and dearest
+--- task
+Using the \`requests\` table, return one row per \`user_id\`, with three columns: the \`user_id\`, the cost of that user's **cheapest** request as \`cheapest\`, and the cost of their **most expensive** request as \`dearest\`.
+--- starter
+SELECT user_id, cost_usd FROM requests;
+--- solution
+SELECT user_id, MIN(cost_usd) AS cheapest, MAX(cost_usd) AS dearest
+FROM requests
+GROUP BY user_id;
+--- hint
+Group by \`user_id\`, then use one aggregate for the smallest value and another for the largest.
+--- hint
+\`MIN(cost_usd)\` and \`MAX(cost_usd)\` both run once per group.
+--- check result | Users 1, 2 and 4; user 4's one request is both
+[[1, 0.0012, 0.0298], [2, 0.0006, 0.0765], [4, 0.0034, 0.0034]]
+--- check source | Groups by user_id
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+user_id
+--- check source | Uses MIN and MAX
+[Mm][Ii][Nn]\\s*\\([\\s\\S]*[Mm][Aa][Xx]\\s*\\(|[Mm][Aa][Xx]\\s*\\([\\s\\S]*[Mm][Ii][Nn]\\s*\\(
+
++++ practice | Output per model, biggest first
+--- task
+Using the \`requests\` table, look only at requests with **more than 500** input tokens. Return one row per \`model\`, with three columns: the \`model\`, how many such requests it answered as \`calls\`, and their total \`output_tokens\` as \`output_total\`. Sort the rows so the model with the biggest \`output_total\` comes first.
+--- starter
+SELECT model FROM requests;
+--- solution
+SELECT model, COUNT(*) AS calls, SUM(output_tokens) AS output_total
+FROM requests
+WHERE input_tokens > 500
+GROUP BY model
+ORDER BY output_total DESC;
+--- hint
+The clauses go in this order: \`SELECT\`, \`FROM\`, \`WHERE\`, \`GROUP BY\`, \`ORDER BY\`.
+--- hint
+The \`WHERE\` drops the small requests before they are grouped. The sort can use the alias of the total.
+--- check result | sonnet first with 3 calls, then haiku with 2
+ordered
+[["sonnet", 3, 3350], ["haiku", 2, 520]]
+--- check source | Filters rows with WHERE before grouping
+[Ww][Hh][Ee][Rr][Ee][\\s\\S]*[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]
+--- check source | Sorts biggest first
+[Dd][Ee][Ss][Cc]
+
++++ practice | Sensors with enough readings
+--- task
+A table called \`readings\` has the columns \`id\`, \`sensor\` and \`value\`. Some values are below zero.
+
+Return one row per sensor, with three columns: the \`sensor\`, how many readings it has as \`n\`, and its average value rounded to 1 decimal place as \`avg_value\`. Only include sensors with **at least 3** readings. A sensor with exactly 3 readings counts; a sensor with only 1 or 2 does not.
+--- starter
+SELECT sensor, value FROM readings;
+--- solution
+SELECT sensor, COUNT(*) AS n, ROUND(AVG(value), 1) AS avg_value
+FROM readings
+GROUP BY sensor
+HAVING COUNT(*) >= 3;
+--- hint
+The rule "at least 3 readings" is a test on a whole group, so it goes in \`HAVING\`, not \`WHERE\`.
+--- hint
+"At least 3" includes 3 itself, so use greater than or equal to.
+--- schema
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor TEXT NOT NULL,
+  value REAL NOT NULL
+);
+INSERT INTO readings (id, sensor, value) VALUES
+  (1, 'temp', -4.5),
+  (2, 'temp', -1.0),
+  (3, 'temp', 2.7),
+  (4, 'volt', 28.1),
+  (5, 'volt', 27.9),
+  (6, 'spin', 3.0),
+  (7, 'temp', 0.0),
+  (8, 'flow', 10.0),
+  (9, 'flow', 12.0),
+  (10, 'flow', 11.0);
+--- check result | temp (4 readings) and flow (exactly 3); volt and spin left out
+[["flow", 3, 11.0], ["temp", 4, -0.7]]
+--- check source | Filters groups with HAVING
+[Hh][Aa][Vv][Ii][Nn][Gg]
+--- check source absent | Does not pick the sensors by name
+sensor\\s*(=|<>|[Ii][Nn]\\b)
+
++++ practice | One row per user and model
+--- task
+The query in the editor should count the requests for each **user and model** pair: one row for user 1 with sonnet, one for user 1 with haiku, and so on. It returns only one row per user, with the model taken from one row of each group, and the wrong counts. Fix it.
+--- starter
+SELECT user_id, model, COUNT(*) AS calls
+FROM requests
+GROUP BY user_id;
+--- solution
+SELECT user_id, model, COUNT(*) AS calls
+FROM requests
+GROUP BY user_id, model;
+--- hint
+Every column in the \`SELECT\` must be in the \`GROUP BY\` or inside an aggregate. Which one is neither?
+--- hint
+You can group by more than one column: put a comma between them. Then each group is one user with one model.
+--- check result | Five pairs, user 1 with sonnet twice
+[[1, "haiku", 1], [1, "sonnet", 2], [2, "haiku", 1], [2, "sonnet", 1], [4, "haiku", 1]]
+--- check source | Groups by both columns
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+(user_id\\s*,\\s*model|model\\s*,\\s*user_id)
+--- check source | Still counts the rows
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)
+
++++ practice | Ground station contact time
+--- task
+A satellite talks to the ground only when it passes over a ground station. Each pass is a row in a table called \`passes\`, with the columns \`id\`, \`station\`, \`started\` (a time) and \`minutes\` (how long the contact lasted).
+
+Return one row per station, with four columns: the \`station\`, how many passes it had as \`passes\`, the total contact time as \`total_min\`, and its longest single pass as \`longest\`. Only include stations with **more than 30** minutes of contact in total. Put the station with the most contact first; if two stations have the same total, put them A to Z by name.
+--- starter
+SELECT station, minutes FROM passes;
+--- solution
+SELECT station,
+       COUNT(*) AS passes,
+       SUM(minutes) AS total_min,
+       MAX(minutes) AS longest
+FROM passes
+GROUP BY station
+HAVING SUM(minutes) > 30
+ORDER BY total_min DESC, station;
+--- hint
+Group by station. Three aggregates give the count, the total and the longest.
+--- hint
+"More than 30 minutes in total" tests a group's total, so it goes in \`HAVING\`.
+--- hint
+Sort by the total, biggest first, then by station name to settle ties.
+--- schema
+CREATE TABLE passes (
+  id INTEGER PRIMARY KEY,
+  station TEXT NOT NULL,
+  started TEXT NOT NULL,
+  minutes INTEGER NOT NULL
+);
+INSERT INTO passes (id, station, started, minutes) VALUES
+  (1, 'Svalbard', '2025-05-01 01:10', 12),
+  (2, 'Awarua', '2025-05-01 02:05', 9),
+  (3, 'Svalbard', '2025-05-01 02:48', 11),
+  (4, 'Kourou', '2025-05-01 03:30', 14),
+  (5, 'Svalbard', '2025-05-01 04:25', 13),
+  (6, 'Awarua', '2025-05-01 05:40', 10),
+  (7, 'Kourou', '2025-05-01 06:15', 17),
+  (8, 'Awarua', '2025-05-01 08:02', 11),
+  (9, 'Hawaii', '2025-05-01 09:20', 30),
+  (10, 'Awarua', '2025-05-01 10:44', 6);
+--- check result | Awarua and Svalbard tied at 36, then Kourou at 31; Hawaii at exactly 30 left out
+ordered
+[["Awarua", 4, 36, 11], ["Svalbard", 3, 36, 13], ["Kourou", 2, 31, 17]]
+--- check source | Filters groups with HAVING
+[Hh][Aa][Vv][Ii][Nn][Gg]
+--- check source | Sorts by the total, biggest first
+[Dd][Ee][Ss][Cc]
+
+=== sql-07 | Joining tables
+--- teach
+Last lesson you counted requests per \`user_id\`. But a \`user_id\` of 2 does not tell you who that is. The email [[lives in a different table|why-two-tables]], \`users\`. This lesson lets you pull both tables into one answer.
+
+Think of a class register and a mark book. The register lists each student's number and name. The mark book lists only student numbers next to marks. To see names beside marks, you take each number in the mark book and look it up in the register.
+
+The database is built the same way. Each row of \`users\` has an \`id\` that is different for every user. That column is the table's **[[primary key|primary-key]]**: a column whose value names exactly one row. Each row of \`requests\` has a \`user_id\`, which holds one of those ids. A column like that, holding another table's primary key, is a **[[foreign key|foreign-key]]**.
+
+A **\`JOIN\`** glues a row from one table to a row from another, side by side, when they match. **\`ON\`** gives the matching rule:
+
+\`\`\`sql
+SELECT users.email, requests.model
+FROM requests
+JOIN users ON users.id = requests.user_id;
+\`\`\`
+
+Read it as: "take \`requests\`, and next to each request put the user whose \`id\` equals that request's \`user_id\`." The result has one row per request:
+
+| email | model |
+| --- | --- |
+| ada@example.com | sonnet |
+| ada@example.com | sonnet |
+| ada@example.com | haiku |
+| lin@example.com | sonnet |
+| lin@example.com | haiku |
+| kai@example.com | haiku |
+
+Notice the names with a dot. \`users.email\` means "the \`email\` column of the \`users\` table". Once two tables are in one query, you need this, because both tables have a column called \`id\`. Plain \`id\` would be ambiguous (it could mean either one), and SQLite would stop with "ambiguous column name: id".
+
+Writing \`users.\` and \`requests.\` every time gets long. An **alias** is a short nickname for a table. Put it right after the table name, then use it with the dot:
+
+\`\`\`sql
+SELECT u.email, r.model
+FROM requests r
+JOIN users u ON u.id = r.user_id;
+\`\`\`
+
+Here \`r\` stands for \`requests\` and \`u\` for \`users\`. It returns exactly the same rows. You may also write \`requests AS r\`; the \`AS\` is optional.
+
+After a join, \`WHERE\` works as before. You can filter on a column from either table:
+
+\`\`\`sql
+SELECT u.email, r.id
+FROM requests r
+JOIN users u ON u.id = r.user_id
+WHERE u.plan = 'pro';
+\`\`\`
+
+That gives ada's requests 1, 2 and 3 and kai's request 6, because ada and kai are the pro users.
+
+One more thing to notice. sam is in \`users\` but has never made a request, so no request row points at sam. A plain \`JOIN\` is an **[[inner join|inner-join]]**: it keeps only rows that have a match on both sides. So sam does not appear at all.
+
+**Watch out:** a wrong \`ON\` does not cause an error. It gives wrong rows. \`ON u.id = r.id\` matches a request's own id against a user's id, which means nothing, yet it returns 4 tidy-looking rows. Leave out \`ON\` completely and SQLite pairs [[every request with every user|row-count-check]]. Always check that \`ON\` links the foreign key to the primary key: \`u.id = r.user_id\`.
+
+::: context why-two-tables Why the email is not in requests
+Why not copy the email into every request row and skip the join? Because then ada's email would be written three times. If ada changes it, you must find and fix every copy, and missing one leaves the data disagreeing with itself. Storing each fact once and pointing to it with an id keeps it in one place. The cost is that you join when you want to see things side by side. Almost every real database, from an app's users and orders to a mission's vehicles and flight logs, is built this way.
+:::
+
+::: context primary-key One value, one row
+A primary key works like a student number or a passport number: no two rows share one, so it names exactly one row. In the course schema it is written \`id INTEGER PRIMARY KEY\`. Why not use the email? Emails change, and a number is short and fast to match. Apps almost always give each table an \`id\` like this.
+:::
+
+::: context foreign-key A column that points at another table
+\`user_id\` in \`requests\` is a foreign key: a copy of a primary key from another table. In the schema it is written \`user_id INTEGER NOT NULL REFERENCES users(id)\`. \`REFERENCES\` tells the database "this must match an \`id\` in \`users\`". SQLite only enforces that when foreign keys are switched on, with \`PRAGMA foreign_keys = ON;\`. Once they are, it refuses a request whose \`user_id\` is 99 when there is no user 99. You will build tables with \`REFERENCES\` yourself in the Creating tables lesson.
+:::
+
+::: context inner-join Who gets a line and who does not
+An inner join only keeps pairs that match. Each request's \`user_id\` draws a line to one user. sam, user 3, gets no line, so sam is not in the result. You can write \`INNER JOIN\` in full; plain \`JOIN\` means the same thing. Next lesson shows \`LEFT JOIN\`, which keeps sam anyway.
+
+\`\`\`svg
+<svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="16" y="16" font-size="12" fill="#6c7a93">requests (id, user_id)</text>
+  <text x="220" y="16" font-size="12" fill="#6c7a93">users (id, email)</text>
+  <g font-size="12" fill="#1f2a44">
+    <rect x="16" y="24" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="38">1  → 1</text>
+    <rect x="16" y="48" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="62">2  → 1</text>
+    <rect x="16" y="72" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="86">3  → 1</text>
+    <rect x="16" y="96" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="110">4  → 2</text>
+    <rect x="16" y="120" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="134">5  → 2</text>
+    <rect x="16" y="144" width="96" height="20" fill="#ffffff" stroke="#8fb8f0"/><text x="24" y="158">6  → 4</text>
+    <rect x="220" y="36" width="124" height="22" fill="#ffffff" stroke="#1d6fd1"/><text x="228" y="51">1  ada</text>
+    <rect x="220" y="72" width="124" height="22" fill="#ffffff" stroke="#1d6fd1"/><text x="228" y="87">2  lin</text>
+    <rect x="220" y="108" width="124" height="22" fill="#ffffff" stroke="#b4232c" stroke-dasharray="4 3"/><text x="228" y="123">3  sam</text>
+    <rect x="220" y="144" width="124" height="22" fill="#ffffff" stroke="#1d6fd1"/><text x="228" y="159">4  kai</text>
+  </g>
+  <g stroke="#1d6fd1" stroke-width="1.2">
+    <line x1="112" y1="34" x2="220" y2="47"/><line x1="112" y1="58" x2="220" y2="47"/><line x1="112" y1="82" x2="220" y2="47"/>
+    <line x1="112" y1="106" x2="220" y2="83"/><line x1="112" y1="130" x2="220" y2="83"/>
+    <line x1="112" y1="154" x2="220" y2="155"/>
+  </g>
+  <text x="290" y="123" font-size="11" fill="#b4232c">no line</text>
+</svg>
+\`\`\`
+:::
+
+::: context row-count-check Count the rows after a join
+With no \`ON\`, SQLite pairs each of the 6 requests with each of the 4 users: 6 × 4 = 24 rows. That is called a **cross join**. A quick habit catches this and the wrong-\`ON\` mistake: before trusting a join, guess how many rows it should return, then check. Here every request has exactly one user, so a correct join of \`requests\` to \`users\` must give 6 rows, one per request. Engineers checking a large report do the same, comparing counts before and after each join.
+:::
+--- task
+Return one row for each **haiku** request, with three columns: the user's \`email\` (from \`users\`), the request's \`model\`, and its \`input_tokens\` (both from \`requests\`).
+
+Join \`requests\` to \`users\` on the user id, and keep only rows where the model is \`'haiku'\`.
+--- starter
+SELECT user_id, model, input_tokens FROM requests WHERE model = 'haiku';
+--- solution
+SELECT u.email, r.model, r.input_tokens
+FROM requests r
+JOIN users u ON u.id = r.user_id
+WHERE r.model = 'haiku';
+--- hint
+The email is in \`users\`, so you need a \`JOIN\`. Start from \`requests\`, give the tables aliases, and link them with \`ON\`.
+--- hint
+The join is \`FROM requests r JOIN users u ON u.id = r.user_id\`. Then choose \`u.email, r.model, r.input_tokens\` in the \`SELECT\`.
+--- hint
+Keep the \`WHERE\` from the starter, but put it after the join and use the alias: \`WHERE r.model = 'haiku'\`.
+--- check result | Three haiku requests with their emails
+[["ada@example.com", "haiku", 800], ["lin@example.com", "haiku", 300], ["kai@example.com", "haiku", 2200]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+
++++ practice | Rockets and their launch sites
+--- task
+Two tables describe a spaceport. \`pads\` has the columns \`id\`, \`code\` and \`site\`: one row per launch pad. \`launches\` has the columns \`id\`, \`pad_id\`, \`rocket\` and \`launched\`; \`pad_id\` is the \`id\` of the pad the rocket flew from.
+
+Return one row per launch, with three columns: the \`rocket\` and its \`launched\` date (from \`launches\`), and the \`site\` of its pad (from \`pads\`). Put the earliest launch first.
+--- starter
+SELECT rocket, pad_id FROM launches;
+--- solution
+SELECT l.rocket, l.launched, p.site
+FROM launches l
+JOIN pads p ON p.id = l.pad_id
+ORDER BY l.launched;
+--- hint
+The site is in a different table, so you need a \`JOIN\`, with \`ON\` giving the matching rule.
+--- hint
+A launch's \`pad_id\` matches a pad's \`id\`. Give the tables short aliases, like \`l\` and \`p\`, and use them with the dot. The sort goes after the join.
+--- schema
+CREATE TABLE pads (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL,
+  site TEXT NOT NULL
+);
+INSERT INTO pads (id, code, site) VALUES
+  (1, 'LC-1', 'Coastal'),
+  (2, 'LC-2', 'Coastal'),
+  (3, 'MP-7', 'Mountain');
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  pad_id INTEGER NOT NULL REFERENCES pads(id),
+  rocket TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, pad_id, rocket, launched) VALUES
+  (1, 2, 'Lark I', '2024-03-02'),
+  (2, 1, 'Lark II', '2024-09-17'),
+  (3, 2, 'Lark II', '2025-01-08'),
+  (4, 3, 'Magpie', '2025-06-21');
+--- check result | Four launches, each with its site, earliest first
+ordered
+[["Lark I", "2024-03-02", "Coastal"], ["Lark II", "2024-09-17", "Coastal"], ["Lark II", "2025-01-08", "Coastal"], ["Magpie", "2025-06-21", "Mountain"]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source | Matches pad_id with the pad's id
+\\.id\\s*=\\s*\\w+\\.pad_id|\\.pad_id\\s*=\\s*\\w+\\.id\\b
+
++++ practice | Big requests from paying users
+--- task
+Using \`users\` and \`requests\`, return one row for every request that has **more than 1000** input tokens **and** was sent by a user on the \`'pro'\` plan. Give three columns: the user's \`email\`, the request's \`model\`, and its total tokens (input plus output) as \`total_tokens\`.
+--- starter
+SELECT user_id, cost_usd FROM requests;
+--- solution
+SELECT u.email, r.model, r.input_tokens + r.output_tokens AS total_tokens
+FROM users u
+JOIN requests r ON r.user_id = u.id
+WHERE u.plan = 'pro' AND r.input_tokens > 1000;
+--- hint
+The plan and the email live in \`users\`; the tokens live in \`requests\`. Join them on the user id.
+--- hint
+After the join, one \`WHERE\` can test columns from both tables: join the two conditions with \`AND\`.
+--- check result | Ada's two sonnet requests and Kai's haiku request
+[["ada@example.com", "sonnet", 1540], ["ada@example.com", "sonnet", 6310], ["kai@example.com", "haiku", 2600]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source absent | Does not pick the user by id or email
+user_id\\s*=\\s*\\d|email\\s*=\\s*'
+
++++ practice | Requests per plan
+--- task
+Using \`users\` and \`requests\`, return one row per **plan**, with three columns: the \`plan\`, how many requests users on that plan made as \`calls\`, and the total \`output_tokens\` of those requests as \`output_total\`.
+--- starter
+SELECT plan FROM users;
+--- solution
+SELECT u.plan, COUNT(*) AS calls, SUM(r.output_tokens) AS output_total
+FROM requests r
+JOIN users u ON u.id = r.user_id
+GROUP BY u.plan;
+--- hint
+First join each request to its user, so every request row carries a plan. Then group by that plan.
+--- hint
+\`GROUP BY u.plan\`, with \`COUNT(*)\` and \`SUM(r.output_tokens)\` in the \`SELECT\`.
+--- check result | pro 4 requests and 1770 tokens, free 2 and 2180
+[["free", 2, 2180], ["pro", 4, 1770]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source | Groups by plan
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+(\\w+\\.)?plan\\b
+
++++ practice | Two columns called name
+--- task
+Two tables describe who runs which satellite. \`operators\` has the columns \`id\` and \`name\`. \`satellites\` has the columns \`id\`, \`name\` and \`operator_id\`, the \`id\` of the operator that runs it. Both tables have a column called \`name\`.
+
+Return one row per satellite that has an operator, with two columns: the satellite's name as \`satellite\` and the operator's name as \`operator\`. One satellite's \`operator_id\` points at an operator that is no longer in the table; leave that one out.
+--- starter
+SELECT name, name FROM satellites JOIN operators ON operator_id = id;
+--- solution
+SELECT s.name AS satellite, o.name AS operator
+FROM satellites s
+JOIN operators o ON o.id = s.operator_id;
+--- hint
+Plain \`name\` and plain \`id\` are ambiguous here: both tables have them. Put the table's alias and a dot in front of every column.
+--- hint
+Give each \`name\` column its own \`AS\` so the two columns in the answer have different headings.
+--- hint
+A plain \`JOIN\` keeps only rows that match on both sides, so the satellite with the missing operator drops out on its own.
+--- schema
+CREATE TABLE operators (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO operators (id, name) VALUES
+  (1, 'Polar Relay'),
+  (2, 'Blue Arc'),
+  (3, 'Nimbus Labs');
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  operator_id INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, operator_id) VALUES
+  (1, 'Kestrel', 1),
+  (2, 'Heron', 2),
+  (3, 'Wren', 1),
+  (4, 'Osprey', 9),
+  (5, 'Finch', 3);
+--- check result | Four satellites with their operators; Osprey, whose operator is gone, left out
+[["Kestrel", "Polar Relay"], ["Heron", "Blue Arc"], ["Wren", "Polar Relay"], ["Finch", "Nimbus Labs"]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source | Names the satellite column
+[Aa][Ss]\\s+satellite\\b
+
++++ practice | The wrong emails
+--- task
+The query in the editor should list every request's \`id\` and \`cost_usd\` next to the \`email\` of the user who sent it: six rows, one per request. Instead it returns only four rows, and most of the emails are wrong. Fix it.
+--- starter
+SELECT r.id, r.cost_usd, u.email
+FROM requests r
+JOIN users u ON u.id = r.id;
+--- solution
+SELECT r.id, r.cost_usd, u.email
+FROM requests r
+JOIN users u ON u.id = r.user_id;
+--- hint
+Look at the \`ON\` line. Which column of \`requests\` says who sent the request?
+--- hint
+A user's \`id\` should be matched with a request's \`user_id\`, not with the request's own \`id\`.
+--- check result | Six requests, each with its sender's email
+[[1, 0.0087, "ada@example.com"], [2, 0.0298, "ada@example.com"], [3, 0.0012, "ada@example.com"], [4, 0.0765, "lin@example.com"], [5, 0.0006, "lin@example.com"], [6, 0.0034, "kai@example.com"]]
+--- check source | Joins on the request's user_id
+user_id
+--- check source absent | Does not match a user's id with a request's own id
+u\\.id\\s*=\\s*r\\.id\\b|r\\.id\\s*=\\s*u\\.id\\b
+
++++ practice | Sensors out of range
+--- task
+A spacecraft's sensors are listed in a table called \`sensors\`, with the columns \`id\`, \`name\`, \`unit\` and \`max_ok\` (the highest safe value). Their readings are in a table called \`readings\`, with the columns \`id\`, \`sensor_id\`, \`t\` (seconds since launch) and \`value\`.
+
+Return every reading whose \`value\` is **above** its own sensor's \`max_ok\`, with four columns: the sensor's \`name\`, the reading's \`t\`, the \`value\`, and how far over the limit it was as \`over_by\`. Put the reading that is furthest over first. A reading exactly at the limit is safe: leave it out.
+--- starter
+SELECT sensor_id, t, value FROM readings;
+--- solution
+SELECT s.name, r.t, r.value, r.value - s.max_ok AS over_by
+FROM readings r
+JOIN sensors s ON s.id = r.sensor_id
+WHERE r.value > s.max_ok
+ORDER BY over_by DESC;
+--- hint
+Each reading has to be compared with a number that lives in the other table. Join first, then the \`WHERE\` can use columns from both.
+--- hint
+The test is the reading's value greater than the sensor's \`max_ok\`. Sort by the difference, biggest first.
+--- schema
+CREATE TABLE sensors (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  max_ok INTEGER NOT NULL
+);
+INSERT INTO sensors (id, name, unit, max_ok) VALUES
+  (1, 'tank_pressure', 'kPa', 350),
+  (2, 'nozzle_temp', 'C', 900),
+  (3, 'bus_voltage', 'V', 32);
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor_id INTEGER NOT NULL REFERENCES sensors(id),
+  t INTEGER NOT NULL,
+  value INTEGER NOT NULL
+);
+INSERT INTO readings (id, sensor_id, t, value) VALUES
+  (1, 1, 10, 340),
+  (2, 2, 10, 880),
+  (3, 3, 10, 31),
+  (4, 1, 20, 362),
+  (5, 2, 20, 900),
+  (6, 3, 20, 35),
+  (7, 1, 30, 351),
+  (8, 2, 30, 941);
+--- check result | nozzle_temp 41 over, tank_pressure 12, bus_voltage 3, tank_pressure 1
+ordered
+[["nozzle_temp", 30, 941, 41], ["tank_pressure", 20, 362, 12], ["bus_voltage", 20, 35, 3], ["tank_pressure", 30, 351, 1]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source | Compares with the sensor's own limit
+max_ok
+
+=== sql-08 | LEFT JOIN and NULL
+--- teach
+Last lesson you joined \`requests\` to \`users\`, and noticed that sam, who has never made a request, disappeared. An inner join keeps only rows with a match on both sides. This lesson shows how to keep sam, and what the database puts in the empty spaces.
+
+Picture the class register again. You copy each student's marks next to their name. A new student has no marks yet. You do not cross them off the register. You keep the line and leave the marks box blank.
+
+A **\`LEFT JOIN\`** does that (its [[longer name|outer-join]] is \`LEFT OUTER JOIN\`). It keeps **every** row from the [[left table|left-right]], the one named after \`FROM\`. When a row there has no match on the right, it still appears, and the right table's columns are filled with \`NULL\`:
+
+\`\`\`sql
+SELECT u.email, r.id
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+ORDER BY u.email, r.id;
+\`\`\`
+
+| email | id |
+| --- | --- |
+| ada@example.com | 1 |
+| ada@example.com | 2 |
+| ada@example.com | 3 |
+| kai@example.com | 6 |
+| lin@example.com | 4 |
+| lin@example.com | 5 |
+| sam@example.com | NULL |
+
+Notice the table order changed. \`users\` now comes first, after \`FROM\`, because users are the rows you want to keep. There are 7 rows: the 6 matched ones, plus one for sam.
+
+**\`NULL\`** means "no value here". It is [[not zero and not an empty string|null-meaning]]. Zero is a number. \`''\` is text with nothing in it. \`NULL\` is the blank box: nothing was ever written. Many tools display it as an empty cell.
+
+That difference matters when you count. Say you want the number of requests per user, including sam. There are two kinds of count:
+
+- \`COUNT(*)\` counts **rows**. sam's row is a row, so it counts as 1, even though it is filled with \`NULL\`.
+- \`COUNT(column)\` counts only the rows where that column is **not** \`NULL\`. So [[counting the request id gives sam 0|count-star]]: \`COUNT(r.id)\`.
+
+You can see the difference on the whole joined table:
+
+\`\`\`sql
+SELECT COUNT(*), COUNT(r.id)
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id;
+\`\`\`
+
+This gives \`7\` and \`6\`: seven rows, but only six of them hold a real request id.
+
+**Watch out:** after a \`LEFT JOIN\`, \`COUNT(*)\` quietly counts the empty rows. Grouped per user, it would say sam made 1 request. To count matches, count a column from the right table, like \`COUNT(r.id)\`. The next lesson shows how to test for \`NULL\` directly and how to swap it for a 0.
+
+::: context outer-join Inner and outer joins
+Joins come in two families. An **inner** join, the plain \`JOIN\` from last lesson, keeps only matched pairs. An **outer** join also keeps rows that found no partner, and fills the gaps with \`NULL\`. \`LEFT JOIN\` is short for \`LEFT OUTER JOIN\`; the word \`OUTER\` is optional and most people leave it out. There is also a \`FULL OUTER JOIN\`, which keeps unmatched rows from both sides; SQLite has supported it since version 3.39.0.
+:::
+
+::: context left-right Left and right are about writing order
+"Left" means the table written first, after \`FROM\`; "right" is the one after \`LEFT JOIN\`. Swap them and you keep a different table's rows. \`FROM requests r LEFT JOIN users u\` would keep every request, which here changes nothing, because every request has a user. SQLite (from version 3.39.0, in 2022) also has \`RIGHT JOIN\`, which keeps every row of the right table, but most people rewrite it as a \`LEFT JOIN\` with the tables swapped, so every query reads the same way.
+:::
+
+::: context null-meaning Missing is not the same as zero
+Think of a thermometer on a spacecraft. A reading of 0 degrees is real information. A missing reading, because the sensor did not report, is something else: you do not know the temperature. Writing 0 for "no reading" would be a lie that looks like data. \`NULL\` is how a database says "unknown" or "not there" honestly. For sam, the request id is not 0; there is no request at all.
+
+\`\`\`svg
+<svg viewBox="0 0 360 100" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <g font-size="12" fill="#1f2a44" text-anchor="middle">
+    <rect x="14" y="20" width="96" height="40" fill="#ffffff" stroke="#1d6fd1" stroke-width="1.5"/>
+    <text x="62" y="45" font-size="14">0</text>
+    <text x="62" y="80">a number</text>
+    <rect x="132" y="20" width="96" height="40" fill="#ffffff" stroke="#1d6fd1" stroke-width="1.5"/>
+    <text x="180" y="45" font-size="14">''</text>
+    <text x="180" y="80">empty text</text>
+    <rect x="250" y="20" width="96" height="40" fill="#ffffff" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="298" y="45" font-size="14" fill="#b4232c">NULL</text>
+    <text x="298" y="80">no value at all</text>
+  </g>
+</svg>
+\`\`\`
+:::
+
+::: context count-star Rows versus values
+\`COUNT(*)\` asks "how many rows are there?" \`COUNT(r.id)\` asks "how many rows have a value in \`r.id\`?" On ordinary tables the two agree. After a \`LEFT JOIN\` they differ, by exactly the number of unmatched rows. It is a good reason to always ask which one you mean. The other aggregates behave like \`COUNT(column)\`: \`SUM\`, \`AVG\`, \`MIN\` and \`MAX\` skip \`NULL\` values too.
+:::
+--- task
+Return **every** user's \`email\` together with how many requests they have made. Users with no requests must still appear, with \`0\`.
+
+Start from \`users\`, keep every user with a \`LEFT JOIN\` to \`requests\`, group by user, and count something that is \`NULL\` for users with no requests.
+--- starter
+SELECT u.email, COUNT(*)
+FROM users u
+JOIN requests r ON r.user_id = u.id
+GROUP BY u.id, u.email;
+--- solution
+SELECT u.email, COUNT(r.id) AS requests
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+GROUP BY u.id, u.email;
+--- hint
+Run the starter first: sam is missing. Change \`JOIN\` to \`LEFT JOIN\` so sam is kept.
+--- hint
+Now sam is there, but with 1. \`COUNT(*)\` counts sam's single \`NULL\`-filled row as 1. Count a column from \`requests\` instead.
+--- hint
+Replace \`COUNT(*)\` with \`COUNT(r.id)\`. \`r.id\` is \`NULL\` in sam's row, so it is not counted.
+--- check result | All four users, sam with 0
+[["ada@example.com", 3], ["lin@example.com", 2], ["sam@example.com", 0], ["kai@example.com", 1]]
+
++++ practice | Pads that never launched
+--- task
+\`pads\` has the columns \`id\`, \`code\` and \`site\`. \`launches\` has the columns \`id\`, \`pad_id\`, \`rocket\` and \`launched\`; \`pad_id\` is the \`id\` of the pad the rocket flew from. One pad has never been used.
+
+Return the \`code\` and \`site\` of **every** pad next to the \`rocket\` of each launch from it. A pad with several launches appears once per launch. The unused pad must still appear, with \`NULL\` for the rocket. Sort by \`code\` from A to Z, and by \`rocket\` from A to Z within a pad.
+--- starter
+SELECT p.code, p.site, l.rocket
+FROM pads p
+JOIN launches l ON l.pad_id = p.id
+ORDER BY p.code, l.rocket;
+--- solution
+SELECT p.code, p.site, l.rocket
+FROM pads p
+LEFT JOIN launches l ON l.pad_id = p.id
+ORDER BY p.code, l.rocket;
+--- hint
+A plain \`JOIN\` keeps only pads that have a launch. You need the kind of join that keeps every row of the left table.
+--- hint
+Keep \`pads\` after \`FROM\`, since those are the rows you want to keep, and change the join to a \`LEFT JOIN\`.
+--- schema
+CREATE TABLE pads (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL,
+  site TEXT NOT NULL
+);
+INSERT INTO pads (id, code, site) VALUES
+  (1, 'LC-1', 'Coastal'),
+  (2, 'LC-2', 'Coastal'),
+  (3, 'MP-7', 'Mountain'),
+  (4, 'MP-8', 'Mountain');
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  pad_id INTEGER NOT NULL REFERENCES pads(id),
+  rocket TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, pad_id, rocket, launched) VALUES
+  (1, 2, 'Lark I', '2024-03-02'),
+  (2, 1, 'Lark II', '2024-09-17'),
+  (3, 2, 'Lark II', '2025-01-08'),
+  (4, 3, 'Magpie', '2025-06-21');
+--- check result | Five rows in order, MP-8 last with NULL
+ordered
+[["LC-1", "Coastal", "Lark II"], ["LC-2", "Coastal", "Lark I"], ["LC-2", "Coastal", "Lark II"], ["MP-7", "Mountain", "Magpie"], ["MP-8", "Mountain", null]]
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source | Starts from pads
+[Ff][Rr][Oo][Mm]\\s+pads\\b
+
++++ practice | Requests whose user is gone
+--- task
+In this copy of the database, one user was removed by mistake, but a request of theirs is still in \`requests\`. Its \`user_id\` points at nobody.
+
+Return **every** request, with three columns: the request's \`id\`, its \`model\`, and the \`email\` of the user who sent it. The request whose user is gone must still appear, with \`NULL\` for the email.
+--- starter
+SELECT r.id, r.model, u.email
+FROM requests r
+JOIN users u ON u.id = r.user_id;
+--- solution
+SELECT r.id, r.model, u.email
+FROM requests r
+LEFT JOIN users u ON u.id = r.user_id;
+--- hint
+This time the rows you must keep are the requests. Which table goes after \`FROM\`?
+--- hint
+With \`requests\` on the left, a \`LEFT JOIN\` to \`users\` keeps every request, even one with no matching user.
+--- schema
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  plan TEXT NOT NULL,
+  created TEXT NOT NULL
+);
+INSERT INTO users (id, email, plan, created) VALUES
+  (1, 'ada@example.com', 'pro',  '2025-01-04'),
+  (2, 'lin@example.com', 'free', '2025-02-11'),
+  (4, 'kai@example.com', 'pro',  '2025-03-28');
+CREATE TABLE requests (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  model TEXT NOT NULL,
+  input_tokens INTEGER NOT NULL,
+  output_tokens INTEGER NOT NULL,
+  cost_usd REAL NOT NULL
+);
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd) VALUES
+  (1, 1, 'sonnet',  1200,  340, 0.0087),
+  (2, 1, 'sonnet',  5400,  910, 0.0298),
+  (3, 3, 'haiku',    800,  120, 0.0012),
+  (4, 2, 'sonnet', 15000, 2100, 0.0765),
+  (5, 2, 'haiku',    300,   80, 0.0006),
+  (6, 4, 'haiku',   2200,  400, 0.0034);
+--- check result | All six requests, request 3 with NULL
+[[1, "sonnet", "ada@example.com"], [2, "sonnet", "ada@example.com"], [3, "haiku", null], [4, "sonnet", "lin@example.com"], [5, "haiku", "lin@example.com"], [6, "haiku", "kai@example.com"]]
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source | Starts from requests
+[Ff][Rr][Oo][Mm]\\s+requests\\b
+
++++ practice | Satellites per operator
+--- task
+\`operators\` has the columns \`id\` and \`name\`. \`satellites\` has the columns \`id\`, \`name\` and \`operator_id\`. One operator runs no satellites yet.
+
+Return **every** operator, with two columns: the operator's \`name\` and how many satellites it runs as \`satellites\`, which must be \`0\` for the operator with none. Put the operator with the most satellites first; when two have the same number, put them A to Z by name.
+--- starter
+SELECT o.name, COUNT(*) AS satellites
+FROM operators o
+JOIN satellites s ON s.operator_id = o.id
+GROUP BY o.id, o.name;
+--- solution
+SELECT o.name, COUNT(s.id) AS satellites
+FROM operators o
+LEFT JOIN satellites s ON s.operator_id = o.id
+GROUP BY o.id, o.name
+ORDER BY satellites DESC, o.name;
+--- hint
+Three changes: keep every operator, count only real matches, and sort.
+--- hint
+After a \`LEFT JOIN\`, \`COUNT(*)\` counts the \`NULL\`-filled row as 1. Count a column from \`satellites\` instead.
+--- hint
+Sort with \`ORDER BY satellites DESC, o.name\`.
+--- schema
+CREATE TABLE operators (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO operators (id, name) VALUES
+  (1, 'Polar Relay'),
+  (2, 'Blue Arc'),
+  (3, 'Nimbus Labs'),
+  (4, 'Aurora Nine');
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  operator_id INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, operator_id) VALUES
+  (1, 'Kestrel', 1),
+  (2, 'Heron', 2),
+  (3, 'Wren', 1),
+  (4, 'Osprey', 2),
+  (5, 'Finch', 3);
+--- check result | Blue Arc and Polar Relay with 2, Nimbus Labs 1, Aurora Nine 0
+ordered
+[["Blue Arc", 2], ["Polar Relay", 2], ["Nimbus Labs", 1], ["Aurora Nine", 0]]
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not count whole rows
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)
+
++++ practice | Spacewalks, none and one
+--- task
+\`crew\` has the columns \`id\` and \`name\`. \`spacewalks\` has the columns \`id\`, \`crew_id\` and \`minutes\`: one row per spacewalk, with who did it and how long it lasted. Some crew members have done several spacewalks, one has done exactly one, and two have done none.
+
+Return **every** crew member, with three columns: their \`name\`, how many spacewalks they have done as \`walks\`, and their longest spacewalk in minutes as \`longest\`. Someone with no spacewalks must show \`0\` walks and \`NULL\` for the longest.
+--- starter
+SELECT name FROM crew;
+--- solution
+SELECT c.name, COUNT(w.id) AS walks, MAX(w.minutes) AS longest
+FROM crew c
+LEFT JOIN spacewalks w ON w.crew_id = c.id
+GROUP BY c.id, c.name;
+--- hint
+Start from \`crew\` and keep everyone with a \`LEFT JOIN\`, then group per crew member.
+--- hint
+\`COUNT\` of a column from \`spacewalks\` gives 0 for someone with none. \`MAX\` skips \`NULL\`, so with nothing to compare it gives \`NULL\` by itself.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO crew (id, name) VALUES
+  (1, 'Imani'),
+  (2, 'Tomas'),
+  (3, 'Yuki'),
+  (4, 'Ravi'),
+  (5, 'Noor');
+CREATE TABLE spacewalks (
+  id INTEGER PRIMARY KEY,
+  crew_id INTEGER NOT NULL REFERENCES crew(id),
+  minutes INTEGER NOT NULL
+);
+INSERT INTO spacewalks (id, crew_id, minutes) VALUES
+  (1, 1, 395),
+  (2, 3, 410),
+  (3, 1, 402),
+  (4, 3, 365),
+  (5, 4, 220),
+  (6, 3, 388);
+--- check result | Tomas and Noor with 0 and NULL, Ravi with exactly one
+[["Imani", 2, 402], ["Tomas", 0, null], ["Yuki", 3, 410], ["Ravi", 1, 220], ["Noor", 0, null]]
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not count whole rows
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)
+
++++ practice | Where did sam go
+--- task
+The query in the editor should return **every** user's \`email\` with how many requests they have made, \`0\` for sam. It uses a \`LEFT JOIN\` and counts \`r.id\`, yet sam is still missing. Fix it.
+--- starter
+SELECT u.email, COUNT(r.id) AS requests
+FROM requests r
+LEFT JOIN users u ON u.id = r.user_id
+GROUP BY u.id, u.email;
+--- solution
+SELECT u.email, COUNT(r.id) AS requests
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+GROUP BY u.id, u.email;
+--- hint
+A \`LEFT JOIN\` keeps every row of the table written first, after \`FROM\`. Which table is that here?
+--- hint
+The rows to keep are the users, so \`users\` has to come after \`FROM\`, and \`requests\` after \`LEFT JOIN\`.
+--- check result | All four users, sam with 0
+[["ada@example.com", 3], ["kai@example.com", 1], ["lin@example.com", 2], ["sam@example.com", 0]]
+--- check source | Starts from users
+[Ff][Rr][Oo][Mm]\\s+users\\b
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+
++++ practice | Station roll call
+--- task
+\`stations\` has the columns \`id\` and \`name\`: one row per ground station. \`passes\` has the columns \`id\`, \`station_id\`, \`started\` (a time written year-month-day hours:minutes) and \`minutes\`: one row per satellite pass over a station. Two stations have had no passes yet.
+
+Return **every** station, with three columns: its \`name\`, how many passes it has had as \`passes\`, and the start time of its first pass as \`first_pass\` (\`NULL\` if it has had none). Sort by the number of passes, most first, then by name from A to Z.
+--- starter
+SELECT name FROM stations;
+--- solution
+SELECT s.name, COUNT(p.id) AS passes, MIN(p.started) AS first_pass
+FROM stations s
+LEFT JOIN passes p ON p.station_id = s.id
+GROUP BY s.id, s.name
+ORDER BY passes DESC, s.name;
+--- hint
+Start from \`stations\` and \`LEFT JOIN\` the passes, so the stations with none stay in. Group per station.
+--- hint
+Count a column from \`passes\`, not whole rows. The first pass is the smallest \`started\`, and it is \`NULL\` on its own when there are none.
+--- hint
+The sort is \`ORDER BY passes DESC, s.name\`.
+--- schema
+CREATE TABLE stations (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO stations (id, name) VALUES
+  (1, 'Svalbard'),
+  (2, 'Awarua'),
+  (3, 'Kourou'),
+  (4, 'Hawaii'),
+  (5, 'Troll');
+CREATE TABLE passes (
+  id INTEGER PRIMARY KEY,
+  station_id INTEGER NOT NULL REFERENCES stations(id),
+  started TEXT NOT NULL,
+  minutes INTEGER NOT NULL
+);
+INSERT INTO passes (id, station_id, started, minutes) VALUES
+  (1, 1, '2025-05-01 01:10', 12),
+  (2, 2, '2025-05-01 02:05', 9),
+  (3, 1, '2025-05-01 02:48', 11),
+  (4, 3, '2025-05-01 03:30', 14),
+  (5, 1, '2025-05-01 00:25', 13),
+  (6, 2, '2025-05-01 05:40', 10);
+--- check result | Svalbard 3, Awarua 2, Kourou 1, then Hawaii and Troll with 0 and NULL
+ordered
+[["Svalbard", 3, "2025-05-01 00:25"], ["Awarua", 2, "2025-05-01 02:05"], ["Kourou", 1, "2025-05-01 03:30"], ["Hawaii", 0, null], ["Troll", 0, null]]
+--- check source | Uses a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not count whole rows
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)
+
+=== sql-08b | Testing for NULL
+--- teach
+Last lesson a \`LEFT JOIN\` kept sam, with \`NULL\` in the spaces where a request would be. This lesson shows how to find those \`NULL\`s on purpose, and how to swap a \`NULL\` for a real value.
+
+Picture a register with a blank box. You cannot ask whether the blank "equals" anything, because nothing is written there. The only fair question is: "Is this box blank?"
+
+SQL works the same way. You might try \`WHERE r.id = NULL\`. It looks right. It never matches anything, not even a \`NULL\`, because comparing anything with \`NULL\` gives an [[unknown answer|three-valued]], not true. \`WHERE\` keeps a row only when its test is true.
+
+\`\`\`sql
+SELECT NULL = NULL;
+\`\`\`
+
+This does not return true. It returns \`NULL\`: "unknown".
+
+The right test is **\`IS NULL\`**, which is true when the value is missing. Its opposite is **\`IS NOT NULL\`**, true when there is a value. Here \`IS NOT NULL\` keeps only the joined rows that really have a request:
+
+\`\`\`sql
+SELECT u.email, r.id
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+WHERE r.id IS NOT NULL;
+\`\`\`
+
+That gives ada's 1, 2 and 3, lin's 4 and 5, and kai's 6. sam's row is dropped, because its \`r.id\` is \`NULL\`.
+
+Turning that round, \`IS NULL\` finds the rows that had [[no match at all|anti-join]].
+
+The second tool swaps a \`NULL\` for a value you choose. **\`COALESCE(x, 0)\`** gives back \`x\`, unless \`x\` is \`NULL\`; then it gives \`0\`. You need it because adding up nothing does not give 0. For sam, [[there are no costs to add up|sum-of-nothing]], so \`SUM\` gives \`NULL\`:
+
+\`\`\`sql
+SELECT u.email, SUM(r.cost_usd) AS spend
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+GROUP BY u.id, u.email
+ORDER BY u.email;
+\`\`\`
+
+sam's \`spend\` comes back \`NULL\`. Wrap the sum in [[this new function|coalesce-word]] to show 0 instead:
+
+\`\`\`sql
+SELECT u.email, COALESCE(SUM(r.cost_usd), 0) AS spend
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+GROUP BY u.id, u.email
+ORDER BY u.email;
+\`\`\`
+
+| email | spend |
+| --- | --- |
+| ada@example.com | 0.0397 |
+| kai@example.com | 0.0034 |
+| lin@example.com | 0.0771 |
+| sam@example.com | 0 |
+
+**Watch out:** \`= NULL\` and \`<> NULL\` (\`<>\` is "not equal") are not errors. They run, return no rows, and look like "nothing found". Whenever you mean "is missing", write \`IS NULL\`; for "is not missing", write \`IS NOT NULL\`.
+
+::: context three-valued True, false and unknown
+Most tests in SQL give true or false. Any comparison with \`NULL\` gives a third answer, unknown, which SQL writes as \`NULL\`. That is why \`5 = NULL\` and even \`NULL = NULL\` are unknown: if you do not know two values, you cannot say they are equal. \`WHERE\` keeps a row only when its test is true, so false and unknown are both dropped.
+
+\`\`\`svg
+<svg viewBox="0 0 360 130" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <g font-size="12" fill="#1f2a44">
+    <text x="14" y="16" fill="#6c7a93">test</text>
+    <text x="140" y="16" fill="#6c7a93">answer</text>
+    <text x="250" y="16" fill="#6c7a93">WHERE</text>
+    <text x="14" y="44">5 = 5</text>
+    <rect x="130" y="28" width="86" height="24" fill="#ffffff" stroke="#1d6fd1"/><text x="140" y="44">true</text>
+    <text x="250" y="44" fill="#1d6fd1">row kept</text>
+    <text x="14" y="78">5 = 6</text>
+    <rect x="130" y="62" width="86" height="24" fill="#ffffff" stroke="#6c7a93"/><text x="140" y="78">false</text>
+    <text x="250" y="78" fill="#b4232c">row dropped</text>
+    <text x="14" y="112">5 = NULL</text>
+    <rect x="130" y="96" width="86" height="24" fill="#ffffff" stroke="#b4232c" stroke-dasharray="4 3"/><text x="140" y="112">unknown</text>
+    <text x="250" y="112" fill="#b4232c">row dropped</text>
+  </g>
+</svg>
+\`\`\`
+:::
+
+::: context anti-join Finding what has no partner
+\`LEFT JOIN\` followed by \`WHERE <right table column> IS NULL\` is a pattern with a name: an **anti-join**. It finds rows on the left with no partner on the right. Real teams use it all the time: users who signed up and never used the product, orders that were never shipped, satellites in a list that sent no telemetry today. Pick a right-hand column that can never be \`NULL\` in a real match, such as the primary key \`r.id\`. In the Subqueries and WITH lesson you will meet subqueries, which give you another way to ask the same question.
+:::
+
+::: context sum-of-nothing Why SUM of nothing is NULL
+\`COUNT\` of no rows is 0. But \`SUM\`, \`AVG\`, \`MIN\` and \`MAX\` of no values give \`NULL\`, because there is nothing to add, average or compare. SQL chose "no answer" over pretending. That is usually not what a report wants, so \`COALESCE(SUM(...), 0)\` is a very common line. SQLite also has its own function, \`TOTAL(...)\`, which works like \`SUM\` but gives \`0.0\` when there is nothing to add; other databases do not have it, so \`COALESCE\` is the habit that travels.
+:::
+
+::: context coalesce-word First value that is not missing
+To coalesce means to come together into one. \`COALESCE\` can take more than two arguments: it looks at them from left to right and gives back the first one that is not \`NULL\`. So \`COALESCE(NULL, NULL, 5)\` gives \`5\`. That makes it handy for fallbacks: use a nickname if there is one, otherwise the email, otherwise the text \`'unknown'\`.
+:::
+--- task
+Return the \`email\` of every user who has **never made a request**, and nothing else.
+
+Start from \`users\`, \`LEFT JOIN\` it to \`requests\` on the user id, and keep only the rows where the request's \`id\` is missing. Use \`IS NULL\` for the test.
+--- starter
+SELECT u.email
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+WHERE r.id = NULL;
+--- solution
+SELECT u.email
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+WHERE r.id IS NULL;
+--- hint
+Run the starter: it returns nothing. Look at the \`WHERE\` line. Which test never matches a \`NULL\`?
+--- hint
+\`= NULL\` is never true. The test for a missing value is \`IS NULL\`.
+--- hint
+Change the last line to \`WHERE r.id IS NULL;\` and leave the rest as it is.
+--- check result | Only sam has never made a request
+[["sam@example.com"]]
+--- check source | Tests for a missing value with IS NULL
+\\b[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]\\b
+
++++ practice | Still in service
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`launched\` and \`retired\`. \`retired\` holds the date a satellite was switched off, or \`NULL\` if it is still working.
+
+Return the \`name\` and \`launched\` date of every satellite that is **still working**.
+--- starter
+SELECT name, launched FROM satellites;
+--- solution
+SELECT name, launched FROM satellites WHERE retired IS NULL;
+--- hint
+"Still working" means the \`retired\` column has no value. Careful: \`= NULL\` never matches anything, because a comparison with \`NULL\` is "unknown".
+--- hint
+The test for a missing value is two words: \`IS NULL\`.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  retired TEXT
+);
+INSERT INTO satellites (id, name, launched, retired) VALUES
+  (1, 'Kestrel', '2021-06-14', NULL),
+  (2, 'Heron',   '2019-11-02', '2024-12-01'),
+  (3, 'Wren',    '2023-02-27', NULL),
+  (4, 'Osprey',  '2020-08-09', '2025-03-15'),
+  (5, 'Finch',   '2024-05-30', NULL);
+--- check result | Kestrel, Wren and Finch
+[["Kestrel", "2021-06-14"], ["Wren", "2023-02-27"], ["Finch", "2024-05-30"]]
+--- check source | Tests with IS NULL
+\\b[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]\\b
+--- check source absent | Does not pick the satellites by name
+name\\s*(=|<>|[Ii][Nn]\\b)
+
++++ practice | Call signs
+--- task
+The \`crew\` table has the columns \`id\`, \`name\`, \`nickname\` and \`callsign\`. A crew member may have a \`callsign\`, a \`nickname\`, both, or neither; the missing ones are \`NULL\`.
+
+Return two columns for every crew member: their \`id\`, and the name to show on the radio as \`radio_name\`. Use the \`callsign\` if there is one; if not, the \`nickname\`; if neither, their \`name\`.
+--- starter
+SELECT id, callsign AS radio_name FROM crew;
+--- solution
+SELECT id, COALESCE(callsign, nickname, name) AS radio_name FROM crew;
+--- hint
+You want the first of three values that is not missing, looked at in a fixed order.
+--- hint
+\`COALESCE\` can take more than two values: it gives back the first one that is not \`NULL\`.
+--- schema
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  nickname TEXT,
+  callsign TEXT
+);
+INSERT INTO crew (id, name, nickname, callsign) VALUES
+  (1, 'Imani', 'Ima', 'Falcon'),
+  (2, 'Tomas', 'Tom', NULL),
+  (3, 'Yuki', NULL, 'Comet'),
+  (4, 'Ravi', NULL, NULL);
+--- check result | Falcon, Tom, Comet and Ravi
+[[1, "Falcon"], [2, "Tom"], [3, "Comet"], [4, "Ravi"]]
+--- check source | Uses COALESCE
+[Cc][Oo][Aa][Ll][Ee][Ss][Cc][Ee]\\s*\\(
+--- check source absent | Does not pick the crew by id
+\\bid\\s*(=|<>|[Ii][Nn]\\b)
+
++++ practice | Mass per operator, zero included
+--- task
+\`operators\` has the columns \`id\` and \`name\`. \`satellites\` has the columns \`id\`, \`name\`, \`operator_id\` and \`mass_kg\`. One operator runs no satellites.
+
+Return **every** operator, with two columns: its \`name\` and the total mass of its satellites as \`total_kg\`, which must be \`0\` (not \`NULL\`) for the operator with none. Put the biggest total first.
+--- starter
+SELECT o.name, SUM(s.mass_kg) AS total_kg
+FROM operators o
+LEFT JOIN satellites s ON s.operator_id = o.id
+GROUP BY o.id, o.name;
+--- solution
+SELECT o.name, COALESCE(SUM(s.mass_kg), 0) AS total_kg
+FROM operators o
+LEFT JOIN satellites s ON s.operator_id = o.id
+GROUP BY o.id, o.name
+ORDER BY total_kg DESC;
+--- hint
+Run the starter: the operator with no satellites gets \`NULL\`, because there is nothing to add up.
+--- hint
+Wrap the sum in \`COALESCE(..., 0)\`, then sort by the total, biggest first.
+--- schema
+CREATE TABLE operators (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO operators (id, name) VALUES
+  (1, 'Polar Relay'),
+  (2, 'Blue Arc'),
+  (3, 'Aurora Nine');
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  operator_id INTEGER NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, operator_id, mass_kg) VALUES
+  (1, 'Kestrel', 1, 220),
+  (2, 'Heron', 2, 3400),
+  (3, 'Wren', 1, 95),
+  (4, 'Finch', 1, 60);
+--- check result | Blue Arc 3400, Polar Relay 375, Aurora Nine 0
+ordered
+[["Blue Arc", 3400], ["Polar Relay", 375], ["Aurora Nine", 0]]
+--- check source | Uses COALESCE
+[Cc][Oo][Aa][Ll][Ee][Ss][Cc][Ee]\\s*\\(
+--- check source | Sorts biggest first
+[Dd][Ee][Ss][Cc]
+
++++ practice | Not ok, or no status at all
+--- task
+A table called \`checks\` holds the results of a pre-flight checklist, with the columns \`id\`, \`item\` and \`status\`. \`status\` is \`'ok'\`, \`'fail'\`, \`'warn'\`, or \`NULL\` when nobody has checked that item yet.
+
+Return the \`item\` of every row that still needs attention: every row whose status is **not** \`'ok'\`. An item nobody has checked (status \`NULL\`) needs attention too, so it must be in the answer.
+--- starter
+SELECT item FROM checks;
+--- solution
+SELECT item
+FROM checks
+WHERE status <> 'ok' OR status IS NULL;
+--- hint
+Try \`WHERE status <> 'ok'\` first and count the rows. Where did the unchecked items go?
+--- hint
+\`NULL <> 'ok'\` is not true: it is "unknown", so \`WHERE\` drops the row. Add a second condition for the missing status, joined with \`OR\`.
+--- schema
+CREATE TABLE checks (
+  id INTEGER PRIMARY KEY,
+  item TEXT NOT NULL,
+  status TEXT
+);
+INSERT INTO checks (id, item, status) VALUES
+  (1, 'hatch seals', 'ok'),
+  (2, 'fuel valves', 'fail'),
+  (3, 'radio link', NULL),
+  (4, 'batteries', 'warn'),
+  (5, 'star tracker', 'ok'),
+  (6, 'parachute', NULL);
+--- check result | fuel valves, radio link, batteries and parachute
+[["fuel valves"], ["radio link"], ["batteries"], ["parachute"]]
+--- check source | Tests for a missing status with IS NULL
+\\b[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]\\b
+--- check source absent | Does not pick the items by name
+item\\s*(=|<>|[Ii][Nn]\\b)
+
++++ practice | The anti-join that found nothing
+--- task
+\`pads\` has the columns \`id\`, \`code\` and \`site\`. \`launches\` has the columns \`id\`, \`pad_id\`, \`rocket\` and \`launched\`.
+
+The query in the editor should return the \`code\` of every pad that has **never** had a launch. There are two such pads, but the query returns nothing. Fix it.
+--- starter
+SELECT p.code
+FROM pads p
+LEFT JOIN launches l ON l.pad_id = p.id
+WHERE p.id IS NULL;
+--- solution
+SELECT p.code
+FROM pads p
+LEFT JOIN launches l ON l.pad_id = p.id
+WHERE l.id IS NULL;
+--- hint
+Every pad has an id, so \`p.id\` is never \`NULL\`. Which table's columns are \`NULL\` in the rows with no match?
+--- hint
+Test a column from the right-hand table, one that is never \`NULL\` in a real match, such as its primary key.
+--- schema
+CREATE TABLE pads (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL,
+  site TEXT NOT NULL
+);
+INSERT INTO pads (id, code, site) VALUES
+  (1, 'LC-1', 'Coastal'),
+  (2, 'LC-2', 'Coastal'),
+  (3, 'MP-7', 'Mountain'),
+  (4, 'MP-8', 'Mountain'),
+  (5, 'LC-3', 'Coastal');
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  pad_id INTEGER NOT NULL REFERENCES pads(id),
+  rocket TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, pad_id, rocket, launched) VALUES
+  (1, 2, 'Lark I', '2024-03-02'),
+  (2, 1, 'Lark II', '2024-09-17'),
+  (3, 2, 'Lark II', '2025-01-08'),
+  (4, 3, 'Magpie', '2025-06-21');
+--- check result | MP-8 and LC-3
+[["MP-8"], ["LC-3"]]
+--- check source | Still a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source | Tests a column of launches
+\\bl\\.\\w+\\s+[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]
+
++++ practice | Quiet sensors
+--- task
+\`sensors\` has the columns \`id\` and \`name\`. \`readings\` has the columns \`id\`, \`sensor_id\`, \`taken\` (a time written year-month-day hours:minutes) and \`value\`. A healthy sensor reports often; a quiet one has reported once or never.
+
+Return every **quiet** sensor, that is every sensor with fewer than 2 readings, including those with none. Give three columns: its \`name\`, how many readings it has as \`readings\`, and the time of its latest reading as \`last_seen\`. When a sensor has never reported, \`last_seen\` must be the text \`'never'\` instead of \`NULL\`. Sort by name from A to Z.
+--- starter
+SELECT name FROM sensors;
+--- solution
+SELECT s.name,
+       COUNT(r.id) AS readings,
+       COALESCE(MAX(r.taken), 'never') AS last_seen
+FROM sensors s
+LEFT JOIN readings r ON r.sensor_id = s.id
+GROUP BY s.id, s.name
+HAVING COUNT(r.id) < 2
+ORDER BY s.name;
+--- hint
+Start from \`sensors\` and \`LEFT JOIN\` the readings, so the silent ones stay in. Group per sensor.
+--- hint
+"Fewer than 2 readings" tests a group, so it goes in \`HAVING\`, and it has to count a column from \`readings\` so a silent sensor counts as 0.
+--- hint
+The latest reading is \`MAX(r.taken)\`. Wrap it in \`COALESCE(..., 'never')\`.
+--- schema
+CREATE TABLE sensors (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO sensors (id, name) VALUES
+  (1, 'tank_pressure'),
+  (2, 'nozzle_temp'),
+  (3, 'bus_voltage'),
+  (4, 'star_tracker'),
+  (5, 'sun_sensor');
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor_id INTEGER NOT NULL REFERENCES sensors(id),
+  taken TEXT NOT NULL,
+  value REAL NOT NULL
+);
+INSERT INTO readings (id, sensor_id, taken, value) VALUES
+  (1, 1, '2025-05-01 06:00', 340.0),
+  (2, 1, '2025-05-01 06:01', 342.5),
+  (3, 2, '2025-05-01 06:00', 880.0),
+  (4, 3, '2025-05-01 05:58', 31.2),
+  (5, 2, '2025-05-01 06:01', 884.0),
+  (6, 1, '2025-05-01 06:02', 339.0);
+--- check result | bus_voltage with one reading, star_tracker and sun_sensor never
+ordered
+[["bus_voltage", 1, "2025-05-01 05:58"], ["star_tracker", 0, "never"], ["sun_sensor", 0, "never"]]
+--- check source | Uses COALESCE
+[Cc][Oo][Aa][Ll][Ee][Ss][Cc][Ee]\\s*\\(
+--- check source | Filters groups with HAVING
+[Hh][Aa][Vv][Ii][Nn][Gg]
+
+=== sql-09 | Inserting rows
+--- teach
+Last lesson you used \`LEFT JOIN\` to keep every user, even sam, who has no requests. Up to now every query has only **read** the tables. From this lesson on, you change them. First: adding new rows.
+
+Think of a class register. A new student joins, so you write one new line at the bottom: name, form, start date. The old lines stay as they were. Adding a row to a table works the same way.
+
+The command is **INSERT**: it adds new rows to a table. In a real product, [[every sign-up|app-inserts]] ends with an \`INSERT\` like the one below.
+
+\`\`\`sql
+INSERT INTO users (id, email, plan, created)
+VALUES (5, 'mo@example.com', 'free', '2025-04-02');
+\`\`\`
+
+Read it in three parts:
+
+- \`INSERT INTO users\` means "add a row to the \`users\` table".
+- \`(id, email, plan, created)\` is the list of columns you are filling.
+- \`VALUES (5, 'mo@example.com', 'free', '2025-04-02')\` is the values for those columns, in the **same order**. The first value goes into the first column, the second into the second, and so on.
+
+Text goes in [[single quotes|single-quotes]], like \`'free'\`. Numbers, like \`5\`, do not. The date is written as text too, \`'2025-04-02'\`, in the same year-month-day shape the table already uses.
+
+You name only the columns you are filling. A column you [[leave out of the list|leave-out]] is filled in by the table if it knows how, or refused if it does not. In this lesson, fill every column.
+
+Nothing comes back from an \`INSERT\`. To see the new row, ask for it with a \`SELECT\`:
+
+\`\`\`sql
+SELECT * FROM users WHERE id = 5;
+\`\`\`
+
+| id | email | plan | created |
+| --- | --- | --- | --- |
+| 5 | mo@example.com | free | 2025-04-02 |
+
+You can add **several rows at once**. Put a comma between the brackets, one bracket per row:
+
+\`\`\`sql
+INSERT INTO users (id, email, plan, created)
+VALUES (6, 'zoe@example.com', 'free', '2025-04-03'),
+       (7, 'raj@example.com', 'pro',  '2025-04-05');
+\`\`\`
+
+That adds two rows with one statement.
+
+The table's rules still apply to every row you add. These rules are called [[constraints|constraints]]. In this schema, \`email\` is marked \`UNIQUE\`, which means no two users may have the same email. So a second \`ada@example.com\` is **refused**: the database stops the insert with an [[error|unique-error]] and adds nothing. That refusal is the database protecting your data. Do not try to work around it.
+
+Order can matter too. A request row has a \`user_id\`, and that number should be the \`id\` of a real user. So when you add a new user and their first request, add the user first, then the request that [[points at them|parent-first]].
+
+**Watch out:** the column list and the \`VALUES\` list must line up. If you write the columns as \`(id, email, plan, created)\` but the values as \`(5, 'free', 'mo@example.com', '2025-04-02')\`, the database happily stores \`free\` as the email and \`mo@example.com\` as the plan. It cannot tell you swapped them. Read the two lists side by side before you run it.
+
+::: context app-inserts Where rows really come from
+Almost no row in a real database is typed by hand. When someone signs up for an app, the app's code runs an \`INSERT\` into its users table. When a flight computer logs a sensor reading ten times a second, each reading becomes a new row in a telemetry table. When a mission control team writes an entry in the log, that is a row too. The SQL is the same one you are learning here; a program fills in the values instead of you.
+:::
+
+::: context single-quotes Single quotes for text, double quotes for names
+In SQL, single quotes mark a piece of text: \`'mo@example.com'\`. Double quotes mean something different: they wrap the **name** of a table or column, as in \`"created"\`. You rarely need double quotes, only when a name contains a space or clashes with a SQL word. To put a single quote inside text, write it twice: \`'O''Brien'\` stores the name O'Brien. Mixing the two kinds of quote up is one of the most common beginner errors.
+:::
+
+::: context leave-out What happens to a column you skip
+Two things can happen. If the column has a default, the table fills that in. You will write a \`DEFAULT\` yourself in the lesson "Creating tables". And in SQLite, a column declared \`INTEGER PRIMARY KEY\`, like \`id\` here, picks the next free number on its own: leave \`id\` out and mo would get 5, one more than the largest id so far. If the column has no default and is marked \`NOT NULL\`, the insert is refused, because "no value" is not allowed there.
+:::
+
+::: context constraints Rules that live in the table
+A **constraint** is a rule written into the table itself, when the table is made. \`NOT NULL\` says "this column must have a value". \`UNIQUE\` says "no two rows may share this value". \`PRIMARY KEY\` says "this column names each row, so it must be unique". Because the rule is in the table, it holds for every program, every script and every person that writes to it. You will write these rules yourself in the lesson "Creating tables", and the SQL Advanced course has a whole lesson on them.
+:::
+
+::: context unique-error What the refusal looks like
+Try adding a second user with the email \`ada@example.com\` and SQLite answers with an error like this:
+
+\`\`\`sql
+INSERT INTO users (id, email, plan, created)
+VALUES (9, 'ada@example.com', 'free', '2025-05-01');
+-- Error: UNIQUE constraint failed: users.email
+\`\`\`
+
+The message names the rule (\`UNIQUE\`) and the column (\`users.email\`). No row is added, not even a half-finished one. Leaving out a required value gives a similar message: \`NOT NULL constraint failed: users.created\`. Reading the message slowly usually tells you exactly what to fix.
+:::
+
+::: context parent-first Why the user goes in first
+A request with \`user_id\` 5 points at user 5, like a luggage tag pointing at its owner. If you add the request before user 5 exists, the tag points at nobody for a moment. Databases that check these links refuse that, so the habit is: the thing being pointed at goes in first.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <text x="90" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">users</text>
+  <rect x="30" y="28" width="120" height="24" fill="#fff" stroke="#6c7a93"/>
+  <text x="90" y="44" font-size="11" fill="#6c7a93" text-anchor="middle">4  kai@example.com</text>
+  <rect x="30" y="52" width="120" height="24" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="90" y="68" font-size="11" fill="#1f2a44" text-anchor="middle">5  mo@example.com</text>
+  <text x="90" y="98" font-size="11" fill="#1d6fd1" text-anchor="middle">1st: add the user</text>
+  <text x="270" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">requests</text>
+  <rect x="210" y="28" width="120" height="24" fill="#fff" stroke="#6c7a93"/>
+  <text x="270" y="44" font-size="11" fill="#6c7a93" text-anchor="middle">6  user_id 4</text>
+  <rect x="210" y="52" width="120" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="270" y="68" font-size="11" fill="#1f2a44" text-anchor="middle">7  user_id 5</text>
+  <text x="270" y="98" font-size="11" fill="#1f2a44" text-anchor="middle">2nd: add the request</text>
+  <line x1="208" y1="64" x2="158" y2="64" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="152,64 160,59 160,69" fill="#1f2a44"/>
+  <text x="180" y="130" font-size="11" fill="#1f2a44" text-anchor="middle">the request's user_id points at the user's id</text>
+</svg>
+\`\`\`
+
+SQLite, the database these lessons use, only checks these links when you switch the check on. Lesson 11 shows how.
+:::
+--- task
+Add a user with id \`5\`, email \`mo@example.com\`, plan \`free\`, created \`2025-04-02\`. Then add a request for them to the \`requests\` table: id \`7\`, user_id \`5\`, model \`haiku\`, \`500\` input tokens, \`90\` output tokens, cost \`0.0008\`.
+
+The \`requests\` columns, in order, are \`id, user_id, model, input_tokens, output_tokens, cost_usd\`.
+--- starter
+-- Insert the new user, then their first request.
+
+--- solution
+INSERT INTO users (id, email, plan, created)
+VALUES (5, 'mo@example.com', 'free', '2025-04-02');
+
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)
+VALUES (7, 5, 'haiku', 500, 90, 0.0008);
+--- hint
+You need two separate \`INSERT INTO … VALUES (…);\` statements, each ending in a semicolon. The user goes first, because the request points at them.
+--- hint
+The first one is the example from the lesson, word for word: \`INSERT INTO users (id, email, plan, created) VALUES (5, 'mo@example.com', 'free', '2025-04-02');\`
+--- hint
+The second one starts \`INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)\` and its values are \`(7, 5, 'haiku', 500, 90, 0.0008)\`. Only \`'haiku'\` is text, so only it gets quotes.
+--- check query | The user exists
+SELECT email, plan, created FROM users WHERE id = 5
+=> [["mo@example.com", "free", "2025-04-02"]]
+--- check query | Their request exists and points at them
+SELECT user_id, model, input_tokens, output_tokens, cost_usd FROM requests WHERE id = 7
+=> [[5, "haiku", 500, 90, 0.0008]]
+--- check query | Nothing else changed
+SELECT COUNT(*) FROM users
+=> [[5]]
+
++++ practice | Sam's first request
+--- task
+sam (user id \`3\`) has just made a first request. Add it to the \`requests\` table: id \`7\`, user_id \`3\`, model \`sonnet\`, \`900\` input tokens, \`150\` output tokens, cost \`0.0051\`.
+
+The \`requests\` columns are \`id, user_id, model, input_tokens, output_tokens, cost_usd\`.
+--- starter
+-- Add sam's request.
+
+--- solution
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)
+VALUES (7, 3, 'sonnet', 900, 150, 0.0051);
+--- hint
+One \`INSERT INTO requests (...) VALUES (...);\` statement does it. The values go in the same order as the columns.
+--- hint
+Only the model is text, so only \`'sonnet'\` gets quotes.
+--- check query | The request is there, with every value in its column
+SELECT user_id, model, input_tokens, output_tokens, cost_usd FROM requests WHERE id = 7
+=> [[3, "sonnet", 900, 150, 0.0051]]
+--- check query | sam now has one request
+SELECT COUNT(*) FROM requests WHERE user_id = 3
+=> [[1]]
+--- check query | Exactly one row was added
+SELECT COUNT(*) FROM requests
+=> [[7]]
+
++++ practice | Two requests in one statement
+--- task
+kai (user id \`4\`) sent two requests. Add both to \`requests\` with **one** \`INSERT\` statement:
+
+- id \`7\`: model \`sonnet\`, \`3100\` input tokens, \`620\` output tokens, cost \`0.0186\`.
+- id \`8\`: model \`haiku\`, \`450\` input tokens, \`95\` output tokens, cost \`0.0009\`.
+--- starter
+-- Add kai's two requests in a single statement.
+
+--- solution
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)
+VALUES (7, 4, 'sonnet', 3100, 620, 0.0186),
+       (8, 4, 'haiku', 450, 95, 0.0009);
+--- hint
+After \`VALUES\`, one bracket holds one row. Put a comma between the brackets to add several rows.
+--- hint
+Both rows have \`user_id\` 4. Write the column list once, then two brackets of values.
+--- check query | Request 7 is kai's sonnet request
+SELECT user_id, model, input_tokens, output_tokens, cost_usd FROM requests WHERE id = 7
+=> [[4, "sonnet", 3100, 620, 0.0186]]
+--- check query | Request 8 is kai's haiku request
+SELECT user_id, model, input_tokens, output_tokens, cost_usd FROM requests WHERE id = 8
+=> [[4, "haiku", 450, 95, 0.0009]]
+--- check query | kai now has three requests
+SELECT COUNT(*) FROM requests WHERE user_id = 4
+=> [[3]]
+--- check source absent | Uses one INSERT, not two
+[Ii][Nn][Ss][Ee][Rr][Tt][\\s\\S]*[Ii][Nn][Ss][Ee][Rr][Tt]
+
++++ practice | Add, then look
+--- task
+Do two things, in this order:
+
+1. Add a user: id \`5\`, email \`mo@example.com\`, plan \`free\`, created \`2025-04-02\`.
+2. Then return the \`email\` of every user on the \`free\` plan, sorted from A to Z.
+
+The checker reads the answer of your last statement, so the \`SELECT\` must come after the \`INSERT\`.
+--- starter
+-- Add mo, then list the free users.
+
+--- solution
+INSERT INTO users (id, email, plan, created)
+VALUES (5, 'mo@example.com', 'free', '2025-04-02');
+
+SELECT email FROM users WHERE plan = 'free' ORDER BY email;
+--- hint
+Two statements, each ending in its own semicolon. The \`INSERT\` changes the table; the \`SELECT\` after it sees the change.
+--- hint
+The query is a \`WHERE\` on the plan and an \`ORDER BY\` on the email.
+--- check result | lin, mo and sam, in order
+ordered
+[["lin@example.com"], ["mo@example.com"], ["sam@example.com"]]
+--- check query | mo is stored with every value in its column
+SELECT email, plan, created FROM users WHERE id = 5
+=> [["mo@example.com", "free", "2025-04-02"]]
+--- check query | There are now five users
+SELECT COUNT(*) FROM users
+=> [[5]]
+
++++ practice | An apostrophe and a missing id
+--- task
+Add a user whose email is \`o'neil@example.com\`, on the \`pro\` plan, created \`2025-04-09\`. Do **not** give an id: leave \`id\` out of the column list, so the table picks the next free number by itself.
+
+The email has a single quote inside it. Inside SQL text, a single quote is written as two single quotes.
+--- starter
+-- Add o'neil, without an id.
+
+--- solution
+INSERT INTO users (email, plan, created)
+VALUES ('o''neil@example.com', 'pro', '2025-04-09');
+--- hint
+Name only the three columns you are filling: \`email\`, \`plan\` and \`created\`.
+--- hint
+A plain \`'o'neil...'\` ends the text after the \`o\`. Write the quote inside the text twice: \`'o''neil@example.com'\`.
+--- check query | The email is stored with its apostrophe
+SELECT plan, created FROM users WHERE email = 'o''neil@example.com'
+=> [["pro", "2025-04-09"]]
+--- check query | The table gave it the next id, 5
+SELECT id FROM users WHERE email = 'o''neil@example.com'
+=> [[5]]
+--- check query | Exactly one user was added
+SELECT COUNT(*) FROM users
+=> [[5]]
+
++++ practice | Tokens the wrong way round
+--- task
+The statement in the editor should add request \`7\` for sam (user \`3\`): model \`haiku\`, **450 input** tokens and **60 output** tokens, cost \`0.0007\`. It runs without an error, but afterwards the row says 60 input tokens and 450 output tokens. Fix it.
+--- starter
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)
+VALUES (7, 3, 'haiku', 60, 450, 0.0007);
+--- solution
+INSERT INTO requests (id, user_id, model, input_tokens, output_tokens, cost_usd)
+VALUES (7, 3, 'haiku', 450, 60, 0.0007);
+--- hint
+Read the column list and the values side by side, one pair at a time.
+--- hint
+The fourth value goes into the fourth column, \`input_tokens\`. Swap the two numbers so each lands in the right column.
+--- check query | Request 7 has 450 input tokens
+SELECT input_tokens FROM requests WHERE id = 7
+=> [[450]]
+--- check query | Request 7 has 60 output tokens
+SELECT output_tokens FROM requests WHERE id = 7
+=> [[60]]
+--- check query | The rest of the row is right
+SELECT user_id, model, cost_usd FROM requests WHERE id = 7
+=> [[3, "haiku", 0.0007]]
+
++++ practice | Writing the mission log
+--- task
+A mission team keeps a log in a table called \`mission_log\`, with the columns \`id\`, \`mission\`, \`logged\` (a time), \`author\` and \`entry\`. It already holds three entries, with ids 1 to 3.
+
+Do two things, in this order:
+
+1. With **one** \`INSERT\`, add these three entries to mission \`A7\`. Leave \`id\` out, so the table numbers them by itself.
+   - logged \`2025-05-02 08:10\`, author \`Yuki\`, entry \`Docking port aligned\`
+   - logged \`2025-05-02 08:25\`, author \`Tomas\`, entry \`Crew's hatch open\`
+   - logged \`2025-05-02 09:00\`, author \`Imani\`, entry \`All systems nominal\`
+2. Then return the \`id\`, \`author\` and \`entry\` of every entry for mission \`A7\`, the newest first (latest \`logged\` first).
+--- starter
+-- Add the three entries, then read back mission A7, newest first.
+
+--- solution
+INSERT INTO mission_log (mission, logged, author, entry)
+VALUES ('A7', '2025-05-02 08:10', 'Yuki', 'Docking port aligned'),
+       ('A7', '2025-05-02 08:25', 'Tomas', 'Crew''s hatch open'),
+       ('A7', '2025-05-02 09:00', 'Imani', 'All systems nominal');
+
+SELECT id, author, entry
+FROM mission_log
+WHERE mission = 'A7'
+ORDER BY logged DESC;
+--- hint
+Name four columns in the \`INSERT\`, leaving \`id\` out, then give three brackets of four values each, separated by commas.
+--- hint
+One entry has an apostrophe in it: write it as two single quotes inside the text.
+--- hint
+The query is a \`WHERE\` on the mission, sorted with \`ORDER BY logged DESC\`.
+--- schema
+CREATE TABLE mission_log (
+  id INTEGER PRIMARY KEY,
+  mission TEXT NOT NULL,
+  logged TEXT NOT NULL,
+  author TEXT NOT NULL,
+  entry TEXT NOT NULL
+);
+INSERT INTO mission_log (id, mission, logged, author, entry) VALUES
+  (1, 'A7', '2025-05-01 22:40', 'Imani', 'Orbit reached'),
+  (2, 'B2', '2025-05-02 07:55', 'Ravi', 'Launch window confirmed'),
+  (3, 'A7', '2025-05-02 06:30', 'Tomas', 'Approach burn complete');
+--- check result | Mission A7's five entries, newest first
+ordered
+[[6, "Imani", "All systems nominal"], [5, "Tomas", "Crew's hatch open"], [4, "Yuki", "Docking port aligned"], [3, "Tomas", "Approach burn complete"], [1, "Imani", "Orbit reached"]]
+--- check query | The new entries got ids 4, 5 and 6
+SELECT id, author FROM mission_log WHERE id > 3 ORDER BY id
+=> [[4, "Yuki"], [5, "Tomas"], [6, "Imani"]]
+--- check query | The apostrophe is stored
+SELECT COUNT(*) FROM mission_log WHERE entry = 'Crew''s hatch open'
+=> [[1]]
+--- check source absent | Uses one INSERT, not three
+[Ii][Nn][Ss][Ee][Rr][Tt][\\s\\S]*[Ii][Nn][Ss][Ee][Rr][Tt]
+
+=== sql-10 | Updating and deleting
+--- teach
+Last lesson you added new rows with \`INSERT\`. This lesson does the other two jobs: changing rows that are already there, and removing them.
+
+Back to the class register. A student moves to a different form, so you cross out the old form and write the new one on the same line. Another student leaves the school, so you strike out their whole line. SQL has one command for each.
+
+**UPDATE** changes values in rows that already exist:
+
+\`\`\`sql
+UPDATE users SET plan = 'free' WHERE id = 1;
+\`\`\`
+
+Read it left to right:
+
+- \`UPDATE users\` means "change rows in the \`users\` table".
+- \`SET plan = 'free'\` means "make the \`plan\` column hold \`'free'\`".
+- \`WHERE id = 1\` picks which rows to change, the same \`WHERE\` you have used since the lesson "Filtering with WHERE".
+
+User 1 is ada. Before, ada's row said \`pro\`. After:
+
+| id | email | plan | created |
+| --- | --- | --- | --- |
+| 1 | ada@example.com | free | 2025-01-04 |
+
+Every other row is untouched, because only ada's row passed the \`WHERE\`. One \`UPDATE\` can also [[change more than one column|set-several]] at a time.
+
+**DELETE** removes whole rows:
+
+\`\`\`sql
+DELETE FROM requests WHERE cost_usd = 0;
+\`\`\`
+
+- \`DELETE FROM requests\` means "remove rows from the \`requests\` table".
+- \`WHERE cost_usd = 0\` picks which ones: here, requests that cost nothing.
+
+There is no column list, because \`DELETE\` always takes away the [[whole row|one-value]]. In our data no request costs exactly 0, so this statement removes no rows at all. That is not an error; zero rows matched.
+
+Now the dangerous part. The \`WHERE\` is optional. Leave it out and the command runs on **every row** in the table:
+
+\`\`\`sql
+UPDATE users SET plan = 'free';  -- all four users are now free
+DELETE FROM requests;            -- every request is gone
+\`\`\`
+
+The database does not ask "are you sure?". It does what you wrote, and there is [[no undo button|no-undo]].
+
+So here is a good habit. Write the \`SELECT\` first, with the \`WHERE\` you plan to use, and look at what comes back. The \`>\` sign means "more than" (and \`<\` means "less than"):
+
+\`\`\`sql
+SELECT id, cost_usd FROM requests WHERE cost_usd > 0.02;
+\`\`\`
+
+| id | cost_usd |
+| --- | --- |
+| 2 | 0.0298 |
+| 4 | 0.0765 |
+
+Two rows, and they are the ones you meant. Now keep the \`WHERE\` exactly as it is and [[swap the front of the statement|select-first]]:
+
+\`\`\`sql
+DELETE FROM requests WHERE cost_usd > 0.02;
+\`\`\`
+
+It removes exactly those two rows, the ones you saw a moment ago. (Many real apps go further and [[never delete important rows at all|soft-delete]].)
+
+**Watch out:** the missing \`WHERE\` is the real mistake, and it is easy to make. You write \`DELETE FROM requests\`, press run before typing the rest, and the whole table is empty. Always write the \`WHERE\` before you run anything, and check it with a \`SELECT\` first.
+
+::: context set-several Changing more than one column
+\`SET\` can change several columns at once. Separate them with commas:
+
+\`\`\`sql
+UPDATE users
+SET plan = 'pro', created = '2025-01-01'
+WHERE id = 3;
+\`\`\`
+
+Both columns change in the same step, and only in the rows the \`WHERE\` picks. The right side can also be a calculation that uses the old value. \`SET input_tokens = input_tokens + 100\` adds 100 to whatever was there before. The database reads each row's old value, works out the new one and writes it back.
+:::
+
+::: context one-value Emptying one value instead of the whole row
+\`DELETE\` cannot remove one cell. If you want to clear a single value and keep the rest of the row, that is an \`UPDATE\` that sets the value to \`NULL\`, the "no value" marker you met with \`LEFT JOIN\`:
+
+\`\`\`sql
+UPDATE requests SET model = NULL WHERE id = 3;
+\`\`\`
+
+In this schema that one is refused, because \`model\` is \`NOT NULL\`: every request must name its model. The rule protects the data, exactly as \`UNIQUE\` did last lesson.
+:::
+
+::: context no-undo Why there is no undo
+A database is not a document with an undo history. Once a statement finishes, the change is saved for good, and other programs may already be reading the new values. Teams protect themselves in three ways: backups taken on a schedule; **transactions**, which let you group several changes and cancel them all before they are saved (the SQL Advanced course has a lesson on them); and some tools, like MySQL's "safe updates" mode, that refuse an \`UPDATE\` or \`DELETE\` whose \`WHERE\` does not pick rows by a key column.
+:::
+
+::: context select-first Same WHERE, different verb
+The trick works because the \`WHERE\` does the same job in all three commands. It picks the rows. Only the first words change what happens to them.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="20" width="150" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="85" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">SELECT * FROM requests</text>
+  <rect x="10" y="100" width="150" height="30" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="85" y="120" font-size="12" fill="#1f2a44" text-anchor="middle">DELETE FROM requests</text>
+  <rect x="200" y="60" width="150" height="30" fill="#fff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="275" y="80" font-size="12" fill="#1f2a44" text-anchor="middle">WHERE cost_usd &lt; 0.002</text>
+  <line x1="162" y1="35" x2="198" y2="70" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="162" y1="115" x2="198" y2="80" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="85" y="72" font-size="11" fill="#1d6fd1" text-anchor="middle">1. look at the rows</text>
+  <text x="85" y="146" font-size="11" fill="#b4232c" text-anchor="middle">2. then remove them</text>
+  <text x="275" y="112" font-size="11" fill="#6c7a93" text-anchor="middle">kept exactly the same</text>
+</svg>
+\`\`\`
+
+If the \`SELECT\` shows the wrong rows, fix the \`WHERE\` there, where it is harmless, before it goes anywhere near a \`DELETE\`.
+:::
+
+::: context soft-delete Many apps never really delete
+Real products often avoid \`DELETE\` for anything important. Instead they keep the row and mark it, with a column like \`deleted\` or \`revoked\` set to 1 by an \`UPDATE\`. Every query then adds \`WHERE deleted = 0\`. This is called a **soft delete**. It means a mistake can be reversed, and there is a record of what existed and when. You will build a table with a \`revoked\` column like this in the next lesson.
+:::
+--- task
+Do two things, in this order:
+
+1. Upgrade the user with email \`lin@example.com\` to the \`pro\` plan. Pick lin's row by matching the \`email\` column, not the id.
+2. Delete every request with **fewer than 500** input tokens (the \`input_tokens\` column).
+--- starter
+-- Upgrade lin, then delete the small requests.
+
+--- solution
+UPDATE users SET plan = 'pro' WHERE email = 'lin@example.com';
+DELETE FROM requests WHERE input_tokens < 500;
+--- hint
+This is one \`UPDATE\` and one \`DELETE\`, each with its own \`WHERE\` and its own semicolon. If you like, check each \`WHERE\` with a \`SELECT\` first.
+--- hint
+The first one: \`UPDATE users SET plan = 'pro' WHERE email = 'lin@example.com';\` The email is text, so it goes in single quotes.
+--- hint
+The second one starts \`DELETE FROM requests\` and needs a \`WHERE\` that keeps rows with \`input_tokens\` less than \`500\`. "Less than" is \`<\`.
+--- check query | lin is on pro
+SELECT plan FROM users WHERE email = 'lin@example.com'
+=> [["pro"]]
+--- check query | Nobody else changed plan
+SELECT COUNT(*) FROM users WHERE plan = 'pro'
+=> [[3]]
+--- check query | The small request is gone
+SELECT COUNT(*) FROM requests WHERE input_tokens < 500
+=> [[0]]
+--- check query | The others are still there
+SELECT COUNT(*) FROM requests
+=> [[5]]
+
++++ practice | Heron changes orbit
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`. The satellite named \`Heron\` has been moved from orbit \`'GEO'\` to orbit \`'MEO'\`.
+
+Change Heron's \`orbit\` to \`'MEO'\`. Pick its row by its \`name\`, not its id. No other row may change.
+--- starter
+-- Move Heron to MEO.
+
+--- solution
+UPDATE satellites SET orbit = 'MEO' WHERE name = 'Heron';
+--- hint
+Changing a value in a row that already exists is an \`UPDATE\` with \`SET\` and a \`WHERE\`.
+--- hint
+The \`WHERE\` picks Heron by matching the \`name\` column, in single quotes.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check query | Heron is in MEO
+SELECT orbit FROM satellites WHERE name = 'Heron'
+=> [["MEO"]]
+--- check query | No satellite is left in GEO
+SELECT COUNT(*) FROM satellites WHERE orbit = 'GEO'
+=> [[0]]
+--- check query | The low-orbit satellites were not touched
+SELECT COUNT(*) FROM satellites WHERE orbit = 'LEO'
+=> [[3]]
+--- check source | Picks the row by name
+name\\s*=\\s*'Heron'
+
++++ practice | Clearing out the old launches
+--- task
+The \`launches\` table has the columns \`id\`, \`rocket\` and \`launched\` (a date written year-month-day).
+
+Delete every launch from **before** \`2025-01-01\`. Launches on or after that day stay.
+--- starter
+-- Delete the launches from before 2025.
+
+--- solution
+DELETE FROM launches WHERE launched < '2025-01-01';
+--- hint
+Removing whole rows is a \`DELETE FROM\` with a \`WHERE\`. Check the \`WHERE\` with a \`SELECT\` first.
+--- hint
+Dates written year-month-day compare correctly as text, so \`<\` with a date in quotes means "before".
+--- schema
+CREATE TABLE launches (
+  id INTEGER PRIMARY KEY,
+  rocket TEXT NOT NULL,
+  launched TEXT NOT NULL
+);
+INSERT INTO launches (id, rocket, launched) VALUES
+  (1, 'Lark I', '2024-03-02'),
+  (2, 'Lark II', '2024-09-17'),
+  (3, 'Lark II', '2025-01-08'),
+  (4, 'Magpie', '2025-06-21'),
+  (5, 'Avocet', '2024-12-31'),
+  (6, 'Heron-B', '2025-01-01');
+--- check query | Only the launches from 2025 on are left, New Year's Day included
+SELECT id FROM launches ORDER BY id
+=> [[3], [4], [6]]
+--- check query | Nothing from 2024 is left
+SELECT COUNT(*) FROM launches WHERE launched < '2025-01-01'
+=> [[0]]
+--- check query | Three launches remain
+SELECT COUNT(*) FROM launches
+=> [[3]]
+
++++ practice | A price cut for two users
+--- task
+Users 1 and 4 get a discount on the requests they have already made. In **one** \`UPDATE\`, for every request whose \`user_id\` is \`1\` or \`4\`:
+
+- halve its \`cost_usd\` (divide it by 2), and
+- add \`100\` to its \`output_tokens\`.
+
+Pick the users with \`IN\`. Requests from other users stay as they are.
+--- starter
+-- Halve the cost and add 100 output tokens for users 1 and 4.
+
+--- solution
+UPDATE requests
+SET cost_usd = cost_usd / 2, output_tokens = output_tokens + 100
+WHERE user_id IN (1, 4);
+--- hint
+\`SET\` can change several columns at once: separate them with commas. The new value can be worked out from the old one.
+--- hint
+\`cost_usd = cost_usd / 2\` reads each row's old cost and writes back half of it.
+--- hint
+The \`WHERE\` is \`WHERE user_id IN (1, 4)\`.
+--- check query | Request 1 is halved and has 100 more output tokens
+SELECT cost_usd, output_tokens FROM requests WHERE id = 1
+=> [[0.00435, 440]]
+--- check query | Kai's request 6 changed too
+SELECT cost_usd, output_tokens FROM requests WHERE id = 6
+=> [[0.0017, 500]]
+--- check query | Lin's requests did not change
+SELECT cost_usd, output_tokens FROM requests WHERE user_id = 2 ORDER BY id
+=> [[0.0765, 2100], [0.0006, 80]]
+--- check source | Picks the users with IN
+[Ii][Nn]\\s*\\(\\s*(1\\s*,\\s*4|4\\s*,\\s*1)\\s*\\)
+
++++ practice | Bad readings out, zero stays
+--- task
+A table called \`readings\` has the columns \`id\`, \`sensor\` and \`value\`. Some values are missing (\`NULL\`) because the sensor did not report, and some are negative, which this sensor cannot really measure.
+
+Delete every reading whose \`value\` is **missing or negative**. A value of exactly \`0\` is a real reading: keep it.
+--- starter
+-- Delete the missing and the negative readings.
+
+--- solution
+DELETE FROM readings WHERE value IS NULL OR value < 0;
+--- hint
+There are two kinds of bad row, so the \`WHERE\` needs two conditions joined with \`OR\`.
+--- hint
+\`value < 0\` is not true for a \`NULL\` value, so it does not catch the missing ones. Test for them with \`IS NULL\`. Using \`<\` rather than \`<=\` keeps the zero.
+--- schema
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor TEXT NOT NULL,
+  value REAL
+);
+INSERT INTO readings (id, sensor, value) VALUES
+  (1, 'flow', 12.5),
+  (2, 'flow', NULL),
+  (3, 'flow', -3.0),
+  (4, 'flow', 0.0),
+  (5, 'flow', 9.75),
+  (6, 'flow', NULL),
+  (7, 'flow', -0.5);
+--- check query | Readings 1, 4 and 5 remain
+SELECT id FROM readings ORDER BY id
+=> [[1], [4], [5]]
+--- check query | No missing value is left
+SELECT COUNT(*) FROM readings WHERE value IS NULL
+=> [[0]]
+--- check query | The zero reading is kept
+SELECT COUNT(*) FROM readings WHERE value = 0
+=> [[1]]
+
++++ practice | Deleting too much
+--- task
+The statement in the editor should delete the **haiku** requests sent by user 1 or user 2: requests 3 and 5. It also deletes request 4, which is a sonnet request. Fix it, so that only requests 3 and 5 are deleted.
+--- starter
+DELETE FROM requests WHERE model = 'haiku' AND user_id = 1 OR user_id = 2;
+--- solution
+DELETE FROM requests WHERE model = 'haiku' AND (user_id = 1 OR user_id = 2);
+--- hint
+\`AND\` is worked out before \`OR\`. Read the condition the way SQL reads it: which rows does \`OR user_id = 2\` catch on its own?
+--- hint
+Put round brackets around the two users, so "user 1 or user 2" is worked out first.
+--- check query | Requests 3 and 5 are gone, request 4 is still there
+SELECT id FROM requests ORDER BY id
+=> [[1], [2], [4], [6]]
+--- check query | Kai's haiku request is still there
+SELECT COUNT(*) FROM requests WHERE id = 6
+=> [[1]]
+--- check query | Four requests remain
+SELECT COUNT(*) FROM requests
+=> [[4]]
+
++++ practice | Restocking the parts store
+--- task
+A spacecraft's spare parts are listed in a table called \`parts\`, with the columns \`id\`, \`name\`, \`bin\`, \`qty\` and \`status\`. A supply ship has arrived. Do these three things, **in this order**:
+
+1. Every part in bin \`'B2'\` gets 20 more: add \`20\` to its \`qty\`.
+2. Delete every part whose \`qty\` is \`0\` **and** whose \`status\` is \`'discontinued'\`. (A part that is out of stock but still made stays.)
+3. Every part that is left with a \`qty\` below \`5\` gets its \`status\` set to \`'reorder'\`.
+--- starter
+-- Three statements: restock B2, remove the dead parts, flag the low ones.
+
+--- solution
+UPDATE parts SET qty = qty + 20 WHERE bin = 'B2';
+DELETE FROM parts WHERE qty = 0 AND status = 'discontinued';
+UPDATE parts SET status = 'reorder' WHERE qty < 5;
+--- hint
+Each step is one statement with its own \`WHERE\` and its own semicolon. The order matters: step 1 changes some quantities before steps 2 and 3 look at them.
+--- hint
+Step 1 uses \`qty = qty + 20\`. Step 2 needs two conditions joined with \`AND\`.
+--- hint
+Step 3 is \`UPDATE parts SET status = 'reorder' WHERE qty < 5;\`.
+--- schema
+CREATE TABLE parts (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  bin TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  status TEXT NOT NULL
+);
+INSERT INTO parts (id, name, bin, qty, status) VALUES
+  (1, 'Fuel valve', 'A1', 4, 'ok'),
+  (2, 'Air filter', 'B2', 0, 'discontinued'),
+  (3, 'Relief valve', 'B7', 0, 'discontinued'),
+  (4, 'Pressure sensor', 'B2', 3, 'ok'),
+  (5, 'Seal kit', 'C3', 0, 'ok'),
+  (6, 'Heater coil', 'A1', 12, 'ok');
+--- check query | Only the discontinued part left at 0 is gone
+SELECT id FROM parts ORDER BY id
+=> [[1], [2], [4], [5], [6]]
+--- check query | Bin B2 was restocked
+SELECT id, qty FROM parts WHERE bin = 'B2' ORDER BY id
+=> [[2, 20], [4, 23]]
+--- check query | The low parts are flagged for reorder, the others are not
+SELECT id, status FROM parts ORDER BY id
+=> [[1, "reorder"], [2, "discontinued"], [4, "ok"], [5, "reorder"], [6, "ok"]]
+
+=== sql-11 | Creating tables
+--- teach
+Last lesson you changed and removed rows with \`UPDATE\` and \`DELETE\`. Every table so far was already there when you arrived. Now you build one of your own. In the task you make a table of [[API keys|api-key]].
+
+Think of printing a blank register page. Before anyone writes a line, you decide the column headings, what kind of thing goes under each one, and the rules printed at the top: "date: required", "each student number only once". Creating a table is making that blank page.
+
+The command is **CREATE TABLE**: it defines a new, empty table, with each column's name, type and rules.
+
+Start with the smallest possible table:
+
+\`\`\`sql
+CREATE TABLE notes (
+  id INTEGER,
+  body TEXT
+);
+\`\`\`
+
+- \`CREATE TABLE notes\` names the new table \`notes\`.
+- Inside the brackets, one column per line: its name, then its **type**, the [[kind of value it holds|column-types]].
+- A comma goes between columns, but **not** after the last one.
+
+The types you will see here:
+
+- \`INTEGER\`: a whole number, like \`5\` or \`1200\`.
+- \`TEXT\`: words and other text, like \`'mo@example.com'\`.
+- \`REAL\`: a number with a decimal point, like the \`0.0087\` in \`cost_usd\`.
+
+Now add rules. Here is a table for invoices, the bills a user has to pay:
+
+\`\`\`sql
+CREATE TABLE invoices (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  amount_cents INTEGER NOT NULL,
+  paid INTEGER DEFAULT 0
+);
+\`\`\`
+
+The money is stored as a whole number of [[cents|cents]], and \`paid\` holds [[0 for no, 1 for yes|booleans]]. The words after each type are the rules, one idea each:
+
+- \`PRIMARY KEY\`: this column uniquely identifies each row. No two invoices share an \`id\`.
+- \`NOT NULL\`: a value is required. An insert that leaves \`amount_cents\` empty is refused.
+- \`REFERENCES users(id)\`: a **[[foreign key|foreign-key]]**. Each \`user_id\` is meant to point at a real row in \`users\`, at its \`id\` column.
+- \`DEFAULT 0\`: the value used when an insert leaves this column out.
+- \`UNIQUE\`: no two rows may share the value. (You met it on \`email\` in the lesson "Inserting rows".)
+
+One column can carry more than one rule: write them one after another, after the type.
+
+These rules are the **constraints** from "Inserting rows", and now you are the one writing them. Constraints are rules the database enforces for every writer, forever. That is cheaper than remembering them in every piece of code.
+
+Here is \`DEFAULT\` at work. The insert names only two columns and leaves \`id\` and \`paid\` out. (An \`INTEGER PRIMARY KEY\` that is left out gets the next free number, here \`1\`.)
+
+\`\`\`sql
+INSERT INTO invoices (user_id, amount_cents) VALUES (2, 1500);
+SELECT * FROM invoices;
+\`\`\`
+
+| id | user_id | amount_cents | paid |
+| --- | --- | --- | --- |
+| 1 | 2 | 1500 | 0 |
+
+The table filled in \`paid\` with \`0\` on its own.
+
+One catch in SQLite, the database these lessons run on. It records a foreign key, but it only **enforces** it once the connection has run this line:
+
+\`\`\`sql
+PRAGMA foreign_keys = ON;
+\`\`\`
+
+A [[PRAGMA|pragma]] is a SQLite settings command. Until that line runs, an \`api_keys\` row pointing at user 99, who does not exist, is accepted without a word. Most other databases, like PostgreSQL and MySQL, always enforce foreign keys. In SQLite, turn it on first.
+
+**Watch out:** a comma after the last column. \`body TEXT,\` followed by \`);\` gives the error \`near ")": syntax error\`, because SQLite expects another column after the comma. Every column but the last ends with a comma.
+
+::: context api-key What an API key is
+An **API key** is a long secret string that lets a program use a service, the way a key card lets you into a building. When an app sends a request to an AI model, it includes its key so the service knows whose account to charge. A user might have several keys, one per laptop or server, each with a label. Keys are not deleted when they stop being trusted; they are marked **revoked**, so the service refuses them but still has a record of them. That is the \`revoked\` column in this lesson's task.
+:::
+
+::: context column-types SQLite is relaxed about types
+Most databases refuse a value of the wrong type. SQLite is unusual: in an ordinary table, the type is a strong hint, not a hard rule. Put the text \`'abc'\` into an \`INTEGER\` column and SQLite stores it as text anyway. Since version 3.37 you can add the word \`STRICT\` after the closing bracket, \`CREATE TABLE s (n INTEGER) STRICT;\`, and then it refuses: \`cannot store TEXT value in INTEGER column s.n\`. Either way, choose the type that matches what the column really holds.
+:::
+
+::: context cents Why money is kept in whole cents
+Numbers with a decimal point are stored in binary, and most decimal fractions, like 0.1, cannot be stored exactly. Adding many of them lets tiny errors creep in. That is why you needed \`ROUND\` in the lesson "Aggregates". Whole numbers do not have this problem. So billing systems store money as a whole number of the smallest unit: 1500 cents instead of 15.00 dollars. They divide by 100 only when they show it to a person.
+:::
+
+::: context booleans Yes and no as 0 and 1
+A column that answers a yes-or-no question is called a **boolean**. SQLite has no separate boolean type, so the habit is an \`INTEGER\` holding \`0\` for no (false) and \`1\` for yes (true). \`paid = 0\` means "not paid yet". Writing \`TRUE\` and \`FALSE\` in a query also works in SQLite, because they are another way of writing 1 and 0.
+:::
+
+::: context foreign-key A column that points at another table
+A foreign key is a column whose values are the ids of rows in another table. It is "foreign" because the id it holds belongs to a different table.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <text x="85" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">invoices</text>
+  <rect x="20" y="28" width="130" height="24" fill="#fff" stroke="#1f2a44"/>
+  <text x="85" y="44" font-size="11" fill="#1f2a44" text-anchor="middle">id 1   user_id 2</text>
+  <rect x="20" y="52" width="130" height="24" fill="#fff" stroke="#b4232c"/>
+  <text x="85" y="68" font-size="11" fill="#b4232c" text-anchor="middle">id 2   user_id 99</text>
+  <text x="275" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">users</text>
+  <rect x="210" y="28" width="130" height="22" fill="#fff" stroke="#6c7a93"/>
+  <text x="275" y="43" font-size="11" fill="#6c7a93" text-anchor="middle">id 1   ada</text>
+  <rect x="210" y="50" width="130" height="22" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="275" y="65" font-size="11" fill="#1f2a44" text-anchor="middle">id 2   lin</text>
+  <rect x="210" y="72" width="130" height="22" fill="#fff" stroke="#6c7a93"/>
+  <text x="275" y="87" font-size="11" fill="#6c7a93" text-anchor="middle">id 3   sam</text>
+  <rect x="210" y="94" width="130" height="22" fill="#fff" stroke="#6c7a93"/>
+  <text x="275" y="109" font-size="11" fill="#6c7a93" text-anchor="middle">id 4   kai</text>
+  <line x1="152" y1="40" x2="204" y2="60" stroke="#1d6fd1" stroke-width="1.5"/>
+  <polygon points="208,61 199,63 202,55" fill="#1d6fd1"/>
+  <line x1="152" y1="64" x2="190" y2="140" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="200" y="152" font-size="11" fill="#b4232c">user 99: no such row</text>
+</svg>
+\`\`\`
+
+With \`PRAGMA foreign_keys = ON\`, SQLite refuses the red one: \`FOREIGN KEY constraint failed\`.
+:::
+
+::: context pragma Settings, one connection at a time
+\`PRAGMA\` is a command that only SQLite has. It reads or changes a setting of the database engine instead of touching your data. \`PRAGMA foreign_keys;\` on its own tells you the current setting: 0 for off, 1 for on. The setting lasts only for the current connection, so apps run it every time they open the database. It is off by default because foreign-key checks arrived in SQLite 3.6.19, in 2009, and switching them on for everyone could have broken older programs. The SQL Advanced course has a whole lesson on foreign keys.
+:::
+--- task
+Create a table called \`api_keys\` with four columns:
+
+- \`id\`: an integer, the primary key.
+- \`user_id\`: an integer, required (\`NOT NULL\`), referencing \`users(id)\`.
+- \`label\`: text, required (\`NOT NULL\`).
+- \`revoked\`: an integer, required (\`NOT NULL\`), with a default of \`0\`.
+
+Then insert one key: id \`1\`, user_id \`1\`, label \`laptop\`. Leave \`revoked\` out of the insert, so it takes its default.
+--- starter
+-- CREATE TABLE api_keys (...);
+
+--- solution
+CREATE TABLE api_keys (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  label TEXT NOT NULL,
+  revoked INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO api_keys (id, user_id, label) VALUES (1, 1, 'laptop');
+--- hint
+The \`invoices\` table in the lesson has the same shape. Start from \`CREATE TABLE api_keys (\` and write one column per line, with a comma after every column but the last. Close it with \`);\`.
+--- hint
+The columns are \`id INTEGER PRIMARY KEY\`, \`user_id INTEGER NOT NULL REFERENCES users(id)\`, \`label TEXT NOT NULL\` and \`revoked INTEGER NOT NULL DEFAULT 0\`.
+--- hint
+The insert names only \`id, user_id, label\`: \`INSERT INTO api_keys (id, user_id, label) VALUES (1, 1, 'laptop');\`. The table fills in \`revoked\` itself.
+--- check query | The key is there, and revoked defaulted to 0
+SELECT user_id, label, revoked FROM api_keys
+=> [[1, "laptop", 0]]
+--- check query | label is required (NOT NULL)
+SELECT "notnull" FROM pragma_table_info('api_keys') WHERE name = 'label'
+=> [[1]]
+--- check query | user_id references users
+SELECT "table", "from", "to" FROM pragma_foreign_key_list('api_keys')
+=> [["users", "user_id", "id"]]
+
++++ practice | A table of missions
+--- task
+Create a table called \`missions\` with three columns:
+
+- \`id\`: an integer, the primary key.
+- \`name\`: text, required (\`NOT NULL\`), and no two missions may share a name (\`UNIQUE\`).
+- \`target\`: text, required (\`NOT NULL\`).
+
+Then add two missions in one \`INSERT\`: id \`1\`, name \`Lantern\`, target \`Moon\`; and id \`2\`, name \`Driftwood\`, target \`Mars\`.
+--- starter
+-- CREATE TABLE missions (...);
+
+--- solution
+CREATE TABLE missions (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  target TEXT NOT NULL
+);
+
+INSERT INTO missions (id, name, target)
+VALUES (1, 'Lantern', 'Moon'),
+       (2, 'Driftwood', 'Mars');
+--- hint
+One column per line inside the brackets: its name, its type, then its rules. A comma after every column but the last.
+--- hint
+A column can carry two rules one after the other: \`name TEXT NOT NULL UNIQUE\`.
+--- check query | Both missions are there
+SELECT id, name, target FROM missions ORDER BY id
+=> [[1, "Lantern", "Moon"], [2, "Driftwood", "Mars"]]
+--- check query | name and target are required
+SELECT name FROM pragma_table_info('missions') WHERE "notnull" = 1 ORDER BY name
+=> [["name"], ["target"]]
+--- check query | No two missions can share a name
+SELECT COUNT(*) FROM pragma_index_list('missions') WHERE "unique" = 1 AND origin = 'u'
+=> [[1]]
+--- check query | id is the primary key
+SELECT name FROM pragma_table_info('missions') WHERE pk = 1
+=> [["id"]]
+
++++ practice | A unit by default
+--- task
+Create a table called \`gauges\` with four columns:
+
+- \`id\`: an integer, the primary key.
+- \`sensor\`: text, required.
+- \`value\`: a number with a decimal point (\`REAL\`), required.
+- \`unit\`: text, required, with a default of \`'kPa'\`.
+
+Then add one reading, leaving \`id\` and \`unit\` out of the insert: sensor \`tank_a\`, value \`342.5\`. Both should be filled in by the table.
+--- starter
+-- CREATE TABLE gauges (...);
+
+--- solution
+CREATE TABLE gauges (
+  id INTEGER PRIMARY KEY,
+  sensor TEXT NOT NULL,
+  value REAL NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'kPa'
+);
+
+INSERT INTO gauges (sensor, value) VALUES ('tank_a', 342.5);
+--- hint
+\`DEFAULT\` gives the value used when an insert leaves the column out. A text default goes in single quotes.
+--- hint
+The insert names only \`sensor\` and \`value\`. The id is picked for you because it is an \`INTEGER PRIMARY KEY\`.
+--- check query | The reading got id 1 and the unit kPa
+SELECT id, sensor, value, unit FROM gauges
+=> [[1, "tank_a", 342.5, "kPa"]]
+--- check query | value is a REAL column
+SELECT type FROM pragma_table_info('gauges') WHERE name = 'value'
+=> [["REAL"]]
+--- check query | unit is required and defaults to kPa
+SELECT "notnull", dflt_value FROM pragma_table_info('gauges') WHERE name = 'unit'
+=> [[1, "'kPa'"]]
+
++++ practice | Teams, then join them
+--- task
+Do three things, in this order:
+
+1. Create a table called \`teams\` with the columns \`id\` (integer, primary key), \`user_id\` (integer, required, referencing \`users(id)\`) and \`name\` (text, required).
+2. Add three rows in one \`INSERT\`: id \`1\` for user \`1\` named \`Rockets\`; id \`2\` for user \`2\` named \`Comets\`; id \`3\` for user \`1\` named \`Probes\`.
+3. Return one row per team, with two columns: the user's \`email\` (from \`users\`) and the team's \`name\`.
+--- starter
+-- Create teams, add three rows, then join them to users.
+
+--- solution
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  name TEXT NOT NULL
+);
+
+INSERT INTO teams (id, user_id, name)
+VALUES (1, 1, 'Rockets'), (2, 2, 'Comets'), (3, 1, 'Probes');
+
+SELECT u.email, t.name
+FROM teams t
+JOIN users u ON u.id = t.user_id;
+--- hint
+The table looks like the \`invoices\` example: an id, a foreign key to \`users\`, and one more column.
+--- hint
+The join links the team's \`user_id\` to the user's \`id\`, the same way \`requests\` joins to \`users\`.
+--- check result | Rockets and Probes for ada, Comets for lin
+[["ada@example.com", "Rockets"], ["lin@example.com", "Comets"], ["ada@example.com", "Probes"]]
+--- check query | user_id references users
+SELECT "table", "from", "to" FROM pragma_foreign_key_list('teams')
+=> [["users", "user_id", "id"]]
+--- check query | Three teams were added
+SELECT COUNT(*) FROM teams
+=> [[3]]
+
++++ practice | Money in whole cents
+--- task
+Create a table called \`payments\` with four columns:
+
+- \`id\`: an integer, the primary key.
+- \`user_id\`: an integer, required, referencing \`users(id)\`.
+- \`amount_cents\`: an integer, required. The amount in **whole cents**.
+- \`refunded\`: an integer, required, with a default of \`0\`.
+
+Then add three payments, leaving \`refunded\` out so it takes its default. Store every amount as a whole number of cents, not dollars:
+
+- id \`1\`, user \`1\`, **19.99** dollars,
+- id \`2\`, user \`2\`, **0.05** dollars,
+- id \`3\`, user \`1\`, **250.00** dollars.
+--- starter
+-- CREATE TABLE payments (...);
+
+--- solution
+CREATE TABLE payments (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  amount_cents INTEGER NOT NULL,
+  refunded INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO payments (id, user_id, amount_cents)
+VALUES (1, 1, 1999), (2, 2, 5), (3, 1, 25000);
+--- hint
+A dollar is 100 cents. Turn each amount into cents before you write it: no decimal points in the values.
+--- hint
+0.05 dollars is 5 cents, not 50. 250.00 dollars is 25000 cents.
+--- check query | The amounts are stored in cents
+SELECT id, amount_cents FROM payments ORDER BY id
+=> [[1, 1999], [2, 5], [3, 25000]]
+--- check query | Every amount is a whole number
+SELECT COUNT(*) FROM payments WHERE typeof(amount_cents) <> 'integer'
+=> [[0]]
+--- check query | refunded defaulted to 0 on every row
+SELECT SUM(refunded), COUNT(*) FROM payments
+=> [[0, 3]]
+--- check query | user_id references users
+SELECT "table", "from", "to" FROM pragma_foreign_key_list('payments')
+=> [["users", "user_id", "id"]]
+
++++ practice | A syntax error near the bracket
+--- task
+The statements in the editor should create a table called \`notes\`, with an \`id\` (integer primary key), a \`body\` (text, required) and a \`pinned\` flag (integer, required, default \`0\`), then add one note. Instead they stop with the error \`near ")": syntax error\`. Fix the table so both statements run.
+--- starter
+CREATE TABLE notes (
+  id INTEGER PRIMARY KEY,
+  body TEXT NOT NULL,
+  pinned INTEGER NOT NULL DEFAULT 0,
+);
+
+INSERT INTO notes (id, body) VALUES (1, 'Check the seals');
+--- solution
+CREATE TABLE notes (
+  id INTEGER PRIMARY KEY,
+  body TEXT NOT NULL,
+  pinned INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO notes (id, body) VALUES (1, 'Check the seals');
+--- hint
+The error points at the closing bracket. What does SQLite expect to come after a comma?
+--- hint
+Every column but the last ends with a comma. Look at the end of the last column's line.
+--- check query | The note is there, not pinned
+SELECT id, body, pinned FROM notes
+=> [[1, "Check the seals", 0]]
+--- check query | pinned is required and defaults to 0
+SELECT "notnull", dflt_value FROM pragma_table_info('notes') WHERE name = 'pinned'
+=> [[1, "0"]]
+--- check query | The table has three columns
+SELECT COUNT(*) FROM pragma_table_info('notes')
+=> [[3]]
+
++++ practice | Crew and their assignments
+--- task
+Build a small crew roster from scratch. Do these four things, in this order:
+
+1. Switch on foreign-key checks for this connection.
+2. Create a table \`crew\` with \`id\` (integer, primary key) and \`name\` (text, required, unique).
+3. Create a table \`assignments\` with \`id\` (integer, primary key), \`crew_id\` (integer, required, referencing \`crew(id)\`), \`task\` (text, required) and \`done\` (integer, required, default \`0\`).
+4. Add crew members id \`1\` \`Imani\`, id \`2\` \`Tomas\` and id \`3\` \`Yuki\`. Then add three assignments, leaving \`id\` and \`done\` out: \`Imani\` gets \`hull check\` and \`radio test\`; \`Tomas\` gets \`fuel audit\`. Yuki gets none. Add the crew before the assignments that point at them: with foreign-key checks on, the other order is refused.
+
+Finally, return **every** crew member's \`name\` with how many assignments they have as \`tasks\`, \`0\` for Yuki.
+--- starter
+-- Switch the checks on, create both tables, fill them, then count.
+
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE crew (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE assignments (
+  id INTEGER PRIMARY KEY,
+  crew_id INTEGER NOT NULL REFERENCES crew(id),
+  task TEXT NOT NULL,
+  done INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO crew (id, name) VALUES (1, 'Imani'), (2, 'Tomas'), (3, 'Yuki');
+INSERT INTO assignments (crew_id, task)
+VALUES (1, 'hull check'), (1, 'radio test'), (2, 'fuel audit');
+
+SELECT c.name, COUNT(a.id) AS tasks
+FROM crew c
+LEFT JOIN assignments a ON a.crew_id = c.id
+GROUP BY c.id, c.name;
+--- hint
+Foreign-key checks are switched on with a \`PRAGMA\` line, before anything else.
+--- hint
+Create \`crew\` before \`assignments\`, and fill it first too: with the checks on, an assignment pointing at a crew member who does not exist yet is refused.
+--- hint
+The last query starts from \`crew\`, uses a \`LEFT JOIN\`, and counts \`a.id\` so Yuki gets 0.
+--- check result | Imani 2, Tomas 1, Yuki 0
+[["Imani", 2], ["Tomas", 1], ["Yuki", 0]]
+--- check query | Foreign-key checks are on
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | crew_id references crew
+SELECT "table", "from", "to" FROM pragma_foreign_key_list('assignments')
+=> [["crew", "crew_id", "id"]]
+--- check query | The assignments are stored, none done yet
+SELECT crew_id, task, done FROM assignments ORDER BY id
+=> [[1, "hull check", 0], [1, "radio test", 0], [2, "fuel audit", 0]]
+
+=== sql-12 | Subqueries: a query inside a query
+--- teach
+Last lesson you built a table of your own. Now back to asking questions, with a new power: one query can use the answer of another.
+
+Picture finding everyone in your class who is taller than average. You cannot do it in one go. First you work out the average height on scrap paper. Then you go down the list and compare each person with that number. SQL lets you write the scrap-paper step right inside the main query.
+
+That inner step is a **subquery**: a whole \`SELECT\` in round brackets, used inside another query.
+
+Start with the scrap-paper step on its own. You met \`AVG\`, the average, in the lesson "Aggregates":
+
+\`\`\`sql
+SELECT AVG(cost_usd) FROM requests;
+\`\`\`
+
+It gives one value: about \`0.02003\`.
+
+Now put that query, in brackets, where the number would go in a \`WHERE\`. The \`>\` sign means "greater than":
+
+\`\`\`sql
+SELECT * FROM requests
+WHERE cost_usd > (SELECT AVG(cost_usd) FROM requests);
+\`\`\`
+
+The database [[works out the inner query first|inside-out]], gets the average, and then checks every request against it. Two requests cost more than the average:
+
+| id | user_id | model | input_tokens | output_tokens | cost_usd |
+| --- | --- | --- | --- | --- | --- |
+| 2 | 1 | sonnet | 5400 | 910 | 0.0298 |
+| 4 | 2 | sonnet | 15000 | 2100 | 0.0765 |
+
+Why not type \`0.02\` instead? Because the average [[changes as the data changes|live-numbers]]. The subquery works it out fresh every time the query runs.
+
+A subquery works anywhere a **value** or a **table** would. That was the value case. Here is the table case. First, a query that counts calls per user, with \`GROUP BY\` from the lesson "Grouping":
+
+\`\`\`sql
+SELECT user_id, COUNT(*) AS calls FROM requests GROUP BY user_id;
+\`\`\`
+
+| user_id | calls |
+| --- | --- |
+| 1 | 3 |
+| 2 | 2 |
+| 4 | 1 |
+
+That result is a small table. Put it in brackets after \`FROM\`, and the outer query reads it like any other table:
+
+\`\`\`sql
+SELECT MAX(calls)
+FROM (SELECT user_id, COUNT(*) AS calls FROM requests GROUP BY user_id);
+\`\`\`
+
+The answer is \`3\`: the most calls any one user has made. You can also [[give the inner table a name|derived-name]].
+
+**Watch out:** a subquery used as a value has to give back exactly one value: one column, one row. This one returns three rows, one for each haiku request:
+
+\`\`\`sql
+SELECT email FROM users
+WHERE id = (SELECT user_id FROM requests WHERE model = 'haiku');
+\`\`\`
+
+SQLite [[quietly uses the first row|first-row]] and gives back only \`ada@example.com\`. No error, and a wrong answer. Run the inner query on its own first, and check it returns one value.
+
+There are [[more shapes of subquery|later-subqueries]] to come. This one, a single value in a \`WHERE\`, is the one you will write most.
+
+::: context inside-out Reading from the inside out
+When a subquery does not depend on the outer query, the database runs it once, before anything else. Its answer then sits in the outer query like a plain number.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="10" width="340" height="70" fill="#fff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="20" y="30" font-size="11" fill="#1f2a44">SELECT * FROM requests WHERE cost_usd &gt;</text>
+  <rect x="30" y="42" width="230" height="28" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <text x="145" y="60" font-size="11" fill="#1f2a44" text-anchor="middle">(SELECT AVG(cost_usd) FROM requests)</text>
+  <text x="305" y="60" font-size="11" fill="#1d6fd1" text-anchor="middle">1st</text>
+  <line x1="145" y1="72" x2="145" y2="98" stroke="#1d6fd1" stroke-width="1.5"/>
+  <polygon points="145,104 140,96 150,96" fill="#1d6fd1"/>
+  <text x="180" y="120" font-size="11" fill="#1f2a44" text-anchor="middle">becomes 0.02003, then every row is compared with it</text>
+</svg>
+\`\`\`
+
+The inner box finishes first; the outer query only ever sees its one answer. The next course meets subqueries that run again for every row.
+:::
+
+::: context live-numbers Numbers that go stale
+A number typed into a query is a snapshot. The average cost today is 0.02003; after a thousand new requests it will be something else, and a query with \`0.02\` typed in will quietly give the wrong list. Dashboards and reports run the same query every hour or every day, so engineers write the rule ("above average") rather than today's answer. Checkers in these lessons sometimes test for exactly this.
+:::
+
+::: context derived-name Naming the table in brackets
+You can put a name after the closing bracket, like this:
+
+\`\`\`sql
+SELECT MAX(per_user.calls)
+FROM (SELECT user_id, COUNT(*) AS calls FROM requests GROUP BY user_id) AS per_user;
+\`\`\`
+
+In SQLite the name is optional. PostgreSQL insisted on one until version 16, so many engineers always write it. A table made on the spot by a subquery is often called a **derived table**. Next lesson shows a tidier way to name steps like this one.
+:::
+
+::: context first-row One row expected, three found
+When a value-subquery returns several rows, SQLite does not complain. It takes the first row it happens to find and throws the rest away. PostgreSQL stops instead, with the error "more than one row returned by a subquery used as an expression". The PostgreSQL behavior is safer: a loud error is better than a quiet wrong answer. If you want "any of these values", that needs \`IN\`, which the next course teaches.
+:::
+
+::: context later-subqueries Where subqueries come back
+The SQL Intermediate course picks subqueries up again. You will use a subquery that gives back a **list**, with \`IN\`: \`WHERE id IN (SELECT user_id FROM requests WHERE model = 'sonnet')\` finds ada and lin. You will also meet **correlated** subqueries, which look at the outer row and run once for each one, and \`EXISTS\`, which asks "is there at least one matching row?".
+:::
+--- task
+Return the \`id\`, \`model\` and \`input_tokens\` of every request that used **more input tokens than the average** request.
+
+Work the average out with a subquery, \`AVG(input_tokens)\`, inside the \`WHERE\`. Do not type the average in as a number.
+--- starter
+SELECT id, model, input_tokens FROM requests;
+--- solution
+SELECT id, model, input_tokens
+FROM requests
+WHERE input_tokens > (SELECT AVG(input_tokens) FROM requests);
+--- hint
+First run \`SELECT AVG(input_tokens) FROM requests;\` on its own to see the average. That whole query becomes your subquery.
+--- hint
+Add a \`WHERE\` to the starter that compares \`input_tokens\` with something, using \`>\` for "greater than".
+--- hint
+The shape is \`WHERE input_tokens > (SELECT AVG(input_tokens) FROM requests)\`, with the subquery inside round brackets.
+--- check result | Only requests 2 and 4 are above the average
+[[2, "sonnet", 5400], [4, "sonnet", 15000]]
+--- check source | Uses a subquery in brackets
+\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\b
+--- check source absent | Does not type the average in
+4150
+
++++ practice | Heavier than average
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Return the \`name\` and \`mass_kg\` of every satellite that is **heavier than the average** satellite. Work the average out with a subquery; do not type it in.
+--- starter
+SELECT name, mass_kg FROM satellites;
+--- solution
+SELECT name, mass_kg
+FROM satellites
+WHERE mass_kg > (SELECT AVG(mass_kg) FROM satellites);
+--- hint
+First run the average on its own: \`AVG\` of the mass column. That whole query becomes the subquery.
+--- hint
+Put the subquery in round brackets where the number would go in the \`WHERE\`.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | Heron and Osprey
+[["Heron", 3400], ["Osprey", 1500]]
+--- check source | Uses a subquery in brackets
+\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\b
+--- check source absent | Does not type the average in
+1055
+
++++ practice | Users who spent more than a cent
+--- task
+Using the \`requests\` table, return one number: **how many users** have spent more than \`0.01\` dollars in total, over all their requests.
+
+Do it in two steps inside one query: a subquery after \`FROM\` that adds up \`cost_usd\` per \`user_id\` in a column named \`total\`, and an outer query that counts the rows of that result whose \`total\` is above \`0.01\`.
+--- starter
+SELECT user_id, SUM(cost_usd) AS total FROM requests GROUP BY user_id;
+--- solution
+SELECT COUNT(*)
+FROM (SELECT user_id, SUM(cost_usd) AS total FROM requests GROUP BY user_id)
+WHERE total > 0.01;
+--- hint
+The starter is the inner step: one row per user with their total. Put it in round brackets after \`FROM\`.
+--- hint
+The outer query reads the bracketed result like a table: it can filter on \`total\` with \`WHERE\`, then count what is left.
+--- check result | 2 users: ada and lin
+[[2]]
+--- check source | Reads from a subquery after FROM
+[Ff][Rr][Oo][Mm]\\s*\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\b
+--- check source absent | Does not type the answer in
+[Ss][Ee][Ll][Ee][Cc][Tt]\\s+2\\b
+
++++ practice | Who sent the expensive ones
+--- task
+Using \`users\` and \`requests\`, return the \`email\` of the user and the \`id\` of the request, for every request that cost **more than the average** request. Work the average out with a subquery.
+--- starter
+SELECT r.id, u.email
+FROM requests r
+JOIN users u ON u.id = r.user_id;
+--- solution
+SELECT u.email, r.id
+FROM requests r
+JOIN users u ON u.id = r.user_id
+WHERE r.cost_usd > (SELECT AVG(cost_usd) FROM requests);
+--- hint
+The starter already joins each request to its user. Add a \`WHERE\` after the join.
+--- hint
+Compare \`r.cost_usd\` with the average cost of all requests, worked out in a bracketed \`SELECT\`.
+--- check result | ada's request 2 and lin's request 4
+[["ada@example.com", 2], ["lin@example.com", 4]]
+--- check source | Uses a subquery in brackets
+\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\b
+--- check source absent | Does not type the average in
+0\\.02\\b|0\\.020
+
++++ practice | Every reading at the peak
+--- task
+A table called \`readings\` has the columns \`id\`, \`t\` and \`value\`. Some readings are missing their value (\`NULL\`), and the highest value appears **more than once**.
+
+Return the \`id\` and \`t\` of **every** reading whose value equals the highest value. If several readings tie for the highest, all of them must be in the answer, which is why sorting and keeping one row is not enough.
+--- starter
+SELECT id, t FROM readings;
+--- solution
+SELECT id, t
+FROM readings
+WHERE value = (SELECT MAX(value) FROM readings);
+--- hint
+First find the highest value on its own with \`MAX\`. It skips the \`NULL\`s.
+--- hint
+Then keep every reading whose value equals that number: a subquery in the \`WHERE\`.
+--- schema
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  t INTEGER NOT NULL,
+  value REAL
+);
+INSERT INTO readings (id, t, value) VALUES
+  (1, 0, 12.5),
+  (2, 10, 18.25),
+  (3, 20, NULL),
+  (4, 30, 17.0),
+  (5, 40, 18.25),
+  (6, 50, NULL),
+  (7, 60, 18.25);
+--- check result | Readings 2, 5 and 7, all at 18.25
+[[2, 10], [5, 40], [7, 60]]
+--- check source | Uses MAX in a subquery
+\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\s+[Mm][Aa][Xx]\\s*\\(
+--- check source absent | Does not type the peak in
+18\\.25
+
++++ practice | Average of the wrong rows
+--- task
+The query in the editor should return the \`id\` and \`cost_usd\` of every **haiku** request that cost more than the average **haiku** request. The answer is request 6. Instead it returns nothing. Fix it.
+--- starter
+SELECT id, cost_usd
+FROM requests
+WHERE model = 'haiku'
+  AND cost_usd > (SELECT AVG(cost_usd) FROM requests);
+--- solution
+SELECT id, cost_usd
+FROM requests
+WHERE model = 'haiku'
+  AND cost_usd > (SELECT AVG(cost_usd) FROM requests WHERE model = 'haiku');
+--- hint
+Run the subquery on its own. Which requests does its average cover?
+--- hint
+The subquery is a complete query of its own: it needs its own \`WHERE\` to average only the haiku requests.
+--- check result | Only request 6
+[[6, 0.0034]]
+--- check source | The subquery averages only haiku requests
+[Ff][Rr][Oo][Mm]\\s+requests\\s+[Ww][Hh][Ee][Rr][Ee]\\s+model\\s*=\\s*'haiku'\\s*\\)
+--- check source absent | Does not type the average in
+0\\.0017
+
++++ practice | The busiest ground station
+--- task
+Each satellite pass over a ground station is a row in a table called \`passes\`, with the columns \`id\`, \`station\` and \`minutes\`.
+
+Return the \`station\` and its total contact time as \`total_min\` for the station with the **most** contact time in total. Two stations tie for the most; return both.
+
+Work it out without typing any number in: the top total comes from a subquery that takes the \`MAX\` of the per-station totals.
+--- starter
+SELECT station, SUM(minutes) AS total_min FROM passes GROUP BY station;
+--- solution
+SELECT station, SUM(minutes) AS total_min
+FROM passes
+GROUP BY station
+HAVING SUM(minutes) = (
+  SELECT MAX(total)
+  FROM (SELECT SUM(minutes) AS total FROM passes GROUP BY station)
+);
+--- hint
+The starter gives every station's total. You want only the groups whose total equals the biggest total, and a test on a group goes in \`HAVING\`.
+--- hint
+The biggest total is itself a query on the per-station totals: a subquery after \`FROM\` inside another subquery.
+--- hint
+The test is \`HAVING SUM(minutes) = (SELECT MAX(total) FROM (SELECT SUM(minutes) AS total FROM passes GROUP BY station))\`.
+--- schema
+CREATE TABLE passes (
+  id INTEGER PRIMARY KEY,
+  station TEXT NOT NULL,
+  minutes INTEGER NOT NULL
+);
+INSERT INTO passes (id, station, minutes) VALUES
+  (1, 'Svalbard', 12),
+  (2, 'Awarua', 9),
+  (3, 'Svalbard', 11),
+  (4, 'Kourou', 14),
+  (5, 'Svalbard', 13),
+  (6, 'Awarua', 16),
+  (7, 'Kourou', 17),
+  (8, 'Awarua', 11);
+--- check result | Svalbard and Awarua, both at 36
+[["Awarua", 36], ["Svalbard", 36]]
+--- check source | Uses MAX over a subquery
+[Mm][Aa][Xx]\\s*\\(
+--- check source absent | Does not type the top total in
+\\b36\\b
+
+=== sql-12b | WITH: naming the steps
+--- teach
+Last lesson you put one query inside another, in brackets. That works well for one step. With two or three steps, brackets inside brackets get hard to read. This lesson shows how to give each step a name.
+
+Think of a recipe. "Make the sauce. Boil the pasta. Mix the sauce into the pasta." Each step has a name, and later steps use the names of earlier ones. You never have to write the sauce recipe again inside the last step.
+
+In SQL, a named step is a **CTE**, short for **[[common table expression|cte-name]]**: a query you give a name to at the top, with the word \`WITH\`, and then use like a table.
+
+\`\`\`sql
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests
+  GROUP BY user_id
+)
+SELECT * FROM spend WHERE total > 0.01;
+\`\`\`
+
+Read it in two parts:
+
+- \`WITH spend AS ( … )\` means "call the result of this query \`spend\`". The query inside works out each user's total spend.
+- The \`SELECT\` after the closing bracket is the main query. It reads from \`spend\` as if it were a table.
+
+Here is what \`spend\` holds:
+
+| user_id | total |
+| --- | --- |
+| 1 | 0.0397 |
+| 2 | 0.0771 |
+| 4 | 0.0034 |
+
+It only has rows for [[users who have made requests|missing-sam]]. The main query keeps the two totals above \`0.01\`: users 1 and 2.
+
+The name \`spend\` exists only [[for this one statement|temporary]]. Run \`SELECT * FROM spend;\` on its own afterwards and you get \`no such table: spend\`.
+
+A CTE can be used like any table: joined, filtered, or read inside a subquery. Here it is joined to \`users\` for the emails, as in the lesson "Joining tables". \`ROUND(x, 4)\`, from "Aggregates", rounds to four decimal places:
+
+\`\`\`sql
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests
+  GROUP BY user_id
+)
+SELECT u.email, ROUND(s.total, 4) AS total
+FROM spend s
+JOIN users u ON u.id = s.user_id
+WHERE s.total > 0.01;
+\`\`\`
+
+| email | total |
+| --- | --- |
+| ada@example.com | 0.0397 |
+| lin@example.com | 0.0771 |
+
+And inside a subquery, the average of the totals is \`(SELECT AVG(total) FROM spend)\`. That gives about \`0.04007\`.
+
+CTEs are how [[real reporting queries|reports]] stay readable. Each step has a name, and you can run any one of them on its own to check it. You can also put [[several steps in one WITH|several-steps]].
+
+**Watch out:** no semicolon after the \`WITH\` part. The \`WITH spend AS ( … )\` and the main \`SELECT\` are one statement, so the only semicolon comes at the very end. A \`;\` straight after the closing bracket cuts the statement in half, and you get an error.
+
+::: context cte-name A long name for a simple idea
+"Common table expression" is the official name in the SQL standard, which added \`WITH\` in 1999. "Table" because the named step behaves like a table; "expression" because it is worked out from a query rather than stored. Nobody says the full name out loud. Engineers say "CTE" or "a WITH query". SQLite has understood \`WITH\` since version 3.8.3, released in 2014.
+:::
+
+::: context missing-sam Why sam is not in the average
+\`spend\` groups the \`requests\` table, and sam has no requests, so there is no group for sam at all. An average over \`spend\` is therefore the average over users who made at least one request: (0.0397 + 0.0771 + 0.0034) ÷ 3 ≈ 0.04007. If you wanted sam counted with a total of 0, you would start from \`users\` with a \`LEFT JOIN\` and use \`COALESCE(total, 0)\`, the tools from "LEFT JOIN and NULL" and "Testing for NULL". Which one is right depends on the question you are asking.
+:::
+
+::: context temporary Not saved anywhere
+A CTE is not a new table in the database. Nothing is written to disk, and no other query can see it. It lives for one statement and then it is gone. If you want a named query that stays around for everyone to use, SQL has **views**: saved queries that behave like tables. The SQL Advanced course has a lesson on them.
+:::
+
+::: context reports How CTEs are used for real
+Picture the query behind a monthly bill: take this month's requests, add them up per user, attach each user's plan, apply the plan's price, keep the users who owe something. Written as one query with brackets inside brackets, nobody can check it. Written as a CTE per step, each step can be run on its own, and a bug can be found step by step. The same goes for mission data: one step cleans the sensor readings, the next averages them per minute, the last flags the minutes that go out of range.
+:::
+
+::: context several-steps One WITH, several steps
+Separate the steps with commas. Each later step can read the earlier ones:
+
+\`\`\`sql
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests GROUP BY user_id
+),
+big AS (
+  SELECT * FROM spend WHERE total > 0.01
+)
+SELECT * FROM big;
+\`\`\`
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 90" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="25" width="90" height="36" fill="#fff" stroke="#6c7a93"/>
+  <text x="55" y="47" font-size="12" fill="#1f2a44" text-anchor="middle">requests</text>
+  <rect x="135" y="25" width="90" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="180" y="47" font-size="12" fill="#1f2a44" text-anchor="middle">spend</text>
+  <rect x="260" y="25" width="90" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="305" y="47" font-size="12" fill="#1f2a44" text-anchor="middle">big</text>
+  <line x1="102" y1="43" x2="127" y2="43" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="133,43 125,38 125,48" fill="#1f2a44"/>
+  <line x1="227" y1="43" x2="252" y2="43" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="258,43 250,38 250,48" fill="#1f2a44"/>
+  <text x="180" y="80" font-size="11" fill="#6c7a93" text-anchor="middle">each step reads the one before</text>
+</svg>
+\`\`\`
+
+The SQL Advanced course goes further, with a CTE that reads from **itself** to count, or to walk down an org chart.
+:::
+--- task
+Return the email and total spend (rounded to 4 decimals) of every user whose total spend is **above the average** total spend per user. Average over the users who have made requests.
+
+Use a \`WITH\` step called \`spend\` for the per-user totals, with columns \`user_id\` and \`total\`. Then join \`users\` for the email, and compare each total with the average of the totals.
+--- starter
+SELECT user_id, SUM(cost_usd) FROM requests GROUP BY user_id;
+--- solution
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests
+  GROUP BY user_id
+)
+SELECT u.email, ROUND(s.total, 4) AS total
+FROM spend s
+JOIN users u ON u.id = s.user_id
+WHERE s.total > (SELECT AVG(total) FROM spend);
+--- hint
+Build \`spend\` with \`WITH spend AS (SELECT user_id, SUM(cost_usd) AS total … GROUP BY user_id)\`. The starter query is most of it.
+--- hint
+The lesson's second example is almost the whole answer. Only its \`WHERE\` is different: it compares with \`0.01\`, and you need the average instead.
+--- hint
+Replace \`0.01\` with the subquery \`(SELECT AVG(total) FROM spend)\`. The join to \`users\` for the email stays as it is.
+--- check result | Only lin spends more than the average
+[["lin@example.com", 0.0771]]
+--- check source | Uses WITH
+\\b[Ww][Ii][Tt][Hh]\\s+\\w+\\s+[Aa][Ss]\\s*\\(
+
++++ practice | Heavy orbits
+--- task
+The \`satellites\` table has the columns \`id\`, \`name\`, \`orbit\`, \`launched\` and \`mass_kg\`.
+
+Use a \`WITH\` step called \`per_orbit\` that works out each orbit's total mass, with the columns \`orbit\` and \`total_kg\`. Then, from \`per_orbit\`, return the \`orbit\` and \`total_kg\` of every orbit whose total is **more than 1000** kg.
+--- starter
+SELECT orbit, SUM(mass_kg) FROM satellites GROUP BY orbit;
+--- solution
+WITH per_orbit AS (
+  SELECT orbit, SUM(mass_kg) AS total_kg
+  FROM satellites
+  GROUP BY orbit
+)
+SELECT orbit, total_kg
+FROM per_orbit
+WHERE total_kg > 1000;
+--- hint
+The starter is most of the named step. Give the sum the name \`total_kg\` and wrap the query in \`WITH per_orbit AS ( … )\`.
+--- hint
+The main query comes after the closing bracket and reads from \`per_orbit\` like a table, with a \`WHERE\` on \`total_kg\`.
+--- schema
+CREATE TABLE satellites (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  orbit TEXT NOT NULL,
+  launched TEXT NOT NULL,
+  mass_kg INTEGER NOT NULL
+);
+INSERT INTO satellites (id, name, orbit, launched, mass_kg) VALUES
+  (1, 'Kestrel', 'LEO', '2021-06-14', 220),
+  (2, 'Heron',   'GEO', '2019-11-02', 3400),
+  (3, 'Wren',    'LEO', '2023-02-27', 95),
+  (4, 'Osprey',  'MEO', '2020-08-09', 1500),
+  (5, 'Finch',   'LEO', '2024-05-30', 60);
+--- check result | GEO 3400 and MEO 1500; LEO has only 375
+[["GEO", 3400], ["MEO", 1500]]
+--- check source | Uses a WITH step called per_orbit
+\\b[Ww][Ii][Tt][Hh]\\s+per_orbit\\s+[Aa][Ss]\\s*\\(
+--- check source | Reads from per_orbit
+[Ff][Rr][Oo][Mm]\\s+per_orbit\\b
+
++++ practice | Filter first, then group
+--- task
+Using the \`requests\` table, use a \`WITH\` step called \`big\` that keeps only the requests with **more than 1000** input tokens (all their columns). Then, from \`big\`, return one row per \`model\`, with the \`model\`, how many big requests it answered as \`calls\`, and their total cost rounded to 4 decimal places as \`spend\`.
+--- starter
+SELECT * FROM requests WHERE input_tokens > 1000;
+--- solution
+WITH big AS (
+  SELECT * FROM requests WHERE input_tokens > 1000
+)
+SELECT model, COUNT(*) AS calls, ROUND(SUM(cost_usd), 4) AS spend
+FROM big
+GROUP BY model;
+--- hint
+A named step does not have to group anything. Here it only filters: the starter is the whole step.
+--- hint
+The main query groups the rows of \`big\` by \`model\`, exactly as if \`big\` were a table.
+--- check result | haiku 1 call, sonnet 3 calls
+[["haiku", 1, 0.0034], ["sonnet", 3, 0.115]]
+--- check source | Uses a WITH step called big
+\\b[Ww][Ii][Tt][Hh]\\s+big\\s+[Aa][Ss]\\s*\\(
+--- check source | Groups the rows of big
+[Ff][Rr][Oo][Mm]\\s+big\\b[\\s\\S]*[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]
+
++++ practice | A usage table for every user
+--- task
+Return **every** user, with three columns: their \`email\`, how many requests they made as \`calls\`, and their total spend rounded to 4 decimal places as \`spend\`. sam, who made none, must show \`0\` and \`0\`. Put the biggest spender first.
+
+Use a \`WITH\` step called \`usage\` with one row per \`user_id\` and the columns \`user_id\`, \`calls\` and \`spend\`. Then start the main query from \`users\` and \`LEFT JOIN\` it to \`usage\`.
+--- starter
+SELECT user_id, COUNT(*) AS calls, SUM(cost_usd) AS spend
+FROM requests
+GROUP BY user_id;
+--- solution
+WITH usage AS (
+  SELECT user_id, COUNT(*) AS calls, SUM(cost_usd) AS spend
+  FROM requests
+  GROUP BY user_id
+)
+SELECT u.email,
+       COALESCE(g.calls, 0) AS calls,
+       ROUND(COALESCE(g.spend, 0), 4) AS spend
+FROM users u
+LEFT JOIN usage g ON g.user_id = u.id
+ORDER BY spend DESC;
+--- hint
+The starter is the \`usage\` step. The main query keeps every user with a \`LEFT JOIN\`, so sam gets \`NULL\`s.
+--- hint
+Turn sam's \`NULL\`s into \`0\` with \`COALESCE\`, on both columns.
+--- hint
+Sort with \`ORDER BY spend DESC\`.
+--- check result | lin, ada, kai, then sam with 0 and 0
+ordered
+[["lin@example.com", 2, 0.0771], ["ada@example.com", 3, 0.0397], ["kai@example.com", 1, 0.0034], ["sam@example.com", 0, 0.0]]
+--- check source | Uses a WITH step called usage
+\\b[Ww][Ii][Tt][Hh]\\s+usage\\s+[Aa][Ss]\\s*\\(
+--- check source | Keeps every user with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+
++++ practice | Below average, zero included
+--- task
+Return the \`email\` of every user whose total spend is **below the average spend per user**. This time the average is over **all** users: someone with no requests counts, with a spend of \`0\`.
+
+Use a \`WITH\` step called \`spend\` that has one row for every user, sam included, with the columns \`user_id\` and \`total\` (\`0\` for a user with no requests). Then compare each total with the average of \`total\`.
+--- starter
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests
+  GROUP BY user_id
+)
+SELECT user_id, total FROM spend;
+--- solution
+WITH spend AS (
+  SELECT u.id AS user_id, COALESCE(SUM(r.cost_usd), 0) AS total
+  FROM users u
+  LEFT JOIN requests r ON r.user_id = u.id
+  GROUP BY u.id
+)
+SELECT u.email
+FROM spend s
+JOIN users u ON u.id = s.user_id
+WHERE s.total < (SELECT AVG(total) FROM spend);
+--- hint
+The starter's step has no row for sam, so its average leaves sam out. Build the step from \`users\` instead, with a \`LEFT JOIN\` to \`requests\`.
+--- hint
+Inside the step, \`COALESCE(SUM(r.cost_usd), 0)\` gives sam a total of 0. The average of \`total\` then divides by four users.
+--- hint
+The main query joins \`spend\` to \`users\` for the email and keeps \`WHERE s.total < (SELECT AVG(total) FROM spend)\`.
+--- check result | kai and sam; ada is above the average once sam counts
+[["sam@example.com"], ["kai@example.com"]]
+--- check source | Builds the step from users with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not type the average in
+0\\.03
+
++++ practice | No such column
+--- task
+The query in the editor should return the \`user_id\` of every user who spent more than \`0.01\` dollars in total. It stops with the error \`no such column: total\`. Fix the \`WITH\` step so the main query works as written.
+--- starter
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd)
+  FROM requests
+  GROUP BY user_id
+)
+SELECT user_id FROM spend WHERE total > 0.01;
+--- solution
+WITH spend AS (
+  SELECT user_id, SUM(cost_usd) AS total
+  FROM requests
+  GROUP BY user_id
+)
+SELECT user_id FROM spend WHERE total > 0.01;
+--- hint
+The main query asks \`spend\` for a column called \`total\`. What are the columns of \`spend\` called right now?
+--- hint
+A column made by an aggregate is named after the expression, \`SUM(cost_usd)\`, unless you give it a name with \`AS\`.
+--- check result | Users 1 and 2
+[[1], [2]]
+--- check source | Names the sum total inside the step
+[Ss][Uu][Mm]\\s*\\(\\s*cost_usd\\s*\\)\\s+[Aa][Ss]\\s+total\\b
+--- check source | The main query still filters on total
+[Ww][Hh][Ee][Rr][Ee]\\s+total\\s*>\\s*0\\.01
+
++++ practice | Counting spikes
+--- task
+\`sensors\` has the columns \`id\` and \`name\`. \`readings\` has the columns \`id\`, \`sensor_id\`, \`t\` and \`value\`. A **spike** is a reading whose value is more than 10 above the average of its own sensor's readings.
+
+Return **every** sensor's \`name\` with how many spikes it had as \`spikes\`, \`0\` if none. Put the sensor with the most spikes first, then A to Z by name.
+
+Build it in named steps in one \`WITH\`:
+
+1. \`avg_per_sensor\`: one row per sensor that has readings, with \`sensor_id\` and \`avg_value\`.
+2. \`spiky\`: the readings whose \`value\` is more than \`avg_value + 10\`, found by joining \`readings\` to \`avg_per_sensor\`.
+3. The main query: every sensor, with a count of its rows in \`spiky\`.
+--- starter
+SELECT sensor_id, AVG(value) FROM readings GROUP BY sensor_id;
+--- solution
+WITH avg_per_sensor AS (
+  SELECT sensor_id, AVG(value) AS avg_value
+  FROM readings
+  GROUP BY sensor_id
+),
+spiky AS (
+  SELECT r.id, r.sensor_id
+  FROM readings r
+  JOIN avg_per_sensor a ON a.sensor_id = r.sensor_id
+  WHERE r.value > a.avg_value + 10
+)
+SELECT s.name, COUNT(k.id) AS spikes
+FROM sensors s
+LEFT JOIN spiky k ON k.sensor_id = s.id
+GROUP BY s.id, s.name
+ORDER BY spikes DESC, s.name;
+--- hint
+Separate the named steps with a comma; each later step can read the ones before it.
+--- hint
+In \`spiky\`, join each reading to its sensor's average so the \`WHERE\` can compare the two.
+--- hint
+The main query starts from \`sensors\`, uses a \`LEFT JOIN\` to \`spiky\`, and counts a column of \`spiky\` so a quiet sensor gets 0.
+--- schema
+CREATE TABLE sensors (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO sensors (id, name) VALUES
+  (1, 'tank_pressure'),
+  (2, 'nozzle_temp'),
+  (3, 'bus_voltage'),
+  (4, 'sun_sensor');
+CREATE TABLE readings (
+  id INTEGER PRIMARY KEY,
+  sensor_id INTEGER NOT NULL REFERENCES sensors(id),
+  t INTEGER NOT NULL,
+  value REAL NOT NULL
+);
+INSERT INTO readings (id, sensor_id, t, value) VALUES
+  (1, 1, 0, 340),
+  (2, 1, 10, 342),
+  (3, 1, 20, 380),
+  (4, 1, 30, 338),
+  (5, 2, 0, 880),
+  (6, 2, 10, 930),
+  (7, 2, 20, 875),
+  (8, 2, 30, 935),
+  (9, 3, 0, 31),
+  (10, 3, 10, 32),
+  (11, 3, 20, 30);
+--- check result | nozzle_temp 2, tank_pressure 1, then bus_voltage and sun_sensor with 0
+ordered
+[["nozzle_temp", 2], ["tank_pressure", 1], ["bus_voltage", 0], ["sun_sensor", 0]]
+--- check source | Names the first step avg_per_sensor
+\\b[Ww][Ii][Tt][Hh]\\s+avg_per_sensor\\s+[Aa][Ss]\\s*\\(
+--- check source | Has a second step called spiky
+,\\s*spiky\\s+[Aa][Ss]\\s*\\(
+
+=== sql-gate | SQL fundamentals: mastery gate
+--- teach
+The gate covers the whole course: choosing rows and columns, sorting, aggregates and grouping, joins and \`LEFT JOIN\`, \`NULL\`, changing data, creating tables, subqueries and \`WITH\`. Every problem runs on the same small shop database, a supplier of spacecraft parts: \`customers\`, \`products\` and \`orders\`, described in each task. Then come questions that check you understand why the answers are right. To get ready, redo the practice problems of the lessons that felt hard, from memory, without the hints.
+--- gate
+pass 7
+questions 9
+minutes 112
+--- schema
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  country TEXT NOT NULL,
+  joined TEXT NOT NULL
+);
+INSERT INTO customers (id, name, country, joined) VALUES
+  (1, 'Aldrin Labs', 'US', '2024-01-15'),
+  (2, 'Baikonur Supply', 'KZ', '2024-03-02'),
+  (3, 'Cosmo Kids', 'GB', '2024-06-20'),
+  (4, 'Deep Field Inc', 'US', '2024-09-09'),
+  (5, 'Europa Robotics', 'DE', '2025-01-05'),
+  (6, 'Fringe Optics', 'FR', '2025-02-14');
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  category TEXT NOT NULL,
+  price_cents INTEGER NOT NULL,
+  discontinued INTEGER NOT NULL DEFAULT 0
+);
+INSERT INTO products (id, name, category, price_cents, discontinued) VALUES
+  (1, 'Star tracker', 'sensor', 125000, 0),
+  (2, 'Reaction wheel', 'actuator', 89000, 0),
+  (3, 'Sun sensor', 'sensor', 15000, 0),
+  (4, 'Magnetorquer', 'actuator', 22000, 1),
+  (5, 'Radio module', 'comms', 46000, 0),
+  (6, 'Patch antenna', 'comms', 8000, 0),
+  (7, 'Gyro unit', 'sensor', 64000, 1),
+  (8, 'Horizon sensor', 'sensor', 125000, 0),
+  (9, 'Thruster valve', 'propulsion', 31000, 0);
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  qty INTEGER NOT NULL,
+  total_cents INTEGER NOT NULL,
+  ordered TEXT NOT NULL,
+  status TEXT NOT NULL,
+  discount_pct INTEGER
+);
+INSERT INTO orders (id, customer_id, product_id, qty, total_cents, ordered, status, discount_pct) VALUES
+  (1, 1, 1, 2, 250000, '2024-02-10', 'shipped', NULL),
+  (2, 1, 3, 4, 54000, '2024-05-03', 'shipped', 10),
+  (3, 2, 2, 1, 89000, '2024-04-18', 'shipped', NULL),
+  (4, 2, 5, 2, 92000, '2024-11-30', 'cancelled', NULL),
+  (5, 3, 6, 5, 36000, '2024-07-01', 'shipped', 10),
+  (6, 4, 1, 1, 118750, '2025-01-20', 'shipped', 5),
+  (7, 4, 5, 1, 46000, '2025-02-02', 'pending', NULL),
+  (8, 1, 2, 2, 160200, '2025-02-15', 'shipped', 10),
+  (9, 5, 6, 10, 72000, '2025-03-01', 'shipped', 10),
+  (10, 3, 4, 1, 22000, '2024-08-12', 'cancelled', NULL),
+  (11, 4, 5, 2, 87400, '2025-03-10', 'pending', 5),
+  (12, 2, 7, 1, 64000, '2024-06-05', 'shipped', NULL),
+  (13, 5, 6, 13, 104000, '2025-03-12', 'shipped', NULL);
+
++++ problem | Page three of the catalogue
+--- task
+\`products\` has the columns \`id\`, \`name\`, \`category\`, \`price_cents\` (the price in whole cents) and \`discontinued\` (\`1\` if the product is no longer sold, \`0\` if it is).
+
+The online catalogue shows only products that are still sold, in the categories \`'sensor'\`, \`'comms'\` and \`'propulsion'\`. It lists them **cheapest first**; products with the same price are listed A to Z by name. Each page shows **2** products.
+
+Return page **3** of the catalogue, with two columns: the \`name\`, and the price in dollars as \`price_usd\` (a dollar is 100 cents; keep the decimals).
+--- starter
+-- Page 3 of the catalogue.
+
+--- solution
+SELECT name, price_cents / 100.0 AS price_usd
+FROM products
+WHERE discontinued = 0
+  AND category IN ('sensor', 'comms', 'propulsion')
+ORDER BY price_cents, name
+LIMIT 2 OFFSET 4;
+--- check result | Horizon sensor then Star tracker, both 1250.0
+ordered
+[["Horizon sensor", 1250.0], ["Star tracker", 1250.0]]
+--- check source | Skips the first two pages
+[Oo][Ff][Ff][Ss][Ee][Tt]\\s+4\\b|[Ll][Ii][Mm][Ii][Tt]\\s+4\\s*,\\s*2\\b
+--- check source absent | Does not pick the products by name or id
+name\\s*(=|[Ii][Nn]\\b|[Ll][Ii][Kk][Ee])|\\bid\\s*(=|[Ii][Nn]\\b)
+
++++ problem | Category price report
+--- task
+\`products\` has the columns \`id\`, \`name\`, \`category\`, \`price_cents\` and \`discontinued\` (\`1\` if no longer sold).
+
+Considering only products that are **still sold**, return one row per \`category\` with four columns: the \`category\`, how many products it has as \`products\`, their average price in dollars rounded to 2 decimal places as \`avg_usd\`, and its cheapest price in dollars as \`min_usd\`. Only include categories with **at least 2** products still sold. Put the category with the highest average first.
+--- starter
+-- One row per category.
+
+--- solution
+SELECT category,
+       COUNT(*) AS products,
+       ROUND(AVG(price_cents) / 100.0, 2) AS avg_usd,
+       MIN(price_cents) / 100.0 AS min_usd
+FROM products
+WHERE discontinued = 0
+GROUP BY category
+HAVING COUNT(*) >= 2
+ORDER BY avg_usd DESC;
+--- check result | sensor (3 products, 883.33 on average) then comms (2, 270.0); actuator has only 1 still sold
+ordered
+[["sensor", 3, 883.33, 150.0], ["comms", 2, 270.0, 80.0]]
+--- check source | Groups by category
+[Gg][Rr][Oo][Uu][Pp]\\s+[Bb][Yy]\\s+category\\b
+--- check source | Filters groups with HAVING
+[Hh][Aa][Vv][Ii][Nn][Gg]
+
++++ problem | Revenue by country
+--- task
+\`customers\` has the columns \`id\`, \`name\`, \`country\` and \`joined\`. \`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\` (what the customer paid, in cents), \`ordered\` (a date), \`status\` (\`'shipped'\`, \`'pending'\` or \`'cancelled'\`) and \`discount_pct\`.
+
+Only **shipped** orders bring in money. Return one row per customer \`country\` with three columns: the \`country\`, how many shipped orders came from it as \`orders\`, and the money they brought in, in dollars, as \`revenue_usd\`. Only include countries that brought in **more than 1000** dollars. Put the country with the most revenue first.
+--- starter
+-- Revenue per country, from shipped orders.
+
+--- solution
+SELECT c.country,
+       COUNT(*) AS orders,
+       SUM(o.total_cents) / 100.0 AS revenue_usd
+FROM orders o
+JOIN customers c ON c.id = o.customer_id
+WHERE o.status = 'shipped'
+GROUP BY c.country
+HAVING SUM(o.total_cents) > 100000
+ORDER BY revenue_usd DESC;
+--- check result | US 5829.5, DE 1760.0, KZ 1530.0; GB brought in only 360
+ordered
+[["US", 4, 5829.5], ["DE", 2, 1760.0], ["KZ", 2, 1530.0]]
+--- check source | Uses a JOIN
+\\b[Jj][Oo][Ii][Nn]\\b
+--- check source | Keeps only shipped orders
+'shipped'
+
++++ problem | Every customer's spend
+--- task
+\`customers\` has the columns \`id\`, \`name\`, \`country\` and \`joined\`. \`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\`, \`ordered\`, \`status\` and \`discount_pct\`.
+
+Return **every** customer, with three columns: the customer's \`name\`, how many orders they have that are **not cancelled** as \`orders\`, and the total of those orders in dollars as \`spent_usd\`. A customer with no such orders must still appear, with \`0\` and \`0\`. Sort by \`spent_usd\`, biggest first, then by name from A to Z.
+--- starter
+-- Every customer, cancelled orders left out of the counts.
+
+--- solution
+WITH live AS (
+  SELECT customer_id, id, total_cents
+  FROM orders
+  WHERE status <> 'cancelled'
+)
+SELECT c.name,
+       COUNT(l.id) AS orders,
+       COALESCE(SUM(l.total_cents), 0) / 100.0 AS spent_usd
+FROM customers c
+LEFT JOIN live l ON l.customer_id = c.id
+GROUP BY c.id, c.name
+ORDER BY spent_usd DESC, c.name;
+--- check result | Aldrin Labs first, Fringe Optics last with 0 orders and 0
+ordered
+[["Aldrin Labs", 3, 4642.0], ["Deep Field Inc", 3, 2521.5], ["Europa Robotics", 2, 1760.0], ["Baikonur Supply", 2, 1530.0], ["Cosmo Kids", 1, 360.0], ["Fringe Optics", 0, 0.0]]
+--- check source | Keeps every customer with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not count whole rows after the join
+[Cc][Oo][Uu][Nn][Tt]\\s*\\(\\s*\\*\\s*\\)
+
++++ problem | Shipped without the big discount
+--- task
+\`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\`, \`ordered\`, \`status\` and \`discount_pct\`. \`discount_pct\` is the discount the customer got, in percent, or \`NULL\` if they got none. \`customers\` has the columns \`id\`, \`name\`, \`country\` and \`joined\`.
+
+Return every **shipped** order that did **not** get the 10 percent discount, with three columns: the order's \`id\`, the customer's \`name\`, and the discount as \`discount\`, showing \`0\` when there was none. An order with no discount at all did not get the 10 percent discount either, so it belongs in the answer. Sort by order id.
+--- starter
+-- Shipped orders without the 10% discount.
+
+--- solution
+SELECT o.id, c.name, COALESCE(o.discount_pct, 0) AS discount
+FROM orders o
+JOIN customers c ON c.id = o.customer_id
+WHERE o.status = 'shipped'
+  AND (o.discount_pct <> 10 OR o.discount_pct IS NULL)
+ORDER BY o.id;
+--- check result | Orders 1, 3, 6, 12 and 13; only order 6 had a discount, of 5
+ordered
+[[1, "Aldrin Labs", 0], [3, "Baikonur Supply", 0], [6, "Deep Field Inc", 5], [12, "Baikonur Supply", 0], [13, "Europa Robotics", 0]]
+--- check source | Tests for a missing discount
+[Ii][Ss]\\s+[Nn][Uu][Ll][Ll]|[Cc][Oo][Aa][Ll][Ee][Ss][Cc][Ee]
+--- check source absent | Does not pick the orders by id
+\\bo\\.id\\s*(=|[Ii][Nn]\\b)
+
++++ problem | Bigger than a typical shipped order
+--- task
+\`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\`, \`ordered\`, \`status\` and \`discount_pct\`. \`customers\` has the columns \`id\`, \`name\`, \`country\` and \`joined\`.
+
+Return every **shipped** order whose \`total_cents\` is above the **average total of shipped orders**, with three columns: the order's \`id\`, the customer's \`name\`, and the total in dollars as \`total_usd\`. Put the biggest first. Work the average out in the query; do not type it in. Pending and cancelled orders count neither in the answer nor in the average.
+--- starter
+-- Shipped orders above the shipped average.
+
+--- solution
+SELECT o.id, c.name, o.total_cents / 100.0 AS total_usd
+FROM orders o
+JOIN customers c ON c.id = o.customer_id
+WHERE o.status = 'shipped'
+  AND o.total_cents > (SELECT AVG(total_cents) FROM orders WHERE status = 'shipped')
+ORDER BY o.total_cents DESC;
+--- check result | Orders 1, 8 and 6; order 13 is below the shipped average
+ordered
+[[1, "Aldrin Labs", 2500.0], [8, "Aldrin Labs", 1602.0], [6, "Deep Field Inc", 1187.5]]
+--- check source | Uses a subquery
+\\(\\s*[Ss][Ee][Ll][Ee][Cc][Tt]\\b
+--- check source absent | Does not type the average in
+105\\d\\d\\d|1053\\.
+
++++ problem | The priciest in each category
+--- task
+\`products\` has the columns \`id\`, \`name\`, \`category\`, \`price_cents\` and \`discontinued\` (\`1\` if no longer sold).
+
+For each category, return the **most expensive product still sold**, with three columns: the \`category\`, the product's \`name\`, and its price in dollars as \`price_usd\`. If two products in a category tie for the highest price, return both. Sort by category, then by name, both A to Z.
+--- starter
+-- The most expensive product still sold in each category, ties included.
+
+--- solution
+WITH top AS (
+  SELECT category, MAX(price_cents) AS top_cents
+  FROM products
+  WHERE discontinued = 0
+  GROUP BY category
+)
+SELECT p.category, p.name, p.price_cents / 100.0 AS price_usd
+FROM products p
+JOIN top t ON t.category = p.category
+WHERE p.discontinued = 0 AND p.price_cents = t.top_cents
+ORDER BY p.category, p.name;
+--- check result | Five rows, with both sensors at 1250.0
+ordered
+[["actuator", "Reaction wheel", 890.0], ["comms", "Radio module", 460.0], ["propulsion", "Thruster valve", 310.0], ["sensor", "Horizon sensor", 1250.0], ["sensor", "Star tracker", 1250.0]]
+--- check source | Uses MAX
+[Mm][Aa][Xx]\\s*\\(
+--- check source absent | Does not pick the products by name
+name\\s*(=|[Ii][Nn]\\b|[Ll][Ii][Kk][Ee])
+
++++ problem | Month-end changes
+--- task
+\`products\` has the columns \`id\`, \`name\`, \`category\`, \`price_cents\` and \`discontinued\`. \`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\`, \`ordered\` (a date written year-month-day), \`status\` and \`discount_pct\`.
+
+Make these four changes, **in this order**:
+
+1. Raise the price of every \`'comms'\` product by 10 percent: its new \`price_cents\` is the old one times 11, divided by 10.
+2. Every \`'pending'\` order placed **before** \`2025-03-01\` becomes \`'cancelled'\`.
+3. Delete every \`'cancelled'\` order placed in **2024** (before \`2025-01-01\`).
+4. Add a new product: id \`10\`, name \`Laser link\`, category \`comms\`, price \`150000\` cents. Leave \`discontinued\` out, so it takes its default. The new product must keep that price: it came after the price rise.
+--- starter
+-- Four statements, in order.
+
+--- solution
+UPDATE products SET price_cents = price_cents * 11 / 10 WHERE category = 'comms';
+UPDATE orders SET status = 'cancelled' WHERE status = 'pending' AND ordered < '2025-03-01';
+DELETE FROM orders WHERE status = 'cancelled' AND ordered < '2025-01-01';
+INSERT INTO products (id, name, category, price_cents) VALUES (10, 'Laser link', 'comms', 150000);
+--- check query | The comms prices went up by 10 percent, the new one did not
+SELECT id, price_cents FROM products WHERE category = 'comms' ORDER BY id
+=> [[5, 50600], [6, 8800], [10, 150000]]
+--- check query | Other prices did not change
+SELECT SUM(price_cents) FROM products WHERE category <> 'comms'
+=> [[471000]]
+--- check query | Order 7 was cancelled, order 11 is still pending
+SELECT id, status FROM orders WHERE id IN (7, 11) ORDER BY id
+=> [[7, "cancelled"], [11, "pending"]]
+--- check query | The 2024 cancelled orders are gone, nothing else
+SELECT id FROM orders ORDER BY id
+=> [[1], [2], [3], [5], [6], [7], [8], [9], [11], [12], [13]]
+--- check query | The new product is still sold
+SELECT name, discontinued FROM products WHERE id = 10
+=> [["Laser link", 0]]
+
++++ problem | A table of reviews
+--- task
+Customers can now review products. Do these things, in this order:
+
+1. Switch on foreign-key checks for this connection.
+2. Create a table \`reviews\` with the columns \`id\` (integer, primary key), \`product_id\` (integer, required, referencing \`products(id)\`), \`customer_id\` (integer, required, referencing \`customers(id)\`), \`stars\` (integer, required) and \`verified\` (integer, required, default \`0\`).
+3. Add four reviews. Leave \`verified\` out of every row except the third:
+   - id \`1\`: product \`1\`, customer \`1\`, \`5\` stars;
+   - id \`2\`: product \`1\`, customer \`4\`, \`4\` stars;
+   - id \`3\`: product \`3\`, customer \`1\`, \`3\` stars, verified \`1\`;
+   - id \`4\`: product \`2\`, customer \`2\`, \`4\` stars.
+4. Return every product still sold in the \`'sensor'\` category, with three columns: its \`name\`, how many reviews it has as \`reviews\`, and its average stars rounded to 1 decimal place as \`avg_stars\` (\`NULL\` when it has no reviews). Sort by name from A to Z.
+--- starter
+-- Switch the checks on, create reviews, fill it, then report on the sensors.
+
+--- solution
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE reviews (
+  id INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL REFERENCES products(id),
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  stars INTEGER NOT NULL,
+  verified INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO reviews (id, product_id, customer_id, stars)
+VALUES (1, 1, 1, 5), (2, 1, 4, 4);
+INSERT INTO reviews (id, product_id, customer_id, stars, verified)
+VALUES (3, 3, 1, 3, 1);
+INSERT INTO reviews (id, product_id, customer_id, stars)
+VALUES (4, 2, 2, 4);
+
+SELECT p.name, COUNT(r.id) AS reviews, ROUND(AVG(r.stars), 1) AS avg_stars
+FROM products p
+LEFT JOIN reviews r ON r.product_id = p.id
+WHERE p.category = 'sensor' AND p.discontinued = 0
+GROUP BY p.id, p.name
+ORDER BY p.name;
+--- check result | Horizon sensor with none, Star tracker 2 at 4.5, Sun sensor 1 at 3.0
+ordered
+[["Horizon sensor", 0, null], ["Star tracker", 2, 4.5], ["Sun sensor", 1, 3.0]]
+--- check query | Foreign-key checks are on
+PRAGMA foreign_keys
+=> [[1]]
+--- check query | reviews points at products and customers
+SELECT "table", "from", "to" FROM pragma_foreign_key_list('reviews') ORDER BY "from"
+=> [["customers", "customer_id", "id"], ["products", "product_id", "id"]]
+--- check query | Only the third review is verified
+SELECT id, verified FROM reviews ORDER BY id
+=> [[1, 0], [2, 0], [3, 1], [4, 0]]
+
++++ problem | Gone quiet
+--- task
+\`products\` has the columns \`id\`, \`name\`, \`category\`, \`price_cents\` and \`discontinued\` (\`1\` if no longer sold). \`orders\` has the columns \`id\`, \`customer_id\`, \`product_id\`, \`qty\`, \`total_cents\`, \`ordered\` (a date written year-month-day), \`status\` and \`discount_pct\`.
+
+The sales team wants the products still sold that **nobody has ordered since** \`2025-01-01\`: every product still sold whose most recent order, of any status, is from before that day, **or** that has never been ordered at all. Return two columns: the product's \`name\`, and the date of its most recent order as \`last_order\` (\`NULL\` if it has never been ordered). Sort by name from A to Z.
+--- starter
+-- Products still sold that nobody has ordered since 2025-01-01.
+
+--- solution
+SELECT p.name, MAX(o.ordered) AS last_order
+FROM products p
+LEFT JOIN orders o ON o.product_id = p.id
+WHERE p.discontinued = 0
+GROUP BY p.id, p.name
+HAVING MAX(o.ordered) < '2025-01-01' OR MAX(o.ordered) IS NULL
+ORDER BY p.name;
+--- check result | Horizon sensor never, Sun sensor last on 2024-05-03, Thruster valve never
+ordered
+[["Horizon sensor", null], ["Sun sensor", "2024-05-03"], ["Thruster valve", null]]
+--- check source | Keeps products with no orders, with a LEFT JOIN
+[Ll][Ee][Ff][Tt]\\s+([Oo][Uu][Tt][Ee][Rr]\\s+)?[Jj][Oo][Ii][Nn]
+--- check source absent | Does not pick the products by name or id
+name\\s*(=|[Ii][Nn]\\b|[Ll][Ii][Kk][Ee])|\\bp\\.id\\s*(=|[Ii][Nn]\\b)
+
++++ question | Dividing whole numbers
+--- ask
+What does this query return?
+
+\`\`\`sql
+SELECT 7 / 2;
+\`\`\`
+--- answer
+3
+--- why
+Both numbers are whole numbers, so SQLite does whole-number division and throws away the part after the point. To get \`3.5\`, write one of them with a decimal point: \`7 / 2.0\`.
+
++++ question | The average skips the blank
+--- ask
+A table \`t\` has one column, \`x\`, and three rows. Their \`x\` values are \`1\`, \`NULL\` and \`3\`. What does this query return?
+
+\`\`\`sql
+SELECT AVG(x) FROM t;
+\`\`\`
+--- answer
+2
+2.0
+--- why
+\`AVG\`, like \`SUM\`, \`MIN\`, \`MAX\` and \`COUNT(x)\`, skips \`NULL\` values. It adds 1 and 3 and divides by the two values it counted, not by the three rows, so the answer is 2.0.
+
++++ question | The second most expensive
+--- ask
+Using the course's \`requests\` table, where the costs are 0.0087, 0.0298, 0.0012, 0.0765, 0.0006 and 0.0034 for requests 1 to 6, what \`id\` does this query return?
+
+\`\`\`sql
+SELECT id FROM requests ORDER BY cost_usd DESC LIMIT 1 OFFSET 1;
+\`\`\`
+--- answer
+2
+--- why
+Sorted most expensive first, the costs go 0.0765 (request 4), 0.0298 (request 2), 0.0087 (request 1) and so on. \`OFFSET 1\` skips the first row and \`LIMIT 1\` keeps the next one: request 2.
+
++++ question | A condition that reads differently
+--- ask
+This query is meant to return the free **and** pro users who signed up after 1 March 2025. What is wrong with it?
+
+\`\`\`sql
+SELECT email FROM users
+WHERE plan = 'free' OR plan = 'pro' AND created > '2025-03-01';
+\`\`\`
+--- choice
+Dates cannot be compared with \`>\`, so the date test is ignored.
+--- choice correct
+\`AND\` is worked out before \`OR\`, so it reads as "free, or (pro and after 1 March)" and returns every free user, whatever the date.
+--- choice
+\`OR\` is worked out first, so the query is correct as written.
+--- choice
+Text in single quotes cannot be compared with \`=\` and \`>\` in the same condition.
+--- why
+SQL does \`AND\` before \`OR\`, the way times comes before plus. Brackets fix it: \`WHERE (plan = 'free' OR plan = 'pro') AND created > '2025-03-01'\`. Dates written year-month-day compare correctly as text.
+
++++ question | Why HAVING and not WHERE
+--- ask
+Why does \`SELECT user_id FROM requests WHERE COUNT(*) > 1 GROUP BY user_id;\` fail, while the same test written as \`HAVING COUNT(*) > 1\` after the \`GROUP BY\` works?
+--- choice
+\`WHERE\` only works with text, and \`COUNT(*)\` gives a number.
+--- choice
+\`WHERE\` must always come after \`GROUP BY\`; with the clauses in the right order it would work.
+--- choice correct
+\`WHERE\` checks one row at a time before the groups are made, so no count exists yet. \`HAVING\` runs after grouping, on each group.
+--- choice
+\`COUNT(*)\` needs a column name inside the brackets when it is used in a filter.
+--- why
+The database runs \`FROM\`, then \`WHERE\` on single rows, then \`GROUP BY\`, then \`HAVING\` on whole groups, then \`SELECT\`. An aggregate like \`COUNT(*)\` only exists once there are groups, so it can be tested in \`HAVING\` but not in \`WHERE\`.
+
++++ question | Counting after a LEFT JOIN
+--- ask
+This query should show every user with how many requests they have made. sam has made none. Which line makes sam show \`1\` instead of \`0\`?
+
+\`\`\`sql
+SELECT u.email, COUNT(*) AS requests      -- line 1
+FROM users u                              -- line 2
+LEFT JOIN requests r ON r.user_id = u.id  -- line 3
+GROUP BY u.id, u.email;                   -- line 4
+\`\`\`
+--- choice correct
+Line 1: \`COUNT(*)\` counts sam's row, which the \`LEFT JOIN\` keeps with \`NULL\`s. \`COUNT(r.id)\` would give 0.
+--- choice
+Line 2: the query should start from \`requests\`.
+--- choice
+Line 3: a \`LEFT JOIN\` invents a fake request for sam; a plain \`JOIN\` would give sam 0.
+--- choice
+Line 4: grouping by two columns counts sam twice.
+--- why
+The \`LEFT JOIN\` is right: it keeps sam. But the row it keeps is still a row, and \`COUNT(*)\` counts rows. \`COUNT(r.id)\` counts only rows where \`r.id\` is not \`NULL\`, so sam gets 0. A plain \`JOIN\` would drop sam altogether.
+
++++ question | Equal to NULL
+--- ask
+What happens when this query runs?
+
+\`\`\`sql
+SELECT u.email
+FROM users u
+LEFT JOIN requests r ON r.user_id = u.id
+WHERE r.id = NULL;
+\`\`\`
+--- choice
+It stops with an error, because \`NULL\` cannot be written after \`=\`.
+--- choice
+It returns sam, the one user with no requests.
+--- choice correct
+It runs and returns no rows at all, because comparing anything with \`NULL\` gives "unknown", never true.
+--- choice
+It returns every user, because \`NULL\` matches anything.
+--- why
+\`r.id = NULL\` is unknown for every row, even the rows where \`r.id\` is \`NULL\`, and \`WHERE\` keeps only rows whose test is true. The test for a missing value is \`IS NULL\`: \`WHERE r.id IS NULL\` returns sam.
+
++++ question | Adding up nothing
+--- ask
+Why do reports write \`COALESCE(SUM(r.cost_usd), 0)\` after a \`LEFT JOIN\`, instead of just \`SUM(r.cost_usd)\`?
+--- choice
+\`SUM\` cannot add up decimal numbers without \`COALESCE\`.
+--- choice correct
+For a user with no rows to add, \`SUM\` gives \`NULL\`, not 0, and \`COALESCE\` swaps that \`NULL\` for 0.
+--- choice
+\`COALESCE\` rounds the total to a whole number of cents.
+--- choice
+Without it, the \`LEFT JOIN\` drops the users who have no requests.
+--- why
+\`COUNT\` of nothing is 0, but \`SUM\`, \`AVG\`, \`MIN\` and \`MAX\` of nothing are \`NULL\`: there is nothing to add. \`COALESCE(x, 0)\` gives back \`x\` unless it is \`NULL\`, and then 0. The \`LEFT JOIN\` has already kept those users; \`COALESCE\` only fixes what their total shows.
+
++++ question | A join with no ON
+--- ask
+A table of \`n\` requests is joined to a table of \`m\` users, but the \`ON\` part was left out, so every request is paired with every user. How does the number of rows in the answer grow?
+--- choice
+O(n + m): one row for each request and one for each user.
+--- choice correct
+O(n × m): every request appears once next to every user.
+--- choice
+O(n): still one row per request, as with a correct join.
+--- choice
+O(max(n, m)): the bigger table sets the number of rows.
+--- why
+Without \`ON\`, the database makes every possible pair: a cross join. With 6 requests and 4 users that is 24 rows; with a million requests and a thousand users it is a billion. Guessing the row count before trusting a join catches this mistake.
+
++++ question | Forgetting the WHERE
+--- ask
+Someone meant to delete one request and ran this, pressing run before typing the rest:
+
+\`\`\`sql
+DELETE FROM requests;
+\`\`\`
+
+What happens?
+--- choice
+Nothing: a \`DELETE\` without a \`WHERE\` is refused with an error.
+--- choice
+The database asks "are you sure?" before deleting anything.
+--- choice
+Only the last request added is deleted.
+--- choice correct
+Every row in \`requests\` is deleted, at once, with no way to undo it.
+--- why
+The \`WHERE\` is optional. Without it, \`DELETE\` and \`UPDATE\` act on every row, and the database does exactly what you wrote. The habit that protects you: write the \`SELECT\` with the \`WHERE\` first, check the rows, then swap \`SELECT *\` for \`DELETE\`.
+
++++ question | A key for user 99
+--- ask
+A table was created with \`user_id INTEGER NOT NULL REFERENCES users(id)\`, and there is no user 99. In SQLite, with the connection just opened and no \`PRAGMA\` run, what happens when you insert a row with \`user_id\` 99?
+--- choice
+It is refused with \`FOREIGN KEY constraint failed\`.
+--- choice correct
+It is accepted without a word: SQLite records the foreign key but only enforces it after \`PRAGMA foreign_keys = ON;\`.
+--- choice
+It is accepted, and SQLite adds an empty user 99 to \`users\` to match it.
+--- choice
+It is refused with \`NOT NULL constraint failed\`.
+--- why
+SQLite keeps foreign-key checks off by default, for the sake of older programs, and the setting lasts one connection. Run \`PRAGMA foreign_keys = ON;\` first, and the same insert is refused. Most other databases always enforce foreign keys.
+
++++ question | One value expected, three found
+--- ask
+Three requests were answered by haiku, sent by users 1, 2 and 4. What does SQLite do with this query?
+
+\`\`\`sql
+SELECT email FROM users
+WHERE id = (SELECT user_id FROM requests WHERE model = 'haiku');
+\`\`\`
+--- choice
+It stops with an error, because the subquery returns more than one row.
+--- choice
+It returns the emails of users 1, 2 and 4.
+--- choice correct
+It quietly uses the first row the subquery finds and returns a single email.
+--- choice
+It returns no rows, because \`id\` cannot equal three values at once.
+--- why
+A subquery used as a value must give back one value. SQLite does not complain when it gives more: it takes the first row and throws the rest away, so the answer looks fine and is wrong. Run the inner query on its own first. "Any of these values" needs \`IN\`, which comes in the next course.
+`;export{e as default};

@@ -1,0 +1,7345 @@
+var e=`@track python
+@title Python
+@name Python, a first language
+@blurb From print() to classes: the twelve ideas every Python program is built from.
+@plainvoice true
+
+=== py-01 | Printing
+--- teach
+In the Terminal course you typed one command, pressed Enter, and the computer answered straight away. \`echo "Launch at dawn"\` printed its text, then sat waiting for your next command. Now you will write your first **program**, and there is one big difference: you write *all* the instructions down first, and then the computer runs them together.
+
+Think of a recipe card. You do not stand in the kitchen and invent each step as you go. The steps are written on the card, in order, and the cook follows them from the top of the card to the bottom.
+
+### A program is a list of instructions
+
+A **program** is a list of instructions for the computer, written down in order. Python reads your program from the top line to the bottom line and does each one in turn. The editor on this page holds your program. When you press **Run Code**, Python runs it, and whatever the program shows appears on the page. That text is called the **[[output|output]]**.
+
+### print writes a line
+
+The first instruction everyone learns is \`print\`. It is Python's version of \`echo\`: it writes a line of text to the output. \`print\` is a **[[function|function]]** — a named action that Python already knows how to do. You tell it *what* to print by putting it inside the round brackets \`(\` and \`)\` right after the name.
+
+In the examples, the part after the \`#\` sign is a note for you, not for Python. It shows what the line prints. Python skips everything after a \`#\`; there is more about that at the end of this lesson.
+
+\`\`\`python
+print("Launch in T-minus 10")   # Launch in T-minus 10
+\`\`\`
+
+Running that program shows one line:
+
+\`\`\`
+Launch in T-minus 10
+\`\`\`
+
+Two \`print\` lines give two lines of output, in the same order as the code, top to bottom:
+
+\`\`\`python
+print("Engines armed")          # Engines armed
+print("Launch in T-minus 10")   # Launch in T-minus 10
+\`\`\`
+
+\`\`\`
+Engines armed
+Launch in T-minus 10
+\`\`\`
+
+### Text goes in quotes
+
+Text in quote marks is called a **[[string|string-beads]]** — a piece of text, with a quote mark \`"\` at each end. The quotes tell Python exactly where the text starts and where it stops. They are not printed: only the letters between them are.
+
+Every letter, space and punctuation mark inside the quotes comes out exactly as you typed it. \`"hello"\` prints \`hello\`, and \`"Hello!"\` prints \`Hello!\`.
+
+**Watch out:** every opening quote needs a closing quote. \`print("Hello)\` is missing the \`"\` before the \`)\`, so Python cannot tell where the text ends, and it stops with an error instead of running. If you forget the quotes altogether, as in \`print(Hello)\`, Python thinks \`Hello\` is a name for something else, cannot find it, and stops with an error that says \`name 'Hello' is not defined\`.
+
+### Several values in one print
+
+You can hand \`print\` more than one value. Put them all inside the brackets and separate them with commas \`,\`. Each value you hand over is called an **[[argument|argument]]**. \`print\` writes them all on one line and puts one space between each pair:
+
+\`\`\`python
+print("Fuel:", 98, "percent")
+\`\`\`
+
+\`\`\`
+Fuel: 98 percent
+\`\`\`
+
+Look at what happened. You did not type any spaces between the values, yet the output has a space after \`Fuel:\` and after \`98\`. \`print\` added them. Notice also that \`98\` has no quotes: it is a number, not text. You will meet numbers properly in the next two lessons.
+
+### Comments: notes for people
+
+Anything after a \`#\` (the hash sign) on a line is a **comment** — a note for people that Python skips completely. It does not run and it is not printed.
+
+\`\`\`python
+# Countdown message for the crew
+print("Launch in T-minus 10")   # this line prints; the note after # does not
+\`\`\`
+
+That is why the examples in these lessons use a comment to show the output right next to the line that makes it:
+
+\`\`\`python
+print("Fuel:", 98, "percent")   # Fuel: 98 percent
+\`\`\`
+
+Comments are for the next person who reads your code, and that person is usually you, a week later, wondering what you meant. Good engineers [[write them on purpose|comments-apollo]].
+
+::: context output Where the output goes
+**Output** is anything a program shows to the outside world. In the Terminal course, \`echo\` and \`cat\` sent their output to the terminal screen, and \`>\` sent it into a file instead. A Python \`print\` sends its text to the same kind of place, which programmers call **standard output**. On this page it appears when you press Run Code. On a real computer, if you ran a Python file from the terminal, the output would land right there in the terminal, below your command.
+:::
+
+::: context function A function is a named action
+A **function** is a small machine with a name. You hand it something through the brackets, it does its job, and something happens. \`print\` takes the text you give it and writes it to the output. Writing the name followed by brackets, like \`print(...)\`, is called **calling** the function: you are asking it to do its job now. Python comes with many ready-made functions, and in a later lesson you will build your own.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="38" width="86" height="34" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="53" y="60" font-size="13" text-anchor="middle" fill="#1f2a44">"Hello"</text>
+  <line x1="98" y1="55" x2="132" y2="55" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="140,55 130,50 130,60" fill="#1f2a44"/>
+  <rect x="142" y="28" width="80" height="54" rx="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <text x="182" y="60" font-size="14" text-anchor="middle" fill="#1f2a44">print</text>
+  <line x1="224" y1="55" x2="256" y2="55" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="264,55 254,50 254,60" fill="#1f2a44"/>
+  <rect x="266" y="30" width="84" height="50" rx="4" fill="#1f2a44"/>
+  <text x="308" y="60" font-size="13" text-anchor="middle" fill="#ffffff">Hello</text>
+  <text x="53" y="96" font-size="11" text-anchor="middle" fill="#6c7a93">what you hand in</text>
+  <text x="182" y="100" font-size="11" text-anchor="middle" fill="#6c7a93">the function</text>
+  <text x="308" y="96" font-size="11" text-anchor="middle" fill="#6c7a93">the output</text>
+</svg>
+\`\`\`
+:::
+
+::: context string-beads Why text is called a string
+Picture beads threaded on a string, one after another. Python stores text the same way: a row of characters in order, where a **character** is one letter, digit, space or punctuation mark. So a piece of text is a "string of characters", and programmers shortened that to **string**. The space counts as a character too, so \`"Go now"\` is six beads long.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 90" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="45" x2="340" y2="45" stroke="#6c7a93" stroke-width="2"/>
+  <circle cx="55" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="105" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="155" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="205" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="255" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <circle cx="305" cy="45" r="20" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="55" y="50" font-size="14" text-anchor="middle" fill="#1f2a44">G</text>
+  <text x="105" y="50" font-size="14" text-anchor="middle" fill="#1f2a44">o</text>
+  <text x="155" y="50" font-size="11" text-anchor="middle" fill="#6c7a93">space</text>
+  <text x="205" y="50" font-size="14" text-anchor="middle" fill="#1f2a44">n</text>
+  <text x="255" y="50" font-size="14" text-anchor="middle" fill="#1f2a44">o</text>
+  <text x="305" y="50" font-size="14" text-anchor="middle" fill="#1f2a44">w</text>
+  <text x="180" y="84" font-size="12" text-anchor="middle" fill="#1f2a44">"Go now": six characters in a row</text>
+</svg>
+\`\`\`
+:::
+
+::: context argument The values you hand to a function
+An **argument** is a value you give a function to work with, placed inside its brackets. In \`print("Fuel:", 98, "percent")\` there are three arguments: \`"Fuel:"\`, \`98\` and \`"percent"\`, separated by commas. The word is borrowed from mathematics, where the number you feed into a formula is also called its argument. It has nothing to do with quarrelling. Some functions take one argument, some take several, and in the arithmetic lesson you will meet one that takes two numbers.
+:::
+
+::: context comments-apollo Comments in real flight software
+The program that guided the Apollo spacecraft to the Moon was written in the 1960s, and its full source code is now public for anyone to read online. It is packed with comments explaining what each part does, and a few jokes as well. Today, flight software teams at NASA and elsewhere follow written coding standards, and explaining tricky code in comments is a normal part of the job. Code is read far more often than it is written, and a comment is how you speak to the next reader.
+:::
+--- task
+Make the program print exactly these two lines:
+
+\`\`\`
+Hello, world!
+Python is running in your browser.
+\`\`\`
+
+Use one \`print\` for each line, with the text in quotes. Then press Run Code.
+--- starter
+# Write your two print() calls below.
+
+--- solution
+print("Hello, world!")
+print("Python is running in your browser.")
+--- hint
+Each line of output needs its own \`print(...)\`. Put the text for each line inside quotes, inside the brackets.
+--- hint
+Copy the text exactly. Capitals and punctuation count: \`Hello, world!\` has a capital H, a comma, a space and an exclamation mark, and the second line ends with a full stop.
+--- hint
+The first line of your program is \`print("Hello, world!")\`. The second line has the same shape, with the second sentence inside the quotes.
+--- check output | Prints both lines, exactly
+Hello, world!
+Python is running in your browser.
+?? Compare your output with the expected lines character by character — spacing and punctuation matter.
+
++++ practice | Three lines for the launch board
+--- task
+Make the program print exactly these three lines:
+
+\`\`\`
+Crew: 4
+Destination: Moon
+Launch window opens at dawn.
+\`\`\`
+
+Use one \`print\` for each line. On the first line, hand \`print\` two values with a comma between them: the text \`"Crew:"\` and the number \`4\`, with no quotes around the 4.
+--- starter
+# Print the three lines for the launch board.
+
+--- solution
+print("Crew:", 4)
+print("Destination: Moon")
+print("Launch window opens at dawn.")
+--- hint
+One \`print\` per line of output, in the same order as the lines, top to bottom.
+--- hint
+\`print\` puts a space between two values for you, so the text \`"Crew:"\` needs no space at its end.
+--- hint
+The first line of your program is \`print("Crew:", 4)\`. The other two lines each hand \`print\` one piece of text in quotes.
+--- check output | Prints the three lines exactly
+Crew: 4
+Destination: Moon
+Launch window opens at dawn.
+--- check source | Hands print the 4 as a number, after the text
+print\\(\\s*["']Crew:["']\\s*,\\s*4\\s*\\)
+?? Write the 4 with no quotes, as its own value after a comma.
+--- check source | Uses three prints
+(print\\([\\s\\S]*){3}
+
++++ practice | Five values, one line
+--- task
+Print exactly this line:
+
+\`\`\`
+Stage 2 ignition at 145 seconds
+\`\`\`
+
+Use a single \`print\` with five values in its brackets, in this order: the text \`Stage\`, the number \`2\`, the text \`ignition at\`, the number \`145\`, and the text \`seconds\`. Put a comma between each pair of values. The numbers have no quotes. No piece of text starts or ends with a space: \`print\` adds the spaces.
+--- starter
+# One print, five values.
+
+--- solution
+print("Stage", 2, "ignition at", 145, "seconds")
+--- hint
+Values inside the brackets are separated by commas, and \`print\` writes one space between each pair.
+--- hint
+The text pieces go in quotes. The numbers \`2\` and \`145\` do not.
+--- hint
+The brackets hold \`"Stage", 2, "ignition at", 145, "seconds"\`.
+--- check output | Prints the line exactly
+Stage 2 ignition at 145 seconds
+--- check source | The 2 is a number of its own
+["']Stage["']\\s*,\\s*2\\s*,
+?? Hand the 2 to print as a number, straight after the text Stage.
+--- check source | The 145 is a number of its own
+,\\s*145\\s*,
+
++++ practice | A checklist with notes
+--- task
+Write a program that prints exactly this:
+
+\`\`\`
+Checklist
+1 Fuel loaded
+2 Hatch closed
+\`\`\`
+
+Three rules:
+
+- The first line of your program is the comment \`# Pre-launch checklist\`.
+- In the two numbered lines, hand \`print\` the number as a number (no quotes), then the text as a second value, with a comma between them.
+- The last \`print\` line ends with the comment \`# last item\`, written after the closing bracket.
+--- starter
+# Replace this line with the comment the task asks for.
+
+--- solution
+# Pre-launch checklist
+print("Checklist")
+print(1, "Fuel loaded")
+print(2, "Hatch closed")   # last item
+--- hint
+A comment starts with \`#\`. Python skips it, so it never shows up in the output.
+--- hint
+A numbered line hands \`print\` two values: a number with no quotes, then the text in quotes. \`print\` puts the space between them.
+--- hint
+A comment can sit at the end of a line of code: write the \`print(...)\`, then a space, then \`# last item\`.
+--- check output | Prints the checklist
+Checklist
+1 Fuel loaded
+2 Hatch closed
+--- check source | Starts with the comment
+^# Pre-launch checklist
+?? The very first line of your program must be exactly # Pre-launch checklist.
+--- check source | The numbers are numbers
+print\\(\\s*1\\s*,[\\s\\S]*print\\(\\s*2\\s*,
+--- check source | The last print ends with a comment
+\\)\\s*# last item
+
++++ practice | Every space counts
+--- task
+Print exactly these three lines. Look closely at the spaces:
+
+\`\`\`
+Fuel: 98%
+Fuel: 98 %
+   Stand by
+\`\`\`
+
+- The first line has no space between \`98\` and \`%\`, so write the whole line as one piece of text.
+- The second line has a space before \`%\`. Write it with one \`print\` and three values: the text \`"Fuel:"\`, the number \`98\`, and the text \`"%"\`.
+- The third line starts with three spaces. Put them inside the quotes.
+--- starter
+# Three lines. Watch the spaces.
+
+--- solution
+print("Fuel: 98%")
+print("Fuel:", 98, "%")
+print("   Stand by")
+--- hint
+Between the quotes, every space is printed exactly as you type it. Between values separated by commas, \`print\` adds one space.
+--- hint
+The first line is one string: \`"Fuel: 98%"\`. The second hands \`print\` three values, so \`print\` adds a space before the \`%\`.
+--- hint
+For the third line, the text in quotes starts with three spaces: \`"   Stand by"\`.
+--- check output | Prints all three lines with the right spaces
+Fuel: 98%
+Fuel: 98 %
+   Stand by
+?? Check the space before each % and the three spaces at the start of the last line.
+--- check source | The second line hands print the number 98
+,\\s*98\\s*,
+--- check source | The three spaces are inside the quotes
+["']   Stand by["']
+
++++ practice | Fix the status lines
+--- task
+This program should print these two lines:
+
+\`\`\`
+Tank pressure normal
+Valves open
+\`\`\`
+
+Instead, Python stops with an error before it prints anything. There are two mistakes, one on each \`print\` line. Fix them. Keep two values in the second \`print\`: the text \`Valves\` and the text \`open\`.
+--- starter
+# Should print two status lines.
+print("Tank pressure normal)
+print(Valves, "open")
+--- solution
+# Should print two status lines.
+print("Tank pressure normal")
+print("Valves", "open")
+--- hint
+Every piece of text needs a quote mark at the start and another at the end.
+--- hint
+On the first line, a closing quote is missing. On the second, \`Valves\` has no quotes at all, so Python looks for a name called \`Valves\` and cannot find one.
+--- check output | Prints both lines
+Tank pressure normal
+Valves open
+--- check source | Valves is text now
+print\\(\\s*["']Valves["']\\s*,
+?? Put Valves in quotes, so Python treats it as text.
+--- check source | The first text is closed
+["']Tank pressure normal["']
+
++++ practice | A mission status panel
+--- task
+Print this status panel exactly:
+
+\`\`\`
+MISSION STATUS
+Vehicle: Kestrel  Crew: 4
+Orbit altitude: 408 km
+Speed: 7.66 km/s
+All systems go.
+\`\`\`
+
+Rules:
+
+- The first line of your program is a comment saying what it prints (any comment will do).
+- The numbers \`4\`, \`408\` and \`7.66\` are handed to \`print\` as numbers, with no quotes, each as a value of its own.
+- Look at line 2: there are **two** spaces between \`Kestrel\` and \`Crew:\`. Get them without typing the 4 inside quotes.
+--- starter
+print("MISSION STATUS")
+
+--- solution
+# Status panel for the mission
+print("MISSION STATUS")
+print("Vehicle: Kestrel ", "Crew:", 4)
+print("Orbit altitude:", 408, "km")
+print("Speed:", 7.66, "km/s")
+print("All systems go.")
+--- hint
+Start with a \`#\` comment line. Then give each line of the panel its own \`print\`.
+--- hint
+When a number sits in the middle of a line, split the line into values: the text before it, the number, and the text after it.
+--- hint
+\`print\` adds one space between values. For two spaces, end the text before \`Crew:\` with one space of its own: \`"Vehicle: Kestrel "\`.
+--- check output | Prints the panel exactly
+MISSION STATUS
+Vehicle: Kestrel  Crew: 4
+Orbit altitude: 408 km
+Speed: 7.66 km/s
+All systems go.
+--- check source | Starts with a comment
+^#
+--- check source | 4 is a number
+,\\s*4\\s*\\)
+--- check source | 408 and 7.66 are numbers
+,\\s*408\\s*,[\\s\\S]*,\\s*7\\.66\\s*,
+?? Hand 408 and 7.66 to print as values of their own, with no quotes.
+
+=== py-02 | Variables and types
+--- teach
+Last lesson, every value you printed was typed right inside \`print\`. Real programs need to remember values and use them again: how much fuel is left, the name of the mission, whether the engines are on. This lesson shows you how to give a value a name so Python remembers it.
+
+Picture a jar in the kitchen with a label stuck on it that says "sugar". The label is how you find the jar again. You can empty the jar and fill it with something new, and the label still works.
+
+### A name for a value
+
+A **variable** is a name for a value. You create one with \`=\`, the equals sign:
+
+\`\`\`python
+fuel = 98
+\`\`\`
+
+Read that line aloud as "fuel **gets** 98", or "set fuel to 98". The equals sign here is not asking a question like in maths. It is an order: *take the value on the right and stick the name on the left onto it*. This is called **[[assignment|assignment]]** — giving a name its value.
+
+Once a variable exists, you can use its name anywhere you would use the value:
+
+\`\`\`python
+fuel = 98
+print(fuel)             # 98
+print("Fuel:", fuel)    # Fuel: 98
+\`\`\`
+
+**Watch out:** \`print(fuel)\` and \`print("fuel")\` do different things. With no quotes, \`fuel\` is a variable, so Python prints the value it holds: \`98\`. In quotes, \`"fuel"\` is a string, so Python prints the word itself: \`fuel\`.
+
+### Changing the value
+
+A variable can be given a new value at any time. This is called **reassigning** it. The name always refers to the most recent value, because Python runs the lines top to bottom:
+
+\`\`\`python
+fuel = 98
+fuel = 75
+print(fuel)   # 75
+\`\`\`
+
+The first line stuck the label on \`98\`. The second line moved the label onto \`75\`. By the time \`print\` runs, \`fuel\` means \`75\`. The old value is not kept anywhere under that name — [[the label has moved|label-moves]].
+
+### Values come in kinds
+
+Values do not all look alike. Here are four variables, each holding a different kind of value:
+
+\`\`\`python
+name = "Ada"
+age = 36
+height_m = 1.65
+is_engineer = True
+\`\`\`
+
+- \`"Ada"\` is text, so it goes in quotes: a string, as in the last lesson.
+- \`36\` is a whole number. No quotes, and no commas inside it, even if it is big: two million is written \`2000000\`.
+- \`1.65\` is a number with a decimal point.
+- \`True\` is a yes-or-no value. There are only two: \`True\` and \`False\`. Each starts with a capital letter and has no quotes.
+
+The kind of a value is called its **type**. In the next lesson you will learn the names Python gives these four types and how to ask Python which type a value is.
+
+### Choosing good names
+
+A variable name can use letters, digits and the underscore \`_\` (the low line you get with Shift and the minus key). It cannot contain spaces, and it cannot start with a digit. Capitals matter: \`fuel\` and \`Fuel\` are two different names.
+
+Python programmers write names in lowercase, with an underscore between words: \`max_speed\`, not \`MaxSpeed\`. This style is called **[[snake case|snake-case]]**. Pick names that say what the value is. \`height_m\` tells you it is a height and that it is [[measured in meters|units-in-names]]; \`h\` tells you almost nothing.
+
+::: context assignment The equals sign points left
+In maths, "x = 5" and "5 = x" say the same thing. In Python they do not. Python always works out the right-hand side first and then gives that value the name on the left. So \`fuel = 98\` works, and \`98 = fuel\` is an error: you cannot stick a label called \`98\` on anything.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" font-family="Inter, Arial, sans-serif">
+  <rect x="30" y="34" width="80" height="34" rx="6" fill="#f2b880" stroke="#1f2a44" stroke-width="2"/>
+  <text x="70" y="56" font-size="14" text-anchor="middle" fill="#1f2a44">fuel</text>
+  <line x1="236" y1="51" x2="122" y2="51" stroke="#1d6fd1" stroke-width="3"/>
+  <polygon points="112,51 124,45 124,57" fill="#1d6fd1"/>
+  <text x="175" y="40" font-size="12" text-anchor="middle" fill="#1d6fd1">=  (gets)</text>
+  <rect x="240" y="30" width="90" height="42" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="285" y="57" font-size="15" text-anchor="middle" fill="#1f2a44">98</text>
+  <text x="70" y="90" font-size="11" text-anchor="middle" fill="#6c7a93">the name (label)</text>
+  <text x="285" y="90" font-size="11" text-anchor="middle" fill="#6c7a93">the value</text>
+</svg>
+\`\`\`
+:::
+
+::: context label-moves What happens to the old value
+When you write \`fuel = 75\` after \`fuel = 98\`, Python does not scratch out the 98 and write 75 over it. It makes the value 75 and moves the name \`fuel\` onto it. The 98 is left with no name, so your program can no longer reach it, and Python quietly clears it away to free up the computer's memory. That is why the order of your lines matters so much: a name means whatever it was last given.
+:::
+
+::: context snake-case Why it is called snake case
+Words joined by underscores lie low and flat along the line, like a snake: \`max_speed\`, \`fuel_left_kg\`. That is the joke behind the name. Python's official style guide, called PEP 8, asks for snake case in variable names, so nearly all Python code you will read uses it. The other style, \`MaxSpeed\`, with a capital at the start of each word, has its own job in Python: it is used for the names of classes, which you will meet in the last lesson of this course.
+:::
+
+::: context units-in-names Why engineers put units in names
+A number without its unit is a trap. Is \`height = 1.65\` in meters or in feet? In 1999, NASA lost the Mars Climate Orbiter because one team's software produced numbers in US customary units (pound-force seconds) while another team's software expected metric units (newton-seconds). The spacecraft flew too close to Mars and was lost. Writing the unit into the name, as in \`height_m\` or \`thrust_kn\`, is a cheap habit that makes that kind of mix-up much easier to spot.
+:::
+--- task
+Create three variables:
+
+- \`city\` holding the string \`"Houston"\`
+- \`population\` holding the whole number \`2300000\` (no quotes, no commas)
+- \`is_capital\` holding \`False\`
+
+Then print \`city\` and \`population\` on one line with a single \`print\`, putting both names inside the brackets with a comma between them. The output should be \`Houston 2300000\`.
+--- starter
+# Create city, population and is_capital, then print city and population.
+
+--- solution
+city = "Houston"
+population = 2300000
+is_capital = False
+print(city, population)
+--- hint
+Each variable is one line: the name, then \`=\`, then the value. For example, \`city = "Houston"\`.
+--- hint
+\`False\` has a capital F and no quotes. The number is written \`2300000\`, with no quotes and no commas.
+--- hint
+The last line is one \`print\` with two arguments: \`print(city, population)\`. No quotes around the names, because you want their values, not the words.
+--- check case | city is the string "Houston"
+city
+=> "Houston"
+--- check test | population is the int 2300000
+type(population) is int and population == 2300000
+?? Write the number without quotes or commas: 2300000.
+--- check case | is_capital is False
+is_capital
+=> False
+--- check output | Prints: Houston 2300000
+Houston 2300000
+
++++ practice | A probe's record
+--- task
+Create four variables about a space probe:
+
+- \`probe\` holding the string \`"Voyager 1"\`
+- \`launch_year\` holding the whole number \`1977\`
+- \`distance_au\` holding the decimal number \`163.2\`
+- \`is_active\` holding \`True\`
+
+Then print two lines. The first uses one \`print\` with \`probe\` and \`launch_year\` inside the brackets. The second uses one \`print\` with the text \`"Active:"\` and \`is_active\`. The output should be:
+
+\`\`\`
+Voyager 1 1977
+Active: True
+\`\`\`
+--- starter
+# Create the four variables, then print the two lines.
+
+--- solution
+probe = "Voyager 1"
+launch_year = 1977
+distance_au = 163.2
+is_active = True
+print(probe, launch_year)
+print("Active:", is_active)
+--- hint
+Each variable is one line: the name, \`=\`, then the value. Text goes in quotes; numbers and \`True\` do not.
+--- hint
+\`True\` starts with a capital T. To print a variable's value, write its name with no quotes around it.
+--- hint
+The two print lines are \`print(probe, launch_year)\` and \`print("Active:", is_active)\`.
+--- check case | probe is "Voyager 1"
+probe
+=> "Voyager 1"
+--- check test | launch_year is the whole number 1977 and distance_au is 163.2
+type(launch_year) is int and launch_year == 1977 and type(distance_au) is float and distance_au == 163.2
+?? Write both numbers with no quotes: 1977 and 163.2.
+--- check case | is_active is True
+is_active
+=> True
+--- check output | Prints the two lines
+Voyager 1 1977
+Active: True
+
++++ practice | Keep the old value
+--- task
+The starter sets \`fuel = 100\`.
+
+1. Make a new variable \`start_fuel\` that holds the same value as \`fuel\`. Write the name \`fuel\` on the right of the \`=\`, not the number \`100\`.
+2. Then reassign \`fuel\` to \`64\`.
+3. Print one line with one \`print\` and four values: the text \`"Start:"\`, \`start_fuel\`, the text \`"Now:"\` and \`fuel\`.
+
+The output should be:
+
+\`\`\`
+Start: 100 Now: 64
+\`\`\`
+--- starter
+fuel = 100
+
+--- solution
+fuel = 100
+start_fuel = fuel
+fuel = 64
+print("Start:", start_fuel, "Now:", fuel)
+--- hint
+A variable's name can go anywhere its value could, including on the right of \`=\`.
+--- hint
+\`start_fuel = fuel\` gives \`start_fuel\` the value \`fuel\` holds at that moment, which is 100. Changing \`fuel\` afterwards moves only the \`fuel\` label.
+--- hint
+After \`fuel = 64\`, the print line is \`print("Start:", start_fuel, "Now:", fuel)\`.
+--- check test | start_fuel kept 100 and fuel is 64
+start_fuel == 100 and fuel == 64
+?? Set start_fuel before you change fuel.
+--- check source | start_fuel is copied from fuel, not typed
+start_fuel\\s*=\\s*fuel\\b
+--- check output | Prints both values
+Start: 100 Now: 64
+
++++ practice | A weather report
+--- task
+Create these four variables:
+
+- \`site\` holding \`"Cape Canaveral"\`
+- \`wind_kmh\` holding \`18\`
+- \`temperature_c\` holding \`24.5\`
+- \`lightning_nearby\` holding \`False\`
+
+Then print this report, one \`print\` per line. In each line, the value must come from the variable, not typed into the text:
+
+\`\`\`
+Site: Cape Canaveral
+Wind: 18 km/h
+Temperature: 24.5 C
+Lightning nearby: False
+\`\`\`
+--- starter
+# Make the four variables, then print the report.
+
+--- solution
+site = "Cape Canaveral"
+wind_kmh = 18
+temperature_c = 24.5
+lightning_nearby = False
+print("Site:", site)
+print("Wind:", wind_kmh, "km/h")
+print("Temperature:", temperature_c, "C")
+print("Lightning nearby:", lightning_nearby)
+--- hint
+Make the variables first. Each line of the report is then one \`print\` with some text and a variable.
+--- hint
+When the value sits in the middle of a line, hand \`print\` three values: the text before, the variable, and the text after, like \`print("Wind:", wind_kmh, "km/h")\`.
+--- check test | The four variables hold the right values
+site == "Cape Canaveral" and wind_kmh == 18 and temperature_c == 24.5 and lightning_nearby is False
+--- check source | The wind comes from the variable
+print\\(\\s*["']Wind:["']\\s*,\\s*wind_kmh
+?? Put wind_kmh, with no quotes, after the text "Wind:".
+--- check source | The temperature comes from the variable
+print\\(\\s*["']Temperature:["']\\s*,\\s*temperature_c
+--- check output | Prints the report
+Site: Cape Canaveral
+Wind: 18 km/h
+Temperature: 24.5 C
+Lightning nearby: False
+
++++ practice | Values that look alike
+--- task
+Some values print the same but are different kinds. Create these five variables:
+
+- \`count_number\` holding the whole number \`7\`
+- \`count_text\` holding the string \`"7"\`
+- \`flag\` holding \`True\`
+- \`flag_text\` holding the string \`"True"\`
+- \`big\` holding the whole number one million five hundred thousand, written with no commas and no quotes
+
+Then print \`count_number\` and \`count_text\` with one \`print\`, and \`flag\` and \`flag_text\` with another. The output should be:
+
+\`\`\`
+7 7
+True True
+\`\`\`
+--- starter
+# Five variables, then two prints.
+
+--- solution
+count_number = 7
+count_text = "7"
+flag = True
+flag_text = "True"
+big = 1500000
+print(count_number, count_text)
+print(flag, flag_text)
+--- hint
+Quotes make a string. \`7\` is a whole number, and \`"7"\` is text made of the character 7.
+--- hint
+\`True\` with no quotes is the yes-or-no value. \`"True"\` in quotes is a string of four letters.
+--- hint
+One million five hundred thousand is \`1500000\`: a 1, a 5, then five zeros.
+--- check test | count_number is a whole number and count_text is text
+type(count_number) is int and count_number == 7 and count_text == "7"
+?? One of them has quotes and the other does not.
+--- check case | flag is the value True
+flag
+=> True
+--- check case | flag_text is the string "True"
+flag_text
+=> "True"
+--- check test | big is the whole number 1500000
+type(big) is int and big == 1500000
+?? No commas and no quotes: 1500000.
+--- check output | Both pairs print the same
+7 7
+True True
+
++++ practice | Fix the name
+--- task
+This program should print:
+
+\`\`\`
+28000 km/h
+\`\`\`
+
+Instead it stops with an error: \`NameError: name 'Max_speed' is not defined\`. Find the mistake and fix it. Keep the variable names \`max_speed\` and \`unit\`.
+--- starter
+max_speed = 28000
+unit = "km/h"
+print(Max_speed, unit)
+--- solution
+max_speed = 28000
+unit = "km/h"
+print(max_speed, unit)
+--- hint
+Python treats capital and small letters as different, so \`Max_speed\` and \`max_speed\` are two different names.
+--- hint
+The variable was made as \`max_speed\`, all small letters. Use exactly that name in the \`print\`.
+--- check output | Prints the speed and unit
+28000 km/h
+--- check source absent | No more Max_speed
+Max_speed
+--- check test | max_speed still holds 28000
+max_speed == 28000 and unit == "km/h"
+
++++ practice | A landing record card
+--- task
+A lander has touched down. Create these variables, with exactly these names and kinds of value:
+
+- \`lander_name\`: the text \`Eagle\`
+- \`landing_site\`: the text \`Sea of Tranquility\`
+- \`crew_count\`: the whole number \`2\`
+- \`samples_kg\`: the decimal number \`21.5\`
+- \`landed\`: the yes-or-no value for yes
+
+Then a correction comes in. On its own line, after the variables and before any \`print\`, reassign \`samples_kg\` to \`21.7\`.
+
+Finally print this card, one \`print\` per line, with every value coming from a variable:
+
+\`\`\`
+Lander: Eagle
+Site: Sea of Tranquility
+Crew: 2 Samples: 21.7 kg
+Landed: True
+\`\`\`
+--- starter
+# Make the variables, correct samples_kg, then print the card.
+
+--- solution
+lander_name = "Eagle"
+landing_site = "Sea of Tranquility"
+crew_count = 2
+samples_kg = 21.5
+landed = True
+samples_kg = 21.7
+print("Lander:", lander_name)
+print("Site:", landing_site)
+print("Crew:", crew_count, "Samples:", samples_kg, "kg")
+print("Landed:", landed)
+--- hint
+Text values go in quotes. Numbers and \`True\` do not.
+--- hint
+Reassigning is one more \`=\` line with the same name: the name then means the newest value.
+--- hint
+The third line of the card hands \`print\` five values: \`"Crew:"\`, \`crew_count\`, \`"Samples:"\`, \`samples_kg\` and \`"kg"\`.
+--- check test | The text values are right
+lander_name == "Eagle" and landing_site == "Sea of Tranquility"
+--- check test | crew_count is the whole number 2 and landed is True
+type(crew_count) is int and crew_count == 2 and landed is True
+--- check test | samples_kg was corrected to 21.7
+samples_kg == 21.7
+?? Add the line samples_kg = 21.7 after the first one.
+--- check source | The correction is its own line
+samples_kg\\s*=\\s*21\\.5[\\s\\S]*samples_kg\\s*=\\s*21\\.7
+--- check output | Prints the card
+Lander: Eagle
+Site: Sea of Tranquility
+Crew: 2 Samples: 21.7 kg
+Landed: True
+
+=== py-02b | What type is it?
+--- teach
+Last lesson you saw that values come in four kinds: text, whole numbers, numbers with a decimal point, and \`True\` or \`False\`. The kind of a value is its **type**. This lesson gives each type its Python name and shows you how to ask Python which type a value is.
+
+Think of the drawers in a toolbox. Screws go in one, nails in another, tape in a third. You would not try to hammer in a screw. Python sorts values the same way, because each type can do different things.
+
+### The four types and their names
+
+Python uses a short name for each type:
+
+| Value | Type name | Say it as | What it is |
+| --- | --- | --- | --- |
+| \`"Ada"\` | \`str\` | "string" | text, in quotes |
+| \`36\` | \`int\` | "int", short for integer | a whole number |
+| \`1.65\` | \`float\` | "float" | a number with a decimal point |
+| \`True\` | \`bool\` | "bool", short for boolean | \`True\` or \`False\` |
+
+An **integer** is a whole number with no fraction part: \`36\`, \`0\`, \`-5\`. A **[[float|float-name]]** is a number with a decimal point: \`1.65\`, \`7.66\`, even \`2.0\`. A **boolean**, or bool, is a yes-or-no value, and there are only two: \`True\` and \`False\`. The odd word [[comes from a person's name|boolean]].
+
+### Asking Python with type()
+
+The function \`type\` tells you the type of any value. Put the value, or a variable's name, inside its brackets, and \`print\` the answer:
+
+\`\`\`python
+age = 36
+print(type(age))   # <class 'int'>
+\`\`\`
+
+There are two pairs of brackets there. The inner call, \`type(age)\`, finds the type. The outer call, \`print(...)\`, shows it. Python works from the inside out, the same way you work out brackets in maths.
+
+The answer reads \`<class 'int'>\`. Ignore the \`<class ...>\` wrapping for now; the part in quotes, \`int\`, is the type name. The word [[class|class-word]] will make sense much later in the course.
+
+Here are all four:
+
+\`\`\`python
+print(type("Ada"))   # <class 'str'>
+print(type(36))      # <class 'int'>
+print(type(1.65))    # <class 'float'>
+print(type(True))    # <class 'bool'>
+\`\`\`
+
+**Watch out:** quotes change the type. \`36\` is an \`int\`, but \`"36"\` is a \`str\`: it is the two characters 3 and 6, not a number. \`print\` shows both as \`36\`, so they look the same on the screen, yet \`type\` tells them apart. Mixing up a number and text that looks like a number is one of the most common mistakes in programming, and [[types matter in flight too|ariane-5]].
+
+::: context float-name Why a decimal number is called a float
+The full name is **floating-point number**. The "point" is the decimal point, and it "floats" because the computer can slide it left or right. Scientists do the same thing when they write 3.0 × 10⁸ ("3 times ten to the eighth") instead of 300,000,000: the digits stay the same and the point moves. That is how one type can hold a tiny number like 0.000003 and a huge one like the distance to the Sun in meters.
+:::
+
+::: context boolean Named after a person
+The \`bool\` type is named after George Boole, an English mathematician of the 1800s. He worked out a kind of algebra where every value is either true or false, and where "and", "or" and "not" act like plus and times. About a century later, engineers found his algebra described exactly how switches in a circuit behave. The logic inside every computer chip is built on it, which is why programmers still say "boolean" for a yes-or-no value.
+:::
+
+::: context class-word What class means here
+In Python every type is described by something called a **class** — a kind of blueprint that says what a value of that type is and what it can do. So \`<class 'int'>\` means "this value was made from the int blueprint". You will build your own classes in the last lesson of this course. For now, read the part in quotes.
+:::
+
+::: context ariane-5 A rocket lost to a type
+On 4 June 1996, the first Ariane 5 rocket broke up about 40 seconds after launch. The cause was in its guidance software. A number stored as a 64-bit floating-point value was converted into a 16-bit integer, a type that can only hold whole numbers up to 32,767. The real value was bigger than that, the conversion failed, and the guidance system shut down. The rocket veered off course and was destroyed. One lesson engineers took from it: always know exactly what type each value is, and what it can hold.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <rect x="14" y="30" width="150" height="50" rx="6" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <text x="89" y="52" font-size="12" text-anchor="middle" fill="#1f2a44">64-bit float</text>
+  <text x="89" y="70" font-size="11" text-anchor="middle" fill="#1f2a44">very large range</text>
+  <line x1="168" y1="55" x2="226" y2="55" stroke="#b4232c" stroke-width="3"/>
+  <polygon points="236,55 224,49 224,61" fill="#b4232c"/>
+  <rect x="240" y="38" width="100" height="34" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="290" y="55" font-size="12" text-anchor="middle" fill="#1f2a44">16-bit int</text>
+  <text x="290" y="67" font-size="11" text-anchor="middle" fill="#1f2a44">max 32,767</text>
+  <text x="200" y="100" font-size="12" text-anchor="middle" fill="#b4232c">value too big to fit: conversion fails</text>
+</svg>
+\`\`\`
+:::
+--- task
+The International Space Station flies about 408 kilometers up, at about 7.66 kilometers per second.
+
+1. Create a variable \`altitude_km\` holding the whole number \`408\`.
+2. Create a variable \`speed_km_s\` holding the decimal number \`7.66\`.
+3. Print the type of \`altitude_km\` on one line, then the type of \`speed_km_s\` on the next, using \`print(type(...))\` for each.
+
+The output should be:
+
+\`\`\`
+<class 'int'>
+<class 'float'>
+\`\`\`
+--- starter
+# Create altitude_km and speed_km_s, then print the type of each.
+
+--- solution
+altitude_km = 408
+speed_km_s = 7.66
+print(type(altitude_km))
+print(type(speed_km_s))
+--- hint
+Make the two variables first, one per line: the name, \`=\`, then the number, with no quotes.
+--- hint
+To show a type, put \`type(...)\` inside \`print(...)\`, with the variable's name inside \`type\`'s brackets.
+--- hint
+The first print line is \`print(type(altitude_km))\`. The second one has the same shape with \`speed_km_s\`.
+--- check test | altitude_km is the int 408
+type(altitude_km) is int and altitude_km == 408
+?? Write 408 with no quotes and no decimal point.
+--- check test | speed_km_s is the float 7.66
+type(speed_km_s) is float and speed_km_s == 7.66
+--- check source | Uses type()
+type\\(
+?? Ask Python with type(...), rather than typing the answer in.
+--- check output | Prints int, then float
+<class 'int'>
+<class 'float'>
+
++++ practice | Three types from a telescope
+--- task
+The Kepler space telescope found 2662 planets before it was retired.
+
+1. Create \`name\` holding the string \`"Kepler"\`.
+2. Create \`planets_found\` holding the whole number \`2662\`.
+3. Create \`is_retired\` holding \`True\`.
+4. Print the type of each one, in that order, one per line, using \`print(type(...))\`.
+
+The output should be:
+
+\`\`\`
+<class 'str'>
+<class 'int'>
+<class 'bool'>
+\`\`\`
+--- starter
+# Three variables, then the type of each.
+
+--- solution
+name = "Kepler"
+planets_found = 2662
+is_retired = True
+print(type(name))
+print(type(planets_found))
+print(type(is_retired))
+--- hint
+Make the three variables first, one per line.
+--- hint
+\`type(...)\` goes inside \`print(...)\`, and the variable's name goes inside \`type\`'s brackets.
+--- check test | The three variables hold the right values
+name == "Kepler" and type(planets_found) is int and planets_found == 2662 and is_retired is True
+--- check source | Asks Python with type()
+type\\(\\s*is_retired\\s*\\)
+?? Print type(is_retired) rather than typing the answer in.
+--- check output | Prints str, int, then bool
+<class 'str'>
+<class 'int'>
+<class 'bool'>
+
++++ practice | Pick values to match the types
+--- task
+This time the print lines are written for you. Your job is the values. Change the four lines at the top so the program prints exactly:
+
+\`\`\`
+<class 'float'>
+<class 'str'>
+<class 'bool'>
+<class 'int'>
+\`\`\`
+
+- \`a\` must be a number with a decimal point.
+- \`b\` must be text made only of digits, such as \`"42"\`: it looks like a number, but it is a string.
+- \`c\` must be one of the two yes-or-no values.
+- \`d\` must be a whole number.
+
+Leave the four \`print\` lines as they are.
+--- starter
+a = 0
+b = 0
+c = 0
+d = 0
+print(type(a))
+print(type(b))
+print(type(c))
+print(type(d))
+--- solution
+a = 2.5
+b = "42"
+c = False
+d = 7
+print(type(a))
+print(type(b))
+print(type(c))
+print(type(d))
+--- hint
+The type comes from how you write the value: a decimal point makes a float, quotes make a string.
+--- hint
+The yes-or-no values are \`True\` and \`False\`, with a capital letter and no quotes.
+--- hint
+For \`b\`, put digits inside quotes, like \`"42"\`. The quotes make it a \`str\`, even though it looks like a number.
+--- check output | Prints float, str, bool, int
+<class 'float'>
+<class 'str'>
+<class 'bool'>
+<class 'int'>
+--- check test | a is a float and d is an int
+type(a) is float and type(d) is int
+--- check test | b is text made of digits
+type(b) is str and len(b) > 0 and b.strip("0123456789") == ""
+?? Put some digits inside quotes, like "42".
+--- check test | c is True or False
+type(c) is bool
+
++++ practice | Name and type, side by side
+--- task
+Create three variables:
+
+- \`fuel_kg\` holding \`5400.0\`
+- \`stage_count\` holding \`3\`
+- \`vehicle\` holding \`"Kestrel"\`
+
+Then print one line for each. Each line shows the variable's **name** as text, then its type, with one \`print\` and two values. The output should be:
+
+\`\`\`
+fuel_kg <class 'float'>
+stage_count <class 'int'>
+vehicle <class 'str'>
+\`\`\`
+
+The first value in each \`print\` is the name in quotes. The second is \`type(...)\` of the variable itself.
+--- starter
+# Three variables, then a name and a type on each line.
+
+--- solution
+fuel_kg = 5400.0
+stage_count = 3
+vehicle = "Kestrel"
+print("fuel_kg", type(fuel_kg))
+print("stage_count", type(stage_count))
+print("vehicle", type(vehicle))
+--- hint
+In quotes, \`"fuel_kg"\` is just the word. Without quotes, \`fuel_kg\` is the variable and its value.
+--- hint
+Each print hands over two values with a comma between them: the name in quotes, then \`type(...)\` with the name and no quotes.
+--- hint
+The first print line is \`print("fuel_kg", type(fuel_kg))\`.
+--- check test | The variables hold the right values
+fuel_kg == 5400.0 and type(fuel_kg) is float and stage_count == 3 and vehicle == "Kestrel"
+--- check source | Uses type() on each variable
+type\\(\\s*fuel_kg\\s*\\)[\\s\\S]*type\\(\\s*stage_count\\s*\\)[\\s\\S]*type\\(\\s*vehicle\\s*\\)
+--- check output | Prints each name with its type
+fuel_kg <class 'float'>
+stage_count <class 'int'>
+vehicle <class 'str'>
+
++++ practice | Tricky values
+--- task
+Print the type of each of these six values, one per line, in this order. Put each value straight inside \`type(...)\`, and each \`type(...)\` inside a \`print(...)\`:
+
+1. \`2.0\`
+2. \`-5\`
+3. \`"3.5"\`
+4. \`0\`
+5. \`False\`
+6. \`""\` (two quotes with nothing between them)
+
+Before you run it, guess each answer. Then check your guesses against the output.
+--- starter
+# Six prints, one type each.
+
+--- solution
+print(type(2.0))
+print(type(-5))
+print(type("3.5"))
+print(type(0))
+print(type(False))
+print(type(""))
+--- hint
+A decimal point makes a float, even when the number is whole. A minus sign does not change the type.
+--- hint
+Anything in quotes is a string, even \`"3.5"\`, and even \`""\`, which holds no characters at all.
+--- check output | Prints the six types in order
+<class 'float'>
+<class 'int'>
+<class 'str'>
+<class 'int'>
+<class 'bool'>
+<class 'str'>
+?? 2.0 is a float, -5 and 0 are ints, False is a bool, and anything in quotes is a str.
+--- check source | Asks type() six times
+(type\\([\\s\\S]*){6}
+--- check source absent | Does not type the answers in
+<class
+
++++ practice | Fix the sensor types
+--- task
+A temperature sensor's reading should be stored as a decimal number, and its on-off state as a yes-or-no value. So this program should print:
+
+\`\`\`
+<class 'float'>
+<class 'bool'>
+\`\`\`
+
+Instead it prints \`<class 'str'>\` twice. Fix the two values at the top so their types are right. Keep the same values, \`21.5\` and yes.
+--- starter
+temperature_c = "21.5"
+sensor_on = "True"
+print(type(temperature_c))
+print(type(sensor_on))
+--- solution
+temperature_c = 21.5
+sensor_on = True
+print(type(temperature_c))
+print(type(sensor_on))
+--- hint
+Quotes turn any value into a string.
+--- hint
+Take the quotes away from both values: a number with a decimal point is a float, and \`True\` with no quotes is a bool.
+--- check test | temperature_c is the float 21.5
+type(temperature_c) is float and temperature_c == 21.5
+--- check case | sensor_on is True
+sensor_on
+=> True
+--- check output | Prints float, then bool
+<class 'float'>
+<class 'bool'>
+
++++ practice | A ground station record
+--- task
+A ground station sends one record. Store each value in a variable with the name and the type given here:
+
+| Name | Type | Value |
+| --- | --- | --- |
+| \`station_code\` | \`str\` | 007 |
+| \`dish_diameter_m\` | \`float\` | 34 |
+| \`elevation_m\` | \`int\` | minus 12 |
+| \`tracking\` | \`bool\` | yes |
+| \`signal_db\` | \`float\` | minus 151.5 |
+
+Think about each one. A code like 007 keeps its zeros only as text. A float that is a whole number still needs a decimal point.
+
+Then print the type of \`dish_diameter_m\`, and on the next line the type of \`station_code\`:
+
+\`\`\`
+<class 'float'>
+<class 'str'>
+\`\`\`
+--- starter
+# Store the five values, then print two types.
+
+--- solution
+station_code = "007"
+dish_diameter_m = 34.0
+elevation_m = -12
+tracking = True
+signal_db = -151.5
+print(type(dish_diameter_m))
+print(type(station_code))
+--- hint
+Match each value to its type: quotes for \`str\`, a decimal point for \`float\`, no decimal point for \`int\`, and \`True\` or \`False\` for \`bool\`.
+--- hint
+\`34\` on its own is an int. Written as \`34.0\` it is a float. \`"007"\` in quotes keeps its two zeros.
+--- hint
+Negative numbers start with a minus sign: \`-12\` and \`-151.5\`.
+--- check test | station_code is the text 007
+station_code == "007"
+?? Put 007 in quotes, so it keeps its zeros.
+--- check test | dish_diameter_m is the float 34.0
+type(dish_diameter_m) is float and dish_diameter_m == 34
+--- check test | elevation_m is the int -12
+type(elevation_m) is int and elevation_m == -12
+--- check test | tracking is True and signal_db is -151.5
+tracking is True and type(signal_db) is float and signal_db == -151.5
+--- check output | Prints float, then str
+<class 'float'>
+<class 'str'>
+
+=== py-03 | Arithmetic
+--- teach
+In the last lesson you met two kinds of number, \`int\` for whole numbers and \`float\` for numbers with a decimal point. Now you will make Python do sums with them. Python is a very fast, very careful calculator, and every engineering program you will ever write uses it that way.
+
+Think of a calculator's keys: plus, minus, times, divide. Python has the same four, written with symbols from your keyboard.
+
+### The four basic operators
+
+A symbol that does a sum is called an **[[operator|operator]]**. Here are the four you know from maths:
+
+| Symbol | Say it as | Example | Result |
+| --- | --- | --- | --- |
+| \`+\` | "plus" | \`7 + 3\` | \`10\` |
+| \`-\` | "minus" | \`7 - 3\` | \`4\` |
+| \`*\` | "times" (the star, or asterisk) | \`7 * 3\` | \`21\` |
+| \`/\` | "divided by" (the slash) | \`7 / 2\` | \`3.5\` |
+
+Keyboards have no × or ÷ key, so Python uses the star \`*\` for times and the slash \`/\` for divide.
+
+\`\`\`python
+print(7 * 3)       # 21
+print(7 / 2)       # 3.5
+\`\`\`
+
+You can store the answer in a variable, the same way you stored plain values two lessons ago. Python works out the right-hand side first, then gives it the name:
+
+\`\`\`python
+bottles = 3
+litres = bottles * 1.5
+print(litres)      # 4.5
+\`\`\`
+
+### Dividing always gives a float
+
+The slash \`/\` always gives a \`float\`, even when the answer comes out whole:
+
+\`\`\`python
+print(6 / 2)       # 3.0
+print(type(6 / 2)) # <class 'float'>
+\`\`\`
+
+\`6 / 2\` is \`3.0\`, not \`3\`. The \`.0\` is Python telling you the answer's type is \`float\`.
+
+### Brackets and the order of operations
+
+When a sum has several steps, Python follows the same order you learned in maths: brackets first, then times and divide, then plus and minus.
+
+\`\`\`python
+print(2 + 3 * 4)     # 14   (3 * 4 first, then add 2)
+print((2 + 3) * 4)   # 20   (the brackets first: 5 * 4)
+\`\`\`
+
+**Watch out:** Python never guesses what you meant. \`2 + 3 * 4\` is \`14\`, not \`20\`, because the multiplication happens before the addition. If you want the addition first, you must write the brackets.
+
+### Rounding with round()
+
+Some answers come out with a long tail of digits, and some come out [[a tiny bit off|float-tails]] because of how computers store decimals. The function \`round\` tidies a number up. It takes two arguments: the number, then how many digits you want after the decimal point.
+
+\`\`\`python
+print(round(3.14159, 2))   # 3.14
+print(0.1 + 0.2)           # 0.30000000000000004
+print(round(0.1 + 0.2, 2)) # 0.3
+\`\`\`
+
+### Putting it together
+
+Here is a sum shaped like the one in the task. Three bottles of water cost 1.25 dollars each, and two apples cost 0.5 dollars each. What is the total?
+
+\`\`\`python
+total = round(3 * 1.25 + 2 * 0.5, 2)
+print(total)   # 4.75
+\`\`\`
+
+Read it from the inside out. \`3 * 1.25\` is \`3.75\`. \`2 * 0.5\` is \`1.0\`. The multiplications happen first, then the \`+\` adds them: \`4.75\`. Last of all, \`round\` keeps two digits after the point. Prices this small are fine, but [[very small numbers|tiny-numbers]] print in a surprising way, so it helps to know what to expect.
+
+::: context operator Where the word comes from
+An **operator** is a symbol that operates on values: it takes them and makes a new value. The values it works on are called **operands**. In \`7 * 3\`, the operator is \`*\` and the operands are \`7\` and \`3\`. You will meet many more operators in Python, including ones that compare values (is this bigger than that?) in the lesson on making decisions.
+:::
+
+::: context float-tails Why 0.1 + 0.2 is not quite 0.3
+Try writing one third as a decimal: 0.3333... The threes never end, so on paper you stop somewhere and accept a tiny error. Computers store numbers in binary (only 0s and 1s), and in binary, 0.1 is a never-ending pattern too. The computer keeps as many digits as fit and drops the rest. The tiny errors usually cancel or hide, but sometimes they peek out, as in \`0.30000000000000004\`. This happens in every programming language, not only Python. Engineers round results for display, and never test two floats for being exactly equal.
+:::
+
+::: context tiny-numbers How Python prints very small numbers
+Python switches to **scientific notation** for numbers smaller than 0.0001. So \`print(0.000003)\` shows \`3e-06\`, which you read as "3 times ten to the minus six", and written 3 × 10⁻⁶ in science books. The \`e\` means "times ten to the power of". It is the same number, written in a shorter way. Scientists and engineers use this all the time for very large and very small values.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" font-family="Inter, Arial, sans-serif">
+  <text x="90" y="40" font-size="18" text-anchor="middle" fill="#1f2a44">0.000003</text>
+  <line x1="160" y1="34" x2="196" y2="34" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="204,34 194,29 194,39" fill="#1f2a44"/>
+  <text x="262" y="40" font-size="18" text-anchor="middle" fill="#1d6fd1">3e-06</text>
+  <text x="90" y="76" font-size="12" text-anchor="middle" fill="#6c7a93">what you type</text>
+  <text x="262" y="76" font-size="12" text-anchor="middle" fill="#6c7a93">what print shows</text>
+  <text x="262" y="92" font-size="11" text-anchor="middle" fill="#6c7a93">3 times 10 to the minus 6</text>
+</svg>
+\`\`\`
+:::
+--- task
+Services that run AI models, such as chatbots, charge by the **token**, which is a small chunk of text, roughly a short word or part of a word. The text you send in is counted as input tokens, and the reply is counted as output tokens.
+
+A request used \`1250\` input tokens and \`380\` output tokens. Input costs \`0.000003\` dollars per token and output costs \`0.000015\` dollars per token.
+
+1. Set \`input_tokens\` to \`1250\` and \`output_tokens\` to \`380\`.
+2. Set \`cost\` to the total in dollars: the input tokens times their price, plus the output tokens times their price, rounded with \`round\` to 6 digits after the decimal point.
+3. Print \`cost\`.
+--- starter
+input_tokens = 0
+output_tokens = 0
+cost = 0
+print(cost)
+--- solution
+input_tokens = 1250
+output_tokens = 380
+cost = round(input_tokens * 0.000003 + output_tokens * 0.000015, 6)
+print(cost)
+--- hint
+Change the first two lines so the variables hold the real token counts. Then work on the \`cost\` line: multiply each token count by its price, then add the two.
+--- hint
+The sum inside is \`input_tokens * 0.000003 + output_tokens * 0.000015\`. The two multiplications happen before the addition, so you do not need extra brackets.
+--- hint
+Wrap the whole sum in \`round(..., 6)\`: the sum goes where the dots are, and \`6\` keeps six digits after the decimal point. The printed answer should be \`0.00945\`.
+--- check test | input_tokens and output_tokens are set
+input_tokens == 1250 and output_tokens == 380
+--- check test | cost is the total in dollars
+abs(cost - 0.00945) < 1e-9
+?? 1250 × 0.000003 + 380 × 0.000015 = 0.00945.
+--- check source | Computes the cost rather than typing it in
+\\*
+?? Use * to multiply — the point is to let Python do the arithmetic.
+--- check output | Prints the cost
+0.00945
+
++++ practice | Energy from solar panels
+--- task
+A rover has \`6\` solar panels. Each panel gives \`45\` watts, and the sun shines on them for \`5\` hours.
+
+1. Set \`panels\` to \`6\`, \`watts_per_panel\` to \`45\` and \`hours\` to \`5\`.
+2. Set \`energy_wh\` to the energy in watt-hours: panels times watts per panel times hours.
+3. Set \`per_hour\` to \`energy_wh\` divided by \`hours\`.
+4. Print \`energy_wh\` and \`per_hour\` on one line, with one \`print\`.
+
+The output should be:
+
+\`\`\`
+1350 270.0
+\`\`\`
+--- starter
+panels = 0
+watts_per_panel = 0
+hours = 0
+
+--- solution
+panels = 6
+watts_per_panel = 45
+hours = 5
+energy_wh = panels * watts_per_panel * hours
+per_hour = energy_wh / hours
+print(energy_wh, per_hour)
+--- hint
+Times is the star \`*\` and divided by is the slash \`/\`. Use the variable names in the sums, not the numbers.
+--- hint
+\`/\` always gives a float, which is why the second number prints as \`270.0\`.
+--- hint
+\`energy_wh = panels * watts_per_panel * hours\`, then \`per_hour = energy_wh / hours\`.
+--- check test | energy_wh is 1350
+energy_wh == 1350 and type(energy_wh) is int
+--- check test | per_hour is 270.0, a float
+per_hour == 270.0 and type(per_hour) is float
+?? Dividing with / always gives a float.
+--- check source | Multiplies the variables
+panels\\s*\\*\\s*watts_per_panel
+--- check output | Prints both numbers
+1350 270.0
+
++++ practice | The average needs brackets
+--- task
+Three pressure readings came in: \`a = 12\`, \`b = 15\` and \`c = 20\`.
+
+Set \`average\` to their mean, which is the three added together, divided by \`3\`. Round it with \`round\` to 2 digits after the decimal point. Then print \`average\`.
+
+The output should be:
+
+\`\`\`
+15.67
+\`\`\`
+
+--- starter
+a = 12
+b = 15
+c = 20
+
+--- solution
+a = 12
+b = 15
+c = 20
+average = round((a + b + c) / 3, 2)
+print(average)
+--- hint
+Python divides before it adds. Brackets make the adding happen first.
+--- hint
+Put \`a + b + c\` in brackets, divide that by 3, then wrap everything in \`round(..., 2)\`.
+--- check test | average is the mean, rounded to 2 digits
+average == 15.67
+?? (12 + 15 + 20) / 3 is 15.666..., which rounds to 15.67.
+--- check source | Adds before dividing
+\\(\\s*a\\s*\\+\\s*b\\s*\\+\\s*c\\s*\\)
+--- check source | Uses round
+round\\(
+--- check output | Prints 15.67
+15.67
+
++++ practice | Orbital speed in meters per second
+--- task
+The space station's speed is about \`27600\` kilometers per hour.
+
+1. Set \`speed_kmh\` to \`27600\`.
+2. Set \`speed_ms\` to the speed in meters per second: multiply by \`1000\` (meters in a kilometer), divide by \`3600\` (seconds in an hour), and round to 1 digit after the decimal point.
+3. Print the text \`"Speed:"\`, then \`speed_ms\`, then the text \`"m/s"\`, with one \`print\`.
+4. On the next line, print the type of \`speed_ms\`.
+
+The output should be:
+
+\`\`\`
+Speed: 7666.7 m/s
+<class 'float'>
+\`\`\`
+--- starter
+speed_kmh = 27600
+
+--- solution
+speed_kmh = 27600
+speed_ms = round(speed_kmh * 1000 / 3600, 1)
+print("Speed:", speed_ms, "m/s")
+print(type(speed_ms))
+--- hint
+Do the whole sum inside \`round(..., 1)\`: the speed, times 1000, divided by 3600.
+--- hint
+\`print\` takes three values for the first line: \`"Speed:"\`, \`speed_ms\` and \`"m/s"\`. The second line is \`print(type(speed_ms))\`.
+--- check test | speed_ms is 7666.7
+abs(speed_ms - 7666.7) < 1e-9
+?? 27600 * 1000 / 3600 is 7666.666..., which rounds to 7666.7.
+--- check source | Converts with 1000 and 3600
+1000[\\s\\S]*3600
+--- check output | Prints the speed and its type
+Speed: 7666.7 m/s
+<class 'float'>
+
++++ practice | Sums that catch people out
+--- task
+Work out four values, each with a sum written in Python. Do not type the answers in.
+
+1. The temperature went from \`start_c = -12.5\` to \`end_c = 4\`. Set \`change_c\` to end minus start.
+2. Set \`midpoint_c\` to the mean of \`start_c\` and \`end_c\`: add them, then divide by 2.
+3. Set \`per_person\` to \`6\` divided by \`3\`.
+4. Set \`total\` to \`0.1 + 0.2\`, rounded to 2 digits after the decimal point.
+
+Print all four on one line, with one \`print\`, in that order. The output should be:
+
+\`\`\`
+16.5 -4.25 2.0 0.3
+\`\`\`
+--- starter
+start_c = -12.5
+end_c = 4
+
+--- solution
+start_c = -12.5
+end_c = 4
+change_c = end_c - start_c
+midpoint_c = (start_c + end_c) / 2
+per_person = 6 / 3
+total = round(0.1 + 0.2, 2)
+print(change_c, midpoint_c, per_person, total)
+--- hint
+Taking away a negative number adds it: 4 minus -12.5 is 16.5.
+--- hint
+The mean needs brackets: \`(start_c + end_c) / 2\`. And \`6 / 3\` is \`2.0\`, because \`/\` always gives a float.
+--- hint
+\`0.1 + 0.2\` comes out a tiny bit off, so wrap it in \`round(..., 2)\`.
+--- check test | change_c is 16.5
+change_c == 16.5
+--- check test | midpoint_c is -4.25
+midpoint_c == -4.25
+?? Put the sum in brackets before you divide by 2.
+--- check test | per_person is the float 2.0
+per_person == 2 and type(per_person) is float
+--- check test | total is exactly 0.3 after rounding
+total == 0.3
+--- check source | Computes change_c from the variables
+change_c\\s*=\\s*end_c\\s*-\\s*start_c
+--- check output | Prints all four
+16.5 -4.25 2.0 0.3
+
++++ practice | Fix the weight
+--- task
+A lander has a mass of \`1200\` kilograms, and it carries \`300\` kilograms more of cargo. Its weight in newtons is its **total** mass times \`9.81\`. So this program should print:
+
+\`\`\`
+14715.0
+\`\`\`
+
+It prints \`4143.0\` instead. Fix the line that works out \`weight_n\`.
+--- starter
+mass_kg = 1200
+extra_kg = 300
+g = 9.81
+weight_n = mass_kg + extra_kg * g
+print(weight_n)
+--- solution
+mass_kg = 1200
+extra_kg = 300
+g = 9.81
+weight_n = (mass_kg + extra_kg) * g
+print(weight_n)
+--- hint
+Python does the times before the plus, so only the cargo is being multiplied by \`g\`.
+--- hint
+Brackets around \`mass_kg + extra_kg\` make Python add first, then multiply the total.
+--- check test | weight_n uses the total mass
+abs(weight_n - 14715) < 1e-6
+?? 1200 + 300 is 1500 kilograms, and 1500 times 9.81 is 14715.0.
+--- check source | Still uses the variables
+mass_kg\\s*\\+\\s*extra_kg
+--- check output | Prints 14715.0
+14715.0
+
++++ practice | Split the mission bill
+--- task
+Four friends share the cost of a ride on a small rocket.
+
+- The ride costs \`1250.50\` dollars.
+- Insurance costs 12 percent of the ride, which is the ride times \`0.12\`.
+- There is a flat booking fee of \`35\` dollars.
+
+1. Set \`ride\` to \`1250.50\`.
+2. Set \`total\` to the ride, plus the insurance, plus the fee, rounded to 2 digits after the decimal point.
+3. Set \`per_person\` to \`total\` divided by \`4\`, rounded to 2 digits.
+4. Print \`total\` and \`per_person\` on one line, with one \`print\`.
+
+The output should be:
+
+\`\`\`
+1435.56 358.89
+\`\`\`
+--- starter
+ride = 1250.50
+
+--- solution
+ride = 1250.50
+total = round(ride + ride * 0.12 + 35, 2)
+per_person = round(total / 4, 2)
+print(total, per_person)
+--- hint
+The insurance is \`ride * 0.12\`. Python works that out before it adds, so you need no extra brackets.
+--- hint
+\`total = round(ride + ride * 0.12 + 35, 2)\`. Then share \`total\` between the 4 friends.
+--- check test | total is 1435.56
+total == 1435.56
+?? 1250.50 + 150.06 + 35 = 1435.56.
+--- check test | per_person is 358.89
+per_person == 358.89
+--- check source | Works out the insurance from ride
+ride\\s*\\*\\s*0\\.12
+--- check output | Prints both amounts
+1435.56 358.89
+
+=== py-03b | Whole-number division, remainder and powers
+--- teach
+Last lesson you used \`+\`, \`-\`, \`*\` and \`/\`. Python has three more arithmetic operators that engineers use all the time. Each one gets its own step here.
+
+Picture 7 cookies shared between 2 friends, with no breaking cookies in half. Each friend gets 3 cookies, and 1 cookie is left over. Those two answers, "3 each" and "1 left over", are the first two operators in this lesson.
+
+### Whole-number division: //
+
+\`//\`, two slashes, means **whole-number division**: divide, then throw away anything after the decimal point, so you only keep the whole part. Say it as "whole-number divided by".
+
+\`\`\`python
+print(7 / 2)    # 3.5  (ordinary division)
+print(7 // 2)   # 3    (whole-number division: 3 cookies each)
+\`\`\`
+
+Programmers also call this **[[floor division|floor-division]]**.
+
+### Remainder: %
+
+\`%\`, the percent sign, gives the **remainder**: what is left over after whole-number division. Say it as "remainder after dividing by". It has nothing to do with percentages here.
+
+\`\`\`python
+print(7 % 2)    # 1   (1 cookie left over)
+print(10 % 5)   # 0   (10 shares out evenly, nothing left)
+\`\`\`
+
+\`//\` and \`%\` make a pair. Together they turn one big number into two smaller ones. For example, 200 minutes is how many hours and minutes? There are 60 minutes in an hour:
+
+\`\`\`python
+print(200 // 60)   # 3    (3 whole hours)
+print(200 % 60)    # 20   (20 minutes left over)
+\`\`\`
+
+So 200 minutes is 3 hours and 20 minutes. This is exactly how [[mission clocks|mission-clock]] turn seconds into a readable time.
+
+### Powers: **
+
+\`**\`, two stars, means **to the power of**: multiply a number by itself a number of times. \`2 ** 3\` is 2 to the power of 3, which is \`2 * 2 * 2\`, which is \`8\`.
+
+\`\`\`python
+print(2 ** 3)    # 8
+print(3 ** 2)    # 9   (3 squared: 3 * 3)
+print(2 ** 10)   # 1024
+\`\`\`
+
+Squaring, \`** 2\`, is the one you will use most. The area of a square with sides 4 meters long is \`4 ** 2\`, which is \`16\` square meters. Powers of two, like \`2 ** 10\`, [[show up everywhere in computers|powers-of-two]].
+
+**Watch out:** in some calculators and in school, \`2^3\` means 2 to the power of 3. In Python the \`^\` sign means something quite different, and \`2 ^ 10\` gives \`8\`, not \`1024\`. Python gives no error, only a wrong answer, so always use \`**\` for powers.
+
+### All seven together
+
+Here is every arithmetic operator from the last two lessons, in one table:
+
+| Operator | Meaning | Example | Result |
+| --- | --- | --- | --- |
+| \`+ - *\` | add, subtract, multiply | \`7 * 3\` | \`21\` |
+| \`/\` | divide (always a float) | \`7 / 2\` | \`3.5\` |
+| \`//\` | whole-number division | \`7 // 2\` | \`3\` |
+| \`%\` | remainder | \`7 % 2\` | \`1\` |
+| \`**\` | power | \`2 ** 10\` | \`1024\` |
+
+::: context floor-division Why it is called floor division
+The **floor** of a number is the nearest whole number at or below it: the floor of 3.5 is 3. \`//\` always rounds *down* to the floor. For positive numbers that is the same as chopping off the decimals. For negative numbers it is not: \`-7 // 2\` is \`-4\`, because -3.5 rounded down, towards the left of the number line, is -4.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 110" font-family="Inter, Arial, sans-serif">
+  <line x1="10" y1="55" x2="350" y2="55" stroke="#1f2a44" stroke-width="2"/>
+  <g stroke="#1f2a44" stroke-width="2">
+    <line x1="20" y1="48" x2="20" y2="62"/><line x1="60" y1="48" x2="60" y2="62"/><line x1="100" y1="48" x2="100" y2="62"/>
+    <line x1="140" y1="48" x2="140" y2="62"/><line x1="180" y1="48" x2="180" y2="62"/><line x1="220" y1="48" x2="220" y2="62"/>
+    <line x1="260" y1="48" x2="260" y2="62"/><line x1="300" y1="48" x2="300" y2="62"/><line x1="340" y1="48" x2="340" y2="62"/>
+  </g>
+  <g font-size="11" text-anchor="middle" fill="#1f2a44">
+    <text x="20" y="78">-4</text><text x="60" y="78">-3</text><text x="100" y="78">-2</text><text x="140" y="78">-1</text>
+    <text x="180" y="78">0</text><text x="220" y="78">1</text><text x="260" y="78">2</text><text x="300" y="78">3</text><text x="340" y="78">4</text>
+  </g>
+  <circle cx="320" cy="55" r="5" fill="#1d6fd1"/>
+  <path d="M320,44 Q310,28 300,44" fill="none" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="300,46 296,37 305,39" fill="#1d6fd1"/>
+  <text x="320" y="22" font-size="11" text-anchor="middle" fill="#1d6fd1">3.5 to 3</text>
+  <circle cx="40" cy="55" r="5" fill="#b4232c"/>
+  <path d="M40,44 Q30,28 20,44" fill="none" stroke="#b4232c" stroke-width="2"/>
+  <polygon points="20,46 16,37 25,39" fill="#b4232c"/>
+  <text x="44" y="22" font-size="11" text-anchor="middle" fill="#b4232c">-3.5 to -4</text>
+  <text x="180" y="102" font-size="12" text-anchor="middle" fill="#1f2a44">// always moves left, to the floor</text>
+</svg>
+\`\`\`
+:::
+
+::: context mission-clock How mission clocks use // and %
+During a launch, controllers watch **mission elapsed time**: the time since lift-off, shown in hours, minutes and seconds. The computer counts plain seconds, so software has to turn a count like 7384 seconds into a readable time. Whole-number division by 3600 (the seconds in an hour) gives the hours: \`7384 // 3600\` is \`2\`. The remainder, \`7384 % 3600\`, is \`184\` seconds, and splitting that the same way with 60 gives \`3\` minutes and \`4\` seconds. So 7384 seconds is 2 hours, 3 minutes and 4 seconds.
+:::
+
+::: context powers-of-two Why 1024 keeps turning up
+Computers store everything as bits, and a bit is a tiny switch that is either off or on: two choices. With 10 switches you can make \`2 ** 10\` different patterns, which is 1024. That is why memory sizes are so often powers of two. The number 1024 is close to 1000, which is why it has long been nicknamed a "kilo" in computing, even though a true kilo is exactly 1000.
+:::
+--- task
+Practice all three new operators.
+
+1. A test burn lasted \`200\` minutes. Set \`hours\` to the whole number of hours in 200 minutes, using \`200 // 60\`.
+2. Set \`minutes\` to the minutes left over, using \`200 % 60\`.
+3. A square solar panel has sides \`3\` meters long. Set \`area\` to its area, using \`3 ** 2\`.
+4. Print \`hours\` and \`minutes\` on one line with one \`print\`, then print \`area\` on the next line.
+
+The output should be:
+
+\`\`\`
+3 20
+9
+\`\`\`
+--- starter
+hours = 0
+minutes = 0
+area = 0
+print(hours, minutes)
+print(area)
+--- solution
+hours = 200 // 60
+minutes = 200 % 60
+area = 3 ** 2
+print(hours, minutes)
+print(area)
+--- hint
+Each of the first three lines gets the sum from the task on its right-hand side, in place of the \`0\`.
+--- hint
+\`//\` is whole-number division, \`%\` is the remainder, and \`**\` is "to the power of". So \`hours = 200 // 60\`.
+--- hint
+The three lines are \`hours = 200 // 60\`, \`minutes = 200 % 60\` and \`area = 3 ** 2\`. Leave the two print lines as they are.
+--- check test | hours and minutes are 3 and 20
+hours == 3 and minutes == 20
+?? 200 // 60 is 3 and 200 % 60 is 20.
+--- check test | area is 9
+area == 9
+--- check source | Uses whole-number division
+//
+--- check source | Uses the remainder operator
+%
+--- check source | Uses ** for the power
+\\*\\*
+?? Write 3 ** 2, with two stars.
+--- check output | Prints the hours and minutes, then the area
+3 20
+9
+
++++ practice | Burn time in minutes and seconds
+--- task
+An engine burn lasted \`437\` seconds.
+
+1. Set \`burn_s\` to \`437\`.
+2. Set \`minutes\` to the whole minutes in \`burn_s\`, using \`//\` and \`60\`.
+3. Set \`seconds\` to the seconds left over, using \`%\` and \`60\`.
+4. Print \`minutes\` and \`seconds\` on one line, with one \`print\`.
+
+The output should be:
+
+\`\`\`
+7 17
+\`\`\`
+--- starter
+burn_s = 437
+
+--- solution
+burn_s = 437
+minutes = burn_s // 60
+seconds = burn_s % 60
+print(minutes, seconds)
+--- hint
+\`//\` gives the whole number of times 60 fits into the seconds. \`%\` gives what is left over.
+--- hint
+\`minutes = burn_s // 60\` and \`seconds = burn_s % 60\`. Use the name \`burn_s\`, not the number.
+--- check test | minutes is 7 and seconds is 17
+minutes == 7 and seconds == 17
+?? 7 times 60 is 420, and 437 - 420 leaves 17.
+--- check source | Uses // and % on burn_s
+burn_s\\s*//\\s*60[\\s\\S]*burn_s\\s*%\\s*60|burn_s\\s*%\\s*60[\\s\\S]*burn_s\\s*//\\s*60
+--- check output | Prints 7 17
+7 17
+
++++ practice | Taking a number apart
+--- task
+\`// 10\` and \`% 10\` split a whole number into its digits. For example, \`% 10\` gives the last digit, and \`// 10\` drops the last digit.
+
+The starter sets \`code = 4071\`.
+
+1. Set \`last_digit\` to the last digit of \`code\`.
+2. Set \`rest\` to \`code\` with its last digit dropped.
+3. Set \`tens_digit\` to the second digit from the right. Drop the last digit first, then take the last digit of what is left, in one line.
+4. Print \`last_digit\`, \`rest\` and \`tens_digit\` on one line, with one \`print\`.
+
+The output should be:
+
+\`\`\`
+1 407 7
+\`\`\`
+--- starter
+code = 4071
+
+--- solution
+code = 4071
+last_digit = code % 10
+rest = code // 10
+tens_digit = code // 10 % 10
+print(last_digit, rest, tens_digit)
+--- hint
+4071 divided by 10 is 407 with 1 left over. So \`% 10\` gives 1 and \`// 10\` gives 407.
+--- hint
+For the tens digit, take \`code // 10\`, which is 407, then take \`% 10\` of that. Python works from left to right: \`code // 10 % 10\`.
+--- check test | last_digit is 1 and rest is 407
+last_digit == 1 and rest == 407
+--- check test | tens_digit is 7
+tens_digit == 7
+?? 4071 // 10 is 407, and 407 % 10 is 7.
+--- check source | Uses both operators on code
+code\\s*%\\s*10[\\s\\S]*code\\s*//\\s*10|code\\s*//\\s*10[\\s\\S]*code\\s*%\\s*10
+--- check output | Prints the three parts
+1 407 7
+
++++ practice | A mission clock
+--- task
+A mission has been running for \`45296\` seconds. Turn that into hours, minutes and seconds.
+
+An hour has \`3600\` seconds and a minute has \`60\`.
+
+1. Set \`elapsed_s\` to \`45296\`.
+2. Set \`hours\` to the whole hours in \`elapsed_s\`.
+3. Set \`minutes\` to the whole minutes in what is left after the hours.
+4. Set \`seconds\` to the seconds left after the minutes.
+5. Print one line with one \`print\`: \`hours\`, the text \`"h"\`, \`minutes\`, the text \`"min"\`, \`seconds\`, the text \`"s"\`.
+
+The output should be:
+
+\`\`\`
+12 h 34 min 56 s
+\`\`\`
+
+Every number must be worked out from \`elapsed_s\`.
+--- starter
+elapsed_s = 45296
+
+--- solution
+elapsed_s = 45296
+hours = elapsed_s // 3600
+minutes = elapsed_s % 3600 // 60
+seconds = elapsed_s % 60
+print(hours, "h", minutes, "min", seconds, "s")
+--- hint
+Hours come first: \`elapsed_s // 3600\`. What is left after the hours is \`elapsed_s % 3600\`.
+--- hint
+Split the leftover the same way with 60: \`elapsed_s % 3600 // 60\` gives the minutes. The seconds are what is left after every whole minute: \`elapsed_s % 60\`.
+--- check test | hours, minutes and seconds are 12, 34 and 56
+hours == 12 and minutes == 34 and seconds == 56
+--- check source | Works from elapsed_s
+elapsed_s\\s*//\\s*3600
+--- check source absent | Does not type the answers in
+print\\(\\s*12
+--- check output | Prints the time
+12 h 34 min 56 s
+
++++ practice | When nothing is left over
+--- task
+Set each of these variables with the operator named, on the numbers given. Before you run it, guess each answer.
+
+1. \`per_team\` is \`12\` whole-number divided by \`4\`, and \`left_over\` is the remainder of \`12\` divided by \`4\`.
+2. \`per_team_small\` is \`3\` whole-number divided by \`4\`, and \`left_small\` is the remainder of \`3\` divided by \`4\`.
+3. \`floor_neg\` is \`-7\` whole-number divided by \`2\`.
+4. \`half_float\` is \`7.0\` whole-number divided by \`2\`.
+5. \`power_zero\` is \`5\` to the power of \`0\`.
+
+Print all seven on one line, with one \`print\`, in the order listed. The output should be:
+
+\`\`\`
+3 0 0 3 -4 3.0 1
+\`\`\`
+--- starter
+# Seven variables, then one print.
+
+--- solution
+per_team = 12 // 4
+left_over = 12 % 4
+per_team_small = 3 // 4
+left_small = 3 % 4
+floor_neg = -7 // 2
+half_float = 7.0 // 2
+power_zero = 5 ** 0
+print(per_team, left_over, per_team_small, left_small, floor_neg, half_float, power_zero)
+--- hint
+When 4 goes into 3 zero times, the whole-number answer is 0 and all 3 are left over.
+--- hint
+\`//\` always rounds down, towards the left of the number line, so -3.5 becomes -4. And a float in the sum, like \`7.0\`, gives a float answer.
+--- hint
+Any number to the power of 0 is 1.
+--- check test | 12 shared by 4 leaves nothing over
+per_team == 3 and left_over == 0
+--- check test | 3 shared by 4 gives 0 each, 3 left over
+per_team_small == 0 and left_small == 3
+--- check test | -7 // 2 is -4
+floor_neg == -4
+?? // rounds down: -3.5 goes down to -4, not up to -3.
+--- check test | 7.0 // 2 is the float 3.0
+half_float == 3 and type(half_float) is float
+--- check test | 5 ** 0 is 1
+power_zero == 1
+--- check output | Prints all seven
+3 0 0 3 -4 3.0 1
+
++++ practice | Fix the minutes
+--- task
+This program should turn \`135\` minutes into hours and minutes, and print:
+
+\`\`\`
+2 15
+\`\`\`
+
+It prints \`2 2\` instead. Fix the wrong line.
+--- starter
+total_min = 135
+hours = total_min // 60
+minutes = total_min // 60
+print(hours, minutes)
+--- solution
+total_min = 135
+hours = total_min // 60
+minutes = total_min % 60
+print(hours, minutes)
+--- hint
+The line for \`minutes\` looks exactly like the line for \`hours\`. Which operator gives what is left over?
+--- hint
+The minutes left over are the remainder: use \`%\`, not \`//\`.
+--- check test | minutes is 15
+minutes == 15 and hours == 2
+--- check source | Uses the remainder for minutes
+minutes\\s*=\\s*total_min\\s*%\\s*60
+--- check output | Prints 2 15
+2 15
+
++++ practice | How many records fit
+--- task
+A memory chip holds \`2\` to the power of \`16\` bytes. Each log record takes \`48\` bytes, and a kilobyte here is \`1024\` bytes.
+
+1. Set \`chip_bytes\` to 2 to the power of 16, using \`**\`.
+2. Set \`kilobytes\` to how many whole kilobytes the chip holds.
+3. Set \`records\` to how many whole records fit in the chip.
+4. Set \`spare_bytes\` to the bytes left over after those records.
+5. Print these three lines, using commas in each \`print\`:
+
+\`\`\`
+Chip: 65536 bytes = 64 KB
+Records: 1365
+Spare bytes: 16
+\`\`\`
+
+Every number must be worked out with the operators, not typed in.
+--- starter
+# Work out the four values, then print three lines.
+
+--- solution
+chip_bytes = 2 ** 16
+kilobytes = chip_bytes // 1024
+records = chip_bytes // 48
+spare_bytes = chip_bytes % 48
+print("Chip:", chip_bytes, "bytes =", kilobytes, "KB")
+print("Records:", records)
+print("Spare bytes:", spare_bytes)
+--- hint
+\`2 ** 16\` is 65536. Then use \`//\` to count what fits, and \`%\` for what is left.
+--- hint
+The first line hands \`print\` five values: \`"Chip:"\`, \`chip_bytes\`, \`"bytes ="\`, \`kilobytes\` and \`"KB"\`.
+--- check test | chip_bytes is 65536 and kilobytes is 64
+chip_bytes == 65536 and kilobytes == 64
+--- check test | records is 1365 and spare_bytes is 16
+records == 1365 and spare_bytes == 16
+?? 65536 // 48 is 1365, and 65536 % 48 is 16.
+--- check source | Uses ** for the power
+2\\s*\\*\\*\\s*16
+--- check output | Prints the three lines
+Chip: 65536 bytes = 64 KB
+Records: 1365
+Spare bytes: 16
+
+=== py-04 | Strings and f-strings
+--- teach
+Last lesson you made Python do arithmetic with numbers. This lesson is about text: how to tidy it up, measure it, search it, and build sentences out of your variables.
+
+Picture a name typed into a sign-up form. People add extra spaces by accident, or type in capitals, or mix big and small letters. Before a program can use that name, it needs a [[wash|cleaning-text]]. Python gives every string a set of tools for exactly that.
+
+### Methods: tools that come with a value
+
+You have already met a few **functions**. A function is a named command you run by putting round brackets after its name, like \`print(...)\`, \`type(...)\` and \`round(...)\`.
+
+A **[[method|method]]** is a function that belongs to a value and does a job on that value. You use it by writing the value, then a dot \`.\`, then the method's name, then round brackets \`()\`:
+
+\`\`\`python
+word = "Hello"
+print(word.upper())   # HELLO
+\`\`\`
+
+Read \`word.upper()\` out loud as "word dot upper". It means: take \`word\` and use its \`upper\` tool. The brackets at the end are what make the tool actually run, the same way the brackets after \`print\` make it print.
+
+### Changing capitals: lower and upper
+
+\`lower\` gives back the text with every letter small. \`upper\` gives it back with every letter a capital. Spaces and punctuation stay as they are.
+
+\`\`\`python
+s = "Hello World"
+print(s.lower())   # hello world
+print(s.upper())   # HELLO WORLD
+\`\`\`
+
+This is handy when people type the same thing in different ways. \`"ADA"\`, \`"Ada"\` and \`"ada"\` all become \`"ada"\` after \`.lower()\`, so your program can treat them as the same name.
+
+### Trimming spaces: strip
+
+\`strip\` removes the spaces at both ends of a string. It leaves the spaces in the middle alone.
+
+\`\`\`python
+s = "  Hello World  "
+print(s.strip())   # Hello World
+\`\`\`
+
+Spaces are invisible on the screen, so how can you be sure they went? The next tool lets you check.
+
+### Measuring: len
+
+\`len\`, short for "length", counts the **characters** in a string. A character is one letter, digit, space or punctuation mark. \`len\` is a plain function, like \`print\`, not a method: the string goes *inside* its brackets, not in front of a dot.
+
+\`\`\`python
+s = "  Hello World  "
+print(len(s))           # 15
+print(len(s.strip()))   # 11
+print(len(s.lower()))   # 15
+\`\`\`
+
+Count it out. \`Hello World\` is 11 characters (the space in the middle counts). The original has 2 spaces in front and 2 behind, so 2 + 11 + 2 = 15. After \`strip\` the 4 end spaces are gone, which leaves 11. After \`lower\` the letters are small but all the spaces are still there, so it is still 15.
+
+### Searching: in
+
+The word \`in\` asks a yes-or-no question: "is this piece of text somewhere inside that one?" The answer is \`True\` or \`False\`, the \`bool\` type from Lesson 2.
+
+\`\`\`python
+s = "  Hello World  "
+print("World" in s)   # True
+print("world" in s)   # False
+\`\`\`
+
+The second answer is \`False\` because Python is **[[case-sensitive|case-sensitive]]**: a capital \`W\` and a small \`w\` are different characters to it.
+
+### Chaining: one tool after another
+
+Every string method hands back a new string. So you can put another dot and another method straight after the first one. This is called **[[chaining|chaining]]**, and Python does the steps from left to right.
+
+\`\`\`python
+raw = "  HeLLo World  "
+print(raw.strip().lower())   # hello world
+\`\`\`
+
+Step by step: \`raw.strip()\` gives \`"HeLLo World"\`. Then \`.lower()\` works on that and gives \`"hello world"\`.
+
+**Watch out:** a method does not change the string you used it on. It hands back a [[changed copy|immutable]]. So a line like \`name.strip()\` on its own does nothing useful: the tidy copy is made and then thrown away. To keep it, store it in a variable with \`=\`:
+
+\`\`\`python
+name = "  Ada  "
+name.strip()          # tidy copy made, then lost
+print(len(name))      # 7   (name still has its spaces)
+clean = name.strip()  # tidy copy kept in clean
+print(len(clean))     # 3
+\`\`\`
+
+### f-strings: sentences with blanks to fill
+
+In Lesson 1 you printed several values with commas, like \`print("Fuel:", 98, "percent")\`. Python puts a space between each value. Sometimes you do not want that space, for example when a bracket should hug a number, as in \`(3 new)\`.
+
+Think of a form letter: "Dear ___, you have ___ new messages." An **[[f-string|f-string-name]]** is a string with blanks like that, which Python fills in for you. You make one in two steps:
+
+1. Put the letter \`f\` right in front of the opening quote.
+2. Inside the text, put a variable's name in **curly braces** \`{ }\` wherever you want its value.
+
+\`\`\`python
+name = "Ada"
+count = 3
+print(f"{name} has {count} new messages")   # Ada has 3 new messages
+print(f"({count} new)")                     # (3 new)
+\`\`\`
+
+In the second line, the round brackets are outside the curly braces, so they are ordinary text and get printed as they are. Only what is inside \`{ }\` gets swapped for a value.
+
+Careful: if you forget the \`f\`, Python prints the braces as plain text. \`print("{name} has mail")\` prints \`{name} has mail\`.
+
+### Anything can go inside the braces
+
+The braces can hold more than a variable name. They can hold any **[[expression|expression]]**, which means any piece of code that works out to a value: arithmetic from last lesson, a method, or \`len\`.
+
+\`\`\`python
+name = "Ada"
+count = 3
+print(f"{count * 2} messages")            # 6 messages
+print(f"Hi {name.upper()}")               # Hi ADA
+print(f"{name} is {len(name)} letters")   # Ada is 3 letters
+\`\`\`
+
+Here \`*\` is "times", from last lesson. Python works out each expression first, then drops the answer into the sentence.
+
+::: context cleaning-text Why programs clean text first
+To a computer, \`"ARM"\` and \`"ARM "\` (with a space on the end) are two different strings. If a program is waiting for the word \`ARM\` and gets the second one, it will not recognize it. So programs that read typed text almost always clean it first: trim the spaces, then turn everything into one case. Engineers call this **normalizing** the input. It is one of the first things any program that talks to people does.
+:::
+
+::: context method Functions and methods
+A **function** is a named, ready-made piece of work you can run: \`print\`, \`type\`, \`round\` and \`len\` are all functions. You give it values inside the brackets and it does its job.
+
+A **method** is a function that lives on a value. Strings carry \`upper\`, \`lower\` and \`strip\`. Later you will see that lists have their own methods too, and in Lesson 8 you will write functions of your own. The dot is the sign: \`value.method()\` means "use this value's own tool".
+:::
+
+::: context case-sensitive Big and small letters are different characters
+"Case" is an old printing word. Printers kept capital letters in the upper case (a wooden tray) and small letters in the lower case, which is where \`upper\` and \`lower\` get their names. Inside the computer, every character is stored as a number, and \`A\` gets a different number from \`a\`. So \`"World" in s\` and \`"world" in s\` are really two different questions. If you want a search that ignores capitals, turn both strings to \`.lower()\` first.
+:::
+
+::: context chaining Reading a chain left to right
+A chain works like a little factory line. The string goes in on the left, each method does one job, and passes its result to the next.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <rect x="4" y="44" width="100" height="36" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="54" y="67" font-size="11" text-anchor="middle" fill="#1f2a44">"  HeLLo World  "</text>
+  <rect x="130" y="44" width="100" height="36" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="180" y="67" font-size="12" text-anchor="middle" fill="#1f2a44">"HeLLo World"</text>
+  <rect x="256" y="44" width="100" height="36" rx="6" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="306" y="67" font-size="12" text-anchor="middle" fill="#1f2a44">"hello world"</text>
+  <line x1="104" y1="62" x2="124" y2="62" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="130,62 122,57 122,67" fill="#1d6fd1"/>
+  <line x1="230" y1="62" x2="250" y2="62" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="256,62 248,57 248,67" fill="#1d6fd1"/>
+  <text x="117" y="32" font-size="12" text-anchor="middle" fill="#1d6fd1">.strip()</text>
+  <text x="243" y="32" font-size="12" text-anchor="middle" fill="#1d6fd1">.lower()</text>
+  <text x="54" y="104" font-size="11" text-anchor="middle" fill="#6c7a93">raw</text>
+  <text x="306" y="104" font-size="11" text-anchor="middle" fill="#6c7a93">result</text>
+</svg>
+\`\`\`
+
+The order can matter. Here it does not, but with other methods it will, so read a chain in the order Python runs it: left to right.
+:::
+
+::: context immutable Strings never change
+Python strings are **immutable**, a word that means "cannot be changed". Once a string exists, no method can edit it. \`strip\`, \`lower\` and \`upper\` all build a brand-new string and hand it back. That is why you have to catch the result with \`=\`. It is also safe: if two variables hold the same string, tidying one can never mess up the other. In Lesson 6 you will meet lists, which *can* be changed in place, and the difference will matter.
+:::
+
+::: context f-string-name What the f stands for
+The \`f\` stands for "formatted". The full name is a *formatted string literal*, but everyone says f-string. They were added in Python 3.6, released in 2016. Before that, programmers glued text together in clumsier ways, and you will still see those in older code. Today f-strings are the usual way to build a message out of values, from a greeting to a line in a log file.
+:::
+
+::: context expression Expressions work out to a value
+An **expression** is any bit of code that Python can work out to one value. \`3\` is an expression. So is \`count * 2\`, and \`name.upper()\`, and \`len(name)\`. A line like \`count = 3\` is not an expression; it is an instruction that stores a value. The rule for braces is: if you could put it on the right of an \`=\`, you can put it inside \`{ }\`.
+:::
+--- task
+The starter has a messy user name in \`raw\`: \`"   Ada Lovelace  "\`, with spaces at both ends.
+
+1. Change the line \`clean = raw\` so that \`clean\` holds \`raw\` with its end spaces stripped **and** turned to lowercase. Chain \`strip\` and \`lower\`.
+2. Change the \`print\` line so it uses an f-string to print exactly:
+
+\`\`\`
+user: ada lovelace (12 characters)
+\`\`\`
+
+The name must come from \`{clean}\` and the number from \`{len(clean)}\`. Do not type the name or the 12 in yourself.
+--- starter
+raw = "   Ada Lovelace  "
+clean = raw
+print(clean)
+--- solution
+raw = "   Ada Lovelace  "
+clean = raw.strip().lower()
+print(f"user: {clean} ({len(clean)} characters)")
+--- hint
+Two ideas from the lesson: chaining methods for \`clean\`, and an f-string for the \`print\`. Do \`clean\` first.
+--- hint
+Methods can be chained: \`clean = raw.strip().lower()\`. The print starts \`print(f"user: {clean} (\` and goes on from there.
+--- hint
+The whole sentence is one f-string: the text \`user: \`, then \`{clean}\`, then a space and a round bracket \`(\`, then \`{len(clean)}\`, then \` characters)\`. The round brackets outside the braces are plain text; the ones in \`len(clean)\` belong to \`len\`.
+--- check case | clean is stripped and lowercased
+clean
+=> "ada lovelace"
+--- check source | Uses an f-string
+f"|f'
+--- check output | Prints the sentence
+user: ada lovelace (12 characters)
+
++++ practice | A clean call sign
+--- task
+The starter has a call sign typed with extra spaces: \`raw = "  kestrel seven "\`.
+
+1. Set \`call_sign\` to \`raw\` with its end spaces stripped **and** turned into capitals. Chain \`strip\` and \`upper\`.
+2. Print it with an f-string, so the output is exactly:
+
+\`\`\`
+Call sign: KESTREL SEVEN
+\`\`\`
+--- starter
+raw = "  kestrel seven "
+
+--- solution
+raw = "  kestrel seven "
+call_sign = raw.strip().upper()
+print(f"Call sign: {call_sign}")
+--- hint
+Chain the two methods with dots, left to right: first \`.strip()\`, then \`.upper()\`.
+--- hint
+An f-string has an \`f\` before the opening quote, and the variable's name goes inside curly braces \`{ }\`.
+--- check case | call_sign is stripped and in capitals
+call_sign
+=> "KESTREL SEVEN"
+--- check source | Uses an f-string
+f"|f'
+--- check output | Prints the call sign line
+Call sign: KESTREL SEVEN
+
++++ practice | Does the log mention a fault?
+--- task
+The starter has one line from a flight log in \`log\`.
+
+1. Set \`has_fault\` to \`True\` or \`False\`: does the word \`fault\` appear anywhere in \`log\`, whatever its capitals? Turn \`log\` into small letters with \`lower\` before you search it with \`in\`.
+2. Set \`length\` to the number of characters in \`log\`, using \`len\`.
+3. Print one f-string, so the output is exactly:
+
+\`\`\`
+fault: True, 42 characters
+\`\`\`
+
+The \`True\` must come from \`{has_fault}\` and the \`42\` from \`{length}\`.
+--- starter
+log = "Stage 1 nominal. Stage 2 FAULT in valve B."
+
+--- solution
+log = "Stage 1 nominal. Stage 2 FAULT in valve B."
+has_fault = "fault" in log.lower()
+length = len(log)
+print(f"fault: {has_fault}, {length} characters")
+--- hint
+\`"fault" in log\` is \`False\` here, because the log says \`FAULT\` in capitals. Search the lowercase copy instead.
+--- hint
+\`log.lower()\` gives the small-letter copy, so the search is \`"fault" in log.lower()\`.
+--- hint
+The f-string is \`f"fault: {has_fault}, {length} characters"\`.
+--- check case | has_fault is True, whatever the capitals
+has_fault
+=> True
+?? The log says FAULT in capitals. Search log.lower() instead of log.
+--- check test | length is the number of characters in log
+length == 42
+--- check source | Searches with in
+\\bin\\s+log
+--- check output | Prints the line
+fault: True, 42 characters
+
++++ practice | A cargo label
+--- task
+The starter sets \`item = "oxygen tank"\`, \`count = 3\` and \`mass_kg = 12.5\`. The cargo limit is \`250\` kilograms.
+
+1. Set \`total_kg\` to \`count\` times \`mass_kg\`.
+2. Print two lines, each with one f-string. Work the numbers out inside the braces; do not type them in:
+
+\`\`\`
+3 x OXYGEN TANK = 37.5 kg
+15.0% of the limit
+\`\`\`
+
+- Line 1 shows the count, the item in capitals, and \`total_kg\`, with the spaces, the \`x\`, the \`=\` and the \`kg\` exactly as above.
+- Line 2 shows \`total_kg\` divided by 250, times 100, rounded with \`round\` to 1 digit after the decimal point, followed by \`% of the limit\`.
+--- starter
+item = "oxygen tank"
+count = 3
+mass_kg = 12.5
+
+--- solution
+item = "oxygen tank"
+count = 3
+mass_kg = 12.5
+total_kg = count * mass_kg
+print(f"{count} x {item.upper()} = {total_kg} kg")
+print(f"{round(total_kg / 250 * 100, 1)}% of the limit")
+--- hint
+Anything that works out to a value can go inside the braces: a variable, a method like \`item.upper()\`, or a sum.
+--- hint
+For line 2, the braces hold \`round(total_kg / 250 * 100, 1)\`. The \`%\` sign after the braces is plain text.
+--- check output | Prints both lines
+3 x OXYGEN TANK = 37.5 kg
+15.0% of the limit
+--- check test | total_kg is 37.5
+total_kg == 37.5
+--- check source | Works out total_kg from the variables
+total_kg\\s*=\\s*count\\s*\\*\\s*mass_kg
+--- check source absent | Does not type 37.5 in
+37\\.5
+--- check source | Uses f-strings
+f"|f'
+
++++ practice | Blank and nearly blank
+--- task
+The starter has three raw values: \`a\` holds only spaces, \`b\` has spaces at both ends **and** two spaces in the middle, and \`c\` is the empty string.
+
+1. Set \`a_clean\`, \`b_clean\` and \`c_clean\` to each one stripped and turned into small letters.
+2. Print one line for each with an f-string: the clean text between square brackets, a space, then its length. The output should be exactly:
+
+\`\`\`
+[] 0
+[mars  base] 10
+[] 0
+\`\`\`
+
+Notice that \`strip\` only removes spaces at the ends, so the two spaces in the middle of \`mars  base\` stay.
+--- starter
+a = "   "
+b = "  Mars  Base "
+c = ""
+
+--- solution
+a = "   "
+b = "  Mars  Base "
+c = ""
+a_clean = a.strip().lower()
+b_clean = b.strip().lower()
+c_clean = c.strip().lower()
+print(f"[{a_clean}] {len(a_clean)}")
+print(f"[{b_clean}] {len(b_clean)}")
+print(f"[{c_clean}] {len(c_clean)}")
+--- hint
+\`strip\` on a string of only spaces leaves the empty string, which has length 0. So does \`strip\` on an empty string.
+--- hint
+The square brackets sit outside the curly braces, so they are printed as they are: \`f"[{a_clean}] {len(a_clean)}"\`.
+--- check case | a_clean is empty
+a_clean
+=> ""
+--- check case | b_clean keeps the middle spaces
+b_clean
+=> "mars  base"
+?? strip removes spaces at the ends only.
+--- check case | c_clean is empty
+c_clean
+=> ""
+--- check output | Prints each clean value and its length
+[] 0
+[mars  base] 10
+[] 0
+
++++ practice | Fix the message
+--- task
+This program should print:
+
+\`\`\`
+Grace Hopper has 12 characters
+\`\`\`
+
+It prints \`{name} has {len(name)} characters\` instead. There are two mistakes: the tidy copy of \`name\` is never kept, and \`message\` is not an f-string. Fix both, and keep the lines \`message = ...\` and \`print(message)\`.
+--- starter
+name = "  Grace Hopper "
+name.strip()
+message = "{name} has {len(name)} characters"
+print(message)
+--- solution
+name = "  Grace Hopper "
+name = name.strip()
+message = f"{name} has {len(name)} characters"
+print(message)
+--- hint
+\`name.strip()\` on its own line makes a tidy copy and then throws it away. Catch it with \`=\`.
+--- hint
+Without an \`f\` in front of the quote, Python prints the curly braces as plain text.
+--- hint
+The two fixed lines are \`name = name.strip()\` and \`message = f"{name} has {len(name)} characters"\`.
+--- check case | name has lost its end spaces
+name
+=> "Grace Hopper"
+--- check case | message is filled in
+message
+=> "Grace Hopper has 12 characters"
+--- check output | Prints the sentence
+Grace Hopper has 12 characters
+
++++ practice | A log line from messy input
+--- task
+Two values were typed in a hurry: \`mission = "  orion pathfinder "\` and \`event = "  Lunar Flyby "\`. The starter also sets \`day = 4\`.
+
+1. Set \`mission_clean\` to \`mission\` stripped and in capitals.
+2. Set \`event_clean\` to \`event\` stripped and in small letters.
+3. Set \`line\` to one f-string built from \`day\`, \`mission_clean\`, \`event_clean\` and the length of \`event_clean\`, so that it holds exactly:
+
+\`\`\`
+[DAY 4] ORION PATHFINDER: lunar flyby (11 chars)
+\`\`\`
+
+4. Set \`is_flyby\` to whether the text \`flyby\` is in \`event_clean\`.
+5. Print \`line\`, then print an f-string for \`is_flyby\`, so the whole output is:
+
+\`\`\`
+[DAY 4] ORION PATHFINDER: lunar flyby (11 chars)
+flyby: True
+\`\`\`
+--- starter
+mission = "  orion pathfinder "
+event = "  Lunar Flyby "
+day = 4
+
+--- solution
+mission = "  orion pathfinder "
+event = "  Lunar Flyby "
+day = 4
+mission_clean = mission.strip().upper()
+event_clean = event.strip().lower()
+line = f"[DAY {day}] {mission_clean}: {event_clean} ({len(event_clean)} chars)"
+is_flyby = "flyby" in event_clean
+print(line)
+print(f"flyby: {is_flyby}")
+--- hint
+Clean each value first, with a chain of two methods. Then build \`line\` from the clean values.
+--- hint
+In the f-string, square and round brackets outside the curly braces are plain text. \`{len(event_clean)}\` gives the 11.
+--- hint
+\`is_flyby = "flyby" in event_clean\` gives \`True\` or \`False\`.
+--- check case | mission_clean is stripped and in capitals
+mission_clean
+=> "ORION PATHFINDER"
+--- check case | event_clean is stripped and in small letters
+event_clean
+=> "lunar flyby"
+--- check case | line holds the whole log line
+line
+=> "[DAY 4] ORION PATHFINDER: lunar flyby (11 chars)"
+--- check case | is_flyby is True
+is_flyby
+=> True
+--- check output | Prints both lines
+[DAY 4] ORION PATHFINDER: lunar flyby (11 chars)
+flyby: True
+
+=== py-05 | Making decisions
+--- teach
+Last lesson you tidied, measured and searched text. In every program so far, each line runs, top to bottom, every single time. Real programs need to choose. A heater thinks: *if* the room is too cold, turn on; *otherwise*, stay off. This lesson teaches your program to [[choose which lines to run|branching]].
+
+### Asking a yes-or-no question: comparisons
+
+A **comparison** asks a question whose answer is \`True\` or \`False\`, the [[bool type|boolean]] from Lesson 2.
+
+\`\`\`python
+temperature = 31
+print(temperature > 30)   # True
+print(temperature < 30)   # False
+\`\`\`
+
+Python has six comparison signs. Here they are with how to read each one out loud:
+
+| Sign | Say it as | Example | Answer |
+|---|---|---|---|
+| \`==\` | "is equal to" | \`5 == 5\` | \`True\` |
+| \`!=\` | "is not equal to" | \`5 != 5\` | \`False\` |
+| \`<\` | "is less than" | \`3 < 5\` | \`True\` |
+| \`<=\` | "is less than or equal to" | \`5 <= 5\` | \`True\` |
+| \`>\` | "is greater than" | \`3 > 5\` | \`False\` |
+| \`>=\` | "is greater than or equal to" | \`70 >= 70\` | \`True\` |
+
+In \`!=\` the \`!\` means "not". \`>=\` is the one to use for "or more" and "at least": a score of 70 *or more* is \`score >= 70\`.
+
+Comparisons work on strings too, and capitals still count, as you saw last lesson:
+
+\`\`\`python
+print("ada" == "ada")   # True
+print("Ada" == "ada")   # False
+\`\`\`
+
+**Watch out:** one \`=\` and two \`==\` are different. A single \`=\` **assigns**: it puts a value into a variable, as in \`score = 70\`. A double \`==\` **compares**: it asks "are these equal?". Mixing them up is the most common beginner mistake. If you write \`if score = 70:\`, Python stops with a \`SyntaxError\` and asks "Maybe you meant '=='". Read it as a [[friendly nudge|assign-vs-compare]].
+
+### if: run some lines only when the answer is True
+
+An \`if\` has four parts:
+
+1. the word \`if\`;
+2. a **condition**, which is a question with a \`True\` or \`False\` answer;
+3. a colon \`:\` at the end of the line;
+4. a **block**: the lines underneath that are pushed in by 4 spaces. They run only when the condition is \`True\`.
+
+\`\`\`python
+temperature = 31
+if temperature > 30:
+    print("hot")
+print("done")
+# hot
+# done
+\`\`\`
+
+The line \`print("done")\` is not pushed in, so it is not part of the block. It runs every time. If you change \`temperature\` to \`20\`, the condition is \`False\`, Python skips the block, and the output is only \`done\`.
+
+Pushing lines in like this is called **[[indentation|indentation]]**. Python uses it to see which lines belong to the \`if\`.
+
+**Watch out:** if you forget to push the block in, Python stops with \`IndentationError: expected an indented block\`. Use 4 spaces for every line of the block.
+
+### else: the other road
+
+\`else\` means "otherwise". Its block runs when the \`if\` condition was \`False\`. It has no condition of its own, only a colon.
+
+\`\`\`python
+temperature = 20
+if temperature > 30:
+    print("hot")
+else:
+    print("not hot")
+# not hot
+\`\`\`
+
+Exactly one of the two blocks runs, never both, never neither.
+
+### elif: more than two roads
+
+\`elif\` is short for **[["else if"|elif-name]]**. It adds another question, which Python asks only if every question above it was \`False\`.
+
+\`\`\`python
+temperature = 31
+if temperature > 30:
+    print("hot")
+elif temperature > 15:
+    print("mild")
+else:
+    print("cold")
+# hot
+\`\`\`
+
+Python checks from the top and stops at the **first** \`True\`. With \`31\`, the first question is \`True\`, so it prints \`hot\` and skips the rest, even though \`31 > 15\` is also true. With \`20\`, the first question is \`False\`, the second is \`True\`: \`mild\`. With \`5\`, both are \`False\`, so the \`else\` runs: \`cold\`.
+
+That is why the order matters: check the highest band first.
+
+### Choosing what a variable holds
+
+A block can do more than print. It can set a variable. Then you print it once, at the end, after the \`if\` is finished:
+
+\`\`\`python
+fuel = 40
+status = ""
+if fuel >= 50:
+    status = "full enough"
+else:
+    status = "refuel"
+print(status)   # refuel
+\`\`\`
+
+\`""\` (two quotes with nothing between them) is an **empty string**: a string with no characters in it. Here it is a placeholder, and the \`if\` puts the real answer in.
+
+### Combining questions: and, or, not
+
+Sometimes one question is not enough. Three words let you [[combine them|and-or-not]]:
+
+- \`and\` is \`True\` only when **both** sides are \`True\`.
+- \`or\` is \`True\` when **at least one** side is \`True\`.
+- \`not\` flips the answer: \`not True\` is \`False\`.
+
+\`\`\`python
+print(5 > 3 and 2 > 4)   # False  (the second part is False)
+print(5 > 3 or 2 > 4)    # True   (the first part is True)
+print(not True)          # False
+\`\`\`
+
+In an \`if\` they read almost like English:
+
+\`\`\`python
+temperature = 22
+raining = False
+if temperature >= 15 and not raining:
+    print("go outside")   # go outside
+\`\`\`
+
+Engineers use exactly this kind of check to decide whether a [[launch can go ahead|go-no-go]].
+
+::: context branching Programs that choose
+Up to now your programs ran like a train on one straight track. An \`if\` adds a **branch**: a fork where the program takes one road or the other. Here is the \`temperature\` example as a map.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="12" width="170" height="34" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="95" y="34" font-size="12" text-anchor="middle" fill="#1f2a44">temperature &gt; 30 ?</text>
+  <rect x="250" y="12" width="100" height="34" rx="6" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="300" y="34" font-size="12" text-anchor="middle" fill="#1f2a44">print "hot"</text>
+  <line x1="180" y1="29" x2="242" y2="29" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="250,29 241,24 241,34" fill="#1d6fd1"/>
+  <text x="214" y="22" font-size="11" text-anchor="middle" fill="#1d6fd1">True</text>
+  <rect x="10" y="84" width="170" height="34" rx="6" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <text x="95" y="106" font-size="12" text-anchor="middle" fill="#1f2a44">temperature &gt; 15 ?</text>
+  <rect x="250" y="84" width="100" height="34" rx="6" fill="#8fb8f0" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="300" y="106" font-size="12" text-anchor="middle" fill="#1f2a44">print "mild"</text>
+  <line x1="180" y1="101" x2="242" y2="101" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="250,101 241,96 241,106" fill="#1d6fd1"/>
+  <text x="214" y="94" font-size="11" text-anchor="middle" fill="#1d6fd1">True</text>
+  <line x1="95" y1="46" x2="95" y2="76" stroke="#b4232c" stroke-width="2"/>
+  <polygon points="95,84 90,75 100,75" fill="#b4232c"/>
+  <text x="104" y="66" font-size="11" fill="#b4232c">False</text>
+  <line x1="95" y1="118" x2="95" y2="148" stroke="#b4232c" stroke-width="2"/>
+  <polygon points="95,156 90,147 100,147" fill="#b4232c"/>
+  <text x="104" y="138" font-size="11" fill="#b4232c">False</text>
+  <rect x="45" y="156" width="100" height="34" rx="6" fill="#f2b880" stroke="#1f2a44" stroke-width="2"/>
+  <text x="95" y="178" font-size="12" text-anchor="middle" fill="#1f2a44">print "cold"</text>
+</svg>
+\`\`\`
+
+Only one road is ever taken on each run.
+:::
+
+::: context boolean Named after George Boole
+The type \`bool\` is short for **Boolean**, named after George Boole, an English mathematician of the 1800s. He showed that "true" and "false" can be worked with like numbers, using rules for *and*, *or* and *not*. In the 1930s, engineers showed that his rules describe exactly how electric switches in a computer can be wired. Every \`if\` you write rests on his idea.
+:::
+
+::: context assign-vs-compare Why Python refuses if x = 5
+In some older languages, such as C, writing \`if (x = 5)\` is allowed. It quietly *stores* 5 in \`x\` and then carries on as if the answer were yes. That little slip has caused real bugs that were hard to find, because the program ran without complaint. Python's designers chose to make it an error, so the mistake is caught the moment you run the code. An error message that stops you is a helper, not a punishment.
+:::
+
+::: context indentation Indentation shows what belongs together
+Many languages, like C and JavaScript, mark a block with curly braces \`{ }\`, and the spaces are only for looks. Python uses the spaces themselves. The upside: the code always looks the way it runs. Python's official style guide asks for 4 spaces per level, and most code editors type 4 spaces for you when you press the Tab key. Blocks inside blocks get pushed in further, 8 spaces, then 12, and you will see that in the lesson on loops.
+:::
+
+::: context elif-name Why elif and not else if
+Python squeezes "else if" into one word, \`elif\`, to keep the code short and flat. You can have as many \`elif\` lines as you need between the \`if\` and the \`else\`, and the \`else\` at the end is optional. Without an \`else\`, if every question is \`False\`, no block runs at all. Think of \`elif\` as a list of questions asked in order, where the first "yes" wins.
+:::
+
+::: context and-or-not The and, or, not table
+Here is every possible answer, where \`a\` and \`b\` each stand for a condition that is \`True\` or \`False\`.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="8" width="340" height="26" fill="#8fb8f0"/>
+  <g font-size="12" text-anchor="middle" fill="#1f2a44">
+    <text x="55" y="26">a</text><text x="135" y="26">b</text><text x="220" y="26">a and b</text><text x="305" y="26">a or b</text>
+    <text x="55" y="52">True</text><text x="135" y="52">True</text><text x="220" y="52">True</text><text x="305" y="52">True</text>
+    <text x="55" y="78">True</text><text x="135" y="78">False</text><text x="305" y="78">True</text>
+    <text x="55" y="104">False</text><text x="135" y="104">True</text><text x="305" y="104">True</text>
+    <text x="55" y="130">False</text><text x="135" y="130">False</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#b4232c">
+    <text x="220" y="78">False</text><text x="220" y="104">False</text><text x="220" y="130">False</text><text x="305" y="130">False</text>
+  </g>
+  <line x1="10" y1="34" x2="350" y2="34" stroke="#1f2a44" stroke-width="1"/>
+  <line x1="175" y1="8" x2="175" y2="142" stroke="#6c7a93" stroke-width="1"/>
+  <rect x="10" y="8" width="340" height="134" fill="none" stroke="#1f2a44" stroke-width="1.5"/>
+</svg>
+\`\`\`
+
+\`and\` is fussy: it needs every part to be \`True\`. \`or\` is easygoing: any one \`True\` is enough.
+:::
+
+::: context go-no-go Go or no-go
+Before a launch, NASA teams check a written list of **launch commit criteria**: rules such as limits on wind and a ban on launching when lightning is too close. Each rule is a yes-or-no question, and the launch goes only if every one of them passes, which is a giant \`and\`. Flight software is full of the same pattern, testing sensor readings against limits with \`if\` and deciding what to do next.
+:::
+--- task
+The starter sets \`score = 64\` and \`label = ""\` (an empty string). Between those lines and \`print(label)\`, write an \`if\` / \`elif\` / \`else\` that sets \`label\` to:
+
+- \`"pass"\` if \`score\` is 70 or more
+- \`"close"\` if \`score\` is 60 to 69
+- \`"fail"\` otherwise (anything below 60)
+
+Keep \`print(label)\` as the last line. With \`score = 64\` it should print \`close\`. Your \`if\` must work for any score: try \`85\` and \`30\` to test it, then set it back to \`64\` before you run the checks.
+--- starter
+score = 64
+label = ""
+print(label)
+--- solution
+score = 64
+if score >= 70:
+    label = "pass"
+elif score >= 60:
+    label = "close"
+else:
+    label = "fail"
+print(label)
+--- hint
+Use the \`fuel\` example from the lesson, with three roads instead of two. "70 or more" is written with \`>=\`.
+--- hint
+Check the highest band first: \`if score >= 70:\`, then \`elif score >= 60:\`, then \`else:\`.
+--- hint
+Each of those three lines ends with a colon and has one line under it, pushed in by 4 spaces, like \`    label = "pass"\`. You do not need \`score < 70\` in the \`elif\`: Python only gets there if the first question was \`False\`.
+--- check output | Prints close for a score of 64
+close
+--- check source | Uses if / elif / else
+\\belif\\b
+?? Three outcomes need \`if\`, \`elif\` and \`else\`.
+--- check source | Uses else for everything below 60
+\\belse\\s*:
+--- check source | Sets "pass" when the score is 70 or more
+(score\\s*>=\\s*70|70\\s*<=\\s*score|score\\s*>\\s*69)[\\s\\S]*label\\s*=\\s*["']pass["']
+?? The first question is \`score >= 70\`, and under it \`label = "pass"\`.
+--- check source | Sets "close" when the score is 60 or more
+(score\\s*>=\\s*60|60\\s*<=\\s*score|score\\s*>\\s*59)[\\s\\S]*label\\s*=\\s*["']close["']
+?? The \`elif\` asks \`score >= 60\`, and under it \`label = "close"\`.
+--- check source | Sets "fail" for everything else
+\\belse\\s*:\\s*\\n\\s+label\\s*=\\s*["']fail["']
+?? Under \`else:\` goes \`label = "fail"\`.
+
++++ practice | Low battery warning
+--- task
+The starter sets \`battery_pct = 18\` and \`status = ""\`.
+
+Write an \`if\` / \`else\` that sets \`status\` to:
+
+- \`"LOW"\` if \`battery_pct\` is below 20,
+- \`"OK"\` otherwise.
+
+Then print this line with an f-string, after the \`if\` / \`else\`:
+
+\`\`\`
+Battery 18%: LOW
+\`\`\`
+
+The number and the word must come from \`battery_pct\` and \`status\`.
+--- starter
+battery_pct = 18
+status = ""
+
+--- solution
+battery_pct = 18
+status = ""
+if battery_pct < 20:
+    status = "LOW"
+else:
+    status = "OK"
+print(f"Battery {battery_pct}%: {status}")
+--- hint
+"Below 20" is \`battery_pct < 20\`. The \`if\` line ends with a colon, and the line under it is pushed in by 4 spaces.
+--- hint
+Each branch sets \`status\`. The \`print\` goes after the \`if\` / \`else\`, not pushed in, so it runs once.
+--- check case | status is LOW for 18%
+status
+=> "LOW"
+--- check source | Uses if and else
+\\bif\\b[\\s\\S]*\\belse\\s*:
+?? Let the program decide with if and else, rather than setting status to "LOW" directly.
+--- check output | Prints the battery line
+Battery 18%: LOW
+
++++ practice | Go or hold
+--- task
+The starter sets \`wind_kmh = 35\` and \`sky = "  Clear "\`, typed with extra spaces and a capital.
+
+Set \`decision\` to \`"GO"\` if **both** of these are true, and to \`"HOLD"\` otherwise:
+
+- \`wind_kmh\` is 40 or less;
+- \`sky\`, stripped and in small letters, is equal to \`"clear"\`.
+
+Use one \`if\` with \`and\`, and an \`else\`. Then print:
+
+\`\`\`
+Launch: GO
+\`\`\`
+--- starter
+wind_kmh = 35
+sky = "  Clear "
+
+--- solution
+wind_kmh = 35
+sky = "  Clear "
+if wind_kmh <= 40 and sky.strip().lower() == "clear":
+    decision = "GO"
+else:
+    decision = "HOLD"
+print(f"Launch: {decision}")
+--- hint
+"40 or less" is \`wind_kmh <= 40\`. \`==\` compares two values; a single \`=\` would store one.
+--- hint
+\`"  Clear " == "clear"\` is \`False\`. Clean \`sky\` first: \`sky.strip().lower() == "clear"\`.
+--- hint
+Join the two questions with \`and\`: the \`if\` line is \`if wind_kmh <= 40 and sky.strip().lower() == "clear":\`.
+--- check case | decision is GO
+decision
+=> "GO"
+?? Compare the cleaned sky: strip it and make it lowercase before comparing.
+--- check source | Uses and
+\\band\\b
+--- check source | Uses else
+\\belse\\s*:
+--- check output | Prints the decision
+Launch: GO
+
++++ practice | Grade an engine burn
+--- task
+A burn was planned for \`planned_s = 120\` seconds and lasted \`actual_s = 126\` seconds.
+
+1. Set \`error_pct\` to how far off the burn was, in percent: the actual minus the planned, divided by the planned, times 100.
+2. Set \`verdict\` with \`if\` / \`elif\` / \`else\`:
+   - \`"ABORT"\` if \`error_pct\` is more than 10, or less than -10;
+   - \`"CHECK"\` if \`error_pct\` is more than 2, or less than -2;
+   - \`"NOMINAL"\` otherwise.
+3. Print one f-string:
+
+\`\`\`
+Burn error 5.0%: CHECK
+\`\`\`
+--- starter
+planned_s = 120
+actual_s = 126
+
+--- solution
+planned_s = 120
+actual_s = 126
+error_pct = (actual_s - planned_s) / planned_s * 100
+if error_pct > 10 or error_pct < -10:
+    verdict = "ABORT"
+elif error_pct > 2 or error_pct < -2:
+    verdict = "CHECK"
+else:
+    verdict = "NOMINAL"
+print(f"Burn error {error_pct}%: {verdict}")
+--- hint
+The subtraction needs brackets: \`(actual_s - planned_s) / planned_s * 100\`.
+--- hint
+A burn that is too short gives a negative error, so each band checks both sides with \`or\`.
+--- hint
+Check the widest band first: \`if error_pct > 10 or error_pct < -10:\`, then \`elif error_pct > 2 or error_pct < -2:\`, then \`else:\`.
+--- check test | error_pct is 5.0
+error_pct == 5.0
+?? (126 - 120) / 120 * 100 is 5.0.
+--- check case | verdict is CHECK
+verdict
+=> "CHECK"
+--- check source | Uses elif and or
+\\belif\\b[^\\n]*\\bor\\b
+--- check output | Prints the verdict line
+Burn error 5.0%: CHECK
+
++++ practice | Leap years
+--- task
+A year is a **leap year** when it can be divided by 4 exactly, **except** years that can be divided by 100 exactly, which are not leap years, **unless** they can also be divided by 400 exactly.
+
+So 2024 is a leap year, 2100 is not, and 2000 is.
+
+The starter has three years. Set \`leap_a\`, \`leap_b\` and \`leap_c\` to \`True\` or \`False\` for \`year_a\`, \`year_b\` and \`year_c\`, using \`%\`, comparisons, \`and\`, \`or\` and \`not\`. Do not type \`True\` or \`False\` in yourself: work each one out from its year.
+
+Then print one line per year, with an f-string:
+
+\`\`\`
+2024 True
+2100 False
+2000 True
+\`\`\`
+--- starter
+year_a = 2024
+year_b = 2100
+year_c = 2000
+
+--- solution
+year_a = 2024
+year_b = 2100
+year_c = 2000
+leap_a = (year_a % 4 == 0 and year_a % 100 != 0) or year_a % 400 == 0
+leap_b = (year_b % 4 == 0 and year_b % 100 != 0) or year_b % 400 == 0
+leap_c = (year_c % 4 == 0 and year_c % 100 != 0) or year_c % 400 == 0
+print(f"{year_a} {leap_a}")
+print(f"{year_b} {leap_b}")
+print(f"{year_c} {leap_c}")
+--- hint
+"Divided by 4 exactly" means the remainder is zero: \`year_a % 4 == 0\`. "Not by 100" is \`year_a % 100 != 0\`.
+--- hint
+A leap year is: divisible by 4 and not by 100, **or** divisible by 400. Brackets keep the \`and\` part together.
+--- hint
+A comparison is already \`True\` or \`False\`, so you can store it straight away: \`leap_a = (year_a % 4 == 0 and year_a % 100 != 0) or year_a % 400 == 0\`.
+--- check case | 2024 is a leap year
+leap_a
+=> True
+--- check case | 2100 is not a leap year
+leap_b
+=> False
+?? 2100 divides by 100, and not by 400, so it is not a leap year.
+--- check case | 2000 is a leap year
+leap_c
+=> True
+?? 2000 divides by 400, so it is a leap year after all.
+--- check source absent | Works the answers out
+leap_[abc]\\s*=\\s*(True|False)\\s*$
+--- check output | Prints the three years
+2024 True
+2100 False
+2000 True
+
++++ practice | Fix the orbit bands
+--- task
+An orbit's height sorts it into a band:
+
+- above \`35786\` kilometers: \`"high orbit"\`
+- above \`2000\`, up to 35786: \`"medium orbit"\`
+- above \`160\`, up to 2000: \`"low orbit"\`
+- anything else: \`"not in orbit"\`
+
+The starter sets \`altitude_km = 20200\`, the height of a navigation satellite, so it should print \`20200 km: medium orbit\`. It prints \`20200 km: low orbit\` instead. Fix the order of the tests. Keep \`altitude_km = 20200\`.
+--- starter
+altitude_km = 20200
+if altitude_km > 160:
+    zone = "low orbit"
+elif altitude_km > 2000:
+    zone = "medium orbit"
+elif altitude_km > 35786:
+    zone = "high orbit"
+else:
+    zone = "not in orbit"
+print(altitude_km, "km:", zone)
+--- solution
+altitude_km = 20200
+if altitude_km > 35786:
+    zone = "high orbit"
+elif altitude_km > 2000:
+    zone = "medium orbit"
+elif altitude_km > 160:
+    zone = "low orbit"
+else:
+    zone = "not in orbit"
+print(altitude_km, "km:", zone)
+--- hint
+Python stops at the first test that is \`True\`. 20200 is more than 160, so the first test catches it.
+--- hint
+Test the highest band first, then the next one down.
+--- check case | zone is medium orbit
+zone
+=> "medium orbit"
+--- check source | Tests the highest band first
+35786[\\s\\S]*2000[\\s\\S]*160
+?? Put the test for above 35786 first, then 2000, then 160.
+--- check test | altitude_km is still 20200
+altitude_km == 20200
+--- check output | Prints medium orbit
+20200 km: medium orbit
+
++++ practice | Go or no-go
+--- task
+Before a launch, every rule must pass. The starter sets five readings. Check the rules **in this order**, and report only the first rule that fails:
+
+1. \`wind_kmh\` must be below 40. If not, the message is like \`NO-GO: wind 45 km/h\`.
+2. \`temperature_c\` must be from 2 to 35, both included. If not: like \`NO-GO: temperature 40.5 C\`.
+3. \`lightning_km\` must be more than 10. If not: like \`NO-GO: lightning 8 km\`.
+4. \`crew_ready\` must be \`True\`. If not: \`NO-GO: crew not ready\`.
+5. \`fuel_pct\` must be at least 98. If not: like \`NO-GO: fuel 91.5%\`.
+
+In each message, the number is the real reading.
+
+If every rule passes, the answer is \`GO\`.
+
+Set \`verdict\` to the right text with one \`if\` / \`elif\` / \`else\` chain, building each message with an f-string, then print \`verdict\`. With the starter's readings the output is:
+
+\`\`\`
+NO-GO: temperature 1.5 C
+\`\`\`
+--- starter
+wind_kmh = 28
+temperature_c = 1.5
+lightning_km = 12
+crew_ready = True
+fuel_pct = 99.5
+verdict = ""
+
+print(verdict)
+--- solution
+wind_kmh = 28
+temperature_c = 1.5
+lightning_km = 12
+crew_ready = True
+fuel_pct = 99.5
+verdict = ""
+if wind_kmh >= 40:
+    verdict = f"NO-GO: wind {wind_kmh} km/h"
+elif temperature_c < 2 or temperature_c > 35:
+    verdict = f"NO-GO: temperature {temperature_c} C"
+elif lightning_km <= 10:
+    verdict = f"NO-GO: lightning {lightning_km} km"
+elif not crew_ready:
+    verdict = "NO-GO: crew not ready"
+elif fuel_pct < 98:
+    verdict = f"NO-GO: fuel {fuel_pct}%"
+else:
+    verdict = "GO"
+print(verdict)
+--- hint
+Each test asks "does this rule fail?". Wind fails when it is 40 or more: \`wind_kmh >= 40\`.
+--- hint
+The temperature fails when it is below 2 **or** above 35. The crew rule fails when \`not crew_ready\`.
+--- hint
+The chain is \`if\`, then four \`elif\`s, then \`else: verdict = "GO"\`. Python stops at the first failing rule, which is why the order matters.
+--- check case | verdict names the temperature
+verdict
+=> "NO-GO: temperature 1.5 C"
+?? The wind passes (28 is below 40), so the temperature is the first rule to fail.
+--- check source | Uses an elif chain
+(\\belif\\b[\\s\\S]*){4}
+--- check source | Checks the crew with not or ==
+\\bnot\\s+crew_ready\\b|crew_ready\\s*==
+--- check output | Prints the verdict
+NO-GO: temperature 1.5 C
+
+=== py-06 | Lists
+--- teach
+Last lesson your program chose between roads with \`if\`. Now for a different problem: what if you have lots of values? A week of temperatures, the planets in order from the Sun, every reading from a sensor. You could make \`temp1\`, \`temp2\`, \`temp3\` and so on, but that gets out of hand fast.
+
+Think of a train. One engine pulls a line of carriages, and each carriage carries something. In Python that train is a **[[list|list-word]]**: one variable that holds several values in order.
+
+### Making a list
+
+Write the values between **square brackets** \`[ ]\`, with a comma between each one. Each value is called an **item**.
+
+\`\`\`python
+planets = ["Mercury", "Venus", "Earth"]
+print(planets)   # ['Mercury', 'Venus', 'Earth']
+\`\`\`
+
+Python shows the strings with single quotes \`' '\` when it prints a list. That means exactly the same as double quotes.
+
+A list can hold any type: numbers, strings, bools, or a mix.
+
+\`\`\`python
+readings = [18, 25, 11]
+mixed = [3, "go", True, 1.5]
+\`\`\`
+
+### Getting one item: the index
+
+Every item has a position number, called its **[[index|index]]**. Counting starts at **0**, not 1. To get an item, write the list's name and then the index in square brackets. Read \`planets[0]\` as "planets at index 0".
+
+\`\`\`python
+planets = ["Mercury", "Venus", "Earth"]
+print(planets[0])   # Mercury
+print(planets[1])   # Venus
+print(planets[2])   # Earth
+\`\`\`
+
+So the first item is at index 0, the second at index 1, and so on. There is a [[reason it starts at 0|zero-start]].
+
+### Counting from the end: negative indexes
+
+A minus sign counts backwards from the end. \`planets[-1]\`, read "planets at minus one", is the last item. \`-2\` is the one before it.
+
+\`\`\`python
+print(planets[-1])   # Earth
+print(planets[-2])   # Venus
+\`\`\`
+
+This is useful when you want the newest reading and do not know how long the list is.
+
+### How many items: len
+
+\`len\`, the same function you used on strings, counts the items in a list:
+
+\`\`\`python
+print(len(planets))   # 3
+\`\`\`
+
+With 3 items the indexes are 0, 1 and 2. The last index is always one less than the length.
+
+**Watch out:** asking for an index that is not there stops the program. \`planets[3]\` on a 3-item list gives \`IndexError: list index out of range\`, because the indexes only go 0, 1, 2. It is an [[error|index-error]] almost everyone meets in their first week.
+
+### Adding to the end: append
+
+\`append\` is a method, like \`strip\` from Lesson 4. It adds one item to the end of the list.
+
+\`\`\`python
+planets = ["Mercury", "Venus", "Earth"]
+planets.append("Mars")
+print(planets)        # ['Mercury', 'Venus', 'Earth', 'Mars']
+print(len(planets))   # 4
+\`\`\`
+
+Here is a big difference from strings. A string method hands back a new copy and leaves the old string alone. \`append\` [[changes the list itself|in-place]]. So you write \`planets.append("Mars")\` on its own line, with no \`=\`.
+
+**Watch out:** do not write \`planets = planets.append("Mars")\`. \`append\` hands back nothing, which Python calls \`None\`, so that line would replace your whole list with \`None\`.
+
+### Taking a piece: slices
+
+A **[[slice|slice]]** copies out a run of items. Inside the square brackets put a start index, a colon \`:\`, and a stop index. Read \`planets[1:3]\` as "planets from 1 up to, but not including, 3".
+
+\`\`\`python
+planets = ["Mercury", "Venus", "Earth", "Mars"]
+print(planets[1:3])   # ['Venus', 'Earth']
+\`\`\`
+
+The start (1, Venus) is included. The stop (3, Mars) is left out. So you get 3 - 1 = 2 items.
+
+### Lists of numbers: sum, min, max, sorted
+
+Four functions work on a whole list of numbers at once:
+
+- \`sum\` adds up every item;
+- \`min\`, short for minimum, finds the smallest;
+- \`max\`, short for maximum, finds the largest;
+- \`sorted\` gives back a new list with the items in order, smallest first.
+
+\`\`\`python
+temps = [18, 25, 11, 21]
+print(sum(temps))      # 75
+print(min(temps))      # 11
+print(max(temps))      # 25
+print(sorted(temps))   # [11, 18, 21, 25]
+print(temps)           # [18, 25, 11, 21]   (sorted made a new list)
+\`\`\`
+
+The **[[average|mean]]**, also called the mean, is the total divided by how many there are. You have both pieces already: \`sum\` for the total and \`len\` for how many.
+
+\`\`\`python
+temps = [18, 25, 11, 21]
+average = sum(temps) / len(temps)
+print(average)   # 18.75
+\`\`\`
+
+Check it: 18 + 25 + 11 + 21 = 75, and 75 / 4 = 18.75. Remember from Lesson 3 that \`/\` always gives a decimal.
+
+::: context list-word Lists in real programs
+A list is Python's everyday way to keep many values together, and almost every real program has some. Mission software keeps sequences of values like this all the time: the last few seconds of readings from a sensor, the steps of a checklist, the waypoints on a route. In C and C++, the languages much flight software is written in, the closest thing is an **array**, whose size is usually fixed when the program is written. A Python list can grow as you add items, which makes it easier to learn with.
+:::
+
+::: context index Two ways to number the same list
+Every item has two addresses: one counting forward from 0, and one counting backward from -1.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <g font-size="12" text-anchor="middle" fill="#1d6fd1">
+    <text x="80" y="30">0</text><text x="180" y="30">1</text><text x="280" y="30">2</text>
+  </g>
+  <rect x="30" y="42" width="100" height="40" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="130" y="42" width="100" height="40" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="230" y="42" width="100" height="40" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <g font-size="13" text-anchor="middle" fill="#1f2a44">
+    <text x="80" y="67">"Mercury"</text><text x="180" y="67">"Venus"</text><text x="280" y="67">"Earth"</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#b4232c">
+    <text x="80" y="102">-3</text><text x="180" y="102">-2</text><text x="280" y="102">-1</text>
+  </g>
+  <text x="180" y="124" font-size="11" text-anchor="middle" fill="#6c7a93">blue: from the front   red: from the back</text>
+</svg>
+\`\`\`
+
+\`planets[2]\` and \`planets[-1]\` are the same carriage, reached from different ends.
+:::
+
+::: context zero-start Why counting starts at 0
+Think of the index as "how many steps from the front". The first item is 0 steps from the front, the second is 1 step, and so on. Inside the computer the items sit side by side in memory, and the index tells it how far to jump from the start, so 0 is the natural first number. The computer scientist Edsger Dijkstra wrote a famous short note in 1982 arguing that numbering should start at zero. Most programming languages agree.
+:::
+
+::: context index-error Errors are messages, not disasters
+When Python cannot do what a line asks, it stops and prints an **error** with a name, like \`IndexError\`, and the line number. Read the last line of the message first: it usually says exactly what went wrong. In Lesson 11 you will learn to catch errors so a program can recover instead of stopping. Flight software is written with great care to avoid this very mistake, because reading past the end of a list of data can make a program use a wrong value.
+:::
+
+::: context in-place Changing a list in place
+Changing something "in place" means editing the thing itself, not making a copy. A list is like a whiteboard: \`append\` writes on the same board, and everyone looking at it sees the new item. A string is like a printed page: to change it you print a new page. That is why string methods need \`=\` to keep their result, and \`append\` does not. Programmers say lists are **mutable** (changeable) and strings are **immutable**.
+:::
+
+::: context slice Why the stop is left out
+Think of the indexes as fence posts *between* the items. A slice cuts at two posts and takes everything in between.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" font-family="Inter, Arial, sans-serif">
+  <line x1="105" y1="26" x2="255" y2="26" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="105" y1="20" x2="105" y2="32" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="255" y1="20" x2="255" y2="32" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="180" y="18" font-size="12" text-anchor="middle" fill="#1d6fd1">planets[1:3]</text>
+  <rect x="30" y="44" width="75" height="40" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="105" y="44" width="75" height="40" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="180" y="44" width="75" height="40" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="255" y="44" width="75" height="40" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <g font-size="12" text-anchor="middle" fill="#1f2a44">
+    <text x="67" y="69">Mercury</text><text x="142" y="69">Venus</text><text x="217" y="69">Earth</text><text x="292" y="69">Mars</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#b4232c">
+    <text x="30" y="104">0</text><text x="105" y="104">1</text><text x="180" y="104">2</text><text x="255" y="104">3</text><text x="330" y="104">4</text>
+  </g>
+  <text x="180" y="128" font-size="11" text-anchor="middle" fill="#6c7a93">cut at post 1 and post 3: two items</text>
+</svg>
+\`\`\`
+
+A handy result: the number of items is always stop minus start.
+:::
+
+::: context mean The mean, and why engineers use it
+There are a few kinds of "average", and the **mean** is the one most people mean: add them all up, divide by how many. Engineers use it constantly. A single sensor reading can be jumpy, so software often averages several readings to get a steadier number. It is also how you would sum up a set of measurements, like how long a system usually takes to answer, in one number.
+:::
+--- task
+\`latencies\` holds four response times in milliseconds: \`[120, 95, 210, 143]\`.
+
+1. Use \`append\` to add one more measurement, \`180\`, to the end of \`latencies\`.
+2. Set \`fastest\` to the smallest value, using \`min\`.
+3. Set \`slowest\` to the largest value, using \`max\`.
+4. Set \`average\` to the mean: the \`sum\` of \`latencies\` divided by its \`len\`.
+5. Print \`fastest\`, \`slowest\` and \`average\` in that order on one line, with one \`print\` and commas between them.
+
+Do steps 2 to 4 after the \`append\`, so all five measurements count.
+--- starter
+latencies = [120, 95, 210, 143]
+
+--- solution
+latencies = [120, 95, 210, 143]
+latencies.append(180)
+fastest = min(latencies)
+slowest = max(latencies)
+average = sum(latencies) / len(latencies)
+print(fastest, slowest, average)
+--- hint
+Step 1 is \`latencies.append(180)\` on its own line, with no \`=\`.
+--- hint
+Each of steps 2 to 4 is a variable set with \`=\`: \`fastest = min(latencies)\`, then the same shape with \`max\`, then \`sum(...) / len(...)\`.
+--- hint
+The last line is \`print(fastest, slowest, average)\`. The commas put a space between the three values.
+--- check case | 180 was appended
+latencies
+=> [120, 95, 210, 143, 180]
+--- check test | fastest and slowest are right
+fastest == 95 and slowest == 210
+--- check test | average is the mean of all five
+abs(average - 149.6) < 1e-9
+--- check output | Prints all three
+95 210 149.6
+
++++ practice | Jupiter's big moons
+--- task
+The starter has a list of Jupiter's four largest moons, in order from the planet.
+
+1. Set \`first\` to the first moon, using an index.
+2. Set \`last\` to the last moon, using a negative index.
+3. Set \`count\` to the number of moons, using \`len\`.
+4. Print one f-string, so the output is exactly:
+
+\`\`\`
+4 moons, from Io to Callisto
+\`\`\`
+--- starter
+moons = ["Io", "Europa", "Ganymede", "Callisto"]
+
+--- solution
+moons = ["Io", "Europa", "Ganymede", "Callisto"]
+first = moons[0]
+last = moons[-1]
+count = len(moons)
+print(f"{count} moons, from {first} to {last}")
+--- hint
+Counting starts at 0, so the first item is \`moons[0]\`. The last is \`moons[-1]\`.
+--- hint
+\`len(moons)\` counts the items. The f-string is \`f"{count} moons, from {first} to {last}"\`.
+--- check case | first is Io
+first
+=> "Io"
+--- check case | last is Callisto
+last
+=> "Callisto"
+--- check source | Uses a negative index
+moons\\[\\s*-1\\s*\\]
+--- check output | Prints the sentence
+4 moons, from Io to Callisto
+
++++ practice | The newest pressures
+--- task
+The starter has five pressure readings, oldest first.
+
+1. A new reading comes in: add \`97\` to the end of \`pressures\` with \`append\`.
+2. Set \`newest\` to the last reading.
+3. Set \`last_three\` to a slice holding the last three readings: the ones at index 3, 4 and 5.
+4. Set \`spread\` to the largest reading minus the smallest, using \`max\` and \`min\`.
+5. Print \`newest\`, \`last_three\` and \`spread\` on one line, with one \`print\`.
+
+The output should be:
+
+\`\`\`
+97 [98, 102, 97] 7
+\`\`\`
+--- starter
+pressures = [101, 99, 104, 98, 102]
+
+--- solution
+pressures = [101, 99, 104, 98, 102]
+pressures.append(97)
+newest = pressures[-1]
+last_three = pressures[3:6]
+spread = max(pressures) - min(pressures)
+print(newest, last_three, spread)
+--- hint
+Do the \`append\` first, so every later step sees six readings.
+--- hint
+A slice \`pressures[3:6]\` starts at index 3 and stops before index 6.
+--- hint
+\`spread = max(pressures) - min(pressures)\`.
+--- check case | 97 was appended
+pressures
+=> [101, 99, 104, 98, 102, 97]
+--- check case | last_three is the last three readings
+last_three
+=> [98, 102, 97]
+--- check test | newest is 97 and spread is 7
+newest == 97 and spread == 7
+?? After the append, the largest is 104 and the smallest is 97.
+--- check output | Prints the three results
+97 [98, 102, 97] 7
+
++++ practice | Warmer than average?
+--- task
+The starter has four temperature readings, oldest first.
+
+1. Set \`average\` to their mean, with \`sum\` and \`len\`.
+2. Set \`latest\` to the newest reading, the last one in the list.
+3. Set \`trend\` with an \`if\` / \`else\`: \`"warming"\` if \`latest\` is greater than \`average\`, otherwise \`"cooling"\`.
+4. Print one f-string:
+
+\`\`\`
+latest 24.0, average 22.0: warming
+\`\`\`
+--- starter
+temps = [21.5, 23.0, 19.5, 24.0]
+
+--- solution
+temps = [21.5, 23.0, 19.5, 24.0]
+average = sum(temps) / len(temps)
+latest = temps[-1]
+if latest > average:
+    trend = "warming"
+else:
+    trend = "cooling"
+print(f"latest {latest}, average {average}: {trend}")
+--- hint
+The mean is \`sum(temps) / len(temps)\`. The newest reading is \`temps[-1]\`.
+--- hint
+Compare the two with \`>\` in an \`if\`, and set \`trend\` in each branch.
+--- check test | average is 22.0
+average == 22.0
+--- check case | latest is 24.0
+latest
+=> 24.0
+--- check case | trend is warming
+trend
+=> "warming"
+--- check output | Prints the line
+latest 24.0, average 22.0: warming
+
++++ practice | Short lists and far ends
+--- task
+Set each of these variables, then print them all on one line with one \`print\`, in the order listed.
+
+The starter has \`single = [42]\`, a list with one item, and \`data = [5, 3, 5, 1]\`.
+
+1. \`same\` is whether the first item of \`single\` is equal to its last item (use index \`0\` and index \`-1\`).
+2. \`ordered\` is \`data\` sorted, smallest first, using \`sorted\`.
+3. \`tail\` is the slice of \`data\` from index 2 up to index 10. The list is shorter than that: see what a slice does.
+4. \`last_index\` is the index of the last item in \`data\`, worked out from \`len(data)\`.
+5. \`last_item\` is \`data\` at \`last_index\`.
+6. \`nothing\` is the slice of \`data\` from index 4 up to index 6.
+
+The output should be:
+
+\`\`\`
+True [1, 3, 5, 5] [5, 1] 3 1 []
+\`\`\`
+
+Afterwards, \`data\` itself must still be \`[5, 3, 5, 1]\`.
+--- starter
+single = [42]
+data = [5, 3, 5, 1]
+
+--- solution
+single = [42]
+data = [5, 3, 5, 1]
+same = single[0] == single[-1]
+ordered = sorted(data)
+tail = data[2:10]
+last_index = len(data) - 1
+last_item = data[last_index]
+nothing = data[4:6]
+print(same, ordered, tail, last_index, last_item, nothing)
+--- hint
+In a one-item list, index 0 and index -1 are the same item. A comparison with \`==\` gives \`True\` or \`False\`, and you can store that.
+--- hint
+A slice never stops the program: it gives the items that exist, and an empty list \`[]\` when none do.
+--- hint
+The last index is always one less than the length: \`len(data) - 1\`. \`sorted\` makes a new list and leaves \`data\` alone.
+--- check case | same is True
+same
+=> True
+--- check case | ordered keeps both 5s
+ordered
+=> [1, 3, 5, 5]
+--- check case | tail stops at the end of the list
+tail
+=> [5, 1]
+--- check test | last_index is 3 and last_item is 1
+last_index == 3 and last_item == 1
+--- check case | nothing is an empty list
+nothing
+=> []
+--- check case | data is unchanged
+data
+=> [5, 3, 5, 1]
+?? sorted gives back a new list. It never changes data.
+--- check output | Prints all six
+True [1, 3, 5, 5] [5, 1] 3 1 []
+
++++ practice | Fix the route
+--- task
+This program should add \`"Mars"\` to the end of the route, then print:
+
+\`\`\`
+Final stop: Mars
+Stops: 4
+\`\`\`
+
+It stops with an error instead. Two lines are wrong. Fix them, and keep the two \`print\` lines as they are.
+--- starter
+stops = ["Launch pad", "Low orbit", "Moon"]
+stops = stops.append("Mars")
+final_stop = stops[len(stops)]
+print("Final stop:", final_stop)
+print("Stops:", len(stops))
+--- solution
+stops = ["Launch pad", "Low orbit", "Moon"]
+stops.append("Mars")
+final_stop = stops[-1]
+print("Final stop:", final_stop)
+print("Stops:", len(stops))
+--- hint
+\`append\` changes the list itself and hands back \`None\`. What does \`stops = stops.append(...)\` leave in \`stops\`?
+--- hint
+A list with 4 items has indexes 0 to 3, so \`stops[len(stops)]\` asks for index 4, which is not there. The last item is at \`-1\`, or at \`len(stops) - 1\`.
+--- check case | stops has Mars on the end
+stops
+=> ["Launch pad", "Low orbit", "Moon", "Mars"]
+--- check source absent | Does not assign the result of append
+=\\s*stops\\.append
+?? Write stops.append("Mars") on its own line, with no =.
+--- check output | Prints the final stop and the count
+Final stop: Mars
+Stops: 4
+
++++ practice | Trim the outliers
+--- task
+A temperature sensor sent seven samples. Two are glitches: \`98.6\` and \`-40.0\`. A common fix is a **trimmed mean**: sort the samples, drop the lowest and the highest, and take the mean of the rest.
+
+1. Set \`trimmed\` to the sorted samples without the first and the last one. Use \`sorted\`, then a slice from index \`1\` up to \`len(samples) - 1\`.
+2. Set \`trimmed_mean\` to the mean of \`trimmed\`, rounded to 2 digits after the decimal point.
+3. Set \`raw_mean\` to the mean of all of \`samples\`, rounded to 2 digits.
+4. Print one f-string:
+
+\`\`\`
+raw 24.19, trimmed 22.14
+\`\`\`
+
+Your slice must work for a list of any length of 3 or more, so do not write the number 6 into it.
+--- starter
+samples = [22.1, 22.4, 98.6, 22.0, 21.9, -40.0, 22.3]
+
+--- solution
+samples = [22.1, 22.4, 98.6, 22.0, 21.9, -40.0, 22.3]
+trimmed = sorted(samples)[1:len(samples) - 1]
+trimmed_mean = round(sum(trimmed) / len(trimmed), 2)
+raw_mean = round(sum(samples) / len(samples), 2)
+print(f"raw {raw_mean}, trimmed {trimmed_mean}")
+--- hint
+\`sorted(samples)\` puts the lowest first and the highest last. A slice from 1 to one before the end leaves both of them out.
+--- hint
+You can slice the result of \`sorted\` straight away: \`sorted(samples)[1:len(samples) - 1]\`.
+--- hint
+Each mean is \`sum(...) / len(...)\`, wrapped in \`round(..., 2)\`.
+--- check case | trimmed drops the lowest and highest
+trimmed
+=> [21.9, 22.0, 22.1, 22.3, 22.4]
+--- check test | trimmed_mean is 22.14 and raw_mean is 24.19
+trimmed_mean == 22.14 and raw_mean == 24.19
+--- check source | Slices up to len(samples) - 1
+len\\(\\s*samples\\s*\\)\\s*-\\s*1
+--- check output | Prints both means
+raw 24.19, trimmed 22.14
+
+=== py-07 | Loops
+--- teach
+Last lesson you kept many values together in one list. Now you will make Python do something with *every* item in a list, without writing the same line again and again. That is what a loop is for.
+
+Picture handing out flyers to a line of people. You do not write a separate plan for each person. Your plan is one sentence: "for each person in the line, hand them a flyer." A loop is that sentence, written in Python.
+
+## Doing something for each item
+
+A **\`for\` loop** runs the same lines of code once for every item in a list.
+
+\`\`\`python
+for name in ["ada", "lin", "sam"]:
+    print("hello", name)
+# hello ada
+# hello lin
+# hello sam
+\`\`\`
+
+Read the first line aloud: "for each name in this list". Here is what each part does:
+
+- \`for\` starts the loop.
+- \`name\` is the **loop variable**: a [[variable that gets a new value on every pass|loop-variable]]. The first time round it holds \`"ada"\`, then \`"lin"\`, then \`"sam"\`.
+- \`in\` is followed by the list to walk through.
+- The colon \`:\` at the end says "the block comes next", the same as after \`if\` in py-05.
+
+The indented lines underneath are the loop's **body**: the lines that repeat. Like the block under an \`if\`, the body is pushed in by 4 spaces. Each run through the body is called a **pass** (engineers also say an **iteration**).
+
+A list is not the only thing you can loop over. You can loop over anything you can [[iterate|iterate]], which means "go through one piece at a time". A string, for example, gives you one letter per pass:
+
+\`\`\`python
+for letter in "abc":
+    print(letter)
+# a
+# b
+# c
+\`\`\`
+
+## Counting with range
+
+Often you want to count, not walk through a list. **\`range\`** makes the numbers for you.
+
+\`range(n)\` gives the whole numbers from \`0\` up to \`n - 1\`. It [[stops one short of n|range-stops-short]]:
+
+\`\`\`python
+for i in range(3):
+    print(i)
+# 0
+# 1
+# 2
+\`\`\`
+
+That is three numbers, \`0\`, \`1\` and \`2\`, and \`3\` itself is left out.
+
+Give \`range\` two numbers and the first is where to start. \`range(1, 6)\` gives \`1\`, \`2\`, \`3\`, \`4\`, \`5\`: it starts at \`1\` and stops before \`6\`.
+
+\`\`\`python
+for n in range(1, 6):
+    print(n)
+# 1
+# 2
+# 3
+# 4
+# 5
+\`\`\`
+
+## Keeping a running total
+
+To add up numbers with a loop, make a variable *before* the loop that starts at zero. On every pass, add the new number to it. This is called a [[running total|accumulator]].
+
+\`\`\`python
+total = 0
+for n in range(1, 6):
+    total = total + n
+print(total)               # 15
+\`\`\`
+
+Here is what \`total\` holds after each pass:
+
+| Pass | \`n\` | \`total\` after the pass |
+|---|---|---|
+| 1 | 1 | 0 + 1 = 1 |
+| 2 | 2 | 1 + 2 = 3 |
+| 3 | 3 | 3 + 3 = 6 |
+| 4 | 4 | 6 + 4 = 10 |
+| 5 | 5 | 10 + 5 = 15 |
+
+The line \`total = total + n\` looks strange if you read \`=\` as "equals". Remember from py-02 that \`=\` means "make this name hold". So it says: "work out \`total + n\`, then make \`total\` hold that new number."
+
+Adding to a variable is so common that Python has a shorter way to write it. \`+=\` is read "add to": \`total += n\` means exactly the same as \`total = total + n\`.
+
+\`\`\`python
+total = 0
+for n in range(1, 6):
+    total += n             # same as: total = total + n
+print(total)               # 15
+\`\`\`
+
+**Watch out:** the \`print(total)\` line is *not* indented, so it runs once, after the loop has finished. If you indent it by mistake, it becomes part of the body and prints on every pass: \`1\`, \`3\`, \`6\`, \`10\`, \`15\`. When a loop prints too much, check the indentation first.
+
+## A decision inside a loop
+
+You can put an \`if\` inside a loop's body. Then the loop makes a fresh decision on every pass. The lines under the \`if\` are pushed in one more step, 8 spaces in total, because they are a block inside a block.
+
+A handy test inside loops uses \`%\`, the remainder operator from py-03. \`n % 3\` is read "n remainder 3": what is left over after dividing \`n\` by 3. When the remainder is \`0\`, 3 goes into \`n\` exactly, so \`n\` is a **multiple** of 3. That makes \`n % 3 == 0\` read as "[[n is a multiple of 3|multiple-test]]".
+
+\`\`\`python
+for n in range(1, 7):
+    if n % 2 == 0:
+        print(n, "is even")
+    else:
+        print(n, "is odd")
+# 1 is odd
+# 2 is even
+# 3 is odd
+# 4 is even
+# 5 is odd
+# 6 is even
+\`\`\`
+
+With \`elif\` you can add more tests, and then the order of the tests matters. Python stops at the first test that is true. Every multiple of 4 is also a multiple of 2, so if a loop tested \`n % 2 == 0\` first and \`n % 4 == 0\` second, the multiple-of-4 branch would never run: \`4\` and \`8\` would already have been caught by the first test. Put the most specific test first, the same way py-05 checked the highest score band first.
+
+## More loops to come
+
+There is a second kind of loop, \`while\`, and two words, \`break\` and \`continue\`, that change how any loop runs. They get the next lesson to themselves.
+
+::: context loop-variable A name that is reused on every pass
+The loop variable is an ordinary variable. The only difference is that the \`for\` line gives it a new value at the start of every pass. You choose its name, and a good name says what one item is: \`for name in names\`, \`for reading in readings\`. Engineers often use \`i\` or \`n\` when the items are counting numbers.
+
+After the loop ends, the loop variable still holds the last value it was given. In the flyer loop, \`name\` is \`"sam"\` once the loop is done.
+:::
+
+::: context iterate What iterating means
+To **iterate** means to go through something one piece at a time, from the Latin word for "again". Anything Python can hand you one piece at a time is called an **iterable**. Lists, strings and \`range\` are all iterables. Later you will meet dictionaries and files, which you can loop over in the same way. That is why the \`for\` loop is the loop you will write most often in Python: one shape works for all of them.
+:::
+
+::: context range-stops-short Why range leaves out the end
+Lists count from \`0\` (py-06). A list with 3 items has positions \`0\`, \`1\` and \`2\`. \`range(3)\` gives exactly those three numbers. So \`range(len(planets))\` gives every position in the list \`planets\`, with nothing extra. The same "up to, but not including" rule is used by slices like \`planets[1:3]\`. A nice side effect: \`range(1, 6)\` has \`6 - 1 = 5\` numbers in it, so the length is always stop minus start.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <text x="180" y="18" font-size="13" text-anchor="middle" fill="#1f2a44" font-weight="700">range(1, 6)</text>
+  <rect x="20" y="34" width="40" height="36" rx="4" fill="#ffffff" stroke="#6c7a93" stroke-width="1.5"/>
+  <rect x="68" y="34" width="40" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="116" y="34" width="40" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="164" y="34" width="40" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="212" y="34" width="40" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="260" y="34" width="40" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <rect x="308" y="34" width="40" height="36" rx="4" fill="#ffffff" stroke="#b4232c" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="40" y="57" font-size="14" text-anchor="middle" fill="#6c7a93">0</text>
+  <text x="88" y="57" font-size="14" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="136" y="57" font-size="14" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="184" y="57" font-size="14" text-anchor="middle" fill="#1f2a44">3</text>
+  <text x="232" y="57" font-size="14" text-anchor="middle" fill="#1f2a44">4</text>
+  <text x="280" y="57" font-size="14" text-anchor="middle" fill="#1f2a44">5</text>
+  <text x="328" y="57" font-size="14" text-anchor="middle" fill="#b4232c">6</text>
+  <text x="88" y="92" font-size="11" text-anchor="middle" fill="#1d6fd1">start</text>
+  <text x="184" y="92" font-size="11" text-anchor="middle" fill="#1d6fd1">5 numbers given</text>
+  <text x="328" y="92" font-size="11" text-anchor="middle" fill="#b4232c">stop:</text>
+  <text x="328" y="107" font-size="11" text-anchor="middle" fill="#b4232c">left out</text>
+</svg>
+\`\`\`
+:::
+
+::: context accumulator The running-total pattern
+A running total is like a tally counter at a door: it starts at zero and clicks up once for each person. Programmers call a variable used this way an **accumulator**, because it accumulates (piles up) a result pass by pass. The pattern always has three parts: set it up before the loop, change it inside the loop, use it after the loop. You will use this shape constantly, for totals, counts, the biggest value seen so far, and more. Forget the first part, and Python stops with an error, because \`total\` does not exist yet when the loop first tries to add to it.
+:::
+
+::: context multiple-test Remainder zero means "fits exactly"
+Share 12 sweets among 3 friends: each gets 4 and none are left over, so \`12 % 3\` is \`0\`. Share 13 and one is left, so \`13 % 3\` is \`1\`. A remainder of zero is the test for "fits exactly". The same trick finds even numbers (\`n % 2 == 0\`) and is used in real programs to do something every so often, such as "save a log line on every 10th pass" with \`n % 10 == 0\`.
+:::
+--- task
+Print the numbers from \`1\` to \`15\`, one per line, with three swaps:
+
+- multiples of \`3\` print \`Fizz\` instead of the number,
+- multiples of \`5\` print \`Buzz\` instead of the number,
+- multiples of both 3 and 5 print \`FizzBuzz\` instead of the number.
+
+Use a \`for\` loop over \`range(1, 16)\` (the \`16\` is left out, so it stops at \`15\`). Inside the loop, use \`if\`, \`elif\` and \`else\` with the \`%\` test. The output starts \`1\`, \`2\`, \`Fizz\`, \`4\`, \`Buzz\` and ends with \`FizzBuzz\` for 15.
+--- starter
+# FizzBuzz, 1 to 15.
+
+--- solution
+for n in range(1, 16):
+    if n % 15 == 0:
+        print("FizzBuzz")
+    elif n % 3 == 0:
+        print("Fizz")
+    elif n % 5 == 0:
+        print("Buzz")
+    else:
+        print(n)
+--- hint
+Start with \`for n in range(1, 16):\` and put the tests in the indented body. \`n % 3 == 0\` is true when n is a multiple of 3.
+--- hint
+Check "multiple of both" first, the same way the lesson put the multiple-of-4 test before the multiple-of-2 test. A number that is a multiple of both 3 and 5 is a multiple of 15, so the first test is \`n % 15 == 0\`. Otherwise 15 stops at Fizz.
+--- hint
+The shape is: \`if n % 15 == 0:\` print \`"FizzBuzz"\`, then \`elif n % 3 == 0:\` print \`"Fizz"\`, then \`elif n % 5 == 0:\` print \`"Buzz"\`, then \`else:\` print \`n\`. Every \`print\` is indented 8 spaces.
+--- check output | Prints FizzBuzz from 1 to 15
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+--- check source | Uses a loop
+\\b(for|while)\\b
+
++++ practice | Celsius to Fahrenheit
+--- task
+The starter has a list of temperatures in degrees Celsius. To turn Celsius into Fahrenheit, multiply by 9, divide by 5, then add 32.
+
+Write a \`for\` loop over \`temps_c\`. On each pass, print one line with an f-string, like this:
+
+\`\`\`
+0 C = 32.0 F
+25 C = 77.0 F
+100 C = 212.0 F
+-40 C = -40.0 F
+\`\`\`
+--- starter
+temps_c = [0, 25, 100, -40]
+
+--- solution
+temps_c = [0, 25, 100, -40]
+for c in temps_c:
+    print(f"{c} C = {c * 9 / 5 + 32} F")
+--- hint
+The loop line is \`for c in temps_c:\`, and the body under it is pushed in by 4 spaces.
+--- hint
+The sum can go inside the braces of the f-string: \`{c * 9 / 5 + 32}\`. The \`/\` makes it a float, which is why it prints \`32.0\`.
+--- check output | Prints all four conversions
+0 C = 32.0 F
+25 C = 77.0 F
+100 C = 212.0 F
+-40 C = -40.0 F
+--- check source | Uses a for loop over the list
+for\\s+\\w+\\s+in\\s+temps_c
+--- check source absent | Does not type the answers in
+212\\.0
+
++++ practice | Total distance, the long way
+--- task
+The starter has the lengths of four legs of a flight, in kilometers.
+
+Write one \`for\` loop that works out two things at once:
+
+- \`total\`: all the legs added up, using a running total that starts at \`0\` and grows with \`+=\`. Do not use \`sum\`.
+- \`long_legs\`: how many legs are longer than \`100\` kilometers, counted with a second running total.
+
+Then print both on one line, after the loop:
+
+\`\`\`
+445.75 2
+\`\`\`
+--- starter
+legs_km = [120.5, 80.0, 45.25, 200.0]
+
+--- solution
+legs_km = [120.5, 80.0, 45.25, 200.0]
+total = 0
+long_legs = 0
+for leg in legs_km:
+    total += leg
+    if leg > 100:
+        long_legs += 1
+print(total, long_legs)
+--- hint
+Set both running totals to \`0\` before the loop, so they exist when the loop first adds to them.
+--- hint
+On every pass, \`total += leg\`. Only when \`leg > 100\`, add 1 to \`long_legs\`: that line sits under an \`if\`, pushed in 8 spaces.
+--- hint
+The \`print\` is not pushed in, so it runs once, after the loop.
+--- check test | total is 445.75
+total == 445.75
+--- check test | long_legs is 2
+long_legs == 2
+?? 120.5 and 200.0 are longer than 100. 80.0 and 45.25 are not.
+--- check source absent | Adds up without sum
+sum\\(
+--- check output | Prints both results
+445.75 2
+
++++ practice | Count the vowels
+--- task
+The starter sets \`message = "Houston, we have liftoff"\`.
+
+1. Set \`vowels\` to how many letters in \`message\` are vowels: \`a\`, \`e\`, \`i\`, \`o\` or \`u\`, in small letters or capitals. Loop over the letters of \`message.lower()\`, and for each one ask whether it is \`in\` the string \`"aeiou"\`.
+2. Print one f-string, after the loop:
+
+\`\`\`
+8 vowels in 24 characters
+\`\`\`
+
+The 24 comes from \`len(message)\`.
+--- starter
+message = "Houston, we have liftoff"
+
+--- solution
+message = "Houston, we have liftoff"
+vowels = 0
+for letter in message.lower():
+    if letter in "aeiou":
+        vowels += 1
+print(f"{vowels} vowels in {len(message)} characters")
+--- hint
+A \`for\` loop over a string gives you one character per pass.
+--- hint
+\`letter in "aeiou"\` is \`True\` when the letter is one of those five. Lowercase the message first, so a capital like \`H\` or \`O\` is handled too.
+--- hint
+Start \`vowels\` at 0 before the loop, and add 1 inside an \`if\` in the loop.
+--- check test | vowels is 8
+vowels == 8
+--- check source | Loops over the message
+for\\s+\\w+\\s+in\\s+message
+--- check output | Prints the count
+8 vowels in 24 characters
+
++++ practice | The highest of the cold readings
+--- task
+The starter has five temperatures, all below zero.
+
+Without using \`max\`, set:
+
+- \`highest\` to the highest reading. Start it at the **first** reading, \`temps[0]\`, not at \`0\`, then loop and keep the larger one.
+- \`times\` to how many readings are equal to \`highest\`.
+- \`first_at\` to the index of the first reading equal to \`highest\`.
+
+Use \`for i in range(len(temps)):\` for the last two, so you know each reading's index. Then print all three on one line:
+
+\`\`\`
+-5 2 1
+\`\`\`
+--- starter
+temps = [-12, -5, -30, -5, -8]
+
+--- solution
+temps = [-12, -5, -30, -5, -8]
+highest = temps[0]
+for t in temps:
+    if t > highest:
+        highest = t
+times = 0
+first_at = -1
+for i in range(len(temps)):
+    if temps[i] == highest:
+        times += 1
+        if first_at == -1:
+            first_at = i
+print(highest, times, first_at)
+--- hint
+Starting \`highest\` at 0 would be wrong here: every reading is below 0, so none would ever beat it.
+--- hint
+\`range(len(temps))\` gives 0, 1, 2, 3, 4, which are exactly the indexes, and \`temps[i]\` is the reading at index \`i\`.
+--- hint
+To keep only the **first** index, start \`first_at\` at \`-1\` and set it only while it is still \`-1\`.
+--- check test | highest is -5
+highest == -5
+?? Start highest at temps[0]. Starting at 0 gives 0, which is not a reading.
+--- check test | times is 2
+times == 2
+--- check test | first_at is 1, not 3
+first_at == 1
+--- check source absent | Finds it without max
+max\\(
+--- check output | Prints all three
+-5 2 1
+
++++ practice | Fix the running total
+--- task
+This program should add up the readings and print the total, then the mean:
+
+\`\`\`
+108
+18.0
+\`\`\`
+
+It prints \`42\` and \`7.0\` instead. Fix it. The fix is to move one line.
+--- starter
+readings = [4, 8, 15, 16, 23, 42]
+for r in readings:
+    total = 0
+    total += r
+print(total)
+print(total / len(readings))
+--- solution
+readings = [4, 8, 15, 16, 23, 42]
+total = 0
+for r in readings:
+    total += r
+print(total)
+print(total / len(readings))
+--- hint
+Which line runs on every pass? Look at what \`total\` is set to at the start of each pass.
+--- hint
+The running total must start at 0 once, **before** the loop, not again on every pass.
+--- check test | total is 108
+total == 108
+--- check source | total starts before the loop
+total\\s*=\\s*0\\s*\\n\\s*for\\b
+--- check output | Prints the total and the mean
+108
+18.0
+
++++ practice | A mission log summary
+--- task
+The starter has a mission log: one status word per entry, oldest first.
+
+1. Count how many entries are \`"OK"\`, \`"WARN"\` and \`"FAIL"\`, in variables \`ok\`, \`warn\` and \`fail\`.
+2. Find \`first_fail\`: the index of the first \`"FAIL"\` entry. Start it at \`-1\`, and set it only for the first one.
+3. Set \`health\` to the share of entries that are \`"OK"\`, in percent, rounded to 1 digit after the decimal point.
+4. Print the summary, after the loop:
+
+\`\`\`
+OK: 4
+WARN: 2
+FAIL: 1
+First FAIL at entry 4
+Health: 57.1%
+\`\`\`
+
+Use one loop, \`for i in range(len(log)):\`.
+--- starter
+log = ["OK", "OK", "WARN", "OK", "FAIL", "WARN", "OK"]
+
+--- solution
+log = ["OK", "OK", "WARN", "OK", "FAIL", "WARN", "OK"]
+ok = 0
+warn = 0
+fail = 0
+first_fail = -1
+for i in range(len(log)):
+    entry = log[i]
+    if entry == "OK":
+        ok += 1
+    elif entry == "WARN":
+        warn += 1
+    elif entry == "FAIL":
+        fail += 1
+        if first_fail == -1:
+            first_fail = i
+health = round(ok / len(log) * 100, 1)
+print(f"OK: {ok}")
+print(f"WARN: {warn}")
+print(f"FAIL: {fail}")
+print(f"First FAIL at entry {first_fail}")
+print(f"Health: {health}%")
+--- hint
+Start all the counters before the loop. Inside it, take \`log[i]\` and use \`if\` / \`elif\` to add 1 to the right counter.
+--- hint
+For \`first_fail\`, check \`if first_fail == -1:\` inside the \`"FAIL"\` branch, so a later failure does not overwrite the first.
+--- hint
+\`health\` is \`round(ok / len(log) * 100, 1)\`: 4 out of 7 is 57.1 percent.
+--- check test | The three counts are 4, 2 and 1
+ok == 4 and warn == 2 and fail == 1
+--- check test | first_fail is 4
+first_fail == 4
+--- check test | health is 57.1
+health == 57.1
+--- check output | Prints the summary
+OK: 4
+WARN: 2
+FAIL: 1
+First FAIL at entry 4
+Health: 57.1%
+
+=== py-07b | While loops, break and continue
+--- teach
+Last lesson a \`for\` loop walked through a list or a \`range\`, so it knew from the start how many passes to make. Sometimes you do not know that. You want to keep going *until something happens*. This lesson gives you a loop for that, and two words that let you leave a loop early or skip a pass.
+
+Picture filling a glass from a jug. You do not count pours. You keep pouring *while* the glass is not full, and you stop the moment it is.
+
+## Repeating while something is true
+
+A **\`while\` loop** repeats its body for as long as its condition is true. The condition is a test, like the ones you wrote after \`if\` in py-05.
+
+\`\`\`python
+fuel = 10
+while fuel > 0:
+    print("fuel left:", fuel)
+    fuel = fuel - 4
+print("empty")
+# fuel left: 10
+# fuel left: 6
+# fuel left: 2
+# empty
+\`\`\`
+
+Read the second line aloud: "while fuel is greater than 0, do the indented lines." Python [[checks the condition before every pass|while-check]]:
+
+1. \`fuel\` is 10. Is \`10 > 0\`? Yes, so print and take away 4. Now \`fuel\` is 6.
+2. Is \`6 > 0\`? Yes, so print and take away 4. Now \`fuel\` is 2.
+3. Is \`2 > 0\`? Yes, so print and take away 4. Now \`fuel\` is -2.
+4. Is \`-2 > 0\`? No, so the loop ends and Python goes on to \`print("empty")\`.
+
+**Watch out:** something inside the body must change the condition. If the line \`fuel = fuel - 4\` were missing, \`fuel\` would stay 10 forever, \`10 > 0\` would always be true, and the loop would [[never stop|infinite-loop]]. If your program seems frozen, look for a \`while\` loop whose variable never changes.
+
+## Leaving early with break
+
+**\`break\`** means "stop this loop right now". Python leaves the loop at once and carries on with the first line after it. It works in \`for\` loops and \`while\` loops.
+
+\`\`\`python
+for temp in [20, 45, 130, 60]:
+    if temp > 100:
+        print("too hot:", temp)
+        break
+    print("ok:", temp)
+# ok: 20
+# ok: 45
+# too hot: 130
+\`\`\`
+
+When \`temp\` is 130, the \`if\` is true, so the loop prints \`too hot: 130\` and breaks. The \`60\` is never looked at. This is how you [[stop at the first match|stop-at-first]].
+
+## Skipping a pass with continue
+
+**\`continue\`** means "skip the rest of this pass and go straight to the next item". The loop itself keeps going.
+
+\`\`\`python
+for reading in [5, -1, 7]:
+    if reading < 0:
+        continue
+    print(reading)
+# 5
+# 7
+\`\`\`
+
+When \`reading\` is -1, \`continue\` jumps back to the top of the loop, so the \`print\` line is skipped for that pass only. This is how programs step over a [[bad reading|bad-readings]].
+
+## Both in one loop
+
+Here is a loop that counts words. It skips empty strings with \`continue\` and stops at the word \`"stop"\` with \`break\`. The word \`"stop"\` is a [[marker that means "the end"|sentinel]].
+
+\`\`\`python
+count = 0
+for word in ["go", "", "go", "stop", "go"]:
+    if word == "":
+        continue
+    if word == "stop":
+        break
+    count += 1
+print(count)   # 2
+\`\`\`
+
+Pass by pass: \`"go"\` adds 1, \`""\` is skipped, \`"go"\` adds 1, \`"stop"\` breaks the loop. The last \`"go"\` is never reached, so \`count\` is 2.
+
+**Watch out:** \`break\` and \`continue\` are easy to mix up. \`break\` ends the *whole loop*. \`continue\` ends only *this pass*. If the example above used \`break\` for the empty string, the loop would quit at \`""\` and \`count\` would be 1.
+
+::: context while-check The loop asks before every pass
+A \`while\` loop asks its question at the top, every time round. If the answer is true, it runs the body and comes back to ask again. If the answer is false, it skips to the line after the loop. So if the condition is false the very first time, the body runs zero times.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <rect x="100" y="12" width="140" height="36" rx="18" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="170" y="35" font-size="13" text-anchor="middle" fill="#1f2a44">fuel &gt; 0 ?</text>
+  <line x1="170" y1="48" x2="170" y2="96" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="170,104 165,94 175,94" fill="#1f2a44"/>
+  <text x="178" y="80" font-size="11" fill="#1d6fd1">True</text>
+  <rect x="100" y="104" width="140" height="36" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="170" y="127" font-size="12" text-anchor="middle" fill="#1f2a44">run the body</text>
+  <path d="M100 122 H60 V30 H92" fill="none" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="100,30 90,25 90,35" fill="#1f2a44"/>
+  <text x="18" y="80" font-size="11" fill="#6c7a93">again</text>
+  <line x1="240" y1="30" x2="282" y2="30" stroke="#b4232c" stroke-width="2"/>
+  <polygon points="290,30 280,25 280,35" fill="#b4232c"/>
+  <text x="258" y="22" font-size="11" fill="#b4232c">False</text>
+  <text x="296" y="26" font-size="11" fill="#1f2a44">after</text>
+  <text x="296" y="40" font-size="11" fill="#1f2a44">the loop</text>
+</svg>
+\`\`\`
+:::
+
+::: context infinite-loop Loops that never end
+A loop that never stops is called an **infinite loop**. By accident, it makes your program freeze until it is stopped from outside. When that happens, look for the variable that never changes.
+
+On purpose, it is how most embedded software is built. The small computers in a car, a drone or a spacecraft usually run one **main loop** written as \`while True:\` (the condition is always true). Each pass reads the sensors, decides what to do and sends commands, and then the loop starts again, for as long as the power is on.
+:::
+
+::: context stop-at-first Why stop early
+If you are searching a list for the first reading that is too high, there is no reason to keep looking once you have found it. \`break\` saves the work of checking the rest. With 4 items that hardly matters, but a spacecraft can log millions of readings, and a search that stops at the first match can finish long before one that checks them all.
+:::
+
+::: context bad-readings Sensors are not perfect
+Real sensors sometimes send nonsense: a loose wire, a moment of electrical noise, or a device that has not warmed up yet. Some systems use a special value, such as -1, to mean "I have no good reading right now". Flight software has to spot readings like these and leave them out, so one glitch does not throw off a total or an average. Skipping them with \`continue\` is the simplest version of that idea.
+:::
+
+::: context sentinel A value that means "stop here"
+A special value placed at the end of some data to mean "there is no more" is called a **sentinel**, after the guard who stands watch at a gate. The loop checks each item for the sentinel and breaks when it sees it. The sentinel must be a value that can never be real data. The word \`"stop"\` works in a list of commands, and a number like \`999\` works in a list of temperatures that can never be that high.
+:::
+--- task
+This task has two parts.
+
+**Part 1: a countdown.** The starter sets \`count = 3\`. Write a \`while\` loop that keeps going while \`count > 0\`. In the body, print \`count\`, then take 1 away from it with \`count = count - 1\`. After the loop, print \`Liftoff!\`.
+
+**Part 2: add up good readings.** The starter has \`readings = [12, -1, 15, 9, 999, 14]\` and \`total = 0\`. Write a \`for\` loop over \`readings\`:
+
+- if the reading is \`-1\` (a bad reading), use \`continue\` to skip it;
+- if the reading is \`999\` (the marker for "the end"), use \`break\` to stop the loop;
+- otherwise, add the reading to \`total\` with \`total += reading\`.
+
+The starter already prints \`total\` at the end. The whole output should be:
+
+\`\`\`
+3
+2
+1
+Liftoff!
+36
+\`\`\`
+--- starter
+count = 3
+# Part 1: count down with a while loop, then print Liftoff!
+
+
+readings = [12, -1, 15, 9, 999, 14]
+total = 0
+# Part 2: add up the good readings with a for loop
+
+
+print(total)
+--- solution
+count = 3
+while count > 0:
+    print(count)
+    count = count - 1
+print("Liftoff!")
+
+readings = [12, -1, 15, 9, 999, 14]
+total = 0
+for reading in readings:
+    if reading == -1:
+        continue
+    if reading == 999:
+        break
+    total += reading
+print(total)
+--- hint
+Part 1 looks like the fuel example: \`while count > 0:\`, then two indented lines, then an unindented \`print("Liftoff!")\`.
+--- hint
+Part 2 looks like the word-counting example: \`for reading in readings:\`, then \`if reading == -1:\` with \`continue\` under it, then \`if reading == 999:\` with \`break\` under it.
+--- hint
+The last line of the loop body is \`total += reading\`, indented 4 spaces so it runs on every pass that was not skipped or stopped. 12 + 15 + 9 = 36, and the 14 is never reached.
+--- check output | Counts down, then prints the total
+3
+2
+1
+Liftoff!
+36
+--- check test | total adds only the good readings before 999
+total == 36
+?? 12 + 15 + 9 = 36: skip the -1, stop at 999, and never reach the 14.
+--- check test | count ended at 0
+count == 0
+--- check source | Uses a while loop
+\\bwhile\\b
+--- check source | Uses break
+\\bbreak\\b
+--- check source | Uses continue
+\\bcontinue\\b
+
++++ practice | Doubling until it is big
+--- task
+A colony of bacteria starts with \`1\` cell and doubles every hour.
+
+Write a \`while\` loop that keeps doubling \`cells\` while it is less than \`1000\`. Count the doublings in \`hours\`. After the loop, print one f-string:
+
+\`\`\`
+10 doublings: 1024 cells
+\`\`\`
+
+Start with \`cells = 1\` and \`hours = 0\`. Double with \`cells = cells * 2\`.
+--- starter
+cells = 1
+hours = 0
+
+--- solution
+cells = 1
+hours = 0
+while cells < 1000:
+    cells = cells * 2
+    hours += 1
+print(f"{hours} doublings: {cells} cells")
+--- hint
+The loop line is \`while cells < 1000:\`. Inside it, change \`cells\` so the loop can end.
+--- hint
+The body has two lines: double \`cells\`, then add 1 to \`hours\`.
+--- check test | cells is 1024 and hours is 10
+cells == 1024 and hours == 10
+?? The loop stops at the first value that is not less than 1000.
+--- check source | Uses a while loop
+\\bwhile\\b
+--- check output | Prints the result
+10 doublings: 1024 cells
+
++++ practice | The first reading over the limit
+--- task
+The starter has six readings and a \`limit\` of \`7.5\`.
+
+Loop over the readings with their index, using \`for i in range(len(readings)):\`. At the first reading greater than \`limit\`:
+
+- set \`first_over\` to that reading,
+- set \`position\` to its index,
+- and stop the loop with \`break\`.
+
+Before the loop, set both \`first_over\` and \`position\` to \`-1\`, so they have a value even if no reading is over the limit. After the loop, print one f-string:
+
+\`\`\`
+First over 7.5: 7.9 at position 3
+\`\`\`
+--- starter
+readings = [3.2, 4.8, 5.1, 7.9, 6.0, 8.4]
+limit = 7.5
+
+--- solution
+readings = [3.2, 4.8, 5.1, 7.9, 6.0, 8.4]
+limit = 7.5
+first_over = -1
+position = -1
+for i in range(len(readings)):
+    if readings[i] > limit:
+        first_over = readings[i]
+        position = i
+        break
+print(f"First over {limit}: {first_over} at position {position}")
+--- hint
+\`readings[i]\` is the reading at index \`i\`. Compare it with \`limit\` in an \`if\`.
+--- hint
+Inside the \`if\`, set both variables, then \`break\`. Without the \`break\`, the loop would go on to 8.4 and overwrite the answer.
+--- check test | first_over is 7.9, not 8.4
+first_over == 7.9
+?? Stop at the first reading over the limit with break.
+--- check test | position is 3
+position == 3
+--- check source | Uses break
+\\bbreak\\b
+--- check output | Prints the first reading over the limit
+First over 7.5: 7.9 at position 3
+
++++ practice | Clean the crew list
+--- task
+The starter has a list of names typed in a hurry: some have extra spaces or capitals, and some are empty or only spaces.
+
+Build a new list \`clean_names\`:
+
+1. Start with an empty list.
+2. Loop over \`names\`. For each one, make a clean copy: stripped and in small letters.
+3. If the clean copy is the empty string \`""\`, skip it with \`continue\`.
+4. Otherwise, \`append\` it to \`clean_names\`.
+
+After the loop, print \`clean_names\`, then its length:
+
+\`\`\`
+['ada', 'lin', 'sam']
+3
+\`\`\`
+--- starter
+names = ["  ada ", "", "LIN", "   ", "Sam  "]
+
+--- solution
+names = ["  ada ", "", "LIN", "   ", "Sam  "]
+clean_names = []
+for name in names:
+    clean = name.strip().lower()
+    if clean == "":
+        continue
+    clean_names.append(clean)
+print(clean_names)
+print(len(clean_names))
+--- hint
+\`[]\` is an empty list. \`append\` adds one item to its end.
+--- hint
+Clean each name first. A name of only spaces becomes \`""\` after \`strip\`, so the same test skips it too.
+--- hint
+Inside the loop: \`clean = name.strip().lower()\`, then \`if clean == "":\` with \`continue\` under it, then \`clean_names.append(clean)\`.
+--- check case | clean_names holds the three clean names
+clean_names
+=> ["ada", "lin", "sam"]
+?? Strip and lowercase each name, and skip the ones that end up empty.
+--- check source | Uses continue
+\\bcontinue\\b
+--- check output | Prints the list and its length
+['ada', 'lin', 'sam']
+3
+
++++ practice | How many halvings?
+--- task
+Keep halving an amount **while it is 1 or more**, and count the halvings.
+
+The starter already loops over three starting amounts. For each one it sets \`amount\` and \`halvings\`, then prints the result. Write the \`while\` loop in the gap, inside the \`for\` loop's body, so the output is:
+
+\`\`\`
+100.0 7
+0.5 0
+1.0 1
+\`\`\`
+
+Look at the last two: \`0.5\` is already below 1, so the body never runs. \`1.0\` is not below 1, so it is halved once.
+--- starter
+for start in [100.0, 0.5, 1.0]:
+    amount = start
+    halvings = 0
+    # your while loop here
+
+    print(start, halvings)
+--- solution
+for start in [100.0, 0.5, 1.0]:
+    amount = start
+    halvings = 0
+    while amount >= 1:
+        amount = amount / 2
+        halvings += 1
+    print(start, halvings)
+--- hint
+"1 or more" is \`amount >= 1\`. With \`>\` instead, the start of 1.0 would give 0.
+--- hint
+The \`while\` line is pushed in 4 spaces, because it sits inside the \`for\` loop. Its body is pushed in 8.
+--- hint
+The body halves \`amount\` with \`amount = amount / 2\` and adds 1 to \`halvings\`.
+--- check output | Prints the halvings for each start
+100.0 7
+0.5 0
+1.0 1
+?? 1.0 counts as "1 or more", so it is halved once. 0.5 is never halved.
+--- check test | The last run halved 1.0 once, down to 0.5
+halvings == 1 and amount == 0.5
+--- check source | Uses a while loop
+\\bwhile\\b
+
++++ practice | Fix the skipped readings
+--- task
+A reading of \`-1\` means the sensor had no good value, so it should be **skipped**, and the rest added up. This program should print the total and how many good readings there were:
+
+\`\`\`
+36 3
+\`\`\`
+
+It prints \`12 1\` instead. Fix it.
+--- starter
+readings = [12, -1, 15, -1, 9]
+total = 0
+good = 0
+for r in readings:
+    if r == -1:
+        break
+    total += r
+    good += 1
+print(total, good)
+--- solution
+readings = [12, -1, 15, -1, 9]
+total = 0
+good = 0
+for r in readings:
+    if r == -1:
+        continue
+    total += r
+    good += 1
+print(total, good)
+--- hint
+The loop stops at the first \`-1\` and never looks at 15 or 9.
+--- hint
+\`break\` ends the whole loop. The word that skips only this pass is \`continue\`.
+--- check test | total is 36 and good is 3
+total == 36 and good == 3
+--- check source absent | No break any more
+\\bbreak\\b
+--- check output | Prints 36 3
+36 3
+
++++ practice | A fuel budget
+--- task
+A spacecraft has \`fuel_kg = 500\` and a list of planned burns, each the kilograms of fuel it needs, in order.
+
+Walk through the burns with a \`for\` loop:
+
+- A burn of \`0\` was cancelled: skip it with \`continue\`.
+- If a burn needs **more** fuel than is left, print \`Not enough fuel for burn of 150 kg\` (with that burn's number) and stop with \`break\`. A burn that needs exactly the fuel left is allowed.
+- Otherwise, take the burn's fuel away from \`fuel_kg\` and add 1 to \`burns_done\`.
+
+After the loop, print one more line. With the starter's burns the whole output is:
+
+\`\`\`
+Not enough fuel for burn of 150 kg
+Burns done: 3, fuel left: 100 kg
+\`\`\`
+--- starter
+fuel_kg = 500
+planned = [120, 0, 80, 200, 150, 90]
+burns_done = 0
+
+--- solution
+fuel_kg = 500
+planned = [120, 0, 80, 200, 150, 90]
+burns_done = 0
+for burn in planned:
+    if burn == 0:
+        continue
+    if burn > fuel_kg:
+        print(f"Not enough fuel for burn of {burn} kg")
+        break
+    fuel_kg = fuel_kg - burn
+    burns_done += 1
+print(f"Burns done: {burns_done}, fuel left: {fuel_kg} kg")
+--- hint
+Check the cancelled burn first, then the fuel. "More fuel than is left" is \`burn > fuel_kg\`.
+--- hint
+Print the warning inside the \`if\`, just before \`break\`. The last line of the loop body takes the fuel away: \`fuel_kg = fuel_kg - burn\`.
+--- hint
+120 + 80 + 200 is 400, which leaves 100. The next burn, 150, is more than 100, so the loop stops there and the 90 is never reached.
+--- check test | fuel_kg is 100 and burns_done is 3
+fuel_kg == 100 and burns_done == 3
+--- check source | Uses continue and break
+\\bcontinue\\b[\\s\\S]*\\bbreak\\b|\\bbreak\\b[\\s\\S]*\\bcontinue\\b
+--- check output | Prints the warning and the summary
+Not enough fuel for burn of 150 kg
+Burns done: 3, fuel left: 100 kg
+
+=== py-08 | Functions
+--- teach
+In the last two lessons, loops repeated some lines right where they sat in your program. A function goes one step further: you write some code once, give it a name, and then use it from anywhere, as many times as you like, with different values each time.
+
+You have already used functions that Python gives you: \`print\`, \`len\`, \`round\`, \`min\`, \`max\`. Each one is like a button on a calculator. You press "square root", it does its steps, and an answer comes out. You do not need to know the steps to use the button. Now you will make buttons of your own.
+
+## Defining a function
+
+A **function** is a named block of code that you can run whenever you want. Making one is called **defining** it.
+
+\`\`\`python
+def shout(word):
+    return word.upper() + "!"
+\`\`\`
+
+Here is each part:
+
+- \`def\` is short for [[define|def-word]]. It says "a new function starts here".
+- \`shout\` is the function's name. Names follow the same rule as variables: lowercase, with underscores between words.
+- \`(word)\` lists the **parameters**: names for the values the function will be given. This function has one, called \`word\`.
+- The colon \`:\` says the block comes next.
+- The indented lines are the function's **body**, the code that runs each time it is used. In this body, \`+\` between two strings joins them into one, so \`"GO" + "!"\` is \`"GO!"\`.
+
+Defining a function does not run it. Python only notes, "there is now a function called \`shout\`." Nothing is printed yet.
+
+## Calling a function
+
+Using a function is called **calling** it. You write its name, then brackets holding the values to give it. The values you pass in are the **arguments**.
+
+\`\`\`python
+print(shout("go"))      # GO!
+print(shout("launch"))  # LAUNCH!
+\`\`\`
+
+On the first call, the argument \`"go"\` goes into the parameter \`word\`. The body runs with \`word\` holding \`"go"\`, and the answer is \`"GO!"\`. On the second call, \`word\` holds \`"launch"\` instead. [[Parameters and arguments|parameter-argument]] are two sides of the same hand-over: the parameter is the empty slot, and the argument is what you put in it.
+
+A function can have several parameters, separated by commas. The arguments fill them in order, first to first and second to second:
+
+\`\`\`python
+def greet(name, punctuation):
+    return f"Hello, {name}{punctuation}"
+
+greet("Lin", "?")    # "Hello, Lin?"
+\`\`\`
+
+Here \`"Lin"\` goes into \`name\` and \`"?"\` goes into \`punctuation\`.
+
+## Handing back an answer with return
+
+**\`return\`** hands a value back to whoever called the function. The call is then replaced by that value, as if you had typed the answer there yourself.
+
+\`\`\`python
+loud = shout("go")
+print(loud)          # GO!
+print(len(loud))     # 3
+\`\`\`
+
+\`shout("go")\` became \`"GO!"\`, and \`loud\` now holds it. \`return\` also [[ends the function|return-ends]] at once: any lines after it in the body do not run.
+
+A function can return the result of a comparison. From py-05 you know a comparison like \`n > 0\` is already \`True\` or \`False\`, so you can return it directly:
+
+\`\`\`python
+def is_positive(n):
+    return n > 0
+
+is_positive(5)       # True
+is_positive(-2)      # False
+\`\`\`
+
+**Watch out:** \`return\` and \`print\` are not the same. \`print\` shows a value on the screen. \`return\` hands it back so the rest of your program can use it. If \`shout\` used \`print\` instead of \`return\`, you would see \`GO!\` on the screen, but \`loud\` would *not* hold the word. The checks in these lessons call your functions and look at what comes back, so [[hand the answer back|return-vs-print]] with \`return\`, not \`print\`.
+
+## A body to fill in later: pass
+
+A \`def\` must have at least one indented line under it. When you have not written the body yet, you put **\`pass\`** there. \`pass\` is a statement that does nothing. It only [[holds the place|pass-placeholder]].
+
+\`\`\`python
+def is_even(n):
+    pass
+\`\`\`
+
+You will see \`pass\` in starters. Replace it with your own lines.
+
+## One more tool: split
+
+Strings have a method called **\`split\`**. (A [[method|method]] is a function attached to a value, like \`strip\` and \`lower\` from py-04.) \`text.split()\` cuts a string at the spaces and gives you a list of the words:
+
+\`\`\`python
+"a b c".split()              # ["a", "b", "c"]
+"  hi   there ".split()      # ["hi", "there"]
+"".split()                   # []
+\`\`\`
+
+Extra spaces, and spaces at the ends, are ignored, so you never get empty words. An empty string gives an empty list. And \`len\` of a list (py-06) tells you how many items it holds, so \`len("a b c".split())\` is \`3\`.
+
+::: context def-word Why it is called def
+Programmers write "define a function" to mean "make a new one and say what it does", the way a dictionary defines a word. Python shortens "define" to \`def\` because it is typed so often. Other languages use other words: JavaScript uses \`function\`, and C and C++ start with the type of value the function returns. The idea is the same everywhere: a name, some parameters, and a body.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <text x="40" y="52" font-size="13" text-anchor="middle" fill="#1d6fd1">"go"</text>
+  <line x1="62" y1="60" x2="122" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="130,60 120,55 120,65" fill="#1f2a44"/>
+  <text x="40" y="78" font-size="11" text-anchor="middle" fill="#6c7a93">argument</text>
+  <rect x="130" y="30" width="110" height="60" rx="8" fill="#8fb8f0" stroke="#1f2a44" stroke-width="2"/>
+  <text x="185" y="56" font-size="14" text-anchor="middle" fill="#1f2a44" font-weight="700">shout</text>
+  <text x="185" y="75" font-size="11" text-anchor="middle" fill="#1f2a44">(word)</text>
+  <line x1="240" y1="60" x2="292" y2="60" stroke="#1f2a44" stroke-width="2"/>
+  <polygon points="300,60 290,55 290,65" fill="#1f2a44"/>
+  <text x="325" y="52" font-size="13" text-anchor="middle" fill="#b4232c">"GO!"</text>
+  <text x="325" y="78" font-size="11" text-anchor="middle" fill="#6c7a93">returned</text>
+  <text x="185" y="110" font-size="11" text-anchor="middle" fill="#6c7a93">same machine, any input</text>
+</svg>
+\`\`\`
+:::
+
+::: context parameter-argument Slot and value
+The two words are easy to mix up, so here is a way to keep them apart. A **parameter** is part of the definition: a name waiting for a value, like a blank on a form. An **argument** is part of the call: the real value you write in the blank. In \`def shout(word)\`, \`word\` is the parameter. In \`shout("go")\`, \`"go"\` is the argument. Each call can give a different argument, and the same parameter name holds it for that call only.
+:::
+
+::: context return-ends Return is the exit door
+When Python reaches \`return\`, it leaves the function immediately and hands the value back. That means you can put a \`return\` inside an \`if\` to finish early:
+
+\`\`\`python
+def sign(n):
+    if n < 0:
+        return "negative"
+    return "not negative"
+\`\`\`
+
+For \`sign(-3)\` the first \`return\` runs and the second is never reached.
+:::
+
+::: context return-vs-print Screen or hand-back
+Think of asking a friend to add up a bill. \`print\` is your friend saying the total out loud. \`return\` is your friend writing it on a card and handing it to you, so you can do something with it: split it, compare it, write it into a list. A program that only prints cannot use its own results. That is why almost every real function returns its answer and leaves printing to the code that called it.
+:::
+
+::: context pass-placeholder Why pass exists
+Python uses indentation to see where a block begins and ends, so an empty block would be invisible. \`def is_even(n):\` followed by nothing is an error. \`pass\` is a real line that does nothing, so the block exists and the program runs. Engineers use it while sketching a program: they write every function's name and parameters first, with \`pass\` bodies, and fill them in one at a time.
+:::
+
+::: context method A function that belongs to a value
+A **method** is a function that comes with a value and works on that value. You call it with a dot: \`text.split()\` means "the \`split\` that belongs to \`text\`". Compare \`len(text)\`, an ordinary function that you hand the value to. Strings, lists and many other kinds of value carry their own methods. You met \`strip\`, \`lower\` and \`upper\` in py-04, and \`append\` in py-06.
+:::
+--- task
+Write two functions.
+
+1. \`word_count(text)\` returns how many words are in \`text\`. Words are separated by spaces, so \`text.split()\` gives you the list of words, and \`len\` of that list is the count. For example, \`word_count("the quick brown fox")\` returns \`4\`, and \`word_count("")\` returns \`0\`.
+2. \`is_even(n)\` returns \`True\` when \`n\` is even and \`False\` otherwise. A number is even when \`n % 2 == 0\`.
+
+Use \`return\` in both, not \`print\`. Replace each \`pass\` in the starter with your \`return\` line.
+--- starter
+def word_count(text):
+    pass
+
+
+def is_even(n):
+    pass
+--- solution
+def word_count(text):
+    return len(text.split())
+
+
+def is_even(n):
+    return n % 2 == 0
+--- hint
+Each function needs one line in its body: a \`return\` followed by the answer. Replace \`pass\` with it, indented 4 spaces.
+--- hint
+\`"a b c".split()\` is \`["a", "b", "c"]\`, and \`len\` of that is 3. So \`word_count\` returns \`len(text.split())\`.
+--- hint
+\`n % 2 == 0\` is already True or False, like \`n > 0\` in \`is_positive\`, so you can return it directly: \`return n % 2 == 0\`.
+--- check case | word_count("the quick brown fox") is 4
+word_count("the quick brown fox")
+=> 4
+--- check case | word_count handles extra spaces
+word_count("  spaced   out  ")
+=> 2
+--- check case | word_count("") is 0
+word_count("")
+=> 0
+--- check case | is_even(10) is True
+is_even(10)
+=> True
+--- check case | is_even(7) is False
+is_even(7)
+=> False
+
++++ practice | Kilometers per hour to meters per second
+--- task
+Write a function \`kmh_to_ms(speed_kmh)\` that returns the speed in meters per second: \`speed_kmh\` divided by \`3.6\`, rounded with \`round\` to 2 digits after the decimal point.
+
+For example, \`kmh_to_ms(36)\` returns \`10.0\`, \`kmh_to_ms(100)\` returns \`27.78\`, and \`kmh_to_ms(0)\` returns \`0.0\`.
+
+Use \`return\`, not \`print\`.
+--- starter
+def kmh_to_ms(speed_kmh):
+    pass
+--- solution
+def kmh_to_ms(speed_kmh):
+    return round(speed_kmh / 3.6, 2)
+--- hint
+The body is one line: \`return\` followed by the answer.
+--- hint
+The answer is \`round(speed_kmh / 3.6, 2)\`.
+--- check case | kmh_to_ms(36) is 10.0
+kmh_to_ms(36)
+=> 10.0
+--- check case | kmh_to_ms(100) is 27.78
+kmh_to_ms(100)
+=> 27.78
+--- check case | kmh_to_ms(0) is 0.0
+kmh_to_ms(0)
+=> 0.0
+
++++ practice | Safe to launch?
+--- task
+Write a function \`can_launch(wind_kmh, lightning)\` that returns \`True\` when it is safe to launch and \`False\` otherwise.
+
+It is safe when **both** are true: \`wind_kmh\` is below 40, and \`lightning\` is \`False\`.
+
+So \`can_launch(10, False)\` is \`True\`, \`can_launch(40, False)\` is \`False\` (40 is not below 40), and \`can_launch(5, True)\` is \`False\`. Return the answer of the test itself; you do not need an \`if\`.
+--- starter
+def can_launch(wind_kmh, lightning):
+    pass
+--- solution
+def can_launch(wind_kmh, lightning):
+    return wind_kmh < 40 and not lightning
+--- hint
+A test like \`wind_kmh < 40\` is already \`True\` or \`False\`, so it can go straight after \`return\`.
+--- hint
+Join the two tests with \`and\`. "\`lightning\` is \`False\`" can be written \`not lightning\`.
+--- check case | Calm and no lightning: True
+can_launch(10, False)
+=> True
+--- check case | Exactly 40 is too windy
+can_launch(40, False)
+=> False
+?? Below 40 means 39 and under. Use < 40, not <= 40.
+--- check case | Lightning stops the launch
+can_launch(5, True)
+=> False
+--- check case | Windy and lightning: False
+can_launch(60, True)
+=> False
+
++++ practice | The longest word
+--- task
+Write a function \`longest_word(text)\` that returns the longest word in \`text\`. Split the text into words with \`split\`, then loop over them and keep the longest one seen so far.
+
+- If two words tie for longest, return the **first** of them.
+- If \`text\` has no words, return the empty string \`""\`.
+
+For example, \`longest_word("go for launch")\` returns \`"launch"\`, \`longest_word("one two six")\` returns \`"one"\`, and \`longest_word("")\` returns \`""\`.
+--- starter
+def longest_word(text):
+    pass
+--- solution
+def longest_word(text):
+    best = ""
+    for word in text.split():
+        if len(word) > len(best):
+            best = word
+    return best
+--- hint
+Start with \`best = ""\` before the loop. An empty string has length 0, so the first word always beats it, and an empty text returns \`""\`.
+--- hint
+Replace \`best\` only when a word is strictly longer: \`len(word) > len(best)\`. With \`>=\`, a later word of the same length would win the tie.
+--- hint
+Put \`return best\` after the loop, pushed in only 4 spaces.
+--- check case | longest_word("go for launch") is "launch"
+longest_word("go for launch")
+=> "launch"
+--- check case | A tie keeps the first word
+longest_word("one two six")
+=> "one"
+?? Replace the best word only when the new one is strictly longer.
+--- check case | No words gives ""
+longest_word("")
+=> ""
+--- check case | Extra spaces do not matter
+longest_word("  a   bb  ")
+=> "bb"
+
++++ practice | From highest to lowest
+--- task
+Write a function \`spread(numbers)\` that returns the largest number in the list minus the smallest.
+
+- For a list with one number, the spread is \`0\`.
+- For an empty list, return \`0\` too. (\`max\` and \`min\` stop the program with an error on an empty list, so check first.)
+
+For example, \`spread([3, 9, 4])\` returns \`6\`, \`spread([-5, -1])\` returns \`4\`, \`spread([7])\` returns \`0\`, and \`spread([])\` returns \`0\`.
+--- starter
+def spread(numbers):
+    pass
+--- solution
+def spread(numbers):
+    if len(numbers) == 0:
+        return 0
+    return max(numbers) - min(numbers)
+--- hint
+Deal with the empty list first, with an \`if\` and an early \`return\`.
+--- hint
+After that check, the answer is \`max(numbers) - min(numbers)\`. For one number, max and min are the same, so this gives 0 by itself.
+--- check case | spread([3, 9, 4]) is 6
+spread([3, 9, 4])
+=> 6
+--- check case | Negative numbers
+spread([-5, -1])
+=> 4
+--- check case | One number gives 0
+spread([7])
+=> 0
+--- check case | An empty list gives 0
+spread([])
+=> 0
+?? Check len(numbers) == 0 before calling max or min.
+
++++ practice | Fix the early return
+--- task
+\`count_positive(numbers)\` should return how many numbers in the list are greater than 0. For example, \`count_positive([3, -1, 4, 0, 5])\` should return \`3\`, and \`count_positive([])\` should return \`0\`.
+
+Instead it gives the wrong answer for most lists, and \`None\` for an empty list. Find the line that is in the wrong place and fix it.
+--- starter
+def count_positive(numbers):
+    count = 0
+    for n in numbers:
+        if n > 0:
+            count += 1
+        return count
+--- solution
+def count_positive(numbers):
+    count = 0
+    for n in numbers:
+        if n > 0:
+            count += 1
+    return count
+--- hint
+\`return\` ends the function at once. Where is it now: inside the loop, or after it?
+--- hint
+Push \`return count\` back to 4 spaces, so it runs once, after the loop has seen every number.
+--- check case | count_positive([3, -1, 4, 0, 5]) is 3
+count_positive([3, -1, 4, 0, 5])
+=> 3
+--- check case | The first number is negative
+count_positive([-2, 7])
+=> 1
+--- check case | An empty list gives 0
+count_positive([])
+=> 0
+?? With the return inside the loop, an empty list never reaches it.
+
++++ practice | A readable duration
+--- task
+Write a function \`format_duration(seconds)\` that turns a whole number of seconds into text like \`"1h 2m 5s"\`.
+
+- Work out the hours, the minutes left over, and the seconds left over, with \`//\` and \`%\`.
+- Leave out any part that is zero: \`3600\` gives \`"1h"\`, and \`7205\` gives \`"2h 5s"\`.
+- One space goes between parts, and there is no space at either end.
+- \`0\` gives \`"0s"\`.
+
+So \`format_duration(3725)\` returns \`"1h 2m 5s"\` and \`format_duration(60)\` returns \`"1m"\`.
+--- starter
+def format_duration(seconds):
+    pass
+--- solution
+def format_duration(seconds):
+    hours = seconds // 3600
+    minutes = seconds % 3600 // 60
+    secs = seconds % 60
+    text = ""
+    if hours > 0:
+        text = text + f"{hours}h "
+    if minutes > 0:
+        text = text + f"{minutes}m "
+    if secs > 0 or text == "":
+        text = text + f"{secs}s"
+    return text.strip()
+--- hint
+Start with an empty string and add each part that is not zero, with \`+\`, using an f-string like \`f"{hours}h "\`.
+--- hint
+Adding a space after every part, then calling \`strip()\` on the result, removes the extra space at the end.
+--- hint
+The seconds part goes in when it is not zero, **or** when nothing has gone in yet: that is how \`0\` becomes \`"0s"\`.
+--- check case | format_duration(3725) is "1h 2m 5s"
+format_duration(3725)
+=> "1h 2m 5s"
+--- check case | Only hours
+format_duration(3600)
+=> "1h"
+--- check case | Only minutes
+format_duration(60)
+=> "1m"
+--- check case | Minutes of zero are left out
+format_duration(7205)
+=> "2h 5s"
+--- check case | Zero seconds gives "0s"
+format_duration(0)
+=> "0s"
+?? When every part is zero, the answer is still "0s".
+
+=== py-08b | Default values and None
+--- teach
+Last lesson you wrote functions with parameters, and every call had to give each parameter an argument. This lesson shows two more things about functions: how to give a parameter a value it uses when you leave it out, and what a function hands back when it has no \`return\`.
+
+Picture ordering a drink. If you do not say a size, you get a medium. You only say the size when you want something different. That "medium unless you say otherwise" is a default.
+
+## A default value
+
+A **default value** is the value a parameter uses when the call leaves it out. You write it in the \`def\` line with \`=\` after the parameter's name:
+
+\`\`\`python
+def greet(name, punctuation="!"):
+    return f"Hello, {name}{punctuation}"
+
+greet("Ada")         # "Hello, Ada!"
+greet("Lin", "?")    # "Hello, Lin?"
+\`\`\`
+
+Read \`punctuation="!"\` as "punctuation, which is \`"!"\` unless you say otherwise". The first call gives only one argument, so \`punctuation\` uses its default, \`"!"\`. The second call gives two arguments, so \`"?"\` replaces the default for that call.
+
+This \`=\` works like the \`=\` from py-02: it gives the name a value. It only happens when the caller does not give one.
+
+Defaults suit values that are almost always the same, such as the [[unit a number is measured in|units-default]].
+
+**Watch out:** parameters with a default must [[come after the ones without|defaults-last]]. \`def greet(name, punctuation="!")\` is fine. \`def greet(punctuation="!", name)\` is an error, and Python will not run the program.
+
+## None: the value for "nothing"
+
+Some functions do a job and have no answer to hand back, like one that prints a message. Such a function has no \`return\` line. When it finishes, it still hands something back: **\`None\`**, Python's value for "[[nothing|none-value]]".
+
+\`\`\`python
+def say(text):
+    print(text)
+
+result = say("hi")   # prints: hi
+print(result)        # None
+\`\`\`
+
+\`say("hi")\` printed \`hi\`, then finished without a \`return\`, so the call became \`None\`, and \`result\` holds \`None\`. \`None\` is written with a capital N and no quotes, like \`True\` and \`False\`.
+
+A function whose body is only \`pass\` also returns \`None\`. That is what the starter functions in py-08 gave back before you wrote them.
+
+**Watch out:** this is where [[mixing up the two|print-instead-of-return]] shows itself. If a function prints its answer instead of returning it, the call becomes \`None\`. When a value you expected turns out to be \`None\`, look for a missing \`return\`.
+
+::: context units-default Why engineers label units
+A default is a good place to write down the unit a number is measured in. In 1999 NASA's Mars Climate Orbiter was lost at Mars. One team's software reported thruster pushes in pound-force seconds, and the software that used those numbers expected newton-seconds. Every number was off by a factor of about 4.45. Engineers learned to keep the unit right next to every value, so a reader never has to guess.
+:::
+
+::: context defaults-last Why defaults go at the end
+Arguments fill parameters in order, first to first. If a parameter with a default came first, Python could not tell whether a single argument was meant for it or for the one after. Putting every default at the end removes the guess: the arguments fill the parameters from the left, and any left over at the end use their defaults.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 130" font-family="Inter, Arial, sans-serif">
+  <text x="180" y="18" font-size="12" text-anchor="middle" fill="#1f2a44">greet("Ada")</text>
+  <rect x="60" y="30" width="110" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="115" y="53" font-size="12" text-anchor="middle" fill="#1f2a44">name</text>
+  <rect x="190" y="30" width="110" height="36" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="245" y="53" font-size="12" text-anchor="middle" fill="#1f2a44">punctuation</text>
+  <text x="115" y="90" font-size="13" text-anchor="middle" fill="#1d6fd1">"Ada"</text>
+  <text x="115" y="108" font-size="11" text-anchor="middle" fill="#6c7a93">from the call</text>
+  <text x="245" y="90" font-size="13" text-anchor="middle" fill="#b4232c">"!"</text>
+  <text x="245" y="108" font-size="11" text-anchor="middle" fill="#6c7a93">the default</text>
+</svg>
+\`\`\`
+:::
+
+::: context none-value Nothing is not zero
+\`None\` is different from \`0\` and from the empty string \`""\`. Zero is a number and \`""\` is a string with no letters, but \`None\` means "there is no value here at all". Its type is called \`NoneType\`, and there is only one \`None\` in any program. You will meet it again as the result of a lookup that finds nothing, and as a starting value for a variable that will be filled in later.
+:::
+
+::: context print-instead-of-return The bug that hides
+A function that prints instead of returning looks as if it works: the right answer appears on the screen. The problem only shows up when other code tries to use the result. Adding one to it, for example, stops the program with an error, because Python cannot add a number to \`None\`. This is one of the most common bugs for new Python programmers, and an easy one to fix once you know the sign.
+:::
+
+--- task
+Write two functions.
+
+1. \`format_speed(value, unit)\` must give \`unit\` the default value \`"m/s"\`. It returns the value and the unit with one space between them, built with an f-string. So \`format_speed(340)\` returns \`"340 m/s"\`, and \`format_speed(7.8, "km/s")\` returns \`"7.8 km/s"\`.
+2. \`announce(text)\` prints \`text\` and has no \`return\` line.
+
+The last two lines of the starter call \`announce("Engines on")\` and print what it handed back. When both functions are right, the output is:
+
+\`\`\`
+Engines on
+None
+\`\`\`
+--- starter
+def format_speed(value, unit):
+    pass
+
+
+def announce(text):
+    pass
+
+
+result = announce("Engines on")
+print(result)
+--- solution
+def format_speed(value, unit="m/s"):
+    return f"{value} {unit}"
+
+
+def announce(text):
+    print(text)
+
+
+result = announce("Engines on")
+print(result)
+--- hint
+In the \`def\` line, change \`unit\` to \`unit="m/s"\`, the same way \`greet\` has \`punctuation="!"\`.
+--- hint
+The body of \`format_speed\` is one line: \`return\` and an f-string with \`{value}\`, a space, and \`{unit}\`.
+--- hint
+The body of \`announce\` is one line, \`print(text)\`, with no \`return\`. The call then gives back \`None\`, and the starter's last line prints it.
+--- check case | format_speed(340) uses the default unit
+format_speed(340)
+=> "340 m/s"
+--- check case | format_speed(7.8, "km/s") uses the unit given
+format_speed(7.8, "km/s")
+=> "7.8 km/s"
+--- check output | announce prints the text and returns None
+Engines on
+None
+
++++ practice | Fuel with a usual rate
+--- task
+Write a function \`fuel_needed(distance_km, rate=0.25)\` that returns the fuel needed for a trip: \`distance_km\` times \`rate\`. Give \`rate\` the default value \`0.25\`, so a caller can leave it out.
+
+So \`fuel_needed(100)\` returns \`25.0\`, \`fuel_needed(100, 0.5)\` returns \`50.0\`, and \`fuel_needed(0)\` returns \`0.0\`.
+--- starter
+def fuel_needed(distance_km, rate):
+    pass
+--- solution
+def fuel_needed(distance_km, rate=0.25):
+    return distance_km * rate
+--- hint
+A default goes in the \`def\` line: \`rate=0.25\`.
+--- hint
+The body is one line: \`return distance_km * rate\`.
+--- check case | fuel_needed(100) uses the default rate
+fuel_needed(100)
+=> 25.0
+?? Give rate a default in the def line: rate=0.25.
+--- check case | fuel_needed(100, 0.5) uses the rate given
+fuel_needed(100, 0.5)
+=> 50.0
+--- check case | No distance, no fuel
+fuel_needed(0)
+=> 0.0
+
++++ practice | The first negative reading, or None
+--- task
+Write a function \`first_negative(numbers)\` that returns the first number in the list that is below 0.
+
+If there is no such number, it returns \`None\`. For example, \`first_negative([4, -2, -7])\` returns \`-2\`, and both \`first_negative([1, 2])\` and \`first_negative([])\` return \`None\`.
+--- starter
+def first_negative(numbers):
+    pass
+--- solution
+def first_negative(numbers):
+    for n in numbers:
+        if n < 0:
+            return n
+    return None
+--- hint
+Loop over the numbers. \`return\` inside the loop ends the function at once, at the first match.
+--- hint
+If the loop finishes without finding one, the line after the loop runs: \`return None\`.
+--- check case | first_negative([4, -2, -7]) is -2
+first_negative([4, -2, -7])
+=> -2
+--- check case | No negatives gives None
+first_negative([1, 2])
+=> None
+--- check case | An empty list gives None
+first_negative([])
+=> None
+--- check case | Zero is not negative
+first_negative([0, 3, -1])
+=> -1
+
++++ practice | A countdown list
+--- task
+Write a function \`countdown(start=3)\` that returns a list of the numbers from \`start\` down to \`1\`. Build it with a \`while\` loop and \`append\`.
+
+- \`countdown()\` returns \`[3, 2, 1]\`, using the default.
+- \`countdown(5)\` returns \`[5, 4, 3, 2, 1]\`.
+- \`countdown(0)\` returns \`[]\`, an empty list.
+--- starter
+def countdown(start):
+    pass
+--- solution
+def countdown(start=3):
+    numbers = []
+    n = start
+    while n > 0:
+        numbers.append(n)
+        n = n - 1
+    return numbers
+--- hint
+Give \`start\` its default in the \`def\` line. Inside, begin with an empty list.
+--- hint
+Loop \`while n > 0:\`, appending \`n\` and then taking 1 away from it. For a start of 0 the loop runs zero times, and the list stays empty.
+--- check case | countdown() uses the default of 3
+countdown()
+=> [3, 2, 1]
+--- check case | countdown(5)
+countdown(5)
+=> [5, 4, 3, 2, 1]
+--- check case | countdown(0) is empty
+countdown(0)
+=> []
+--- check source | Uses a while loop
+\\bwhile\\b
+
++++ practice | Divide, or fall back
+--- task
+Write a function \`safe_divide(a, b, fallback=None)\` that returns \`a\` divided by \`b\`. When \`b\` is \`0\`, it returns \`fallback\` instead of dividing.
+
+- \`safe_divide(6, 3)\` returns \`2.0\`.
+- \`safe_divide(5, 0)\` returns \`None\`, the default fallback.
+- \`safe_divide(5, 0, 0)\` returns \`0\`: here the caller chose \`0\` as the fallback.
+- \`safe_divide(0, 5)\` returns \`0.0\`: dividing zero is fine.
+--- starter
+def safe_divide(a, b, fallback):
+    return a / b
+--- solution
+def safe_divide(a, b, fallback=None):
+    if b == 0:
+        return fallback
+    return a / b
+--- hint
+Give \`fallback\` the default \`None\` in the \`def\` line.
+--- hint
+Check \`b == 0\` first, and return early. Check \`b\`, not \`a\`: dividing 0 by 5 is allowed.
+--- check case | safe_divide(6, 3) is 2.0
+safe_divide(6, 3)
+=> 2.0
+--- check case | Dividing by 0 gives None
+safe_divide(5, 0)
+=> None
+--- check case | A fallback of 0 is used
+safe_divide(5, 0, 0)
+=> 0
+--- check case | Zero divided by 5 is 0.0
+safe_divide(0, 5)
+=> 0.0
+
++++ practice | Fix the describer
+--- task
+\`describe(planet, moons)\` should **return** a sentence like \`"Mars has 2 moons"\`, and \`moons\` should default to \`0\`, so \`describe("Venus")\` returns \`"Venus has 0 moons"\`.
+
+The last two lines of the starter use it. When the function is right, the program prints:
+
+\`\`\`
+MARS HAS 2 MOONS
+\`\`\`
+
+It stops with an error instead. Fix the function's two mistakes, and leave the last two lines alone.
+--- starter
+def describe(planet, moons):
+    print(f"{planet} has {moons} moons")
+
+
+line = describe("Mars", 2)
+print(line.upper())
+--- solution
+def describe(planet, moons=0):
+    return f"{planet} has {moons} moons"
+
+
+line = describe("Mars", 2)
+print(line.upper())
+--- hint
+A function that prints and has no \`return\` hands back \`None\`, and \`None\` has no \`upper\`.
+--- hint
+Change \`print(...)\` to \`return ...\`, and give \`moons\` a default: \`moons=0\`.
+--- check case | describe("Mars", 2) returns the sentence
+describe("Mars", 2)
+=> "Mars has 2 moons"
+--- check case | moons defaults to 0
+describe("Venus")
+=> "Venus has 0 moons"
+--- check output | Prints the sentence in capitals
+MARS HAS 2 MOONS
+
++++ practice | A sensor report
+--- task
+Write a function \`make_report(readings, unit="C", limit=None)\` that returns a short report about a list of readings:
+
+- If \`readings\` is empty, return \`None\`.
+- Otherwise the report is like \`"readings: 3, max: 24.5 C"\`: the number of readings, the largest reading, and the unit.
+- If a \`limit\` was given and the largest reading is over it, add \`" (over limit)"\` to the end.
+
+A limit of \`0\` is a real limit, so compare \`limit\` with \`None\` using \`!=\`, not by looking at its size.
+
+For example:
+
+- \`make_report([21.0, 24.5, 22.0])\` returns \`"readings: 3, max: 24.5 C"\`.
+- \`make_report([290.5, 301.25], "K")\` returns \`"readings: 2, max: 301.25 K"\`.
+- \`make_report([21.0, 24.5], "C", 24)\` returns \`"readings: 2, max: 24.5 C (over limit)"\`.
+- \`make_report([], "C", 10)\` returns \`None\`.
+--- starter
+def make_report(readings, unit, limit):
+    pass
+--- solution
+def make_report(readings, unit="C", limit=None):
+    if len(readings) == 0:
+        return None
+    biggest = max(readings)
+    report = f"readings: {len(readings)}, max: {biggest} {unit}"
+    if limit != None and biggest > limit:
+        report = report + " (over limit)"
+    return report
+--- hint
+Deal with the empty list first, then work out \`max(readings)\` once and keep it in a variable.
+--- hint
+Build the report with an f-string. Then, if \`limit != None and biggest > limit\`, join \`" (over limit)"\` onto the end with \`+\`.
+--- check case | Uses the default unit and no limit
+make_report([21.0, 24.5, 22.0])
+=> "readings: 3, max: 24.5 C"
+--- check case | Uses the unit given
+make_report([290.5, 301.25], "K")
+=> "readings: 2, max: 301.25 K"
+--- check case | Over the limit
+make_report([21.0, 24.5], "C", 24)
+=> "readings: 2, max: 24.5 C (over limit)"
+--- check case | Under the limit
+make_report([21.0, 24.5], "C", 30)
+=> "readings: 2, max: 24.5 C"
+--- check case | A limit of 0 still counts
+make_report([2.0], "C", 0)
+=> "readings: 1, max: 2.0 C (over limit)"
+?? 0 is a real limit. Compare limit with None, not with 0.
+--- check case | No readings gives None
+make_report([], "C", 10)
+=> None
+
+=== py-09 | Dictionaries
+--- teach
+Last lesson you finished learning how functions hand values back. Now you will meet a new way to store values, and you will use it inside a function.
+
+In py-06 you found things in a list by their position: \`planets[0]\` is the first. That works when you know where something sits. But think of a contacts app on a phone. You do not look up "contact number 47". You look up a *name*, and it gives you the number. A dictionary lets Python [[look values up by name|named-values]].
+
+## Keys and values
+
+A **dictionary** (Python writes it \`dict\`) holds pairs. Each pair has a **key**, the thing you look up, and a **value**, what you get back. It works like a [[lookup table|lookup-table]].
+
+\`\`\`python
+prices = {"input": 3, "output": 15}
+\`\`\`
+
+Here is how to read it:
+
+- Curly braces \`{\` and \`}\` start and end the dictionary.
+- Each pair is written \`key: value\`. The colon \`:\` joins a key to its value.
+- Commas separate the pairs.
+
+This dictionary holds prices in dollars per million tokens (the token prices from py-03, scaled up to whole numbers). The key \`"input"\` goes with the value \`3\`, and the key \`"output"\` goes with the value \`15\`. \`{}\` on its own is an **empty dictionary**, with no pairs yet.
+
+## Looking a value up
+
+To get a value, put its key in square brackets, the way you put a position in square brackets for a list:
+
+\`\`\`python
+prices["input"]      # 3
+prices["output"]     # 15
+\`\`\`
+
+**Watch out:** if the key is not in the dictionary, Python stops with an error called a \`KeyError\`, one kind of [[error that stops a running program|keyerror]]. \`prices["cached"]\` fails, because there is no \`"cached"\` key yet. Keys must also match exactly: \`"Input"\` with a capital I is a different key from \`"input"\`.
+
+## Adding or changing a pair
+
+To add a pair, give a new key a value with \`=\`:
+
+\`\`\`python
+prices["cached"] = 0.3
+print(prices)        # {'input': 3, 'output': 15, 'cached': 0.3}
+\`\`\`
+
+If the key is already there, the same line replaces its value instead, because [[each key appears only once|unique-keys]]:
+
+\`\`\`python
+prices["input"] = 4
+prices["input"]      # 4
+\`\`\`
+
+Notice that \`print\` shows strings in a dictionary with single quotes. Single and double quotes mean the same thing in Python.
+
+## Is this key in there?
+
+\`in\`, which you used with strings in py-04, tells you whether a key is in a dictionary. It gives \`True\` or \`False\`:
+
+\`\`\`python
+"output" in prices   # True
+"missing" in prices  # False
+\`\`\`
+
+\`in\` looks at the keys, not the values. \`15 in prices\` is \`False\`, because \`15\` is a value, not a key.
+
+## A safe lookup with .get
+
+The method **\`.get\`** looks up a key, but instead of an error it gives you a fallback value when the key is missing. You give it the key, then the fallback:
+
+\`\`\`python
+prices.get("output", 0)    # 15  (the key is there, so you get its value)
+prices.get("missing", 0)   # 0   (no such key, so you get the fallback)
+\`\`\`
+
+Read \`prices.get("missing", 0)\` as "the value for \`"missing"\`, or \`0\` if there is none".
+
+## Looping over keys and values
+
+The method **\`.items()\`** gives you every pair in the dictionary. In a \`for\` loop you can take each pair apart into [[two loop variables at once|unpacking]], one for the key and one for the value:
+
+\`\`\`python
+for key, value in prices.items():
+    print(key, value)
+# input 4
+# output 15
+# cached 0.3
+\`\`\`
+
+The pairs come out in the order they were added.
+
+## Counting with a dictionary
+
+Dictionaries are perfect for counting how many times each thing appears. Start with an empty dictionary. For each item, look up its count so far with \`.get(item, 0)\` (zero if it is new), add one, and store the result back. This is a [[tally|tally]].
+
+\`\`\`python
+counts = {}
+for color in ["red", "blue", "red"]:
+    counts[color] = counts.get(color, 0) + 1
+print(counts)        # {'red': 2, 'blue': 1}
+\`\`\`
+
+Pass by pass:
+
+| Pass | \`color\` | \`counts.get(color, 0)\` | \`counts\` after the pass |
+|---|---|---|---|
+| 1 | \`"red"\` | 0 | \`{'red': 1}\` |
+| 2 | \`"blue"\` | 0 | \`{'red': 1, 'blue': 1}\` |
+| 3 | \`"red"\` | 1 | \`{'red': 2, 'blue': 1}\` |
+
+You can put this inside a function and \`return counts\` at the end, the same way py-08 returned its answers. If the loop has nothing to go through, \`counts\` stays \`{}\`.
+
+::: context named-values Data with names on it
+Much of the data engineers handle is a set of named values: a weather report with \`"wind"\` and \`"temperature"\`, or a spacecraft status with \`"altitude"\` and \`"battery"\`. When programs send data like this to each other over the internet, they very often use a text format called **JSON**, which looks almost the same as a Python dictionary: \`{"altitude": 408, "unit": "km"}\`. Python's \`json\` module turns JSON text into dictionaries and back, so everything in this lesson works on it.
+:::
+
+::: context lookup-table Keys point to values
+A lookup table is a two-column list where you find a row by the left column and read the right one, like the table of contents in a book. In a dictionary the keys are the left column and the values are the right. Python finds a key very quickly, without reading through every pair, even when the dictionary holds millions of them.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" font-family="Inter, Arial, sans-serif">
+  <text x="100" y="18" font-size="12" text-anchor="middle" fill="#6c7a93">keys</text>
+  <text x="260" y="18" font-size="12" text-anchor="middle" fill="#6c7a93">values</text>
+  <rect x="45" y="28" width="110" height="30" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="100" y="48" font-size="12" text-anchor="middle" fill="#1f2a44">"input"</text>
+  <rect x="45" y="68" width="110" height="30" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="100" y="88" font-size="12" text-anchor="middle" fill="#1f2a44">"output"</text>
+  <rect x="45" y="108" width="110" height="30" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="100" y="128" font-size="12" text-anchor="middle" fill="#1f2a44">"cached"</text>
+  <rect x="215" y="28" width="90" height="30" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="260" y="48" font-size="12" text-anchor="middle" fill="#1f2a44">3</text>
+  <rect x="215" y="68" width="90" height="30" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="260" y="88" font-size="12" text-anchor="middle" fill="#1f2a44">15</text>
+  <rect x="215" y="108" width="90" height="30" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="260" y="128" font-size="12" text-anchor="middle" fill="#1f2a44">0.3</text>
+  <line x1="155" y1="43" x2="205" y2="43" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="213,43 203,38 203,48" fill="#1d6fd1"/>
+  <line x1="155" y1="83" x2="205" y2="83" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="213,83 203,78 203,88" fill="#1d6fd1"/>
+  <line x1="155" y1="123" x2="205" y2="123" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="213,123 203,118 203,128" fill="#1d6fd1"/>
+</svg>
+\`\`\`
+:::
+
+::: context keyerror When Python stops with an error
+An error that happens while a program is running is called an **exception**. Python stops, and prints the kind of error and the line where it happened. \`KeyError: 'cached'\` means "you asked for the key \`'cached'\` and there is no such key". The message is a clue, not a disaster: it names the exact key that was missing. A later lesson shows how a program can catch an exception and carry on. Until then, \`in\` and \`.get\` let you avoid this one.
+:::
+
+::: context unique-keys One key, one value
+A dictionary can never hold the same key twice. Writing to a key that already exists replaces the old value; it does not add a second pair. That is what makes a lookup give one clear answer. Values do not have that rule: two different keys can hold the same value, like two friends who share a phone number.
+:::
+
+::: context unpacking Taking a pair apart
+\`.items()\` hands the loop one pair at a time, such as \`("input", 4)\`. Writing two names after \`for\`, separated by a comma, takes each pair apart: the first part goes into \`key\`, the second into \`value\`. This is called **unpacking**. The names are up to you: \`for name, price in prices.items()\` works the same way and reads better.
+:::
+
+::: context tally Counting like a tally sheet
+Picture counting cars by color with a pencil. When a color appears for the first time, you write it down with one mark. When it appears again, you add a mark next to it. The dictionary does the same: \`.get(color, 0)\` is "how many marks so far, or zero if it is not written down yet", and \`+ 1\` is the new mark. This counting pattern is one of the most used patterns in all of Python.
+:::
+--- task
+Write \`count_words(text)\` that returns a dictionary mapping each word to how many times it appears.
+
+- Make the text lowercase and split it into words with \`text.lower().split()\`, so \`"The the"\` counts \`the\` twice.
+- Loop over those words, and count each one with \`counts[word] = counts.get(word, 0) + 1\`, like the color example.
+- Return \`counts\` at the end.
+
+For example, \`count_words("to be or not to be")\` returns \`{"to": 2, "be": 2, "or": 1, "not": 1}\`, and \`count_words("")\` returns \`{}\`. The starter already makes the empty dictionary and returns it.
+--- starter
+def count_words(text):
+    counts = {}
+    return counts
+--- solution
+def count_words(text):
+    counts = {}
+    for word in text.lower().split():
+        counts[word] = counts.get(word, 0) + 1
+    return counts
+--- hint
+Add a \`for\` loop between \`counts = {}\` and \`return counts\`. Loop over \`text.lower().split()\`.
+--- hint
+The loop is \`for word in text.lower().split():\`, and its body is indented 8 spaces, because it sits inside the function and inside the loop.
+--- hint
+The body is \`counts[word] = counts.get(word, 0) + 1\`, which adds one, starting from zero the first time a word is seen. Keep \`return counts\` indented 4 spaces, so it runs once, after the loop.
+--- check case | Counts repeated words
+count_words("to be or not to be")
+=> {"to": 2, "be": 2, "or": 1, "not": 1}
+--- check case | Ignores case
+count_words("The the THE")
+=> {"the": 3}
+--- check case | An empty string gives an empty dict
+count_words("")
+=> {}
+
++++ practice | Everything in the store
+--- task
+A dictionary maps each item in a store room to how many there are, such as \`{"oxygen": 12, "water": 40}\`.
+
+Write a function \`total_items(stock)\` that returns how many items there are altogether. Loop over \`stock.items()\` and keep a running total of the values. Do not use \`sum\`.
+
+So \`total_items({"oxygen": 12, "water": 40})\` returns \`52\`, and \`total_items({})\` returns \`0\`.
+--- starter
+def total_items(stock):
+    pass
+--- solution
+def total_items(stock):
+    total = 0
+    for item, count in stock.items():
+        total += count
+    return total
+--- hint
+\`.items()\` gives each pair. Two names after \`for\`, like \`for item, count in stock.items():\`, take each pair apart.
+--- hint
+Start \`total\` at 0 before the loop, add \`count\` on each pass, and return \`total\` after the loop.
+--- check case | total_items({"oxygen": 12, "water": 40}) is 52
+total_items({"oxygen": 12, "water": 40})
+=> 52
+--- check case | An empty store has 0 items
+total_items({})
+=> 0
+--- check case | One kind of item
+total_items({"food": 7})
+=> 7
+--- check source absent | Adds up without sum
+sum\\(
+
++++ practice | Codes both ways
+--- task
+A dictionary maps command names to their code numbers, such as \`{"ARM": 1, "FIRE": 2}\`.
+
+Write a function \`invert(codes)\` that returns a **new** dictionary going the other way: each number maps to its name. So \`invert({"ARM": 1, "FIRE": 2})\` returns \`{1: "ARM", 2: "FIRE"}\`, and \`invert({})\` returns \`{}\`.
+
+Build it with a loop over \`codes.items()\`, adding one pair to the new dictionary on each pass.
+--- starter
+def invert(codes):
+    return codes
+--- solution
+def invert(codes):
+    by_number = {}
+    for name, number in codes.items():
+        by_number[number] = name
+    return by_number
+--- hint
+Start with an empty dictionary, \`{}\`, and fill it in the loop.
+--- hint
+Each pass takes apart one pair into \`name\` and \`number\`, then stores it the other way round: \`by_number[number] = name\`.
+--- check case | invert({"ARM": 1, "FIRE": 2})
+invert({"ARM": 1, "FIRE": 2})
+=> {1: "ARM", 2: "FIRE"}
+--- check case | An empty dictionary gives an empty dictionary
+invert({})
+=> {}
+--- check case | One pair
+invert({"SAFE": 0})
+=> {0: "SAFE"}
+
++++ practice | The cheapest part
+--- task
+A dictionary maps part names to prices, such as \`{"bolt": 0.2, "nut": 0.1}\`.
+
+Write a function \`cheapest(prices)\` that returns the **name** of the part with the lowest price.
+
+- If two parts share the lowest price, return the one that comes first in the dictionary.
+- If the dictionary is empty, return \`None\`.
+
+So \`cheapest({"bolt": 0.2, "nut": 0.1, "washer": 0.1})\` returns \`"nut"\`, and \`cheapest({})\` returns \`None\`.
+--- starter
+def cheapest(prices):
+    pass
+--- solution
+def cheapest(prices):
+    best_name = None
+    best_price = 0
+    for name, price in prices.items():
+        if best_name == None or price < best_price:
+            best_name = name
+            best_price = price
+    return best_name
+--- hint
+Keep two things as you loop: the best name so far and its price. Start the name at \`None\`, meaning "nothing seen yet".
+--- hint
+Take a part when nothing has been seen yet, **or** when its price is strictly lower. With \`<=\`, a later part at the same price would win the tie.
+--- hint
+If the dictionary is empty, the loop never runs and \`best_name\` is still \`None\`, which is the right answer.
+--- check case | The cheaper of a tie comes first
+cheapest({"bolt": 0.2, "nut": 0.1, "washer": 0.1})
+=> "nut"
+?? Replace the best part only when the price is strictly lower.
+--- check case | An empty dictionary gives None
+cheapest({})
+=> None
+--- check case | One part
+cheapest({"gear": 5})
+=> "gear"
+--- check case | The last part is the cheapest
+cheapest({"panel": 900, "cable": 30, "clip": 2})
+=> "clip"
+
++++ practice | Add two tallies together
+--- task
+Write a function \`merge_counts(a, b)\` that takes two tally dictionaries, like \`{"red": 2}\`, and returns a **new** dictionary where each key's count is its count in \`a\` plus its count in \`b\`. A key that is in only one of them keeps its own count.
+
+- \`merge_counts({"a": 1, "b": 2}, {"b": 3, "c": 4})\` returns \`{"a": 1, "b": 5, "c": 4}\`.
+- \`merge_counts({}, {})\` returns \`{}\`.
+- The dictionary \`a\` must not change. Copy its pairs into the new dictionary with a loop, then add \`b\`'s counts with \`.get\`.
+--- starter
+def merge_counts(a, b):
+    for key, count in b.items():
+        a[key] = a.get(key, 0) + count
+    return a
+--- solution
+def merge_counts(a, b):
+    merged = {}
+    for key, count in a.items():
+        merged[key] = count
+    for key, count in b.items():
+        merged[key] = merged.get(key, 0) + count
+    return merged
+--- hint
+The starter adds straight into \`a\`, which changes the caller's dictionary. Start a new, empty one instead.
+--- hint
+First loop: copy each pair of \`a\` into the new dictionary. Second loop: for each pair of \`b\`, store \`merged.get(key, 0) + count\`.
+--- check case | Counts are added, keys from both kept
+merge_counts({"a": 1, "b": 2}, {"b": 3, "c": 4})
+=> {"a": 1, "b": 5, "c": 4}
+--- check case | Two empty tallies give an empty one
+merge_counts({}, {})
+=> {}
+--- check case | An empty second tally changes nothing
+merge_counts({"a": 1}, {})
+=> {"a": 1}
+--- check test | a is left unchanged
+(lambda a: (merge_counts(a, {"x": 1}), a)[1] == {"y": 2})({"y": 2})
+?? Build a new dictionary. Do not add into a itself.
+
++++ practice | Fix the task timer
+--- task
+\`minutes_per_task(tasks, minutes)\` takes two lists of the same length: task names, and how many minutes each one took. It should return a dictionary with the **total** minutes for each task.
+
+So \`minutes_per_task(["fuel", "check", "fuel"], [30, 10, 15])\` should return \`{"fuel": 45, "check": 10}\`. It returns \`{"fuel": 15, "check": 10}\` instead: a task that appears twice keeps only its last time. Fix the line inside the loop.
+--- starter
+def minutes_per_task(tasks, minutes):
+    totals = {}
+    for i in range(len(tasks)):
+        totals[tasks[i]] = minutes[i]
+    return totals
+--- solution
+def minutes_per_task(tasks, minutes):
+    totals = {}
+    for i in range(len(tasks)):
+        totals[tasks[i]] = totals.get(tasks[i], 0) + minutes[i]
+    return totals
+--- hint
+Setting a key that already exists replaces its value. The line needs to add to what is there.
+--- hint
+Look up the total so far with \`.get(tasks[i], 0)\`, which gives 0 the first time, and add \`minutes[i]\` to it.
+--- check case | A repeated task adds up
+minutes_per_task(["fuel", "check", "fuel"], [30, 10, 15])
+=> {"fuel": 45, "check": 10}
+--- check case | No tasks gives an empty dictionary
+minutes_per_task([], [])
+=> {}
+--- check case | The same task three times
+minutes_per_task(["dock", "dock", "dock"], [5, 5, 1])
+=> {"dock": 11}
+
++++ practice | Fill the orders
+--- task
+Write a function \`fill_orders(stock, orders)\`.
+
+- \`stock\` is a dictionary mapping each item to how many are on the shelf, like \`{"bolt": 2, "nut": 1}\`.
+- \`orders\` is a list of item names. Each order takes **one** of that item.
+
+Go through the orders in turn. If the item is in \`stock\` and its count is more than 0, take one away from its count. Otherwise the order fails: add its name to a list of failed orders.
+
+Return the list of failed orders, in the order they failed. The function changes \`stock\` itself as it goes.
+
+For example, with \`stock = {"bolt": 2, "nut": 1}\` and orders \`["bolt", "nut", "nut", "gear", "bolt", "bolt"]\`, it returns \`["nut", "gear", "bolt"]\`, and afterwards \`stock\` is \`{"bolt": 0, "nut": 0}\`.
+--- starter
+def fill_orders(stock, orders):
+    failed = []
+    return failed
+--- solution
+def fill_orders(stock, orders):
+    failed = []
+    for item in orders:
+        if item in stock and stock[item] > 0:
+            stock[item] = stock[item] - 1
+        else:
+            failed.append(item)
+    return failed
+--- hint
+Check \`item in stock\` before you look up \`stock[item]\`: looking up a missing key stops the program with a \`KeyError\`.
+--- hint
+\`and\` checks its left side first, so \`item in stock and stock[item] > 0\` never looks up a missing key.
+--- hint
+When the order can be filled, take one away: \`stock[item] = stock[item] - 1\`. Otherwise \`failed.append(item)\`.
+--- check test | The failed orders come back in order
+fill_orders({"bolt": 2, "nut": 1}, ["bolt", "nut", "nut", "gear", "bolt", "bolt"]) == ["nut", "gear", "bolt"]
+?? gear is not in the stock at all, and the second nut and third bolt find a count of 0.
+--- check test | The stock goes down as orders are filled
+(lambda s: (fill_orders(s, ["bolt", "nut", "bolt"]), s)[1] == {"bolt": 0, "nut": 0})({"bolt": 2, "nut": 1})
+--- check case | No orders, nothing fails
+fill_orders({"bolt": 1}, [])
+=> []
+--- check test | An empty shelf fails every order and stays as it was
+(lambda s: fill_orders(s, ["cap", "cap"]) == ["cap", "cap"] and s == {"cap": 0})({"cap": 0})
+
+=== py-10 | List comprehensions
+--- teach
+Last lesson you filled a dictionary with a \`for\` loop: start with an empty one, walk through the words one at a time, and add to it. This lesson shows a shorter way to write a loop whose only job is to build a new list (or a new dictionary) out of an old one.
+
+Picture a photocopier with settings. You feed in a stack of pages and say "copy every page, but make it bigger", or "copy only the pages that have pictures". The original stack stays as it was, and you walk away with a new stack. Python has a one-line way to give that kind of order.
+
+### The long way first
+
+Here is a loop you can already write. It makes a list of the squares of some numbers (a number times itself):
+
+\`\`\`python
+numbers = [1, 2, 3, 4]
+squares = []
+for n in numbers:
+    squares.append(n * n)
+print(squares)    # [1, 4, 9, 16]
+\`\`\`
+
+It works, but three of the four lines are plumbing: make an empty list, loop, append. Python programs do this all the time, so there is a shorter form.
+
+### The short way: a list comprehension
+
+\`\`\`python
+numbers = [1, 2, 3, 4]
+squares = [n * n for n in numbers]
+print(squares)    # [1, 4, 9, 16]
+\`\`\`
+
+This is a **[[list comprehension|comprehension-name]]** — a whole list-building loop written inside square brackets \`[ ]\`. Read it aloud as "n times n, for each n in numbers".
+
+It has two parts:
+
+- Before the word \`for\` is the **[[expression|expression]]** — the thing to put in the new list for each item. Here it is \`n * n\`, "n times n".
+- After it comes \`for n in numbers\`, the same words as the top line of a \`for\` loop, but with no colon at the end.
+
+The square brackets on the outside say "the answer is a list". Python builds [[a brand-new list|new-list]] and leaves \`numbers\` exactly as it was.
+
+The expression can be anything that makes a value, including a string method you already know:
+
+\`\`\`python
+names = ["ada", "lin"]
+loud = [name.upper() for name in names]
+print(loud)       # ['ADA', 'LIN']
+\`\`\`
+
+### Keeping only some items: add an \`if\`
+
+Put \`if\` and a condition at the end, and only the items that pass the condition make it into the new list:
+
+\`\`\`python
+numbers = [1, 2, 3, 4, 5, 6]
+evens = [n for n in numbers if n % 2 == 0]
+print(evens)      # [2, 4, 6]
+\`\`\`
+
+Read it as "n, for each n in numbers, if n divided by 2 leaves a remainder of 0". Remember from the arithmetic lesson that \`%\` means "the remainder after dividing", and \`==\` means "is equal to". Items where the condition is \`False\` are skipped. Keeping some items and dropping the rest is called **[[filtering|filtering]]**.
+
+Here the expression is \`n\` on its own, which means "keep the item as it is".
+
+### Changing and filtering at the same time
+
+You can use both parts at once. For each item, Python checks the \`if\` first. Only the items that pass go through the expression at the front:
+
+\`\`\`python
+words = ["go", "rocket", "fuel", "orbit"]
+shout = [w.upper() for w in words if len(w) > 4]
+print(shout)      # ['ROCKET', 'ORBIT']
+\`\`\`
+
+Read it as "w in capitals, for each w in words, if the length of w is greater than 4". \`"go"\` has 2 letters and \`"fuel"\` has 4, so they are dropped. (4 is not greater than 4.) \`"rocket"\` and \`"orbit"\` pass and come out in capitals.
+
+Notice that Python prints the strings in the list with [[single quotes|quote-style]]. That is only how it shows them; \`'ROCKET'\` and \`"ROCKET"\` are the same string.
+
+### The same trick for dictionaries
+
+Swap the square brackets for curly braces \`{ }\` and put a key, a colon \`:\`, and a value at the front. You get a **dictionary comprehension**, which builds a dictionary:
+
+\`\`\`python
+planets = ["mars", "venus", "io"]
+sizes = {p: len(p) for p in planets}
+print(sizes)      # {'mars': 4, 'venus': 5, 'io': 2}
+\`\`\`
+
+Read it as "p maps to the length of p, for each p in planets". The colon means "maps to", the same as when you wrote a dictionary by hand last lesson. Each word becomes a key, and its length becomes the value.
+
+A comprehension is for building one list or one dictionary. If your loop prints things, or does several steps for each item, keep the [[ordinary loop|when-to-loop]] — it will be easier to read.
+
+**Watch out:** the parts go in a fixed order: expression, then \`for\`, then \`if\`. The \`if\` always goes last. \`[if len(w) > 4 w for w in words]\` is a mistake, and Python stops with \`SyntaxError: invalid syntax\`. If you get that error, check the order first.
+
+::: context comprehension-name Why such an odd name
+In maths there is a way to describe a set by a rule instead of listing it: "the squares of n, for every n from 1 to 4". Mathematicians call that set-builder notation, and the rule that lets you build a set that way is known as comprehension. Python borrowed the idea (and the name) from other programming languages, especially one called Haskell. Here "comprehension" means "taking everything in that fits the rule", not "understanding".
+:::
+
+::: context expression A piece of code that gives a value
+An expression is any bit of code that Python can work out to a single value. \`n * n\` is an expression. So are \`len(w)\`, \`w.upper()\`, \`3 + 4\` and \`"hello"\`. A line like \`squares = []\` is not an expression; it is an instruction that stores something. A handy test: if you could put it inside \`print( )\` and see a value, it is an expression. The front of a comprehension must be an expression, because Python needs a value to put in the new list.
+:::
+
+::: context new-list The old list is not changed
+A comprehension never touches the list it reads from. It makes a separate list and fills it with the answers, one per item, in the same order. That is useful: you can keep the raw data and the worked-out data side by side, and check one against the other.
+
+\`\`\`svg
+<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <defs><marker id="nl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a44"/></marker></defs>
+  <text x="20" y="60" font-size="13" fill="#1f2a44">numbers</text>
+  <rect x="120" y="40" width="36" height="30" fill="white" stroke="#1f2a44"/>
+  <rect x="160" y="40" width="36" height="30" fill="white" stroke="#1f2a44"/>
+  <rect x="200" y="40" width="36" height="30" fill="white" stroke="#1f2a44"/>
+  <rect x="240" y="40" width="36" height="30" fill="white" stroke="#1f2a44"/>
+  <text x="138" y="60" font-size="13" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="178" y="60" font-size="13" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="218" y="60" font-size="13" text-anchor="middle" fill="#1f2a44">3</text>
+  <text x="258" y="60" font-size="13" text-anchor="middle" fill="#1f2a44">4</text>
+  <text x="290" y="60" font-size="11" fill="#6c7a93">unchanged</text>
+  <line x1="198" y1="72" x2="198" y2="95" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#nl-arrow)"/>
+  <rect x="138" y="97" width="120" height="30" rx="8" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="198" y="117" font-size="13" text-anchor="middle" fill="#1f2a44">n * n</text>
+  <line x1="198" y1="129" x2="198" y2="150" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#nl-arrow)"/>
+  <text x="20" y="172" font-size="13" fill="#1f2a44">squares</text>
+  <rect x="120" y="152" width="36" height="30" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <rect x="160" y="152" width="36" height="30" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <rect x="200" y="152" width="36" height="30" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <rect x="240" y="152" width="36" height="30" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <text x="138" y="172" font-size="13" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="178" y="172" font-size="13" text-anchor="middle" fill="#1f2a44">4</text>
+  <text x="218" y="172" font-size="13" text-anchor="middle" fill="#1f2a44">9</text>
+  <text x="258" y="172" font-size="13" text-anchor="middle" fill="#1f2a44">16</text>
+</svg>
+\`\`\`
+:::
+
+::: context filtering Throwing out the readings you cannot trust
+Filtering is everywhere in engineering. A temperature sensor on a test stand might now and then send a glitch, like 999 degrees, when the real value is about 22. Before working out an average, an engineer keeps only the readings inside a believable range and drops the rest. The rule is the \`if\` part; the kept readings are the new list.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <defs><marker id="fl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a44"/></marker></defs>
+  <rect x="30" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <rect x="80" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <rect x="130" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <rect x="180" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <rect x="230" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <rect x="280" y="15" width="36" height="28" fill="white" stroke="#1f2a44"/>
+  <text x="48" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">1</text>
+  <text x="98" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="148" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">3</text>
+  <text x="198" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">4</text>
+  <text x="248" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">5</text>
+  <text x="298" y="34" font-size="13" text-anchor="middle" fill="#1f2a44">6</text>
+  <rect x="30" y="62" width="286" height="28" rx="6" fill="white" stroke="#1d6fd1" stroke-width="1.5"/>
+  <text x="173" y="81" font-size="13" text-anchor="middle" fill="#1d6fd1">if n % 2 == 0</text>
+  <text x="48" y="112" font-size="14" text-anchor="middle" fill="#b4232c">x</text>
+  <text x="148" y="112" font-size="14" text-anchor="middle" fill="#b4232c">x</text>
+  <text x="248" y="112" font-size="14" text-anchor="middle" fill="#b4232c">x</text>
+  <line x1="98" y1="92" x2="98" y2="118" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fl-arrow)"/>
+  <line x1="198" y1="92" x2="198" y2="118" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fl-arrow)"/>
+  <line x1="298" y1="92" x2="298" y2="118" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#fl-arrow)"/>
+  <rect x="80" y="120" width="36" height="28" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <rect x="180" y="120" width="36" height="28" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <rect x="280" y="120" width="36" height="28" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <text x="98" y="139" font-size="13" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="198" y="139" font-size="13" text-anchor="middle" fill="#1f2a44">4</text>
+  <text x="298" y="139" font-size="13" text-anchor="middle" fill="#1f2a44">6</text>
+  <text x="30" y="164" font-size="11" fill="#6c7a93">odd numbers fail the test and are skipped</text>
+</svg>
+\`\`\`
+:::
+
+::: context quote-style Single or double quotes
+Python accepts a string written with either kind of quote: \`'orbit'\` and \`"orbit"\` are exactly the same value. When Python prints a list or a dictionary, it has to show you where each string starts and ends, so it puts quotes around them, and it picks single quotes. When you \`print\` a string on its own, no quotes appear at all. In your own code, pick one style and stay with it.
+:::
+
+::: context when-to-loop Short is not always better
+Code is read many more times than it is written, often by a teammate at a bad moment, like when a test has failed. A one-line comprehension is easy to read when it says one thing: "these items, changed like this, if they pass this test". Once it grows a second \`for\` or a long condition, a plain \`for\` loop with a few named steps is kinder to the reader. In the intermediate course you will meet a third member of the family, the set comprehension, which uses curly braces with no colon.
+:::
+--- task
+Write two functions. Each one should \`return\` a comprehension. You can delete the starter lines inside them.
+
+- \`long_words(words)\` returns a list of the words in \`words\` that are longer than 4 characters, changed to capitals with \`.upper()\`. For example, \`long_words(["rocket", "fuel", "orbit", "go"])\` gives \`["ROCKET", "ORBIT"]\`.
+- \`lengths(words)\` returns a dictionary that maps each word to its length (use \`len\`). For example, \`lengths(["ada", "lovelace"])\` gives \`{"ada": 3, "lovelace": 8}\`.
+--- starter
+def long_words(words):
+    result = []
+    return result
+
+
+def lengths(words):
+    return {}
+--- solution
+def long_words(words):
+    return [w.upper() for w in words if len(w) > 4]
+
+
+def lengths(words):
+    return {w: len(w) for w in words}
+--- hint
+\`long_words\` both changes and filters, like the \`shout\` example. \`lengths\` builds a dictionary, like the \`sizes\` example. Each function can be one line: \`return\` followed by the comprehension.
+--- hint
+For \`lengths\`, use curly braces with "key: value" at the front: \`{w: len(w) for w in words}\`.
+--- hint
+For \`long_words\`, the expression is \`w.upper()\` and the condition goes at the end: \`return [w.upper() for w in words if len(w) > 4]\`.
+--- check case | long_words keeps and uppercases long words
+long_words(["rocket", "fuel", "orbit", "go"])
+=> ["ROCKET", "ORBIT"]
+--- check case | lengths maps words to their lengths
+lengths(["ada", "lovelace"])
+=> {"ada": 3, "lovelace": 8}
+--- check source | Uses a comprehension
+\\[[^\\]]*\\bfor\\b[^\\]]*\\bin\\b
+?? Write the list as [expression for item in list if condition].
+
++++ practice | Fahrenheit in one line
+--- task
+Write a function \`to_fahrenheit(temps_c)\` that returns a new list with each Celsius temperature turned into Fahrenheit: times 9, divided by 5, plus 32.
+
+Return a list comprehension. So \`to_fahrenheit([0, 100])\` returns \`[32.0, 212.0]\`, and \`to_fahrenheit([])\` returns \`[]\`.
+--- starter
+def to_fahrenheit(temps_c):
+    result = []
+    return result
+--- solution
+def to_fahrenheit(temps_c):
+    return [c * 9 / 5 + 32 for c in temps_c]
+--- hint
+The expression before \`for\` is what goes into the new list for each item.
+--- hint
+\`return [c * 9 / 5 + 32 for c in temps_c]\`.
+--- check case | to_fahrenheit([0, 100])
+to_fahrenheit([0, 100])
+=> [32.0, 212.0]
+--- check case | An empty list gives an empty list
+to_fahrenheit([])
+=> []
+--- check case | -40 is the same in both
+to_fahrenheit([-40])
+=> [-40.0]
+--- check source | Uses a list comprehension
+\\[[^\\]]*\\bfor\\b[^\\]]*\\bin\\b
+
++++ practice | Ten percent off
+--- task
+Write a function \`discounted(prices)\` that takes a dictionary of item names and prices, and returns a **new** dictionary with every price 10 percent lower: the price times \`0.9\`, rounded to 2 digits after the decimal point.
+
+Return a dictionary comprehension over \`prices.items()\`. So \`discounted({"helmet": 250, "gloves": 45.5})\` returns \`{"helmet": 225.0, "gloves": 40.95}\`, and \`prices\` itself does not change.
+--- starter
+def discounted(prices):
+    return prices
+--- solution
+def discounted(prices):
+    return {name: round(price * 0.9, 2) for name, price in prices.items()}
+--- hint
+A dictionary comprehension has curly braces and \`key: value\` at the front.
+--- hint
+Two names after \`for\` take each pair apart, the same as in a loop: \`for name, price in prices.items()\`.
+--- hint
+The front is \`name: round(price * 0.9, 2)\`.
+--- check case | Every price is 10 percent lower
+discounted({"helmet": 250, "gloves": 45.5})
+=> {"helmet": 225.0, "gloves": 40.95}
+--- check case | An empty dictionary
+discounted({})
+=> {}
+--- check test | The original prices do not change
+(lambda p: (discounted(p), p)[1] == {"boots": 100})({"boots": 100})
+--- check source | Uses a dictionary comprehension
+\\{[^}]*:[^}]*\\bfor\\b
+
++++ practice | Word lengths from a sentence
+--- task
+Write a function \`word_lengths(text)\` that returns a dictionary mapping each word in \`text\` to its number of letters. Words are compared in small letters, so turn the text into small letters and split it into words first.
+
+Return a dictionary comprehension. For example:
+
+- \`word_lengths("Go for launch")\` returns \`{"go": 2, "for": 3, "launch": 6}\`.
+- \`word_lengths("")\` returns \`{}\`.
+- \`word_lengths("Mars mars")\` returns \`{"mars": 4}\`: both words become the same key.
+--- starter
+def word_lengths(text):
+    pass
+--- solution
+def word_lengths(text):
+    return {word: len(word) for word in text.lower().split()}
+--- hint
+\`text.lower().split()\` gives the list of words in small letters.
+--- hint
+The comprehension is \`{word: len(word) for word in ...}\`. A key can only appear once, so a repeated word just sets the same pair again.
+--- check case | word_lengths("Go for launch")
+word_lengths("Go for launch")
+=> {"go": 2, "for": 3, "launch": 6}
+--- check case | An empty string gives {}
+word_lengths("")
+=> {}
+--- check case | A repeated word is one key
+word_lengths("Mars mars")
+=> {"mars": 4}
+--- check source | Uses a dictionary comprehension
+\\{[^}]*:[^}]*\\bfor\\b
+
++++ practice | Keep the readings in range
+--- task
+Write a function \`in_range(readings, low, high)\` that returns a new list with only the readings from \`low\` to \`high\`, **both included**, in their original order. Repeated readings are kept.
+
+Return a list comprehension with an \`if\`. For example:
+
+- \`in_range([5, 10, 15, 20], 10, 15)\` returns \`[10, 15]\`.
+- \`in_range([], 0, 1)\` returns \`[]\`.
+- \`in_range([3, 3, 99], 0, 5)\` returns \`[3, 3]\`.
+- \`in_range([-1, 0], 0, 0)\` returns \`[0]\`.
+--- starter
+def in_range(readings, low, high):
+    return [r for r in readings if r > low and r < high]
+--- solution
+def in_range(readings, low, high):
+    return [r for r in readings if r >= low and r <= high]
+--- hint
+"Both included" means a reading equal to \`low\` or to \`high\` stays in.
+--- hint
+Use \`>=\` and \`<=\` in the condition.
+--- check case | The ends of the range are kept
+in_range([5, 10, 15, 20], 10, 15)
+=> [10, 15]
+?? A reading equal to low or high is in range.
+--- check case | An empty list
+in_range([], 0, 1)
+=> []
+--- check case | Repeats are kept
+in_range([3, 3, 99], 0, 5)
+=> [3, 3]
+--- check case | A range of one value
+in_range([-1, 0], 0, 0)
+=> [0]
+
++++ practice | Fix the name filter
+--- task
+\`long_names(names)\` should return the names that are longer than 3 characters, just as they are. So \`long_names(["Io", "Titan", "Rhea"])\` should return \`["Titan", "Rhea"]\`.
+
+It returns \`[5, 4]\` instead. Fix the comprehension.
+--- starter
+def long_names(names):
+    return [len(n) for n in names if len(n) > 3]
+--- solution
+def long_names(names):
+    return [n for n in names if len(n) > 3]
+--- hint
+The part before \`for\` is what goes into the new list. Right now that is each name's length.
+--- hint
+To keep the item as it is, the front is just \`n\`.
+--- check case | Keeps the long names themselves
+long_names(["Io", "Titan", "Rhea"])
+=> ["Titan", "Rhea"]
+--- check case | Exactly 3 letters is not longer than 3
+long_names(["Ada", "Moon"])
+=> ["Moon"]
+--- check case | An empty list
+long_names([])
+=> []
+
++++ practice | Average the good readings
+--- task
+A dictionary maps each sensor's name to a list of its readings. Some readings are glitches. A reading is **good** when it is from \`-50\` to \`150\`, both included.
+
+1. Write a helper function \`good_readings(values)\` that returns a list comprehension of the good readings in \`values\`.
+2. Write \`summarize(readings)\` that returns a new dictionary mapping each sensor's name to the mean of its good readings, rounded to 1 digit after the decimal point. Leave out any sensor with no good readings at all, so you never divide by zero.
+
+For example:
+
+\`\`\`
+summarize({"a": [20, 22, 999], "b": [-60, 200], "c": [10]})
+\`\`\`
+
+returns \`{"a": 21.0, "c": 10.0}\`. Sensor \`b\` has no good readings, so it is left out. \`summarize({})\` returns \`{}\`.
+--- starter
+def good_readings(values):
+    pass
+
+
+def summarize(readings):
+    pass
+--- solution
+def good_readings(values):
+    return [v for v in values if v >= -50 and v <= 150]
+
+
+def summarize(readings):
+    good = {name: good_readings(values) for name, values in readings.items()}
+    return {name: round(sum(v) / len(v), 1) for name, v in good.items() if len(v) > 0}
+--- hint
+\`good_readings\` is one filtering comprehension with \`>=\` and \`<=\`.
+--- hint
+In \`summarize\`, first build a dictionary from each name to its good readings. Then build the answer from that one, with \`if len(v) > 0\` at the end to leave out empty lists.
+--- hint
+The mean of a list \`v\` is \`sum(v) / len(v)\`, wrapped in \`round(..., 1)\`.
+--- check case | good_readings drops the glitches
+good_readings([-50, -51, 150, 151, 20])
+=> [-50, 150, 20]
+?? -50 and 150 are both included.
+--- check case | summarize averages the good readings
+summarize({"a": [20, 22, 999], "b": [-60, 200], "c": [10]})
+=> {"a": 21.0, "c": 10.0}
+--- check case | An empty dictionary
+summarize({})
+=> {}
+--- check case | A sensor with an empty list is left out
+summarize({"x": [], "y": [1, 2]})
+=> {"y": 1.5}
+
+=== py-11 | Handling errors
+--- teach
+Last lesson every list your comprehensions read was tidy. Real data is not. Someone types \`forty-two\` where you wanted a number, or a file is missing a line. This lesson is about what your program does when something goes wrong, instead of falling over.
+
+Think of a recipe with a backup plan: "Use two eggs. If you have no eggs, use a mashed banana instead." You try the normal way first, and you know in advance what to do if it fails. Python lets your code carry a backup plan in the same way.
+
+### What an error looks like
+
+\`int(text)\` turns text made of digits into a whole number:
+
+\`\`\`python
+n = int("42")
+print(n + 1)      # 43
+\`\`\`
+
+But text that is not a whole number cannot be turned into one:
+
+\`\`\`python
+n = int("forty-two")
+\`\`\`
+
+Python stops the whole program and prints:
+
+\`\`\`
+ValueError: invalid literal for int() with base 10: 'forty-two'
+\`\`\`
+
+When something goes wrong while the program is running (at **[[run time|run-time]]**), Python **raises an [[exception|exception-word]]**. An **exception** is an error message with a name, like \`ValueError\`, sent up to say "I could not do that". To **raise** it means to send it. \`ValueError\` means "the type was fine, but this value makes no sense here". If nothing deals with the exception, the program stops and prints a **[[traceback|traceback]]**: the list of lines it was running, then the exception's name and message.
+
+### Catching it: \`try\` and \`except\`
+
+To give your code a backup plan, wrap the risky line in \`try\` and say what to do in \`except\`:
+
+\`\`\`python
+try:
+    n = int("forty-two")
+except ValueError:
+    n = 0
+print(n)          # 0
+\`\`\`
+
+Read it as: "try these indented lines. If a \`ValueError\` happens, run the lines under \`except\` instead." Both lines end with a colon, and the lines under each are indented, the same as \`if\` and \`for\`. Dealing with an exception like this is called **catching** or **handling** it. The program does not stop; it carries on after the \`except\` block.
+
+If nothing goes wrong, the \`except\` block is skipped:
+
+\`\`\`python
+try:
+    n = int("42")
+except ValueError:
+    n = 0
+print(n)          # 42
+\`\`\`
+
+When an error happens on a line inside \`try\`, Python does not finish the rest of the \`try\` block. It [[jumps straight to the except block|try-flow]].
+
+### Raising your own
+
+Sometimes Python is happy, but the value is still wrong for your job. Then you can raise an exception yourself, with the word \`raise\`, the exception's name, and a message in brackets:
+
+\`\`\`python
+def percent(part, whole):
+    if whole == 0:
+        raise ValueError("whole must not be zero")
+    return part / whole * 100
+
+print(percent(3, 4))   # 75.0
+print(percent(3, 0))   # stops: ValueError: whole must not be zero
+\`\`\`
+
+\`raise\` ends the function at once, like \`return\`. But instead of handing back a value, it sends the exception to whoever called the function. Why do that? Because stopping with [[a clear message|fail-loudly]] at the spot where things went wrong is far better than carrying on with a wrong number.
+
+A common use is a range check. Here \`or\` means "if either of these is true":
+
+\`\`\`python
+def fuel_level(percent):
+    if percent < 0 or percent > 100:
+        raise ValueError(f"fuel out of range: {percent}")
+    return percent
+
+print(fuel_level(80))    # 80
+print(fuel_level(120))   # stops: ValueError: fuel out of range: 120
+\`\`\`
+
+### Catch the kind you expect
+
+Each kind of problem has its own exception name. Three you will meet often:
+
+| Exception | What went wrong | Example that raises it |
+| --- | --- | --- |
+| \`ValueError\` | the right type, but a value that makes no sense | \`int("forty-two")\` |
+| \`KeyError\` | a dictionary does not have that key | \`{"a": 1}["b"]\` |
+| \`ZeroDivisionError\` | dividing by zero | \`5 / 0\` |
+
+Always write the name you expect after \`except\`. It is possible to write \`except:\` with no name, which catches every exception there is. Do not do that: a bare \`except:\` [[hides real bugs|bare-except]], like a spelling mistake in your own code, behind your backup plan.
+
+Your task uses a **[[port number|port-number]]**: a whole number from 1 to 65535 that says which program on a computer a network message is for.
+
+**Watch out:** put only the risky line inside \`try\`. If you also put your own \`raise ValueError(...)\` inside the \`try\`, your own \`except ValueError:\` catches it straight away, and the error you meant to send out quietly disappears. Keep the \`try\` small, and do your range check after it.
+
+::: context run-time Two moments: writing and running
+There are two moments when Python can find a problem. Before your program starts, Python reads the whole file and checks the grammar: a missing colon or a bracket that is never closed is a \`SyntaxError\`, and nothing runs at all. Other problems can only show up while the program runs, because they depend on the values. Python cannot know \`int(text)\` will fail until it sees what \`text\` holds. Those are run-time errors, and they are what \`try\` is for.
+:::
+
+::: context exception-word An exception to the plan
+The name means an exception to the normal flow: the program was going line by line, and something happened that the normal plan does not cover. "Raise" comes from the picture of raising a flag or raising your hand: you signal the problem to whoever is in charge. In Python, "whoever is in charge" is the code that called your function, then the code that called that one, and so on up the chain, until something catches it or the program stops.
+:::
+
+::: context traceback Reading the red text from the bottom
+A traceback lists the lines Python was running when the exception happened, starting from the outside and ending at the exact line that failed. The most useful part is the very last line: the exception's name and its message. Read that first. Then read up to find the line of your own code where it happened. The intermediate course has a whole lesson on reading tracebacks, because it is the fastest way to find a bug.
+:::
+
+::: context try-flow Two paths out of a try
+Think of \`try\` as a fork in the road. If every line inside it works, Python skips the \`except\` block and carries on below. If a line raises the named exception, Python drops the rest of the \`try\` block, runs the \`except\` block, and then carries on below. Either way, the program keeps going.
+
+\`\`\`svg
+<svg viewBox="0 0 360 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <defs><marker id="tf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a44"/></marker></defs>
+  <rect x="10" y="20" width="130" height="40" rx="6" fill="white" stroke="#1d6fd1" stroke-width="1.5"/>
+  <text x="75" y="45" font-size="13" text-anchor="middle" fill="#1f2a44">try: int(text)</text>
+  <rect x="220" y="20" width="130" height="40" rx="6" fill="white" stroke="#b4232c" stroke-width="1.5"/>
+  <text x="285" y="45" font-size="12" text-anchor="middle" fill="#1f2a44">except ValueError:</text>
+  <rect x="115" y="125" width="130" height="40" rx="6" fill="#8fb8f0" stroke="#1d6fd1"/>
+  <text x="180" y="150" font-size="13" text-anchor="middle" fill="#1f2a44">carry on below</text>
+  <line x1="140" y1="40" x2="217" y2="40" stroke="#b4232c" stroke-width="1.5" marker-end="url(#tf-arrow)"/>
+  <text x="179" y="33" font-size="11" text-anchor="middle" fill="#b4232c">error</text>
+  <line x1="75" y1="60" x2="150" y2="122" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#tf-arrow)"/>
+  <text x="62" y="100" font-size="11" text-anchor="middle" fill="#6c7a93">no error</text>
+  <line x1="285" y1="60" x2="210" y2="122" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#tf-arrow)"/>
+  <text x="298" y="100" font-size="11" text-anchor="middle" fill="#6c7a93">handled</text>
+</svg>
+\`\`\`
+:::
+
+::: context fail-loudly A rocket lost to one unhandled error
+On 4 June 1996, the first Ariane 5 rocket broke up about 40 seconds after lift-off. Its navigation software, reused from the smaller Ariane 4, tried to squeeze a measurement into a 16-bit whole number. Ariane 5 flew faster, the value was too big to fit, and the conversion raised an error that nothing handled. The navigation computer shut down (its backup had failed the same way a moment earlier), and the rocket veered off course and destroyed itself. Engineers still teach it as the reason to check ranges and to decide ahead of time what happens when something goes wrong.
+:::
+
+::: context bare-except Why a catch-everything is dangerous
+A bare \`except:\` catches every exception, not only the one you had in mind. If you misspell a variable name, Python raises a \`NameError\`, and a bare \`except:\` quietly runs your backup plan instead of telling you about the typo. It even catches the signal sent when you press Ctrl+C to stop a program. Naming the exception, like \`except ValueError:\`, means "I expected this one; anything else, tell me". In the intermediate course you will design exception types of your own.
+:::
+
+::: context port-number Numbered doors on a computer
+One computer runs many programs that talk over the network at once. The port number says which one a message is for, like a flat number on an envelope that already has the street address. Web servers usually listen on port 443 or 80, and test servers often use 8080. Ports are stored in 16 bits, so the largest is 65535 (that is 2 to the power of 16, minus 1). Port 0 is reserved and not used as a real address, which is why the range starts at 1.
+:::
+--- task
+Write a function \`parse_port(text)\` that turns text such as \`"8080"\` into a port number.
+
+1. Inside a \`try\`, turn the text into a whole number with \`int(text)\`. If that raises a \`ValueError\`, catch it with \`except ValueError:\` and \`return None\`.
+2. After the \`try\` / \`except\`, if the number is less than 1 or greater than 65535, \`raise ValueError(...)\` with a short message of your own, such as \`f"port out of range: {port}"\`.
+3. Otherwise, return the number.
+
+So \`parse_port("8080")\` gives \`8080\`, \`parse_port("http")\` gives \`None\`, and both \`parse_port("70000")\` and \`parse_port("0")\` raise \`ValueError\`.
+--- starter
+def parse_port(text):
+    return int(text)
+--- solution
+def parse_port(text):
+    try:
+        port = int(text)
+    except ValueError:
+        return None
+    if port < 1 or port > 65535:
+        raise ValueError(f"port out of range: {port}")
+    return port
+--- hint
+Start with the backup plan: put only \`port = int(text)\` inside \`try:\`, and under \`except ValueError:\` write \`return None\`.
+--- hint
+Below the \`try\` / \`except\` (not indented under it), check the range with \`if port < 1 or port > 65535:\`, like the \`fuel_level\` example.
+--- hint
+Under that \`if\`, write \`raise ValueError(f"port out of range: {port}")\`. On the last line of the function, \`return port\`.
+--- check case | "8080" gives 8080
+parse_port("8080")
+=> 8080
+--- check case | "http" gives None
+parse_port("http")
+=> None
+--- check test | "70000" raises ValueError
+raises(ValueError, lambda: parse_port("70000"))
+?? A number outside 1–65535 must raise ValueError, not return something.
+--- check test | "0" raises ValueError
+raises(ValueError, lambda: parse_port("0"))
+
++++ practice | A number, or zero
+--- task
+Write a function \`to_int_or_zero(text)\` that turns \`text\` into a whole number with \`int\`. If \`int\` raises a \`ValueError\`, catch it and return \`0\` instead.
+
+So \`to_int_or_zero("42")\` returns \`42\`, \`to_int_or_zero("-3")\` returns \`-3\`, and both \`to_int_or_zero("4.2")\` and \`to_int_or_zero("")\` return \`0\`.
+--- starter
+def to_int_or_zero(text):
+    return int(text)
+--- solution
+def to_int_or_zero(text):
+    try:
+        return int(text)
+    except ValueError:
+        return 0
+--- hint
+Put the risky line, the one with \`int\`, inside \`try:\`.
+--- hint
+Under \`except ValueError:\`, return the backup answer, \`0\`.
+--- check case | "42" gives 42
+to_int_or_zero("42")
+=> 42
+--- check case | "-3" gives -3
+to_int_or_zero("-3")
+=> -3
+--- check case | "4.2" is not a whole number
+to_int_or_zero("4.2")
+=> 0
+?? int("4.2") raises ValueError, because 4.2 is not a whole number.
+--- check case | An empty string gives 0
+to_int_or_zero("")
+=> 0
+
++++ practice | Speed without dividing by zero
+--- task
+Write a function \`speed(distance, seconds)\` that returns \`distance\` divided by \`seconds\`. When \`seconds\` is \`0\`, the division raises a \`ZeroDivisionError\`: catch that one, with \`try\` and \`except ZeroDivisionError:\`, and return \`None\`.
+
+So \`speed(100, 4)\` returns \`25.0\`, \`speed(5, 0)\` returns \`None\`, and \`speed(0, 3)\` returns \`0.0\`.
+--- starter
+def speed(distance, seconds):
+    return distance / seconds
+--- solution
+def speed(distance, seconds):
+    try:
+        return distance / seconds
+    except ZeroDivisionError:
+        return None
+--- hint
+The risky line is the division. Wrap it in \`try:\`.
+--- hint
+Name the exception you expect: \`except ZeroDivisionError:\`, then \`return None\` under it.
+--- check case | speed(100, 4) is 25.0
+speed(100, 4)
+=> 25.0
+--- check case | Zero seconds gives None
+speed(5, 0)
+=> None
+--- check case | Zero distance is fine
+speed(0, 3)
+=> 0.0
+--- check source | Catches ZeroDivisionError by name
+except\\s+ZeroDivisionError
+
++++ practice | Keep the numbers, skip the rest
+--- task
+Write a function \`parse_all(texts)\` that takes a list of strings and returns a list of the whole numbers in it, in order. Skip every string that \`int\` cannot turn into a whole number.
+
+Loop over \`texts\`, and use \`try\` / \`except ValueError\` around \`int\` for each one. For example:
+
+- \`parse_all(["3", "x", "10", "-2", "4.5"])\` returns \`[3, 10, -2]\`.
+- \`parse_all([])\` returns \`[]\`.
+- \`parse_all(["a"])\` returns \`[]\`.
+--- starter
+def parse_all(texts):
+    return [int(t) for t in texts]
+--- solution
+def parse_all(texts):
+    numbers = []
+    for t in texts:
+        try:
+            numbers.append(int(t))
+        except ValueError:
+            continue
+    return numbers
+--- hint
+A comprehension cannot catch errors. Use a \`for\` loop with a \`try\` inside it.
+--- hint
+Inside \`try:\`, append \`int(t)\` to your list. Under \`except ValueError:\`, skip to the next string with \`continue\`.
+--- check case | Keeps the whole numbers in order
+parse_all(["3", "x", "10", "-2", "4.5"])
+=> [3, 10, -2]
+--- check case | An empty list
+parse_all([])
+=> []
+--- check case | Nothing valid gives []
+parse_all(["a"])
+=> []
+--- check case | Zero is a real number
+parse_all(["0", "zero"])
+=> [0]
+
++++ practice | An average that refuses to guess
+--- task
+Write a function \`safe_average(texts)\` that takes a list of strings, turns every one that is a whole number into an \`int\`, skips the rest, and returns the mean of the numbers it kept.
+
+If no string was a whole number, there is nothing to average. Then \`raise ValueError("no valid numbers")\` instead of returning anything. For example:
+
+- \`safe_average(["4", "bad", "8"])\` returns \`6.0\`.
+- \`safe_average(["0"])\` returns \`0.0\`.
+- \`safe_average([])\` and \`safe_average(["x", ""])\` both raise \`ValueError\`.
+--- starter
+def safe_average(texts):
+    numbers = [int(t) for t in texts]
+    return sum(numbers) / len(numbers)
+--- solution
+def safe_average(texts):
+    numbers = []
+    for t in texts:
+        try:
+            numbers.append(int(t))
+        except ValueError:
+            continue
+    if len(numbers) == 0:
+        raise ValueError("no valid numbers")
+    return sum(numbers) / len(numbers)
+--- hint
+Collect the numbers with a loop and a small \`try\` around \`int\`.
+--- hint
+After the loop, and outside any \`try\`, check whether the list is empty. If it is, \`raise ValueError(...)\`.
+--- check case | Skips the bad text
+safe_average(["4", "bad", "8"])
+=> 6.0
+--- check case | A single zero averages to 0.0
+safe_average(["0"])
+=> 0.0
+--- check test | An empty list raises ValueError
+raises(ValueError, lambda: safe_average([]))
+?? With nothing to average, raise ValueError rather than dividing by zero.
+--- check test | Nothing valid raises ValueError
+raises(ValueError, lambda: safe_average(["x", ""]))
+
++++ practice | Fix the swallowed error
+--- task
+\`parse_altitude(text)\` should:
+
+- return \`None\` when \`text\` is not a whole number, such as \`"high"\`;
+- raise \`ValueError\` when the number is below 0, such as \`"-5"\`;
+- otherwise return the number.
+
+But \`parse_altitude("-5")\` returns \`None\` instead of raising. Its own \`raise\` is caught by its own \`except\`. Move the range check so the error gets out.
+--- starter
+def parse_altitude(text):
+    try:
+        altitude = int(text)
+        if altitude < 0:
+            raise ValueError("altitude below zero")
+    except ValueError:
+        return None
+    return altitude
+--- solution
+def parse_altitude(text):
+    try:
+        altitude = int(text)
+    except ValueError:
+        return None
+    if altitude < 0:
+        raise ValueError("altitude below zero")
+    return altitude
+--- hint
+Any \`ValueError\` raised inside the \`try\` block, even your own, jumps to the \`except\` block.
+--- hint
+Keep only \`altitude = int(text)\` inside \`try\`. Put the \`if altitude < 0:\` check after the \`try\` / \`except\`, pushed in only 4 spaces.
+--- check case | "350" gives 350
+parse_altitude("350")
+=> 350
+--- check case | "high" gives None
+parse_altitude("high")
+=> None
+--- check test | "-5" raises ValueError
+raises(ValueError, lambda: parse_altitude("-5"))
+?? Move the range check out of the try block, so the except cannot catch it.
+--- check case | "0" is allowed
+parse_altitude("0")
+=> 0
+
++++ practice | Read a settings list
+--- task
+Write a function \`parse_settings(lines)\` that reads settings from a list of lines and returns a dictionary. Each line holds a name and a whole-number value, separated by spaces, such as \`"port 8080"\`.
+
+- Skip blank lines, including lines of only spaces.
+- If a line does not split into exactly two words, \`raise ValueError\` with a message that includes the line.
+- The value is turned into a number with \`int\`. If that fails, let its \`ValueError\` go out to the caller: do not catch it.
+- If a name appears a second time, \`raise ValueError\` too.
+
+So \`parse_settings(["port 8080", "", "retries 3"])\` returns \`{"port": 8080, "retries": 3}\`, and \`parse_settings([])\` returns \`{}\`. Each of \`["port"]\`, \`["port eighty"]\` and \`["a 1", "a 2"]\` raises \`ValueError\`.
+--- starter
+def parse_settings(lines):
+    settings = {}
+    return settings
+--- solution
+def parse_settings(lines):
+    settings = {}
+    for line in lines:
+        words = line.split()
+        if len(words) == 0:
+            continue
+        if len(words) != 2:
+            raise ValueError(f"bad line: {line}")
+        name = words[0]
+        if name in settings:
+            raise ValueError(f"duplicate setting: {name}")
+        settings[name] = int(words[1])
+    return settings
+--- hint
+\`line.split()\` gives the words. A blank line, or one of only spaces, gives an empty list: skip it with \`continue\`.
+--- hint
+Check the number of words with \`len(words) != 2\`, and whether the name is already \`in settings\`, before you store anything.
+--- hint
+\`int(words[1])\` raises a \`ValueError\` by itself when the value is not a whole number. With no \`try\` around it, that error goes out to the caller.
+--- check case | Reads the settings and skips blank lines
+parse_settings(["port 8080", "", "retries 3", "   "])
+=> {"port": 8080, "retries": 3}
+--- check case | No lines gives {}
+parse_settings([])
+=> {}
+--- check test | A line with one word raises ValueError
+raises(ValueError, lambda: parse_settings(["port"]))
+--- check test | A value that is not a number raises ValueError
+raises(ValueError, lambda: parse_settings(["port eighty"]))
+--- check test | A repeated name raises ValueError
+raises(ValueError, lambda: parse_settings(["a 1", "a 2"]))
+?? Check whether the name is already in the dictionary before you store it.
+--- check test | A line with three words raises ValueError
+raises(ValueError, lambda: parse_settings(["port 80 80"]))
+
+=== py-12 | Classes
+--- teach
+Last lesson your functions learned to protect themselves from bad input. Up to now, your data (variables, lists, dictionaries) and the functions that work on it have lived apart. This lesson shows how to keep them together, in one new kind of value that you design yourself.
+
+Think of a bank. Every account has the same kind of information — who owns it and how much is in it — and the same actions, like putting money in. But each account has its own numbers. The bank has one plan for what an account is, and many real accounts made from that plan.
+
+### A class is a blueprint
+
+A **class** is that plan: a blueprint for a new kind of value. The word \`class\`, a name, and a colon start one:
+
+\`\`\`python
+class Account:
+    pass
+
+acct = Account()
+\`\`\`
+
+\`pass\` holds the place of a body, as you saw with functions. Writing the class name with brackets, \`Account()\`, builds one thing from the blueprint. That thing is called an **[[object|object-instance]]** — one real value made from a class. You can make as many objects from one class as you like.
+
+Class names start with a capital letter, and each new word gets a capital too: \`Account\`, \`FuelTank\`. This style is called **[[CamelCase|camel-case]]**. It is the one exception to the lowercase-with-underscores rule for names, and it tells a reader "this is a class".
+
+### Giving each object its own data
+
+An empty blueprint is not much use. To give every new object its data, write a function called \`__init__\` inside the class:
+
+\`\`\`python
+class Account:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+
+acct = Account("ada")
+print(acct.owner)      # ada
+print(acct.balance)    # 0
+\`\`\`
+
+A few new things here, one at a time.
+
+- A function written inside a class is called a **method**. You have used methods already: \`.upper()\` is a method of strings.
+- \`__init__\` is written with two underscores before and after. People read it as "[[dunder init|dunder]]", short for "double underscore init". It is a special method: Python runs it by itself every time a new object is created.
+- \`self\` is the new object itself. Every method takes **[[self|self-name]]** as its first parameter.
+- \`self.owner = owner\` means "store the value of \`owner\` inside this object, under the name \`owner\`". A value stored inside an object is called an **[[attribute|attribute]]**. You read it back with a dot: \`acct.owner\`.
+
+So \`Account("ada")\` does three things. Python makes a new, empty object. It runs \`__init__\` with \`self\` set to that object, \`owner\` set to \`"ada"\`, and \`balance\` set to its default, \`0\`. Then it hands you the finished object, which is stored in \`acct\`.
+
+Why both \`owner\` and \`self.owner\`? \`owner\` on its own is a parameter, and like every parameter it is gone when the method ends. \`self.owner\` is stored on the object, so it stays for as long as the object does.
+
+### Two objects, two sets of data
+
+Each object keeps its own attributes. Changing one does not change the other:
+
+\`\`\`python
+a = Account("ada", 100)
+b = Account("lin")
+print(a.balance, b.balance)    # 100 0
+\`\`\`
+
+### Methods that use the data
+
+Now add a method that changes the balance:
+
+\`\`\`python
+class Account:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+
+    def deposit(self, amount):
+        self.balance += amount
+        return self.balance
+
+acct = Account("ada")
+print(acct.deposit(50))    # 50
+print(acct.deposit(20))    # 70
+print(acct.balance)        # 70
+\`\`\`
+
+\`+=\` means "add to": \`self.balance += amount\` is a short way to write \`self.balance = self.balance + amount\`.
+
+You call a method with a dot, the same as \`name.upper()\`. Look closely: \`deposit\` has two parameters, \`self\` and \`amount\`, but you call it with one value, \`acct.deposit(50)\`. Python fills in \`self\` for you with the object before the dot, here \`acct\`. So inside the method, \`self.balance\` is \`acct.balance\`.
+
+A method does not have to return anything. This one only changes the data:
+
+\`\`\`python fragment
+    def empty(self):
+        self.balance = 0
+\`\`\`
+
+After \`acct.empty()\`, \`acct.balance\` is \`0\`. Like any function without \`return\`, it hands back \`None\`.
+
+**Watch out:** forgetting \`self\` is the mistake everyone makes. Leave it out of the \`def\` line, as in \`def deposit(amount):\`, and calling \`acct.deposit(50)\` stops with \`TypeError: ... takes 1 positional argument but 2 were given\` — Python passed the object and 50, and there was room for only one. Leave it out inside the method, writing \`balance += amount\` instead of \`self.balance += amount\`, and Python looks for an ordinary variable called \`balance\`, does not find one, and stops with an error.
+
+::: context object-instance One blueprint, many objects
+An object made from a class is also called an instance of that class: \`acct\` is an instance of \`Account\`. Every value you have used is an object of some class. \`"hello"\` is an instance of \`str\`, and \`[1, 2]\` is an instance of \`list\`. That is why \`type(age)\` printed \`<class 'int'>\` back in the variables lesson. Now you can make classes of your own.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <defs><marker id="oi-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a44"/></marker></defs>
+  <rect x="10" y="55" width="130" height="60" rx="6" fill="white" stroke="#1d6fd1" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="75" y="80" font-size="13" text-anchor="middle" fill="#1d6fd1">class Account</text>
+  <text x="75" y="100" font-size="11" text-anchor="middle" fill="#6c7a93">owner, balance</text>
+  <rect x="210" y="12" width="140" height="62" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="222" y="32" font-size="13" font-weight="bold" fill="#1f2a44">a</text>
+  <text x="222" y="50" font-size="12" fill="#1f2a44">owner: ada</text>
+  <text x="222" y="66" font-size="12" fill="#1f2a44">balance: 100</text>
+  <rect x="210" y="96" width="140" height="62" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="222" y="116" font-size="13" font-weight="bold" fill="#1f2a44">b</text>
+  <text x="222" y="134" font-size="12" fill="#1f2a44">owner: lin</text>
+  <text x="222" y="150" font-size="12" fill="#1f2a44">balance: 0</text>
+  <line x1="140" y1="75" x2="207" y2="45" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#oi-arrow)"/>
+  <line x1="140" y1="95" x2="207" y2="125" stroke="#1f2a44" stroke-width="1.5" marker-end="url(#oi-arrow)"/>
+  <text x="75" y="140" font-size="11" text-anchor="middle" fill="#6c7a93">the blueprint</text>
+</svg>
+\`\`\`
+:::
+
+::: context camel-case Humps in the middle of a name
+The capitals in \`FuelTank\` stick up like the humps of a camel, which is where the name comes from. Python has an official style guide, called PEP 8, that most Python programmers follow. It says classes use CamelCase, and variables and functions use lowercase words joined by underscores, like \`fuel_level\`. Python does not force this, but following it means anyone can tell at a glance whether \`Thing\` is a class and \`thing\` is a value.
+:::
+
+::: context dunder Names Python calls for you
+Names with two underscores on each side are special: you write them, but Python calls them at the right moment. \`__init__\` is short for "initialize", which means "set up at the start". There are many others. In the intermediate course you will write \`__repr__\`, which Python calls to show an object, and \`__eq__\`, which Python calls when you compare two objects with \`==\`. The double underscores make these names hard to clash with your own by accident.
+:::
+
+::: context self-name Why self has to be written
+Many languages hide the "this object" parameter. Python makes you write it, because one of its guiding rules is "explicit is better than implicit": it is better to see what is happening than to have it happen out of sight. The name \`self\` is a habit, not a keyword. Any name would work, but every Python programmer uses \`self\`, so use it too.
+:::
+
+::: context attribute Data that belongs to an object
+An attribute is a named value that belongs to an object, the way "color" and "size" belong to a shirt. The dot means "the one inside": \`acct.balance\` is "the balance inside \`acct\`". Flight software is often organized the same way. NASA's open-source F Prime framework, which ran on the Ingenuity helicopter on Mars, is built from components written as C++ classes, each keeping its own data and the methods that work on it.
+:::
+--- task
+Write a class called \`Counter\` that counts up, like a clicker.
+
+- \`__init__(self, start=0)\` stores the starting number in \`self.value\`. So \`Counter()\` starts at \`0\`, and \`Counter(5)\` starts at \`5\`.
+- \`increment(self)\` adds one to \`self.value\` and returns the new value.
+- \`reset(self)\` sets \`self.value\` back to \`0\`. It does not need to return anything.
+
+Replace the \`pass\` in the starter with these three methods.
+--- starter
+class Counter:
+    pass
+--- solution
+class Counter:
+    def __init__(self, start=0):
+        self.value = start
+
+    def increment(self):
+        self.value += 1
+        return self.value
+
+    def reset(self):
+        self.value = 0
+--- hint
+Copy the shape of \`Account\`: an \`__init__\` method first, then the other methods, each indented inside the class, each with \`self\` as its first parameter.
+--- hint
+\`__init__\` has one line: \`self.value = start\`. \`reset\` has one line too: \`self.value = 0\`, like the \`empty\` method.
+--- hint
+\`increment\` is like \`deposit\`, with 1 in place of \`amount\`: \`self.value += 1\`, then \`return self.value\`.
+--- check case | A new Counter starts at 0
+Counter().value
+=> 0
+--- check case | It can start somewhere else
+Counter(5).value
+=> 5
+--- check test | increment adds one and returns it
+(lambda c: (c.increment(), c.increment()) == (1, 2) and c.value == 2)(Counter())
+--- check test | reset goes back to 0
+(lambda c: (c.increment(), c.reset(), c.value)[2] == 0)(Counter(9))
+
++++ practice | A rover that keeps its distance
+--- task
+Write a class \`Rover\`:
+
+- \`__init__(self, name)\` stores \`name\` in \`self.name\`, and sets \`self.distance_km\` to \`0\`.
+- \`drive(self, km)\` adds \`km\` to \`self.distance_km\` and returns the new total. A rover cannot drive a negative distance: if \`km\` is below 0, \`drive\` raises \`ValueError\` and changes nothing.
+
+So after \`r = Rover("Pathfinder")\`, \`r.drive(3)\` returns \`3\`, then \`r.drive(2.5)\` returns \`5.5\`, and \`r.name\` is \`"Pathfinder"\`.
+--- starter
+class Rover:
+    pass
+--- solution
+class Rover:
+    def __init__(self, name):
+        self.name = name
+        self.distance_km = 0
+
+    def drive(self, km):
+        if km < 0:
+            raise ValueError("km must not be negative")
+        self.distance_km += km
+        return self.distance_km
+--- hint
+Every method takes \`self\` first. In \`__init__\`, store both attributes on \`self\`.
+--- hint
+\`drive\` checks \`km\` first and raises for a negative one. Then it adds with \`self.distance_km += km\` and returns \`self.distance_km\`.
+--- check case | A new rover keeps its name
+Rover("Pathfinder").name
+=> "Pathfinder"
+--- check case | A new rover has driven 0 km
+Rover("Pathfinder").distance_km
+=> 0
+--- check test | drive adds up and returns the total
+(lambda r: (r.drive(3), r.drive(2.5)) == (3, 5.5) and r.distance_km == 5.5)(Rover("Pathfinder"))
+?? Add km to self.distance_km, then return self.distance_km.
+--- check test | A negative distance raises ValueError and changes nothing
+(lambda r: (r.drive(4), raises(ValueError, lambda: r.drive(-1)), r.distance_km)[1:] == (True, 4))(Rover("Pathfinder"))
+--- check test | Two rovers keep separate distances
+(lambda a, b: (a.drive(10), b.drive(1), a.distance_km, b.distance_km)[2:] == (10, 1))(Rover("A"), Rover("B"))
+
++++ practice | A solar panel's power
+--- task
+Write a class \`SolarPanel\`:
+
+- \`__init__(self, width_m, height_m, efficiency=0.2)\` stores the three values in attributes with the same names.
+- \`area(self)\` returns the width times the height.
+- \`power(self, sunlight=1000)\` returns the area times the efficiency times \`sunlight\`, rounded with \`round\` to 2 digits after the decimal point. Call \`self.area()\` inside it rather than working the area out again.
+
+So \`SolarPanel(2, 3).area()\` is \`6\`, \`SolarPanel(2, 3).power()\` is \`1200.0\`, and \`SolarPanel(1, 1, 0.25).power(800)\` is \`200.0\`.
+--- starter
+class SolarPanel:
+    pass
+--- solution
+class SolarPanel:
+    def __init__(self, width_m, height_m, efficiency=0.2):
+        self.width_m = width_m
+        self.height_m = height_m
+        self.efficiency = efficiency
+
+    def area(self):
+        return self.width_m * self.height_m
+
+    def power(self, sunlight=1000):
+        return round(self.area() * self.efficiency * sunlight, 2)
+--- hint
+Defaults work in methods the same as in functions: \`efficiency=0.2\` and \`sunlight=1000\` in the \`def\` lines.
+--- hint
+One method can call another on the same object with \`self.\`: \`self.area()\`.
+--- check case | area is width times height
+SolarPanel(2, 3).area()
+=> 6
+--- check case | power uses the default efficiency and sunlight
+SolarPanel(2, 3).power()
+=> 1200.0
+--- check case | power uses the values given
+SolarPanel(1, 1, 0.25).power(800)
+=> 200.0
+--- check test | The attributes are stored
+(lambda p: p.width_m == 4 and p.height_m == 0.5 and p.efficiency == 0.2)(SolarPanel(4, 0.5))
+
++++ practice | A searchable logbook
+--- task
+Write a class \`Logbook\` that keeps a list of entries:
+
+- \`__init__(self)\` sets \`self.entries\` to an empty list.
+- \`add(self, text)\` strips the spaces from the ends of \`text\`. If what is left is empty, it does nothing. Otherwise it appends it to \`self.entries\`.
+- \`count(self)\` returns how many entries there are.
+- \`search(self, word)\` returns a list of the entries that contain \`word\`, whatever its capitals, in the order they were added. Use a list comprehension, and compare both in small letters.
+
+For example, after adding \`"Engine start"\`, \`"   "\` and \`"engine stop "\`, \`count()\` is \`2\`, and \`search("ENGINE")\` returns \`["Engine start", "engine stop"]\`.
+--- starter
+class Logbook:
+    pass
+--- solution
+class Logbook:
+    def __init__(self):
+        self.entries = []
+
+    def add(self, text):
+        clean = text.strip()
+        if clean != "":
+            self.entries.append(clean)
+
+    def count(self):
+        return len(self.entries)
+
+    def search(self, word):
+        return [e for e in self.entries if word.lower() in e.lower()]
+--- hint
+Each logbook needs its own list, so make it in \`__init__\` with \`self.entries = []\`.
+--- hint
+In \`add\`, strip first, then append only if the result is not \`""\`.
+--- hint
+\`search\` returns \`[e for e in self.entries if word.lower() in e.lower()]\`.
+--- check test | Blank entries are not added
+(lambda b: (b.add("Engine start"), b.add("   "), b.add("engine stop "), b.count())[3] == 2)(Logbook())
+--- check test | Entries are stored stripped
+(lambda b: (b.add("  Hatch sealed  "), b.entries)[1] == ["Hatch sealed"])(Logbook())
+--- check test | search ignores capitals and keeps the order
+(lambda b: (b.add("Engine start"), b.add("Cabin check"), b.add("engine stop "), b.search("ENGINE"))[3] == ["Engine start", "engine stop"])(Logbook())
+?? Compare word.lower() with each entry's lower() copy.
+--- check test | A new logbook is empty and finds nothing
+(lambda b: b.count() == 0 and b.search("x") == [])(Logbook())
+--- check test | Two logbooks do not share entries
+(lambda a, b: (a.add("one"), b.count())[1] == 0)(Logbook(), Logbook())
+
++++ practice | A battery with limits
+--- task
+Write a class \`Battery\`:
+
+- \`__init__(self, capacity_wh)\` stores \`capacity_wh\`, and sets \`self.charge_wh\` to \`0\`.
+- \`charge(self, wh)\` adds \`wh\` to the charge, but never above the capacity: any extra is lost. It returns the new charge.
+- \`use(self, wh)\` takes \`wh\` away from the charge and returns the new charge. If \`wh\` is more than the charge, it raises \`ValueError\` and leaves the charge as it was. Using exactly all of the charge is allowed.
+- Both methods raise \`ValueError\` if \`wh\` is below 0.
+
+So with \`b = Battery(100)\`: \`b.charge(70)\` returns \`70\`, \`b.charge(50)\` returns \`100\`, \`b.use(100)\` returns \`0\`, and then \`b.use(1)\` raises \`ValueError\`.
+--- starter
+class Battery:
+    def __init__(self, capacity_wh):
+        self.capacity_wh = capacity_wh
+        self.charge_wh = 0
+
+    def charge(self, wh):
+        self.charge_wh += wh
+        return self.charge_wh
+
+    def use(self, wh):
+        self.charge_wh = self.charge_wh - wh
+        return self.charge_wh
+--- solution
+class Battery:
+    def __init__(self, capacity_wh):
+        self.capacity_wh = capacity_wh
+        self.charge_wh = 0
+
+    def charge(self, wh):
+        if wh < 0:
+            raise ValueError("cannot charge a negative amount")
+        self.charge_wh += wh
+        if self.charge_wh > self.capacity_wh:
+            self.charge_wh = self.capacity_wh
+        return self.charge_wh
+
+    def use(self, wh):
+        if wh < 0:
+            raise ValueError("cannot use a negative amount")
+        if wh > self.charge_wh:
+            raise ValueError("not enough charge")
+        self.charge_wh = self.charge_wh - wh
+        return self.charge_wh
+--- hint
+Check the bad cases first, at the top of each method, and \`raise ValueError(...)\` for them before changing anything.
+--- hint
+After adding in \`charge\`, if the charge is over the capacity, set it back to the capacity.
+--- hint
+"More than the charge" is \`wh > self.charge_wh\`. With \`>=\`, using exactly all of it would wrongly fail.
+--- check test | charge stops at the capacity
+(lambda b: (b.charge(70), b.charge(50)) == (70, 100) and b.charge_wh == 100)(Battery(100))
+?? Any charge above capacity_wh is lost.
+--- check test | Using all of the charge leaves 0
+(lambda b: (b.charge(40), b.use(40))[1] == 0)(Battery(100))
+--- check test | Using more than the charge raises ValueError and changes nothing
+(lambda b: (b.charge(10), raises(ValueError, lambda: b.use(11)), b.charge_wh)[1:] == (True, 10))(Battery(100))
+--- check test | Negative amounts raise ValueError
+(lambda b: raises(ValueError, lambda: b.charge(-5)) and raises(ValueError, lambda: b.use(-5)))(Battery(100))
+--- check test | Two batteries are separate
+(lambda a, b: (a.charge(30), b.charge_wh)[1] == 0)(Battery(50), Battery(50))
+
++++ practice | Fix the thermostat
+--- task
+\`Thermostat\` keeps a target temperature. \`raise_by(degrees)\` should raise the target by \`degrees\` and return the new target. So after \`t = Thermostat(20)\`, \`t.raise_by(2)\` should return \`22\`, and \`t.target\` should then be \`22\`.
+
+It returns \`20\`, and the target never changes. Fix the one line that is wrong.
+--- starter
+class Thermostat:
+    def __init__(self, target=20):
+        self.target = target
+
+    def raise_by(self, degrees):
+        target = self.target + degrees
+        return self.target
+--- solution
+class Thermostat:
+    def __init__(self, target=20):
+        self.target = target
+
+    def raise_by(self, degrees):
+        self.target = self.target + degrees
+        return self.target
+--- hint
+\`target\` on its own is an ordinary variable inside the method. It is gone when the method ends.
+--- hint
+To change the object's own value, write to \`self.target\`.
+--- check test | raise_by returns the new target
+Thermostat(20).raise_by(2) == 22
+--- check test | The target itself changes
+(lambda t: (t.raise_by(3), t.raise_by(1), t.target)[2] == 24)(Thermostat(20))
+?? Store the new value in self.target, not in a plain variable.
+--- check case | The default target is 20
+Thermostat().target
+=> 20
+
++++ practice | A parts inventory
+--- task
+Write a class \`Inventory\` that keeps a dictionary of part names and counts in \`self.counts\`:
+
+- \`__init__(self)\` sets \`self.counts\` to an empty dictionary.
+- \`add(self, part, count=1)\` adds \`count\` to that part's number, starting from 0 for a new part.
+- \`remove(self, part, count=1)\` takes \`count\` away. If the part is not in the inventory, it raises \`KeyError\`. If there are fewer than \`count\` of it, it raises \`ValueError\` and changes nothing.
+- \`total(self)\` returns how many parts there are altogether.
+- \`report(self)\` returns a list of lines like \`"bolt: 3"\`, one for each part whose count is more than 0, in the order the parts were first added. Use a list comprehension.
+
+For example, after \`add("bolt", 3)\`, \`add("nut")\` and \`remove("nut")\`, \`total()\` is \`3\`, and \`report()\` is \`["bolt: 3"]\`.
+--- starter
+class Inventory:
+    def __init__(self):
+        self.counts = {}
+--- solution
+class Inventory:
+    def __init__(self):
+        self.counts = {}
+
+    def add(self, part, count=1):
+        self.counts[part] = self.counts.get(part, 0) + count
+
+    def remove(self, part, count=1):
+        if part in self.counts:
+            if self.counts[part] < count:
+                raise ValueError(f"only {self.counts[part]} {part} left")
+            self.counts[part] = self.counts[part] - count
+        else:
+            raise KeyError(part)
+
+    def total(self):
+        total = 0
+        for part, count in self.counts.items():
+            total += count
+        return total
+
+    def report(self):
+        return [f"{part}: {count}" for part, count in self.counts.items() if count > 0]
+--- hint
+\`add\` is the tally pattern: \`self.counts.get(part, 0) + count\`.
+--- hint
+In \`remove\`, use \`if part in self.counts:\` with an \`else\` for the missing part. \`raise KeyError(part)\` works just like \`raise ValueError(...)\`. Check the count before you change it.
+--- hint
+\`report\` builds a list from \`self.counts.items()\` with an f-string at the front and \`if count > 0\` at the end.
+--- check test | add and total
+(lambda inv: (inv.add("bolt", 3), inv.add("nut"), inv.add("bolt"), inv.total())[3] == 5)(Inventory())
+--- check test | report skips parts with none left
+(lambda inv: (inv.add("bolt", 3), inv.add("nut"), inv.remove("nut"), inv.report())[3] == ["bolt: 3"])(Inventory())
+--- check test | Removing a missing part raises KeyError
+(lambda inv: raises(KeyError, lambda: inv.remove("gear")))(Inventory())
+--- check test | Removing too many raises ValueError and changes nothing
+(lambda inv: (inv.add("nut", 2), raises(ValueError, lambda: inv.remove("nut", 3)), inv.counts)[1:] == (True, {"nut": 2}))(Inventory())
+?? Check the count before you change it.
+--- check test | An empty inventory
+(lambda inv: inv.total() == 0 and inv.report() == [])(Inventory())
+
+=== py-gate | Python, a first language: mastery gate
+--- teach
+The gate covers the whole course: values and types, arithmetic, strings and f-strings, decisions, lists, loops, functions, dictionaries, comprehensions, errors and classes. Its ten problems are new, most of them mix several lessons, and there are no hints. Twelve short questions after them check that you understand why the code does what it does. To get ready, redo the practice problems of the lessons that felt hardest, without looking at the hints.
+--- gate
+pass 7
+questions 10
+minutes 112
+
++++ problem | Add up the digits
+--- task
+Write a function \`digit_sum(n)\` that returns the sum of the digits of the whole number \`n\`. For example, \`digit_sum(4071)\` returns \`4 + 0 + 7 + 1\`, which is \`12\`.
+
+- Take the digits off one at a time with \`% 10\` and \`// 10\`, in a \`while\` loop.
+- \`digit_sum(0)\` returns \`0\`.
+- If \`n\` is below 0, raise \`ValueError\`.
+--- starter
+def digit_sum(n):
+    pass
+--- solution
+def digit_sum(n):
+    if n < 0:
+        raise ValueError("n must not be negative")
+    total = 0
+    while n > 0:
+        total += n % 10
+        n = n // 10
+    return total
+--- check case | digit_sum(4071) is 12
+digit_sum(4071)
+=> 12
+--- check case | digit_sum(0) is 0
+digit_sum(0)
+=> 0
+--- check case | One digit
+digit_sum(9)
+=> 9
+--- check case | Many zeros
+digit_sum(1000000)
+=> 1
+--- check test | A negative number raises ValueError
+raises(ValueError, lambda: digit_sum(-5))
+
++++ problem | Squash the runs
+--- task
+Write a function \`compress(text)\` that shortens runs of the same character. Each run becomes the character followed by how many times it repeats, and runs are kept in order.
+
+- \`compress("aaabcc")\` returns \`"a3b1c2"\`.
+- \`compress("aabbaa")\` returns \`"a2b2a2"\`: the two runs of \`a\` are separate.
+- \`compress("x")\` returns \`"x1"\`.
+- \`compress("")\` returns \`""\`.
+--- starter
+def compress(text):
+    pass
+--- solution
+def compress(text):
+    result = ""
+    current = ""
+    run = 0
+    for ch in text:
+        if ch == current:
+            run += 1
+        else:
+            if run > 0:
+                result = result + f"{current}{run}"
+            current = ch
+            run = 1
+    if run > 0:
+        result = result + f"{current}{run}"
+    return result
+--- check case | compress("aaabcc")
+compress("aaabcc")
+=> "a3b1c2"
+--- check case | Separate runs of the same letter stay separate
+compress("aabbaa")
+=> "a2b2a2"
+--- check case | One character
+compress("x")
+=> "x1"
+--- check case | An empty string
+compress("")
+=> ""
+--- check case | Spaces are characters too
+compress("  b")
+=> " 2b1"
+
++++ problem | Letter grades for a class
+--- task
+Write two functions.
+
+1. \`letter(score)\` returns \`"A"\` for a score of 90 or more, \`"B"\` for 80 or more, \`"C"\` for 70 or more, and \`"F"\` for anything lower. A score below 0 or above 100 raises \`ValueError\`.
+2. \`grade_all(scores)\` takes a dictionary mapping names to scores and returns a new dictionary mapping each name to its letter. Use a dictionary comprehension that calls \`letter\`.
+
+So \`grade_all({"ada": 90, "lin": 89.5})\` returns \`{"ada": "A", "lin": "B"}\`, \`grade_all({})\` returns \`{}\`, and \`grade_all({"x": 101})\` raises \`ValueError\`.
+--- starter
+def letter(score):
+    pass
+
+
+def grade_all(scores):
+    pass
+--- solution
+def letter(score):
+    if score < 0 or score > 100:
+        raise ValueError(f"score out of range: {score}")
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    else:
+        return "F"
+
+
+def grade_all(scores):
+    return {name: letter(score) for name, score in scores.items()}
+--- check case | The edges of each band
+grade_all({"ada": 90, "lin": 89.5, "sam": 70, "kim": 0, "max": 100})
+=> {"ada": "A", "lin": "B", "sam": "C", "kim": "F", "max": "A"}
+--- check case | An empty class
+grade_all({})
+=> {}
+--- check case | letter(69.9) is F
+letter(69.9)
+=> "F"
+--- check test | A score above 100 raises ValueError
+raises(ValueError, lambda: grade_all({"x": 101}))
+--- check test | A score below 0 raises ValueError
+raises(ValueError, lambda: letter(-1))
+
++++ problem | The fastest leg
+--- task
+Write a function \`fastest_leg(distances, times)\`. The two lists have the same length: leg number \`i\` covered \`distances[i]\` kilometers in \`times[i]\` hours. Its speed is the distance divided by the time.
+
+Return the **index** of the leg with the highest speed.
+
+- A leg with a time of \`0\` is a bad record: skip it.
+- If two legs tie for fastest, return the first.
+- If there is no leg left to compare, return \`None\`.
+
+So \`fastest_leg([100, 300, 50], [10, 20, 2])\` returns \`2\` (speeds 10, 15 and 25), and \`fastest_leg([10], [0])\` returns \`None\`.
+--- starter
+def fastest_leg(distances, times):
+    pass
+--- solution
+def fastest_leg(distances, times):
+    best = None
+    best_speed = 0
+    for i in range(len(distances)):
+        if times[i] == 0:
+            continue
+        speed = distances[i] / times[i]
+        if best == None or speed > best_speed:
+            best = i
+            best_speed = speed
+    return best
+--- check case | The fastest is the last leg
+fastest_leg([100, 300, 50], [10, 20, 2])
+=> 2
+--- check case | A tie returns the first
+fastest_leg([5, 5], [1, 1])
+=> 0
+--- check case | A leg of time 0 is skipped
+fastest_leg([10, 1], [0, 1])
+=> 1
+--- check case | Only bad records gives None
+fastest_leg([10], [0])
+=> None
+--- check case | No legs gives None
+fastest_leg([], [])
+=> None
+--- check case | A slow first leg with speed 0 still counts
+fastest_leg([0, 0], [4, 2])
+=> 0
+
++++ problem | Add up a line of readings
+--- task
+Write a function \`sum_line(line)\`. The text holds readings separated by spaces, such as \`"12 x 15 -3 7"\`.
+
+- Add up every word that is a whole number.
+- Count the words that are not, as bad words.
+- If the word \`END\` appears, stop there: it and everything after it are ignored.
+
+Return a string like \`"31 (1 bad)"\`: the total, a space, then the count of bad words in brackets.
+
+So \`sum_line("12 x 15 -3 7")\` returns \`"31 (1 bad)"\`, \`sum_line("5 END 9 x")\` returns \`"5 (0 bad)"\`, and \`sum_line("")\` returns \`"0 (0 bad)"\`.
+--- starter
+def sum_line(line):
+    pass
+--- solution
+def sum_line(line):
+    total = 0
+    bad = 0
+    for word in line.split():
+        if word == "END":
+            break
+        try:
+            total += int(word)
+        except ValueError:
+            bad += 1
+    return f"{total} ({bad} bad)"
+--- check case | Adds the numbers and counts the bad word
+sum_line("12 x 15 -3 7")
+=> "31 (1 bad)"
+--- check case | Stops at END
+sum_line("5 END 9 x")
+=> "5 (0 bad)"
+--- check case | An empty line
+sum_line("")
+=> "0 (0 bad)"
+--- check case | Nothing but bad words
+sum_line("a 4.5")
+=> "0 (2 bad)"
+--- check case | END first
+sum_line("END 3")
+=> "0 (0 bad)"
+
++++ problem | A launch queue
+--- task
+Write a class \`LaunchQueue\` that holds the names of rockets waiting to launch, first come, first served:
+
+- \`__init__(self)\` sets \`self.waiting\` to an empty list.
+- \`add(self, name)\` strips the spaces from the ends of \`name\` and adds it to the end of the queue. A name that is empty after stripping raises \`ValueError\`.
+- \`size(self)\` returns how many are waiting.
+- \`peek(self)\` returns the first name without removing it, or \`None\` when the queue is empty.
+- \`launch(self)\` removes the first name and returns it. Keep the rest with a slice. When the queue is empty it raises \`ValueError\`.
+
+For example, after \`add("Kestrel")\` and \`add(" Osprey ")\`, \`launch()\` returns \`"Kestrel"\`, then \`peek()\` returns \`"Osprey"\` and \`size()\` returns \`1\`.
+--- starter
+class LaunchQueue:
+    def __init__(self):
+        self.waiting = []
+--- solution
+class LaunchQueue:
+    def __init__(self):
+        self.waiting = []
+
+    def add(self, name):
+        clean = name.strip()
+        if clean == "":
+            raise ValueError("a rocket needs a name")
+        self.waiting.append(clean)
+
+    def size(self):
+        return len(self.waiting)
+
+    def peek(self):
+        if len(self.waiting) == 0:
+            return None
+        return self.waiting[0]
+
+    def launch(self):
+        if len(self.waiting) == 0:
+            raise ValueError("nothing is waiting")
+        first = self.waiting[0]
+        self.waiting = self.waiting[1:len(self.waiting)]
+        return first
+--- check test | First come, first served
+(lambda q: (q.add("Kestrel"), q.add(" Osprey "), q.launch(), q.peek(), q.size())[2:] == ("Kestrel", "Osprey", 1))(LaunchQueue())
+--- check test | An empty queue peeks None and cannot launch
+(lambda q: q.peek() == None and q.size() == 0 and raises(ValueError, lambda: q.launch()))(LaunchQueue())
+--- check test | A blank name raises ValueError and is not added
+(lambda q: raises(ValueError, lambda: q.add("   ")) and q.size() == 0)(LaunchQueue())
+--- check test | Launching everything empties the queue
+(lambda q: (q.add("a"), q.add("b"), q.launch(), q.launch(), q.size(), q.peek())[4:] == (0, None))(LaunchQueue())
+--- check test | Two queues are separate
+(lambda a, b: (a.add("x"), b.size())[1] == 0)(LaunchQueue(), LaunchQueue())
+
++++ problem | The second largest
+--- task
+Write a function \`second_largest(numbers)\` that returns the largest number in the list that is strictly smaller than the largest of all.
+
+- Repeats of the largest do not count: \`second_largest([4, 9, 2, 9, 7])\` returns \`7\`.
+- If there is no such number, return \`None\`: \`second_largest([5, 5])\` and \`second_largest([])\` both return \`None\`.
+- Negative numbers work too: \`second_largest([-3, -8])\` returns \`-8\`.
+--- starter
+def second_largest(numbers):
+    return sorted(numbers)[-2]
+--- solution
+def second_largest(numbers):
+    if len(numbers) == 0:
+        return None
+    top = max(numbers)
+    second = None
+    for n in numbers:
+        if n < top and (second == None or n > second):
+            second = n
+    return second
+--- check case | Repeats of the largest do not count
+second_largest([4, 9, 2, 9, 7])
+=> 7
+--- check case | All the same gives None
+second_largest([5, 5])
+=> None
+--- check case | An empty list gives None
+second_largest([])
+=> None
+--- check case | Negative numbers
+second_largest([-3, -8])
+=> -8
+--- check case | One number gives None
+second_largest([42])
+=> None
+--- check case | The second largest comes first
+second_largest([8, 1, 10])
+=> 8
+
++++ problem | The most common word
+--- task
+Write a function \`most_common(text)\` that returns the word that appears most often in \`text\`, compared in small letters, and returned in small letters.
+
+- If two words tie, return the one that appears first in the text.
+- If the text has no words, return \`None\`.
+
+So \`most_common("the cat and the hat")\` returns \`"the"\`, \`most_common("Go go GO stop")\` returns \`"go"\`, \`most_common("b a b a")\` returns \`"b"\`, and \`most_common("")\` returns \`None\`.
+--- starter
+def most_common(text):
+    pass
+--- solution
+def most_common(text):
+    counts = {}
+    for word in text.lower().split():
+        counts[word] = counts.get(word, 0) + 1
+    best = None
+    best_count = 0
+    for word, count in counts.items():
+        if count > best_count:
+            best = word
+            best_count = count
+    return best
+--- check case | "the" appears twice
+most_common("the cat and the hat")
+=> "the"
+--- check case | Capitals do not matter
+most_common("Go go GO stop")
+=> "go"
+--- check case | A tie returns the word seen first
+most_common("b a b a")
+=> "b"
+--- check case | No words gives None
+most_common("")
+=> None
+--- check case | One word
+most_common("orbit")
+=> "orbit"
+
++++ problem | What is wrong with this password?
+--- task
+Write a function \`password_problems(pw)\` that returns a list of what is wrong with a password, in this order:
+
+1. \`"too short"\` if it has fewer than 8 characters;
+2. \`"no digit"\` if none of its characters is in \`"0123456789"\`;
+3. \`"no capital"\` if it has no capital letter;
+4. \`"no small letter"\` if it has no small letter.
+
+A character is a capital letter when turning it into small letters changes it: \`ch.lower() != ch\`. It is a small letter when \`ch.upper() != ch\`. Digits and punctuation do not change either way.
+
+A good password gives \`[]\`. So \`password_problems("Orbit2024")\` returns \`[]\`, and \`password_problems("abc")\` returns \`["too short", "no digit", "no capital"]\`.
+--- starter
+def password_problems(pw):
+    return []
+--- solution
+def password_problems(pw):
+    has_digit = False
+    has_capital = False
+    has_small = False
+    for ch in pw:
+        if ch in "0123456789":
+            has_digit = True
+        if ch.lower() != ch:
+            has_capital = True
+        if ch.upper() != ch:
+            has_small = True
+    problems = []
+    if len(pw) < 8:
+        problems.append("too short")
+    if not has_digit:
+        problems.append("no digit")
+    if not has_capital:
+        problems.append("no capital")
+    if not has_small:
+        problems.append("no small letter")
+    return problems
+--- check case | A good password
+password_problems("Orbit2024")
+=> []
+--- check case | Short, no digit, no capital
+password_problems("abc")
+=> ["too short", "no digit", "no capital"]
+--- check case | Only capitals and a digit
+password_problems("ABCDEFGH1")
+=> ["no small letter"]
+--- check case | An empty password has every problem
+password_problems("")
+=> ["too short", "no digit", "no capital", "no small letter"]
+--- check case | Exactly 8 characters is long enough
+password_problems("Abcdefg1")
+=> []
+--- check case | Punctuation is not a letter
+password_problems("!!!!!!!!")
+=> ["no digit", "no capital", "no small letter"]
+
++++ problem | A moving average
+--- task
+Write a function \`moving_average(values, window=3)\` that returns the mean of every run of \`window\` values in a row, in order, each rounded to 2 digits after the decimal point.
+
+- \`moving_average([1, 2, 3, 4, 5])\` returns \`[2.0, 3.0, 4.0]\`: the means of \`[1, 2, 3]\`, \`[2, 3, 4]\` and \`[3, 4, 5]\`.
+- \`moving_average([1, 2, 3, 4], 2)\` returns \`[1.5, 2.5, 3.5]\`.
+- If \`window\` is bigger than the list, there is no full run, so return \`[]\`.
+- If \`window\` is below 1, raise \`ValueError\`.
+
+Use slices and a list comprehension over \`range\`.
+--- starter
+def moving_average(values, window=3):
+    pass
+--- solution
+def moving_average(values, window=3):
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    return [round(sum(values[i:i + window]) / window, 2) for i in range(len(values) - window + 1)]
+--- check case | The default window of 3
+moving_average([1, 2, 3, 4, 5])
+=> [2.0, 3.0, 4.0]
+--- check case | A window of 2
+moving_average([1, 2, 3, 4], 2)
+=> [1.5, 2.5, 3.5]
+--- check case | A window bigger than the list
+moving_average([5], 3)
+=> []
+--- check case | A window as long as the list
+moving_average([10, 20, 31])
+=> [20.33]
+--- check case | A window of 1 copies the values
+moving_average([4, 6], 1)
+=> [4.0, 6.0]
+--- check test | A window of 0 raises ValueError
+raises(ValueError, lambda: moving_average([1, 2], 0))
+
++++ question | Two names, one value
+--- ask
+What does this print?
+
+\`\`\`python
+x = 7
+y = x
+x = x + 1
+print(x, y)
+\`\`\`
+--- answer
+8 7
+--- why
+\`y = x\` gives \`y\` the value \`x\` held at that moment, 7. The next line makes a new value, 8, and moves only the name \`x\` onto it, so \`y\` still means 7.
+
++++ question | Four operators
+--- ask
+What does this print?
+
+\`\`\`python
+print(7 // 2, 7 % 2, -7 // 2, 2 ** 3)
+\`\`\`
+--- answer
+3 1 -4 8
+--- why
+\`7 // 2\` is 3 whole times, \`7 % 2\` is the 1 left over, and \`2 ** 3\` is 2 times 2 times 2. \`//\` always rounds down, towards the left of the number line, so -3.5 becomes -4, not -3.
+
++++ question | Text that looks like numbers
+--- ask
+What does this print?
+
+\`\`\`python
+print("3" + "4", 3 + 4)
+\`\`\`
+--- answer
+34 7
+--- why
+\`"3"\` and \`"4"\` are strings, and \`+\` between two strings joins them into \`"34"\`. \`3\` and \`4\` with no quotes are ints, so \`+\` adds them. The quotes decide the type, and the type decides what \`+\` does.
+
++++ question | The spaces that stayed
+--- ask
+This program prints \`7\`, not \`3\`. Why?
+
+\`\`\`python
+name = "  ada  "
+name.strip()
+print(len(name))
+\`\`\`
+--- choice
+\`strip\` only removes spaces from the middle of a string.
+--- choice correct
+\`strip\` hands back a new, tidy string and leaves \`name\` as it was. The new string was never stored, so it was lost.
+--- choice
+\`len\` counts the quote marks as well as the letters.
+--- choice
+\`strip\` needs to be told which characters to remove, so with nothing in its brackets it does nothing.
+--- why
+Strings never change. Every string method builds a new string and hands it back, so you keep it with \`=\`: \`name = name.strip()\`.
+
++++ question | Which road is taken
+--- ask
+What does this print?
+
+\`\`\`python
+score = 95
+if score >= 50:
+    print("pass")
+elif score >= 90:
+    print("excellent")
+else:
+    print("fail")
+\`\`\`
+--- answer
+pass
+--- why
+Python checks from the top and runs only the first block whose test is \`True\`. 95 is at least 50, so it prints \`pass\` and never asks the second question. The highest band has to be checked first.
+
++++ question | Skip and stop
+--- ask
+What does this print?
+
+\`\`\`python
+total = 0
+for n in [3, -1, 4, 0, 5]:
+    if n < 0:
+        continue
+    if n == 0:
+        break
+    total += n
+print(total)
+\`\`\`
+--- answer
+7
+--- why
+3 is added. -1 is skipped by \`continue\`, which only ends that pass. 4 is added. At 0, \`break\` ends the whole loop, so the 5 is never reached: 3 + 4 is 7.
+
++++ question | What append hands back
+--- ask
+What does this program do?
+
+\`\`\`python
+planets = ["Venus", "Earth"]
+planets = planets.append("Mars")
+print(planets)
+\`\`\`
+--- choice
+It prints \`['Venus', 'Earth', 'Mars']\`.
+--- choice correct
+It prints \`None\`.
+--- choice
+It prints \`Mars\`.
+--- choice
+It stops with an error on the second line.
+--- why
+\`append\` changes the list itself and hands back \`None\`. The second line then sticks the name \`planets\` on that \`None\`, and the list is lost. Write \`planets.append("Mars")\` on its own line, with no \`=\`.
+
++++ question | Print or return
+--- ask
+What does this program print?
+
+\`\`\`python
+def double(n):
+    print(n * 2)
+
+result = double(4)
+print(result)
+\`\`\`
+--- choice correct
+\`8\`, then \`None\`.
+--- choice
+\`8\`, then \`8\`.
+--- choice
+Only \`8\`: the second \`print\` has nothing to show.
+--- choice
+It stops with an error, because \`double\` has no \`return\`.
+--- why
+The call prints 8 while it runs. A function with no \`return\` hands back \`None\`, so \`result\` holds \`None\`, and the last line prints it. That is why functions should \`return\` their answer rather than print it.
+
++++ question | A key that is not there
+--- ask
+What happens when this runs?
+
+\`\`\`python
+stock = {"bolt": 4}
+print(stock.get("nut", 0))
+print(stock["nut"])
+\`\`\`
+--- choice
+It prints \`0\` twice.
+--- choice
+It prints \`0\`, then \`None\`.
+--- choice correct
+It prints \`0\`, then stops with a \`KeyError\`.
+--- choice
+It stops with a \`KeyError\` before printing anything.
+--- why
+\`.get("nut", 0)\` gives the fallback, 0, when the key is missing. Square brackets have no fallback: a missing key raises \`KeyError\` and stops the program. Lines run top to bottom, so the first \`print\` has already happened.
+
++++ question | A comprehension with a filter
+--- ask
+What does this print?
+
+\`\`\`python
+print([n * 2 for n in [1, 2, 3, 4] if n % 2 == 0])
+\`\`\`
+--- answer
+[4, 8]
+--- why
+The \`if\` is checked first: only 2 and 4 leave no remainder when divided by 2. Then the expression at the front, \`n * 2\`, turns them into 4 and 8.
+
++++ question | Why name the exception
+--- ask
+In this code, the name \`bonus\` was never created: it is a typo for \`bonus_points\`. What happens when \`text\` is \`"5"\`?
+
+\`\`\`python
+try:
+    total = int(text) + bonus
+except:
+    total = 0
+print(total)
+\`\`\`
+--- choice
+It prints \`5\`, because \`int("5")\` works.
+--- choice correct
+It prints \`0\`. The bare \`except:\` catches the \`NameError\` from the typo as well, so the mistake is hidden.
+--- choice
+It stops with \`NameError: name 'bonus' is not defined\`.
+--- choice
+Python refuses to run the file, because \`bonus\` is not defined.
+--- why
+A bare \`except:\` catches every exception, including the one caused by your own typo. Writing \`except ValueError:\` would catch only the error you expected, and the \`NameError\` would stop the program and point at the typo.
+
++++ question | Two objects from one class
+--- ask
+What does this print?
+
+\`\`\`python
+class Clicker:
+    def __init__(self):
+        self.count = 0
+
+    def click(self):
+        self.count += 1
+
+a = Clicker()
+b = Clicker()
+a.click()
+a.click()
+b.click()
+print(a.count, b.count)
+\`\`\`
+--- answer
+2 1
+--- why
+Each object keeps its own attributes. \`a.click()\` changes \`a.count\` only, because Python passes \`a\` in as \`self\`. \`b\` has its own \`count\`, clicked once.
+`;export{e as default};
