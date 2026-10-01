@@ -3,6 +3,30 @@
 What changed in each version of LAUNCHPAD. The newest version is first; the app shows the entry for
 the version it is running under Settings → What's new.
 
+## 1.4.0
+
+**LAUNCHPAD catches up with ORBIT.** The two apps share one platform, and LAUNCHPAD had fallen months
+behind it. It now runs on ORBIT's current platform, with LAUNCHPAD's own curriculum, layers, claims and
+gates exactly as they were.
+
+- **Learn to code, read aloud.** Every lesson has the guided reading: press play and the lesson is read
+  to you, the page scrolls with the voice and lights each word, and runnable examples run where they
+  stand. Practice and the task hold the reading until you have done them.
+- **The Computer Science degree.** All 17 degree courses: Data Structures and Algorithms I and II,
+  Discrete Math, Computer Organization, Systems, Operating Systems, Networks, Theory, Compilers,
+  Security, Parallel Computing and five capstones. Each one opens when the courses it builds on are
+  passed.
+- **Mastery, not just a pass.** The Python, C++, SQL, Terminal and Git courses are the new editions:
+  plain-voice lessons with notes you can tap, 5 to 8 practice problems under every lesson, a timed
+  mastery gate at the end of every course, and re-tests that come back days and weeks later.
+- **A tutor that watches your runs.** When a run fails, it says what went wrong the way a person beside
+  you would, and can say it out loud.
+- **Explain.** Highlight anything in a lesson and it is explained from what you have already read.
+- **Find on any page** with ⌘F or Ctrl+F, a docked player while you scroll, and the space bar to play
+  and pause.
+- Every recorded lesson was recorded again with the newer pronunciation: code, paths, symbols and
+  equations are said the way a person says them.
+
 ## 1.3.0
 
 **A new layer: The Frontier.** Eight modules, M33 to M40, for understanding AI the way working AI

@@ -78,13 +78,21 @@ jobs:
           git status --porcelain -- ../launchpad
           test -z "$(git status --porcelain -- ../launchpad)"
 
-  # Every Learn-to-code lesson, through the real runtimes in Node: the starter
-  # must not pass and the solution must pass every check. The runtimes
-  # (Pyodide, sql.js, clang in WebAssembly, Playwright's Chromium) are the
-  # root devDependencies; launchpad-app resolves them from there.
+  # Every Learn-to-code problem, through the real runtimes in Node
+  # (src/learn/solutions.test.ts): every lesson task, practice problem and gate
+  # problem, where the reference solution must pass its checks and the starter
+  # must not. It is thousands of programs, so it is split across machines:
+  # shard k of 3 checks every third problem, from the k-th. Python runs on
+  # CPython, C++ on clang, SQL on sql.js, JavaScript and TypeScript in Node
+  # threads and HTML in Playwright's Chromium (the root devDependencies).
   lessons:
-    name: Every lesson can be passed
+    name: Every problem can be solved (${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,8 +105,15 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm ci --no-audit --no-fund
         working-directory: launchpad-app
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Python packages lessons may import
+        run: pip install numpy scipy matplotlib pandas
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run every lesson's starter and solution
+      - name: Every problem, shard ${{ matrix.shard }} of 3
         working-directory: launchpad-app
-        run: VERIFY=all npx vitest run src/learn/verify.test.ts
+        run: npx vitest run src/learn/solutions.test.ts
+        env:
+          LEARN_SHARD: ${{ matrix.shard }}/3
