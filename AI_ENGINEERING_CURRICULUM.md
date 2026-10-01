@@ -4,6 +4,25 @@
 
 ---
 
+## Alongside a degree
+
+This program runs beside a **Bachelor of Science in Software Engineering at DeVry University**, starting
+soon. The two do different jobs, and the plan depends on keeping them apart:
+
+- **The degree** is the credential, the structured academics, the professors and the career services. It
+  is what gets a résumé past a filter that asks for a degree, and "degree in progress" is what internship
+  postings ask for.
+- **This program** is the engineering laboratory around it: deliberate practice, the flagship and the
+  evidence a stranger can judge, and the depth in backend systems, cloud and AI infrastructure that a
+  degree does not reach.
+- **Where they overlap, use one to reinforce the other.** When a term's course covers discrete math, data
+  structures or operating systems, the matching Learn-to-code course here is its practice and labs, not a
+  second syllabus to finish first. Nothing here is a reason to delay school, and school is never a reason
+  to stop applying.
+- **School hours count.** The weekly ceiling below is total focused hours. Subtract coursework first, and let
+  M0's runway arithmetic, re-run every term, set the pace for the rest.
+
+
 ## The honest numbers
 
 | | hours |
@@ -2112,7 +2131,7 @@ logged in the funnel table when it happens. **Tick this module on Gate A;** Gate
 replying and never holds up the ladder. **PASS:** state your floor out loud without hedging, recorded.
 **And** deliver a 30-second background answer with no apology and no hedge, plus a one-line non-defensive
 answer to each of the six predictable follow-ups: not currently employed? what title? how big was the
-team? who was the client? why no degree? what have you been doing since? **Two of those six have no
+team? who was the client? where are you in your degree? what have you been doing since? **Two of those six have no
 answer inside a framing that hides how you spent the year, so do not use one.** Say what is true:
 full-time self-directed work on an app you built and operate, with a working engineer reviewing your code
 and an eval harness gating its CI, no client and no team. **If they ask how you learned, name the program
@@ -4329,7 +4348,8 @@ publish audited outcomes, and a placement rate nobody audited is a marketing num
 
 **The second thing this cannot buy is a credential that survives an ATS filter**, and no hour count
 changes that. Which is why M0 filtering postings on degree requirements *before* you spend an hour is
-the correct move, not a consolation.
+the correct move, not a consolation. The degree under way at DeVry is what changes the answer: "degree in
+progress" clears the internship filter now, and the finished degree clears the rest.
 
 So the honest ceiling: **this can make you a candidate who wins almost any interview you actually get,
 and it can instrument your funnel well enough that you find out fast which part is failing. It cannot

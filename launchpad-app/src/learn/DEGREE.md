@@ -501,8 +501,10 @@ gives unseen planted bugs, features and performance fixes on the finished projec
 
 ## Infrastructure: LAUNCHPAD's extension past the degree (`cs.18` to `cs.22`)
 
-The degree courses give the fundamentals a strong graduate has. LAUNCHPAD's learner is studying for
-a software engineering degree and aiming at backend, cloud and AI-infrastructure roles at the
+The degree courses give the fundamentals a strong graduate has. LAUNCHPAD's learner is starting a
+Bachelor of Science in Software Engineering at DeVry University, so these courses reinforce the school
+courses rather than replace them (when a term covers a subject, the matching course here is its practice and
+labs), and the aim is backend, cloud and AI-infrastructure roles at the
 companies that run the largest systems. These five courses are the depth a degree does not give:
 the systems those teams build and operate, learned by building small, faithful versions of them.
 
