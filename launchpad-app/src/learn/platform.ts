@@ -65,10 +65,16 @@ export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_COURSES.some(
  */
 export const ROADMAPS: Roadmap[] = [
   {
+    id: 'internship',
+    title: 'Phase 1 · Internship-ready',
+    blurb: 'The shortest road to being worth an internship: one language learned properly, the command line and git, SQL, JavaScript and TypeScript for services, and the first data structures and algorithms course. Pair it with a live flagship from the modules (M1 to M10: HTTP, a database, tests, a deploy) and start applying when both are done — not after everything else.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1'],
+  },
+  {
     id: 'backend-ai-infra',
     title: 'Backend & AI Infrastructure',
-    blurb: 'The path LAUNCHPAD is built around, beside a software engineering degree: one language learned properly, then data structures and algorithms with proofs, systems, operating systems, networks and parallel computing, the backend capstones (a key-value store, an HTTP server, a data warehouse), TypeScript for services, and a language model built from scratch. What backend and AI-infrastructure teams hire for, taught to mastery.',
-    steps: ['python', 'python-intermediate', 'bash', 'git', 'python-advanced', 'cs-disc', 'cs-dsa1', 'sql', 'sql-intermediate', 'cs-dsa2', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-dsacpp', 'cs-sys', 'cs-os', 'cs-net', 'cs-par', 'cs-sec', 'cs-cap-kv', 'cs-cap-http', 'sql-advanced', 'sql-expert', 'sql-projects', 'cs-cap-data', 'javascript', 'typescript', 'python-expert', 'python-projects', 'python-ai'],
+    blurb: 'The path LAUNCHPAD is built around, beside a software engineering degree, in three phases. Phase 1, internship-ready: a language, the tools, SQL, TypeScript, first algorithms. Phase 2, junior engineer: deeper algorithms, databases, systems, operating systems and networks, security, and the backend capstones (an HTTP server, a key-value store, a data warehouse). Phase 3, specialist: parallel computing, a language model from scratch, then distributed systems, cloud infrastructure and ML systems. Apply from the end of Phase 1; keep going while you are paid to engineer.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1', 'typescript-intermediate', 'python-advanced', 'cs-disc', 'cs-dsa2', 'sql-advanced', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-sys', 'cs-os', 'cs-net', 'cs-cap-http', 'cs-cap-kv', 'cs-sec', 'sql-expert', 'sql-projects', 'cs-cap-data', 'cs-par', 'python-expert', 'python-projects', 'python-ai'],
   },
   {
     id: 'ai-product',
