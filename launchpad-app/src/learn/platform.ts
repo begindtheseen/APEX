@@ -74,7 +74,7 @@ export const ROADMAPS: Roadmap[] = [
     id: 'backend-ai-infra',
     title: 'Backend & AI Infrastructure',
     blurb: 'The path LAUNCHPAD is built around, beside a Software Engineering bachelor’s at DeVry, in three phases: where a school course covers a subject, the matching course here is its practice and labs. Phase 1, internship-ready: a language, the tools, SQL, TypeScript, first algorithms. Phase 2, junior engineer: deeper algorithms, databases, systems, operating systems and networks, security, and the backend capstones (an HTTP server, a key-value store, a data warehouse). Phase 3, specialist: parallel computing, a language model from scratch, then distributed systems, cloud infrastructure and ML systems. Apply from the end of Phase 1; keep going while you are paid to engineer.',
-    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1', 'typescript-intermediate', 'python-advanced', 'cs-disc', 'cs-dsa2', 'sql-advanced', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-sys', 'cs-os', 'cs-net', 'cs-cap-http', 'cs-cap-kv', 'cs-sec', 'sql-expert', 'sql-projects', 'cs-cap-data', 'cs-par', 'python-expert', 'python-projects', 'python-ai', 'cs-mlsys1'],
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'sql', 'sql-intermediate', 'javascript', 'typescript', 'cs-dsa1', 'typescript-intermediate', 'python-advanced', 'cs-disc', 'cs-dsa2', 'sql-advanced', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-sys', 'cs-os', 'cs-net', 'cs-cap-http', 'cs-cap-kv', 'cs-sec', 'sql-expert', 'sql-projects', 'cs-cap-data', 'cs-par', 'python-expert', 'python-projects', 'python-ai', 'cs-dist1', 'cs-cloud', 'cs-mlsys1', 'cs-mlsys2'],
   },
   {
     id: 'ai-product',

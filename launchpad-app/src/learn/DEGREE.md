@@ -536,38 +536,19 @@ last, so later labs extend earlier ones.
 
 ### Distributed Systems I: syllabus (`dist1`, `cs.18-dist1.txt`)
 
-Starts where Parallel Computing's distributed lessons stop (partial failure, Lamport and vector
-clocks, quorums, a first Raft): a two-page refresher, then depth.
+Starts where Parallel Computing's distributed lessons stop, with a short refresher, then the concepts
+that unlock real work. One seeded discrete-event network (`Sim`, `Node`) carries every lab.
 
-1. **The simulator.** A seeded, discrete-event network: nodes, messages, delay, loss, duplication,
-   partitions. Every later lab runs on it.
-2. **Failure models and detectors.** Crash-stop, crash-recover, omission, Byzantine; timeouts,
-   heartbeats, phi-accrual suspicion; why a perfect detector is impossible.
-3. **RPC semantics.** At-most-once, at-least-once, "exactly-once" as idempotency plus dedup;
-   idempotency keys and request ids.
-4. **Timeouts, retries and backoff.** Exponential backoff with jitter, retry budgets, hedged
-   requests, deadlines that propagate; retry storms simulated.
-5. **Time.** Physical clocks, NTP skew, monotonic vs wall clocks, hybrid logical clocks.
-6. **Leases and fencing.** Leader leases, clock-skew danger, fencing tokens that make a stale
-   leader harmless.
-7. **Consistency models I.** Linearizability defined by histories; a linearizability checker
-   built (Wing-Gong search) and run on simulated histories.
-8. **Consistency models II.** Sequential, causal, read-your-writes, monotonic reads, eventual;
-   which anomalies each allows, shown with histories.
-9. **Replication strategies.** Single-leader, multi-leader, leaderless; replication lag and its
-   anomalies; conflict detection.
-10. **Quorums in depth.** R + W > N, sloppy quorums and hinted handoff, read repair; the cases
-    where quorums still are not linearizable.
-11. **Anti-entropy.** Merkle trees to find divergent ranges; gossip dissemination and membership.
-12. **Partitioning.** Hash vs range partitioning, hot keys, consistent hashing with virtual
-    nodes, rebalancing with minimal movement.
-13. **Conflict-free replicated data types.** G-counter, PN-counter, LWW and OR-sets; the
-    join-semilattice argument for convergence.
-14. **CAP and PACELC, properly.** What the theorem says and does not; latency vs consistency
-    choices in real designs.
-15. **Testing distributed systems.** Fault injection, deterministic simulation testing,
-    Jepsen-style checking of a buggy store until the bug is found.
-16. **Mastery gate.**
+1. **The simulator.** A seeded network you can replay: delay, loss, duplication, partitions, crashes.
+2. **Failures and timeouts.** Failure models, adaptive detectors, deadlines that travel with a request.
+3. **Retries and idempotency.** Backoff with jitter, retry budgets, idempotency keys and dedup.
+4. **Time, leases and fencing tokens.** Clock skew, leader leases, tokens that make a stale leader harmless.
+5. **Consistency models.** A linearizability checker built; the weaker models and CAP/PACELC.
+6. **Replication and quorums.** Leaders and lag, R + W > N and where it stops helping (CRDTs in a note).
+7. **Partitioning.** Consistent hashing with virtual nodes, hot keys, rebalancing.
+8. **Anti-entropy and gossip.** Merkle trees and epidemic spreading.
+9. **Testing distributed systems.** Fault injection, seed sweeps and shrinking a failing case.
+10. **Mastery gate.**
 
 ### Distributed Systems II: syllabus (`dist2`, `cs.19-dist2.txt`)
 
@@ -600,93 +581,47 @@ Systems I). The plan below stays for when the work calls for it.
 
 ### Cloud Infrastructure: syllabus (`cloud`, `cs.20-cloud.txt`)
 
-1. **From one box to a fleet.** What changes with a thousand machines: failure as the normal
-   case, cattle not pets, the control plane and the data plane.
-2. **Isolation.** Processes, VMs and containers; namespaces and cgroups as a model; noisy
-   neighbours.
-3. **Images and artifacts.** Content-addressed layers, reproducible builds, image caches.
-4. **Desired state and reconciliation.** Controllers and reconcile loops built; level- vs
-   edge-triggered; idempotent actuation.
-5. **Scheduling.** Bin-packing, requests vs limits, affinity and spreading, preemption; a
-   scheduler built and measured.
-6. **Rollouts.** Rolling, blue-green and canary; health checks, readiness vs liveness; automated
-   rollback on a bad canary.
-7. **Service discovery and load balancing.** DNS and registries; round-robin, least-loaded,
-   power of two choices, consistent hashing; L4 vs L7.
-8. **Queueing theory for capacity.** Little's law, utilization and the latency knee, M/M/1 and
-   M/M/c; tail latency and fan-out.
-9. **Autoscaling.** Target tracking, hysteresis and cooldowns, scaling on queue depth; cold
-   starts; an autoscaler that does not oscillate.
-10. **Overload.** Rate limiting (token and leaky buckets), backpressure, load shedding, circuit
-    breakers; graceful degradation.
-11. **Caching at scale.** TTLs, invalidation, stampedes and request coalescing, write-through vs
-    write-back; hit-rate math.
-12. **Storage services.** Block, file and object storage; replication vs erasure coding;
-    durability math in nines.
-13. **Observability.** Metrics, logs and traces; histograms and percentiles that can be merged;
-    a span tree reconstructed from a trace.
-14. **SLOs.** SLIs, objectives and error budgets; multi-window burn-rate alerts.
-15. **Infrastructure as code.** Declarative resources, the plan/apply diff, dependency ordering,
-    drift detection.
-16. **Regions and disaster recovery.** Zones and regions, RPO and RTO, failover drills; cost as a
-    design input.
-17. **Mastery gate.**
+One simulated cluster (`Cluster`, `Machine`, ticks, control loops) carries every lab.
+
+1. **From one box to a fleet.** The simulator; failure as normal (isolation and images in notes).
+2. **Desired state and reconciliation.** A pure diff and a reconcile loop.
+3. **Scheduling.** Filter then score, zone spreading and best fit.
+4. **Rollouts and health checks.** A canary judge and a stepped rollout with automatic rollback.
+5. **Service discovery and load balancing.** Four picking rules, power of two choices, stale load data.
+6. **Queueing theory for capacity.** Little's law and an M/M/c capacity plan.
+7. **Autoscaling.** Target tracking with a tolerance band; oscillation counted.
+8. **Overload.** Token buckets, priority and deadline load shedding, congestion collapse.
+9. **Caching at scale.** Expiry, request coalescing, stampedes measured.
+10. **Observability and SLOs.** A mergeable histogram; multi-window burn-rate alerts.
+11. **Infrastructure as code and disaster recovery.** Plan with dependency order; drift; a failover drill.
+12. **Mastery gate.**
 
 ### ML Systems I: syllabus (`mlsys1`, `cs.21-mlsys-train.txt`)
 
-1. **The accelerator as a cost model.** FLOPs, memory bandwidth, arithmetic intensity; the
-   roofline model built and applied.
-2. **Matrix multiply, fast.** Blocking and tiling for reuse, counted in memory traffic; why
-   shapes and padding matter.
-3. **Numerics.** fp32, fp16, bf16 and fp8 simulated bit by bit; overflow and underflow; loss
-   scaling; accumulation precision.
-4. **Memory of a training step.** Parameters, gradients, optimizer state, activations; the
-   bytes-per-parameter budget worked out.
-5. **Activation recomputation.** Trading compute for memory; the checkpoint placement problem.
-6. **Data parallelism.** Gradient averaging; ring all-reduce implemented and costed with the
-   alpha-beta model; bucketing and overlap.
-7. **Collectives and topology.** All-reduce, all-gather, reduce-scatter, all-to-all; tree vs ring;
-   fast links inside a node, slower ones between nodes.
-8. **Sharded data parallelism.** Optimizer, gradient and parameter sharding (the ZeRO stages);
-   memory and communication per stage.
-9. **Tensor parallelism.** Splitting matmuls by rows and columns; where the all-reduces go in a
-   transformer layer.
-10. **Pipeline parallelism.** Micro-batches, GPipe and one-forward-one-backward schedules, the
-    bubble fraction derived and simulated.
-11. **Planning a training run.** Fitting a model to a cluster with data, tensor and pipeline
-    parallelism; model FLOPs utilization measured.
-12. **The input pipeline.** Sharded datasets, shuffling at scale, prefetching; keeping the
-    accelerator fed.
-13. **Failures at scale.** Failure rates across thousands of devices, checkpoint frequency
-    optimised, sharded and asynchronous checkpoints, restart time.
-14. **Scaling laws as planning.** Compute-optimal model and data size; budgeting a run.
-15. **Mixture of experts.** Routing, capacity factor, expert parallelism and its all-to-all.
-16. **Mastery gate.**
+One accelerator cost model and one simulated cluster carry every lab.
+
+1. **The accelerator as a cost model.** FLOPs, bandwidth, the roofline; tiling and padding in practice.
+2. **Numerics.** fp32, bf16, fp16, fp8; overflow, loss scaling, accumulation.
+3. **The memory of a training step**, and recomputation to trade compute for it.
+4. **Data parallelism.** Ring all-reduce over simulated devices; fast and slow links; hierarchical all-reduce.
+5. **Sharded data parallelism.** The ZeRO stages.
+6. **Tensor and pipeline parallelism.** Where the all-reduces go; the bubble.
+7. **Planning a training run.** Fitting a model to a cluster, MFU, compute budgets.
+8. **The input pipeline.** Sharding, shuffling at scale, keeping accelerators fed.
+9. **Failures at scale.** Checkpoint frequency, sharded and asynchronous checkpoints, restarts.
+10. **Mastery gate** (mixture of experts appears here and in notes).
 
 ### ML Systems II: syllabus (`mlsys2`, `cs.22-mlsys-serve.txt`)
 
-1. **What inference costs.** Prefill vs decode, compute-bound vs memory-bound, the roofline
-   revisited for one token at a time.
-2. **The KV cache.** What is cached and why; its size per token, per request and per batch.
-3. **Paged KV memory.** Fragmentation, block tables, a paged allocator built; copy-on-write
-   for shared prefixes.
-4. **Batching.** Static vs continuous batching; a scheduler built; throughput vs latency.
-5. **Serving metrics.** Time to first token, time per output token, goodput under an SLO;
-   measured in a simulated server.
-6. **Sampling.** Greedy, temperature, top-k, top-p, implemented; determinism and seeds.
-7. **Speculative decoding.** Draft and verify; the acceptance rule that keeps the output
-   distribution exact; expected speedup.
-8. **Quantization.** int8 and int4, per-tensor, per-channel and per-group scales; error measured;
-   weight-only vs activation quantization.
-9. **Prefix caching.** A radix tree over token prefixes; eviction; cache-aware routing.
-10. **Routing and load balancing across replicas.** Least-loaded vs KV-aware routing; session
-    affinity; head-of-line blocking.
-11. **Disaggregated serving.** Separate prefill and decode pools; when it pays.
-12. **Autoscaling model servers.** Cold starts and weight loading, warm pools, scaling on queue
-    depth and tokens per second.
-13. **Long context.** Attention cost at long lengths, chunked prefill, sliding windows.
-14. **Vector search infrastructure.** Embeddings at scale, exact vs approximate nearest
-    neighbours, an IVF index built, recall vs latency.
-15. **Cost per token.** Utilization, batch size and hardware choice in one cost model; pricing a
-    feature.
-16. **Mastery gate.**
+One decoding-step cost model and one simulated model server carry every lab.
+
+1. **What inference costs.** Prefill, decode and the KV cache.
+2. **Paged KV memory.** Block tables and copy-on-write.
+3. **Continuous batching, measured.** TTFT, TPOT, goodput; chunked prefill for long prompts.
+4. **Sampling and speculative decoding.** The exact acceptance rule, checked empirically.
+5. **Quantization.** Per-tensor vs per-group scales, error measured.
+6. **Prefix caching and KV-aware routing.**
+7. **Autoscaling model servers.** Cold starts, warm pools, the right signal.
+8. **Vector search.** An IVF index with recall measured.
+9. **Cost per token** (disaggregated serving and long context in notes).
+10. **Mastery gate.**

@@ -27,6 +27,37 @@ gates exactly as they were.
 - Every recorded lesson was recorded again with the newer pronunciation: code, paths, symbols and
   equations are said the way a person says them.
 
+**Past the degree: four infrastructure courses.** Short theory, then a lab you build on a deterministic
+simulator, then practice that pushes on the case where the naive design breaks, and a gate.
+
+- **Distributed Systems I:** a replayable network simulator, failure detection and deadlines, retries
+  and idempotency keys, leases and fencing tokens, a linearizability checker, replication and quorums,
+  consistent hashing, gossip, and fault-injection testing.
+- **Cloud Infrastructure:** reconcile loops, a scheduler, canary rollouts with automatic rollback, load
+  balancing, capacity planning with queueing math, an autoscaler that does not oscillate, overload
+  protection, caching, mergeable latency histograms and burn-rate alerts, infrastructure as code and a
+  failover drill.
+- **ML Systems I, training:** the roofline cost model, training numerics, the memory of a training
+  step, ring all-reduce, ZeRO sharding, tensor and pipeline parallelism, planning a run on a cluster, the
+  input pipeline, and checkpointing at scale.
+- **ML Systems II, inference and serving:** the KV cache, paged KV memory, continuous batching measured
+  on time to first token and goodput, speculative decoding, quantization, prefix caching and routing,
+  autoscaling model servers, vector search and cost per token.
+
+**Practice and gates for LAUNCHPAD's own courses:** JavaScript (72 problems), TypeScript (66) and
+AI from scratch (99), each with a mastery gate.
+
+**Roadmaps in phases.** *Phase 1 · Internship-ready* is the shortest road to applying: Python, the
+command line and git, SQL, JavaScript and TypeScript, and the first algorithms course, beside a live
+flagship. *Backend & AI Infrastructure* runs the whole path in three phases, with TypeScript early and
+the infrastructure courses at the end.
+
+**Production labs in the modules**, where the work already lives: point-in-time restore, replica lag and
+a lost update in Postgres (M5); property-based tests and fuzzing (M9); flame graphs, heap profiles and
+honest benchmarks (M10); an API designed to evolve (M13); a threat model and a hardened container (M21);
+one workload on Kubernetes and a public-cloud slice built from code (M23). The program is now 1,882
+hours, and The Plan works out your dates from that.
+
 ## 1.3.0
 
 **A new layer: The Frontier.** Eight modules, M33 to M40, for understanding AI the way working AI
