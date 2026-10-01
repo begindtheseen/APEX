@@ -65,6 +65,12 @@ export const LEARN_LANGS: LearnLang[] = TAUGHT.filter((l) => LEARN_COURSES.some(
  */
 export const ROADMAPS: Roadmap[] = [
   {
+    id: 'backend-ai-infra',
+    title: 'Backend & AI Infrastructure',
+    blurb: 'The path LAUNCHPAD is built around, beside a software engineering degree: one language learned properly, then data structures and algorithms with proofs, systems, operating systems, networks and parallel computing, the backend capstones (a key-value store, an HTTP server, a data warehouse), TypeScript for services, and a language model built from scratch. What backend and AI-infrastructure teams hire for, taught to mastery.',
+    steps: ['python', 'python-intermediate', 'bash', 'git', 'python-advanced', 'cs-disc', 'cs-dsa1', 'sql', 'sql-intermediate', 'cs-dsa2', 'cpp', 'cpp-intermediate', 'cs-org', 'cs-dsacpp', 'cs-sys', 'cs-os', 'cs-net', 'cs-par', 'cs-sec', 'cs-cap-kv', 'cs-cap-http', 'sql-advanced', 'sql-expert', 'sql-projects', 'cs-cap-data', 'javascript', 'typescript', 'python-expert', 'python-projects', 'python-ai'],
+  },
+  {
     id: 'ai-product',
     title: 'AI Product Engineer',
     blurb: 'The order LAUNCHPAD itself teaches in: the command line and git, JavaScript and TypeScript for the product, the web page it lives in, SQL for its data and Python for its models.',
