@@ -13,7 +13,7 @@
    ========================================================================== */
 import { afterAll, describe, expect, it } from 'vitest'
 import { buildProgram, domSteps, gradeRun, lessonShell, typeCheckFailures, typeLines } from './grade'
-import { TRACKS } from './index'
+import { TRACKS } from './full'
 import type { LearnGrade, LearnLesson, LearnRun } from './types'
 import { closeRunners, runCppNode, runJs, runPython, runSqlNode, runTs, runWeb, type Out } from './verify/runners'
 

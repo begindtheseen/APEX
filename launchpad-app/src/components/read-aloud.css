@@ -1,82 +1,154 @@
 /* ============================================================================
    ORBIT — read-aloud controls
+   One capsule: Read aloud and the speed; while reading, the player.
    ========================================================================== */
 .raloud {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
-.raloud__btn {
+.raloud__pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: 2px;
+  height: 32px;
+  padding: 0 4px;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--panel-2);
-  color: var(--ink-3);
-  font-size: 11.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-2) 85%, transparent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
 }
 
-.raloud__btn:hover {
-  color: var(--ink);
-  border-color: var(--line-strong);
-}
-
-.raloud__btn--go {
+.raloud__pill:hover,
+.raloud[data-on='true'] .raloud__pill {
   border-color: var(--line-blue);
+}
+
+.raloud[data-on='true'] .raloud__pill {
+  background: color-mix(in srgb, var(--line-blue) 10%, var(--panel-2));
+}
+
+.raloud__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  padding: 0 10px 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
 }
 
-.raloud[data-on='true'] .raloud__btn--go,
-.raloud[data-on='true'] {
-  color: var(--ink-2);
+.raloud__go svg {
+  color: var(--blue, #5696f8);
 }
 
-.raloud__at {
-  font-size: 11px;
-  color: var(--ink-5);
-  font-variant-numeric: tabular-nums;
-  padding: 0 2px;
+.raloud__go:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--line-blue) 16%, transparent);
 }
 
-.raloud__voice,
-.raloud__rate {
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--panel-2);
+.raloud__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--ink-3);
-  font-size: 11.5px;
-  max-width: 190px;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
 }
 
-.raloud__voice:hover,
-.raloud__rate:hover {
-  border-color: var(--line-strong);
+.raloud__icon:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--line-blue) 16%, transparent);
 }
 
-.raloud__prep {
+.raloud__icon--main {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--line-blue) 22%, transparent);
+}
+
+/* The line she moves along (components/Scrubber.tsx). */
+.raloud__icon--busy {
+  cursor: default;
+}
+
+.raloud__track {
+  width: 150px;
+  margin: 0 6px;
+}
+
+.raloud__status {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 10px;
-  border: 1px solid var(--line-blue);
-  border-radius: var(--r-sm);
+  max-width: 34ch;
+  padding: 0 8px;
+  overflow: hidden;
   color: var(--ink-2);
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.raloud__sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+/* The speed: a chip showing "1×", with the real select laid invisibly over it, so it opens the system picker. */
+.raloud__rate {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+}
+
+.raloud__rate:hover,
+.raloud__rate:focus-within {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--line-blue) 16%, transparent);
+}
+
+.raloud__rate select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .raloud__spin {
   width: 10px;
   height: 10px;
+  flex: none;
   border: 2px solid var(--line-strong);
   border-top-color: var(--ink-2);
   border-radius: 50%;
@@ -93,18 +165,22 @@
   .raloud__spin {
     animation: none;
   }
+  .scrub__fill,
+  .scrub__thumb {
+    transition: none;
+  }
 }
 
 .raloud__notice {
-  flex-basis: 100%;
-  margin: 2px 0 0;
+  margin: 0;
+  max-width: 60ch;
   font-size: 11.5px;
   color: var(--ink-4);
 }
 
-@media (max-width: 620px) {
-  .raloud__voice {
-    max-width: 120px;
+@media (max-width: 420px) {
+  .raloud__track {
+    width: 70px;
   }
 }
 
@@ -117,8 +193,43 @@
 }
 
 ::highlight(raloud-word) {
-  background-color: rgba(86, 150, 248, 0.42);
   color: #fff;
+}
+
+/* The light under the word being said (lib/voice/highlight.ts): slides from word to word, and holds still
+   on its word while the page scrolls. */
+.raloud-glide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  border-radius: 6px;
+  background: rgba(86, 150, 248, 0.38);
+  box-shadow: 0 0 14px rgba(86, 150, 248, 0.35);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width;
+  transition: opacity 0.2s ease;
+}
+
+.raloud-glide[data-slide='true'] {
+  transition:
+    transform 0.17s cubic-bezier(0.25, 0.8, 0.25, 1),
+    width 0.17s cubic-bezier(0.25, 0.8, 0.25, 1),
+    height 0.17s ease,
+    opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raloud-glide[data-slide='true'] {
+    transition: opacity 0.2s ease;
+  }
+}
+
+:root[data-theme='light'] .raloud-glide {
+  mix-blend-mode: multiply;
+  background: rgba(86, 150, 248, 0.28);
 }
 
 /* When she has scrolled away from where the voice is. */
@@ -148,4 +259,431 @@
 html[data-focus-lock='true'] .raloud-jump,
 body:has(.fbar) .raloud-jump {
   bottom: calc(96px + var(--safe-bottom, 0px));
+}
+
+/* ── The docked player ───────────────────────────────────────────────────────
+   While the voice is on and the capsule has scrolled away, the player sits at
+   the bottom of the lesson's column like a song in a music app: frosted glass
+   over the page, the lesson and what the voice is doing on the left, the
+   controls in the middle, speed and stop on the right, and the progress as a
+   hairline along its bottom edge. */
+.raloud-dock {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + var(--safe-bottom, 0px));
+  z-index: 46;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: min(680px, calc(100% - 32px));
+  height: 78px;
+  padding: 0 10px 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: color-mix(in srgb, #0b1626 90%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  transform: translate(-50%, 0) scale(1);
+  opacity: 1;
+  transition:
+    transform 0.42s var(--ease-spring),
+    opacity 0.24s var(--ease-out),
+    visibility 0s linear 0s;
+}
+
+.raloud-dock[data-show='false'] {
+  transform: translate(-50%, calc(100% + 28px)) scale(0.96);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.3s var(--ease-out),
+    opacity 0.2s var(--ease-out),
+    visibility 0s linear 0.3s;
+}
+
+/* Clicking the left side takes her back to where the voice is. */
+.raloud-dock__now {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 6px 8px 6px 4px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+.raloud-dock__now:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* The "artwork": a small tile whose bars move while the voice speaks, and rest when it stops. */
+.raloud-dock__art {
+  display: inline-flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  width: 40px;
+  height: 40px;
+  padding-bottom: 12px;
+  border-radius: 9px;
+  background:
+    radial-gradient(120% 90% at 30% 20%, rgba(154, 212, 255, 0.35), transparent 60%),
+    linear-gradient(145deg, #1b6ce0 0%, #0c2f66 100%);
+  box-shadow: 0 4px 14px rgba(27, 108, 224, 0.35);
+}
+
+.raloud-dock__art i {
+  width: 3px;
+  height: 5px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  transform-origin: bottom;
+  transition: height 0.3s var(--ease-out);
+}
+
+.raloud-dock__art[data-playing='true'] i {
+  animation: raloud-eq 0.9s ease-in-out infinite alternate;
+}
+.raloud-dock__art[data-playing='true'] i:nth-child(1) { animation-duration: 0.82s; }
+.raloud-dock__art[data-playing='true'] i:nth-child(2) { animation-duration: 0.64s; animation-delay: -0.3s; }
+.raloud-dock__art[data-playing='true'] i:nth-child(3) { animation-duration: 0.95s; animation-delay: -0.5s; }
+.raloud-dock__art[data-playing='true'] i:nth-child(4) { animation-duration: 0.72s; animation-delay: -0.15s; }
+
+@keyframes raloud-eq {
+  from { height: 4px; }
+  to { height: 16px; }
+}
+
+.raloud-dock__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.raloud-dock__title,
+.raloud-dock__doing {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.raloud-dock__title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.raloud-dock__doing {
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+.raloud-dock__middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.raloud-dock__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.raloud-dock__track {
+  width: 300px;
+}
+
+.raloud-dock__controls .raloud__icon {
+  width: 32px;
+  height: 32px;
+  color: var(--ink-2);
+}
+
+.raloud-dock__controls .raloud__icon--main {
+  width: 38px;
+  height: 38px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.raloud-dock__controls .raloud__icon--main:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.raloud-dock__controls .raloud__icon--main svg {
+  width: 15px;
+  height: 15px;
+}
+
+.raloud-dock__wait {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+}
+
+.raloud-dock__end {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+/* Above the focus strip when a block is running. */
+.shell[data-focus='true'] .raloud-dock,
+body:has(.fbar) .raloud-dock {
+  bottom: calc(92px + var(--safe-bottom, 0px));
+}
+
+/* The tutor steps up above the docked player. "Back to the word" is not needed while it shows: clicking the
+   player's left side does the same. */
+body:has(.raloud-dock[data-show='true']) .raloud-jump {
+  display: none;
+}
+
+body:has(.raloud-dock[data-show='true']) .tutor {
+  bottom: calc(96px + var(--safe-bottom, 0px));
+}
+
+body:has(.fbar):has(.raloud-dock[data-show='true']) .tutor {
+  bottom: calc(170px + var(--safe-bottom, 0px));
+}
+
+@media (max-width: 720px) {
+  .raloud-dock__track {
+    width: 200px;
+  }
+}
+
+@media (max-width: 520px) {
+  .raloud-dock {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 4px;
+  }
+  .raloud-dock__track {
+    width: 150px;
+  }
+  .raloud-dock__track .scrub__time {
+    display: none;
+  }
+  .raloud-dock__art {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raloud-dock,
+  .raloud-dock[data-show='false'] {
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  }
+  .raloud-dock[data-show='true'] {
+    transition: opacity 0.2s ease;
+  }
+  .raloud-dock__art[data-playing='true'] i {
+    animation: none;
+    height: 10px;
+  }
+}
+
+/* Room under the lesson's last lines, so the docked player never sits on them. */
+.shell:has(.raloud-dock[data-show='true']) .scroll {
+  padding-bottom: 88px;
+}
+
+.shell[data-focus='true']:has(.raloud-dock[data-show='true']) .scroll {
+  padding-bottom: 164px;
+}
+
+/* ── The scrubber ────────────────────────────────────────────────────────────
+   A thin line that thickens under the pointer, a knob at the voice's place,
+   a paler line to where a click would land, and a card with that sentence. */
+.scrub {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scrub__hit {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 22px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.scrub__rail {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: height 0.15s var(--ease-out);
+}
+
+.scrub__hit:hover .scrub__rail,
+.scrub__hit:focus-visible .scrub__rail,
+.scrub[data-active='true'] .scrub__rail {
+  height: 6px;
+}
+
+.scrub__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: var(--blue-hi, #2a7ef5);
+  transition: width 0.25s var(--ease-out);
+}
+
+.scrub__ghost {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.scrub__thumb {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transform: translateY(-50%) scale(0);
+  transition:
+    transform 0.15s var(--ease-out),
+    left 0.25s var(--ease-out);
+  pointer-events: none;
+}
+
+.scrub__hit:hover .scrub__thumb,
+.scrub__hit:focus-visible .scrub__thumb,
+.scrub[data-active='true'] .scrub__thumb {
+  transform: translateY(-50%) scale(1);
+}
+
+.scrub__hit:focus-visible .scrub__rail {
+  box-shadow: 0 0 0 2px var(--line-blue-strong);
+}
+
+/* Following a drag or a scan exactly, not easing behind it. */
+.scrub[data-active='true'] .scrub__fill,
+.scrub[data-active='true'] .scrub__thumb {
+  transition: transform 0.15s var(--ease-out);
+}
+
+.scrub__time {
+  min-width: 32px;
+  color: var(--ink-4);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.scrub__time--left {
+  text-align: left;
+}
+
+.scrub__peek {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: max-content;
+  max-width: 260px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(10, 21, 37, 0.97);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: normal;
+  text-align: left;
+}
+
+/* The capsule sits near the top of the lesson: its card opens below, clear of the top bar. */
+.raloud__pill .scrub__peek {
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+.scrub__peek-where {
+  color: var(--ink-4);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.scrub__peek-text {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* In the docked player the card floats above the player, clear of its buttons. */
+.raloud-dock .scrub__peek {
+  bottom: calc(100% + 52px);
+}
+
+/* Past the next practice she has not done: shaded, and not reachable going forward. */
+.scrub__locked {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 2;
+  background: repeating-linear-gradient(90deg, rgba(255, 200, 87, 0.35) 0 2px, rgba(10, 18, 32, 0.9) 2px 5px);
+  pointer-events: none;
+}
+
+/* Where each practice still to do sits on the line. */
+.scrub__mark {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 3px;
+  height: 10px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #ffc857;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.scrub__mark[data-next='true'] {
+  height: 12px;
+  background: #ffd76e;
 }

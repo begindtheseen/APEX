@@ -15,8 +15,9 @@
    ========================================================================== */
 import { ContextPanel } from '@/components/ContextPanel'
 import { VideoEmbed } from '@/components/VideoEmbed'
-import { splitNotes, type ContextNote } from '@/lib/contextNotes'
-import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { splitNotes, stripNoteRefs, type ContextNote } from '@/lib/contextNotes'
+import { canRequestExplain, claimCtx, holdCtxOpen, onCtxClaimed, requestExplain } from '@/lib/ctxBus'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import './markdown.css'
 
 /**
@@ -62,14 +63,22 @@ function WithNotes({ children, className, renderCode }: { children: string; clas
   // underneath it (context-panel.css).
   useLayoutEffect(() => {
     if (!note) return
-    document.documentElement.dataset.ctxOpen = 'true'
-    return () => void delete document.documentElement.dataset.ctxOpen
+    claimCtx('note')
+    return holdCtxOpen()
   }, [note])
+  // Explain opening puts the note away; only one panel shows at a time.
+  useEffect(() => onCtxClaimed('note', () => setActive(null)), [])
   const body = <div className={`md ${className}`}>{renderBlocks(split.body)}</div>
   return (
     <NotesContext.Provider value={state}>
       {renderCode ? <CodeContext.Provider value={renderCode}>{body}</CodeContext.Provider> : body}
-      {note ? <ContextPanel note={note} onClose={() => setActive(null)} /> : null}
+      {note ? (
+        <ContextPanel
+          note={note}
+          onClose={() => setActive(null)}
+          onMore={canRequestExplain() ? () => requestExplain({ selection: note.title, paragraph: stripNoteRefs(note.body) }) : undefined}
+        />
+      ) : null}
     </NotesContext.Provider>
   )
 }
@@ -107,10 +116,16 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
   const custom = render?.(lang, code)
   if (custom) return <>{custom}</>
   return (
-    <pre className="md__pre" data-lang={lang || undefined}>
-      {lang ? <span className="md__lang">{lang}</span> : null}
-      <code>{code}</code>
-    </pre>
+    <>
+      <pre className="md__pre" data-lang={lang.split(/\s+/)[0] || undefined}>
+        {lang ? <span className="md__lang">{lang.split(/\s+/)[0]}</span> : null}
+        <code>{code}</code>
+      </pre>
+      {/* ```cpp laptop: a whole program that needs what the in-browser compiler leaves out. */}
+      {lang.split(/\s+/).includes('laptop') ? (
+        <p className="md__laptop">Build this one on a laptop compiler: it needs something the in-browser C++ leaves out, such as exceptions, threads, signals or the operating system's own calls.</p>
+      ) : null}
+    </>
   )
 }
 
@@ -467,7 +482,7 @@ function Table({ rows }: { rows: string[] }) {
 function inline(src: string): ReactNode[] {
   const out: ReactNode[] = []
   const re =
-    /(\\\$)|(`[^`]+`)|(\$(?!\s)(?:[^$\n\\]|\\.)+?(?<!\s)\$)|(\[\[[^\]|\n]+\|[a-z0-9][a-z0-9-]*\]\])|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[[^\]]+\]\([^)]+\))/g
+    /(\\[$*_])|(`[^`]+`)|(\$(?!\s)(?:[^$\n\\]|\\.)+?(?<!\s)\$)|(\[\[[^\]|\n]+\|[a-z0-9][a-z0-9-]*\]\])|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[[^\]]+\]\([^)]+\))/g
   let last = 0
   let m: RegExpExecArray | null
   let key = 0
@@ -476,8 +491,9 @@ function inline(src: string): ReactNode[] {
     if (m.index > last) out.push(src.slice(last, m.index))
     const tok = m[0]
 
-    if (tok === '\\$') {
-      out.push('$')
+    // A backslash before $, * or _ keeps the character itself (Σ\* is Σ*, not the start of italics).
+    if (tok.length === 2 && tok.startsWith('\\')) {
+      out.push(tok[1]!)
     } else if (tok.startsWith('`')) {
       out.push(
         <code className="md__code" key={key++}>
