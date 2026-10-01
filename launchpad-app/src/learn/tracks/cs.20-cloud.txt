@@ -90,6 +90,8 @@ A `Cluster` holds the machines by name, the clock `now`, a seeded generator `rng
 
 Every change appends a 4-tuple to `log`: `(time, kind, what, detail)`, for example `(3, "place", "web-0", "m2")`.
 
+Two parts are left for you to write in the lab: `fail(name)`, which crashes a machine and loses its tasks, and `tick()`, which moves time forward as described next.
+
 One tick does three things, in this order:
 
 1. Run every scheduled action that is due. These are the outside world: a machine dying, a load spike, an operator's change.
